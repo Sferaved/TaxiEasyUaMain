@@ -18,7 +18,7 @@
             android:value="@string/google_maps_key_storage" />
 
         <activity
-            android:name=".MainActivity"
+            android:name=".StartActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar">
@@ -28,6 +28,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name="com.taxi.easy.ua.MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.TaxiEasyUa.NoActionBar"
+            />
     </application>
 
 </manifest>
