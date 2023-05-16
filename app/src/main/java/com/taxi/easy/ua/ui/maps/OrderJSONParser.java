@@ -19,9 +19,9 @@ import java.util.concurrent.Exchanger;
 
 import javax.net.ssl.HttpsURLConnection;
 
-public class CostJSONParser {
+public class OrderJSONParser {
 
-    public CostJSONParser(String urlString) throws MalformedURLException, JSONException, InterruptedException {
+    public OrderJSONParser(String urlString) throws MalformedURLException, JSONException, InterruptedException {
         sendURL(urlString);
     }
 
@@ -50,20 +50,31 @@ public class CostJSONParser {
             urlConnection.disconnect();
         });
 
-        CostJSONParser.ResultFromThread first = new ResultFromThread(exchanger);
+        OrderJSONParser.ResultFromThread first = new ResultFromThread(exchanger);
 
         JSONObject jsonarray = new JSONObject(first.message);
 
          if(!jsonarray.getString("order_cost").equals("0")) {
              costMap.put("dispatching_order_uid", jsonarray.getString("dispatching_order_uid"));
-             costMap.put("order_cost", jsonarray.getString("order_cost"));
-             costMap.put("add_cost", jsonarray.getString("add_cost"));
-             costMap.put("recommended_add_cost", jsonarray.getString("recommended_add_cost"));
-             costMap.put("currency", jsonarray.getString("currency"));
              costMap.put("discount_trip", jsonarray.getString("discount_trip"));
-             costMap.put("can_pay_bonuses", jsonarray.getString("can_pay_bonuses"));
-             costMap.put("can_pay_cashless", jsonarray.getString("can_pay_cashless"));
+             costMap.put("find_car_timeout", jsonarray.getString("find_car_timeout"));
+             costMap.put("find_car_delay", jsonarray.getString("find_car_delay"));
+             costMap.put("order_cost", jsonarray.getString("order_cost"));
+             costMap.put("currency", jsonarray.getString("currency"));
+             costMap.put("route_address_from", jsonarray.getString("route_address_from"));
+             costMap.put("route_address_to", jsonarray.getString("route_address_to"));
+
+             JSONObject from = new JSONObject(costMap.get("route_address_from"));
+
+             costMap.put("from_name", from.getString("name"));
+             costMap.put("from_number", from.getString("number"));
+
+             JSONObject to = new JSONObject(costMap.get("route_address_to"));
+             costMap.put("to_name", to.getString("name"));
+             costMap.put("to_number", to.getString("number"));
          }
+
+
 //        Log.d(TAG, "servicesAll: " + costMap);
             return costMap;
 

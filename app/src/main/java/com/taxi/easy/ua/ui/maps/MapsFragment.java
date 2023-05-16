@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.ui.maps;
 
 import android.annotation.SuppressLint;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -23,6 +24,7 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.taxi.easy.ua.R;
 
 import org.json.JSONException;
@@ -38,6 +40,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MapsFragment extends Fragment {
     public MyPosition myPositionStart , myPositionFinish;
@@ -56,53 +59,13 @@ public class MapsFragment extends Fragment {
          * install it inside the SupportMapFragment. This method will only be triggered once the
          * user has installed Google Play services and returned to the app.
          */
-//        @Override
-//        public void onMapReady(GoogleMap googleMap) {
-//
-//            myPositionStart = new MyPosition(50.568235937668135, 30.26999524844567);
-//            myPositionFinish = new MyPosition(50.51499815972034, 30.23909620059411);
-//
-//            start = new LatLng(myPositionStart.latitude, myPositionStart.longitude);
-//            finish = new LatLng(myPositionFinish.latitude, myPositionFinish.longitude);
-//
-//            googleMap.addMarker(new MarkerOptions().position(start).title("Звідки"));
-//            googleMap.addMarker(new MarkerOptions().position(finish).title("Куди"));
-//            googleMap.moveCamera(CameraUpdateFactory.newLatLng(start));
-//
-//            CameraPosition cameraPosition = new CameraPosition.Builder()
-//                    .target(start)
-//                    .zoom(12)
-//                    .bearing(45)
-//                    .tilt(20)
-//                    .build();
-//            CameraUpdate cameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
-//            googleMap.animateCamera(cameraUpdate);
-//
-//
-//            googleMap.setOnMapClickListener(latLng -> Log.d("TAG", "onMapClick: " + latLng.latitude + "," + latLng.longitude));
-//
-//            googleMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
-//
-//                @Override
-//                public void onMapLongClick(LatLng latLng) {
-//                    Log.d("TAG", "onMapLongClick: " + latLng.latitude + "," + latLng.longitude);
-//                }
-//
-//            });
-//
-//            googleMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
-//
-//                @Override
-//                public void onCameraChange(CameraPosition camera) {
-//                    Log.d("TAG", "onCameraChange: " + camera.target.latitude + "," + camera.target.longitude);
-//                }
-//
-//            });
-//        }
+
         public void onMapReady(GoogleMap googleMap) {
             mMap = googleMap;
 
-            myPositionStart = new MyPosition(50.568235937668135, 30.26999524844567);
+//            myPositionStart = new MyPosition(50.568235937668135, 30.26999524844567);
+//         Тест
+            myPositionStart = new MyPosition(46.4775,  30.7326);
 
             start = new LatLng(myPositionStart.latitude, myPositionStart.longitude);
 
@@ -157,24 +120,92 @@ public class MapsFragment extends Fragment {
 //                            origin = start;
 //                            dest = (LatLng) finish;
 //*******************************************
-                        // Getting URL to the Google Directions API
-                        String url = getDirectionsUrl(origin, dest);
 
-                        DownloadTask downloadTask = new DownloadTask();
 
-                        // Start downloading json data from Google Directions API
-                        downloadTask.execute(url);
+//                        Log.d("TAG", "onMapClick: " + getTaxiUrl(origin, dest));
 
-                        Log.d("TAG", "onMapClick: " + getTaxiUrl(origin, dest));
-
-                        String urlCost = getTaxiUrl(origin, dest);
+                        String urlCost = getTaxiUrl(origin, dest, "costMap");
 
 
 
                         // Start downloading json data from Google Directions API
 //                        downloadTaskCost.execute(url);
                         try {
-                            Log.d("TAG", "onMapClick: + sendURL(urlCost)" + CostJSONParser.sendURL(urlCost).get("order_cost")) ;
+//                            Log.d("TAG", "onMapClick: + sendURL(urlCost)" + CostJSONParser.sendURL(urlCost).get("order_cost")) ;
+                            String orderCost = CostJSONParser.sendURL(urlCost).get("order_cost");
+
+                            if(orderCost != null) {
+                                // Getting URL to the Google Directions API
+                                String url = getDirectionsUrl(origin, dest);
+
+                                DownloadTask downloadTask = new DownloadTask();
+
+                                // Start downloading json data from Google Directions API
+                                downloadTask.execute(url);
+                                new MaterialAlertDialogBuilder(getActivity())
+                                        .setMessage("Вартість поїздки: " + orderCost + "грн")
+                                        .setPositiveButton("Замовити", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                Log.d("TAG", "onClick: " + "Замовити");
+
+                                                String urlOrder = getTaxiUrl(origin, dest, "orderMap");
+                                                try {
+                                                    Map sendUrlMap = OrderJSONParser.sendURL(urlOrder);
+                                                    String orderWeb = (String) sendUrlMap.get("order_cost");
+                                                    String from_name = (String) sendUrlMap.get("from_name");
+                                                    String from_number = (String) sendUrlMap.get("from_number");
+                                                    String to_name = (String) sendUrlMap.get("to_name");
+                                                    String to_number = (String) sendUrlMap.get("to_number");
+
+                                                    new MaterialAlertDialogBuilder(getActivity())
+                                                            .setMessage("Дякуемо за замовлення зі " +
+                                                                    from_name + ", " + from_number + " до " +
+                                                                    to_name + ", " + to_number + " " +
+                                                                    "Чекайте звонка оператора. Вартість поїздки: " + orderWeb + "грн")
+                                                            .setPositiveButton("Ок", new DialogInterface.OnClickListener() {
+                                                                @Override
+                                                                public void onClick(DialogInterface dialog, int which) {
+                                                                    Log.d("TAG", "onClick: " + "Дякуемо за замовлення. Чекайте звонка оператора.");
+                                                                }
+                                                            })
+                                                            .show();
+
+                                                } catch (MalformedURLException e) {
+                                                    throw new RuntimeException(e);
+                                                } catch (InterruptedException e) {
+                                                    throw new RuntimeException(e);
+                                                } catch (JSONException e) {
+                                                    throw new RuntimeException(e);
+                                                }
+                                            }
+                                        })
+                                        .setNegativeButton("Відміна", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                Log.d("TAG", "onClick: " + "Відміна");
+                                            }
+                                        })
+                                        .show();
+                            } else {
+                                markerPoints.clear();
+                                mMap.clear();
+                                new MaterialAlertDialogBuilder(getActivity())
+                                        .setMessage("Координати маршруту не знайдено у базі. Спробуйте пошук за адресою.")
+                                        .setPositiveButton("Пошук", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                Log.d("TAG", "onClick: " + "Пошук");
+                                            }
+                                        })
+                                        .setNegativeButton("Відміна", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                Log.d("TAG", "onClick: " + "Відміна");
+                                            }
+                                        })
+                                        .show();
+                            }
                         } catch (MalformedURLException e) {
                             throw new RuntimeException(e);
                         } catch (InterruptedException e) {
@@ -192,83 +223,6 @@ public class MapsFragment extends Fragment {
         }
 
     };
-
-//    public Map<String, String> sendURL (String urlString) throws MalformedURLException, InterruptedException, JSONException {
-//        URL url = new URL(urlString);
-//        final String TAG = "TAG";
-//
-//        Exchanger<String> exchanger = new Exchanger<>();
-//
-//        AsyncTask.execute(() -> {
-//            HttpsURLConnection urlConnection = null;
-//            try {
-//                urlConnection = (HttpsURLConnection) url.openConnection();
-//                urlConnection.setDoInput(true);
-//                if (urlConnection.getResponseCode() == 200) {
-//                    InputStream in = new BufferedInputStream(urlConnection.getInputStream());
-//                    exchanger.exchange(convertStreamToString(in));
-//                } else {
-//
-//                }
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            } catch (InterruptedException e) {
-//                throw new RuntimeException(e);
-//            }
-//            urlConnection.disconnect();
-//        });
-//
-//        MapsFragment.ResultFromThread first = new ResultFromThread(exchanger);
-//
-//        JSONObject jsonarray = new JSONObject(first.message);
-//
-////        Log.d(TAG, "servicesAll contacts: " + jsonarray.length() );
-//
-//        Map<String, String> costMap = new HashMap<>();
-//            costMap.put("dispatching_order_uid", jsonarray.getString("dispatching_order_uid"));
-//            costMap.put("order_cost", jsonarray.getString("order_cost"));
-//            costMap.put("add_cost", jsonarray.getString("add_cost"));
-//            costMap.put("recommended_add_cost", jsonarray.getString("recommended_add_cost"));
-//            costMap.put("currency", jsonarray.getString("currency"));
-//            costMap.put("discount_trip", jsonarray.getString("discount_trip"));
-//            costMap.put("can_pay_bonuses", jsonarray.getString("can_pay_bonuses"));
-//            costMap.put("can_pay_cashless", jsonarray.getString("can_pay_cashless"));
-//
-//        Log.d(TAG, "servicesAll: " + costMap);
-//
-//        return costMap;
-//    }
-//    private String convertStreamToString(InputStream is) {
-//        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-//        StringBuilder sb = new StringBuilder();
-//
-//        String line;
-//        try {
-//            while ((line = reader.readLine()) != null) {
-//                sb.append(line).append('\n');
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        } finally {
-//            try {
-//                is.close();
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//
-//        return sb.toString();
-//    }
-//
-//    public static class ResultFromThread {
-//        public String message;
-//
-//        public ResultFromThread(Exchanger<String> exchanger) throws InterruptedException {
-//            this.message = exchanger.exchange(message);
-//        }
-//
-//    }
-
 
 
     private class DownloadTask extends AsyncTask<String, Void, String> {
@@ -373,7 +327,7 @@ public class MapsFragment extends Fragment {
         return url;
     }
 
-    private String getTaxiUrl(LatLng origin, LatLng dest) {
+    private String getTaxiUrl(LatLng origin, LatLng dest, String urlAPI) {
 
         // Origin of route
         String str_origin = origin.latitude + "/" + origin.longitude;
@@ -389,7 +343,7 @@ public class MapsFragment extends Fragment {
 
         // Building the url to the web service
 
-        String url = "https://m.easy-order-taxi.site/api/android/costMap/" + parameters;
+        String url = "https://m.easy-order-taxi.site/api/android/" + urlAPI + "/" + parameters;
 
         return url;
     }
