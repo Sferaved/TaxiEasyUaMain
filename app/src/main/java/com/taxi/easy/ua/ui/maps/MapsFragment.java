@@ -1,17 +1,23 @@
 package com.taxi.easy.ua.ui.maps;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.gms.maps.CameraUpdate;
@@ -126,15 +132,15 @@ public class MapsFragment extends Fragment {
 
                         String urlCost = getTaxiUrl(origin, dest, "costMap");
 
-
-
                         // Start downloading json data from Google Directions API
 //                        downloadTaskCost.execute(url);
                         try {
 //                            Log.d("TAG", "onMapClick: + sendURL(urlCost)" + CostJSONParser.sendURL(urlCost).get("order_cost")) ;
-                            String orderCost = CostJSONParser.sendURL(urlCost).get("order_cost");
+                            Map sendUrlMapCost = CostJSONParser.sendURL(urlCost);
 
-                            if(orderCost != null) {
+                            String orderCost = (String) sendUrlMapCost.get("order_cost");
+
+                            if(!orderCost.equals("0")) {
                                 // Getting URL to the Google Directions API
                                 String url = getDirectionsUrl(origin, dest);
 
@@ -152,24 +158,60 @@ public class MapsFragment extends Fragment {
                                                 String urlOrder = getTaxiUrl(origin, dest, "orderMap");
                                                 try {
                                                     Map sendUrlMap = OrderJSONParser.sendURL(urlOrder);
-                                                    String orderWeb = (String) sendUrlMap.get("order_cost");
-                                                    String from_name = (String) sendUrlMap.get("from_name");
-                                                    String from_number = (String) sendUrlMap.get("from_number");
-                                                    String to_name = (String) sendUrlMap.get("to_name");
-                                                    String to_number = (String) sendUrlMap.get("to_number");
 
-                                                    new MaterialAlertDialogBuilder(getActivity())
-                                                            .setMessage("Дякуемо за замовлення зі " +
-                                                                    from_name + ", " + from_number + " до " +
-                                                                    to_name + ", " + to_number + " " +
-                                                                    "Чекайте звонка оператора. Вартість поїздки: " + orderWeb + "грн")
-                                                            .setPositiveButton("Ок", new DialogInterface.OnClickListener() {
-                                                                @Override
-                                                                public void onClick(DialogInterface dialog, int which) {
-                                                                    Log.d("TAG", "onClick: " + "Дякуемо за замовлення. Чекайте звонка оператора.");
-                                                                }
-                                                            })
-                                                            .show();
+                                                    String orderWeb = (String) sendUrlMap.get("order_cost");
+                                                    if(!orderWeb.equals("0")) {
+                                                        String from_name = (String) sendUrlMap.get("from_name");
+                                                        String to_name = (String) sendUrlMap.get("to_name");
+                                                        new MaterialAlertDialogBuilder(getActivity())
+                                                                .setMessage("Дякуемо за замовлення зі " +
+                                                                        from_name + " до " +
+                                                                        to_name + ". " +
+                                                                        "Очикуйте дзвонка оператора. Вартість поїздки: " + orderWeb + "грн")
+                                                                .setPositiveButton("Ок", new DialogInterface.OnClickListener() {
+                                                                    @Override
+                                                                    public void onClick(DialogInterface dialog, int which) {
+                                                                        Log.d("TAG", "onClick ");
+                                                                        markerPoints.clear();
+                                                                        mMap.clear();
+                                                                    }
+                                                                })
+                                                                .show();
+                                                    } else {
+                                                        String message = (String) sendUrlMap.get("message");
+                                                        new MaterialAlertDialogBuilder(getActivity())
+                                                                .setMessage(message +
+                                                                        ". Спробуйте ще або зателефонуйте оператору.")
+                                                                .setPositiveButton("Підтримка", new DialogInterface.OnClickListener() {
+                                                                    @Override
+                                                                    public void onClick(DialogInterface dialog, int which) {
+                                                                        Intent intent = new Intent(Intent.ACTION_CALL);
+                                                                        intent.setData(Uri.parse("tel:0934066749"));
+                                                                        if (ActivityCompat.checkSelfPermission(getActivity(),
+                                                                                Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                                                                            Toast.makeText(getActivity(), "Дозвольте застосунку отримати доступ у панелі налаштувань телефону та спробуйте ще.", Toast.LENGTH_LONG).show();
+//                    final Intent i = new Intent();
+//                    i.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+//                    i.addCategory(Intent.CATEGORY_DEFAULT);
+//                    i.setData(Uri.parse("package:" + this.getPackageName()));
+//                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                    i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+//                    i.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+//                    this.startActivity(i);
+                                                                            return;
+                                                                        }
+                                                                        startActivity(intent);
+                                                                    }
+                                                                })
+                                                                .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
+                                                                    @Override
+                                                                    public void onClick(DialogInterface dialog, int which) {
+                                                                        Log.d("TAG", "onClick: " + "Спробуйте ще");
+                                                                    }
+                                                                })
+                                                                .show();
+                                                    }
+
 
                                                 } catch (MalformedURLException e) {
                                                     throw new RuntimeException(e);
@@ -187,25 +229,44 @@ public class MapsFragment extends Fragment {
                                             }
                                         })
                                         .show();
-                            } else {
+                            }
+                            else {
                                 markerPoints.clear();
                                 mMap.clear();
+                                String message = (String) sendUrlMapCost.get("message");
                                 new MaterialAlertDialogBuilder(getActivity())
-                                        .setMessage("Координати маршруту не знайдено у базі. Спробуйте пошук за адресою.")
-                                        .setPositiveButton("Пошук", new DialogInterface.OnClickListener() {
+                                        .setMessage(message +
+                                                ". Спробуйте ще або зателефонуйте оператору.")
+                                        .setPositiveButton("Підтримка", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int which) {
-                                                Log.d("TAG", "onClick: " + "Пошук");
+                                                Intent intent = new Intent(Intent.ACTION_CALL);
+                                                intent.setData(Uri.parse("tel:0934066749"));
+                                                if (ActivityCompat.checkSelfPermission(getActivity(),
+                                                        Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                                                    Toast.makeText(getActivity(), "Дозвольте застосунку отримати доступ у панелі налаштувань телефону та спробуйте ще.", Toast.LENGTH_LONG).show();
+//                    final Intent i = new Intent();
+//                    i.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+//                    i.addCategory(Intent.CATEGORY_DEFAULT);
+//                    i.setData(Uri.parse("package:" + this.getPackageName()));
+//                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                    i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+//                    i.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+//                    this.startActivity(i);
+                                                    return;
+                                                }
+                                                startActivity(intent);
                                             }
                                         })
-                                        .setNegativeButton("Відміна", new DialogInterface.OnClickListener() {
+                                        .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int which) {
-                                                Log.d("TAG", "onClick: " + "Відміна");
+                                                Log.d("TAG", "onClick: " + "Спробуйте ще");
                                             }
                                         })
                                         .show();
                             }
+
                         } catch (MalformedURLException e) {
                             throw new RuntimeException(e);
                         } catch (InterruptedException e) {

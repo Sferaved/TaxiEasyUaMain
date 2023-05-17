@@ -67,11 +67,13 @@ public class OrderJSONParser {
              JSONObject from = new JSONObject(costMap.get("route_address_from"));
 
              costMap.put("from_name", from.getString("name"));
-             costMap.put("from_number", from.getString("number"));
 
              JSONObject to = new JSONObject(costMap.get("route_address_to"));
              costMap.put("to_name", to.getString("name"));
-             costMap.put("to_number", to.getString("number"));
+
+         } else {
+             costMap.put("order_cost", "0");
+             costMap.put("message", jsonarray.getString("Message"));
          }
 
 

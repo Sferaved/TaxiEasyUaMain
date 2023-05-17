@@ -63,8 +63,11 @@ public class CostJSONParser {
              costMap.put("discount_trip", jsonarray.getString("discount_trip"));
              costMap.put("can_pay_bonuses", jsonarray.getString("can_pay_bonuses"));
              costMap.put("can_pay_cashless", jsonarray.getString("can_pay_cashless"));
+         }else {
+             Log.d("TAG", "sendURL: " + jsonarray.getString("Message"));
+             costMap.put("order_cost", "0");
+             costMap.put("message", jsonarray.getString("Message"));
          }
-//        Log.d(TAG, "servicesAll: " + costMap);
             return costMap;
 
     }
