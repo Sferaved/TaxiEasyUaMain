@@ -22,6 +22,10 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key_storage" />
 
+        <meta-data
+            android:name="visicom.API_KEY"
+            android:value="@string/visicom_key_storage" />
+
         <activity
             android:name=".StartActivity"
             android:exported="true"

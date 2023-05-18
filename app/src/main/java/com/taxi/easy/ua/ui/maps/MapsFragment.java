@@ -9,10 +9,15 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -86,6 +91,8 @@ public class MapsFragment extends Fragment {
             CameraUpdate cameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
             googleMap.animateCamera(cameraUpdate);
 
+            dialogFrom();
+
             mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
                 @Override
                 public void onMapClick(LatLng latLng) {
@@ -148,7 +155,7 @@ public class MapsFragment extends Fragment {
 
                                 // Start downloading json data from Google Directions API
                                 downloadTask.execute(url);
-                                new MaterialAlertDialogBuilder(getActivity())
+                                new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
                                         .setMessage("Вартість поїздки: " + orderCost + "грн")
                                         .setPositiveButton("Замовити", new DialogInterface.OnClickListener() {
                                             @Override
@@ -163,7 +170,7 @@ public class MapsFragment extends Fragment {
                                                     if(!orderWeb.equals("0")) {
                                                         String from_name = (String) sendUrlMap.get("from_name");
                                                         String to_name = (String) sendUrlMap.get("to_name");
-                                                        new MaterialAlertDialogBuilder(getActivity())
+                                                        new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
                                                                 .setMessage("Дякуемо за замовлення зі " +
                                                                         from_name + " до " +
                                                                         to_name + ". " +
@@ -179,7 +186,7 @@ public class MapsFragment extends Fragment {
                                                                 .show();
                                                     } else {
                                                         String message = (String) sendUrlMap.get("message");
-                                                        new MaterialAlertDialogBuilder(getActivity())
+                                                        new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
                                                                 .setMessage(message +
                                                                         ". Спробуйте ще або зателефонуйте оператору.")
                                                                 .setPositiveButton("Підтримка", new DialogInterface.OnClickListener() {
@@ -234,7 +241,7 @@ public class MapsFragment extends Fragment {
                                 markerPoints.clear();
                                 mMap.clear();
                                 String message = (String) sendUrlMapCost.get("message");
-                                new MaterialAlertDialogBuilder(getActivity())
+                                new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
                                         .setMessage(message +
                                                 ". Спробуйте ще або зателефонуйте оператору.")
                                         .setPositiveButton("Підтримка", new DialogInterface.OnClickListener() {
@@ -285,6 +292,54 @@ public class MapsFragment extends Fragment {
 
     };
 
+    private void dialogFrom() {
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme);
+        LayoutInflater inflater = getActivity().getLayoutInflater();
+        View view = inflater.inflate(R.layout.from_to_layout, null);
+        builder.setView(view);
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(),
+                android.R.layout.simple_dropdown_item_1line, COUNTRIES);
+        AutoCompleteTextView textViewFrom = view.findViewById(R.id.text_from);
+        textViewFrom.setAdapter(adapter);
+        textViewFrom.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @SuppressLint("SuspiciousIndentation")
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if( textViewFrom.getText().length() >=3)
+                    Log.d("TAG", "textView.getText():" + textViewFrom.getText());
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
+        textViewFrom.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Log.d("TAG", "onCreate: " +  adapter.getItem(position) );
+            }
+        });
+
+        builder.setMessage("Сформуйте маршрут")
+                .setPositiveButton("Ок", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Log.d("TAG", "onClick ");
+                    }
+                })
+                .show();
+    }
+    private static final String[] COUNTRIES = new String[] {
+            "Belgium", "France", "Italy", "Germany", "Spain", "Belgium2", "France2", "Italy2", "Germany2", "Spain2", "Belgium3", "France3", "Italy3", "Germany3", "Spain3"
+    };
 
     private class DownloadTask extends AsyncTask<String, Void, String> {
 
