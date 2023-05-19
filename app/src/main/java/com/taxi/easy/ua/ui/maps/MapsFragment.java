@@ -299,7 +299,7 @@ public class MapsFragment extends Fragment {
         builder.setView(view);
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(),
-                android.R.layout.simple_dropdown_item_1line, COUNTRIES);
+                android.R.layout.simple_dropdown_item_1line, adapterData());
         AutoCompleteTextView textViewFrom = view.findViewById(R.id.text_from);
         textViewFrom.setAdapter(adapter);
         textViewFrom.addTextChangedListener(new TextWatcher() {
@@ -311,9 +311,10 @@ public class MapsFragment extends Fragment {
             @SuppressLint("SuspiciousIndentation")
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if( textViewFrom.getText().length() >=3)
+                if( textViewFrom.getText().length() >=3) {
+//                    data = adapterData2();
                     Log.d("TAG", "textView.getText():" + textViewFrom.getText());
-
+                }
             }
 
             @Override
@@ -335,11 +336,19 @@ public class MapsFragment extends Fragment {
                         Log.d("TAG", "onClick ");
                     }
                 })
+                .setNegativeButton("Мапа", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Toast.makeText(getActivity(), "Позначте на карті місця посадки та призначення", Toast.LENGTH_SHORT).show();
+                    }
+                })
                 .show();
     }
-    private static final String[] COUNTRIES = new String[] {
-            "Belgium", "France", "Italy", "Germany", "Spain", "Belgium2", "France2", "Italy2", "Germany2", "Spain2", "Belgium3", "France3", "Italy3", "Germany3", "Spain3"
-    };
+    private String[] adapterData() {
+        return  new String[] {
+                "Belgium", "France", "Italy", "Germany", "Spain", "Belgium2", "France2", "Italy2", "Germany2", "Spain2", "Belgium3", "France3", "Italy3", "Germany3", "Spain3"
+        };
+    }
 
     private class DownloadTask extends AsyncTask<String, Void, String> {
 
