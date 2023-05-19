@@ -9,8 +9,6 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,6 +16,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -37,6 +36,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.start.StartActivity;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -58,7 +58,9 @@ public class MapsFragment extends Fragment {
     LatLng start, finish;
     private GoogleMap mMap;
     ArrayList markerPoints= new ArrayList();
-
+    private String from, to;
+    public String region =  "Одеса";
+    EditText from_number, to_number;
     private OnMapReadyCallback callback = new OnMapReadyCallback() {
 
         /**
@@ -91,7 +93,7 @@ public class MapsFragment extends Fragment {
             CameraUpdate cameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
             googleMap.animateCamera(cameraUpdate);
 
-            dialogFrom();
+            dialogFromTo();
 
             mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
                 @Override
@@ -181,6 +183,10 @@ public class MapsFragment extends Fragment {
                                                                         Log.d("TAG", "onClick ");
                                                                         markerPoints.clear();
                                                                         mMap.clear();
+                                                                        Intent intent = new Intent(getActivity(), StartActivity.class);
+                                                                        startActivity(intent);
+                                                                        Toast.makeText(getActivity(), "До побачення. Чекаємо наступного разу.", Toast.LENGTH_SHORT).show();
+
                                                                     }
                                                                 })
                                                                 .show();
@@ -292,40 +298,34 @@ public class MapsFragment extends Fragment {
 
     };
 
-    private void dialogFrom() {
+    private void dialogFromTo() {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme);
         LayoutInflater inflater = getActivity().getLayoutInflater();
         View view = inflater.inflate(R.layout.from_to_layout, null);
         builder.setView(view);
 
+        from_number = view.findViewById(R.id.from_number);
+        to_number = view.findViewById(R.id.to_number);
+
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(),
-                android.R.layout.simple_dropdown_item_1line, adapterData());
+                android.R.layout.simple_dropdown_item_1line, Odessa.street());
         AutoCompleteTextView textViewFrom = view.findViewById(R.id.text_from);
         textViewFrom.setAdapter(adapter);
-        textViewFrom.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
-            }
-
-            @SuppressLint("SuspiciousIndentation")
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if( textViewFrom.getText().length() >=3) {
-//                    data = adapterData2();
-                    Log.d("TAG", "textView.getText():" + textViewFrom.getText());
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
         textViewFrom.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Log.d("TAG", "onCreate: " +  adapter.getItem(position) );
+                from = String.valueOf(adapter.getItem(position));
+//                Log.d("TAG", "onCreate: " +  adapter.getItem(position) );
+            }
+        });
+
+        AutoCompleteTextView textViewTo = view.findViewById(R.id.text_to);
+        textViewTo.setAdapter(adapter);
+        textViewTo.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                to = String.valueOf(adapter.getItem(position));
             }
         });
 
@@ -333,7 +333,153 @@ public class MapsFragment extends Fragment {
                 .setPositiveButton("Ок", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        Log.d("TAG", "onClick ");
+
+                        try {
+//                            Log.d("TAG", "onMapClick: + sendURL(urlCost)" + CostJSONParser.sendURL(urlCost).get("order_cost")) ;
+                            String urlCost = "https://m.easy-order-taxi.site/api/android/costSearch/" + from + "/"+ from_number.getText() + "/"+ to + "/"+ to_number.getText();
+                            Log.d("TAG", "onClick urlCost: " + urlCost);
+                            Map sendUrlMapCost = CostJSONParser.sendURL(urlCost);
+
+                            String orderCost = (String) sendUrlMapCost.get("order_cost");
+                            Log.d("TAG", "onClick orderCost : " + orderCost );
+
+                            if(!orderCost.equals("0")) {
+
+
+
+                                // Start downloading json data from Google Directions API
+
+                                new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
+                                        .setMessage("Вартість поїздки: " + orderCost + "грн")
+                                        .setPositiveButton("Замовити", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                Log.d("TAG", "onClick: " + "Замовити");
+
+                                                String urlOrder = "https://m.easy-order-taxi.site/api/android/orderSearch/" + from + "/"+ from_number.getText() + "/"+ to + "/"+ to_number.getText();
+
+                                                try {
+                                                    Map sendUrlMap = OrderJSONParser.sendURL(urlOrder);
+
+                                                    String orderWeb = (String) sendUrlMap.get("order_cost");
+                                                    if(!orderWeb.equals("0")) {
+                                                        String from_name = (String) sendUrlMap.get("from_name");
+                                                        String to_name = (String) sendUrlMap.get("to_name");
+                                                        new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
+                                                                .setMessage("Дякуемо за замовлення зі " +
+                                                                        from_name + "(" + from_number.getText() +  ")" + " до " +
+                                                                        to_name + "(" +  to_number.getText() +  ")." +
+                                                                        "Очикуйте дзвонка оператора. Вартість поїздки: " + orderWeb + "грн")
+                                                                .setPositiveButton("Ок", new DialogInterface.OnClickListener() {
+                                                                    @Override
+                                                                    public void onClick(DialogInterface dialog, int which) {
+                                                                        Log.d("TAG", "onClick ");
+
+                                                                        Intent intent = new Intent(getActivity(), StartActivity.class);
+                                                                        startActivity(intent);
+                                                                        Toast.makeText(getActivity(), "До побачення. Чекаємо наступного разу.", Toast.LENGTH_SHORT).show();
+
+                                                                    }
+                                                                })
+                                                                .show();
+                                                    } else {
+                                                        String message = (String) sendUrlMap.get("message");
+                                                        new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
+                                                                .setMessage(message +
+                                                                        ". Спробуйте ще або зателефонуйте оператору.")
+                                                                .setPositiveButton("Підтримка", new DialogInterface.OnClickListener() {
+                                                                    @Override
+                                                                    public void onClick(DialogInterface dialog, int which) {
+                                                                        Intent intent = new Intent(Intent.ACTION_CALL);
+                                                                        intent.setData(Uri.parse("tel:0934066749"));
+                                                                        if (ActivityCompat.checkSelfPermission(getActivity(),
+                                                                                Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                                                                            Toast.makeText(getActivity(), "Дозвольте застосунку отримати доступ у панелі налаштувань телефону та спробуйте ще.", Toast.LENGTH_LONG).show();
+//                    final Intent i = new Intent();
+//                    i.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+//                    i.addCategory(Intent.CATEGORY_DEFAULT);
+//                    i.setData(Uri.parse("package:" + this.getPackageName()));
+//                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                    i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+//                    i.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+//                    this.startActivity(i);
+                                                                            return;
+                                                                        }
+                                                                        startActivity(intent);
+                                                                    }
+                                                                })
+                                                                .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
+                                                                    @Override
+                                                                    public void onClick(DialogInterface dialog, int which) {
+                                                                        Log.d("TAG", "onClick: " + "Спробуйте ще");
+                                                                    }
+                                                                })
+                                                                .show();
+                                                    }
+
+
+                                                } catch (MalformedURLException e) {
+                                                    throw new RuntimeException(e);
+                                                } catch (InterruptedException e) {
+                                                    throw new RuntimeException(e);
+                                                } catch (JSONException e) {
+                                                    throw new RuntimeException(e);
+                                                }
+                                            }
+                                        })
+                                        .setNegativeButton("Відміна", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                Log.d("TAG", "onClick: " + "Відміна");
+                                            }
+                                        })
+                                        .show();
+                            }
+                            else {
+                                markerPoints.clear();
+                                mMap.clear();
+                                String message = (String) sendUrlMapCost.get("message");
+                                new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
+                                        .setMessage(message +
+                                                ". Спробуйте ще або зателефонуйте оператору.")
+                                        .setPositiveButton("Підтримка", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                Intent intent = new Intent(Intent.ACTION_CALL);
+                                                intent.setData(Uri.parse("tel:0934066749"));
+                                                if (ActivityCompat.checkSelfPermission(getActivity(),
+                                                        Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                                                    Toast.makeText(getActivity(), "Дозвольте застосунку отримати доступ у панелі налаштувань телефону та спробуйте ще.", Toast.LENGTH_LONG).show();
+//                    final Intent i = new Intent();
+//                    i.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+//                    i.addCategory(Intent.CATEGORY_DEFAULT);
+//                    i.setData(Uri.parse("package:" + this.getPackageName()));
+//                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                    i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+//                    i.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+//                    this.startActivity(i);
+                                                    return;
+                                                }
+                                                startActivity(intent);
+                                            }
+                                        })
+                                        .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                Log.d("TAG", "onClick: " + "Спробуйте ще");
+                                            }
+                                        })
+                                        .show();
+                            }
+
+                        } catch (MalformedURLException e) {
+                            throw new RuntimeException(e);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        } catch (JSONException e) {
+                            throw new RuntimeException(e);
+                        }
+
                     }
                 })
                 .setNegativeButton("Мапа", new DialogInterface.OnClickListener() {
@@ -344,11 +490,7 @@ public class MapsFragment extends Fragment {
                 })
                 .show();
     }
-    private String[] adapterData() {
-        return  new String[] {
-                "Belgium", "France", "Italy", "Germany", "Spain", "Belgium2", "France2", "Italy2", "Germany2", "Spain2", "Belgium3", "France3", "Italy3", "Germany3", "Spain3"
-        };
-    }
+
 
     private class DownloadTask extends AsyncTask<String, Void, String> {
 

@@ -1,5 +1,5 @@
 <resources>
-    <string name="version">Версія: 1.01</string>
+    <string name="version">Версія: 1.02</string>
 
     <string name="app_name">TaxiEasyUa</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
@@ -14,5 +14,14 @@
     <string name="menu_gallery">Gallery</string>
     <string name="menu_slideshow">Slideshow</string>
     <string name="menu_about">Про додаток</string>
+    <string name="title_activity_login">LoginActivity</string>
+    <string name="prompt_email">Email</string>
+    <string name="prompt_password">Password</string>
+    <string name="action_sign_in">Sign in or register</string>
+    <string name="action_sign_in_short">Sign in</string>
+    <string name="welcome">"Welcome !"</string>
+    <string name="invalid_username">Not a valid username</string>
+    <string name="invalid_password">Password must be >5 characters</string>
+    <string name="login_failed">"Login failed"</string>
 
 </resources>
