@@ -38,6 +38,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.start.ResultSONParser;
 import com.taxi.easy.ua.ui.start.StartActivity;
 
 import org.json.JSONException;
@@ -306,7 +307,28 @@ public class MapsFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 from = String.valueOf(adapter.getItem(position));
+                String url = "https://m.easy-order-taxi.site/api/android/autocompleteSearchComboHid/" + from;
 
+
+                Log.d("TAG", "onClick urlCost: " + url);
+                Map sendUrlMapCost = null;
+                try {
+                    sendUrlMapCost = ResultSONParser.sendURL(url);
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
+
+                String orderCost = (String) sendUrlMapCost.get("message");
+                Log.d("TAG", "onClick orderCost : " + orderCost );
+
+                if(orderCost.equals("1")) {
+                    from_number.setVisibility(View.VISIBLE);
+                    from_number.requestFocus();
+                }
             }
         });
 
@@ -315,7 +337,31 @@ public class MapsFragment extends Fragment {
         textViewTo.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
                 to = String.valueOf(adapter.getItem(position));
+                String url = "https://m.easy-order-taxi.site/api/android/autocompleteSearchComboHid/" + to;
+
+
+                Log.d("TAG", "onClick urlCost: " + url);
+                Map sendUrlMapCost = null;
+                try {
+                    sendUrlMapCost = ResultSONParser.sendURL(url);
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
+
+                String orderCost = (String) sendUrlMapCost.get("message");
+                Log.d("TAG", "onClick orderCost : " + orderCost );
+
+                if(orderCost.equals("1")) {
+                    to_number.setVisibility(View.VISIBLE);
+                    to_number.requestFocus();
+                }
+
             }
         });
 
@@ -628,6 +674,7 @@ public class MapsFragment extends Fragment {
 
         return url;
     }
+
     private String downloadUrl(String strUrl) throws IOException {
         String data = "";
         InputStream iStream = null;
