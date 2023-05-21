@@ -11,8 +11,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 19
         targetSdk 33
-        versionCode 102
-        versionName 'add search by street'
+        versionCode 103
+        versionName 'minimum equipment'
         multiDexEnabled true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

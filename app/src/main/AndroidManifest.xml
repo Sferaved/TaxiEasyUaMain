@@ -50,7 +50,7 @@
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar" />
-        <activity android:name="com.taxi.easy.ua.ui.set.SettingsActivity" />
+
     </application>
 
 </manifest>
