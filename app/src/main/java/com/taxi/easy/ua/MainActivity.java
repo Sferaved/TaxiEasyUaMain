@@ -99,6 +99,8 @@ public class MainActivity extends AppCompatActivity {
         spinner.setPrompt("Title");
         StartActivity.cursorDb = StartActivity.database.query(StartActivity.TABLE_SETTINGS_INFO, null, null, null, null, null, null);
         String tariffOld =  StartActivity.logCursor(StartActivity.TABLE_SETTINGS_INFO).get(2);
+        if (StartActivity.cursorDb != null && !StartActivity.cursorDb.isClosed())
+            StartActivity.cursorDb.close();
         for (int i = 0; i < tariffArr.length; i++) {
             if(tariffArr[i].equals(tariffOld)) {
                 spinner.setSelection(i);

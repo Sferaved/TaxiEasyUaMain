@@ -9,10 +9,10 @@ android {
 
     defaultConfig {
         applicationId "com.taxi.easy.ua"
-        minSdk 19
+        minSdk 26
         targetSdk 33
-        versionCode 103
-        versionName 'minimum equipment'
+        versionCode 104
+        versionName 'min sdk 26'
         multiDexEnabled true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -396,9 +396,14 @@ public class MapsFragment extends Fragment {
 
         StartActivity.cursorDb = StartActivity.database.query(StartActivity.TABLE_SETTINGS_INFO, null, null, null, null, null, null);
         String tarif =  StartActivity.logCursor(StartActivity.TABLE_SETTINGS_INFO).get(2);
-
+        if (StartActivity.cursorDb != null && !StartActivity.cursorDb.isClosed())
+            StartActivity.cursorDb.close();
+        StartActivity.cursorDb = StartActivity.database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+        String phoneNumber =  StartActivity.logCursor(StartActivity.TABLE_USER_INFO).get(1);
+        if (StartActivity.cursorDb != null && !StartActivity.cursorDb.isClosed())
+            StartActivity.cursorDb.close();
         // Building the parameters to the web service
-        String parameters = str_origin + "/" + str_dest + "/" + tarif;
+        String parameters = str_origin + "/" + str_dest + "/" + tarif+ "/" + phoneNumber;
 
         // Building the url to the web service
 
