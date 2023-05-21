@@ -4,23 +4,23 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    tools:layout_editor_absoluteX="-2dp"
-    tools:layout_editor_absoluteY="-1dp">
+    tools:layout_editor_absoluteX="6dp"
+    tools:layout_editor_absoluteY="8dp">
 
 
     <AutoCompleteTextView
         android:id="@+id/text_from"
-        android:layout_width="250sp"
+        android:layout_width="match_parent"
         android:layout_height="43sp"
         android:layout_marginHorizontal="10sp"
-        android:layout_marginStart="10sp"
-        android:layout_marginTop="5sp"
         android:backgroundTint="@color/colorAccent"
         android:dropDownWidth="wrap_content"
         android:dropDownHeight="130sp"
         android:dropDownSelector="@color/teal_200"
         android:hint="Звідки"
         android:inputType="text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -28,32 +28,63 @@
         android:id="@+id/from_number"
         android:layout_width="50sp"
         android:layout_height="43sp"
-        android:layout_marginStart="11sp"
-        android:layout_marginTop="4dp"
-        app:layout_constraintStart_toEndOf="@+id/text_from"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        android:text=" "
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text_from" />
 
     <AutoCompleteTextView
         android:id="@+id/text_to"
-        android:layout_width="250sp"
+        android:layout_width="match_parent"
         android:layout_height="43sp"
         android:layout_marginHorizontal="10sp"
-        android:layout_marginStart="10sp"
-        android:layout_marginTop="15sp"
+        android:layout_marginTop="12dp"
         android:backgroundTint="@color/colorAccent"
         android:dropDownSelector="@color/teal_200"
         android:hint="Куди"
         android:inputType="text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/text_from"
+        app:layout_constraintTop_toBottomOf="@+id/from_number"
         tools:ignore="MissingConstraints" />
 
     <EditText
         android:id="@+id/to_number"
         android:layout_width="50sp"
         android:layout_height="43sp"
-        android:layout_marginStart="10sp"
-        android:layout_marginTop="15sp"
-        app:layout_constraintStart_toEndOf="@+id/text_to"
-        app:layout_constraintTop_toBottomOf="@+id/from_number" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:text=" "
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text_to" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_begin="20dp" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_begin="20dp" />
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/barrier2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="top"
+        app:constraint_referenced_ids="text_from" />
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/barrier3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="top"
+        app:constraint_referenced_ids="text_to" />
 </androidx.constraintlayout.widget.ConstraintLayout>
