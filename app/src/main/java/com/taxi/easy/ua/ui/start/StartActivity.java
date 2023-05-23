@@ -3,7 +3,7 @@ package com.taxi.easy.ua.ui.start;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.Context;
+import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -11,7 +11,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.os.Bundle;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -32,13 +31,15 @@ import org.json.JSONException;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class StartActivity extends Activity {
-    private static final String DB_NAME = "data_base";
+    private static final String DB_NAME = "data_1112234568_taxi";
     public static final String TABLE_USER_INFO = "userInfo";
     public static final String TABLE_SETTINGS_INFO = "settingsInfo";
+    public static final String TABLE_ORDERS_INFO = "ordersInfo";
 
     public static SQLiteDatabase database;
     public static Cursor cursorDb;
@@ -54,6 +55,8 @@ public class StartActivity extends Activity {
     public static final int READ_CALL_PHONE = 0;
 
     Intent intent;
+
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -86,7 +89,8 @@ public class StartActivity extends Activity {
         cursorDb = database.query(TABLE_USER_INFO, null, null, null, null, null, null);
         Log.d("TAG", "initDB:" + logCursor(TABLE_USER_INFO));
         if(cursorDb.getCount() == 0)   {
-            phoneNumber();
+            fab.setVisibility(View.VISIBLE);
+//            phoneNumber();
         } else {
             fab.setVisibility(View.VISIBLE);
         }
@@ -116,6 +120,11 @@ public class StartActivity extends Activity {
         database.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_SETTINGS_INFO + "(id integer primary key autoincrement," +
                 " type_auto text," +
                 " tarif text);");
+        database.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_ORDERS_INFO + "(id integer primary key autoincrement," +
+                " from_street text," +
+                " from_number text," +
+                " to_street text," +
+                " to_number text);");
 
         cursorDb = database.query(TABLE_SETTINGS_INFO, null, null, null, null, null, null);
         if (cursorDb.getCount() == 0) {
@@ -128,7 +137,6 @@ public class StartActivity extends Activity {
         } else {
             Log.d("TAG", "initDB:" + logCursor(TABLE_SETTINGS_INFO));
         }
-
 
     }
 
@@ -166,6 +174,104 @@ public class StartActivity extends Activity {
         fab.setVisibility(View.VISIBLE);
     }
 
+    public static void insertRecordsOrders(Map<String, String> orders, String from_number, String to_number) {
+
+        String selection = "from_street = ?";
+        String[] selectionArgs = new String[] {orders.get("from_name")};
+
+        Cursor cursor_from = database.query(TABLE_ORDERS_INFO,
+                null, selection, selectionArgs, null, null, null);
+
+        selection = "to_street = ?";
+        selectionArgs = new String[] {orders.get("to_name")};
+
+        Cursor cursor_to = database.query(TABLE_ORDERS_INFO,
+                null, selection, selectionArgs, null, null, null);
+
+        if (cursor_from.getCount() == 0 && cursor_to.getCount() == 0) {
+
+            String sql = "INSERT INTO " + TABLE_ORDERS_INFO + " VALUES(?,?,?,?,?);";
+            SQLiteStatement statement = database.compileStatement(sql);
+            database.beginTransaction();
+            try {
+                statement.clearBindings();
+                statement.bindString(2, orders.get("from_name"));
+                statement.bindString(3, from_number);
+                statement.bindString(4, orders.get("to_name"));
+                statement.bindString(5, to_number);
+
+                statement.execute();
+                database.setTransactionSuccessful();
+
+            } finally {
+                database.endTransaction();
+            }
+            Log.d("TAG", "insertRecordsOrders: " + logCursor(TABLE_ORDERS_INFO));
+        }
+
+        cursor_from.close();
+        cursor_to.close();
+        Log.d("TAG", "insertRecordsOrders: from_name No" + orders.get("from_name"));
+    }
+
+    public static void updateRecordsUser(String result) {
+        ContentValues cv = new ContentValues();
+
+        cv.put("phone_number", result);
+
+        // обновляем по id
+        int updCount = database.update(TABLE_USER_INFO, cv, "id = ?",
+                new String[] { "1" });
+        Log.d("TAG", "updated rows count = " + updCount);
+
+
+    }
+    public static ArrayList<Map> routMaps() {
+        Map <String, String> routs;
+        ArrayList<Map> routsArr = new ArrayList<>();
+        Cursor c = database.query(TABLE_ORDERS_INFO, null, null, null, null, null, null);
+        int i = 0;
+        if (c != null) {
+            if (c.moveToFirst()) {
+
+                do {
+                    routs = new HashMap<>();
+                    routs.put("id", c.getString(c.getColumnIndexOrThrow ("id")));
+                    routs.put("from_street", c.getString(c.getColumnIndexOrThrow ("from_street")));
+                    routs.put("from_number", c.getString(c.getColumnIndexOrThrow ("from_number")));
+                    routs.put("to_street", c.getString(c.getColumnIndexOrThrow ("to_street")));
+                    routs.put("to_number", c.getString(c.getColumnIndexOrThrow ("to_number")));
+                    routsArr.add(i++, routs);
+                } while (c.moveToNext());
+            }
+        }
+
+        Log.d("TAG", "routMaps: " + routsArr);
+        return routsArr;
+    }
+
+    public static Map <String, String> routChoice(int i) {
+        Map <String, String> rout = new HashMap<>();
+        Cursor c = database.query(TABLE_ORDERS_INFO, null, null, null, null, null, null);
+
+        if (c != null) {
+            if (c.move(i)) {
+
+                do {
+                    rout = new HashMap<>();
+                    rout.put("id", c.getString(c.getColumnIndexOrThrow ("id")));
+                    rout.put("from_street", c.getString(c.getColumnIndexOrThrow ("from_street")));
+                    rout.put("from_number", c.getString(c.getColumnIndexOrThrow ("from_number")));
+                    rout.put("to_street", c.getString(c.getColumnIndexOrThrow ("to_street")));
+                    rout.put("to_number", c.getString(c.getColumnIndexOrThrow ("to_number")));
+
+                } while (c.moveToNext());
+            }
+        }
+
+        Log.d("TAG", "routMaps: " + rout);
+        return rout;
+    }
     @SuppressLint("Range")
     public static List<String> logCursor(String table) {
         List<String> list = new ArrayList<>();
@@ -206,57 +312,13 @@ public class StartActivity extends Activity {
 
     }
 
-    private void phoneNumber() {
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);
-        LayoutInflater inflater = this.getLayoutInflater();
-        View view = inflater.inflate(R.layout.phone_verify_layout, null);
-        builder.setView(view);
-
-        @SuppressLint({"MissingInflatedId", "LocalSuppress"})
-        EditText phoneNumber = view.findViewById(R.id.phoneNumber);
-        TelephonyManager tMgr = (TelephonyManager) this.getSystemService(Context.TELEPHONY_SERVICE);
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-                    Log.d("TAG", "Manifest.permission.READ_PHONE_NUMBERS: " + ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_NUMBERS));
-                    Log.d("TAG", "Manifest.permission.READ_PHONE_STATE: " + ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE));
-                return;
-        }
-            @SuppressLint("HardwareIds") String mPhoneNumber = tMgr.getLine1Number();
-            Log.d("TAG", "phoneNumber: " + mPhoneNumber);
-            phoneNumber.setText(mPhoneNumber);
-
-
-                builder.setTitle("Перевірка телефону")
-                        .setPositiveButton("Відправити", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                String urlCost = "https://m.easy-order-taxi.site/api/android/sendCode/" + phoneNumber.getText();
-                                Log.d("TAG", "onClick urlCost: " + urlCost);
-                                try {
-                                    Map sendUrlResult = ResultSONParser.sendURL(urlCost);
-                                    Log.d("TAG", "onClick sendUrlMapCost: " + sendUrlResult);
-                                    if (sendUrlResult.get("resp_result").equals("200")) {
-                                        codeVerify(String.valueOf(phoneNumber.getText()));
-                                    } else {
-                                        String message = (String) sendUrlResult.get("message");
-                                        Toast.makeText(StartActivity.this, message, Toast.LENGTH_SHORT).show();
-                                    }
-
-                                } catch (MalformedURLException e) {
-                                    throw new RuntimeException(e);
-                                } catch (InterruptedException e) {
-                                    throw new RuntimeException(e);
-                                } catch (JSONException e) {
-                                    throw new RuntimeException(e);
-                                }
-
-
-                            }
-                        })
-                        .show();
-
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        database.close();
     }
+
+
 
     public void codeVerify(String phoneNumber) {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);

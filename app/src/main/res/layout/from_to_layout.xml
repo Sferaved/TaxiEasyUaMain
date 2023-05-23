@@ -28,11 +28,11 @@
         android:id="@+id/from_number"
         android:layout_width="50sp"
         android:layout_height="43sp"
+        android:gravity="center"
+        android:text=" "
+        android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
-        android:gravity="center"
-        android:visibility="invisible"
-        android:text=" "
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/text_from" />
 
@@ -56,13 +56,14 @@
         android:id="@+id/to_number"
         android:layout_width="50sp"
         android:layout_height="43sp"
-        app:layout_constraintEnd_toEndOf="parent"
         android:gravity="center"
         android:text=" "
         android:visibility="invisible"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/text_to" />
+
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline2"

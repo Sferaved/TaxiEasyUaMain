@@ -11,8 +11,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 33
-        versionCode 104
-        versionName 'min sdk 26'
+        versionCode 106
+        versionName 'test'
         multiDexEnabled true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

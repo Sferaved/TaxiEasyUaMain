@@ -399,9 +399,13 @@ public class MapsFragment extends Fragment {
         if (StartActivity.cursorDb != null && !StartActivity.cursorDb.isClosed())
             StartActivity.cursorDb.close();
         StartActivity.cursorDb = StartActivity.database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-        String phoneNumber =  StartActivity.logCursor(StartActivity.TABLE_USER_INFO).get(1);
-        if (StartActivity.cursorDb != null && !StartActivity.cursorDb.isClosed())
-            StartActivity.cursorDb.close();
+//        String phoneNumber =  StartActivity.logCursor(StartActivity.TABLE_USER_INFO).get(1);
+//        if (StartActivity.cursorDb != null && !StartActivity.cursorDb.isClosed())
+//            StartActivity.cursorDb.close();
+//        if(phoneNumber == null) {
+//            phoneNumberEdit.setVisibility(View.VISIBLE);
+        String phoneNumber = "+380936734488";
+//        }
         // Building the parameters to the web service
         String parameters = str_origin + "/" + str_dest + "/" + tarif+ "/" + phoneNumber;
 
