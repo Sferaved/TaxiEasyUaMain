@@ -4,12 +4,17 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -29,11 +34,17 @@ import com.taxi.easy.ua.R;
 
 import org.json.JSONException;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Exchanger;
+
+import javax.net.ssl.HttpsURLConnection;
 
 public class StartActivity extends Activity {
     private static final String DB_NAME = "data_1112234568_taxi";
@@ -101,14 +112,100 @@ public class StartActivity extends Activity {
        fab.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-
+                    Intent intent = new Intent(Intent.ACTION_CALL);
+                    intent.setData(Uri.parse("tel:0934066749"));
+                    if (ActivityCompat.checkSelfPermission(StartActivity.this,
+                            Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                        checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
+                    }
                     startActivity(intent);
                 }
             });
+       if(!hasConnection()) {
+           Toast.makeText(StartActivity.this, "Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
+       } else {
+           try {
+               if (verifyConnection("https://m.easy-order-taxi.site/api/android").equals("200")) {
+                   startActivity(intent);
+                   Toast.makeText(StartActivity.this, "Вітаємо. Сформуйте маршрут або обирить улюблений.", Toast.LENGTH_LONG).show();
+               } else {
+                   Toast.makeText(StartActivity.this, "Помилка підключення до сервера. Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
+//                            Intent setIntent = new Intent(Settings.ACTION_SETTINGS);
+//                            startActivity(setIntent);
+               }
+           } catch (MalformedURLException e) {
+               throw new RuntimeException(e);
+           } catch (InterruptedException e) {
+               throw new RuntimeException(e);
+           }
+           Log.d("TAG", "onResume: "  + hasConnection());
+
+       }
 
 
     }
+    public boolean hasConnection() {
+        ConnectivityManager cm = (ConnectivityManager) StartActivity.this.getSystemService(
+                Context.CONNECTIVITY_SERVICE);
+        NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        if (wifiNetwork != null && wifiNetwork.isConnected()) {
+            return true;
+        }
+        NetworkInfo mobileNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+        if (mobileNetwork != null && mobileNetwork.isConnected()) {
+            return true;
+        }
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        if (activeNetwork != null && activeNetwork.isConnected()) {
+            return true;
+        }
+        return false;
+    }
 
+    public String verifyConnection (String urlString) throws MalformedURLException, InterruptedException {
+
+        URL url = new URL(urlString);
+        final String TAG = "TAG";
+
+        Exchanger<String> exchanger = new Exchanger<>();
+
+        AsyncTask.execute(() -> {
+            HttpsURLConnection urlConnection = null;
+            try {
+                urlConnection = (HttpsURLConnection) url.openConnection();
+                urlConnection.setDoInput(true);
+                if (urlConnection.getResponseCode() == 200) {
+
+                    StringBuffer buffer = new StringBuffer();
+                    InputStream is = urlConnection.getInputStream();
+                    byte[] b = new byte[3];
+                    while ( is.read(b) != -1)
+                        buffer.append(new String(b));
+                    exchanger.exchange(buffer.toString());
+                } else {
+                    exchanger.exchange("400");
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            urlConnection.disconnect();
+        });
+
+        StartActivity.ResultFromThread first = new ResultFromThread(exchanger);
+
+        return first.message;
+    }
+
+    public static class ResultFromThread {
+        public String message;
+
+        public ResultFromThread(Exchanger<String> exchanger) throws InterruptedException {
+            this.message = exchanger.exchange(message);
+        }
+
+    }
     private void initDB() throws MalformedURLException, JSONException, InterruptedException {
 //        this.deleteDatabase(DB_NAME);
         database = this.openOrCreateDatabase(DB_NAME, MODE_PRIVATE, null);

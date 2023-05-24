@@ -84,6 +84,9 @@ public class HomeFragment extends Fragment {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_single_choice, array);
         listView.setAdapter(adapter);
         listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+        if(array.length != 0)  {
+            listView.setItemChecked(0, true);
+        }
         button = binding.btnRouts;
 
         button.setOnClickListener(new View.OnClickListener() {
@@ -167,10 +170,11 @@ public class HomeFragment extends Fragment {
 
                                             } else {
                                                 messageResult = "Дякуемо за замовлення зі " +
-                                                        from_name + " " + from_number.getText() + " " + " до " +
-                                                        to_name + " " + to_number.getText() + "." +
+                                                        from_name + " " + from_number_rout + " " + " до " +
+                                                        to_name + " " + to_number_rout + "." +
                                                         " Очикуйте дзвонка оператора. Вартість поїздки: " + orderWeb + "грн";
                                             }
+                                            button.setVisibility(View.VISIBLE);
                                             fab.setVisibility(View.VISIBLE);
                                             StartActivity.insertRecordsOrders(sendUrlMap,
                                                     from_number.getText().toString(), to_number.getText().toString());
@@ -181,6 +185,7 @@ public class HomeFragment extends Fragment {
                                                         @Override
                                                         public void onClick(DialogInterface dialog, int which) {
                                                             Log.d("TAG", "onClick ");
+                                                            button.setVisibility(View.VISIBLE);
                                                             fab.setVisibility(View.VISIBLE);
 //                                                            Intent intent = new Intent(getActivity(), StartActivity.class);
 //                                                            startActivity(intent);
@@ -204,12 +209,15 @@ public class HomeFragment extends Fragment {
                                                                 checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
 
                                                             }
+                                                            button.setVisibility(View.VISIBLE);
+                                                            fab.setVisibility(View.VISIBLE);
                                                             startActivity(intent);
                                                         }
                                                     })
                                                     .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
                                                         @Override
                                                         public void onClick(DialogInterface dialog, int which) {
+                                                            button.setVisibility(View.VISIBLE);
                                                             fab.setVisibility(View.VISIBLE);
 //                                                            Intent intent = new Intent(getActivity(), MainActivity.class);
 //                                                            startActivity(intent);
@@ -254,6 +262,7 @@ public class HomeFragment extends Fragment {
                                         Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                                     checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
                                 }
+                                button.setVisibility(View.VISIBLE);
                                 fab.setVisibility(View.VISIBLE);
                                 startActivity(intent);
                             }
@@ -261,6 +270,7 @@ public class HomeFragment extends Fragment {
                         .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
+                                button.setVisibility(View.VISIBLE);
                                 fab.setVisibility(View.VISIBLE);
 //                                Intent intent = new Intent(getActivity(), MainActivity.class);
 //                                startActivity(intent);
@@ -291,7 +301,8 @@ public class HomeFragment extends Fragment {
 
         from_number = view.findViewById(R.id.from_number);
         to_number = view.findViewById(R.id.to_number);
-        fab.setVisibility(View.INVISIBLE);
+        button.setVisibility(View.VISIBLE);
+        fab.setVisibility(View.VISIBLE);
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(),
                 android.R.layout.simple_dropdown_item_1line, arrayStreet);
@@ -451,12 +462,15 @@ public class HomeFragment extends Fragment {
                                                                                     checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
 
                                                                                 }
+                                                                                button.setVisibility(View.VISIBLE);
+                                                                                fab.setVisibility(View.VISIBLE);
                                                                                 startActivity(intent);
                                                                             }
                                                                         })
                                                                         .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
                                                                             @Override
                                                                             public void onClick(DialogInterface dialog, int which) {
+                                                                                button.setVisibility(View.VISIBLE);
                                                                                 fab.setVisibility(View.VISIBLE);
 //                                                                                Intent intent = new Intent(getActivity(), MainActivity.class);
 //                                                                                startActivity(intent);
@@ -509,6 +523,7 @@ public class HomeFragment extends Fragment {
                                                             Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                                                         checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
                                                     }
+                                                    button.setVisibility(View.VISIBLE);
                                                     fab.setVisibility(View.VISIBLE);
                                                     startActivity(intent);
                                                 }
@@ -516,6 +531,7 @@ public class HomeFragment extends Fragment {
                                             .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
+                                                    button.setVisibility(View.VISIBLE);
                                                     fab.setVisibility(View.VISIBLE);
 //                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
 //                                                    startActivity(intent);
@@ -549,11 +565,11 @@ public class HomeFragment extends Fragment {
                         button.setVisibility(View.VISIBLE);
                         Toast.makeText(getActivity(), "Обирайте зі списку попередніх поїздок", Toast.LENGTH_SHORT).show();
                     } else {
-                        Intent intent = new Intent(getActivity(), MainActivity.class);
-                        startActivity(intent);
-
+//                        Intent intent = new Intent(getActivity(), MainActivity.class);
+//                        startActivity(intent);
+                        fab.setVisibility(View.VISIBLE);
                     }
-                       fab.setVisibility(View.VISIBLE);
+
                     }
                 })
                 .show();
@@ -717,14 +733,16 @@ public class HomeFragment extends Fragment {
                                                         checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
 
                                                     }
+                                                    button.setVisibility(View.VISIBLE);
+                                                    fab.setVisibility(View.VISIBLE);
                                                     startActivity(intent);
                                                 }
                                             })
                                             .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
-                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
-                                                    startActivity(intent);
+                                                    button.setVisibility(View.VISIBLE);
+                                                    fab.setVisibility(View.VISIBLE);
                                                 }
                                             })
                                             .show();

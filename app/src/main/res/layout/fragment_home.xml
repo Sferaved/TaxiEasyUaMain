@@ -31,11 +31,11 @@
 
     <ListView
         android:id="@+id/list"
-        android:layout_width="414dp"
-        android:layout_height="585dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         app:layout_constraintTop_toBottomOf="@+id/btn_routs"
         tools:ignore="MissingConstraints"
-        tools:layout_editor_absoluteX="-2dp" />
+        tools:layout_editor_absoluteX="1dp" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab"
@@ -63,4 +63,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:constraint_referenced_ids="imageView2" />
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/barrier4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="top"
+        app:constraint_referenced_ids="list" />
 </androidx.constraintlayout.widget.ConstraintLayout>
