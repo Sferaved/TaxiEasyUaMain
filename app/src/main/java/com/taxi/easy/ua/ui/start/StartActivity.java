@@ -253,21 +253,12 @@ public class StartActivity extends Activity {
     public static Map <String, String> routChoice(int i) {
         Map <String, String> rout = new HashMap<>();
         Cursor c = database.query(TABLE_ORDERS_INFO, null, null, null, null, null, null);
-
-        if (c != null) {
-            if (c.move(i)) {
-
-                do {
-                    rout = new HashMap<>();
-                    rout.put("id", c.getString(c.getColumnIndexOrThrow ("id")));
-                    rout.put("from_street", c.getString(c.getColumnIndexOrThrow ("from_street")));
-                    rout.put("from_number", c.getString(c.getColumnIndexOrThrow ("from_number")));
-                    rout.put("to_street", c.getString(c.getColumnIndexOrThrow ("to_street")));
-                    rout.put("to_number", c.getString(c.getColumnIndexOrThrow ("to_number")));
-
-                } while (c.moveToNext());
-            }
-        }
+        c.move(i);
+        rout.put("id", c.getString(c.getColumnIndexOrThrow ("id")));
+        rout.put("from_street", c.getString(c.getColumnIndexOrThrow ("from_street")));
+        rout.put("from_number", c.getString(c.getColumnIndexOrThrow ("from_number")));
+        rout.put("to_street", c.getString(c.getColumnIndexOrThrow ("to_street")));
+        rout.put("to_number", c.getString(c.getColumnIndexOrThrow ("to_number")));
 
         Log.d("TAG", "routMaps: " + rout);
         return rout;

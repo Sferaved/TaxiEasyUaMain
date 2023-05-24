@@ -30,6 +30,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentHomeBinding;
@@ -58,6 +59,7 @@ public class HomeFragment extends Fragment {
     Button button;
     private String[] array = arrayToRoutsAdapter();
     private String[] arrayStreet = Odessa.street();
+    static FloatingActionButton fab;
 
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -70,6 +72,14 @@ public class HomeFragment extends Fragment {
 
 //        final TextView textView = binding.textHome;
         listView = binding.list;
+        fab = binding.fab;
+
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dialogFromTo();
+            }
+        });
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_single_choice, array);
         listView.setAdapter(adapter);
@@ -80,10 +90,10 @@ public class HomeFragment extends Fragment {
             @Override
             public void onClick(View view) {
 
-                Log.d("TAG", "onClick: btnRouts " + StartActivity.routChoice(listView.getCheckedItemPosition()+1));
+                Log.d("TAG", "onClick: listView.getCheckedItemPosition() " + listView.getCheckedItemPosition()+1);
                 dialogFromToOneRout(StartActivity.routChoice(listView.getCheckedItemPosition()+1));
-                button.setVisibility(View.INVISIBLE);
-            }
+                button.setVisibility(View.INVISIBLE); }
+
         });
 //        homeViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
         dialogFromTo();
@@ -115,11 +125,12 @@ public class HomeFragment extends Fragment {
         LayoutInflater inflater = getActivity().getLayoutInflater();
         View view = inflater.inflate(R.layout.from_to_layout, null);
         builder.setView(view);
-
+        fab.setVisibility(View.INVISIBLE);
         String from_street_rout = rout.get("from_street");
         String from_number_rout = rout.get("from_number");
         String to_street_rout = rout.get("to_street");
         String to_number_rout = rout.get("to_number");
+        Log.d("TAG", "dialogFromToOneRout: " + from_street_rout + to_street_rout);
         try {
                 String urlCost = getTaxiUrlSearch(from_street_rout, from_number_rout, to_street_rout, to_number_rout, "costSearch");
 
@@ -160,7 +171,7 @@ public class HomeFragment extends Fragment {
                                                         to_name + " " + to_number.getText() + "." +
                                                         " Очикуйте дзвонка оператора. Вартість поїздки: " + orderWeb + "грн";
                                             }
-
+                                            fab.setVisibility(View.VISIBLE);
                                             StartActivity.insertRecordsOrders(sendUrlMap,
                                                     from_number.getText().toString(), to_number.getText().toString());
 
@@ -170,10 +181,10 @@ public class HomeFragment extends Fragment {
                                                         @Override
                                                         public void onClick(DialogInterface dialog, int which) {
                                                             Log.d("TAG", "onClick ");
-
-                                                            Intent intent = new Intent(getActivity(), StartActivity.class);
-                                                            startActivity(intent);
-                                                            Toast.makeText(getActivity(), "До побачення. Чекаємо наступного разу.", Toast.LENGTH_SHORT).show();
+                                                            fab.setVisibility(View.VISIBLE);
+//                                                            Intent intent = new Intent(getActivity(), StartActivity.class);
+//                                                            startActivity(intent);
+//                                                            Toast.makeText(getActivity(), "До побачення. Чекаємо наступного разу.", Toast.LENGTH_SHORT).show();
 
                                                         }
                                                     })
@@ -199,8 +210,9 @@ public class HomeFragment extends Fragment {
                                                     .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
                                                         @Override
                                                         public void onClick(DialogInterface dialog, int which) {
-                                                            Intent intent = new Intent(getActivity(), MainActivity.class);
-                                                            startActivity(intent);
+                                                            fab.setVisibility(View.VISIBLE);
+//                                                            Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                                            startActivity(intent);
                                                         }
                                                     })
                                                     .show();
@@ -222,6 +234,8 @@ public class HomeFragment extends Fragment {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     Log.d("TAG", "onClick: " + "Відміна");
+                                    button.setVisibility(View.VISIBLE);
+                                    fab.setVisibility(View.VISIBLE);
                                 }
                             })
                             .show();
@@ -240,14 +254,16 @@ public class HomeFragment extends Fragment {
                                         Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                                     checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
                                 }
+                                fab.setVisibility(View.VISIBLE);
                                 startActivity(intent);
                             }
                         })
                         .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                Intent intent = new Intent(getActivity(), MainActivity.class);
-                                startActivity(intent);
+                                fab.setVisibility(View.VISIBLE);
+//                                Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                startActivity(intent);
                             }
                         })
                         .show();
@@ -275,7 +291,7 @@ public class HomeFragment extends Fragment {
 
         from_number = view.findViewById(R.id.from_number);
         to_number = view.findViewById(R.id.to_number);
-
+        fab.setVisibility(View.INVISIBLE);
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(),
                 android.R.layout.simple_dropdown_item_1line, arrayStreet);
@@ -395,6 +411,7 @@ public class HomeFragment extends Fragment {
                                                                             from_name + " " + from_number.getText() + " " + " по місту." +
                                                                             " Очикуйте дзвонка оператора. Вартість поїздки: " + orderWeb + "грн";
 
+
                                                                 } else {
                                                                     messageResult = "Дякуемо за замовлення зі " +
                                                                             from_name + " " + from_number.getText() + " " + " до " +
@@ -411,10 +428,10 @@ public class HomeFragment extends Fragment {
                                                                             @Override
                                                                             public void onClick(DialogInterface dialog, int which) {
                                                                                 Log.d("TAG", "onClick ");
-
-                                                                                Intent intent = new Intent(getActivity(), StartActivity.class);
-                                                                                startActivity(intent);
-                                                                                Toast.makeText(getActivity(), "До побачення. Чекаємо наступного разу.", Toast.LENGTH_SHORT).show();
+                                                                                fab.setVisibility(View.VISIBLE);
+//                                                                                Intent intent = new Intent(getActivity(), StartActivity.class);
+//                                                                                startActivity(intent);
+//                                                                                Toast.makeText(getActivity(), "До побачення. Чекаємо наступного разу.", Toast.LENGTH_SHORT).show();
 
                                                                             }
                                                                         })
@@ -440,8 +457,9 @@ public class HomeFragment extends Fragment {
                                                                         .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
                                                                             @Override
                                                                             public void onClick(DialogInterface dialog, int which) {
-                                                                                Intent intent = new Intent(getActivity(), MainActivity.class);
-                                                                                startActivity(intent);
+                                                                                fab.setVisibility(View.VISIBLE);
+//                                                                                Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                                                                startActivity(intent);
                                                                             }
                                                                         })
                                                                         .show();
@@ -471,6 +489,7 @@ public class HomeFragment extends Fragment {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
                                                     Log.d("TAG", "onClick: " + "Відміна");
+                                                    fab.setVisibility(View.VISIBLE);
                                                 }
                                             })
                                             .show();
@@ -490,14 +509,16 @@ public class HomeFragment extends Fragment {
                                                             Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                                                         checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
                                                     }
+                                                    fab.setVisibility(View.VISIBLE);
                                                     startActivity(intent);
                                                 }
                                             })
                                             .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
-                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
-                                                    startActivity(intent);
+                                                    fab.setVisibility(View.VISIBLE);
+//                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                                    startActivity(intent);
                                                 }
                                             })
                                             .show();
@@ -522,9 +543,17 @@ public class HomeFragment extends Fragment {
                 .setNegativeButton("Маршрути", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
+                    if(array.length != 0)  {
+                        Log.d("TAG", "onClick: btnRouts " + array.length);
                         listView.setItemChecked(0, true);
                         button.setVisibility(View.VISIBLE);
                         Toast.makeText(getActivity(), "Обирайте зі списку попередніх поїздок", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Intent intent = new Intent(getActivity(), MainActivity.class);
+                        startActivity(intent);
+
+                    }
+                       fab.setVisibility(View.VISIBLE);
                     }
                 })
                 .show();

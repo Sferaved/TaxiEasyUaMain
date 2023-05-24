@@ -23,10 +23,10 @@
         android:shadowColor="@color/colorPrimary"
         android:text="підтвердити"
         android:textColor="@color/colorYellow"
+        android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         tools:ignore="MissingConstraints"
-        android:visibility="invisible"
         tools:layout_editor_absoluteY="14dp" />
 
     <ListView
@@ -36,6 +36,20 @@
         app:layout_constraintTop_toBottomOf="@+id/btn_routs"
         tools:ignore="MissingConstraints"
         tools:layout_editor_absoluteX="-2dp" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="100sp"
+
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.954"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@android:drawable/ic_media_play" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline4"
