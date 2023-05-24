@@ -3,6 +3,8 @@ package com.taxi.easy.ua.ui.maps;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import com.taxi.easy.ua.ui.start.StartActivity;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -26,9 +28,18 @@ public class CostJSONParser {
     }
 
     public static Map<String, String> sendURL(String urlString) throws MalformedURLException, InterruptedException, JSONException {
-        URL url = new URL(urlString);
+
         Log.d("TAG", "sendURL: " + urlString);
         Map<String, String> costMap = new HashMap<>();
+
+            if (!StartActivity.verifyConnection("https://m.easy-order-taxi.site/api/android").equals("200")) {
+                costMap.put("order_cost", "0");
+                costMap.put("message", "Помілка розрахунку");
+                return costMap;
+            }
+
+        URL url = new URL(urlString);
+
         Exchanger<String> exchanger = new Exchanger<>();
 
         AsyncTask.execute(() -> {
@@ -101,5 +112,6 @@ public class CostJSONParser {
         }
 
     }
+
 
 }

@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -42,10 +43,14 @@ import com.taxi.easy.ua.ui.start.StartActivity;
 
 import org.json.JSONException;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import javax.net.ssl.HttpsURLConnection;
 
 public class HomeFragment extends Fragment {
 
@@ -59,7 +64,7 @@ public class HomeFragment extends Fragment {
     Button button;
     private String[] array = arrayToRoutsAdapter();
     private String[] arrayStreet = Odessa.street();
-    static FloatingActionButton fab;
+    static FloatingActionButton fab, fab_call;
 
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -73,6 +78,7 @@ public class HomeFragment extends Fragment {
 //        final TextView textView = binding.textHome;
         listView = binding.list;
         fab = binding.fab;
+        fab_call = binding.fabCall;
 
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -81,6 +87,18 @@ public class HomeFragment extends Fragment {
             }
         });
 
+        fab_call.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_CALL);
+                intent.setData(Uri.parse("tel:0934066749"));
+                if (ActivityCompat.checkSelfPermission(getActivity(),
+                        Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                    checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
+                }
+                startActivity(intent);
+            }
+        });
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_single_choice, array);
         listView.setAdapter(adapter);
         listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
@@ -94,7 +112,13 @@ public class HomeFragment extends Fragment {
             public void onClick(View view) {
 
                 Log.d("TAG", "onClick: listView.getCheckedItemPosition() " + listView.getCheckedItemPosition()+1);
-                dialogFromToOneRout(StartActivity.routChoice(listView.getCheckedItemPosition()+1));
+                try {
+                    dialogFromToOneRout(StartActivity.routChoice(listView.getCheckedItemPosition()+1));
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 button.setVisibility(View.INVISIBLE); }
 
         });
@@ -123,7 +147,36 @@ public class HomeFragment extends Fragment {
         return arrayRouts;
     }
 
-    private void dialogFromToOneRout(Map <String, String> rout) {
+    private void dialogFromToOneRout(Map <String, String> rout) throws MalformedURLException, InterruptedException {
+        if (!StartActivity.verifyConnection("https://m.easy-order-taxi.site/api/android").equals("200")) {
+
+            String phoneNumber = StartActivity.logCursor(StartActivity.TABLE_USER_INFO).get(1);
+
+            String urlErrorString = "https://m.easy-order-taxi.site/api/android/sentPhone/" + phoneNumber;
+            Log.d("TAG", "dialogFromToOneRout urlErrorString: " + urlErrorString);
+            URL urlError = new URL(urlErrorString);
+
+
+            AsyncTask.execute(() -> {
+                HttpsURLConnection urlConnection = null;
+
+                try {
+                    urlConnection = (HttpsURLConnection) urlError.openConnection();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                urlConnection.setDoInput(true);
+                try {
+                    urlConnection.getResponseCode();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+                urlConnection.disconnect();
+            });
+            Intent intent = new Intent(getContext(), StartActivity.class);
+            startActivity(intent);
+        }
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme);
         LayoutInflater inflater = getActivity().getLayoutInflater();
         View view = inflater.inflate(R.layout.from_to_layout, null);
@@ -134,6 +187,7 @@ public class HomeFragment extends Fragment {
         String to_street_rout = rout.get("to_street");
         String to_number_rout = rout.get("to_number");
         Log.d("TAG", "dialogFromToOneRout: " + from_street_rout + to_street_rout);
+
         try {
                 String urlCost = getTaxiUrlSearch(from_street_rout, from_number_rout, to_street_rout, to_number_rout, "costSearch");
 

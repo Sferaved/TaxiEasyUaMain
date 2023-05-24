@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -47,7 +48,7 @@ import java.util.concurrent.Exchanger;
 import javax.net.ssl.HttpsURLConnection;
 
 public class StartActivity extends Activity {
-    private static final String DB_NAME = "data_1112234568_taxi";
+    private static final String DB_NAME = "data_1112234568_taxi_1";
     public static final String TABLE_USER_INFO = "userInfo";
     public static final String TABLE_SETTINGS_INFO = "settingsInfo";
     public static final String TABLE_ORDERS_INFO = "ordersInfo";
@@ -59,7 +60,7 @@ public class StartActivity extends Activity {
     public String region =  "Одеса";
     EditText from_number, to_number;
     String messageResult;
-
+    Button btn_again;
 
     private static final int READ_PHONE_NUMBERS_CODE = 0;
     private static final int READ_PHONE_STATE_CODE = 0;
@@ -84,8 +85,10 @@ public class StartActivity extends Activity {
         checkPermission(Manifest.permission.READ_PHONE_STATE, READ_PHONE_STATE_CODE);
 
             fab = findViewById(R.id.fab);
+            btn_again = findViewById(R.id.btn_again);
 
             intent = new Intent(this, MainActivity.class);
+
         try {
             initDB();
         } catch (MalformedURLException e) {
@@ -95,18 +98,6 @@ public class StartActivity extends Activity {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-
-
-        cursorDb = database.query(TABLE_USER_INFO, null, null, null, null, null, null);
-        Log.d("TAG", "initDB:" + logCursor(TABLE_USER_INFO));
-        if(cursorDb.getCount() == 0)   {
-            fab.setVisibility(View.VISIBLE);
-//            phoneNumber();
-        } else {
-            fab.setVisibility(View.VISIBLE);
-        }
-        if (cursorDb != null && !cursorDb.isClosed())
-            cursorDb.close();
 
 
        fab.setOnClickListener(new View.OnClickListener() {
@@ -121,24 +112,23 @@ public class StartActivity extends Activity {
                     startActivity(intent);
                 }
             });
+
+
+       btn_again.setOnClickListener(new View.OnClickListener() {
+           @Override
+           public void onClick(View v) {
+               finish();
+               intent = new Intent(StartActivity.this, StartActivity.class);
+               startActivity(intent);
+           }
+       });
+
        if(!hasConnection()) {
            Toast.makeText(StartActivity.this, "Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
        } else {
-           try {
-               if (verifyConnection("https://m.easy-order-taxi.site/api/android").equals("200")) {
-                   startActivity(intent);
-                   Toast.makeText(StartActivity.this, "Вітаємо. Сформуйте маршрут або обирить улюблений.", Toast.LENGTH_LONG).show();
-               } else {
-                   Toast.makeText(StartActivity.this, "Помилка підключення до сервера. Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
-//                            Intent setIntent = new Intent(Settings.ACTION_SETTINGS);
-//                            startActivity(setIntent);
-               }
-           } catch (MalformedURLException e) {
-               throw new RuntimeException(e);
-           } catch (InterruptedException e) {
-               throw new RuntimeException(e);
-           }
-           Log.d("TAG", "onResume: "  + hasConnection());
+           startActivity(intent);
+           Toast.makeText(StartActivity.this, "Ласкаво просимо. Сформуйте маршрут або виберіть улюблений.", Toast.LENGTH_LONG).show();
+         Log.d("TAG", "onResume: "  + hasConnection());
 
        }
 
@@ -162,7 +152,7 @@ public class StartActivity extends Activity {
         return false;
     }
 
-    public String verifyConnection (String urlString) throws MalformedURLException, InterruptedException {
+    public static String verifyConnection(String urlString) throws MalformedURLException, InterruptedException {
 
         URL url = new URL(urlString);
         final String TAG = "TAG";
@@ -448,6 +438,7 @@ public class StartActivity extends Activity {
                .show();
 
     }
+
 
 
 }
