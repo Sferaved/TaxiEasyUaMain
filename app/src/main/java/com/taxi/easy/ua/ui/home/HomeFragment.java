@@ -7,6 +7,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -79,11 +81,18 @@ public class HomeFragment extends Fragment {
         listView = binding.list;
         fab = binding.fab;
         fab_call = binding.fabCall;
+        button = binding.btnRouts;
 
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                dialogFromTo();
+                try {
+                    dialogFromTo();
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         });
 
@@ -99,13 +108,15 @@ public class HomeFragment extends Fragment {
                 startActivity(intent);
             }
         });
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_single_choice, array);
-        listView.setAdapter(adapter);
-        listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-        if(array.length != 0)  {
+
+        if(array != null)  {
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_single_choice, array);
+            listView.setAdapter(adapter);
+            listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
             listView.setItemChecked(0, true);
-        }
-        button = binding.btnRouts;
+
+        } else  button.setVisibility(View.INVISIBLE);
+
 
         button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -119,11 +130,19 @@ public class HomeFragment extends Fragment {
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                button.setVisibility(View.INVISIBLE); }
+
+                button.setVisibility(View.INVISIBLE);
+            }
 
         });
 //        homeViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
-        dialogFromTo();
+        try {
+            dialogFromTo();
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         return root;
     }
@@ -136,13 +155,18 @@ public class HomeFragment extends Fragment {
 
     private String[] arrayToRoutsAdapter () {
         ArrayList<Map>  routMaps = StartActivity.routMaps();
-        String[] arrayRouts = new String[routMaps.size()];
-        for (int i = 0; i < routMaps.size() ; i++) {
-            arrayRouts[i] = "Звідки: " + routMaps.get(i).get("from_street").toString() + " " +
-                    routMaps.get(i).get("from_number").toString()  + "\nКуди: " +
-                    routMaps.get(i).get("to_street").toString()  + " " +
-                    routMaps.get(i).get("to_number").toString();
+        String[] arrayRouts;
+        if(routMaps.size() != 0) {
+            arrayRouts = new String[routMaps.size()];
+            for (int i = 0; i < routMaps.size(); i++) {
+                arrayRouts[i] = "Звідки: " + routMaps.get(i).get("from_street").toString() + " " +
+                        routMaps.get(i).get("from_number").toString() + "\nКуди: " +
+                        routMaps.get(i).get("to_street").toString() + " " +
+                        routMaps.get(i).get("to_number").toString();
 
+            }
+        } else {
+            arrayRouts = null;
         }
         return arrayRouts;
     }
@@ -228,7 +252,7 @@ public class HomeFragment extends Fragment {
                                                         to_name + " " + to_number_rout + "." +
                                                         " Очикуйте дзвонка оператора. Вартість поїздки: " + orderWeb + "грн";
                                             }
-                                            button.setVisibility(View.VISIBLE);
+                                            button.setVisibility(View.INVISIBLE);
                                             fab.setVisibility(View.VISIBLE);
                                             StartActivity.insertRecordsOrders(sendUrlMap,
                                                     from_number.getText().toString(), to_number.getText().toString());
@@ -239,10 +263,14 @@ public class HomeFragment extends Fragment {
                                                         @Override
                                                         public void onClick(DialogInterface dialog, int which) {
                                                             Log.d("TAG", "onClick ");
-                                                            button.setVisibility(View.VISIBLE);
+                                                            if(array.length != 0)  {
+                                                                button.setVisibility(View.VISIBLE);
+
+                                                            } else  button.setVisibility(View.INVISIBLE);
+
                                                             fab.setVisibility(View.VISIBLE);
-//                                                            Intent intent = new Intent(getActivity(), StartActivity.class);
-//                                                            startActivity(intent);
+                                                            Intent intent = new Intent(getActivity(), StartActivity.class);
+                                                            startActivity(intent);
 //                                                            Toast.makeText(getActivity(), "До побачення. Чекаємо наступного разу.", Toast.LENGTH_SHORT).show();
 
                                                         }
@@ -263,7 +291,10 @@ public class HomeFragment extends Fragment {
                                                                 checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
 
                                                             }
-                                                            button.setVisibility(View.VISIBLE);
+                                                            if(array.length != 0)  {
+                                                                button.setVisibility(View.VISIBLE);
+
+                                                            } else  button.setVisibility(View.INVISIBLE);
                                                             fab.setVisibility(View.VISIBLE);
                                                             startActivity(intent);
                                                         }
@@ -271,7 +302,10 @@ public class HomeFragment extends Fragment {
                                                     .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
                                                         @Override
                                                         public void onClick(DialogInterface dialog, int which) {
-                                                            button.setVisibility(View.VISIBLE);
+                                                            if(array.length != 0)  {
+                                                                button.setVisibility(View.VISIBLE);
+
+                                                            } else  button.setVisibility(View.INVISIBLE);
                                                             fab.setVisibility(View.VISIBLE);
 //                                                            Intent intent = new Intent(getActivity(), MainActivity.class);
 //                                                            startActivity(intent);
@@ -296,7 +330,10 @@ public class HomeFragment extends Fragment {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     Log.d("TAG", "onClick: " + "Відміна");
-                                    button.setVisibility(View.VISIBLE);
+                                    if(array.length != 0)  {
+                                        button.setVisibility(View.VISIBLE);
+
+                                    } else  button.setVisibility(View.INVISIBLE);
                                     fab.setVisibility(View.VISIBLE);
                                 }
                             })
@@ -316,7 +353,10 @@ public class HomeFragment extends Fragment {
                                         Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                                     checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
                                 }
-                                button.setVisibility(View.VISIBLE);
+                                if(array.length != 0)  {
+                                    button.setVisibility(View.VISIBLE);
+
+                                } else  button.setVisibility(View.INVISIBLE);
                                 fab.setVisibility(View.VISIBLE);
                                 startActivity(intent);
                             }
@@ -324,7 +364,10 @@ public class HomeFragment extends Fragment {
                         .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                button.setVisibility(View.VISIBLE);
+                                if(array.length != 0)  {
+                                    button.setVisibility(View.VISIBLE);
+
+                                } else  button.setVisibility(View.INVISIBLE);
                                 fab.setVisibility(View.VISIBLE);
 //                                Intent intent = new Intent(getActivity(), MainActivity.class);
 //                                startActivity(intent);
@@ -347,7 +390,27 @@ public class HomeFragment extends Fragment {
 
 
     }
-    private void dialogFromTo() {
+    private void dialogFromTo() throws MalformedURLException, InterruptedException {
+        Boolean hasConnect = false;
+
+        ConnectivityManager cm = (ConnectivityManager) getActivity().getSystemService(
+                Context.CONNECTIVITY_SERVICE);
+        NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        if (wifiNetwork != null && wifiNetwork.isConnected()) {
+            hasConnect = true;
+        }
+        NetworkInfo mobileNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+        if (mobileNetwork != null && mobileNetwork.isConnected()) {
+            hasConnect = true;
+        }
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        if (activeNetwork != null && activeNetwork.isConnected()) {
+            hasConnect = true;
+        }
+
+        if (!hasConnect) {
+            Toast.makeText(getActivity(), "Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
+        }
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme);
         LayoutInflater inflater = getActivity().getLayoutInflater();
         View view = inflater.inflate(R.layout.from_to_layout, null);
@@ -355,7 +418,10 @@ public class HomeFragment extends Fragment {
 
         from_number = view.findViewById(R.id.from_number);
         to_number = view.findViewById(R.id.to_number);
-        button.setVisibility(View.VISIBLE);
+        if(array != null)  {
+            button.setVisibility(View.VISIBLE);
+
+        } else  button.setVisibility(View.INVISIBLE);
         fab.setVisibility(View.VISIBLE);
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(),
@@ -373,7 +439,10 @@ public class HomeFragment extends Fragment {
                 Log.d("TAG", "onClick urlCost: " + url);
                 Map sendUrlMapCost = null;
                 try {
-                    sendUrlMapCost = ResultSONParser.sendURL(url);
+                    if (StartActivity.verifyConnection("https://m.easy-order-taxi.site/api/android").equals("200")) {
+                        sendUrlMapCost = ResultSONParser.sendURL(url);
+                    }
+
                 } catch (MalformedURLException e) {
                     throw new RuntimeException(e);
                 } catch (InterruptedException e) {
@@ -405,7 +474,10 @@ public class HomeFragment extends Fragment {
                 Log.d("TAG", "onClick urlCost: " + url);
                 Map sendUrlMapCost = null;
                 try {
-                    sendUrlMapCost = ResultSONParser.sendURL(url);
+                    if (StartActivity.verifyConnection("https://m.easy-order-taxi.site/api/android").equals("200")) {
+                        sendUrlMapCost = ResultSONParser.sendURL(url);
+                    }
+
                 } catch (MalformedURLException e) {
                     throw new RuntimeException(e);
                 } catch (InterruptedException e) {
@@ -494,8 +566,8 @@ public class HomeFragment extends Fragment {
                                                                             public void onClick(DialogInterface dialog, int which) {
                                                                                 Log.d("TAG", "onClick ");
                                                                                 fab.setVisibility(View.VISIBLE);
-//                                                                                Intent intent = new Intent(getActivity(), StartActivity.class);
-//                                                                                startActivity(intent);
+                                                                                Intent intent = new Intent(getActivity(), StartActivity.class);
+                                                                                startActivity(intent);
 //                                                                                Toast.makeText(getActivity(), "До побачення. Чекаємо наступного разу.", Toast.LENGTH_SHORT).show();
 
                                                                             }
@@ -618,10 +690,6 @@ public class HomeFragment extends Fragment {
                         listView.setItemChecked(0, true);
                         button.setVisibility(View.VISIBLE);
                         Toast.makeText(getActivity(), "Обирайте зі списку попередніх поїздок", Toast.LENGTH_SHORT).show();
-                    } else {
-//                        Intent intent = new Intent(getActivity(), MainActivity.class);
-//                        startActivity(intent);
-                        fab.setVisibility(View.VISIBLE);
                     }
 
                     }
@@ -767,7 +835,7 @@ public class HomeFragment extends Fragment {
 
                                                     Intent intent = new Intent(getActivity(), StartActivity.class);
                                                     startActivity(intent);
-                                                    Toast.makeText(getActivity(), "До побачення. Чекаємо наступного разу.", Toast.LENGTH_SHORT).show();
+//                                                    Toast.makeText(getActivity(), "До побачення. Чекаємо наступного разу.", Toast.LENGTH_SHORT).show();
 
                                                 }
                                             })

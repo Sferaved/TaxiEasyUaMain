@@ -31,11 +31,7 @@ public class ResultSONParser {
         Map<String, String> costMap = new HashMap<>();
         Exchanger<String> exchanger = new Exchanger<>();
 
-        if (!StartActivity.verifyConnection("https://m.easy-order-taxi.site/api/android").equals("200")) {
-            costMap.put("resp_result", "0");
-            costMap.put("message", "Помілка розрахунку");
-            return costMap;
-        }
+
         AsyncTask.execute(() -> {
             HttpsURLConnection urlConnection = null;
             try {
