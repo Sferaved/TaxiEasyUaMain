@@ -452,6 +452,9 @@ public class HomeFragment extends Fragment {
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     if(connected()) {
                         from = String.valueOf(adapter.getItem(position));
+                        if (from.indexOf("/") != -1) {
+                            from = from.substring(0,  from.indexOf("/"));
+                        };
                         String url = "https://m.easy-order-taxi.site/api/android/autocompleteSearchComboHid/" + from;
 
 
@@ -475,11 +478,11 @@ public class HomeFragment extends Fragment {
                             from_number.requestFocus();
                         }
                     }
-                    else {
-                        getActivity().finish();
-                        Intent intent = new Intent(getActivity(), MainActivity.class);
-                        startActivity(intent);
-                    }
+//                    else {
+//                        getActivity().finish();
+//                        Intent intent = new Intent(getActivity(), MainActivity.class);
+//                        startActivity(intent);
+//                    }
                 }
             });
 
@@ -490,6 +493,9 @@ public class HomeFragment extends Fragment {
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     if(connected()) {
                         to = String.valueOf(adapter.getItem(position));
+                        if (to.indexOf("/") != -1) {
+                            to = to.substring(0,  to.indexOf("/"));
+                        };
                         String url = "https://m.easy-order-taxi.site/api/android/autocompleteSearchComboHid/" + to;
 
 
@@ -513,11 +519,11 @@ public class HomeFragment extends Fragment {
                             to_number.requestFocus();
                         }
                     }
-                    else {
-                        getActivity().finish();
-                        Intent intent = new Intent(getActivity(), MainActivity.class);
-                        startActivity(intent);
-                    }
+//                    else {
+//                        getActivity().finish();
+//                        Intent intent = new Intent(getActivity(), MainActivity.class);
+//                        startActivity(intent);
+//                    }
                 }
             });
 
@@ -639,6 +645,7 @@ public class HomeFragment extends Fragment {
                                                             }
                                                             cursor = StartActivity.database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
                                                             if (cursor.getCount() == 0) {
+                                                                Toast.makeText(getActivity(), "Формат вводу номера телефону: +380936665544", Toast.LENGTH_SHORT).show();
                                                                 phoneNumber();
                                                                 cursor.close();
                                                             }
