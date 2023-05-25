@@ -31,7 +31,6 @@ public class ResultSONParser {
         Map<String, String> costMap = new HashMap<>();
         Exchanger<String> exchanger = new Exchanger<>();
 
-
         AsyncTask.execute(() -> {
             HttpsURLConnection urlConnection = null;
             try {
@@ -62,7 +61,7 @@ public class ResultSONParser {
              costMap.put("resp_result", "0");
              costMap.put("message", jsonarray.getString("message"));
          }
-            return costMap;
+         return costMap;
 
     }
     private static String convertStreamToString(InputStream is) {

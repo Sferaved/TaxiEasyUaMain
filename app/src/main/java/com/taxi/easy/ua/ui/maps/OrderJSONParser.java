@@ -1,10 +1,7 @@
 package com.taxi.easy.ua.ui.maps;
 
-import android.database.Cursor;
 import android.os.AsyncTask;
 import android.util.Log;
-
-import com.taxi.easy.ua.ui.start.StartActivity;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,39 +30,7 @@ public class OrderJSONParser {
         Log.d("TAG", "sendURL: " + urlString);
         Map<String, String> costMap = new HashMap<>();
         Exchanger<String> exchanger = new Exchanger<>();
-        if (!StartActivity.verifyConnection("https://m.easy-order-taxi.site/api/android").equals("200")) {
 
-            Cursor cursor = StartActivity.database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-            costMap.put("order_cost", "0");
-            costMap.put("message", "Помілка розрахунку. Чекайте на дзвінок від оператора");
-            cursor.close();
-
-            String phoneNumber = StartActivity.logCursor(StartActivity.TABLE_USER_INFO).get(1);
-
-            String urlErrorString = "https://m.easy-order-taxi.site/api/android/sentPhone/" + phoneNumber;
-
-            URL urlError = new URL(urlErrorString);
-
-
-            AsyncTask.execute(() -> {
-                HttpsURLConnection urlConnection = null;
-
-                try {
-                    urlConnection = (HttpsURLConnection) urlError.openConnection();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                urlConnection.setDoInput(true);
-                try {
-                    urlConnection.getResponseCode();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-
-                urlConnection.disconnect();
-            });
-            return costMap;
-        }
         AsyncTask.execute(() -> {
             HttpsURLConnection urlConnection = null;
             try {

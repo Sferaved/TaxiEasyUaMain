@@ -3,8 +3,6 @@ package com.taxi.easy.ua.ui.maps;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import com.taxi.easy.ua.ui.start.StartActivity;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -31,12 +29,6 @@ public class CostJSONParser {
 
         Log.d("TAG", "sendURL: " + urlString);
         Map<String, String> costMap = new HashMap<>();
-
-            if (!StartActivity.verifyConnection("https://m.easy-order-taxi.site/api/android").equals("200")) {
-                costMap.put("order_cost", "0");
-                costMap.put("message", "Помілка розрахунку");
-                return costMap;
-            }
 
         URL url = new URL(urlString);
 
