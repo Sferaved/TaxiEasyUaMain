@@ -14,7 +14,9 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -64,7 +66,7 @@ public class HomeFragment extends Fragment {
     static FloatingActionButton fab, fab_call;
     private final String TAG = "TAG";
 
-
+    private static final int CM_DELETE_ID = 1;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
 
@@ -116,6 +118,7 @@ public class HomeFragment extends Fragment {
             listView.setAdapter(adapter);
             listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
             listView.setItemChecked(0, true);
+            registerForContextMenu(listView);
 
         } else  button.setVisibility(View.INVISIBLE);
 
@@ -769,8 +772,6 @@ public class HomeFragment extends Fragment {
             ActivityCompat.requestPermissions(getActivity(), new String[]{permission}, requestCode);
         }
     }
-
-
     private void getPhoneNumber () {
         String mPhoneNumber;
         TelephonyManager tMgr = (TelephonyManager) getActivity().getSystemService(Context.TELEPHONY_SERVICE);
@@ -797,7 +798,6 @@ public class HomeFragment extends Fragment {
         }
 
     }
-
     private void phoneNumber() {
 
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme);
@@ -928,5 +928,27 @@ public class HomeFragment extends Fragment {
                 })
                 .show();
 
+    }
+    public void onCreateContextMenu(ContextMenu menu, View v,
+                                    ContextMenu.ContextMenuInfo menuInfo) {
+        super.onCreateContextMenu(menu, v, menuInfo);
+        menu.add(0, CM_DELETE_ID, 0, R.string.delete_record);
+    }
+
+    public boolean onContextItemSelected(MenuItem item) {
+        if (item.getItemId() == CM_DELETE_ID) {
+            // получаем из пункта контекстного меню данные по пункту списка
+            AdapterView.AdapterContextMenuInfo acmi = (AdapterView.AdapterContextMenuInfo) item
+                    .getMenuInfo();
+            StartActivity.reIndexOrders();
+            // извлекаем id записи и удаляем соответствующую запись в БД
+            long del_id = acmi.id+1;
+            int i_del =  StartActivity.database.delete(StartActivity.TABLE_ORDERS_INFO, "id = " + del_id, null);
+            StartActivity.reIndexOrders();
+            getActivity().finish();
+
+            return true;
+        }
+        return super.onContextItemSelected(item);
     }
 }

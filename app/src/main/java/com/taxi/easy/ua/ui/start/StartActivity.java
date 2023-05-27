@@ -370,6 +370,38 @@ public class StartActivity extends Activity {
         return list;
     }
 
+    public static void reIndexOrders() {
+
+
+        database.execSQL("CREATE TABLE  temp_table" + "(id integer primary key autoincrement," +
+                " from_street text," +
+                " from_number text," +
+                " to_street text," +
+                " to_number text);");
+        // Копирование данных из старой таблицы во временную
+        database.execSQL("INSERT INTO temp_table SELECT * FROM " + TABLE_ORDERS_INFO);
+
+        // Удаление старой таблицы
+        database.execSQL("DROP TABLE " + TABLE_ORDERS_INFO);
+
+        // Создание новой таблицы
+        database.execSQL("CREATE TABLE " + TABLE_ORDERS_INFO + "(id integer primary key autoincrement," +
+                " from_street text," +
+                " from_number text," +
+                " to_street text," +
+                " to_number text);");
+
+        String query = "INSERT INTO " + TABLE_ORDERS_INFO + " (from_street, from_number, to_street, to_number) " +
+                "SELECT from_street, from_number, to_street,  to_number FROM temp_table";
+
+        // Копирование данных из временной таблицы в новую
+        database.execSQL(query);
+
+        // Удаление временной таблицы
+        database.execSQL("DROP TABLE temp_table");
+
+    }
+
 
     // Function to check and request permission
     public void checkPermission(String permission, int requestCode) {
@@ -437,7 +469,6 @@ public class StartActivity extends Activity {
                .show();
 
     }
-
 
 
 }

@@ -1,5 +1,5 @@
 <resources>
-    <string name="version">Версія: 1.22</string>
+    <string name="version">Версія: 1.23</string>
 
     <string name="app_name">TaxiEasyUa</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
@@ -24,5 +24,6 @@
     <string name="invalid_password">Password must be >5 characters</string>
     <string name="login_failed">"Login failed"</string>
     <string name="action_exit">Вихід</string>
+    <string name="delete_record">видалити?</string>
 
 </resources>
