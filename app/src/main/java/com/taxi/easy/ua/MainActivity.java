@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -31,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
+    NetworkChangeReceiver networkChangeReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +55,8 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
+
+        networkChangeReceiver = new NetworkChangeReceiver();
     }
 
     @Override
@@ -162,5 +167,23 @@ public class MainActivity extends AppCompatActivity {
             "Минивэн",
             "Такси Терминал",
             };
+    }
+
+    @Override
+    protected void onStart() {
+        registerReceiver(networkChangeReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        super.onStart();
+        // Создание фильтра намерений для отслеживания изменений подключения к интернету
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+
+        // Регистрация BroadcastReceiver с фильтром намерений
+        registerReceiver(networkChangeReceiver, filter);
+    }
+
+    @Override
+    protected void onStop() {
+        unregisterReceiver(networkChangeReceiver);
+        super.onStop();
     }
 }

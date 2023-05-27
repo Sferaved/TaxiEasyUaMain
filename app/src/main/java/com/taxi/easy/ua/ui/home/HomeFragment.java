@@ -32,7 +32,6 @@ import androidx.fragment.app.Fragment;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentHomeBinding;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
@@ -81,20 +80,15 @@ public class HomeFragment extends Fragment {
         if(connected()) {
             array = arrayToRoutsAdapter();
         }
-        else {
-            getActivity().finish();
-            Intent intent = new Intent(getActivity(), MainActivity.class);
-            startActivity(intent);
-        }
+
 
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if(connected()) {
                     try {
-                        if (connected()) {
-                            dialogFromTo();
-                        }
+                        dialogFromTo();
+
                     } catch (MalformedURLException e) {
                         throw new RuntimeException(e);
                     } catch (InterruptedException e) {
@@ -129,7 +123,7 @@ public class HomeFragment extends Fragment {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (connected()) {
+
                     try {
                         dialogFromToOneRout(StartActivity.routChoice(listView.getCheckedItemPosition() + 1));
                     } catch (MalformedURLException e) {
@@ -137,7 +131,7 @@ public class HomeFragment extends Fragment {
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
-                }
+
             }
         });
 
@@ -297,8 +291,8 @@ public class HomeFragment extends Fragment {
                                                                         button.setVisibility(View.INVISIBLE);
 
                                                                     getActivity().finish();
-                                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
-                                                                    startActivity(intent);
+//                                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                                                    startActivity(intent);
                                                                 }
                                                             }
                                                         })
@@ -337,8 +331,8 @@ public class HomeFragment extends Fragment {
                                                                     } else
                                                                         button.setVisibility(View.INVISIBLE);
                                                                     getActivity().finish();
-                                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
-                                                                    startActivity(intent);
+//                                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                                                    startActivity(intent);
                                                                 }
                                                             }
                                                         })
@@ -368,8 +362,8 @@ public class HomeFragment extends Fragment {
                                             button.setVisibility(View.INVISIBLE);
                                     } else {
                                         getActivity().finish();
-                                        Intent intent = new Intent(getActivity(), MainActivity.class);
-                                        startActivity(intent);
+//                                        Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                        startActivity(intent);
                                     }
                                 }
                             })
@@ -408,8 +402,8 @@ public class HomeFragment extends Fragment {
                                         } else button.setVisibility(View.INVISIBLE);
                                     } else {
                                         getActivity().finish();
-                                        Intent intent = new Intent(getActivity(), MainActivity.class);
-                                        startActivity(intent);
+//                                        Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                        startActivity(intent);
                                     }
                                 }
                             })
@@ -594,8 +588,8 @@ public class HomeFragment extends Fragment {
                                                                                     public void onClick(DialogInterface dialog, int which) {
                                                                                         if(connected()) {
                                                                                             getActivity().finish();
-                                                                                            Intent intent = new Intent(getActivity(), MainActivity.class);
-                                                                                            startActivity(intent);
+//                                                                                            Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                                                                            startActivity(intent);
                                                                                         }
                                                                                     }
                                                                                 })
@@ -626,8 +620,8 @@ public class HomeFragment extends Fragment {
                                                                                         if(connected()) {
                                                                                             button.setVisibility(View.VISIBLE);
                                                                                             getActivity().finish();
-                                                                                            Intent intent = new Intent(getActivity(), MainActivity.class);
-                                                                                            startActivity(intent);
+//                                                                                            Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                                                                            startActivity(intent);
                                                                                         }
                                                                                     }
                                                                                 })
@@ -658,8 +652,8 @@ public class HomeFragment extends Fragment {
                                                         public void onClick(DialogInterface dialog, int which) {
                                                             if(connected()) {
                                                                 getActivity().finish();
-                                                                Intent intent = new Intent(getActivity(), MainActivity.class);
-                                                                startActivity(intent);
+//                                                                Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                                                startActivity(intent);
                                                             }
                                                         }
                                                     })
@@ -690,8 +684,8 @@ public class HomeFragment extends Fragment {
                                                             if(connected()) {
                                                                 button.setVisibility(View.VISIBLE);
                                                                 getActivity().finish();
-                                                                Intent intent = new Intent(getActivity(), MainActivity.class);
-                                                                startActivity(intent);
+//                                                                Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                                                startActivity(intent);
                                                             }
                                                         }
                                                     })
@@ -708,8 +702,8 @@ public class HomeFragment extends Fragment {
                                 } else {
                                     Toast.makeText(getActivity(), "Вкажить місце відправлення", Toast.LENGTH_SHORT).show();
                                     getActivity().finish();
-                                    Intent intent = new Intent(getActivity(), MainActivity.class);
-                                    startActivity(intent);
+//                                    Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                    startActivity(intent);
                                 }
                             }
                         }
@@ -725,13 +719,13 @@ public class HomeFragment extends Fragment {
                                     Toast.makeText(getActivity(), "Обирайте зі списку попередніх поїздок", Toast.LENGTH_SHORT).show();
                                 } else {
                                     getActivity().finish();
-                                    Intent intent = new Intent(getActivity(), MainActivity.class);
-                                    startActivity(intent);
+//                                    Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                    startActivity(intent);
                                 }
                             } else {
                                 getActivity().finish();
-                                Intent intent = new Intent(getActivity(), MainActivity.class);
-                                startActivity(intent);
+//                                Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                startActivity(intent);
                             }
                         }
                     })
@@ -875,8 +869,8 @@ public class HomeFragment extends Fragment {
                                                 public void onClick(DialogInterface dialog, int which) {
                                                     if(connected()) {
                                                         getActivity().finish();
-                                                        Intent intent = new Intent(getActivity(), MainActivity.class);
-                                                        startActivity(intent);
+//                                                        Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                                        startActivity(intent);
                                                     }
 
                                                 }

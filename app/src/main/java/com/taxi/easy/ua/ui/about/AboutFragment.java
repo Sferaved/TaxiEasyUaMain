@@ -52,13 +52,12 @@ public class AboutFragment extends Fragment {
             }
         });
 
-        final TextView textViewVersion = binding.textVersion;
+
         final TextView textViewAuthor = binding.textAuthor;
         final TextView textViewSite = binding.textSite;
         final TextView textViewEmail = binding.textEmail;
         final TextView textViewBuild = binding.textBuild;
 
-        aboutViewModel.getTextVersion().observe(getViewLifecycleOwner(), textViewVersion::setText);
         aboutViewModel.getTextAuthor().observe(getViewLifecycleOwner(), textViewAuthor::setText);
         aboutViewModel.getTextSite().observe(getViewLifecycleOwner(), textViewSite::setText);
         aboutViewModel.getTextEmail().observe(getViewLifecycleOwner(), textViewEmail::setText);

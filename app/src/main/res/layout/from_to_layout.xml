@@ -11,7 +11,7 @@
     <AutoCompleteTextView
         android:id="@+id/text_from"
         android:layout_width="match_parent"
-        android:layout_height="43sp"
+        android:layout_height="50sp"
         android:layout_marginHorizontal="10sp"
         android:backgroundTint="@color/colorAccent"
         android:dropDownWidth="wrap_content"
@@ -27,7 +27,7 @@
     <EditText
         android:id="@+id/from_number"
         android:layout_width="50sp"
-        android:layout_height="43sp"
+        android:layout_height="50sp"
         android:gravity="center"
         android:text=" "
         android:visibility="invisible"
@@ -39,7 +39,7 @@
     <AutoCompleteTextView
         android:id="@+id/text_to"
         android:layout_width="match_parent"
-        android:layout_height="43sp"
+        android:layout_height="50sp"
         android:layout_marginHorizontal="10sp"
         android:layout_marginTop="12dp"
         android:backgroundTint="@color/colorAccent"
@@ -55,7 +55,7 @@
     <EditText
         android:id="@+id/to_number"
         android:layout_width="50sp"
-        android:layout_height="43sp"
+        android:layout_height="50sp"
         android:gravity="center"
         android:text=" "
         android:visibility="invisible"
