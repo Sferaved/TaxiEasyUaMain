@@ -9,7 +9,7 @@
     <TextView
         android:id="@+id/textView3"
         android:layout_width="wrap_content"
-        android:layout_height="20sp"
+        android:layout_height="50sp"
         android:gravity="center"
         android:text="Тариф:"
         android:textStyle="bold"
@@ -27,7 +27,7 @@
         android:layout_gravity="center"
         android:layout_marginTop="4dp"
         android:gravity="clip_horizontal"
-        android:minHeight="40sp"
+        android:minHeight="50sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.501"
         app:layout_constraintStart_toStartOf="parent"
