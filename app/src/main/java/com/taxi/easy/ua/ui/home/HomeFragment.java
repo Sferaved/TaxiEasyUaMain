@@ -39,6 +39,7 @@ import com.taxi.easy.ua.databinding.FragmentHomeBinding;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.Odessa;
 import com.taxi.easy.ua.ui.maps.OrderJSONParser;
+import com.taxi.easy.ua.ui.start.FirebaseSignIn;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
 import com.taxi.easy.ua.ui.start.StartActivity;
 
@@ -254,6 +255,9 @@ public class HomeFragment extends Fragment {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     if (connected()) {
+//                                        Intent intent = new Intent(getActivity(), FirebaseSignIn.class);
+//                                        startActivity(intent);
+
                                         String urlOrder = getTaxiUrlSearch(from_street_rout, from_number_rout, to_street_rout, to_number_rout, "orderSearch");
 
                                         try {
@@ -552,8 +556,11 @@ public class HomeFragment extends Fragment {
                                                         @Override
                                                         public void onClick(DialogInterface dialog, int which) {
                                                             if(connected()) {
+
                                                             Cursor cursor = StartActivity.database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
                                                             if (cursor.getCount() == 0) {
+                                                                Intent intent = new Intent(getActivity(), FirebaseSignIn.class);
+                                                                startActivity(intent);
                                                                 getPhoneNumber();
                                                                 cursor.close();
                                                             } else {
@@ -929,6 +936,7 @@ public class HomeFragment extends Fragment {
                 .show();
 
     }
+
     public void onCreateContextMenu(ContextMenu menu, View v,
                                     ContextMenu.ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);

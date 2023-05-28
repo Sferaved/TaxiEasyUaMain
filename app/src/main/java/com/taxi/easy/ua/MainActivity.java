@@ -2,10 +2,12 @@ package com.taxi.easy.ua;
 
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -14,7 +16,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -28,6 +32,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
 import com.taxi.easy.ua.ui.start.StartActivity;
+
+import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -76,18 +82,88 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        Intent intent;
         if(item.getItemId() == R.id.action_settings) {
            settings();
         }
-
+        if (item.getItemId() == R.id.phone_settings) {
+                phoneNumberChange();
+        }
         if (item.getItemId() == R.id.action_exit) {
-                intent = new Intent(this, StartActivity.class);
-                startActivity(intent);
                 this.finish();
         }
 
         return false;
+    }
+
+    public void phoneNumberChange() {
+
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);
+
+        LayoutInflater inflater = this.getLayoutInflater();
+
+        View view = inflater.inflate(R.layout.phone_verify_layout, null);
+
+        builder.setView(view);
+
+        @SuppressLint({"MissingInflatedId", "LocalSuppress"})
+        EditText phoneNumber = view.findViewById(R.id.phoneNumber);
+
+        phoneNumber.setText(StartActivity.logCursor(StartActivity.TABLE_USER_INFO).get(1));
+
+
+//        String result = phoneNumber.getText().toString();
+        builder.setTitle("Перевірка телефону")
+                .setPositiveButton("Змінити", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if(connected()) {
+                            Log.d("TAG", "onClick befor validate: ");
+                            String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
+                            boolean val = Pattern.compile(PHONE_PATTERN).matcher(phoneNumber.getText().toString()).matches();
+                            Log.d("TAG", "onClick No validate: " + val);
+                            if (val == false) {
+                                Toast.makeText(MainActivity.this, "Формат вводу номера телефону: +380936665544" , Toast.LENGTH_SHORT).show();
+                                Log.d("TAG", "onClick:phoneNumber.getText().toString() " + phoneNumber.getText().toString());
+
+                            } else {
+                                StartActivity.updateRecordsUser(phoneNumber.getText().toString());
+                            }
+                        }
+                    }
+                }).setNegativeButton("Відміна", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Intent intent = new Intent(MainActivity.this, MainActivity.class);
+                        startActivity(intent);
+                    }
+                })
+                .show();
+
+    }
+    private boolean connected() {
+
+        Boolean hasConnect = false;
+
+        ConnectivityManager cm = (ConnectivityManager) this.getSystemService(
+                Context.CONNECTIVITY_SERVICE);
+        NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        if (wifiNetwork != null && wifiNetwork.isConnected()) {
+            hasConnect = true;
+        }
+        NetworkInfo mobileNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+        if (mobileNetwork != null && mobileNetwork.isConnected()) {
+            hasConnect = true;
+        }
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        if (activeNetwork != null && activeNetwork.isConnected()) {
+            hasConnect = true;
+        }
+
+        if (!hasConnect) {
+            Toast.makeText(this, "Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
+        }
+        Log.d("TAG", "connected: " + hasConnect);
+        return hasConnect;
     }
     private String[] tariffArr = tariffs();
     private String tariff;
