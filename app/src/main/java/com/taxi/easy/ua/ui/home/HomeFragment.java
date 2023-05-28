@@ -34,12 +34,12 @@ import androidx.fragment.app.Fragment;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentHomeBinding;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.Odessa;
 import com.taxi.easy.ua.ui.maps.OrderJSONParser;
-import com.taxi.easy.ua.ui.start.FirebaseSignIn;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
 import com.taxi.easy.ua.ui.start.StartActivity;
 
@@ -247,134 +247,138 @@ public class HomeFragment extends Fragment {
 
                 if (!orderCost.equals("0")) {
 
-                    // Start downloading json data from Google Directions API
+                    if(!MainActivity.verifyOrder) {
+                        Log.d(TAG, "dialogFromToOneRout FirebaseSignIn.verifyOrder: " + MainActivity.verifyOrder);
+                        Toast.makeText(getActivity(), "Вартість поїздки: " + orderCost + "грн. Вибачте, без перевірки Google-акаунту замовлення не можливе. Спробуйте знову.", Toast.LENGTH_SHORT).show();
+                    } else {
 
-                    new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
-                            .setMessage("Вартість поїздки: " + orderCost + "грн")
-                            .setPositiveButton("Замовити", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    if (connected()) {
+                        new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
+                                .setMessage("Вартість поїздки: " + orderCost + "грн")
+                                .setPositiveButton("Замовити", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        if (connected()) {
 //                                        Intent intent = new Intent(getActivity(), FirebaseSignIn.class);
 //                                        startActivity(intent);
 
-                                        String urlOrder = getTaxiUrlSearch(from_street_rout, from_number_rout, to_street_rout, to_number_rout, "orderSearch");
+                                            String urlOrder = getTaxiUrlSearch(from_street_rout, from_number_rout, to_street_rout, to_number_rout, "orderSearch");
 
-                                        try {
-                                            Map sendUrlMap = OrderJSONParser.sendURL(urlOrder);
+                                            try {
+                                                Map sendUrlMap = OrderJSONParser.sendURL(urlOrder);
 
-                                            String orderWeb = (String) sendUrlMap.get("order_cost");
-                                            if (!orderWeb.equals("0")) {
+                                                String orderWeb = (String) sendUrlMap.get("order_cost");
+                                                if (!orderWeb.equals("0")) {
 
-                                                String from_name = (String) sendUrlMap.get("from_name");
-                                                String to_name = (String) sendUrlMap.get("to_name");
-                                                if (from_name.equals(to_name)) {
-                                                    messageResult = "Дякуемо за замовлення зі " +
-                                                            from_name + " " + from_number.getText() + " " + " по місту." +
-                                                            " Очикуйте дзвонка оператора. Вартість поїздки: " + orderWeb + "грн";
+                                                    String from_name = (String) sendUrlMap.get("from_name");
+                                                    String to_name = (String) sendUrlMap.get("to_name");
+                                                    if (from_name.equals(to_name)) {
+                                                        messageResult = "Дякуемо за замовлення зі " +
+                                                                from_name + " " + from_number.getText() + " " + " по місту." +
+                                                                " Очикуйте дзвонка оператора. Вартість поїздки: " + orderWeb + "грн";
 
+                                                    } else {
+                                                        messageResult = "Дякуемо за замовлення зі " +
+                                                                from_name + " " + from_number_rout + " " + " до " +
+                                                                to_name + " " + to_number_rout + "." +
+                                                                " Очикуйте дзвонка оператора. Вартість поїздки: " + orderWeb + "грн";
+                                                    }
+                                                    button.setVisibility(View.INVISIBLE);
+
+                                                    StartActivity.insertRecordsOrders(sendUrlMap,
+                                                            from_number.getText().toString(), to_number.getText().toString());
+
+                                                    new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
+                                                            .setMessage(messageResult)
+                                                            .setPositiveButton("Ок", new DialogInterface.OnClickListener() {
+                                                                @Override
+                                                                public void onClick(DialogInterface dialog, int which) {
+                                                                    if (connected()) {
+                                                                        Log.d("TAG", "onClick ");
+                                                                        if (array.length != 0) {
+                                                                            button.setVisibility(View.VISIBLE);
+
+                                                                        } else
+                                                                            button.setVisibility(View.INVISIBLE);
+
+//                                                                        getActivity().finish();
+//                                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                                                    startActivity(intent);
+                                                                    }
+                                                                }
+                                                            })
+                                                            .show();
                                                 } else {
-                                                    messageResult = "Дякуемо за замовлення зі " +
-                                                            from_name + " " + from_number_rout + " " + " до " +
-                                                            to_name + " " + to_number_rout + "." +
-                                                            " Очикуйте дзвонка оператора. Вартість поїздки: " + orderWeb + "грн";
+                                                    String message = (String) sendUrlMap.get("message");
+                                                    new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
+                                                            .setMessage(message +
+                                                                    " Спробуйте ще або зателефонуйте оператору.")
+                                                            .setPositiveButton("Підтримка", new DialogInterface.OnClickListener() {
+                                                                @Override
+                                                                public void onClick(DialogInterface dialog, int which) {
+                                                                    Intent intent = new Intent(Intent.ACTION_CALL);
+                                                                    intent.setData(Uri.parse("tel:0934066749"));
+                                                                    if (ActivityCompat.checkSelfPermission(getActivity(),
+                                                                            Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                                                                        checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
+
+                                                                    }
+                                                                    if (array.length != 0) {
+                                                                        button.setVisibility(View.VISIBLE);
+
+                                                                    } else
+                                                                        button.setVisibility(View.INVISIBLE);
+
+                                                                    startActivity(intent);
+                                                                }
+                                                            })
+                                                            .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
+                                                                @Override
+                                                                public void onClick(DialogInterface dialog, int which) {
+                                                                    if (connected()) {
+                                                                        if (array.length != 0) {
+                                                                            button.setVisibility(View.VISIBLE);
+
+                                                                        } else
+                                                                            button.setVisibility(View.INVISIBLE);
+                                                                        getActivity().finish();
+//                                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
+//                                                                    startActivity(intent);
+                                                                    }
+                                                                }
+                                                            })
+                                                            .show();
                                                 }
-                                                button.setVisibility(View.INVISIBLE);
 
-                                                StartActivity.insertRecordsOrders(sendUrlMap,
-                                                        from_number.getText().toString(), to_number.getText().toString());
 
-                                                new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
-                                                        .setMessage(messageResult)
-                                                        .setPositiveButton("Ок", new DialogInterface.OnClickListener() {
-                                                            @Override
-                                                            public void onClick(DialogInterface dialog, int which) {
-                                                                if(connected()) {
-                                                                    Log.d("TAG", "onClick ");
-                                                                    if (array.length != 0) {
-                                                                        button.setVisibility(View.VISIBLE);
-
-                                                                    } else
-                                                                        button.setVisibility(View.INVISIBLE);
-
-                                                                    getActivity().finish();
-//                                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
-//                                                                    startActivity(intent);
-                                                                }
-                                                            }
-                                                        })
-                                                        .show();
-                                            } else {
-                                                String message = (String) sendUrlMap.get("message");
-                                                new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
-                                                        .setMessage(message +
-                                                                " Спробуйте ще або зателефонуйте оператору.")
-                                                        .setPositiveButton("Підтримка", new DialogInterface.OnClickListener() {
-                                                            @Override
-                                                            public void onClick(DialogInterface dialog, int which) {
-                                                                Intent intent = new Intent(Intent.ACTION_CALL);
-                                                                intent.setData(Uri.parse("tel:0934066749"));
-                                                                if (ActivityCompat.checkSelfPermission(getActivity(),
-                                                                        Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                                                                    checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
-
-                                                                }
-                                                                if (array.length != 0) {
-                                                                    button.setVisibility(View.VISIBLE);
-
-                                                                } else
-                                                                    button.setVisibility(View.INVISIBLE);
-
-                                                                startActivity(intent);
-                                                            }
-                                                        })
-                                                        .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
-                                                            @Override
-                                                            public void onClick(DialogInterface dialog, int which) {
-                                                                if (connected()) {
-                                                                    if (array.length != 0) {
-                                                                        button.setVisibility(View.VISIBLE);
-
-                                                                    } else
-                                                                        button.setVisibility(View.INVISIBLE);
-                                                                    getActivity().finish();
-//                                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
-//                                                                    startActivity(intent);
-                                                                }
-                                                            }
-                                                        })
-                                                        .show();
+                                            } catch (MalformedURLException e) {
+                                                throw new RuntimeException(e);
+                                            } catch (InterruptedException e) {
+                                                throw new RuntimeException(e);
+                                            } catch (JSONException e) {
+                                                throw new RuntimeException(e);
                                             }
-
-
-                                        } catch (MalformedURLException e) {
-                                            throw new RuntimeException(e);
-                                        } catch (InterruptedException e) {
-                                            throw new RuntimeException(e);
-                                        } catch (JSONException e) {
-                                            throw new RuntimeException(e);
                                         }
                                     }
-                                }
 
-                            })
-                            .setNegativeButton("Відміна", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    if (connected()) {
-                                        Log.d("TAG", "onClick: " + "Відміна");
-                                        if (array.length != 0) {
-                                            button.setVisibility(View.VISIBLE);
-                                        } else
-                                            button.setVisibility(View.INVISIBLE);
-                                    } else {
-                                        getActivity().finish();
+                                })
+                                .setNegativeButton("Відміна", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        if (connected()) {
+                                            Log.d("TAG", "onClick: " + "Відміна");
+                                            if (array.length != 0) {
+                                                button.setVisibility(View.VISIBLE);
+                                            } else
+                                                button.setVisibility(View.INVISIBLE);
+                                        } else {
+                                            getActivity().finish();
 //                                        Intent intent = new Intent(getActivity(), MainActivity.class);
 //                                        startActivity(intent);
+                                        }
                                     }
-                                }
-                            })
-                            .show();
+                                })
+                                .show();
+                    }
                 } else {
 
                     sentPhone();
@@ -549,18 +553,22 @@ public class HomeFragment extends Fragment {
                                         Log.d("TAG", "onClick orderCost : " + orderCost);
 
                                         if (!orderCost.equals("0")) {
+                                            if(!MainActivity.verifyOrder) {
+                                                Log.d(TAG, "dialogFromToOneRout FirebaseSignIn.verifyOrder: " + MainActivity.verifyOrder);
+                                                Toast.makeText(getActivity(), "Вартість поїздки: " + orderCost + "грн. Вибачте, без перевірки Google-акаунту замовлення не можливе. Спробуйте знову.", Toast.LENGTH_SHORT).show();
+                                            } else {
 
                                             new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
                                                     .setMessage("Вартість поїздки: " + orderCost + "грн")
                                                     .setPositiveButton("Замовити", new DialogInterface.OnClickListener() {
                                                         @Override
                                                         public void onClick(DialogInterface dialog, int which) {
+
                                                             if(connected()) {
 
                                                             Cursor cursor = StartActivity.database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
                                                             if (cursor.getCount() == 0) {
-                                                                Intent intent = new Intent(getActivity(), FirebaseSignIn.class);
-                                                                startActivity(intent);
+
                                                                 getPhoneNumber();
                                                                 cursor.close();
                                                             } else {
@@ -596,11 +604,11 @@ public class HomeFragment extends Fragment {
                                                                                 .setPositiveButton("Ок", new DialogInterface.OnClickListener() {
                                                                                     @Override
                                                                                     public void onClick(DialogInterface dialog, int which) {
-                                                                                        if(connected()) {
+//                                                                                        if(connected()) {
                                                                                             getActivity().finish();
-//                                                                                            Intent intent = new Intent(getActivity(), MainActivity.class);
-//                                                                                            startActivity(intent);
-                                                                                        }
+////                                                                                            Intent intent = new Intent(getActivity(), MainActivity.class);
+////                                                                                            startActivity(intent);
+//                                                                                        }
                                                                                     }
                                                                                 })
                                                                                 .show();
@@ -660,14 +668,15 @@ public class HomeFragment extends Fragment {
                                                     .setNegativeButton("Відміна", new DialogInterface.OnClickListener() {
                                                         @Override
                                                         public void onClick(DialogInterface dialog, int which) {
-                                                            if(connected()) {
+//                                                            if(connected()) {
                                                                 getActivity().finish();
 //                                                                Intent intent = new Intent(getActivity(), MainActivity.class);
 //                                                                startActivity(intent);
                                                             }
-                                                        }
+//                                                        }
                                                     })
                                                     .show();
+                                            }
                                         } else {
 
                                             String message = (String) sendUrlMapCost.get("message");
@@ -874,11 +883,11 @@ public class HomeFragment extends Fragment {
                                             .setPositiveButton("Ок", new DialogInterface.OnClickListener() {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
-                                                    if(connected()) {
+//                                                    if(connected()) {
                                                         getActivity().finish();
-//                                                        Intent intent = new Intent(getActivity(), MainActivity.class);
-//                                                        startActivity(intent);
-                                                    }
+////                                                        Intent intent = new Intent(getActivity(), MainActivity.class);
+////                                                        startActivity(intent);
+//                                                    }
 
                                                 }
                                             })

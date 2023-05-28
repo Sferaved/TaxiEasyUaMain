@@ -6,9 +6,12 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -22,6 +25,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -31,8 +35,10 @@ import androidx.navigation.ui.NavigationUI;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
+import com.taxi.easy.ua.ui.start.FirebaseSignIn;
 import com.taxi.easy.ua.ui.start.StartActivity;
 
+import java.util.List;
 import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
@@ -40,10 +46,14 @@ public class MainActivity extends AppCompatActivity {
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
     NetworkChangeReceiver networkChangeReceiver;
-
+    public static boolean verifyOrder;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Intent intent = new Intent(this, FirebaseSignIn.class);
+        startActivity(intent);
+
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -108,7 +118,10 @@ public class MainActivity extends AppCompatActivity {
         @SuppressLint({"MissingInflatedId", "LocalSuppress"})
         EditText phoneNumber = view.findViewById(R.id.phoneNumber);
 
-        phoneNumber.setText(StartActivity.logCursor(StartActivity.TABLE_USER_INFO).get(1));
+        List<String> stringList =  StartActivity.logCursor(StartActivity.TABLE_USER_INFO);
+        Log.d("TAG", "phoneNumberChange stringList: " + stringList.size());
+        if(stringList.size() != 0) {
+            phoneNumber.setText(stringList.get(1));
 
 
 //        String result = phoneNumber.getText().toString();
@@ -138,8 +151,92 @@ public class MainActivity extends AppCompatActivity {
                     }
                 })
                 .show();
+        } else {
+            getPhoneNumber ();
+            Cursor cursor = StartActivity.database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+            if (cursor.getCount() == 0) {
+                Toast.makeText(MainActivity.this, "Формат вводу номера телефону: +380936665544", Toast.LENGTH_SHORT).show();
+                phoneNumber();
+                cursor.close();
+            }
+        }
+    }
+
+    private void getPhoneNumber () {
+        String mPhoneNumber;
+        TelephonyManager tMgr = (TelephonyManager) this.getSystemService(Context.TELEPHONY_SERVICE);
+
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            Log.d("TAG", "Manifest.permission.READ_PHONE_NUMBERS: " + ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_PHONE_NUMBERS));
+            Log.d("TAG", "Manifest.permission.READ_PHONE_STATE: " + ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_PHONE_STATE));
+            return;
+        }
+        mPhoneNumber = tMgr.getLine1Number();
+//        mPhoneNumber = null;
+        if(mPhoneNumber != null) {
+            String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
+            boolean val = Pattern.compile(PHONE_PATTERN).matcher(mPhoneNumber).matches();
+            Log.d("TAG", "onClick No validate: " + val);
+            if (val == false) {
+                Toast.makeText(this, "Формат вводу номера телефону: +380936665544" , Toast.LENGTH_SHORT).show();
+                Log.d("TAG", "onClick:phoneNumber.getText().toString() " + mPhoneNumber);
+//                getActivity().finish();
+
+            } else {
+                StartActivity.insertRecordsUser(mPhoneNumber);
+            }
+        }
 
     }
+    private void phoneNumber() {
+
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);
+
+        LayoutInflater inflater = this.getLayoutInflater();
+
+        View view = inflater.inflate(R.layout.phone_verify_layout, null);
+
+        builder.setView(view);
+
+        @SuppressLint({"MissingInflatedId", "LocalSuppress"})
+        EditText phoneNumber = view.findViewById(R.id.phoneNumber);
+        phoneNumber.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View view, boolean b) {
+                phoneNumber.setHint("");
+
+
+            }
+        });
+
+
+//        String result = phoneNumber.getText().toString();
+        builder.setTitle("Перевірка телефону")
+                .setPositiveButton("Відправити", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if(connected()) {
+                            Log.d("TAG", "onClick befor validate: ");
+                            String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
+                            boolean val = Pattern.compile(PHONE_PATTERN).matcher(phoneNumber.getText().toString()).matches();
+                            Log.d("TAG", "onClick No validate: " + val);
+                            if (val == false) {
+                                Toast.makeText(MainActivity.this, "Формат вводу номера телефону: +380936665544" , Toast.LENGTH_SHORT).show();
+                                Log.d("TAG", "onClick:phoneNumber.getText().toString() " + phoneNumber.getText().toString());
+                                MainActivity.this.finish();
+
+                            } else {
+                                StartActivity.insertRecordsUser(phoneNumber.getText().toString());
+                            }
+                        }
+                    }
+                })
+                .show();
+
+    }
+
+
+
     private boolean connected() {
 
         Boolean hasConnect = false;

@@ -3,7 +3,6 @@ package com.taxi.easy.ua.ui.start;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -17,11 +16,13 @@ import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.taxi.easy.ua.MainActivity;
 
 import java.util.Arrays;
 import java.util.List;
 
 public class FirebaseSignIn extends AppCompatActivity {
+    public static boolean verifyOrder;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,15 +54,15 @@ public class FirebaseSignIn extends AppCompatActivity {
             // Successfully signed in
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
             Log.d("TAG", "onSignInResult: " + user.getEmail());
+            MainActivity.verifyOrder = true;
             this.finish();
         } else {
             // Sign in failed. If response is null the user canceled the
             // sign-in flow using the back button. Otherwise check
             // response.getError().getErrorCode() and handle the error.
             // ...
-            Toast.makeText(this, "Вибачте, без перевірки Google-акаунту замовлення не можливе. Спробуйте знову.", Toast.LENGTH_SHORT).show();
-            Intent intent = new Intent(this, StartActivity.class);
-            startActivity(intent);
+            MainActivity.verifyOrder = false;
+
         }
     }
 }
