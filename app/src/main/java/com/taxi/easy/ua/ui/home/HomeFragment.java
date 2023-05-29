@@ -35,6 +35,7 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.OpenStreetMapActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentHomeBinding;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
@@ -64,7 +65,7 @@ public class HomeFragment extends Fragment {
     Button button;
     private String[] array;
     private String[] arrayStreet = Odessa.street();
-    static FloatingActionButton fab, fab_call;
+    static FloatingActionButton fab, fab_call, fab_open_map;
     private final String TAG = "TAG";
 
     private static final int CM_DELETE_ID = 1;
@@ -78,6 +79,7 @@ public class HomeFragment extends Fragment {
         listView = binding.list;
         fab = binding.fab;
         fab_call = binding.fabCall;
+        fab_open_map = binding.fabOpenMap;
         button = binding.btnRouts;
 
         if(connected()) {
@@ -110,6 +112,13 @@ public class HomeFragment extends Fragment {
                         Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                     checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
                 }
+                startActivity(intent);
+            }
+        });
+        fab_open_map.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getActivity(), OpenStreetMapActivity.class);
                 startActivity(intent);
             }
         });
