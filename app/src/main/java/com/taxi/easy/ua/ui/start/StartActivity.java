@@ -32,7 +32,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 
 import org.json.JSONException;
 
@@ -130,8 +129,8 @@ public class StartActivity extends Activity {
        if(!hasConnection()) {
            Toast.makeText(StartActivity.this, "Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
        } else {
-           intent = new Intent(this, OpenStreetMapActivity.class);
-//           intent = new Intent(this, FirebaseSignIn.class);
+//           intent = new Intent(this, OpenStreetMapActivity.class);
+           intent = new Intent(this, FirebaseSignIn.class);
            startActivity(intent);
 
          Log.d("TAG", "onResume: "  + hasConnection());
