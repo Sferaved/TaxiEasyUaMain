@@ -31,6 +31,7 @@ import androidx.core.content.ContextCompat;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.OpenStreetMapActivity;
 import com.taxi.easy.ua.R;
 
 import org.json.JSONException;
@@ -129,7 +130,8 @@ public class StartActivity extends Activity {
        if(!hasConnection()) {
            Toast.makeText(StartActivity.this, "Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
        } else {
-           intent = new Intent(this, MainActivity.class);
+           intent = new Intent(this, OpenStreetMapActivity.class);
+//           intent = new Intent(this, MainActivity.class);
            startActivity(intent);
            Toast.makeText(StartActivity.this, "Ласкаво просимо. Сформуйте маршрут або виберіть улюблений.", Toast.LENGTH_LONG).show();
          Log.d("TAG", "onResume: "  + hasConnection());
