@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.ui.home;
 
+import static com.taxi.easy.ua.ui.start.StartActivity.READ_CALL_PHONE;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -35,12 +37,12 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
-import com.taxi.easy.ua.OpenStreetMapActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentHomeBinding;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.Odessa;
 import com.taxi.easy.ua.ui.maps.OrderJSONParser;
+import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
 import com.taxi.easy.ua.ui.start.StartActivity;
 
@@ -71,6 +73,8 @@ public class HomeFragment extends Fragment {
     private static final int CM_DELETE_ID = 1;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+
+
 
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
@@ -110,9 +114,9 @@ public class HomeFragment extends Fragment {
                 intent.setData(Uri.parse("tel:0934066749"));
                 if (ActivityCompat.checkSelfPermission(getActivity(),
                         Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                    checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
-                }
-                startActivity(intent);
+                    checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
+
+                } else   startActivity(intent);
             }
         });
         fab_open_map.setOnClickListener(new View.OnClickListener() {
@@ -328,16 +332,16 @@ public class HomeFragment extends Fragment {
                                                                     intent.setData(Uri.parse("tel:0934066749"));
                                                                     if (ActivityCompat.checkSelfPermission(getActivity(),
                                                                             Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                                                                        checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
+                                                                        checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
 
-                                                                    }
-                                                                    if (array.length != 0) {
-                                                                        button.setVisibility(View.VISIBLE);
+                                                                    } else startActivity(intent);
+//                                                                    if (array.length != 0) {
+//                                                                        button.setVisibility(View.VISIBLE);
+//
+//                                                                    } else
+//                                                                        button.setVisibility(View.INVISIBLE);
 
-                                                                    } else
-                                                                        button.setVisibility(View.INVISIBLE);
 
-                                                                    startActivity(intent);
                                                                 }
                                                             })
                                                             .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
@@ -402,14 +406,9 @@ public class HomeFragment extends Fragment {
                                     intent.setData(Uri.parse("tel:0934066749"));
                                     if (ActivityCompat.checkSelfPermission(getActivity(),
                                             Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                                        checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
-                                    }
-                                    if (array.length != 0) {
-                                        button.setVisibility(View.VISIBLE);
+                                        checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
 
-                                    } else button.setVisibility(View.INVISIBLE);
-
-                                    startActivity(intent);
+                                    } else   startActivity(intent);
                                 }
                             })
                             .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
@@ -633,12 +632,13 @@ public class HomeFragment extends Fragment {
                                                                                         intent.setData(Uri.parse("tel:0934066749"));
                                                                                         if (ActivityCompat.checkSelfPermission(getActivity(),
                                                                                                 Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                                                                                            checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
+                                                                                            checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
 
-                                                                                        }
-                                                                                        button.setVisibility(View.VISIBLE);
+                                                                                        } else
+                                                                                            startActivity(intent);
+//                                                                                        button.setVisibility(View.VISIBLE);
 
-                                                                                        startActivity(intent);
+
                                                                                     }
                                                                                 })
                                                                                 .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
@@ -699,11 +699,12 @@ public class HomeFragment extends Fragment {
                                                             intent.setData(Uri.parse("tel:0934066749"));
                                                             if (ActivityCompat.checkSelfPermission(getActivity(),
                                                                     Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                                                                checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
-                                                            }
-                                                            button.setVisibility(View.VISIBLE);
+                                                                checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
+                                                            } else
+                                                                startActivity(intent);
+//                                                            button.setVisibility(View.VISIBLE);
 
-                                                            startActivity(intent);
+
                                                         }
                                                     })
                                                     .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
@@ -913,12 +914,12 @@ public class HomeFragment extends Fragment {
                                                     intent.setData(Uri.parse("tel:0934066749"));
                                                     if (ActivityCompat.checkSelfPermission(getActivity(),
                                                             Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                                                        checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
+                                                        checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
 
-                                                    }
-                                                    button.setVisibility(View.VISIBLE);
+                                                    } else   startActivity(intent);
+//                                                    button.setVisibility(View.VISIBLE);
 
-                                                    startActivity(intent);
+
                                                 }
                                             })
                                             .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {

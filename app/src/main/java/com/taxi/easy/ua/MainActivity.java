@@ -35,7 +35,6 @@ import androidx.navigation.ui.NavigationUI;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
-import com.taxi.easy.ua.ui.start.FirebaseSignIn;
 import com.taxi.easy.ua.ui.start.StartActivity;
 
 import java.util.List;
@@ -50,10 +49,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        Intent intent = new Intent(this, FirebaseSignIn.class);
-        startActivity(intent);
-
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -73,6 +68,8 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupWithNavController(navigationView, navController);
 
         networkChangeReceiver = new NetworkChangeReceiver();
+
+        Toast.makeText(this, "Ласкаво просимо. Сформуйте маршрут або виберіть улюблений.", Toast.LENGTH_LONG).show();
     }
 
     @Override

@@ -32,6 +32,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 
 import org.json.JSONException;
 
@@ -62,8 +63,8 @@ public class StartActivity extends Activity {
     String messageResult;
     Button btn_again;
 
-    private static final int READ_PHONE_NUMBERS_CODE = 0;
-    private static final int READ_PHONE_STATE_CODE = 0;
+    public static final int READ_PHONE_NUMBERS_CODE = 0;
+    public static final int READ_PHONE_STATE_CODE = 0;
     public static final int READ_CALL_PHONE = 0;
 
     Intent intent;
@@ -83,9 +84,9 @@ public class StartActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        checkPermission(Manifest.permission.CALL_PHONE,READ_CALL_PHONE);
-        checkPermission(Manifest.permission.READ_PHONE_NUMBERS, READ_PHONE_NUMBERS_CODE);
-        checkPermission(Manifest.permission.READ_PHONE_STATE, READ_PHONE_STATE_CODE);
+//        checkPermission(Manifest.permission.CALL_PHONE,READ_CALL_PHONE);
+//        checkPermission(Manifest.permission.READ_PHONE_NUMBERS, READ_PHONE_NUMBERS_CODE);
+//        checkPermission(Manifest.permission.READ_PHONE_STATE, READ_PHONE_STATE_CODE);
 
             fab = findViewById(R.id.fab);
             btn_again = findViewById(R.id.btn_again);
@@ -111,7 +112,7 @@ public class StartActivity extends Activity {
                     if (ActivityCompat.checkSelfPermission(StartActivity.this,
                             Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                         checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
-                    }
+                    } else
                     startActivity(intent);
                 }
             });
@@ -129,10 +130,10 @@ public class StartActivity extends Activity {
        if(!hasConnection()) {
            Toast.makeText(StartActivity.this, "Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
        } else {
-//           intent = new Intent(this, OpenStreetMapActivity.class);
-           intent = new Intent(this, MainActivity.class);
+           intent = new Intent(this, OpenStreetMapActivity.class);
+//           intent = new Intent(this, FirebaseSignIn.class);
            startActivity(intent);
-           Toast.makeText(StartActivity.this, "Ласкаво просимо. Сформуйте маршрут або виберіть улюблений.", Toast.LENGTH_LONG).show();
+
          Log.d("TAG", "onResume: "  + hasConnection());
 
        }
