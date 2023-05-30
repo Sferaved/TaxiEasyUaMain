@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.ui.start;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -54,6 +55,7 @@ public class FirebaseSignIn extends AppCompatActivity {
 
         fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
+            @SuppressLint("SuspiciousIndentation")
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(Intent.ACTION_CALL);

@@ -40,7 +40,6 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentHomeBinding;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
-import com.taxi.easy.ua.ui.maps.Odessa;
 import com.taxi.easy.ua.ui.maps.OrderJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
@@ -66,7 +65,7 @@ public class HomeFragment extends Fragment {
     private ListView listView;
     Button button;
     private String[] array;
-    private String[] arrayStreet = Odessa.street();
+    public String[] arrayStreet = StartActivity.arrayStreet;
     static FloatingActionButton fab, fab_call, fab_open_map;
     private final String TAG = "TAG";
 
@@ -116,14 +115,22 @@ public class HomeFragment extends Fragment {
                         Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                     checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
 
-                } else   startActivity(intent);
+                } else startActivity(intent);
             }
         });
         fab_open_map.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(getActivity(), OpenStreetMapActivity.class);
-                startActivity(intent);
+                if(connected()){
+                    if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                        checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+
+                    } else {
+                        Intent intent = new Intent(getActivity(), OpenStreetMapActivity.class);
+                        startActivity(intent);
+                    }
+                }
             }
         });
 
@@ -152,17 +159,26 @@ public class HomeFragment extends Fragment {
             }
         });
 
-        try {
-            dialogFromTo();
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+//        try {
+//            dialogFromTo();
+//        } catch (MalformedURLException e) {
+//            throw new RuntimeException(e);
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
 
         return root;
     }
 
+    public static String[] join(String[] a, String [] b)
+    {
+        String [] c = new String[a.length + b.length];
+
+        System.arraycopy(a, 0, c, 0, a.length);
+        System.arraycopy(b, 0, c, a.length, b.length);
+
+        return c;
+    }
     @Override
     public void onDestroyView() {
         super.onDestroyView();
@@ -297,7 +313,7 @@ public class HomeFragment extends Fragment {
                                                     }
                                                     button.setVisibility(View.INVISIBLE);
 
-                                                    StartActivity.insertRecordsOrders(sendUrlMap,
+                                                    StartActivity.insertRecordsOrders(from_name, to_name,
                                                             from_number.getText().toString(), to_number.getText().toString());
 
                                                     new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
@@ -604,7 +620,7 @@ public class HomeFragment extends Fragment {
                                                                                     " Очикуйте дзвонка оператора. Вартість поїздки: " + orderWeb + "грн";
                                                                         }
 
-                                                                        StartActivity.insertRecordsOrders(sendUrlMap,
+                                                                        StartActivity.insertRecordsOrders(from_name, to_name,
                                                                                 from_number.getText().toString(), to_number.getText().toString());
 
                                                                         new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
@@ -792,12 +808,7 @@ public class HomeFragment extends Fragment {
 
         return url;
     }
-    public void checkPermission(String permission, int requestCode) {
-        // Checking if permission is not granted
-        if (ContextCompat.checkSelfPermission(getActivity(), permission) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(getActivity(), new String[]{permission}, requestCode);
-        }
-    }
+
     private void getPhoneNumber () {
         String mPhoneNumber;
         TelephonyManager tMgr = (TelephonyManager) getActivity().getSystemService(Context.TELEPHONY_SERVICE);
@@ -885,7 +896,7 @@ public class HomeFragment extends Fragment {
                                                 " Очикуйте дзвонка оператора. Вартість поїздки: " + orderWeb + "грн";
                                     }
 
-                                    StartActivity.insertRecordsOrders(sendUrlMap,
+                                    StartActivity.insertRecordsOrders(from_name, to_name,
                                             from_number.getText().toString(), to_number.getText().toString());
 
                                     new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
@@ -955,7 +966,12 @@ public class HomeFragment extends Fragment {
                 .show();
 
     }
-
+    public void checkPermission(String permission, int requestCode) {
+        // Checking if permission is not granted
+        if (ContextCompat.checkSelfPermission(getActivity(), permission) == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(getActivity(), new String[]{permission}, requestCode);
+        }
+    }
     public void onCreateContextMenu(ContextMenu menu, View v,
                                     ContextMenu.ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);

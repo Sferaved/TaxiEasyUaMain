@@ -32,6 +32,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.maps.Kyiv1;
+import com.taxi.easy.ua.ui.maps.Kyiv2;
 
 import org.json.JSONException;
 
@@ -48,7 +50,7 @@ import java.util.concurrent.Exchanger;
 import javax.net.ssl.HttpsURLConnection;
 
 public class StartActivity extends Activity {
-    private static final String DB_NAME = "data_1112234568_taxi_asda12296798985";
+    private static final String DB_NAME = "data_1112234568_taxi_asda1229iuyoi3e4e266988е5";
     public static final String TABLE_USER_INFO = "userInfo";
     public static final String TABLE_SETTINGS_INFO = "settingsInfo";
     public static final String TABLE_ORDERS_INFO = "ordersInfo";
@@ -67,25 +69,27 @@ public class StartActivity extends Activity {
     public static final int READ_CALL_PHONE = 0;
 
     Intent intent;
+    public static String[] arrayStreet = join(Kyiv1.street(), Kyiv2.street());
 
+    public static String[] join(String[] a, String [] b)
+    {
+        String [] c = new String[a.length + b.length];
 
+        System.arraycopy(a, 0, c, 0, a.length);
+        System.arraycopy(b, 0, c, a.length, b.length);
 
+        return c;
+    }
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.start_layout);
-
-
-
     }
 
     @SuppressLint("SuspiciousIndentation")
     @Override
     protected void onResume() {
         super.onResume();
-//        checkPermission(Manifest.permission.CALL_PHONE,READ_CALL_PHONE);
-//        checkPermission(Manifest.permission.READ_PHONE_NUMBERS, READ_PHONE_NUMBERS_CODE);
-//        checkPermission(Manifest.permission.READ_PHONE_STATE, READ_PHONE_STATE_CODE);
 
             fab = findViewById(R.id.fab);
             btn_again = findViewById(R.id.btn_again);
@@ -127,6 +131,7 @@ public class StartActivity extends Activity {
        });
 
        if(!hasConnection()) {
+           btn_again.setVisibility(View.VISIBLE);
            Toast.makeText(StartActivity.this, "Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
        } else {
 //           intent = new Intent(this, OpenStreetMapActivity.class);
@@ -154,6 +159,7 @@ public class StartActivity extends Activity {
         if (activeNetwork != null && activeNetwork.isConnected()) {
             return true;
         }
+
         return false;
     }
 
@@ -266,30 +272,31 @@ public class StartActivity extends Activity {
         fab.setVisibility(View.VISIBLE);
     }
 
-    public static void insertRecordsOrders(Map<String, String> orders, String from_number, String to_number) {
-
+    public static void insertRecordsOrders( String from, String to, String from_number, String to_number) {
+        Log.d("TAG", "insertRecordsOrders: from, to, from_number,  to_number " + from + " - " + to + " - " + from_number + " - " + to_number);
         String selection = "from_street = ?";
-        String[] selectionArgs = new String[] {orders.get("from_name")};
+        String[] selectionArgs = new String[] {from};
 
         Cursor cursor_from = database.query(TABLE_ORDERS_INFO,
                 null, selection, selectionArgs, null, null, null);
-
-        selection = "to_street = ?";
-        selectionArgs = new String[] {orders.get("to_name")};
+        Log.d("TAG", "insertRecordsOrders: cursor_from.getCount()" + cursor_from.getCount());
+                selection = "to_street = ?";
+        selectionArgs = new String[] {to};
 
         Cursor cursor_to = database.query(TABLE_ORDERS_INFO,
                 null, selection, selectionArgs, null, null, null);
+        Log.d("TAG", "insertRecordsOrders: cursor_to.getCount()"  + cursor_to.getCount());
 
-        if (cursor_from.getCount() == 0 && cursor_to.getCount() == 0) {
+        if (cursor_from.getCount() == 0 || cursor_to.getCount() == 0) {
 
             String sql = "INSERT INTO " + TABLE_ORDERS_INFO + " VALUES(?,?,?,?,?);";
             SQLiteStatement statement = database.compileStatement(sql);
             database.beginTransaction();
             try {
                 statement.clearBindings();
-                statement.bindString(2, orders.get("from_name"));
+                statement.bindString(2, from);
                 statement.bindString(3, from_number);
-                statement.bindString(4, orders.get("to_name"));
+                statement.bindString(4, to);
                 statement.bindString(5, to_number);
 
                 statement.execute();
@@ -303,7 +310,7 @@ public class StartActivity extends Activity {
 
         cursor_from.close();
         cursor_to.close();
-        Log.d("TAG", "insertRecordsOrders: from_name No" + orders.get("from_name"));
+
     }
 
     public static void updateRecordsUser(String result) {

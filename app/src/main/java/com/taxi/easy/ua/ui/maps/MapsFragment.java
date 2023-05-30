@@ -200,7 +200,7 @@ public class MapsFragment extends Fragment {
                                                                                 Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                                                                             checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
                                                                         }
-                                                                        startActivity(intent);
+                                                                         else startActivity(intent);
                                                                     }
                                                                 })
                                                                 .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
@@ -250,7 +250,7 @@ public class MapsFragment extends Fragment {
                                                         Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                                                     checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
                                                 }
-                                                startActivity(intent);
+                                                 else startActivity(intent);
                                             }
                                         })
                                         .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
