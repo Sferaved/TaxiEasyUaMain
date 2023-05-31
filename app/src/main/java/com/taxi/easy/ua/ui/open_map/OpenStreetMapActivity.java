@@ -630,7 +630,8 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                 from_geo = "Ви зараз тут: " + (String) sendUrlMap.get("route_address_from");
                 textViewFrom.setText(from_geo);
             } else {
-                dialogFromTo();
+                Toast.makeText(this, (String) sendUrlMap.get("message"), Toast.LENGTH_SHORT).show();
+                finish();
             }
 
             Log.d(TAG, "dialogFromToGeo: " + from_geo);
