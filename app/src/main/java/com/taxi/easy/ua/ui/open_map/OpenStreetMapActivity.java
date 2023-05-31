@@ -27,6 +27,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -39,6 +40,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
+import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.maps.OrderJSONParser;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
 import com.taxi.easy.ua.ui.start.StartActivity;
@@ -61,10 +63,14 @@ public class OpenStreetMapActivity extends AppCompatActivity {
     private Location locationStart;
     private IMapController mapController;
     EditText from_number, to_number;
-    private String from, to, messageResult;
+    private String from, to, messageResult, from_geo;
     public String[] arrayStreet = StartActivity.arrayStreet;
 
     static FloatingActionButton fab, fab_call, fab_open_map;
+    private TextView textViewFrom;
+    private static double startLat;
+    private static double startLan;
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -78,6 +84,8 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             fab = findViewById(R.id.fab);
             fab_call = findViewById(R.id.fab_call);
             fab_open_map = findViewById(R.id.fab_open_map);
+
+
 
             fab.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -110,8 +118,26 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             fab_open_map.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Intent intent = new Intent(OpenStreetMapActivity.this, OpenStreetMapActivity.class);
-                    startActivity(intent);
+                    if (ActivityCompat.checkSelfPermission(OpenStreetMapActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(OpenStreetMapActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        try {
+                            dialogFromTo();
+                        } catch (MalformedURLException e) {
+                            throw new RuntimeException(e);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    } else {
+                        try {
+                            dialogFromToGeo();
+                        } catch (MalformedURLException e) {
+                            throw new RuntimeException(e);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        } catch (JSONException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
                 }
             });
 
@@ -129,18 +155,18 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
             locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
-            try {
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    dialogFromTo();
-                } else {
-                    dialogFromToGeo();
-                }
-
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+//            try {
+//                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//                    dialogFromTo();
+//                } else {
+//                    dialogFromToGeo();
+//                }
+//
+//            } catch (MalformedURLException e) {
+//                throw new RuntimeException(e);
+//            } catch (InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
 
     }
 
@@ -178,7 +204,15 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
         @Override
         public void onLocationChanged(Location location) {
-            showLocation(location);
+            try {
+                showLocation(location);
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
             locationStart = location;
             GeoPoint startPoint = new GeoPoint(location.getLatitude(), location.getLongitude());
             mapController.setCenter(startPoint);
@@ -193,7 +227,15 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         @Override
         public void onProviderEnabled(String provider) {
             checkEnabled();
-            showLocation(locationManager.getLastKnownLocation(provider));
+            try {
+                showLocation(locationManager.getLastKnownLocation(provider));
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @SuppressLint("SetTextI18n")
@@ -209,16 +251,26 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         }
     };
 
-    private void showLocation(Location location) {
+    private void showLocation(Location location) throws MalformedURLException, InterruptedException, JSONException {
         if (location == null)
             return;
         if (location.getProvider().equals(LocationManager.GPS_PROVIDER)) {
-            Log.d("TAG", "showLocation GPS_PROVIDER: "  + formatLocation(location));
-            Toast.makeText(this, "showLocation GPS_PROVIDER: "  + formatLocation(location), Toast.LENGTH_LONG).show();
+
+//            from_geo = formatLocation(location);
+            startLat = location.getLatitude();
+            startLan = location.getLongitude();
+            dialogFromToGeo();
+
+//            Toast.makeText(this, "showLocation GPS_PROVIDER: "  + from_geo, Toast.LENGTH_LONG).show();
         } else if (location.getProvider().equals(
                 LocationManager.NETWORK_PROVIDER)) {
             Log.d("TAG", "showLocation NETWORK_PROVIDER: " + formatLocation(location));
-            Toast.makeText(this, "showLocation NETWORK_PROVIDER: "  + formatLocation(location), Toast.LENGTH_LONG).show();
+
+            startLat = location.getLatitude();
+            startLan = location.getLongitude();
+            dialogFromToGeo();
+//            from_geo = formatLocation(location);
+//            Toast.makeText(this, "showLocation NETWORK_PROVIDER: "  + from_geo, Toast.LENGTH_LONG).show();
 
         }
     }
@@ -227,6 +279,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
     private String formatLocation(Location location) {
         if (location == null)
             return "";
+
         return String.format("Coordinates: lat = %1$.4f, lon = %2$.4f, time = %3$tF %3$tT",
                 location.getLatitude(), location.getLongitude(), new Date(location.getTime()));
     }
@@ -548,16 +601,16 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                             }
                         }
                     })
-                    .setNegativeButton("Мапа", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-
-                        }
-                    })
+//                    .setNegativeButton("Мапа", new DialogInterface.OnClickListener() {
+//                        @Override
+//                        public void onClick(DialogInterface dialogInterface, int i) {
+//
+//                        }
+//                    })
                     .show();
         }
     }
-    private void dialogFromToGeo() throws MalformedURLException, InterruptedException {
+    private void dialogFromToGeo() throws MalformedURLException, InterruptedException, JSONException {
 
         if(connected()) {
 
@@ -565,8 +618,25 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             LayoutInflater inflater = this.getLayoutInflater();
             View view = inflater.inflate(R.layout.from_to_geo_layout, null);
             builder.setView(view);
-            to_number = view.findViewById(R.id.to_number);
+            textViewFrom = view.findViewById(R.id.text_from);
+            from_geo = startLat + " - " + startLan;
 
+
+            String urlFrom = "https://m.easy-order-taxi.site/api/android/fromSearchGeo/" + startLat + "/" + startLan;
+            Map sendUrlMap = FromJSONParser.sendURL(urlFrom);
+            Log.d(TAG, "onClick sendUrlMap: " + sendUrlMap);
+            String orderWeb = (String) sendUrlMap.get("order_cost");
+            if (orderWeb.equals("100")) {
+                from_geo = "Ви зараз тут: " + (String) sendUrlMap.get("route_address_from");
+                textViewFrom.setText(from_geo);
+            } else {
+                dialogFromTo();
+            }
+
+            Log.d(TAG, "dialogFromToGeo: " + from_geo);
+
+
+            to_number = view.findViewById(R.id.to_number);
             ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
                     android.R.layout.simple_dropdown_item_1line, arrayStreet);
 
@@ -772,9 +842,23 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                             }
                         }
                     })
-                    .setNegativeButton("Мапа", new DialogInterface.OnClickListener() {
+//                    .setNegativeButton("Мапа", new DialogInterface.OnClickListener() {
+//                        @Override
+//                        public void onClick(DialogInterface dialogInterface, int i) {
+//
+//                        }
+//                    })
+                    .setNeutralButton("ЗМІНИТИ", new DialogInterface.OnClickListener() {
                         @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
+                        public void onClick(DialogInterface dialog, int which) {
+
+                                    try {
+                                        dialogFromTo();
+                                    } catch (MalformedURLException e) {
+                                        throw new RuntimeException(e);
+                                    } catch (InterruptedException e) {
+                                        throw new RuntimeException(e);
+                                    }
 
                         }
                     })
