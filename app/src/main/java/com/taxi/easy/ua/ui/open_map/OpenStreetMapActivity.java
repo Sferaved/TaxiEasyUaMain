@@ -753,6 +753,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                                                                                            .setMessage(message +
                                                                                                    " Спробуйте ще або зателефонуйте оператору.")
                                                                                            .setPositiveButton("Підтримка", new DialogInterface.OnClickListener() {
+                                                                                               @SuppressLint("SuspiciousIndentation")
                                                                                                @Override
                                                                                                public void onClick(DialogInterface dialog, int which) {
                                                                                                    Intent intent = new Intent(Intent.ACTION_CALL);
@@ -1022,6 +1023,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                                                 .setMessage(message +
                                                         " Спробуйте ще або зателефонуйте оператору.")
                                                 .setPositiveButton("Підтримка", new DialogInterface.OnClickListener() {
+                                                    @SuppressLint("SuspiciousIndentation")
                                                     @Override
                                                     public void onClick(DialogInterface dialog, int which) {
                                                         Intent intent = new Intent(Intent.ACTION_CALL);

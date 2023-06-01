@@ -33,7 +33,16 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.maps.Kyiv1;
+import com.taxi.easy.ua.ui.maps.Kyiv10;
+import com.taxi.easy.ua.ui.maps.Kyiv11;
 import com.taxi.easy.ua.ui.maps.Kyiv2;
+import com.taxi.easy.ua.ui.maps.Kyiv3;
+import com.taxi.easy.ua.ui.maps.Kyiv4;
+import com.taxi.easy.ua.ui.maps.Kyiv5;
+import com.taxi.easy.ua.ui.maps.Kyiv6;
+import com.taxi.easy.ua.ui.maps.Kyiv7;
+import com.taxi.easy.ua.ui.maps.Kyiv8;
+import com.taxi.easy.ua.ui.maps.Kyiv9;
 
 import org.json.JSONException;
 
@@ -69,14 +78,100 @@ public class StartActivity extends Activity {
     public static final int READ_CALL_PHONE = 0;
 
     Intent intent;
-    public static String[] arrayStreet = join(Kyiv1.street(), Kyiv2.street());
+    public static String[] arrayStreet = join(Kyiv1.street(),
+            Kyiv2.street(),
+            Kyiv3.street(),
+            Kyiv4.street(),
+            Kyiv5.street(),
+            Kyiv6.street(),
+            Kyiv7.street(),
+            Kyiv8.street(),
+            Kyiv9.street(),
+            Kyiv10.street(),
+            Kyiv11.street());
 
-    public static String[] join(String[] a, String [] b)
+
+    public static String[] join(String[] a1,
+                                String [] a2,
+                                String [] a3,
+                                String [] a4,
+                                String [] a5,
+                                String [] a6,
+                                String [] a7,
+                                String [] a8,
+                                String [] a9,
+                                String [] a10,
+                                String [] a11
+    )
     {
-        String [] c = new String[a.length + b.length];
+        String [] c = new String[a1.length +
+                a2.length +
+                a3.length +
+                a4.length +
+                a5.length +
+                a6.length +
+                a7.length +
+                a8.length +
+                a9.length +
+                a10.length +
+                a11.length];
 
-        System.arraycopy(a, 0, c, 0, a.length);
-        System.arraycopy(b, 0, c, a.length, b.length);
+        System.arraycopy(a1, 0, c, 0, a1.length);
+        System.arraycopy(a2, 0, c, a1.length, a2.length);
+        System.arraycopy(a3, 0, c, a1.length
+                + a2.length, a3.length);
+        System.arraycopy(a4, 0, c, a1.length
+                + a2.length
+                + a3.length, a4.length);
+        System.arraycopy(a5, 0, c, a1.length
+                + a2.length
+                + a3.length
+                + a4.length, a5.length);
+        System.arraycopy(a6, 0, c, a1.length
+                + a2.length
+                + a3.length
+                + a4.length
+                + a5.length, a6.length);
+        System.arraycopy(a7, 0, c, a1.length
+                + a2.length
+                + a3.length
+                + a4.length
+                + a5.length
+                + a6.length, a7.length);
+        System.arraycopy(a8, 0, c, a1.length
+                + a2.length
+                + a3.length
+                + a4.length
+                + a5.length
+                + a6.length
+                + a7.length, a8.length);
+        System.arraycopy(a9, 0, c, a1.length
+                + a2.length
+                + a3.length
+                + a4.length
+                + a5.length
+                + a6.length
+                + a7.length
+                + a8.length, a9.length);
+        System.arraycopy(a10, 0, c, a1.length
+                + a2.length
+                + a3.length
+                + a4.length
+                + a5.length
+                + a6.length
+                + a7.length
+                + a8.length
+                + a9.length, a10.length);
+        System.arraycopy(a11, 0, c, a1.length
+                + a2.length
+                + a3.length
+                + a4.length
+                + a5.length
+                + a6.length
+                + a7.length
+                + a8.length
+                + a9.length
+                + a10.length, a11.length);
 
         return c;
     }

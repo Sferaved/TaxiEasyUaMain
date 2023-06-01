@@ -1,5 +1,5 @@
 <resources>
-    <string name="version">Версія: 1.33</string>
+    <string name="version">Версія: 1.34</string>
 
     <string name="app_name">TaxiEasyUa</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
