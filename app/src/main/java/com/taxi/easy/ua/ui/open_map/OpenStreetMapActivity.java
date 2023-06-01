@@ -10,6 +10,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -51,6 +52,7 @@ import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
 
 import java.net.MalformedURLException;
 import java.util.Date;
@@ -68,9 +70,8 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
     static FloatingActionButton fab, fab_call, fab_open_map;
     private TextView textViewFrom;
-    private static double startLat;
-    private static double startLan;
-
+    private static double startLat, startLan, finishLat, finishLan;
+    MapView map = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -142,8 +143,15 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             });
 
 
-            MapView map = (MapView) findViewById(R.id.map);
+            map = findViewById(R.id.map);
             map.setTileSource(TileSourceFactory.MAPNIK);
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+            checkPermission( Manifest.permission.WRITE_EXTERNAL_STORAGE, PackageManager.PERMISSION_GRANTED);
+            return;
+        }
+
 
             map.setBuiltInZoomControls(true);
             map.setMultiTouchControls(true);
@@ -152,8 +160,13 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             mapController.setZoom(14);
             map.setClickable(true);
 
-
             locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+
+        finishLat = 50.3993678189;
+        finishLan = 30.5612182617;
+
+
+            setMarker(finishLat,finishLan, "Місце призначення");
 
 //            try {
 //                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -191,6 +204,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
                 1000 * 10, 10, locationListener);
         checkEnabled();
+        map.onResume();
     }
 
 
@@ -198,6 +212,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         locationManager.removeUpdates(locationListener);
+        map.onPause();
     }
 
     private final LocationListener locationListener = new LocationListener() {
@@ -259,6 +274,8 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 //            from_geo = formatLocation(location);
             startLat = location.getLatitude();
             startLan = location.getLongitude();
+
+
             dialogFromToGeo();
 
 //            Toast.makeText(this, "showLocation GPS_PROVIDER: "  + from_geo, Toast.LENGTH_LONG).show();
@@ -273,8 +290,33 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 //            Toast.makeText(this, "showLocation NETWORK_PROVIDER: "  + from_geo, Toast.LENGTH_LONG).show();
 
         }
+
+        setMarker(startLat,startLan, "Ви тут");
     }
 
+    private void setMarker(double Lat, double Lan, String title) {
+        Marker m = new Marker(map);
+        m.setPosition(new GeoPoint(Lat, Lan));
+        m.setTextLabelBackgroundColor(
+                Color.TRANSPARENT
+        );
+        m.setTextLabelForegroundColor(
+                Color.RED
+        );
+        m.setTextLabelFontSize(40);
+        m.setIcon(getResources().getDrawable(R.mipmap.ic_start_foreground));
+//        m.setOnMarkerClickListener(new Marker.OnMarkerClickListener() {
+//            @Override
+//            public boolean onMarkerClick(Marker marker, MapView mapView) {
+//                Toast.makeText(OpenStreetMapActivity.this, title, Toast.LENGTH_SHORT).show();
+//                return true;
+//            }
+//        });
+        m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+        m.setTitle(title);
+        map.getOverlays().add(m);
+        map.invalidate();
+    }
     @SuppressLint("DefaultLocale")
     private String formatLocation(Location location) {
         if (location == null)
