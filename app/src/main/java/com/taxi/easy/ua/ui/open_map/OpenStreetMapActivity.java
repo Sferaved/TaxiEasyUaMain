@@ -17,6 +17,7 @@ import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
@@ -48,13 +49,18 @@ import com.taxi.easy.ua.ui.start.StartActivity;
 
 import org.json.JSONException;
 import org.osmdroid.api.IMapController;
+import org.osmdroid.bonuspack.routing.OSRMRoadManager;
+import org.osmdroid.bonuspack.routing.Road;
+import org.osmdroid.bonuspack.routing.RoadManager;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Polyline;
 
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -275,8 +281,9 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             startLat = location.getLatitude();
             startLan = location.getLongitude();
 
-
-            dialogFromToGeo();
+            GeoPoint startPoint = new GeoPoint(startLat, startLan);
+            GeoPoint endPoint = new GeoPoint(finishLat, finishLan);
+            showRout(startPoint, endPoint);
 
 //            Toast.makeText(this, "showLocation GPS_PROVIDER: "  + from_geo, Toast.LENGTH_LONG).show();
         } else if (location.getProvider().equals(
@@ -286,8 +293,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             startLat = location.getLatitude();
             startLan = location.getLongitude();
             dialogFromToGeo();
-//            from_geo = formatLocation(location);
-//            Toast.makeText(this, "showLocation NETWORK_PROVIDER: "  + from_geo, Toast.LENGTH_LONG).show();
+
 
         }
 
@@ -304,7 +310,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                 Color.RED
         );
         m.setTextLabelFontSize(40);
-        m.setIcon(getResources().getDrawable(R.mipmap.ic_start_foreground));
+//        m.setIcon(getResources().getDrawable(R.mipmap.ic_start_foreground));
 //        m.setOnMarkerClickListener(new Marker.OnMarkerClickListener() {
 //            @Override
 //            public boolean onMarkerClick(Marker marker, MapView mapView) {
@@ -312,10 +318,25 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 //                return true;
 //            }
 //        });
-        m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+        m.setAnchor(Marker.ANCHOR_BOTTOM, Marker.ANCHOR_BOTTOM);
         m.setTitle(title);
         map.getOverlays().add(m);
         map.invalidate();
+    }
+
+    private void showRout(GeoPoint startPoint, GeoPoint endPoint) {
+        AsyncTask.execute(() -> {
+            RoadManager roadManager = new OSRMRoadManager(this, System.getProperty("http.agent"));
+            ArrayList<GeoPoint> waypoints = new ArrayList<GeoPoint>();
+
+            waypoints.add(startPoint);
+
+            waypoints.add(endPoint);
+            Road road = roadManager.getRoad(waypoints);
+            Polyline roadOverlay = RoadManager.buildRoadOverlay(road);
+            map.getOverlays().add(roadOverlay);
+            map.invalidate();
+        });
     }
     @SuppressLint("DefaultLocale")
     private String formatLocation(Location location) {

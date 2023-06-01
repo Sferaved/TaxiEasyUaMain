@@ -55,6 +55,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-analytics'
 
 
-        implementation 'org.osmdroid:osmdroid-android:6.1.16'
+    implementation 'org.osmdroid:osmdroid-android:6.1.16'
 
+    implementation 'com.github.MKergall:osmbonuspack:6.9.0'
 }
