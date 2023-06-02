@@ -29,6 +29,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 
 import java.util.Arrays;
 import java.util.List;
@@ -43,6 +44,11 @@ public class FirebaseSignIn extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.start_layout);
 
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+//            return;
+        }
         btn_again = findViewById(R.id.btn_again);
         btn_again.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -98,10 +104,17 @@ public class FirebaseSignIn extends AppCompatActivity {
             // Successfully signed in
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
             Log.d("TAG", "onSignInResult: " + user.getEmail());
-            Intent intent = new Intent(FirebaseSignIn.this, MainActivity.class);
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                Intent intent = new Intent(FirebaseSignIn.this, MainActivity.class);
+                startActivity(intent);
+            }
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
+                Intent intent = new Intent(FirebaseSignIn.this, OpenStreetMapActivity.class);
+                startActivity(intent);
+            }
             MainActivity.verifyOrder = true;
-            startActivity(intent);
-            finish();
+                finish();
         } else {
             // Sign in failed. If response is null the user canceled the
             // sign-in flow using the back button. Otherwise check

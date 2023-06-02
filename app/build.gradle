@@ -12,8 +12,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 33
-        versionCode 134
-        versionName 'test add All street'
+        versionCode 135
+        versionName 'test add markers'
         multiDexEnabled true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

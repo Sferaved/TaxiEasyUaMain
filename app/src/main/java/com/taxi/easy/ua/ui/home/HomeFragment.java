@@ -87,6 +87,14 @@ public class HomeFragment extends Fragment {
 
         if(connected()) {
             array = arrayToRoutsAdapter();
+            try {
+                dialogFromTo();
+
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
 
 
@@ -114,8 +122,11 @@ public class HomeFragment extends Fragment {
                 if (ActivityCompat.checkSelfPermission(getActivity(),
                         Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                     checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
-
-                } else startActivity(intent);
+                }
+                if (ActivityCompat.checkSelfPermission(getActivity(),
+                        Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                    startActivity(intent);
+                }
             }
         });
         fab_open_map.setOnClickListener(new View.OnClickListener() {
@@ -125,7 +136,8 @@ public class HomeFragment extends Fragment {
                     if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                         checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
                         checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                    } else {
+                    }
+                    if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                         Intent intent = new Intent(getActivity(), OpenStreetMapActivity.class);
                         startActivity(intent);
                    }
