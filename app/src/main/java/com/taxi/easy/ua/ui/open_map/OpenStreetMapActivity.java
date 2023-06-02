@@ -91,9 +91,6 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             fab_call = findViewById(R.id.fab_call);
             fab_open_map = findViewById(R.id.fab_open_map);
 
-
-
-
             fab.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -152,24 +149,18 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             checkPermission( Manifest.permission.WRITE_EXTERNAL_STORAGE, PackageManager.PERMISSION_GRANTED);
 //            return;
         }*/
-
-
             map.setBuiltInZoomControls(true);
             map.setMultiTouchControls(true);
 
             mapController = map.getController();
-            mapController.setZoom(14);
+            mapController.setZoom(12);
             map.setClickable(true);
 
+            GeoPoint initialGeoPoint = new GeoPoint(50.4501, 30.5234); // Координаты Киева
+            map.getController().setCenter(initialGeoPoint);
+
+
             locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-//
-//        finishLat = 50.3993678189;
-//        finishLan = 30.5612182617;
-
-
-
-
-
 
     }
 
@@ -672,11 +663,12 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             Log.d(TAG, "onClick sendUrlMap: " + sendUrlMap);
             String orderWeb = (String) sendUrlMap.get("order_cost");
             if (orderWeb.equals("100")) {
+
                 from_geo = "Ви зараз тут: " + (String) sendUrlMap.get("route_address_from");
                 textViewFrom.setText(from_geo);
 
                 startPoint = new GeoPoint(startLat, startLan);
-                setMarker(startLat,startLan, "from_geo");
+                setMarker(startLat,startLan, from_geo);
 
             } else {
                 Toast.makeText(this, (String) sendUrlMap.get("message"), Toast.LENGTH_SHORT).show();

@@ -59,7 +59,7 @@ import java.util.concurrent.Exchanger;
 import javax.net.ssl.HttpsURLConnection;
 
 public class StartActivity extends Activity {
-    private static final String DB_NAME = "data_1112234568_taxi_asda1229iuyoi3e4e266988е5";
+    private static final String DB_NAME = "data_2";
     public static final String TABLE_USER_INFO = "userInfo";
     public static final String TABLE_SETTINGS_INFO = "settingsInfo";
     public static final String TABLE_ORDERS_INFO = "ordersInfo";

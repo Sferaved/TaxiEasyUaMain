@@ -120,6 +120,7 @@ public class FirebaseSignIn extends AppCompatActivity {
             // sign-in flow using the back button. Otherwise check
             // response.getError().getErrorCode() and handle the error.
             // ...
+
             Toast.makeText(this, "Вибачте. Вхід до додатку заблоковано. Зверніться до оператора.", Toast.LENGTH_SHORT).show();
 
             MainActivity.verifyOrder = false;
