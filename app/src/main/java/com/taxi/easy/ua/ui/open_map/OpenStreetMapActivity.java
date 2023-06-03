@@ -181,12 +181,20 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             return;
         }
         checkEnabled();
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                1000 * 10, 10, locationListener);
-        if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+
+
+
+            if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
                     1000 * 10, 10, locationListener);
+        } else if(locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                1000 * 10, 10, locationListener);
         }
+
+
+
 
         map.onResume();
 
@@ -324,6 +332,11 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
     @SuppressLint("SetTextI18n")
     private void checkEnabled() {
+        if(locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)  != true && !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) != true) {
+            finish();
+            Intent intent = new Intent(this, MainActivity.class);
+            startActivity(intent);
+        }
         Log.d("TAG", "checkEnabled: Enabled GPS_PROVIDER: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
         Log.d("TAG", "checkEnabled: Enabled NETWORK_PROVIDER: " + locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER));
 

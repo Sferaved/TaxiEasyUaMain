@@ -327,7 +327,7 @@ public class StartActivityK extends Activity {
         if (cursorDb.getCount() == 0) {
             List<String> settings = new ArrayList<>();
             settings.add("usually");
-            settings.add("Базовый");
+            settings.add("Базовый онлайн");
             insertFirstSettings(settings);
             if (cursorDb != null && !cursorDb.isClosed())
                 cursorDb.close();
