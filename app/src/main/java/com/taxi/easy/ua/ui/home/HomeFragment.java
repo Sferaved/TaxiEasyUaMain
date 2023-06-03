@@ -216,7 +216,7 @@ public class HomeFragment extends Fragment {
     }
     private void sentPhone () throws MalformedURLException {
         String phoneNumber = StartActivity.logCursor(StartActivity.TABLE_USER_INFO).get(1);
-            String urlErrorString = "https://m.easy-order-taxi.site/api/android/sentPhone/" + phoneNumber;
+            String urlErrorString = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/sentPhone/" + phoneNumber;
             Log.d("TAG", "dialogFromToOneRout urlErrorString: " + urlErrorString);
             URL urlError = new URL(urlErrorString);
 
@@ -496,7 +496,7 @@ public class HomeFragment extends Fragment {
                         if (from.indexOf("/") != -1) {
                             from = from.substring(0,  from.indexOf("/"));
                         };
-                        String url = "https://m.easy-order-taxi.site/api/android/autocompleteSearchComboHid/" + from;
+                        String url = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/autocompleteSearchComboHid/" + from;
 
 
                         Log.d("TAG", "onClick urlCost: " + url);
@@ -537,7 +537,7 @@ public class HomeFragment extends Fragment {
                         if (to.indexOf("/") != -1) {
                             to = to.substring(0,  to.indexOf("/"));
                         };
-                        String url = "https://m.easy-order-taxi.site/api/android/autocompleteSearchComboHid/" + to;
+                        String url = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/autocompleteSearchComboHid/" + to;
 
 
                         Log.d("TAG", "onClick urlCost: " + url);
@@ -813,7 +813,7 @@ public class HomeFragment extends Fragment {
 
         // Building the url to the web service
 
-        String url = "https://m.easy-order-taxi.site/api/android/" + urlAPI + "/" + parameters;
+        String url = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/" + urlAPI + "/" + parameters;
         Log.d("TAG", "getTaxiUrlSearch: " + url);
 
 

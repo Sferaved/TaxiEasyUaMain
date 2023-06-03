@@ -32,17 +32,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.maps.Kyiv1;
-import com.taxi.easy.ua.ui.maps.Kyiv10;
-import com.taxi.easy.ua.ui.maps.Kyiv11;
-import com.taxi.easy.ua.ui.maps.Kyiv2;
-import com.taxi.easy.ua.ui.maps.Kyiv3;
-import com.taxi.easy.ua.ui.maps.Kyiv4;
-import com.taxi.easy.ua.ui.maps.Kyiv5;
-import com.taxi.easy.ua.ui.maps.Kyiv6;
-import com.taxi.easy.ua.ui.maps.Kyiv7;
-import com.taxi.easy.ua.ui.maps.Kyiv8;
-import com.taxi.easy.ua.ui.maps.Kyiv9;
+import com.taxi.easy.ua.ui.maps.Odessa;
 
 import org.json.JSONException;
 import org.osmdroid.util.GeoPoint;
@@ -59,7 +49,7 @@ import java.util.concurrent.Exchanger;
 
 import javax.net.ssl.HttpsURLConnection;
 
-public class StartActivity extends Activity {
+public class StartActivityO extends Activity {
     private static final String DB_NAME = "data_266668_89999";
     public static final String TABLE_USER_INFO = "userInfo";
     public static final String TABLE_SETTINGS_INFO = "settingsInfo";
@@ -75,25 +65,25 @@ public class StartActivity extends Activity {
 
     Intent intent;
 
-//    public static String[] arrayStreet = Odessa.street();
-//    public static String api = "apiTest";
-//    public static GeoPoint initialGeoPoint = new GeoPoint(46.4825, 30.7233); // Координаты Одесса
-    public static String api = "api";
-
-    public static GeoPoint initialGeoPoint = new GeoPoint(50.4501, 30.5234); // Координаты Киева
-
-    public static String[] arrayStreet = join(Kyiv1.street(),
-            Kyiv2.street(),
-            Kyiv3.street(),
-            Kyiv4.street(),
-            Kyiv5.street(),
-            Kyiv6.street(),
-            Kyiv7.street(),
-            Kyiv8.street(),
-            Kyiv9.street(),
-            Kyiv10.street(),
-            Kyiv11.street());
-
+    public static String[] arrayStreet = Odessa.street();
+    public static String api = "apiTest";
+    public static GeoPoint initialGeoPoint = new GeoPoint(46.4825, 30.7233); // Координаты Одесса
+//    public static String api = "api";
+//
+//    public static GeoPoint initialGeoPoint = new GeoPoint(50.4501, 30.5234); // Координаты Киева
+//
+//    public static String[] arrayStreet = join(Kyiv1.street(),
+//            Kyiv2.street(),
+//            Kyiv3.street(),
+//            Kyiv4.street(),
+//            Kyiv5.street(),
+//            Kyiv6.street(),
+//            Kyiv7.street(),
+//            Kyiv8.street(),
+//            Kyiv9.street(),
+//            Kyiv10.street(),
+//            Kyiv11.street());
+//
 
     public static String[] join(String[] a1,
                                 String [] a2,
@@ -211,9 +201,9 @@ public class StartActivity extends Activity {
                 public void onClick(View v) {
                     Intent intent = new Intent(Intent.ACTION_CALL);
                     intent.setData(Uri.parse("tel:0934066749"));
-                    if (ActivityCompat.checkSelfPermission(StartActivity.this,
+                    if (ActivityCompat.checkSelfPermission(StartActivityO.this,
                             Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                        checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
+                        checkPermission(Manifest.permission.CALL_PHONE, StartActivityO.READ_CALL_PHONE);
                     } else
                     startActivity(intent);
                 }
@@ -224,14 +214,14 @@ public class StartActivity extends Activity {
            @Override
            public void onClick(View v) {
 //               finish();
-               intent = new Intent(StartActivity.this, StartActivity.class);
+               intent = new Intent(StartActivityO.this, StartActivityO.class);
                startActivity(intent);
            }
        });
 
        if(!hasConnection()) {
            btn_again.setVisibility(View.VISIBLE);
-           Toast.makeText(StartActivity.this, "Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
+           Toast.makeText(StartActivityO.this, "Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
        } else {
 //           intent = new Intent(this, OpenStreetMapActivity.class);
            intent = new Intent(this, FirebaseSignIn.class);
@@ -244,7 +234,7 @@ public class StartActivity extends Activity {
 
     }
     public boolean hasConnection() {
-        ConnectivityManager cm = (ConnectivityManager) StartActivity.this.getSystemService(
+        ConnectivityManager cm = (ConnectivityManager) StartActivityO.this.getSystemService(
                 Context.CONNECTIVITY_SERVICE);
         NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         if (wifiNetwork != null && wifiNetwork.isConnected()) {
@@ -293,7 +283,7 @@ public class StartActivity extends Activity {
             urlConnection.disconnect();
         });
 
-        StartActivity.ResultFromThread first = new ResultFromThread(exchanger);
+        StartActivityO.ResultFromThread first = new ResultFromThread(exchanger);
 
         return first.message;
     }
@@ -553,19 +543,19 @@ public class StartActivity extends Activity {
                 .setPositiveButton("Відправити", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        String urlCost = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/approvedPhones/" + phoneNumber + "/" + code.getText();
+                        String urlCost = "https://m.easy-order-taxi.site/" + StartActivityO.api + "/android/approvedPhones/" + phoneNumber + "/" + code.getText();
                         Log.d("TAG", "onClick urlCost: " + urlCost);
                         try {
                             Map sendUrlMapCost = ResultSONParser.sendURL(urlCost);
                             Log.d("TAG", "onClick sendUrlMapCost: " + sendUrlMapCost);
                             if(sendUrlMapCost.get("resp_result").equals("200")) {
                                 insertRecordsUser(phoneNumber);
-                                Intent intent = new Intent(StartActivity.this, MainActivity.class);
+                                Intent intent = new Intent(StartActivityO.this, MainActivity.class);
                                 startActivity(intent);
 //                                finish();
                             } else {
                                 String message = (String) sendUrlMapCost.get("message");
-                                Toast.makeText(StartActivity.this, message, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(StartActivityO.this, message, Toast.LENGTH_SHORT).show();
                             }
 
                         } catch (MalformedURLException e) {

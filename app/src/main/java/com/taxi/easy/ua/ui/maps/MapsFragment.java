@@ -411,7 +411,7 @@ public class MapsFragment extends Fragment {
 
         // Building the url to the web service
 
-        String url = "https://m.easy-order-taxi.site/api/android/" + urlAPI + "/" + parameters;
+        String url = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/" + urlAPI + "/" + parameters;
 
         return url;
     }

@@ -156,7 +156,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             mapController.setZoom(12);
             map.setClickable(true);
 
-            GeoPoint initialGeoPoint = new GeoPoint(50.4501, 30.5234); // Координаты Киева
+            GeoPoint initialGeoPoint = StartActivity.initialGeoPoint;
             map.getController().setCenter(initialGeoPoint);
 
 
@@ -180,12 +180,14 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
             return;
         }
-
+        checkEnabled();
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
                 1000 * 10, 10, locationListener);
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
-                1000 * 10, 10, locationListener);
-        checkEnabled();
+        if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+                    1000 * 10, 10, locationListener);
+        }
+
         map.onResume();
 
 //        try {
@@ -322,8 +324,8 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
     @SuppressLint("SetTextI18n")
     private void checkEnabled() {
-        Log.d("TAG", "checkEnabled: Enabled: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
-        Log.d("TAG", "checkEnabled: Enabled: " + locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER));
+        Log.d("TAG", "checkEnabled: Enabled GPS_PROVIDER: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
+        Log.d("TAG", "checkEnabled: Enabled NETWORK_PROVIDER: " + locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER));
 
     }
 
@@ -401,7 +403,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 //                        if (from.indexOf("/") != -1) {
 //                            from = from.substring(0,  from.indexOf("/"));
 //                        };
-//                        String url = "https://m.easy-order-taxi.site/api/android/autocompleteSearchComboHid/" + from;
+//                        String url = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/autocompleteSearchComboHid/" + from;
 //
 //
 //                        Log.d("TAG", "onClick urlCost: " + url);
@@ -438,7 +440,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 //                        if (to.indexOf("/") != -1) {
 //                            to = to.substring(0,  to.indexOf("/"));
 //                        };
-//                        String url = "https://m.easy-order-taxi.site/api/android/autocompleteSearchComboHid/" + to;
+//                        String url = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/autocompleteSearchComboHid/" + to;
 //
 //
 //                        Log.d("TAG", "onClick urlCost: " + url);
@@ -658,7 +660,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             from_geo = startLat + " - " + startLan;
 
 
-            String urlFrom = "https://m.easy-order-taxi.site/api/android/fromSearchGeo/" + startLat + "/" + startLan;
+            String urlFrom = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/fromSearchGeo/" + startLat + "/" + startLan;
             Map sendUrlMap = FromJSONParser.sendURL(urlFrom);
             Log.d(TAG, "onClick sendUrlMap: " + sendUrlMap);
             String orderWeb = (String) sendUrlMap.get("order_cost");
@@ -694,7 +696,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                         if (to.indexOf("/") != -1) {
                             to = to.substring(0,  to.indexOf("/"));
                         };
-                        String url = "https://m.easy-order-taxi.site/api/android/autocompleteSearchComboHid/" + to;
+                        String url = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/autocompleteSearchComboHid/" + to;
 
 
                         Log.d("TAG", "onClick urlCost: " + url);
@@ -936,7 +938,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
         // Building the url to the web service
 
-        String url = "https://m.easy-order-taxi.site/api/android/" + urlAPI + "/" + parameters;
+        String url = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/" + urlAPI + "/" + parameters;
         Log.d("TAG", "getTaxiUrlSearch: " + url);
 
 
@@ -966,7 +968,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
         // Building the url to the web service
 
-        String url = "https://m.easy-order-taxi.site/api/android/" + urlAPI + "/" + parameters;
+        String url = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/" + urlAPI + "/" + parameters;
         Log.d("TAG", "getTaxiUrlSearch: " + url);
 
 

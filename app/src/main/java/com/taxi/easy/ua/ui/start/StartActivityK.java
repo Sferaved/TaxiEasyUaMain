@@ -59,7 +59,7 @@ import java.util.concurrent.Exchanger;
 
 import javax.net.ssl.HttpsURLConnection;
 
-public class StartActivity extends Activity {
+public class StartActivityK extends Activity {
     private static final String DB_NAME = "data_266668_89999";
     public static final String TABLE_USER_INFO = "userInfo";
     public static final String TABLE_SETTINGS_INFO = "settingsInfo";
@@ -211,9 +211,9 @@ public class StartActivity extends Activity {
                 public void onClick(View v) {
                     Intent intent = new Intent(Intent.ACTION_CALL);
                     intent.setData(Uri.parse("tel:0934066749"));
-                    if (ActivityCompat.checkSelfPermission(StartActivity.this,
+                    if (ActivityCompat.checkSelfPermission(StartActivityK.this,
                             Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                        checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
+                        checkPermission(Manifest.permission.CALL_PHONE, StartActivityK.READ_CALL_PHONE);
                     } else
                     startActivity(intent);
                 }
@@ -224,14 +224,14 @@ public class StartActivity extends Activity {
            @Override
            public void onClick(View v) {
 //               finish();
-               intent = new Intent(StartActivity.this, StartActivity.class);
+               intent = new Intent(StartActivityK.this, StartActivityK.class);
                startActivity(intent);
            }
        });
 
        if(!hasConnection()) {
            btn_again.setVisibility(View.VISIBLE);
-           Toast.makeText(StartActivity.this, "Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
+           Toast.makeText(StartActivityK.this, "Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
        } else {
 //           intent = new Intent(this, OpenStreetMapActivity.class);
            intent = new Intent(this, FirebaseSignIn.class);
@@ -244,7 +244,7 @@ public class StartActivity extends Activity {
 
     }
     public boolean hasConnection() {
-        ConnectivityManager cm = (ConnectivityManager) StartActivity.this.getSystemService(
+        ConnectivityManager cm = (ConnectivityManager) StartActivityK.this.getSystemService(
                 Context.CONNECTIVITY_SERVICE);
         NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         if (wifiNetwork != null && wifiNetwork.isConnected()) {
@@ -293,7 +293,7 @@ public class StartActivity extends Activity {
             urlConnection.disconnect();
         });
 
-        StartActivity.ResultFromThread first = new ResultFromThread(exchanger);
+        StartActivityK.ResultFromThread first = new ResultFromThread(exchanger);
 
         return first.message;
     }
@@ -553,19 +553,19 @@ public class StartActivity extends Activity {
                 .setPositiveButton("Відправити", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        String urlCost = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/approvedPhones/" + phoneNumber + "/" + code.getText();
+                        String urlCost = "https://m.easy-order-taxi.site/" + StartActivityK.api + "/android/approvedPhones/" + phoneNumber + "/" + code.getText();
                         Log.d("TAG", "onClick urlCost: " + urlCost);
                         try {
                             Map sendUrlMapCost = ResultSONParser.sendURL(urlCost);
                             Log.d("TAG", "onClick sendUrlMapCost: " + sendUrlMapCost);
                             if(sendUrlMapCost.get("resp_result").equals("200")) {
                                 insertRecordsUser(phoneNumber);
-                                Intent intent = new Intent(StartActivity.this, MainActivity.class);
+                                Intent intent = new Intent(StartActivityK.this, MainActivity.class);
                                 startActivity(intent);
 //                                finish();
                             } else {
                                 String message = (String) sendUrlMapCost.get("message");
-                                Toast.makeText(StartActivity.this, message, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(StartActivityK.this, message, Toast.LENGTH_SHORT).show();
                             }
 
                         } catch (MalformedURLException e) {
