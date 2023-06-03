@@ -1,5 +1,5 @@
 <resources>
-    <string name="version">Версія: 1.39</string>
+    <string name="version">Версія: 1.40</string>
 
     <string name="app_name">TaxiEasyUa</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
@@ -32,5 +32,6 @@
     <string name="default_web_client_id">356539267738-0v3d1nsci9g7fij8cemnlid7cfalvdo2.apps.googleusercontent.com</string>
     <string name="my_phone">Мій телефон</string>
     <string name="open_maps">Замовити по мапе</string>
+    <string name="driver">Робота водієм</string>
 
 </resources>

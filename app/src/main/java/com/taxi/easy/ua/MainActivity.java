@@ -10,6 +10,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -63,6 +64,9 @@ public class MainActivity extends AppCompatActivity {
                 R.id.nav_home, R.id.nav_about)
                 .setOpenableLayout(drawer)
                 .build();
+
+
+
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
@@ -94,6 +98,10 @@ public class MainActivity extends AppCompatActivity {
         }
         if (item.getItemId() == R.id.phone_settings) {
                 phoneNumberChange();
+        }
+        if (item.getItemId() == R.id.nav_driver) {
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.taxieasyua.job"));
+            startActivity(browserIntent);
         }
         if (item.getItemId() == R.id.action_exit) {
                 this.finish();

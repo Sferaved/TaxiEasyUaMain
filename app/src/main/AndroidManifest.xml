@@ -67,6 +67,8 @@
             android:exported="true"/>
         <activity android:name=".ui.start.StartActivityO" />
         <activity android:name=".ui.start.StartActivityK" />
+
+        <receiver android:name=".NetworkChangeReceiver" />
     </application>
 
 </manifest>
