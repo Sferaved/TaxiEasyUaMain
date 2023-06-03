@@ -180,39 +180,20 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
             return;
         }
-        checkEnabled();
 
 
 
-            if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+
+        if(locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) == true) {
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
                     1000 * 10, 10, locationListener);
-        } else if(locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+        } else if(locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) == true) {
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
                 1000 * 10, 10, locationListener);
         }
-
-
-
-
+        checkEnabled();
         map.onResume();
 
-//        try {
-//            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//                dialogFromTo();
-//            }
-//            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-//                dialogFromToGeo();
-//            }
-//
-//        } catch (MalformedURLException e) {
-//            throw new RuntimeException(e);
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException(e);
-//        } catch (JSONException e) {
-//            throw new RuntimeException(e);
-//        }
     }
 
 
@@ -301,14 +282,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                 Color.RED
         );
         m.setTextLabelFontSize(40);
-//        m.setIcon(getResources().getDrawable(R.mipmap.ic_start_foreground));
-//        m.setOnMarkerClickListener(new Marker.OnMarkerClickListener() {
-//            @Override
-//            public boolean onMarkerClick(Marker marker, MapView mapView) {
-//                Toast.makeText(OpenStreetMapActivity.this, title, Toast.LENGTH_SHORT).show();
-//                return true;
-//            }
-//        });
+
         m.setAnchor(Marker.ANCHOR_TOP, Marker.ANCHOR_TOP);
         m.setTitle(title);
         map.getOverlays().add(m);
@@ -388,279 +362,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         Log.d(TAG, "connected: " + hasConnect);
         return hasConnect;
     }
-//    private void dialogFromTo() throws MalformedURLException, InterruptedException {
-//
-//        if(connected()) {
-//
-//            MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);
-//            LayoutInflater inflater = this.getLayoutInflater();
-//            View view = inflater.inflate(R.layout.from_to_layout, null);
-//            builder.setView(view);
-//
-//
-//
-//            from_number = view.findViewById(R.id.from_number);
-//            to_number = view.findViewById(R.id.to_number);
-//
-//
-//            ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-//                    android.R.layout.simple_dropdown_item_1line, arrayStreet);
-//            AutoCompleteTextView textViewFrom = view.findViewById(R.id.text_from);
-//            textViewFrom.setAdapter(adapter);
-//
-//            textViewFrom.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-//                @Override
-//                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//                    if(connected()) {
-//                        from = String.valueOf(adapter.getItem(position));
-//                        if (from.indexOf("/") != -1) {
-//                            from = from.substring(0,  from.indexOf("/"));
-//                        };
-//                        String url = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/autocompleteSearchComboHid/" + from;
-//
-//
-//                        Log.d("TAG", "onClick urlCost: " + url);
-//                        Map sendUrlMapCost = null;
-//                        try {
-//                            sendUrlMapCost = ResultSONParser.sendURL(url);
-//                        } catch (MalformedURLException e) {
-//                            throw new RuntimeException(e);
-//                        } catch (InterruptedException e) {
-//                            throw new RuntimeException(e);
-//                        } catch (JSONException e) {
-//                            throw new RuntimeException(e);
-//                        }
-//
-//                        String orderCost = (String) sendUrlMapCost.get("message");
-//                        Log.d("TAG", "onClick orderCost : " + orderCost);
-//
-//                        if (orderCost.equals("1")) {
-//                            from_number.setVisibility(View.VISIBLE);
-//                            from_number.requestFocus();
-//                        }
-//                    }
-//
-//                }
-//            });
-//
-//            AutoCompleteTextView textViewTo = view.findViewById(R.id.text_to);
-//            textViewTo.setAdapter(adapter);
-//            textViewTo.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-//                @Override
-//                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//                    if(connected()) {
-//                        to = String.valueOf(adapter.getItem(position));
-//                        if (to.indexOf("/") != -1) {
-//                            to = to.substring(0,  to.indexOf("/"));
-//                        };
-//                        String url = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/autocompleteSearchComboHid/" + to;
-//
-//
-//                        Log.d("TAG", "onClick urlCost: " + url);
-//                        Map sendUrlMapCost = null;
-//                        try {
-//                            sendUrlMapCost = ResultSONParser.sendURL(url);
-//                        } catch (MalformedURLException e) {
-//                            throw new RuntimeException(e);
-//                        } catch (InterruptedException e) {
-//                            throw new RuntimeException(e);
-//                        } catch (JSONException e) {
-//                            throw new RuntimeException(e);
-//                        }
-//
-//                        String orderCost = (String) sendUrlMapCost.get("message");
-//                        Log.d("TAG", "onClick orderCost : " + orderCost);
-//
-//                        if (orderCost.equals("1")) {
-//                            to_number.setVisibility(View.VISIBLE);
-//                            to_number.requestFocus();
-//                        }
-//                    }
-//
-//                }
-//            });
-//
-//
-//            builder.setMessage("Сформуйте маршрут")
-//                    .setPositiveButton("Ок", new DialogInterface.OnClickListener() {
-//                        @Override
-//                        public void onClick(DialogInterface dialog, int which) {
-//                            if(connected()) {
-//                                if (from != null) {
-//                                    if (to == null) {
-//                                        to = from;
-//                                        to_number.setText(from_number.getText());
-//                                    }
-//                                    try {
-//                                        String urlCost = getTaxiUrlSearch(from, from_number.getText().toString(), to, to_number.getText().toString(), "costSearch");
-//
-//                                        Log.d("TAG", "onClick urlCost: " + urlCost);
-//                                        Map sendUrlMapCost = CostJSONParser.sendURL(urlCost);
-//
-//                                        String orderCost = (String) sendUrlMapCost.get("order_cost");
-//                                        Log.d("TAG", "onClick orderCost : " + orderCost);
-//
-//                                        if (!orderCost.equals("0")) {
-//                                            if(!MainActivity.verifyOrder) {
-//                                                Log.d(TAG, "dialogFromToOneRout FirebaseSignIn.verifyOrder: " + MainActivity.verifyOrder);
-//                                                Toast.makeText(OpenStreetMapActivity.this, "Вартість поїздки: " + orderCost + "грн. Вибачте, без перевірки Google-акаунту замовлення не можливе. Спробуйте знову.", Toast.LENGTH_SHORT).show();
-//                                            } else {
-//
-//                                                new MaterialAlertDialogBuilder(OpenStreetMapActivity.this, R.style.AlertDialogTheme)
-//                                                        .setMessage("Вартість поїздки: " + orderCost + "грн")
-//                                                        .setPositiveButton("Замовити", new DialogInterface.OnClickListener() {
-//                                                            @Override
-//                                                            public void onClick(DialogInterface dialog, int which) {
-//
-//                                                                if(connected()) {
-//
-//                                                                    Cursor cursor = StartActivity.database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-//                                                                    if (cursor.getCount() == 0) {
-//
-//                                                                        getPhoneNumber();
-//                                                                        cursor.close();
-//                                                                    } else {
-//                                                                        String urlOrder = getTaxiUrlSearch(from, from_number.getText().toString(), to, to_number.getText().toString(), "orderSearch");
-//                                                                        if (cursor != null && !cursor.isClosed())
-//                                                                            cursor.close();
-//                                                                        try {
-//                                                                            Map sendUrlMap = OrderJSONParser.sendURL(urlOrder);
-//
-//                                                                            String orderWeb = (String) sendUrlMap.get("order_cost");
-//                                                                            if (!orderWeb.equals("0")) {
-//
-//                                                                                String from_name = (String) sendUrlMap.get("from_name");
-//                                                                                String to_name = (String) sendUrlMap.get("to_name");
-//                                                                                if (from_name.equals(to_name)) {
-//                                                                                    messageResult = "Дякуемо за замовлення зі " +
-//                                                                                            from_name + " " + from_number.getText() + " " + " по місту." +
-//                                                                                            " Очикуйте дзвонка оператора. Вартість поїздки: " + orderWeb + "грн";
-//
-//
-//                                                                                } else {
-//                                                                                    messageResult = "Дякуемо за замовлення зі " +
-//                                                                                            from_name + " " + from_number.getText() + " " + " до " +
-//                                                                                            to_name + " " + to_number.getText() + "." +
-//                                                                                            " Очикуйте дзвонка оператора. Вартість поїздки: " + orderWeb + "грн";
-//                                                                                }
-//
-//                                                                                StartActivity.insertRecordsOrders(from_name, to_name,
-//                                                                                        from_number.getText().toString(), to_number.getText().toString());
-//
-//                                                                                new MaterialAlertDialogBuilder(OpenStreetMapActivity.this, R.style.AlertDialogTheme)
-//                                                                                        .setMessage(messageResult)
-//                                                                                        .setPositiveButton("Ок", new DialogInterface.OnClickListener() {
-//                                                                                            @Override
-//                                                                                            public void onClick(DialogInterface dialog, int which) {
-//                                                                                                Intent intent = new Intent(OpenStreetMapActivity.this, StartActivity.class);
-//                                                                                                startActivity(intent);
-//                                                                                            }
-//                                                                                        })
-//                                                                                        .show();
-//                                                                            } else {
-//                                                                                String message = (String) sendUrlMap.get("message");
-//                                                                                new MaterialAlertDialogBuilder(OpenStreetMapActivity.this, R.style.AlertDialogTheme)
-//                                                                                        .setMessage(message +
-//                                                                                                " Спробуйте ще або зателефонуйте оператору.")
-//                                                                                        .setPositiveButton("Підтримка", new DialogInterface.OnClickListener() {
-//                                                                                            @Override
-//                                                                                            public void onClick(DialogInterface dialog, int which) {
-//                                                                                                Intent intent = new Intent(Intent.ACTION_CALL);
-//                                                                                                intent.setData(Uri.parse("tel:0934066749"));
-//                                                                                                if (ActivityCompat.checkSelfPermission(OpenStreetMapActivity.this,
-//                                                                                                        Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-//                                                                                                    checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
-//
-//                                                                                                }
-//                                                                                                else startActivity(intent);
-//                                                                                            }
-//                                                                                        })
-//                                                                                        .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
-//                                                                                            @Override
-//                                                                                            public void onClick(DialogInterface dialog, int which) {
-//
-//                                                                                            }
-//                                                                                        })
-//                                                                                        .show();
-//                                                                            }
-//
-//
-//                                                                        } catch (MalformedURLException e) {
-//                                                                            throw new RuntimeException(e);
-//                                                                        } catch (InterruptedException e) {
-//                                                                            throw new RuntimeException(e);
-//                                                                        } catch (JSONException e) {
-//                                                                            throw new RuntimeException(e);
-//                                                                        }
-//                                                                    }
-//                                                                    cursor = StartActivity.database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-//                                                                    if (cursor.getCount() == 0) {
-//                                                                        Toast.makeText(OpenStreetMapActivity.this, "Формат вводу номера телефону: +380936665544. Спробуйте ще", Toast.LENGTH_SHORT).show();
-//                                                                        phoneNumber();
-//                                                                        cursor.close();
-//                                                                    }
-//
-//
-//                                                                }
-//                                                            }})
-//                                                        .setNegativeButton("Відміна", new DialogInterface.OnClickListener() {
-//                                                            @Override
-//                                                            public void onClick(DialogInterface dialog, int which) {
-////
-//                                                        }
-//                                                        })
-//                                                        .show();
-//                                            }
-//                                        } else {
-//
-//                                            String message = (String) sendUrlMapCost.get("message");
-//                                            new MaterialAlertDialogBuilder(OpenStreetMapActivity.this, R.style.AlertDialogTheme)
-//                                                    .setMessage(message +
-//                                                            " Спробуйте ще або зателефонуйте оператору.")
-//                                                    .setPositiveButton("Підтримка", new DialogInterface.OnClickListener() {
-//                                                        @Override
-//                                                        public void onClick(DialogInterface dialog, int which) {
-//                                                            Intent intent = new Intent(Intent.ACTION_CALL);
-//                                                            intent.setData(Uri.parse("tel:0934066749"));
-//                                                            if (ActivityCompat.checkSelfPermission(OpenStreetMapActivity.this,
-//                                                                    Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-//                                                                checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
-//                                                            }
-//                                                            else  startActivity(intent);
-//                                                        }
-//                                                    })
-//                                                    .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
-//                                                        @Override
-//                                                        public void onClick(DialogInterface dialog, int which) {
-//
-//                                                        }
-//                                                    })
-//                                                    .show();
-//                                        }
-//
-//                                    } catch (MalformedURLException e) {
-//                                        throw new RuntimeException(e);
-//                                    } catch (InterruptedException e) {
-//                                        throw new RuntimeException(e);
-//                                    } catch (JSONException e) {
-//                                        throw new RuntimeException(e);
-//                                    }
-//                                } else {
-//                                    Toast.makeText(OpenStreetMapActivity.this, "Вкажить місце відправлення", Toast.LENGTH_SHORT).show();
-//
-//                                }
-//                            }
-//                        }
-//                    })
-////                    .setNegativeButton("Мапа", new DialogInterface.OnClickListener() {
-////                        @Override
-////                        public void onClick(DialogInterface dialogInterface, int i) {
-////
-////                        }
-////                    })
-//                    .show();
-//        }
-//    }
+
     private void dialogFromToGeo() throws MalformedURLException, InterruptedException, JSONException {
 
         if(connected()) {
