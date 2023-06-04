@@ -103,7 +103,9 @@ public class FirebaseSignIn extends AppCompatActivity {
         if (result.getResultCode() == RESULT_OK) {
             // Successfully signed in
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-            Log.d("TAG", "onSignInResult: " + user.getEmail());
+            StartActivity.userEmail = user.getEmail();
+            StartActivity.displayName = user.getDisplayName();
+            Log.d("TAG", "onSignInResult: " + user.getEmail() + " " + user.getDisplayName());
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 Intent intent = new Intent(FirebaseSignIn.this, MainActivity.class);
                 startActivity(intent);

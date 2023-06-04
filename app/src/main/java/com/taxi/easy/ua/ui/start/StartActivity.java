@@ -74,7 +74,7 @@ public class StartActivity extends Activity {
     public static final int READ_CALL_PHONE = 0;
 
     Intent intent;
-
+    public static String userEmail, displayName;
 //    public static String[] arrayStreet = Odessa.street();
 //    public static String api = "apiTest";
 //    public static GeoPoint initialGeoPoint = new GeoPoint(46.4825, 30.7233); // Координаты Одесса

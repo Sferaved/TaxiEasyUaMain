@@ -648,7 +648,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
         if(urlAPI.equals("orderSearch")) {
             String phoneNumber = StartActivity.logCursor(StartActivity.TABLE_USER_INFO).get(1);
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber;
+            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + StartActivity.displayName + " (" + StartActivity.userEmail + ")";
         }
 
         // Building the url to the web service
@@ -678,7 +678,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
         if(urlAPI.equals("orderSearchGeo")) {
             String phoneNumber = StartActivity.logCursor(StartActivity.TABLE_USER_INFO).get(1);
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber;
+            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + StartActivity.displayName + " (" + StartActivity.userEmail + ")";
         }
 
         // Building the url to the web service
