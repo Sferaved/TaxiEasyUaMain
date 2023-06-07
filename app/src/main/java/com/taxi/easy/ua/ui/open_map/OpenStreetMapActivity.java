@@ -670,13 +670,21 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
         // Building the parameters to the web service
 
-        String parameters = str_origin + "/" + str_dest + "/" + tarif;
+        String parameters = null;
+        String phoneNumber = "no phone";
+        if(urlAPI.equals("costSearchGeo")) {
+            Cursor c = StartActivity.database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+
+            if (c.getCount() == 1) {
+                phoneNumber = StartActivity.logCursor(StartActivity.TABLE_USER_INFO).get(1);
+                c.close();
+            }
+            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + StartActivity.displayName + "(" + StartActivity.userEmail + ")";
+        }
 
         if(urlAPI.equals("orderSearchGeo")) {
-            String phoneNumber = StartActivity.logCursor(StartActivity.TABLE_USER_INFO).get(1);
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + StartActivity.displayName
-//                    + " (" + StartActivity.userEmail + ")"
-            ;
+            phoneNumber = StartActivity.logCursor(StartActivity.TABLE_USER_INFO).get(1);
+            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + StartActivity.displayName ;
         }
 
         // Building the url to the web service
