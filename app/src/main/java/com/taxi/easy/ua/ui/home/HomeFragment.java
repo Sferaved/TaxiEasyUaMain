@@ -118,7 +118,7 @@ public class HomeFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(Intent.ACTION_CALL);
-                intent.setData(Uri.parse("tel:0934066749"));
+                intent.setData(Uri.parse("tel:0674443804"));
                 if (ActivityCompat.checkSelfPermission(getActivity(),
                         Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                     checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
@@ -137,10 +137,13 @@ public class HomeFragment extends Fragment {
                         checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
                         checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
                     }
-                    if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                         Intent intent = new Intent(getActivity(), OpenStreetMapActivity.class);
                         startActivity(intent);
-                   }
+                    } else {
+                        Intent intent = new Intent(getActivity(), MainActivity.class);
+                        startActivity(intent);
+                    }
 
                 }
             }
@@ -357,7 +360,7 @@ public class HomeFragment extends Fragment {
                                                                 @Override
                                                                 public void onClick(DialogInterface dialog, int which) {
                                                                     Intent intent = new Intent(Intent.ACTION_CALL);
-                                                                    intent.setData(Uri.parse("tel:0934066749"));
+                                                                    intent.setData(Uri.parse("tel:0674443804"));
                                                                     if (ActivityCompat.checkSelfPermission(getActivity(),
                                                                             Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                                                                         checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
@@ -431,7 +434,7 @@ public class HomeFragment extends Fragment {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     Intent intent = new Intent(Intent.ACTION_CALL);
-                                    intent.setData(Uri.parse("tel:0934066749"));
+                                    intent.setData(Uri.parse("tel:0674443804"));
                                     if (ActivityCompat.checkSelfPermission(getActivity(),
                                             Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                                         checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
@@ -585,7 +588,17 @@ public class HomeFragment extends Fragment {
                                         Log.d("TAG", "onClick urlCost: " + urlCost);
                                         Map sendUrlMapCost = CostJSONParser.sendURL(urlCost);
 
+                                        String message = (String) sendUrlMapCost.get("message");
                                         String orderCost = (String) sendUrlMapCost.get("order_cost");
+                                        Log.d("TAG", "onClick orderCost : " + orderCost);
+
+                                        if (orderCost.equals("0")) {
+
+                                            Toast.makeText(getActivity(), "Помілка: " + message, Toast.LENGTH_SHORT).show();
+                                            Intent intent = new Intent(getActivity(), MainActivity.class);
+                                            startActivity(intent);
+                                        }
+
                                         Log.d("TAG", "onClick orderCost : " + orderCost);
 
                                         if (!orderCost.equals("0")) {
@@ -657,7 +670,7 @@ public class HomeFragment extends Fragment {
                                                                                     @Override
                                                                                     public void onClick(DialogInterface dialog, int which) {
                                                                                         Intent intent = new Intent(Intent.ACTION_CALL);
-                                                                                        intent.setData(Uri.parse("tel:0934066749"));
+                                                                                        intent.setData(Uri.parse("tel:0674443804"));
                                                                                         if (ActivityCompat.checkSelfPermission(getActivity(),
                                                                                                 Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                                                                                             checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
@@ -714,41 +727,7 @@ public class HomeFragment extends Fragment {
                                                     })
                                                     .show();
                                             }
-                                        } else {
-
-                                            String message = (String) sendUrlMapCost.get("message");
-                                            new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme)
-                                                    .setMessage(message +
-                                                            " Спробуйте ще або зателефонуйте оператору.")
-                                                    .setPositiveButton("Підтримка", new DialogInterface.OnClickListener() {
-                                                        @Override
-                                                        public void onClick(DialogInterface dialog, int which) {
-                                                            Intent intent = new Intent(Intent.ACTION_CALL);
-                                                            intent.setData(Uri.parse("tel:0934066749"));
-                                                            if (ActivityCompat.checkSelfPermission(getActivity(),
-                                                                    Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                                                                checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
-                                                            } else
-                                                                startActivity(intent);
-//                                                            button.setVisibility(View.VISIBLE);
-
-
-                                                        }
-                                                    })
-                                                    .setNegativeButton("Спробуйте ще", new DialogInterface.OnClickListener() {
-                                                        @Override
-                                                        public void onClick(DialogInterface dialog, int which) {
-                                                            if(connected()) {
-                                                                button.setVisibility(View.VISIBLE);
-                                                                getActivity().finish();
-//                                                                Intent intent = new Intent(getActivity(), MainActivity.class);
-//                                                                startActivity(intent);
-                                                            }
-                                                        }
-                                                    })
-                                                    .show();
                                         }
-
                                     } catch (MalformedURLException e) {
                                         throw new RuntimeException(e);
                                     } catch (InterruptedException e) {
@@ -808,7 +787,9 @@ public class HomeFragment extends Fragment {
 
         if(urlAPI.equals("orderSearch")) {
             String phoneNumber = StartActivity.logCursor(StartActivity.TABLE_USER_INFO).get(1);
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + StartActivity.displayName + " (" + StartActivity.userEmail + ")";
+            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + StartActivity.displayName
+//                    + " (" + StartActivity.userEmail + ")"
+            ;
         }
 
         // Building the url to the web service
@@ -934,7 +915,7 @@ public class HomeFragment extends Fragment {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
                                                     Intent intent = new Intent(Intent.ACTION_CALL);
-                                                    intent.setData(Uri.parse("tel:0934066749"));
+                                                    intent.setData(Uri.parse("tel:0674443804"));
                                                     if (ActivityCompat.checkSelfPermission(getActivity(),
                                                             Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                                                         checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);

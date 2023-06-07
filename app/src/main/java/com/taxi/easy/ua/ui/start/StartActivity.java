@@ -210,7 +210,7 @@ public class StartActivity extends Activity {
                 @Override
                 public void onClick(View v) {
                     Intent intent = new Intent(Intent.ACTION_CALL);
-                    intent.setData(Uri.parse("tel:0934066749"));
+                    intent.setData(Uri.parse("tel:0674443804"));
                     if (ActivityCompat.checkSelfPermission(StartActivity.this,
                             Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                         checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);

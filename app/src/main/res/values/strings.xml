@@ -1,5 +1,5 @@
 <resources>
-    <string name="version">Версія: 1.42</string>
+    <string name="version">Версія: 1.45</string>
 
     <string name="app_name">TaxiEasyUa</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
@@ -10,7 +10,7 @@
     <string name="action_settings">Налаштування</string>
 
     <string name="menu_maps">Мапа</string>
-    <string name="menu_home">Замовити</string>
+    <string name="menu_home">Маршрути</string>
     <string name="menu_gallery">Gallery</string>
     <string name="menu_slideshow">Slideshow</string>
     <string name="menu_about">Про додаток</string>
@@ -33,5 +33,6 @@
     <string name="my_phone">Мій телефон</string>
     <string name="open_maps">Замовити по мапе</string>
     <string name="driver">Робота водієм</string>
+    <string name="send_email">Поділитися</string>
 
 </resources>

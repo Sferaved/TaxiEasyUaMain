@@ -27,7 +27,7 @@ public class ToJSONParser {
 
     public static Map<String, String> sendURL(String urlString) throws MalformedURLException, InterruptedException, JSONException {
 
-        Log.d("TAG", "sendURL: " + urlString);
+        Log.d("TAG", "sendURL 1111: " + urlString);
         Map<String, String> costMap = new HashMap<>();
 
         URL url = new URL(urlString);
@@ -68,7 +68,7 @@ public class ToJSONParser {
              costMap.put("lng", jsonarray.getString("lng"));
 
          }else {
-             Log.d("TAG", "sendURL: " + jsonarray.getString("Message"));
+             Log.d("TAG", "sendURL 2222: " + jsonarray.getString("Message"));
              costMap.put("order_cost", "0");
              costMap.put("message", jsonarray.getString("Message"));
          }

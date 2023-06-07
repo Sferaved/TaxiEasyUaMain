@@ -106,6 +106,26 @@ public class MainActivity extends AppCompatActivity {
         if (item.getItemId() == R.id.action_exit) {
                 this.finish();
         }
+        if (item.getItemId() == R.id.send_email) {
+            String subject = "Андроїд-додаток для швидких та дешевих поїздок по Києву та області.";
+            String body = "Мої вітання. \n \n Знайшов чудовий додаток для поїздок на таксі. \n \n Раджу спробувати за посиланням в офіційному магазині Google: \n\n https://play.google.com/store/apps/details?id=com.taxieasyua.job \n\n Гарного дня. \n Ще побачимось.";
+
+            String[] CC = {""};
+            Intent emailIntent = new Intent(Intent.ACTION_SEND);
+
+            emailIntent.setData(Uri.parse("mailto:"));
+            emailIntent.setType("text/plain");
+            emailIntent.putExtra(Intent.EXTRA_CC, CC);
+            emailIntent.putExtra(Intent.EXTRA_SUBJECT, subject);
+            emailIntent.putExtra(Intent.EXTRA_TEXT, body);
+
+            try {
+                startActivity(Intent.createChooser(emailIntent, "Порадити другові додаток..."));
+            } catch (android.content.ActivityNotFoundException ex) {
+                Toast.makeText(this, "Поштовий клієнт не встановлено.", Toast.LENGTH_SHORT).show();
+            }
+
+        }
 
         return false;
     }
@@ -335,15 +355,13 @@ public class MainActivity extends AppCompatActivity {
     
     private String[] tariffs () {
         return new String[]{
-                "Базовый онлайн",
+                "Базовий онлайн",
                 "Базовый",
                 "Универсал",
                 "Бизнес-класс",
                 "Премиум-класс",
                 "Эконом-класс",
                 "Микроавтобус",
-                "Минивэн",
-
             };
     }
 
