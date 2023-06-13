@@ -2,9 +2,12 @@ package com.taxi.easy.ua.ui.start;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -29,10 +32,19 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 
+import org.json.JSONException;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+
+import javax.net.ssl.HttpsURLConnection;
 
 public class FirebaseSignIn extends AppCompatActivity {
 
@@ -94,39 +106,77 @@ public class FirebaseSignIn extends AppCompatActivity {
             new ActivityResultCallback<FirebaseAuthUIAuthenticationResult>() {
                 @Override
                 public void onActivityResult(FirebaseAuthUIAuthenticationResult result) {
-                    onSignInResult(result);
+                    try {
+                        onSignInResult(result);
+                    } catch (MalformedURLException | JSONException e) {
+                        throw new RuntimeException(e);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
     );
-    private void onSignInResult(FirebaseAuthUIAuthenticationResult result) {
+    private void onSignInResult(FirebaseAuthUIAuthenticationResult result) throws MalformedURLException, JSONException, InterruptedException {
         IdpResponse response = result.getIdpResponse();
         if (result.getResultCode() == RESULT_OK) {
             // Successfully signed in
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
             StartActivity.userEmail = user.getEmail();
             StartActivity.displayName = user.getDisplayName();
-            Log.d("TAG", "onSignInResult: " + user.getEmail() + " " + user.getDisplayName());
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                Intent intent = new Intent(FirebaseSignIn.this, MainActivity.class);
-                startActivity(intent);
-            } else {
-                Intent intent = new Intent(FirebaseSignIn.this, OpenStreetMapActivity.class);
-                startActivity(intent);
-            }
-            MainActivity.verifyOrder = true;
+
+            addUser();
+            if(blackList()) {
+                Log.d("TAG", "onSignInResult: " + user.getEmail() + " " + user.getDisplayName());
+                if(switchState()) {
+                    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        Intent intent = new Intent(FirebaseSignIn.this, MainActivity.class);
+                        startActivity(intent);
+                    } else {
+                        Intent intent = new Intent(FirebaseSignIn.this, OpenStreetMapActivity.class);
+                        startActivity(intent);
+                    }
+                } else {
+                    Intent intent = new Intent(FirebaseSignIn.this, MainActivity.class);
+                    startActivity(intent);
+                }
+                MainActivity.verifyOrder = true;
                 finish();
+
+            } else {
+                Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
+
+                MainActivity.verifyOrder = false;
+            }
         } else {
             // Sign in failed. If response is null the user canceled the
             // sign-in flow using the back button. Otherwise check
             // response.getError().getErrorCode() and handle the error.
             // ...
 
-            Toast.makeText(this, "Вибачте. Вхід до додатку заблоковано. Зверніться до оператора.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
 
             MainActivity.verifyOrder = false;
         }
     }
+    private boolean  switchState() {
+        LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        boolean gps_enabled = false;
+        boolean network_enabled = false;
 
+        try {
+            gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        } catch(Exception ex) {}
+
+        try {
+            network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch(Exception ex) {}
+
+        if(!gps_enabled || !network_enabled) {
+            return false;
+        } else
+
+            return true;
+    };
     public void checkPermission(String permission, int requestCode) {
         // Checking if permission is not granted
         if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) {
@@ -143,5 +193,45 @@ public class FirebaseSignIn extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
     }
+    private void addUser() throws MalformedURLException, JSONException, InterruptedException {
+        String urlString = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/addUser/" +  StartActivity.displayName + "/" + StartActivity.userEmail;
 
+        URL url = new URL(urlString);
+        Log.d("TAG", "sendURL: " + urlString);
+
+        AsyncTask.execute(() -> {
+            HttpsURLConnection urlConnection = null;
+            try {
+                urlConnection = (HttpsURLConnection) url.openConnection();
+                urlConnection.setDoInput(true);
+                urlConnection.getResponseCode();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            urlConnection.disconnect();
+        });
+
+
+
+    }
+
+    private boolean blackList() throws MalformedURLException, JSONException, InterruptedException {
+        String urlString = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/verifyBlackListUser/" +  StartActivity.userEmail;
+
+        Log.d("TAG", "onClick urlCost: " + urlString);
+
+        boolean result = false;
+        Map sendUrlMap = CostJSONParser.sendURL(urlString);
+
+        String message = (String) sendUrlMap.get("message");
+        Log.d("TAG", "onClick orderCost : " + message);
+
+        if (message.equals("Не черном списке")) {
+            result = true;
+        }
+        if (message.equals("В черном списке")) {
+            result = false;
+        }
+        return result;
+    }
 }

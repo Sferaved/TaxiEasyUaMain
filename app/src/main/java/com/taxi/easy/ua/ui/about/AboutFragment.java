@@ -7,12 +7,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.google.android.material.snackbar.Snackbar;
+import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentAboutBinding;
 
 public class AboutFragment extends Fragment {
@@ -30,8 +31,8 @@ public class AboutFragment extends Fragment {
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String subject = "Андроїд-додаток для швидких та дешевих поїздок по Києву та області.";
-                String body = "Мої вітання. \n \n Знайшов чудовий додаток для поїздок на таксі. \n \n Раджу спробувати за посиланням в офіційному магазині Google: \n\n https://play.google.com/store/apps/details?id=com.taxieasyua.job \n\n Гарного дня. \n Ще побачимось.";
+                String subject = getString(R.string.android);
+                String body = getString(R.string.good_day);
 
                 String[] CC = {""};
                 Intent emailIntent = new Intent(Intent.ACTION_SEND);
@@ -43,10 +44,9 @@ public class AboutFragment extends Fragment {
                 emailIntent.putExtra(Intent.EXTRA_TEXT, body);
 
                 try {
-                    startActivity(Intent.createChooser(emailIntent, "Порадити другові додаток..."));
+                    startActivity(Intent.createChooser(emailIntent, getString(R.string.share)));
                 } catch (android.content.ActivityNotFoundException ex) {
-                    Snackbar.make(view, "Поштовий клієнт не встановлено.", Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
+                    Toast.makeText(getActivity(), getString(R.string.no_email_agent), Toast.LENGTH_SHORT).show();
                 }
 
             }

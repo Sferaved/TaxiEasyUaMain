@@ -10,7 +10,7 @@
         android:id="@+id/imageView2"
         android:layout_width="87dp"
         android:layout_height="62dp"
-        android:src="@drawable/logo"
+        android:src="@mipmap/ic_launcher_round"
         app:layout_constraintTop_toTopOf="parent"
         tools:ignore="MissingConstraints"
         tools:layout_editor_absoluteX="1dp" />
@@ -21,7 +21,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:shadowColor="@color/colorPrimary"
-        android:text="підтвердити"
+        android:text="@string/choice_button"
         android:textColor="@color/colorYellow"
         android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
@@ -36,6 +36,15 @@
         app:layout_constraintTop_toBottomOf="@+id/btn_routs"
         tools:ignore="MissingConstraints"
         tools:layout_editor_absoluteX="1dp" />
+
+    <Switch
+        android:id="@+id/gpsSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="GPS"
+        android:layout_marginBottom="20sp"
+        app:layout_constraintBottom_toTopOf="@+id/fab_open_map"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_open_map"

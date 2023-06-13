@@ -190,56 +190,68 @@ public class StartActivity extends Activity {
     protected void onResume() {
         super.onResume();
 
-            fab = findViewById(R.id.fab);
-            btn_again = findViewById(R.id.btn_again);
+        fab = findViewById(R.id.fab);
+        btn_again = findViewById(R.id.btn_again);
 
-            intent = new Intent(this, MainActivity.class);
+        intent = new Intent(this, MainActivity.class);
 
         try {
             initDB();
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
+        } catch (MalformedURLException | JSONException | InterruptedException e) {
             throw new RuntimeException(e);
         }
 
 
-       fab.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent = new Intent(Intent.ACTION_CALL);
-                    intent.setData(Uri.parse("tel:0674443804"));
-                    if (ActivityCompat.checkSelfPermission(StartActivity.this,
-                            Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                        checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
-                    } else
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_CALL);
+                intent.setData(Uri.parse("tel:0674443804"));
+                if (ActivityCompat.checkSelfPermission(StartActivity.this,
+                        Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                    checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
                     startActivity(intent);
                 }
-            });
+                if (ActivityCompat.checkSelfPermission(StartActivity.this,
+                        Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                    startActivity(intent);
+                }
+
+            }
+        });
 
 
-       btn_again.setOnClickListener(new View.OnClickListener() {
-           @Override
-           public void onClick(View v) {
+        btn_again.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
 //               finish();
-               intent = new Intent(StartActivity.this, StartActivity.class);
-               startActivity(intent);
-           }
-       });
+                intent = new Intent(StartActivity.this, StartActivity.class);
+                startActivity(intent);
+            }
+        });
 
-       if(!hasConnection()) {
-           btn_again.setVisibility(View.VISIBLE);
-           Toast.makeText(StartActivity.this, "Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
-       } else {
+        if(!hasConnection()) {
+            btn_again.setVisibility(View.VISIBLE);
+            Toast.makeText(StartActivity.this, getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
+        } else {
 //           intent = new Intent(this, OpenStreetMapActivity.class);
-           intent = new Intent(this, FirebaseSignIn.class);
-           startActivity(intent);
 
-         Log.d("TAG", "onResume: "  + hasConnection());
+//           Log.d("TAG", "onResume Manifest.permission.ACCESS_FINE_LOCATION " + ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION));
+//           Log.d("TAG", "onResume Manifest.permission.ACCESS_COARSE_LOCATION " + ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION));
+//           if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//               Intent intent = new Intent(this, FirebaseSignIn.class);
+//               startActivity(intent);
+//           } else {
+//               Intent intent = new Intent(this, OpenStreetMapActivity.class);
+//               startActivity(intent);
+//           }
 
-       }
+            intent = new Intent(this, FirebaseSignIn.class);
+            startActivity(intent);
+
+            Log.d("TAG", "onResume: "  + hasConnection());
+
+        }
 
 
     }
@@ -293,7 +305,7 @@ public class StartActivity extends Activity {
             urlConnection.disconnect();
         });
 
-        StartActivity.ResultFromThread first = new ResultFromThread(exchanger);
+        ResultFromThread first = new ResultFromThread(exchanger);
 
         return first.message;
     }
@@ -379,7 +391,7 @@ public class StartActivity extends Activity {
         Cursor cursor_from = database.query(TABLE_ORDERS_INFO,
                 null, selection, selectionArgs, null, null, null);
         Log.d("TAG", "insertRecordsOrders: cursor_from.getCount()" + cursor_from.getCount());
-                selection = "to_street = ?";
+        selection = "to_street = ?";
         selectionArgs = new String[] {to};
 
         Cursor cursor_to = database.query(TABLE_ORDERS_INFO,
@@ -549,8 +561,8 @@ public class StartActivity extends Activity {
         @SuppressLint({"MissingInflatedId", "LocalSuppress"})
         EditText code = view.findViewById(R.id.code);
 
-        builder.setTitle("Код перевіркі зі смс-повідомлення")
-                .setPositiveButton("Відправити", new DialogInterface.OnClickListener() {
+        builder.setTitle(getString(R.string.sms_code))
+                .setPositiveButton(getString(R.string.sent_button), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         String urlCost = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/approvedPhones/" + phoneNumber + "/" + code.getText();
@@ -577,7 +589,7 @@ public class StartActivity extends Activity {
                         }
                     }
                 })
-               .show();
+                .show();
 
     }
 

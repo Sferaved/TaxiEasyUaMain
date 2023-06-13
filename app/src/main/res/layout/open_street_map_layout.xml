@@ -10,8 +10,8 @@
         android:id="@+id/map"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:layout_editor_absoluteX="42dp"
-        tools:layout_editor_absoluteY="0dp">
+        tools:layout_editor_absoluteX="30dp"
+        tools:layout_editor_absoluteY="41dp">
 
 
     </org.osmdroid.views.MapView>
@@ -28,6 +28,17 @@
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@android:drawable/ic_menu_info_details"
         tools:ignore="MissingConstraints" />
+
+
+    <Switch
+        android:id="@+id/gpsSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="GPS"
+        android:layout_marginBottom="20sp"
+        app:layout_constraintBottom_toTopOf="@+id/fab_open_map"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_open_map"
         android:layout_width="wrap_content"

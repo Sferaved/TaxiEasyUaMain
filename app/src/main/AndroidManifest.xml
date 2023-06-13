@@ -62,8 +62,10 @@
             android:label="@string/app_name"
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar" />
         <activity android:name=".ui.start.FirebaseSignIn"
+            android:theme="@style/Theme.TaxiEasyUa.NoActionBar"
             android:exported="true"/>
         <activity android:name=".ui.open_map.OpenStreetMapActivity"
+            android:theme="@style/Theme.TaxiEasyUa.NoActionBar"
             android:exported="true"/>
 
         <receiver android:name=".NetworkChangeReceiver" />

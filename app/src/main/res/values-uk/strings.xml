@@ -1,0 +1,85 @@
+<resources>
+    <string name="version">Версія: 1.47</string>
+
+    <string name="app_name">Таксі Київ</string>
+    <string name="back4app_server_url">https://parseapi.back4app.com/</string>
+    <string name="back4app_app_id">01YGF894m3NJRXT1BlH6qPo9pUfDlG9sqi9K9mIL</string>
+    <string name="back4app_client_key">T5f5GuT1UCmaiJn8Dek3sVmayGuJa2jfelQR6V6f</string>
+
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Таксі Київ заказ онлайн Лайт</string>
+    <string name="nav_header_subtitle">Швидкі поїздки по Києву та області</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Налаштування</string>
+
+    <string name="menu_maps">Мапа</string>
+    <string name="menu_home">Маршрути</string>
+    <string name="menu_gallery">Gallery</string>
+    <string name="menu_slideshow">Slideshow</string>
+    <string name="menu_about">Про додаток</string>
+    <string name="title_activity_login">LoginActivity</string>
+    <string name="prompt_email">Email</string>
+    <string name="prompt_password">Password</string>
+    <string name="action_sign_in">Sign in or register</string>
+    <string name="action_sign_in_short">Sign in</string>
+    <string name="welcome">"Welcome !"</string>
+    <string name="invalid_username">Not a valid username</string>
+    <string name="invalid_password">Password must be >5 characters</string>
+    <string name="login_failed">"Login failed"</string>
+    <string name="action_exit">Вихід</string>
+    <string name="delete_record">видалити?</string>
+    <string name="make_rout">Створити маршрут</string>
+    <string name="call_admin">Дзвонок оператору</string>
+    <string name="email_friend">Розповісти другові</string>
+    <!--    <string name="default_web_client_id">356539267738-5bs72asrar11ud7ckcis68ophlnm3gfj.apps.googleusercontent.com</string>-->
+    <!--<string name="default_web_client_id">356539267738-0v3d1nsci9g7fij8cemnlid7cfalvdo2.apps.googleusercontent.com</string>-->
+    <string name="my_phone">Мій телефон</string>
+    <string name="open_maps">Замовити по мапе</string>
+    <string name="driver">Робота водієм</string>
+    <string name="send_email">Поділитися</string>
+    <string name="gps_ok">У Вас все добре</string>
+    <string name="cancel_button">Ні, дякую</string>
+    <string name="gps_on">Увімкнути</string>
+    <string name="gps_info">Щоб покращити роботу програми, увімкніть на пристрої геолокацію Google</string>
+    <string name="gps_on_button">включить gps</string>
+    <string name="wellcome">Ласкаво просимо. Сформуйте маршрут або виберіть улюблений.</string>
+    <string name="verify_phone">Перевірка телефону</string>
+    <string name="format_phone">Формат вводу номера телефону: +380936665544</string>
+    <string name="sent_button">Відправити</string>
+    <string name="verify_internet">Перевірте інтернет-підключення або зателефонуйте оператору.</string>
+    <string name="save_button">Зберегти</string>
+    <string name="you_this">"Ви зараз тут: "</string>
+    <string name="make_rout_message">Сформуйте маршрут</string>
+    <string name="error_message">"Помілка: "</string>
+    <string name="to_point">"Місце призначення: "</string>
+    <string name="cost_of_order">"Вартість поїздки: "</string>
+    <string name="firebase_false_message">грн. Вибачте, без перевірки Google-акаунту замовлення не можливе. Спробуйте знову.</string>
+    <string name="UAH">грн</string>
+    <string name="order">Замовити</string>
+    <string name="thanks_message">"Дякуемо за замовлення зі "</string>
+    <string name="call_of_order">" Очикуйте дзвонка оператора. Вартість поїздки: "</string>
+    <string name="next_try">" Спробуйте ще або зателефонуйте оператору."</string>
+    <string name="help">Підтримка</string>
+    <string name="show_to_point">Вкажіть місце призначення</string>
+    <string name="change">ЗМІНИТИ</string>
+    <string name="on_city">" по місту."</string>
+    <string name="help_button">Підтримка</string>
+    <string name="try_again">Спробуйте ще</string>
+    <string name="ok_button">Ок</string>
+    <string name="to_message">" до "</string>
+    <string name="rout_from_message">Вкажить місце відправлення</string>
+    <string name="routs_button">Маршрути</string>
+    <string name="old_routs_message">Обирайте зі списку попередніх поїздок</string>
+    <string name="firebase_error">Вибачте. Вхід до додатку заблоковано. Зверніться до оператора.</string>
+    <string name="choice_button">підтвердити</string>
+    <string name="to_edit">Куди</string>
+    <string name="from_edit">Звідки</string>
+    <string name="sms_code">Код перевіркі зі смс-повідомлення</string>
+    <string name="android">Андроїд-додаток для швидких та дешевих поїздок по Києву та області.</string>
+    <string name="good_day">Мої вітання. \n \n Знайшов чудовий додаток для поїздок на таксі. \n \n Раджу спробувати за посиланням в офіційному магазині Google: \n\n https://play.google.com/store/apps/details?id=com.taxi.easy.ua \n\n Гарного дня. \n Ще побачимось.</string>
+    <string name="share">Порадити другові додаток...</string>
+    <string name="no_email_agent">Поштовий клієнт не встановлено.</string>
+    <string name="check_position">Чекайте, відбувається визначення Вашого розташування...</string>
+</resources>

@@ -19,7 +19,7 @@ public class NetworkChangeReceiver extends BroadcastReceiver {
 
         if (!isConnected) {
             // Устройство подключено к интернету
-            Toast.makeText(context, "Немає підключення до Інтернету", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, R.string.verify_internet, Toast.LENGTH_SHORT).show();
         }
     }
 }

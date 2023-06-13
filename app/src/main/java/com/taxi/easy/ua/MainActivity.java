@@ -1,5 +1,11 @@
 package com.taxi.easy.ua;
 
+import static com.taxi.easy.ua.R.string.cancel_button;
+import static com.taxi.easy.ua.R.string.format_phone;
+import static com.taxi.easy.ua.R.string.verify_internet;
+import static com.taxi.easy.ua.R.string.verify_phone;
+
+
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
@@ -8,10 +14,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -46,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
     NetworkChangeReceiver networkChangeReceiver;
-    public static boolean verifyOrder;
+    public static boolean verifyOrder = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -73,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
 
         networkChangeReceiver = new NetworkChangeReceiver();
 
-        Toast.makeText(this, "Ласкаво просимо. Сформуйте маршрут або виберіть улюблений.", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, getString(R.string.wellcome), Toast.LENGTH_LONG).show();
     }
 
     @Override
@@ -94,21 +102,24 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if(item.getItemId() == R.id.action_settings) {
-           settings();
+            settings();
         }
         if (item.getItemId() == R.id.phone_settings) {
-                phoneNumberChange();
+            phoneNumberChange();
         }
         if (item.getItemId() == R.id.nav_driver) {
             Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.taxieasyua.job"));
             startActivity(browserIntent);
         }
         if (item.getItemId() == R.id.action_exit) {
-                this.finish();
+            this.finish();
+        }
+        if (item.getItemId() == R.id.gps) {
+            eventGps(this);
         }
         if (item.getItemId() == R.id.send_email) {
-            String subject = "Андроїд-додаток для швидких та дешевих поїздок по Києву та області.";
-            String body = "Мої вітання. \n \n Знайшов чудовий додаток для поїздок на таксі. \n \n Раджу спробувати за посиланням в офіційному магазині Google: \n\n https://play.google.com/store/apps/details?id=com.taxieasyua.job \n\n Гарного дня. \n Ще побачимось.";
+            String subject = getString(R.string.android);
+            String body = getString(R.string.good_day);
 
             String[] CC = {""};
             Intent emailIntent = new Intent(Intent.ACTION_SEND);
@@ -120,16 +131,46 @@ public class MainActivity extends AppCompatActivity {
             emailIntent.putExtra(Intent.EXTRA_TEXT, body);
 
             try {
-                startActivity(Intent.createChooser(emailIntent, "Порадити другові додаток..."));
+                startActivity(Intent.createChooser(emailIntent, getString(R.string.share)));
             } catch (android.content.ActivityNotFoundException ex) {
-                Toast.makeText(this, "Поштовий клієнт не встановлено.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.no_email_agent), Toast.LENGTH_SHORT).show();
             }
 
         }
 
         return false;
     }
+    public static void eventGps(Context context) {
+        LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        boolean gps_enabled = false;
+        boolean network_enabled = false;
 
+        try {
+            gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        } catch(Exception ex) {}
+
+        try {
+            network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch(Exception ex) {}
+
+        Log.d("TAG", "onOptionsItemSelected gps_enabled: " + gps_enabled);
+        Log.d("TAG", "onOptionsItemSelected network_enabled: " + network_enabled);
+        if(!gps_enabled || !network_enabled) {
+            // notify user
+            new MaterialAlertDialogBuilder(context, R.style.AlertDialogTheme)
+                    .setMessage(R.string.gps_info)
+                    .setPositiveButton(R.string.gps_on, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                            context.startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                        }
+                    })
+                    .setNegativeButton(R.string.cancel_button,null)
+                    .show();
+        } else {
+            Toast.makeText(context, context.getString(R.string.gps_ok), Toast.LENGTH_SHORT).show();
+        }
+    }
     public void phoneNumberChange() {
 
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);
@@ -150,37 +191,37 @@ public class MainActivity extends AppCompatActivity {
 
 
 //        String result = phoneNumber.getText().toString();
-        builder.setTitle("Перевірка телефону")
-                .setPositiveButton("Змінити", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        if(connected()) {
-                            Log.d("TAG", "onClick befor validate: ");
-                            String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
-                            boolean val = Pattern.compile(PHONE_PATTERN).matcher(phoneNumber.getText().toString()).matches();
-                            Log.d("TAG", "onClick No validate: " + val);
-                            if (val == false) {
-                                Toast.makeText(MainActivity.this, "Формат вводу номера телефону: +380936665544" , Toast.LENGTH_SHORT).show();
-                                Log.d("TAG", "onClick:phoneNumber.getText().toString() " + phoneNumber.getText().toString());
+            builder.setTitle(verify_phone)
+                    .setPositiveButton("Змінити", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            if(connected()) {
+                                Log.d("TAG", "onClick befor validate: ");
+                                String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
+                                boolean val = Pattern.compile(PHONE_PATTERN).matcher(phoneNumber.getText().toString()).matches();
+                                Log.d("TAG", "onClick No validate: " + val);
+                                if (val == false) {
+                                    Toast.makeText(MainActivity.this, getString(R.string.format_phone) , Toast.LENGTH_SHORT).show();
+                                    Log.d("TAG", "onClick:phoneNumber.getText().toString() " + phoneNumber.getText().toString());
 
-                            } else {
-                                StartActivity.updateRecordsUser(phoneNumber.getText().toString());
+                                } else {
+                                    StartActivity.updateRecordsUser(phoneNumber.getText().toString());
+                                }
                             }
                         }
-                    }
-                }).setNegativeButton("Відміна", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        Intent intent = new Intent(MainActivity.this, MainActivity.class);
-                        startActivity(intent);
-                    }
-                })
-                .show();
+                    }).setNegativeButton(cancel_button, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            Intent intent = new Intent(MainActivity.this, MainActivity.class);
+                            startActivity(intent);
+                        }
+                    })
+                    .show();
         } else {
             getPhoneNumber ();
             Cursor cursor = StartActivity.database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
             if (cursor.getCount() == 0) {
-                Toast.makeText(MainActivity.this, "Формат вводу номера телефону: +380936665544", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, format_phone, Toast.LENGTH_SHORT).show();
                 phoneNumber();
                 cursor.close();
             }
@@ -203,7 +244,7 @@ public class MainActivity extends AppCompatActivity {
             boolean val = Pattern.compile(PHONE_PATTERN).matcher(mPhoneNumber).matches();
             Log.d("TAG", "onClick No validate: " + val);
             if (val == false) {
-                Toast.makeText(this, "Формат вводу номера телефону: +380936665544" , Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, format_phone , Toast.LENGTH_SHORT).show();
                 Log.d("TAG", "onClick:phoneNumber.getText().toString() " + mPhoneNumber);
 //                getActivity().finish();
 
@@ -236,8 +277,8 @@ public class MainActivity extends AppCompatActivity {
 
 
 //        String result = phoneNumber.getText().toString();
-        builder.setTitle("Перевірка телефону")
-                .setPositiveButton("Відправити", new DialogInterface.OnClickListener() {
+        builder.setTitle(verify_phone)
+                .setPositiveButton(getString(R.string.sent_button), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         if(connected()) {
@@ -246,7 +287,7 @@ public class MainActivity extends AppCompatActivity {
                             boolean val = Pattern.compile(PHONE_PATTERN).matcher(phoneNumber.getText().toString()).matches();
                             Log.d("TAG", "onClick No validate: " + val);
                             if (val == false) {
-                                Toast.makeText(MainActivity.this, "Формат вводу номера телефону: +380936665544" , Toast.LENGTH_SHORT).show();
+                                Toast.makeText(MainActivity.this, format_phone , Toast.LENGTH_SHORT).show();
                                 Log.d("TAG", "onClick:phoneNumber.getText().toString() " + phoneNumber.getText().toString());
                                 MainActivity.this.finish();
 
@@ -282,7 +323,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (!hasConnect) {
-            Toast.makeText(this, "Перевірте інтернет-підключення або зателефонуйте оператору.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, verify_internet, Toast.LENGTH_LONG).show();
         }
         Log.d("TAG", "connected: " + hasConnect);
         return hasConnect;
@@ -313,7 +354,7 @@ public class MainActivity extends AppCompatActivity {
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-               tariff = tariffArr[position];
+                tariff = tariffArr[position];
             }
 
             @Override
@@ -328,31 +369,31 @@ public class MainActivity extends AppCompatActivity {
 
 
         builder.setView(view)
-                        .setPositiveButton("Зберегти", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                ContentValues cv = new ContentValues();
-                                cv.put("tarif", tariff);
+                .setPositiveButton(getString(R.string.save_button), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        ContentValues cv = new ContentValues();
+                        cv.put("tarif", tariff);
 
-                                // обновляем по id
-                                StartActivity.database.update(StartActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                                        new String[] { "1" });
-                                Log.d("TAG", "onClick: " + StartActivity.logCursor(StartActivity.TABLE_SETTINGS_INFO));
-                                Intent intent =  new Intent(MainActivity.this, MainActivity.class);
-                                startActivity(intent);
+                        // обновляем по id
+                        StartActivity.database.update(StartActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                                new String[] { "1" });
+                        Log.d("TAG", "onClick: " + StartActivity.logCursor(StartActivity.TABLE_SETTINGS_INFO));
+                        Intent intent =  new Intent(MainActivity.this, MainActivity.class);
+                        startActivity(intent);
 
-                           }
-                        }).setNegativeButton("Відміна", new DialogInterface.OnClickListener() {
-                                 @Override
-                                 public void onClick(DialogInterface dialog, int which) {
-                                     Intent intent =  new Intent(MainActivity.this, MainActivity.class);
-                                     startActivity(intent);
-                                 }
-                             })
+                    }
+                }).setNegativeButton(getString(cancel_button), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Intent intent =  new Intent(MainActivity.this, MainActivity.class);
+                        startActivity(intent);
+                    }
+                })
 
-                        .show();
+                .show();
     }
-    
+
     private String[] tariffs () {
         return new String[]{
                 "Базовий онлайн",
@@ -362,7 +403,7 @@ public class MainActivity extends AppCompatActivity {
                 "Премиум-класс",
                 "Эконом-класс",
                 "Микроавтобус",
-            };
+        };
     }
 
     @Override
