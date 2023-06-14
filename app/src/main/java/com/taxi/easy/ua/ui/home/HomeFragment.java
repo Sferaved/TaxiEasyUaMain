@@ -246,10 +246,16 @@ public class HomeFragment extends Fragment {
         if(routMaps.size() != 0) {
             arrayRouts = new String[routMaps.size()];
             for (int i = 0; i < routMaps.size(); i++) {
-                arrayRouts[i] = routMaps.get(i).get("from_street").toString() + " " +
-                        routMaps.get(i).get("from_number").toString() + " -> " +
-                        routMaps.get(i).get("to_street").toString() + " " +
-                        routMaps.get(i).get("to_number").toString();
+                if(!routMaps.get(i).get("from_street").toString().equals(routMaps.get(i).get("to_street").toString())) {
+                    arrayRouts[i] = routMaps.get(i).get("from_street").toString() + " " +
+                            routMaps.get(i).get("from_number").toString() + " -> " +
+                            routMaps.get(i).get("to_street").toString() + " " +
+                            routMaps.get(i).get("to_number").toString();
+                } else {
+                    arrayRouts[i] = routMaps.get(i).get("from_street").toString() + " " +
+                            routMaps.get(i).get("from_number").toString() + " -> " +
+                            getString(R.string.on_city);
+                }
 
             }
         } else {
