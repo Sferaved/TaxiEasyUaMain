@@ -27,7 +27,7 @@ public class ToJSONParser {
 
     public static Map<String, String> sendURL(String urlString) throws MalformedURLException, InterruptedException, JSONException {
 
-        Log.d("TAG", "sendURL 1111: " + urlString);
+        Log.d("TAG", "sendURL ToJson: " + urlString);
         Map<String, String> costMap = new HashMap<>();
 
         URL url = new URL(urlString);
@@ -53,25 +53,36 @@ public class ToJSONParser {
             urlConnection.disconnect();
         });
 
-        ToJSONParser.ResultFromThread first = new ResultFromThread(exchanger);
+        ResultFromThread first = new ResultFromThread(exchanger);
 
         JSONObject jsonarray = new JSONObject(first.message);
-
+        Log.d("TAG", "sendURL jsonarray: " + jsonarray);
          if(!jsonarray.getString("order_cost").equals("0")) {
+             costMap.put("lat", jsonarray.getString("lat"));
+             costMap.put("lng", jsonarray.getString("lng"));
              costMap.put("dispatching_order_uid", jsonarray.getString("dispatching_order_uid"));
              costMap.put("order_cost", jsonarray.getString("order_cost"));
              costMap.put("add_cost", jsonarray.getString("add_cost"));
              costMap.put("recommended_add_cost", jsonarray.getString("recommended_add_cost"));
              costMap.put("currency", jsonarray.getString("currency"));
              costMap.put("discount_trip", jsonarray.getString("discount_trip"));
-             costMap.put("lat", jsonarray.getString("lat"));
-             costMap.put("lng", jsonarray.getString("lng"));
 
-         }else {
-             Log.d("TAG", "sendURL 2222: " + jsonarray.getString("Message"));
+             costMap.put("routefrom", jsonarray.getString("routefrom"));
+             costMap.put("routefromnumber", jsonarray.getString("routefromnumber"));
+
+             costMap.put("routeto", jsonarray.getString("routeto"));
+             costMap.put("to_number", jsonarray.getString("to_number"));
+
+
+
+
+         }
+         if(jsonarray.getString("order_cost").equals("0")) {
+             Log.d("TAG", "sendURL: " + jsonarray.getString("Message"));
              costMap.put("order_cost", "0");
              costMap.put("message", jsonarray.getString("Message"));
          }
+        Log.d("TAG", "sendURL to Json costMap: " + costMap);
             return costMap;
 
     }

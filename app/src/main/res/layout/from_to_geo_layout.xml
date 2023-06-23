@@ -19,22 +19,45 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <CheckBox
+        android:id="@+id/on_city"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="28dp"
+        app:layout_constraintBottom_toTopOf="@+id/text_to"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.501"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text_from"
+        app:layout_constraintVertical_bias="0.0" />
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="48dp"
+        android:layout_marginBottom="20dp"
+        android:text="@string/on_city_tv"
+        app:layout_constraintBottom_toTopOf="@+id/text_to"
+        app:layout_constraintStart_toStartOf="@+id/on_city"
+        tools:ignore="MissingConstraints" />
+
     <AutoCompleteTextView
         android:id="@+id/text_to"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
 
-        android:lines="3"
-        android:minLines="1"
-        android:gravity="top|left"
-        android:maxLines="3"
-        android:inputType="textMultiLine"
         android:layout_marginHorizontal="10sp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="52dp"
         android:backgroundTint="@color/colorAccent"
         android:dropDownSelector="@color/teal_200"
+        android:gravity="top|left"
         android:hint="@string/to_edit"
+        android:inputType="textMultiLine"
+        android:lines="2"
+        android:maxLines="2"
 
+        android:minLines="2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.842"
         app:layout_constraintStart_toStartOf="parent"
@@ -45,7 +68,7 @@
         android:id="@+id/to_number"
         android:layout_width="50sp"
         android:layout_height="50sp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="8dp"
         android:gravity="center"
         android:text=" "
         android:visibility="invisible"
@@ -53,7 +76,6 @@
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/text_to" />
-
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline2"

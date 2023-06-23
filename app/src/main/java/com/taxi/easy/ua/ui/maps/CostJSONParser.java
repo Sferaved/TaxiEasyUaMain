@@ -53,7 +53,7 @@ public class CostJSONParser {
             urlConnection.disconnect();
         });
 
-        CostJSONParser.ResultFromThread first = new ResultFromThread(exchanger);
+        ResultFromThread first = new ResultFromThread(exchanger);
 
         JSONObject jsonarray = new JSONObject(first.message);
 

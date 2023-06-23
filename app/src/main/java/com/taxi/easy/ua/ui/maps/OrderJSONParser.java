@@ -27,7 +27,7 @@ public class OrderJSONParser {
 
     public static Map<String, String> sendURL(String urlString) throws MalformedURLException, InterruptedException, JSONException {
         URL url = new URL(urlString);
-        Log.d("TAG", "sendURL: " + urlString);
+        Log.d("TAG", "sendURL++++: " + urlString);
         Map<String, String> costMap = new HashMap<>();
         Exchanger<String> exchanger = new Exchanger<>();
 
@@ -38,22 +38,19 @@ public class OrderJSONParser {
                 urlConnection.setDoInput(true);
                 if (urlConnection.getResponseCode() == 200) {
                     InputStream in = new BufferedInputStream(urlConnection.getInputStream());
-                    exchanger.exchange(convertStreamToString(in));
-                } else {
 
+                    exchanger.exchange(convertStreamToString(in));
                 }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            } catch (InterruptedException e) {
+            } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
             urlConnection.disconnect();
         });
 
-        OrderJSONParser.ResultFromThread first = new ResultFromThread(exchanger);
+        ResultFromThread first = new ResultFromThread(exchanger);
 
         JSONObject jsonarray = new JSONObject(first.message);
-
+        Log.d("TAG", "sendURL jsonarray: " + jsonarray.toString());
          if(!jsonarray.getString("order_cost").equals("0")) {
              costMap.put("dispatching_order_uid", jsonarray.getString("dispatching_order_uid"));
              costMap.put("discount_trip", jsonarray.getString("discount_trip"));
@@ -72,8 +69,12 @@ public class OrderJSONParser {
 
              costMap.put("from_name", from.getString("name"));
 
-             JSONObject to = new JSONObject(costMap.get("route_address_to"));
-             costMap.put("to_name", to.getString("name"));
+            if(costMap.get("route_address_to") != null){
+                         JSONObject to = new JSONObject(costMap.get("route_address_to"));
+                         costMap.put("to_name", to.getString("name"));
+            } else {
+                costMap.put("to_name", " ");
+            }
 
          } else {
              costMap.put("order_cost", "0");

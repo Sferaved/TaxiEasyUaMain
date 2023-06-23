@@ -19,8 +19,11 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -77,7 +80,7 @@ public class StartActivity extends Activity {
 //    public static String[] arrayStreet = Odessa.street();
 //    public static String api = "apiTest";
 //    public static GeoPoint initialGeoPoint = new GeoPoint(46.4825, 30.7233); // Координаты Одесса
-    public static String api = "api";
+    public static String api = "api149";
 
     public static GeoPoint initialGeoPoint = new GeoPoint(50.4501, 30.5234); // Координаты Киева
 
@@ -169,6 +172,15 @@ public class StartActivity extends Activity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.start_layout);
+        ImageView mImageView = findViewById(R.id.imageView2);
+        Animation sunRiseAnimation = AnimationUtils.loadAnimation(this, R.anim.sun_rise);
+        // Подключаем анимацию к нужному View
+        mImageView.startAnimation(sunRiseAnimation);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+//            return;
+        }
     }
 
     @SuppressLint("SuspiciousIndentation")
@@ -191,18 +203,9 @@ public class StartActivity extends Activity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_CALL);
+                Intent intent = new Intent(Intent.ACTION_DIAL);
                 intent.setData(Uri.parse("tel:0674443804"));
-                if (ActivityCompat.checkSelfPermission(StartActivity.this,
-                        Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                    checkPermission(Manifest.permission.CALL_PHONE, StartActivity.READ_CALL_PHONE);
-                    startActivity(intent);
-                }
-                if (ActivityCompat.checkSelfPermission(StartActivity.this,
-                        Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
-                    startActivity(intent);
-                }
-
+                startActivity(intent);
             }
         });
 
@@ -220,21 +223,13 @@ public class StartActivity extends Activity {
             btn_again.setVisibility(View.VISIBLE);
             Toast.makeText(StartActivity.this, getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
         } else {
-//           intent = new Intent(this, OpenStreetMapActivity.class);
-
-//           Log.d("TAG", "onResume Manifest.permission.ACCESS_FINE_LOCATION " + ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION));
-//           Log.d("TAG", "onResume Manifest.permission.ACCESS_COARSE_LOCATION " + ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION));
-//           if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//               Intent intent = new Intent(this, FirebaseSignIn.class);
-//               startActivity(intent);
-//           } else {
-//               Intent intent = new Intent(this, OpenStreetMapActivity.class);
-//               startActivity(intent);
-//           }
-
+            try {
+                startIp();
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
             intent = new Intent(this, FirebaseSignIn.class);
             startActivity(intent);
-
             Log.d("TAG", "onResume: "  + hasConnection());
 
         }
@@ -259,7 +254,24 @@ public class StartActivity extends Activity {
 
         return false;
     }
+    public void startIp() throws MalformedURLException {
+        String urlString = "https://m.easy-order-taxi.site/" +  StartActivity.api + "/android/startIP";
+        Log.d("TAG", "startIp: " + urlString);
+        URL url = new URL(urlString);
 
+        AsyncTask.execute(() -> {
+            HttpsURLConnection urlConnection = null;
+            try {
+                urlConnection = (HttpsURLConnection) url.openConnection();
+                urlConnection.setDoInput(true);
+                urlConnection.getResponseCode();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            urlConnection.disconnect();
+        });
+
+    }
     public static String verifyConnection(String urlString) throws MalformedURLException, InterruptedException {
 
         URL url = new URL(urlString);
