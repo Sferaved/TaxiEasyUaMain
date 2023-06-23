@@ -25,7 +25,7 @@
         android:lines="2"
         android:maxLines="2"
         android:minLines="2"
-
+        android:completionThreshold="4"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
@@ -79,7 +79,7 @@
         android:lines="2"
         android:maxLines="2"
         android:minLines="2"
-
+        android:completionThreshold="4"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.473"
         app:layout_constraintStart_toStartOf="parent"
