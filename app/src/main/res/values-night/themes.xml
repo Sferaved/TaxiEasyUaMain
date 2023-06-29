@@ -1,8 +1,8 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.TaxiEasyUa" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+    <style name="Theme.TaxiEasyUaBack4App" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
         <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/purple_200</item>
+        <item name="colorPrimary">@color/black</item>
         <item name="colorPrimaryVariant">@color/purple_700</item>
         <item name="colorOnPrimary">@color/black</item>
         <!-- Secondary brand color. -->
@@ -10,31 +10,32 @@
         <item name="colorSecondaryVariant">@color/teal_200</item>
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
-<!--        <item name="android:statusBarColor" tools:targetApi="21">?attr/colorPrimaryVariant</item>-->
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
+
     </style>
 
-    <style name="Theme.TaxiEasyUa.NoActionBar">
+
+    <style name="Theme.TaxiEasyUaBack4App.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <item name="colorPrimary">@color/black</item>
-        <item name="colorPrimaryVariant">@color/black</item>
-        <item name="colorOnPrimary">@color/white</item>
-
-        <!--        <item name="android:windowTranslucentNavigation">true</item>-->
-        <!--        <item name="android:fitsSystemWindows">true</item>-->
-        <!--        <item name="android:clipToPadding">false</item>-->
+        <!--                <item name="android:windowTranslucentNavigation">true</item>-->
+        <!--                <item name="android:fitsSystemWindows">true</item>-->
+        <!--                <item name="android:clipToPadding">false</item>-->
     </style>
 
     <style name="Theme.TaxiEasyUa.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" >
         <item name="android:textColor">@android:color/white</item>
+
     </style>
 
-    <style name="Theme.TaxiEasyUa.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+    <style name="Theme.TaxiEasyUa.PopupOverlay" parent="ThemeOverlay.AppCompat.Light"  >
+    </style>
 
     <style name="AlertDialogTheme">
         <item name="buttonBarPositiveButtonStyle">@style/Alert.Button.Positive</item>
         <item name="buttonBarNeutralButtonStyle">@style/Alert.Button.Neutral</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Alert.Button.Negative</item>
     </style>
 
     <style name="Alert.Button.Positive" parent="Widget.MaterialComponents.Button.TextButton">
@@ -48,8 +49,19 @@
     <style name="Alert.Button.Neutral" parent="Widget.MaterialComponents.Button.TextButton">
         <item name="backgroundTint">@android:color/transparent</item>
         <item name="rippleColor">@color/colorAccent</item>
-        <item name="android:textColor">@android:color/darker_gray</item>
+        <item name="android:textColor">@android:color/white</item>
         <item name="android:textSize">14sp</item>
+    </style>
+    <style name="Alert.Button.Negative" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="backgroundTint">@android:color/transparent</item>
+        <item name="rippleColor">@color/colorAccent</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="LeftNavigation">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="itemTextColor">@color/colorAccent</item>
     </style>
 
 </resources>

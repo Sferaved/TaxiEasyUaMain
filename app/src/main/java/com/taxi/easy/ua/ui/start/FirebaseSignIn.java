@@ -58,6 +58,7 @@ public class FirebaseSignIn extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.start_layout);
+        Toast.makeText(this, R.string.check_message, Toast.LENGTH_LONG).show();
         ImageView mImageView = findViewById(R.id.imageView2);
         Animation sunRiseAnimation = AnimationUtils.loadAnimation(this, R.anim.sun_rise);
         // Подключаем анимацию к нужному View

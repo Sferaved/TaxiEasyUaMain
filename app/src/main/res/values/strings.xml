@@ -1,5 +1,5 @@
 <resources>
-    <string name="version">Версия: 1.50</string>
+    <string name="version">Версия: 1.53</string>
 
     <string name="app_name">Такси Киев</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -55,10 +55,10 @@
     <string name="error_message">"Ошибка: "</string>
     <string name="to_point">"Место назначения: "</string>
     <string name="cost_of_order">"Стоимость поездки: "</string>
-    <string name="firebase_false_message">грн. Извините, без проверки Google-аккаунта заказ невозможен. Попробуйте снова.</string>
+    <string name="firebase_false_message">грн. Извините, без проверки Google-аккаунта заказ невозможен.</string>
     <string name="UAH">грн</string>
     <string name="order">Заказать</string>
-    <string name="thanks_message">"Спасибо за заказ с "</string>
+    <string name="thanks_message">"Спасибо за заказ "</string>
     <string name="call_of_order">" Ожидайте звонка оператора. Стоимость поездки: "</string>
     <string name="next_try">" Попробуйте еще или позвоните оператору."</string>
     <string name="help">Поддержка</string>
@@ -69,11 +69,11 @@
     <string name="help_button">Поддержка</string>
     <string name="try_again">Попробуйте еще</string>
     <string name="ok_button">Ок</string>
-    <string name="to_message">" к "</string>
+    <string name="to_message">" -> "</string>
     <string name="rout_from_message">Укажите место отправки</string>
     <string name="routs_button">Маршруты</string>
     <string name="old_routs_message">Выбирайте из списка предыдущих поездок</string>
-    <string name="firebase_error">Извините. Вход в приложение заблокирован. Обратитесь к оператору.</string>
+    <string name="firebase_error">Извините. Вход заблокирован. Обратитесь к оператору.</string>
     <string name="choice_button">подтвердить</string>
     <string name="to_edit">Куда</string>
     <string name="from_edit">Откуда</string>
@@ -86,4 +86,8 @@
     <string name="my_adresses">Избранные</string>
     <string name="make_order_message">Совершите хотя бы одну поездку</string>
     <string name="to_adress_message">Куда едем?</string>
+    <string name="coastMarkersMessage">"Стоимость поездки до "</string>
+    <string name="please_phone_message">Без информации о номере телефона заказ невозможен</string>
+    <string name="check_message">Ожидайте, идет подключение...</string>
+    <string name="find_of_map">Попробуйте найти на карте</string>
 </resources>

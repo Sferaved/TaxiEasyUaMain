@@ -46,7 +46,6 @@
         android:id="@+id/text_to"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-
         android:layout_marginHorizontal="10sp"
         android:layout_marginTop="52dp"
         android:backgroundTint="@color/colorAccent"
@@ -54,11 +53,10 @@
         android:gravity="top|left"
         android:hint="@string/to_edit"
         android:inputType="textMultiLine"
-        android:lines="2"
-        android:maxLines="2"
+        android:lines="3"
+        android:maxLines="3"
 
-        android:minLines="2"
-        android:completionThreshold="4"
+        android:minLines="1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.842"
         app:layout_constraintStart_toStartOf="parent"
