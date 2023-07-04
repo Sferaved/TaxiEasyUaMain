@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -63,7 +64,6 @@ public class FirebaseSignIn extends AppCompatActivity {
         Animation sunRiseAnimation = AnimationUtils.loadAnimation(this, R.anim.sun_rise);
         // Подключаем анимацию к нужному View
         mImageView.startAnimation(sunRiseAnimation);
-
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
             checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
@@ -84,15 +84,28 @@ public class FirebaseSignIn extends AppCompatActivity {
             @SuppressLint("SuspiciousIndentation")
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_DIAL);
+                Intent intent = new Intent(Intent.ACTION_CALL);
                 intent.setData(Uri.parse("tel:0674443804"));
-                startActivity(intent);
+                if (ActivityCompat.checkSelfPermission(FirebaseSignIn.this,
+                        Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                    checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
+                } else
+                    startActivity(intent);
             }
         });
 
 
+        Configuration config = getResources().getConfiguration();
+
+        Log.d("TAG", "onCreate: config = " + config.getLocales().get(0) );
+
+
+
+        // Установка языка локализации для Firebase
+
 
         FirebaseApp.initializeApp(this);
+
 // Choose authentication providers
         List<AuthUI.IdpConfig> providers = Arrays.asList(
                 new AuthUI.IdpConfig.GoogleBuilder().build());
@@ -112,17 +125,23 @@ public class FirebaseSignIn extends AppCompatActivity {
                 public void onActivityResult(FirebaseAuthUIAuthenticationResult result) {
                     try {
                         onSignInResult(result);
-                    } catch (MalformedURLException | JSONException e) {
-                        throw new RuntimeException(e);
-                    } catch (InterruptedException e) {
+                    } catch (MalformedURLException | JSONException | InterruptedException e) {
                         throw new RuntimeException(e);
                     }
                 }
             }
     );
     private void onSignInResult(FirebaseAuthUIAuthenticationResult result) throws MalformedURLException, JSONException, InterruptedException {
+//        Configuration config = getResources().getConfiguration();
+//        Locale locale = new Locale("en"); // Код языка локализации
+//        config.setLocale(locale);
+//        getResources().updateConfiguration(config, getResources().getDisplayMetrics());
+//        Log.d("TAG", "onSignInResult: config = " + config.getLocales().get(0) );
+        MainActivity.verifyOrder = false;
         IdpResponse response = result.getIdpResponse();
-        if (result.getResultCode() == RESULT_OK) {
+        Log.d("TAG", "onSignInResult: response.toString() " + response.toString());
+
+        if (result.getResultCode() == RESULT_OK && response != null) {
             // Successfully signed in
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
             StartActivity.userEmail = user.getEmail();
@@ -156,10 +175,10 @@ public class FirebaseSignIn extends AppCompatActivity {
             // sign-in flow using the back button. Otherwise check
             // response.getError().getErrorCode() and handle the error.
             // ...
-
             Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
+            finish();
 
-            MainActivity.verifyOrder = false;
+
         }
     }
     private boolean  switchState() {

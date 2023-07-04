@@ -27,9 +27,10 @@ public class MarkerOverlay extends Overlay {
             mapView.getOverlays().remove(marker);
         }
 
-        GeoPoint point = (GeoPoint) mapView.getProjection().fromPixels((int) event.getX(), (int) event.getY());
 
         OpenStreetMapActivity.endPoint = (GeoPoint) mapView.getProjection().fromPixels((int) event.getX(), (int) event.getY());
+        String target = OpenStreetMapActivity.epm;
+        OpenStreetMapActivity.setMarker(OpenStreetMapActivity.endPoint.getLatitude(), OpenStreetMapActivity.endPoint.getLongitude(), target);
         try {
             OpenStreetMapActivity.dialogMarkers();
         } catch (MalformedURLException | JSONException | InterruptedException e) {

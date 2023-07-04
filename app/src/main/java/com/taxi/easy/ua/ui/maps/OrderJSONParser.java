@@ -52,14 +52,21 @@ public class OrderJSONParser {
         JSONObject jsonarray = new JSONObject(first.message);
         Log.d("TAG", "sendURL jsonarray: " + jsonarray.toString());
          if(!jsonarray.getString("order_cost").equals("0")) {
+             costMap.put("from_lat", jsonarray.getString("lat"));
+             costMap.put("from_lng", jsonarray.getString("lng"));
+
+             costMap.put("lat", jsonarray.getString("lat"));
+             costMap.put("lng", jsonarray.getString("lng"));
+
+
              costMap.put("dispatching_order_uid", jsonarray.getString("dispatching_order_uid"));
              costMap.put("discount_trip", jsonarray.getString("discount_trip"));
-             costMap.put("find_car_timeout", jsonarray.getString("find_car_timeout"));
-             costMap.put("find_car_delay", jsonarray.getString("find_car_delay"));
+//             costMap.put("find_car_timeout", jsonarray.getString("find_car_timeout"));
+//             costMap.put("find_car_delay", jsonarray.getString("find_car_delay"));
              costMap.put("order_cost", jsonarray.getString("order_cost"));
              costMap.put("currency", jsonarray.getString("currency"));
-             costMap.put("route_address_from", jsonarray.getString("route_address_from"));
-             costMap.put("route_address_to", jsonarray.getString("route_address_to"));
+//             costMap.put("route_address_from", jsonarray.getString("route_address_from"));
+//             costMap.put("route_address_to", jsonarray.getString("route_address_to"));
 
 
              costMap.put("routefrom", jsonarray.getString("routefrom"));

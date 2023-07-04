@@ -8,13 +8,13 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
+
     <color name="background">#FF3700B3</color>
     <color name="text">#FFFFFFFF</color>
     <color name="colorAccent">#FF03DAC5</color>
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorYellow">#FFEB3B</color>
-
-
-
+    <color name="default_text_color">#6C6767</color>
+    <color name="selected_text_color">#FF0000</color>
 </resources>

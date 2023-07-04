@@ -1,5 +1,5 @@
 <resources>
-    <string name="version">Версія: 1.53</string>
+    <string name="version">Версія: 1.54</string>
 
     <string name="app_name">Таксі Київ</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -82,12 +82,15 @@
     <string name="good_day">Мої вітання. \n \n Знайшов чудовий додаток для поїздок на таксі. \n \n Раджу спробувати за посиланням в офіційному магазині Google: \n\n https://play.google.com/store/apps/details?id=com.taxi.easy.ua \n\n Гарного дня. \n Ще побачимось.</string>
     <string name="share">Порадити другові додаток...</string>
     <string name="no_email_agent">Поштовий клієнт не встановлено.</string>
-    <string name="check_position">Чекайте, відбувається визначення Вашого розташування...</string>
+    <string name="check_position">Зачекайте, відбувається визначення Вашого розташування...</string>
     <string name="my_adresses">Обрані</string>
     <string name="make_order_message">Здійсніть хоча б одну поїздку</string>
     <string name="to_adress_message">Куди їдемо?</string>
-    <string name="coastMarkersMessage">"Вартість подорожі до "</string>
+    <string name="coastMarkersMessage">"Вартість подорожі по маршруту "</string>
     <string name="please_phone_message">Без інформації про номер телефону замовлення неможливе</string>
     <string name="check_message">Чекайте, йде підключення.</string>
     <string name="find_of_map">Спробуйте знайти на карті</string>
+    <string name="end_point_marker">Місце призначення</string>
+    <string name="error_firebase_start">Помилка перевірки. Наберіть оператора.</string>
+    <string name="address_error_message">Помилка введення адреси</string>
 </resources>
