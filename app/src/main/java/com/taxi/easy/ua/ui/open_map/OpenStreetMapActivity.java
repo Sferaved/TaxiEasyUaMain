@@ -1170,7 +1170,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                                 try {
 
                                     String urlCost = OpenStreetMapActivity.getTaxiUrlSearchMarkers(startPoint.getLatitude(), startPoint.getLongitude(),
-                                            to_lat, to_lng, "orderSearchMarkers");
+                                            to_lat, to_lng, "costSearchMarkers");
 
                                     Map<String, String> sendUrlMapCost = ToJSONParser.sendURL(urlCost);
 
@@ -1351,9 +1351,10 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         if(routMaps.size() != 0) {
 
             for (int j = 0; j < routMaps.size(); j++) {
-                if(!routMaps.get(j).get("from_street").toString().equals(routMaps.get(j).get("to_street").toString())) {
-
-                    if(!routMaps.get(j).get("from_street").toString().equals("Місце призначення"))
+                if(!routMaps.get(j).get("from_lat").toString().equals(routMaps.get(j).get("to_lat").toString())) {
+                    if(!routMaps.get(j).get("from_street").toString().equals("Місце призначення") &&
+                            !routMaps.get(j).get("from_street").toString().equals(routMaps.get(j).get("from_lat").toString()) &&
+                            !routMaps.get(j).get("from_street").toString().equals(routMaps.get(j).get("from_number").toString()))
                     {
                         adressMap = new HashMap<>();
                         adressMap.put("street", routMaps.get(j).get("from_street").toString());
@@ -1362,7 +1363,9 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                         adressMap.put("to_lng", routMaps.get(j).get("from_lng").toString());
                         adressArrLoc.add(k++, adressMap);
                     }
-                    if(!routMaps.get(j).get("to_street").toString().equals("Місце призначення"))
+                    if(!routMaps.get(j).get("to_street").toString().equals("Місце призначення")&&
+                            !routMaps.get(j).get("to_street").toString().equals(routMaps.get(j).get("to_lat").toString()) &&
+                            !routMaps.get(j).get("to_street").toString().equals(routMaps.get(j).get("to_number").toString()))
                     {
                         adressMap = new HashMap<>();
                         adressMap.put("street", routMaps.get(j).get("to_street").toString());
