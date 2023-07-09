@@ -66,6 +66,7 @@ public class StartActivity extends Activity {
     public static final String TABLE_USER_INFO = "userInfo";
     public static final String TABLE_SETTINGS_INFO = "settingsInfo";
     public static final String TABLE_ORDERS_INFO = "ordersInfo";
+    public static final String TABLE_SERVICE_INFO = "serviceInfo";
 
     public static SQLiteDatabase database;
     public static Cursor cursorDb;
@@ -80,7 +81,7 @@ public class StartActivity extends Activity {
 //    public static String[] arrayStreet = Odessa.street();
 //    public static String api = "apiTest";
 //    public static GeoPoint initialGeoPoint = new GeoPoint(46.4825, 30.7233); // Координаты Одесса
-    public static String api = "api154";
+    public static String api = "api157";
 
     public static GeoPoint initialGeoPoint = new GeoPoint(50.4501, 30.5234); // Координаты Киева
 
@@ -333,7 +334,6 @@ public class StartActivity extends Activity {
                 " to_number text," +
                 " to_lat text," +
                 " to_lng text);");
-
         cursorDb = database.query(TABLE_SETTINGS_INFO, null, null, null, null, null, null);
         if (cursorDb.getCount() == 0) {
             List<String> settings = new ArrayList<>();
@@ -345,6 +345,29 @@ public class StartActivity extends Activity {
         } else {
             Log.d("TAG", "initDB:" + logCursor(TABLE_SETTINGS_INFO));
         }
+        database.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_SERVICE_INFO + "(id integer primary key autoincrement," +
+                " BAGGAGE text," +
+                " ANIMAL text," +
+                " CONDIT text," +
+                " MEET text," +
+                " COURIER text," +
+                " TERMINAL text," +
+                " CHECK_OUT text," +
+                " BABY_SEAT text," +
+                " DRIVER text," +
+                " NO_SMOKE text," +
+                " ENGLISH text," +
+                " CABLE text," +
+                " FUEL text," +
+                " WIRES text," +
+                " SMOKE text);");
+        cursorDb = database.query(TABLE_SERVICE_INFO, null, null, null, null, null, null);
+        if (cursorDb.getCount() == 0) {
+            insertServices();
+        } else {
+            Log.d("TAG", "initDB:" + logCursor(TABLE_SERVICE_INFO));
+        }
+
 
     }
 
@@ -356,6 +379,35 @@ public class StartActivity extends Activity {
             statement.clearBindings();
             statement.bindString(2, settings.get(0));
             statement.bindString(3, settings.get(1));
+
+            statement.execute();
+            database.setTransactionSuccessful();
+
+        } finally {
+            database.endTransaction();
+        }
+    }
+    private void insertServices() {
+        String sql = "INSERT INTO " + TABLE_SERVICE_INFO + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
+        SQLiteStatement statement = database.compileStatement(sql);
+        database.beginTransaction();
+        try {
+            statement.clearBindings();
+            statement.bindString(2, "0");
+            statement.bindString(3, "0");
+            statement.bindString(4, "0");
+            statement.bindString(5, "0");
+            statement.bindString(6, "0");
+            statement.bindString(7, "0");
+            statement.bindString(8, "0");
+            statement.bindString(9, "0");
+            statement.bindString(10,"0");
+            statement.bindString(11,"0");
+            statement.bindString(12,"0");
+            statement.bindString(13,"0");
+            statement.bindString(14,"0");
+            statement.bindString(15,"0");
+            statement.bindString(16,"0");
 
             statement.execute();
             database.setTransactionSuccessful();

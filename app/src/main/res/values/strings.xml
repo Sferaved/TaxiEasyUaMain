@@ -1,5 +1,5 @@
 <resources>
-    <string name="version">Версия: 1.56</string>
+    <string name="version">Версия: 1.57</string>
 
     <string name="app_name">Такси Киев</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -93,4 +93,23 @@
     <string name="end_point_marker">Место назначения</string>
     <string name="error_firebase_start">Ошибка проверки. Наберите оператора.</string>
     <string name="address_error_message">Ошибка ввода адреса</string>
+
+
+
+
+    <string name="BAGGAGE">Загрузка салона</string>
+    <string name="ANIMAL">Животное</string>,
+    <string name="CONDIT">Кондиционер</string>
+    <string name="MEET">Встреча с табличкой</string>
+    <string name="COURIER">Курьер. доставка</string>
+    <string name="TERMINAL">Терминал</string>
+    <string name="CHECK">Чек</string>
+    <string name="BABY_SEAT">Детское кресло</string>
+    <string name="DRIVER">Драйвер</string>
+    <string name="NO_SMOKE">Некурящий водитель</string>
+    <string name="ENGLISH">Англоговорящий водитель</string>
+    <string name="CABLE">Трос</string>
+    <string name="FUEL">Подвоз бензина</string>
+    <string name="WIRES">Провода</string>
+    <string name="SMOKE">Я буду курить</string>
 </resources>

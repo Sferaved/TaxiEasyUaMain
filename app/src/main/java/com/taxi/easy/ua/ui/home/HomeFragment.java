@@ -1,7 +1,8 @@
 package com.taxi.easy.ua.ui.home;
 
 import static android.graphics.Color.RED;
-import static com.taxi.easy.ua.ui.start.StartActivity.READ_CALL_PHONE;
+
+import static com.taxi.easy.ua.R.string.address_error_message;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -61,6 +62,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -105,6 +107,7 @@ public class HomeFragment extends Fragment {
 
         if(connected()) {
             array = arrayToRoutsAdapter();
+
             try {
                 dialogFromTo();
 
@@ -356,6 +359,7 @@ public class HomeFragment extends Fragment {
             String orderCost = (String) sendUrlMapCost.get("order_cost");
 
             GeoPoint startPoint = new GeoPoint(from_lat, to_lat);
+            Log.d("TAG", "dialogFromToOneRout orderCost: " + orderCost);
             if (orderCost.equals("0")) {
                 OpenStreetMapActivity.coastOfRoad(startPoint, message);
             }
@@ -463,6 +467,7 @@ public class HomeFragment extends Fragment {
 
             MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme);
             LayoutInflater inflater = getActivity().getLayoutInflater();
+
             View view = inflater.inflate(R.layout.from_to_layout, null);
             builder.setView(view);
 
@@ -524,7 +529,7 @@ public class HomeFragment extends Fragment {
                             Toast.makeText(getActivity(), R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
                         } else if (orderCost.equals("400")) {
                             text_from.setTextColor(RED);
-                            Toast.makeText(getActivity(), R.string.address_error_message, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getActivity(), address_error_message, Toast.LENGTH_SHORT).show();
                         } else if (orderCost.equals("1")) {
                             from_number.setVisibility(View.VISIBLE);
                             from_number.requestFocus();
@@ -559,7 +564,7 @@ public class HomeFragment extends Fragment {
                             Toast.makeText(getActivity(), R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
                         } else if (orderCost.equals("400")) {
                             text_to.setTextColor(RED);
-                            Toast.makeText(getActivity(), R.string.address_error_message, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getActivity(), address_error_message, Toast.LENGTH_SHORT).show();
                         } else if (orderCost.equals("1")) {
                             to_number.setVisibility(View.VISIBLE);
                             to_number.requestFocus();
@@ -758,14 +763,8 @@ public class HomeFragment extends Fragment {
                     .setNegativeButton( getString(R.string.routs_button), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
-                            if(connected()) {
-                                if (array != null) {
-                                    Log.d("TAG", "onClick: btnRouts " + array.length);
-                                    listView.setItemChecked(0, true);
-                                    button.setVisibility(View.VISIBLE);
-                                    Toast.makeText(getActivity(), getString(R.string.old_routs_message), Toast.LENGTH_SHORT).show();
-                                }
-                            }
+
+//                            ItemListDialogFragment.newInstance(10).show(requireActivity().getSupportFragmentManager(), "dialog");
                         }
                     })
                     .show();
@@ -804,8 +803,36 @@ public class HomeFragment extends Fragment {
         }
 
         // Building the url to the web service
+// Building the url to the web service
+        List<String> services = StartActivity.logCursor(StartActivity.TABLE_SERVICE_INFO);
+        List<String> servicesChecked = new ArrayList<>();
+        String result;
+        boolean servicesVer = false;
+        for (int i = 1; i <= 15 ; i++) {
+            if(services.get(i).equals("1")) {
+                servicesVer = true;
+                break;
+            }
+        }
+        if(servicesVer) {
+            for (int i = 0; i < MyBottomSheetDialogFragment.arrayServiceCode.length; i++) {
+                if(services.get(i+1).equals("1")) {
+                    servicesChecked.add(MyBottomSheetDialogFragment.arrayServiceCode[i]);
+                }
+            }
+            for (int i = 0; i < servicesChecked.size(); i++) {
+                if(servicesChecked.get(i).equals("CHECK_OUT")) {
+                    servicesChecked.set(i, "CHECK");
+                }
+            }
+            result = String.join("*", servicesChecked);
+            Log.d("TAG", "getTaxiUrlSearchGeo result:" + result + "/");
+        } else {
+            result = "no_extra_charge_codes";
+        }
 
-        String url = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/" + urlAPI + "/" + parameters;
+        String url = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/" + urlAPI + "/" + parameters + "/" + result;
+
         Log.d("TAG", "getTaxiUrlSearch: " + url);
 
 
