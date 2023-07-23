@@ -119,10 +119,31 @@ public class HomeFragment extends Fragment {
             from = OpenStreetMapActivity.from_name;
         }
         from_number = binding.fromNumber;
-        if((OpenStreetMapActivity.from_house != null) && !OpenStreetMapActivity.from_house.equals("house")) {
-            from_number.setVisibility(View.VISIBLE);
-            from_number.setText(OpenStreetMapActivity.from_house);
 
+        if((OpenStreetMapActivity.from_house != null) && !OpenStreetMapActivity.from_house.equals("house")) {
+            String url = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/autocompleteSearchComboHid/" + from;
+
+            Map sendUrlMapCost = null;
+            try {
+                sendUrlMapCost = ResultSONParser.sendURL(url);
+            } catch (MalformedURLException | InterruptedException | JSONException e) {
+                Toast.makeText(getActivity(), R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
+            }
+
+            String orderCost = (String) sendUrlMapCost.get("message");
+            if (orderCost.equals("200")) {
+                Toast.makeText(getActivity(), R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
+            } else if (orderCost.equals("400")) {
+                textViewFrom.setTextColor(RED);
+                Toast.makeText(getActivity(), address_error_message, Toast.LENGTH_SHORT).show();
+            } else if (orderCost.equals("1")) {
+                from_number.setVisibility(View.VISIBLE);
+                from_number.setText(OpenStreetMapActivity.from_house);
+                from_number.requestFocus();
+            } else if (orderCost.equals("0")) {
+                from_number.setText(" ");
+                from_number.setVisibility(View.INVISIBLE);
+            }
         }
         textViewFrom.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @SuppressLint("ResourceAsColor")

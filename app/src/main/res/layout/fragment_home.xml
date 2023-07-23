@@ -9,7 +9,7 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent">
 
         <TextView
             android:id="@+id/num1"
@@ -262,13 +262,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
-            android:layout_marginBottom="30sp"
+            android:layout_marginTop="28dp"
             android:contentDescription="@string/call_admin"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.962"
+            app:layout_constraintHorizontal_bias="0.991"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/mapbut"
             app:layout_constraintVertical_bias="1.0"
             app:srcCompat="@android:drawable/stat_sys_phone_call_forward" />
 

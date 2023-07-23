@@ -64,7 +64,7 @@ import java.util.concurrent.Exchanger;
 import javax.net.ssl.HttpsURLConnection;
 
 public class StartActivity extends Activity {
-    public static final String DB_NAME = "data_21072023_1";
+    public static final String DB_NAME = "data_23072023_1";
     public static final String TABLE_USER_INFO = "userInfo";
     public static final String TABLE_SETTINGS_INFO = "settingsInfo";
     public static final String TABLE_ORDERS_INFO = "ordersInfo";
@@ -501,7 +501,7 @@ public class StartActivity extends Activity {
         if (cursorDb.getCount() == 0) {
             List<String> settings = new ArrayList<>();
             settings.add("usually");
-            settings.add("Базовый");
+            settings.add("Базовий онлайн");
             insertFirstSettings(settings);
             if (cursorDb != null && !cursorDb.isClosed())
                 cursorDb.close();
