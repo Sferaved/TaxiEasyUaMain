@@ -1,5 +1,6 @@
 <resources>
-    <string name="version">Версия: 1.57</string>
+    <string name="version_code">Версия: 1.600</string>
+    <string name="version">Версия: 1.600</string>
 
     <string name="app_name">Такси Киев</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -15,8 +16,8 @@
     <string name="action_settings">Настройки</string>
 
     <string name="menu_maps">Карта</string>
-    <string name="menu_home">Маршруты</string>
-    <string name="menu_gallery">Gallery</string>
+    <string name="menu_home">По адресам</string>
+    <string name="menu_gallery">Мои маршрути</string>
     <string name="menu_slideshow">Slideshow</string>
     <string name="menu_about">О приложении</string>
     <string name="title_activity_login">LoginActivity</string>
@@ -67,7 +68,7 @@
     <string name="on_city">" по городу."</string>
     <string name="on_city_tv">" по городу"</string>
     <string name="help_button">Поддержка</string>
-    <string name="try_again">Попробуйте еще</string>
+    <string name="try_again">Заново</string>
     <string name="ok_button">Ок</string>
     <string name="to_message">" -> "</string>
     <string name="rout_from_message">Укажите место отправки</string>
@@ -109,7 +110,32 @@
     <string name="NO_SMOKE">Некурящий водитель</string>
     <string name="ENGLISH">Англоговорящий водитель</string>
     <string name="CABLE">Трос</string>
-    <string name="FUEL">Подвоз бензина</string>
+    <string name="FUEL">Подвоз топлива</string>
     <string name="WIRES">Провода</string>
     <string name="SMOKE">Я буду курить</string>
+    <string name="add_services">Дополнительно</string>
+    <string name="time_limit">Превышение времени выполнения</string>
+    <string name="slow_internet">Низкая скорость интернета</string>
+    <string name="update_message">Необходимо провести обновление</string>
+    <string name="update_url">Обновить приложение</string>
+    <string name="new_version">Доступна новая версия</string>
+    <string name="news_of_version">В новой версии улучшена производительность и добавлены новые удобные функции</string>
+    <string name="Street_hint">Улица</string>
+    <string name="gps">GPS</string>
+    <string name="btn_cost">Подтвердить</string>
+    <string name="texthist">Предыдущие адреса</string>
+    <string name="routs">Быстрый заказ</string>
+    <string name="on_map">По карте</string>
+    <string name="add_cost_message">Увеличьте стоимость поездки для более быстрого поиска машины</string>
+    <string name="from_text">Откуда</string>
+    <string name="to_text">Куда</string>
+    <string name="serve">Подача</string>
+    <string name="coment">Комментарий</string>
+    <string name="services">УСЛУГИ</string>
+    <string name="resettimetoorder">Измените дату или время для предварительного заказа</string>
+    <string name="my_routs">Отметьте маршруты для удаления</string>
+    <string name="no_routs">Нет маршрутов</string>
+    <string name="cheng">Изменить</string>
+    <string name="delete_routs">удалить выбранные маршруты</string>
+
 </resources>

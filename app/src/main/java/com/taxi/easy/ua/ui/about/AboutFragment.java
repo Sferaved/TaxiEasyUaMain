@@ -16,6 +16,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentAboutBinding;
 
+
 public class AboutFragment extends Fragment {
 
     private FragmentAboutBinding binding;

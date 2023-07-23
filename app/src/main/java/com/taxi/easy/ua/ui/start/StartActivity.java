@@ -3,10 +3,13 @@ package com.taxi.easy.ua.ui.start;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -17,12 +20,10 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -31,12 +32,12 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.maps.Kyiv1;
 import com.taxi.easy.ua.ui.maps.Kyiv10;
+import com.taxi.easy.ua.ui.maps.Kyiv11;
 import com.taxi.easy.ua.ui.maps.Kyiv2;
 import com.taxi.easy.ua.ui.maps.Kyiv3;
 import com.taxi.easy.ua.ui.maps.Kyiv4;
@@ -51,6 +52,7 @@ import org.osmdroid.util.GeoPoint;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -62,17 +64,16 @@ import java.util.concurrent.Exchanger;
 import javax.net.ssl.HttpsURLConnection;
 
 public class StartActivity extends Activity {
-    private static final String DB_NAME = "data_04042023_1";
+    public static final String DB_NAME = "data_21072023_1";
     public static final String TABLE_USER_INFO = "userInfo";
     public static final String TABLE_SETTINGS_INFO = "settingsInfo";
     public static final String TABLE_ORDERS_INFO = "ordersInfo";
     public static final String TABLE_SERVICE_INFO = "serviceInfo";
+    public static final String TABLE_ADD_SERVICE_INFO = "serviceAddInfo";
 
     public static SQLiteDatabase database;
     public static Cursor cursorDb;
-    static FloatingActionButton fab;
-
-    Button btn_again;
+    static FloatingActionButton fab, btn_again;
 
     public static final int READ_CALL_PHONE = 0;
 
@@ -81,7 +82,7 @@ public class StartActivity extends Activity {
 //    public static String[] arrayStreet = Odessa.street();
 //    public static String api = "apiTest";
 //    public static GeoPoint initialGeoPoint = new GeoPoint(46.4825, 30.7233); // Координаты Одесса
-    public static String api = "api157";
+    public static String api = "api160";
 
     public static GeoPoint initialGeoPoint = new GeoPoint(50.4501, 30.5234); // Координаты Киева
 
@@ -94,7 +95,8 @@ public class StartActivity extends Activity {
             Kyiv7.street(),
             Kyiv8.street(),
             Kyiv9.street(),
-            Kyiv10.street());
+            Kyiv10.street(),
+            Kyiv11.street());
 
 
     public static String[] join(String[] a1,
@@ -106,7 +108,8 @@ public class StartActivity extends Activity {
                                 String [] a7,
                                 String [] a8,
                                 String [] a9,
-                                String [] a10
+                                String [] a10,
+                                String [] a11
     )
     {
         String [] c = new String[a1.length +
@@ -118,7 +121,8 @@ public class StartActivity extends Activity {
                 a7.length +
                 a8.length +
                 a9.length +
-                a10.length];
+                a10.length +
+                a11.length];
 
         System.arraycopy(a1, 0, c, 0, a1.length);
         System.arraycopy(a2, 0, c, a1.length, a2.length);
@@ -166,29 +170,130 @@ public class StartActivity extends Activity {
                 + a7.length
                 + a8.length
                 + a9.length, a10.length);
+        System.arraycopy(a11, 0, c, a1.length
+                + a2.length
+                + a3.length
+                + a4.length
+                + a5.length
+                + a6.length
+                + a7.length
+                + a8.length
+                + a9.length
+                + a10.length, a11.length);
 
         return c;
     }
+
+
+    public String[]    arrayServiceCode() {
+            return new String[]{
+                "BAGGAGE",
+                "ANIMAL",
+                "CONDIT",
+                "MEET",
+                "COURIER",
+                "TERMINAL",
+                "CHECK_OUT",
+                "BABY_SEAT",
+                "DRIVER",
+                "NO_SMOKE",
+                "ENGLISH",
+                "CABLE",
+                "FUEL",
+                "WIRES",
+                "SMOKE",
+        };
+    }
+    public static long addCost, cost;
+    public static boolean verifyPhone;
+    Button try_again_button;
+    private BroadcastReceiver connectivityReceiver;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.start_layout);
-        ImageView mImageView = findViewById(R.id.imageView2);
-        Animation sunRiseAnimation = AnimationUtils.loadAnimation(this, R.anim.sun_rise);
-        // Подключаем анимацию к нужному View
-        mImageView.startAnimation(sunRiseAnimation);
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+        } else {
+            setContentView(R.layout.start_layout);
+            try_again_button = findViewById(R.id.try_again_button);
+            try_again_button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    startActivity(new Intent(StartActivity.this, StartActivity.class));
+                }
+            });
+        }
+
+
+
+
 
     }
 
+    // Создаем метод для установки повторяющегося будильника
+    private void setRepeatingAlarm() {
+        // Получаем системный сервис AlarmManager
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+
+        // Создаем намерение для запуска StartActivity
+        Intent intent = new Intent(this, StartActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+
+        // Устанавливаем повторяющийся будильник с интервалом 60 секунд
+        long intervalMillis = 60 * 1000; // 60 секунд
+        long triggerTimeMillis = System.currentTimeMillis() + intervalMillis;
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, triggerTimeMillis, intervalMillis, pendingIntent);
+
+        // Проверяем наличие интернет-соединения
+        connectivityReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (hasConnectionAlarm()) {
+                    // Если есть подключение к интернету, отменяем повторяющийся будильник
+                    alarmManager.cancel(pendingIntent);
+                    try_again_button.setVisibility(View.INVISIBLE);
+                    startActivity(new Intent(StartActivity.this, StartActivity.class));
+                    if (connectivityReceiver != null) {
+                        unregisterReceiver(connectivityReceiver);
+                    }
+                }
+            }
+        };
+
+        // Регистрируем BroadcastReceiver для изменений состояния сети
+        IntentFilter intentFilter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+        registerReceiver(connectivityReceiver, intentFilter);
+
+    }
+    private boolean hasConnectionAlarm() {
+        ConnectivityManager connectivityManager =
+                (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo activeNetwork = connectivityManager.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+
+    }
     @SuppressLint("SuspiciousIndentation")
     @Override
     protected void onResume() {
         super.onResume();
 
-        fab = findViewById(R.id.fab);
-        btn_again = findViewById(R.id.btn_again);
+        if(hasConnection()) {
 
-        intent = new Intent(this, MainActivity.class);
+            isConnectedToGoogle();
+        }
+        else  {
+            Toast.makeText(this, R.string.verify_internet, Toast.LENGTH_SHORT).show();
+            try_again_button.setVisibility(View.VISIBLE);
+            setRepeatingAlarm();
+        }
+            fab = findViewById(R.id.fab);
+            btn_again = findViewById(R.id.btn_again);
+
+            intent = new Intent(this, MainActivity.class);
 
         try {
             initDB();
@@ -198,38 +303,39 @@ public class StartActivity extends Activity {
 
 
         fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_DIAL);
-                intent.setData(Uri.parse("tel:0674443804"));
-                startActivity(intent);
-            }
-        });
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(Intent.ACTION_DIAL);
+                    intent.setData(Uri.parse("tel:0674443804"));
+                    startActivity(intent);
+                }
+            });
 
 
-        btn_again.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+       btn_again.setOnClickListener(new View.OnClickListener() {
+           @Override
+           public void onClick(View v) {
 //               finish();
-                intent = new Intent(StartActivity.this, StartActivity.class);
-                startActivity(intent);
-            }
-        });
+               intent = new Intent(StartActivity.this, StartActivity.class);
+               startActivity(intent);
+           }
+       });
 
-        if(!hasConnection()) {
-            btn_again.setVisibility(View.VISIBLE);
-            Toast.makeText(StartActivity.this, getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
-        } else {
-            try {
-                startIp();
-                intent = new Intent(this, FirebaseSignIn.class);
-                startActivity(intent);
-            } catch (MalformedURLException e) {
-                btn_again.setVisibility(View.VISIBLE);
-                Toast.makeText(this, R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
-            }
+       if(!hasConnection()) {
+           btn_again.setVisibility(View.VISIBLE);
+           Toast.makeText(StartActivity.this, getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
+       } else {
+           try {
+               startIp();
 
-        }
+               intent = new Intent(this, FirebaseSignIn.class);
+//               intent = new Intent(this, MainActivity.class);
+               startActivity(intent);
+           } catch (MalformedURLException e) {
+               btn_again.setVisibility(View.VISIBLE);
+               Toast.makeText(this, R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
+           }
+       }
 
 
     }
@@ -246,13 +352,69 @@ public class StartActivity extends Activity {
         }
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
         if (activeNetwork != null && activeNetwork.isConnected()) {
+
             return true;
         }
 
         return false;
     }
+    public boolean isConnectedToGoogle() {
 
-    public void startIp() throws MalformedURLException {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+        }
+
+        Toast.makeText(this, R.string.check_message, Toast.LENGTH_LONG).show();
+        ImageView mImageView = findViewById(R.id.imageView2);
+        Animation sunRiseAnimation = AnimationUtils.loadAnimation(this, R.anim.sun_rise);
+        // Подключаем анимацию к нужному View
+        mImageView.startAnimation(sunRiseAnimation);
+
+            AsyncTask.execute(() -> {
+
+                try {
+                    String googleEndpoint = "https://www.google.com";
+                    long startTime = System.currentTimeMillis();
+
+                    URL url = new URL(googleEndpoint);
+                    HttpsURLConnection connection = null;
+                    connection = (HttpsURLConnection) url.openConnection();
+                    connection.setDoInput(true);
+                    connection.setRequestMethod("GET");
+                    connection.setConnectTimeout(2000); // Установите тайм-аут подключения в миллисекундах
+                    connection.connect();
+
+                    long endTime = System.currentTimeMillis();
+                    long responseTime = endTime - startTime;
+
+                        // Проверка успешности ответа и времени подключения
+                        if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                            Log.d("TAG", "isConnectedToGoogle: Подключение к Google выполнено успешно. Время ответа: " + responseTime + " мс");
+                            if (responseTime >= 2000) {
+                                Intent intent = new Intent(StartActivity.this, StopActivity.class);
+                                startActivity(intent);
+
+                            }
+                        } else {
+                            Log.d("TAG", "Не удалось подключиться к Google. Код ответа: " + connection.getResponseCode());
+                            Intent intent = new Intent(StartActivity.this, StopActivity.class);
+                            startActivity(intent);
+                        }
+                    connection.disconnect();
+                } catch (IOException e) {
+                    Log.d("TAG","Не удалось подключиться к Google. Код ответа: " );
+                    Intent intent = new Intent(StartActivity.this, StopActivity.class);
+                    startActivity(intent);
+                }
+
+            });
+
+
+
+        return false;
+    }
+    public static void startIp() throws MalformedURLException {
         String urlString = "https://m.easy-order-taxi.site/" +  StartActivity.api + "/android/startIP";
         Log.d("TAG", "startIp: " + urlString);
         URL url = new URL(urlString);
@@ -334,6 +496,7 @@ public class StartActivity extends Activity {
                 " to_number text," +
                 " to_lat text," +
                 " to_lng text);");
+//        Log.d("TAG", "initDB TABLE_ORDERS_INFO:" + logCursor(TABLE_ORDERS_INFO));
         cursorDb = database.query(TABLE_SETTINGS_INFO, null, null, null, null, null, null);
         if (cursorDb.getCount() == 0) {
             List<String> settings = new ArrayList<>();
@@ -364,11 +527,22 @@ public class StartActivity extends Activity {
         cursorDb = database.query(TABLE_SERVICE_INFO, null, null, null, null, null, null);
         if (cursorDb.getCount() == 0) {
             insertServices();
+        }
+
+        database.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_ADD_SERVICE_INFO + "(id integer primary key autoincrement," +
+                " time text," +
+                " comment text," +
+                " date text);");
+        cursorDb = database.query(TABLE_ADD_SERVICE_INFO, null, null, null, null, null, null);
+        if (cursorDb.getCount() == 0) {
+            insertAddServices();
         } else {
-            Log.d("TAG", "initDB:" + logCursor(TABLE_SERVICE_INFO));
+            resetRecordsAddServices();
         }
 
 
+        Cursor cursor = StartActivity.database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+        verifyPhone = cursor.getCount() == 1;
     }
 
     private void insertFirstSettings(List<String> settings) {
@@ -416,6 +590,34 @@ public class StartActivity extends Activity {
             database.endTransaction();
         }
     }
+    private void insertAddServices() {
+        String sql = "INSERT INTO " + TABLE_ADD_SERVICE_INFO + " VALUES(?,?,?,?);";
+        SQLiteStatement statement = database.compileStatement(sql);
+        database.beginTransaction();
+        try {
+            statement.clearBindings();
+            statement.bindString(2, "no_time");
+            statement.bindString(3, "no_comment");
+            statement.bindString(4, "no_date");
+
+            statement.execute();
+            database.setTransactionSuccessful();
+
+        } finally {
+            database.endTransaction();
+        }
+    }
+    public static void resetRecordsAddServices() {
+        ContentValues cv = new ContentValues();
+
+        cv.put("time", "no_time");
+        cv.put("comment", "no_comment");
+        cv.put("date", "no_date");
+
+        // обновляем по id
+        database.update(TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+                new String[] { "1" });
+    }
 
     public static void insertRecordsUser(String phoneNumber) {
         String sql = "INSERT INTO " + TABLE_USER_INFO + " VALUES(?,?);";
@@ -445,7 +647,7 @@ public class StartActivity extends Activity {
         Cursor cursor_from = database.query(TABLE_ORDERS_INFO,
                 null, selection, selectionArgs, null, null, null);
         Log.d("TAG", "insertRecordsOrders: cursor_from.getCount()" + cursor_from.getCount());
-        selection = "to_street = ?";
+                selection = "to_street = ?";
         selectionArgs = new String[] {to};
 
         Cursor cursor_to = database.query(TABLE_ORDERS_INFO,
@@ -505,6 +707,7 @@ public class StartActivity extends Activity {
 
 
     }
+
     public static ArrayList<Map> routMaps() {
         Map <String, String> routs;
         ArrayList<Map> routsArr = new ArrayList<>();
@@ -629,50 +832,9 @@ public class StartActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         database.close();
+        if (connectivityReceiver != null) {
+            unregisterReceiver(connectivityReceiver);
+        }
     }
-
-
-
-    public void codeVerify(String phoneNumber) {
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);
-        LayoutInflater inflater = this.getLayoutInflater();
-        View view = inflater.inflate(R.layout.phone_verify_code_layout, null);
-        builder.setView(view);
-
-        @SuppressLint({"MissingInflatedId", "LocalSuppress"})
-        EditText code = view.findViewById(R.id.code);
-
-        builder.setTitle(getString(R.string.sms_code))
-                .setPositiveButton(getString(R.string.sent_button), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        String urlCost = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/approvedPhones/" + phoneNumber + "/" + code.getText();
-                        Log.d("TAG", "onClick urlCost: " + urlCost);
-                        try {
-                            Map sendUrlMapCost = ResultSONParser.sendURL(urlCost);
-                            Log.d("TAG", "onClick sendUrlMapCost: " + sendUrlMapCost);
-                            if(sendUrlMapCost.get("resp_result").equals("200")) {
-                                insertRecordsUser(phoneNumber);
-                                Intent intent = new Intent(StartActivity.this, MainActivity.class);
-                                startActivity(intent);
-//                                finish();
-                            } else {
-                                String message = (String) sendUrlMapCost.get("message");
-                                Toast.makeText(StartActivity.this, message, Toast.LENGTH_SHORT).show();
-                            }
-
-                        } catch (MalformedURLException e) {
-                            throw new RuntimeException(e);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        } catch (JSONException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                })
-                .show();
-
-    }
-
 
 }

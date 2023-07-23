@@ -7,9 +7,9 @@
 
 
         <ListView
-            android:id="@+id/list"
+            android:id="@+id/listAddress"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
 
             tools:ignore="MissingConstraints"
             tools:layout_editor_absoluteX="1dp" />

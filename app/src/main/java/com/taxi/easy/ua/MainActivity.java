@@ -3,17 +3,13 @@ package com.taxi.easy.ua;
 import static com.taxi.easy.ua.R.string.cancel_button;
 import static com.taxi.easy.ua.R.string.format_phone;
 import static com.taxi.easy.ua.R.string.verify_internet;
-import static com.taxi.easy.ua.R.string.verify_phone;
-
 
 import android.annotation.SuppressLint;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -22,16 +18,12 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.util.Log;
-import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -46,7 +38,7 @@ import androidx.navigation.ui.NavigationUI;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
-import com.taxi.easy.ua.ui.home.MyBottomSheetDialogFragment;
+import com.taxi.easy.ua.ui.home.MyPhoneDialogFragment;
 import com.taxi.easy.ua.ui.start.StartActivity;
 
 import java.util.List;
@@ -72,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.nav_home, R.id.nav_about)
+                R.id.nav_home, R.id.nav_gallery, R.id.nav_about)
                 .setOpenableLayout(drawer)
                 .build();
 
@@ -83,8 +75,7 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupWithNavController(navigationView, navController);
 
         networkChangeReceiver = new NetworkChangeReceiver();
-        MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
-        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+
 //        Toast.makeText(this, getString(R.string.wellcome), Toast.LENGTH_LONG).show();
     }
 
@@ -105,18 +96,15 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if(item.getItemId() == R.id.action_settings) {
-            settings();
-        }
         if (item.getItemId() == R.id.phone_settings) {
-            phoneNumberChange();
+                phoneNumberChange();
         }
         if (item.getItemId() == R.id.nav_driver) {
             Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.taxieasyua.job"));
             startActivity(browserIntent);
         }
         if (item.getItemId() == R.id.action_exit) {
-            this.finish();
+            finishAffinity();
         }
         if (item.getItemId() == R.id.gps) {
             eventGps(this);
@@ -181,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
 
         LayoutInflater inflater = this.getLayoutInflater();
 
-        View view = inflater.inflate(R.layout.phone_verify_layout, null);
+        View view = inflater.inflate(R.layout.phone_settings_layout, null);
 
         builder.setView(view);
 
@@ -195,39 +183,33 @@ public class MainActivity extends AppCompatActivity {
 
 
 //        String result = phoneNumber.getText().toString();
-            builder.setTitle(verify_phone)
-                    .setPositiveButton("Змінити", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            if(connected()) {
-                                Log.d("TAG", "onClick befor validate: ");
-                                String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
-                                boolean val = Pattern.compile(PHONE_PATTERN).matcher(phoneNumber.getText().toString()).matches();
-                                Log.d("TAG", "onClick No validate: " + val);
-                                if (val == false) {
-                                    Toast.makeText(MainActivity.this, getString(R.string.format_phone) , Toast.LENGTH_SHORT).show();
-                                    Log.d("TAG", "onClick:phoneNumber.getText().toString() " + phoneNumber.getText().toString());
+        builder
+                .setPositiveButton(R.string.cheng, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if(connected()) {
+                            Log.d("TAG", "onClick befor validate: ");
+                            String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
+                            boolean val = Pattern.compile(PHONE_PATTERN).matcher(phoneNumber.getText().toString()).matches();
+                            Log.d("TAG", "onClick No validate: " + val);
+                            if (val == false) {
+                                Toast.makeText(MainActivity.this, getString(format_phone) , Toast.LENGTH_SHORT).show();
+                                Log.d("TAG", "onClick:phoneNumber.getText().toString() " + phoneNumber.getText().toString());
 
-                                } else {
-                                    StartActivity.updateRecordsUser(phoneNumber.getText().toString());
-                                }
+                            } else {
+                                StartActivity.updateRecordsUser(phoneNumber.getText().toString());
                             }
                         }
-                    }).setNegativeButton(cancel_button, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            Intent intent = new Intent(MainActivity.this, MainActivity.class);
-                            startActivity(intent);
-                        }
-                    })
-                    .show();
+                    }
+                }).setNegativeButton(cancel_button, null)
+                .show();
         } else {
-            getPhoneNumber ();
-            Cursor cursor = StartActivity.database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-            if (cursor.getCount() == 0) {
-                Toast.makeText(MainActivity.this, format_phone, Toast.LENGTH_SHORT).show();
-                phoneNumber();
-                cursor.close();
+            if (!StartActivity.verifyPhone) {
+                getPhoneNumber();
+            }
+            if (!StartActivity.verifyPhone) {
+                MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment();
+                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
             }
         }
     }
@@ -258,54 +240,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
-    private void phoneNumber() {
-
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);
-
-        LayoutInflater inflater = this.getLayoutInflater();
-
-        View view = inflater.inflate(R.layout.phone_verify_layout, null);
-
-        builder.setView(view);
-
-        @SuppressLint({"MissingInflatedId", "LocalSuppress"})
-        EditText phoneNumber = view.findViewById(R.id.phoneNumber);
-        phoneNumber.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View view, boolean b) {
-                phoneNumber.setHint("");
-
-
-            }
-        });
-
-
-//        String result = phoneNumber.getText().toString();
-        builder.setTitle(verify_phone)
-                .setPositiveButton(getString(R.string.sent_button), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        if(connected()) {
-                            Log.d("TAG", "onClick befor validate: ");
-                            String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
-                            boolean val = Pattern.compile(PHONE_PATTERN).matcher(phoneNumber.getText().toString()).matches();
-                            Log.d("TAG", "onClick No validate: " + val);
-                            if (val == false) {
-                                Toast.makeText(MainActivity.this, format_phone , Toast.LENGTH_SHORT).show();
-                                Log.d("TAG", "onClick:phoneNumber.getText().toString() " + phoneNumber.getText().toString());
-                                MainActivity.this.finish();
-
-                            } else {
-                                StartActivity.insertRecordsUser(phoneNumber.getText().toString());
-                            }
-                        }
-                    }
-                })
-                .show();
-
-    }
-
-
 
     private boolean connected() {
 
@@ -337,138 +271,6 @@ public class MainActivity extends AppCompatActivity {
     public String[] arrayService;
     public static String[] arrayServiceCode;
     ListView listView;
-    private void settings () {
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);
-        LayoutInflater inflater = this.getLayoutInflater();
-        View view = inflater.inflate(R.layout.settings_layout, null);
-
-
-        ArrayAdapter<String> adapterTariff = new ArrayAdapter<String>(view.getContext(), android.R.layout.simple_spinner_item, tariffArr);
-        @SuppressLint({"MissingInflatedId", "LocalSuppress"})
-        Spinner spinner = view.findViewById(R.id.list_tariff);
-        spinner.setAdapter(adapterTariff);
-        spinner.setPrompt("Title");
-        StartActivity.cursorDb = StartActivity.database.query(StartActivity.TABLE_SETTINGS_INFO, null, null, null, null, null, null);
-        String tariffOld =  StartActivity.logCursor(StartActivity.TABLE_SETTINGS_INFO).get(2);
-        if (StartActivity.cursorDb != null && !StartActivity.cursorDb.isClosed())
-            StartActivity.cursorDb.close();
-        for (int i = 0; i < tariffArr.length; i++) {
-            if(tariffArr[i].equals(tariffOld)) {
-                spinner.setSelection(i);
-            }
-        }
-
-        arrayService = new String[]{
-                getString(R.string.BAGGAGE),
-                getString(R.string.ANIMAL),
-                getString(R.string.CONDIT),
-                getString(R.string.MEET),
-                getString(R.string.COURIER),
-                getString(R.string.TERMINAL),
-                getString(R.string.CHECK),
-                getString(R.string.BABY_SEAT),
-                getString(R.string.DRIVER),
-                getString(R.string.NO_SMOKE),
-                getString(R.string.ENGLISH),
-                getString(R.string.CABLE),
-                getString(R.string.FUEL),
-                getString(R.string.WIRES),
-                getString(R.string.SMOKE),
-        };
-        arrayServiceCode = new String[]{
-                "BAGGAGE",
-                "ANIMAL",
-                "CONDIT",
-                "MEET",
-                "COURIER",
-                "TERMINAL",
-                "CHECK_OUT",
-                "BABY_SEAT",
-                "DRIVER",
-                "NO_SMOKE",
-                "ENGLISH",
-                "CABLE",
-                "FUEL",
-                "WIRES",
-                "SMOKE",
-        };
-        listView = view.findViewById(R.id.list);
-        ArrayAdapter<String> adapterSet = new ArrayAdapter<>(view.getContext(), R.layout.services_adapter_layout, arrayService);
-        listView.setAdapter(adapterSet);
-        listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-        List<String> services = StartActivity.logCursor(StartActivity.TABLE_SERVICE_INFO);
-        for (int i = 0; i < arrayServiceCode.length; i++) {
-            if(services.get(i+1).equals("1")) {
-                listView.setItemChecked(i,true);
-            }
-        }
-
-
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                tariff = tariffArr[position];
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-
-
-
-
-
-
-
-        builder.setView(view)
-                .setPositiveButton(getString(R.string.save_button), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        ContentValues cv = new ContentValues();
-                        cv.put("tarif", tariff);
-
-                        // обновляем по id
-                        StartActivity.database.update(StartActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                                new String[] { "1" });
-                        Log.d("TAG", "onClick: " + StartActivity.logCursor(StartActivity.TABLE_SETTINGS_INFO));
-
-                        for (int i = 0; i < 15; i++) {
-                            Log.d("TAG", "onPause: " + arrayServiceCode[i]);
-                            cv = new ContentValues();
-                            cv.put(arrayServiceCode[i], "0");
-                            StartActivity.database.update(StartActivity.TABLE_SERVICE_INFO, cv, "id = ?",
-                                    new String[] { "1" });
-                        }
-
-                        SparseBooleanArray booleanArray = listView.getCheckedItemPositions();
-                        booleanArray = listView.getCheckedItemPositions();
-                        for (int i = 0; i < booleanArray.size(); i++) {
-                            if(booleanArray.get(booleanArray.keyAt(i))) {
-                                cv = new ContentValues();
-                                cv.put(arrayServiceCode[booleanArray.keyAt(i)], "1");
-                                StartActivity.database.update(StartActivity.TABLE_SERVICE_INFO, cv, "id = ?",
-                                        new String[] { "1" });
-
-                            }
-                        }
-
-
-                        Intent intent =  new Intent(MainActivity.this, MainActivity.class);
-                        startActivity(intent);
-
-                    }
-                }).setNegativeButton(getString(cancel_button), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        Intent intent =  new Intent(MainActivity.this, MainActivity.class);
-                        startActivity(intent);
-                    }
-                })
-
-                .show();
-    }
-
     private String[] tariffs () {
         return new String[]{
                 "Базовий онлайн",
@@ -478,7 +280,7 @@ public class MainActivity extends AppCompatActivity {
                 "Премиум-класс",
                 "Эконом-класс",
                 "Микроавтобус",
-        };
+            };
     }
 
     @Override

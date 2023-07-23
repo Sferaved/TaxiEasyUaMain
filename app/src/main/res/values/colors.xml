@@ -17,4 +17,6 @@
     <color name="colorYellow">#FFEB3B</color>
     <color name="default_text_color">#6C6767</color>
     <color name="selected_text_color">#FF0000</color>
+    <color name="zamov">#3A506B</color>
+    <color name="new_background_color">#434C5E</color>
 </resources>

@@ -1,0 +1,5 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@android:color/white" /> <!-- Задайте цвет заполнения -->
+    <stroke android:color="@android:color/black" android:width="2dp" /> <!-- Задайте цвет и толщину рамки -->
+    <corners android:radius="4dp" /> <!-- Опционально: Задайте скругление углов -->
+</shape>

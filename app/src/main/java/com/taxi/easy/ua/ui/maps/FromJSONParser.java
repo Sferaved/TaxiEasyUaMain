@@ -57,6 +57,8 @@ public class FromJSONParser {
          if(!jsonarray.getString("order_cost").equals("0")) {
              costMap.put("order_cost", "100");
              costMap.put("route_address_from", jsonarray.getString("route_address_from"));
+             costMap.put("name", jsonarray.getString("name"));
+             costMap.put("house", jsonarray.getString("house"));
 
          } else {
              costMap.put("order_cost", "0");

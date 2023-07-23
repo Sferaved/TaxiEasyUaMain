@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/new_background_color"
+    tools:context=".MainActivity" >
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/regular"
+        android:text="Подача"
+        android:textColor="#D9D9D9"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toBottomOf="@+id/podaczainp"
+        app:layout_constraintStart_toStartOf="@+id/numtext"
+        app:layout_constraintTop_toTopOf="@+id/podaczainp" />
+
+    <TextView
+        android:id="@+id/numtext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/regular"
+        android:text="Номер телефону"
+        android:textColor="#D9D9D9"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toBottomOf="@+id/phonenum"
+        app:layout_constraintStart_toStartOf="@+id/komenterinp"
+        app:layout_constraintTop_toTopOf="@+id/phonenum" />
+
+    <EditText
+        android:id="@+id/podaczainp"
+        android:layout_width="160dp"
+        android:layout_height="33dp"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/input"
+        android:ems="10"
+        android:fontFamily="@font/regular"
+        android:inputType="text"
+        android:textAlignment="viewStart"
+        android:textAllCaps="true"
+        android:textColor="#D9D9D9"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="@+id/phonenum"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/phonenum"
+        android:layout_width="160dp"
+        android:layout_height="33dp"
+        android:layout_marginTop="13dp"
+        android:background="@drawable/input"
+        android:ems="10"
+        android:fontFamily="@font/regular"
+        android:inputType="numberSigned"
+        android:textAlignment="viewStart"
+        android:textAllCaps="true"
+        android:textColor="#D9D9D9"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="@+id/komenterinp"
+        app:layout_constraintTop_toBottomOf="@+id/podaczainp" />
+
+    <EditText
+        android:id="@+id/komenterinp"
+        android:layout_width="315dp"
+        android:layout_height="36dp"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/input"
+        android:ems="10"
+        android:fontFamily="@font/regular"
+        android:inputType="text"
+        android:textAlignment="viewStart"
+        android:textAllCaps="true"
+        android:textColor="#D9D9D9"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.503"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/phonenum" />
+
+    <TextView
+        android:id="@+id/komentar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        android:fontFamily="@font/light"
+        android:text="Коментар"
+        android:textColor="#9DA0A8"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toTopOf="@+id/komenterinp"
+        app:layout_constraintStart_toStartOf="@+id/komenterinp" />
+
+    <TextView
+        android:id="@+id/maintext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="11dp"
+        android:fontFamily="@font/medium"
+        android:text="ПОСЛУГИ"
+        android:textColor="#D9D9D9"
+        android:textSize="22sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/komenterinp" />
+
+    <CheckBox
+        android:id="@+id/dostawabox"
+        android:layout_width="30dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="5dp"
+        android:textColor="#689093"
+        android:textSize="0sp"
+        app:layout_constraintEnd_toEndOf="@+id/komenterinp"
+        app:layout_constraintTop_toBottomOf="@+id/maintext" />
+
+    <CheckBox
+        android:id="@+id/kondecbox"
+        android:layout_width="30dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="6dp"
+        android:textColor="#689093"
+        android:textSize="0sp"
+        app:layout_constraintEnd_toEndOf="@+id/dostawabox"
+        app:layout_constraintTop_toBottomOf="@+id/dostawabox" />
+
+    <CheckBox
+        android:id="@+id/bagazhbox"
+        android:layout_width="30dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="6dp"
+        android:textColor="#689093"
+        android:textSize="0sp"
+        app:layout_constraintEnd_toEndOf="@+id/kondecbox"
+        app:layout_constraintTop_toBottomOf="@+id/kondecbox" />
+
+    <CheckBox
+        android:id="@+id/animbox"
+        android:layout_width="30dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="6dp"
+        android:textColor="#689093"
+        android:textSize="0sp"
+        app:layout_constraintEnd_toEndOf="@+id/bagazhbox"
+        app:layout_constraintTop_toBottomOf="@+id/bagazhbox" />
+
+    <CheckBox
+        android:id="@+id/salonbox"
+        android:layout_width="30dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="6dp"
+        android:textColor="#689093"
+        android:textSize="0sp"
+        app:layout_constraintEnd_toEndOf="@+id/animbox"
+        app:layout_constraintTop_toBottomOf="@+id/animbox" />
+
+    <CheckBox
+        android:id="@+id/garantbox"
+        android:layout_width="30dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="6dp"
+        android:textColor="#689093"
+        android:textSize="0sp"
+        app:layout_constraintEnd_toEndOf="@+id/salonbox"
+        app:layout_constraintTop_toBottomOf="@+id/salonbox" />
+
+    <CheckBox
+        android:id="@+id/tablebox"
+        android:layout_width="30dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="6dp"
+        android:textColor="#689093"
+        android:textSize="0sp"
+        app:layout_constraintEnd_toEndOf="@+id/garantbox"
+        app:layout_constraintTop_toBottomOf="@+id/garantbox" />
+
+    <CheckBox
+        android:id="@+id/driverbox"
+        android:layout_width="30dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="6dp"
+        android:textColor="#689093"
+        android:textSize="0sp"
+        app:layout_constraintEnd_toEndOf="@+id/tablebox"
+        app:layout_constraintTop_toBottomOf="@+id/tablebox" />
+
+    <CheckBox
+        android:id="@+id/drotybox"
+        android:layout_width="30dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="6dp"
+        android:textColor="#689093"
+        android:textSize="0sp"
+        app:layout_constraintEnd_toEndOf="@+id/driverbox"
+        app:layout_constraintTop_toBottomOf="@+id/driverbox" />
+
+    <CheckBox
+        android:id="@+id/nosmokebox"
+        android:layout_width="30dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="6dp"
+        android:textColor="#689093"
+        android:textSize="0sp"
+        app:layout_constraintEnd_toEndOf="@+id/drotybox"
+        app:layout_constraintTop_toBottomOf="@+id/drotybox" />
+
+    <CheckBox
+        android:id="@+id/krislobox"
+        android:layout_width="30dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="6dp"
+        android:textColor="#689093"
+        android:textSize="0sp"
+        app:layout_constraintEnd_toEndOf="@+id/smokebox"
+        app:layout_constraintTop_toBottomOf="@+id/smokebox" />
+
+    <CheckBox
+        android:id="@+id/krislobox2"
+        android:layout_width="30dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="6dp"
+        android:textColor="#689093"
+        android:textSize="0sp"
+        app:layout_constraintEnd_toEndOf="@+id/krislobox"
+        app:layout_constraintTop_toBottomOf="@+id/krislobox" />
+
+    <CheckBox
+        android:id="@+id/smokebox"
+        android:layout_width="30dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="6dp"
+        android:textColor="#689093"
+        android:textSize="0sp"
+        app:layout_constraintEnd_toEndOf="@+id/nosmokebox"
+        app:layout_constraintTop_toBottomOf="@+id/nosmokebox" />
+
+    <TextView
+        android:id="@+id/dostawatext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="・Кур’єрська доставка"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toBottomOf="@+id/dostawabox"
+        app:layout_constraintStart_toStartOf="@+id/komenterinp"
+        app:layout_constraintTop_toTopOf="@+id/dostawabox" />
+
+    <TextView
+        android:id="@+id/kondtext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="・Кондиціонер"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toBottomOf="@+id/kondecbox"
+        app:layout_constraintStart_toStartOf="@+id/komenterinp"
+        app:layout_constraintTop_toTopOf="@+id/kondecbox" />
+
+    <TextView
+        android:id="@+id/bagazhtext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="・Багаж в салоні"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toBottomOf="@+id/bagazhbox"
+        app:layout_constraintStart_toStartOf="@+id/komenterinp"
+        app:layout_constraintTop_toTopOf="@+id/bagazhbox" />
+
+    <TextView
+        android:id="@+id/salontext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="・Тиша в салоні"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toBottomOf="@+id/salonbox"
+        app:layout_constraintStart_toStartOf="@+id/komenterinp"
+        app:layout_constraintTop_toTopOf="@+id/salonbox" />
+
+    <TextView
+        android:id="@+id/garanttext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="・Гарантована подача"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toBottomOf="@+id/garantbox"
+        app:layout_constraintStart_toStartOf="@+id/komenterinp"
+        app:layout_constraintTop_toTopOf="@+id/garantbox" />
+
+    <TextView
+        android:id="@+id/drivertext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="・Драйвер (тверезий водій)"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toBottomOf="@+id/driverbox"
+        app:layout_constraintStart_toStartOf="@+id/komenterinp"
+        app:layout_constraintTop_toTopOf="@+id/driverbox" />
+
+    <TextView
+        android:id="@+id/tabletext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="・Зустріч з табличкою"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toBottomOf="@+id/tablebox"
+        app:layout_constraintStart_toStartOf="@+id/komenterinp"
+        app:layout_constraintTop_toTopOf="@+id/tablebox" />
+
+    <TextView
+        android:id="@+id/krislotext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="・Дитяче крісло"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toBottomOf="@+id/krislobox"
+        app:layout_constraintStart_toStartOf="@+id/komenterinp"
+        app:layout_constraintTop_toTopOf="@+id/krislobox" />
+
+    <TextView
+        android:id="@+id/krislotext2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="・Пошук в сусідніх секторах"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toBottomOf="@+id/krislobox2"
+        app:layout_constraintStart_toStartOf="@+id/krislotext"
+        app:layout_constraintTop_toTopOf="@+id/krislobox2" />
+
+    <TextView
+        android:id="@+id/smoketext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="・Я буду палити в авто"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toBottomOf="@+id/smokebox"
+        app:layout_constraintStart_toStartOf="@+id/komenterinp"
+        app:layout_constraintTop_toTopOf="@+id/smokebox" />
+
+    <TextView
+        android:id="@+id/nosmoketext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="・Водій не палить"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toBottomOf="@+id/nosmokebox"
+        app:layout_constraintStart_toStartOf="@+id/komenterinp"
+        app:layout_constraintTop_toTopOf="@+id/nosmokebox" />
+
+    <TextView
+        android:id="@+id/drotytext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="・Дроти (зарядити акумулятор)"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toBottomOf="@+id/drotybox"
+        app:layout_constraintStart_toStartOf="@+id/komenterinp"
+        app:layout_constraintTop_toTopOf="@+id/drotybox" />
+
+    <TextView
+        android:id="@+id/animtext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="5dp"
+        android:text="・Їду з твариною"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toBottomOf="@+id/animbox"
+        app:layout_constraintStart_toStartOf="@+id/komenterinp"
+        app:layout_constraintTop_toTopOf="@+id/animbox" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/orderbut"
+        android:layout_width="185dp"
+        android:layout_height="60dp"
+        android:background="@drawable/zamov"
+        android:fontFamily="@font/medium"
+        android:insetLeft="0dp"
+        android:insetTop="0dp"
+        android:insetRight="0dp"
+        android:insetBottom="0dp"
+        android:text="Замовити"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/krislobox2"
+        app:layout_constraintTop_toBottomOf="@+id/krislobox2" />
+
+    <TextView
+        android:id="@+id/textView7"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="5dp"
+        android:fontFamily="@font/medium"
+        android:text="Сума"
+        android:textColor="#D9D9D9"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@+id/plusbut"
+        app:layout_constraintEnd_toEndOf="@+id/minusbut"
+        app:layout_constraintStart_toStartOf="@+id/plusbut"
+        app:layout_constraintTop_toTopOf="@+id/orderbut" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/plusbut"
+        android:layout_width="50dp"
+        android:layout_height="34dp"
+        android:background="@drawable/plus"
+        android:fontFamily="@font/regular"
+        android:insetLeft="0dp"
+        android:insetTop="0dp"
+        android:insetRight="0dp"
+        android:insetBottom="0dp"
+        android:text="+"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        android:textSize="25sp"
+        app:layout_constraintBottom_toBottomOf="@+id/orderbut"
+        app:layout_constraintStart_toStartOf="@+id/krislotext2" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/minusbut"
+        android:layout_width="50dp"
+        android:layout_height="34dp"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/minus"
+        android:fontFamily="@font/regular"
+        android:insetLeft="0dp"
+        android:insetTop="0dp"
+        android:insetRight="0dp"
+        android:insetBottom="0dp"
+        android:text="-"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        android:textSize="25sp"
+        app:layout_constraintBottom_toBottomOf="@+id/orderbut"
+        app:layout_constraintStart_toEndOf="@+id/plusbut" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

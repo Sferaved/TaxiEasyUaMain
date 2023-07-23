@@ -5,7 +5,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -14,7 +13,6 @@ import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -35,6 +33,7 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.NotificationHelper;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
@@ -50,61 +49,36 @@ import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
 
+
 public class FirebaseSignIn extends AppCompatActivity {
 
-    static FloatingActionButton fab;
-    Button btn_again;
+    static FloatingActionButton fab, btn_again;
     public static final int READ_CALL_PHONE = 0;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.start_layout);
-        Toast.makeText(this, R.string.check_message, Toast.LENGTH_LONG).show();
+//        Toast.makeText(this, R.string.check_message, Toast.LENGTH_LONG).show();
         ImageView mImageView = findViewById(R.id.imageView2);
         Animation sunRiseAnimation = AnimationUtils.loadAnimation(this, R.anim.sun_rise);
         // Подключаем анимацию к нужному View
         mImageView.startAnimation(sunRiseAnimation);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//            return;
-        }
-        btn_again = findViewById(R.id.btn_again);
-        btn_again.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-//               finish();
-                Intent intent = new Intent(FirebaseSignIn.this, StartActivity.class);
-                startActivity(intent);
-            }
-        });
+
+
 
         fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @SuppressLint("SuspiciousIndentation")
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_CALL);
+                Intent intent = new Intent(Intent.ACTION_DIAL);
                 intent.setData(Uri.parse("tel:0674443804"));
-                if (ActivityCompat.checkSelfPermission(FirebaseSignIn.this,
-                        Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                    checkPermission(Manifest.permission.CALL_PHONE, READ_CALL_PHONE);
-                } else
-                    startActivity(intent);
+                startActivity(intent);
             }
         });
 
 
-        Configuration config = getResources().getConfiguration();
-
-        Log.d("TAG", "onCreate: config = " + config.getLocales().get(0) );
-
-
-
-        // Установка языка локализации для Firebase
-
-
-        FirebaseApp.initializeApp(this);
+        FirebaseApp.initializeApp(FirebaseSignIn.this);
 
 // Choose authentication providers
         List<AuthUI.IdpConfig> providers = Arrays.asList(
@@ -115,9 +89,25 @@ public class FirebaseSignIn extends AppCompatActivity {
                 .createSignInIntentBuilder()
                 .setAvailableProviders(providers)
                 .build();
-        signInLauncher.launch(signInIntent);
+        try {
+            signInLauncher.launch(signInIntent);
+            } catch (NullPointerException e) {
+            Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
+        }
     }
-    //   See: https://developer.android.com/training/basics/intents/result
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        btn_again = findViewById(R.id.btn_again);
+        btn_again.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(FirebaseSignIn.this, StartActivity.class));
+            }
+        });
+    }
+
     private final ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
             new FirebaseAuthUIActivityResultContract(),
             new ActivityResultCallback<FirebaseAuthUIAuthenticationResult>() {
@@ -131,17 +121,13 @@ public class FirebaseSignIn extends AppCompatActivity {
                 }
             }
     );
+
     private void onSignInResult(FirebaseAuthUIAuthenticationResult result) throws MalformedURLException, JSONException, InterruptedException {
-//        Configuration config = getResources().getConfiguration();
-//        Locale locale = new Locale("en"); // Код языка локализации
-//        config.setLocale(locale);
-//        getResources().updateConfiguration(config, getResources().getDisplayMetrics());
-//        Log.d("TAG", "onSignInResult: config = " + config.getLocales().get(0) );
         MainActivity.verifyOrder = false;
         IdpResponse response = result.getIdpResponse();
         Log.d("TAG", "onSignInResult: response.toString() " + response.toString());
-
-        if (result.getResultCode() == RESULT_OK && response != null) {
+    try {
+        if (result.getResultCode() == RESULT_OK) {
             // Successfully signed in
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
             StartActivity.userEmail = user.getEmail();
@@ -151,6 +137,7 @@ public class FirebaseSignIn extends AppCompatActivity {
             if(blackList()) {
                 Log.d("TAG", "onSignInResult: " + user.getEmail() + " " + user.getDisplayName());
                 if(switchState()) {
+                    version();
                     if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                         Intent intent = new Intent(FirebaseSignIn.this, MainActivity.class);
                         startActivity(intent);
@@ -163,12 +150,9 @@ public class FirebaseSignIn extends AppCompatActivity {
                     startActivity(intent);
                 }
                 MainActivity.verifyOrder = true;
-                finish();
 
             } else {
                 Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
-
-                MainActivity.verifyOrder = false;
             }
         } else {
             // Sign in failed. If response is null the user canceled the
@@ -176,10 +160,13 @@ public class FirebaseSignIn extends AppCompatActivity {
             // response.getError().getErrorCode() and handle the error.
             // ...
             Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
-            finish();
+            btn_again.setVisibility(View.VISIBLE);
 
 
         }
+    } catch (NullPointerException e) {
+        Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
+    }
     }
     private boolean  switchState() {
         LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -256,5 +243,38 @@ public class FirebaseSignIn extends AppCompatActivity {
             result = false;
         }
         return result;
+    }
+
+    private void version() throws MalformedURLException {
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            checkPermission(Manifest.permission.POST_NOTIFICATIONS, PackageManager.PERMISSION_GRANTED);
+            return;
+        }
+
+        String url = "https://m.easy-order-taxi.site/" + StartActivity.api + "/android/" +"versionAPI";
+
+
+        Log.d("TAG", "onClick urlCost: " + url);
+        Map sendUrlMapCost = null;
+        try {
+            sendUrlMapCost = ResultSONParser.sendURL(url);
+        } catch (MalformedURLException | InterruptedException | JSONException e) {
+            throw new RuntimeException(e);
+        }
+
+        String message = (String) sendUrlMapCost.get("message");
+        if(!message.equals(getString(R.string.version_code))) {
+            NotificationHelper notificationHelper = new NotificationHelper();
+
+            String title = getString(R.string.new_version);
+            String messageNotif = getString(R.string.news_of_version);
+            String urlStr = "https://play.google.com/store/apps/details?id=com.taxi.easy.ua&pli=1";
+
+            notificationHelper.showNotification(this, title, messageNotif, urlStr);
+        }
+
+
+
     }
 }

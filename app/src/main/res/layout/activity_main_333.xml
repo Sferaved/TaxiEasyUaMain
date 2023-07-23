@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#434C5E"
+    tools:context=".MainActivity">
+<ScrollView
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" >
+    <TextView
+        android:id="@+id/num1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="5dp"
+        android:fontFamily="@font/regular"
+        android:text="1"
+        android:textColor="#D9D9D9"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toStartOf="@+id/inpfrom"
+        app:layout_constraintTop_toTopOf="@+id/inpfrom" />
+
+    <TextView
+        android:id="@+id/textfrom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="@font/light"
+        android:text="Звідки"
+        android:textColor="#9DA0A8"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toTopOf="@+id/inpfrom"
+        app:layout_constraintStart_toStartOf="@+id/inpfrom" />
+
+    <EditText
+        android:id="@+id/inpfrom"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:layout_marginTop="55dp"
+        android:background="@drawable/input"
+        android:ems="10"
+        android:fontFamily="@font/light"
+        android:hint="Вулиця"
+        android:inputType="text"
+        android:textColor="#D9D9D9"
+        android:textColorHint="#ABD9D9D9"
+        android:textSize="18sp"
+        app:layout_constraintStart_toStartOf="@+id/inpwhere"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/numbud"
+        android:layout_width="55dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/input"
+        android:ems="10"
+        android:fontFamily="@font/light"
+        android:inputType="number"
+        android:hint="#"
+        android:textColorHint="#ABD9D9D9"
+        android:textAlignment="textStart"
+        android:textAllCaps="true"
+        android:textColor="#D9D9D9"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="@+id/histrory"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@+id/inpfrom"
+        app:layout_constraintTop_toTopOf="@+id/inpfrom" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/gpsbut"
+        android:layout_width="60dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/buttons"
+        android:fontFamily="@font/regular"
+        android:insetLeft="0dp"
+        android:insetTop="0dp"
+        android:insetRight="0dp"
+        android:insetBottom="0dp"
+        android:text="GPS"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        app:layout_constraintEnd_toEndOf="@+id/histrory"
+        app:layout_constraintTop_toBottomOf="@+id/numbud" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/plusad"
+        android:layout_width="60dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/buttons"
+        android:fontFamily="@font/regular"
+        android:insetLeft="0dp"
+        android:insetTop="0dp"
+        android:insetRight="0dp"
+        android:insetBottom="0dp"
+        android:text="+"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="@+id/histrory"
+        app:layout_constraintTop_toBottomOf="@+id/numbud2" />
+
+    <TextView
+        android:id="@+id/num2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="17dp"
+        android:layout_marginEnd="5dp"
+        android:fontFamily="@font/regular"
+        android:text="2"
+        android:textColor="#D9D9D9"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toStartOf="@+id/inpwhere"
+        app:layout_constraintTop_toBottomOf="@+id/gpsbut" />
+
+    <EditText
+        android:id="@+id/inpwhere"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:background="@drawable/input"
+        android:ems="10"
+        android:fontFamily="@font/light"
+        android:hint="Вулиця"
+        android:inputType="text"
+        android:textColor="#D9D9D9"
+        android:textColorHint="#ABD9D9D9"
+        android:textSize="18sp"
+        app:layout_constraintStart_toStartOf="@+id/histrory"
+        app:layout_constraintTop_toTopOf="@+id/num2" />
+
+    <TextView
+        android:id="@+id/textwhere"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="@font/light"
+        android:text="Куди"
+        android:textColor="#9DA0A8"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toTopOf="@+id/inpwhere"
+        app:layout_constraintStart_toStartOf="@+id/inpwhere" />
+
+    <EditText
+        android:id="@+id/numbud2"
+        android:layout_width="55dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/input"
+        android:ems="10"
+        android:fontFamily="@font/light"
+        android:inputType="number"
+        android:hint="#"
+        android:textColorHint="#ABD9D9D9"
+        android:textAlignment="textStart"
+        android:textAllCaps="true"
+        android:textColor="#D9D9D9"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="@+id/histrory"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@+id/inpwhere"
+        app:layout_constraintTop_toTopOf="@+id/inpwhere" />
+
+    <TextView
+        android:id="@+id/texthist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginBottom="1dp"
+        android:fontFamily="@font/light"
+        android:text="Попередні адреси"
+        android:textColor="#9DA0A8"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toTopOf="@+id/histrory"
+        app:layout_constraintStart_toStartOf="@+id/histrory" />
+
+    <TextView
+        android:id="@+id/histrory"
+        android:layout_width="293dp"
+        android:layout_height="41dp"
+        android:layout_marginTop="17dp"
+        android:background="@drawable/history"
+        android:fontFamily="@font/light"
+        android:text="Відсутні"
+        android:textAlignment="textStart"
+        android:textColor="#D9D9D9"
+        android:textSize="17sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/plusad" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/mapbut"
+        android:layout_width="165dp"
+        android:layout_height="48dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/buttons"
+        android:fontFamily="@font/regular"
+        android:insetLeft="0dp"
+        android:insetTop="0dp"
+        android:insetRight="0dp"
+        android:insetBottom="0dp"
+        android:text="Вибрати на карті"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toTopOf="@+id/dodatkbut"
+        app:layout_constraintStart_toStartOf="@+id/histrory" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/shabbut"
+        android:layout_width="115dp"
+        android:layout_height="48dp"
+        android:background="@drawable/buttons"
+        android:fontFamily="@font/regular"
+        android:insetLeft="0dp"
+        android:insetTop="0dp"
+        android:insetRight="0dp"
+        android:insetBottom="0dp"
+        android:text="Шаблони"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        app:layout_constraintEnd_toEndOf="@+id/histrory"
+        app:layout_constraintTop_toTopOf="@+id/mapbut" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/dodatkbut"
+        android:layout_width="141dp"
+        android:layout_height="48dp"
+        android:background="@drawable/buttons"
+        android:fontFamily="@font/regular"
+        android:insetLeft="0dp"
+        android:insetTop="0dp"
+        android:insetRight="0dp"
+        android:insetBottom="0dp"
+        android:text="Додатково"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toBottomOf="@+id/cashbut"
+        app:layout_constraintStart_toStartOf="@+id/mapbut" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/cashbut"
+        android:layout_width="141dp"
+        android:layout_height="48dp"
+        android:layout_marginBottom="18dp"
+        android:background="@drawable/buttons"
+        android:fontFamily="@font/regular"
+        android:insetLeft="0dp"
+        android:insetTop="0dp"
+        android:insetRight="0dp"
+        android:insetBottom="0dp"
+        android:text="Готівка"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        app:layout_constraintBottom_toTopOf="@+id/orderbut"
+        app:layout_constraintEnd_toEndOf="@+id/shabbut" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/orderbut"
+        android:layout_width="170dp"
+        android:layout_height="60dp"
+        android:background="@drawable/zamov"
+        android:fontFamily="@font/medium"
+        android:insetLeft="0dp"
+        android:insetTop="0dp"
+        android:insetRight="0dp"
+        android:insetBottom="0dp"
+        android:text="Замовити"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/cashbut"
+        app:layout_constraintTop_toBottomOf="@+id/histrory"
+        app:layout_constraintVertical_bias="0.69" />
+
+    <TextView
+        android:id="@+id/textView7"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="5dp"
+        android:fontFamily="@font/medium"
+        android:text="Сума"
+        android:textColor="#D9D9D9"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@+id/plusbut"
+        app:layout_constraintEnd_toEndOf="@+id/minusbut"
+        app:layout_constraintStart_toStartOf="@+id/plusbut"
+        app:layout_constraintTop_toTopOf="@+id/orderbut" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/plusbut"
+        android:layout_width="50dp"
+        android:layout_height="34dp"
+        android:background="@drawable/plus"
+        android:fontFamily="@font/regular"
+        android:insetLeft="0dp"
+        android:insetTop="0dp"
+        android:insetRight="0dp"
+        android:insetBottom="0dp"
+        android:text="+"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        android:textSize="25sp"
+        app:layout_constraintBottom_toBottomOf="@+id/minusbut"
+        app:layout_constraintStart_toStartOf="@+id/dodatkbut" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/minusbut"
+        android:layout_width="50dp"
+        android:layout_height="34dp"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/minus"
+        android:fontFamily="@font/regular"
+        android:insetLeft="0dp"
+        android:insetTop="0dp"
+        android:insetRight="0dp"
+        android:insetBottom="0dp"
+        android:text="-"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        android:textSize="25sp"
+        app:layout_constraintBottom_toBottomOf="@+id/orderbut"
+        app:layout_constraintStart_toEndOf="@+id/plusbut" />
+</ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,5 +1,6 @@
 <resources>
-    <string name="version">Версія: 1.57</string>
+    <string name="version_code">1.600</string>
+    <string name="version">Версія: 1.600</string>
 
     <string name="app_name">Таксі Київ</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -15,8 +16,8 @@
     <string name="action_settings">Налаштування</string>
 
     <string name="menu_maps">Мапа</string>
-    <string name="menu_home">Маршрути</string>
-    <string name="menu_gallery">Gallery</string>
+    <string name="menu_home">За адресою</string>
+    <string name="menu_gallery">Мої маршрути</string>
     <string name="menu_slideshow">Slideshow</string>
     <string name="menu_about">Про додаток</string>
     <string name="title_activity_login">LoginActivity</string>
@@ -67,7 +68,7 @@
     <string name="on_city">" по місту."</string>
     <string name="on_city_tv">" по місту"</string>
     <string name="help_button">Підтримка</string>
-    <string name="try_again">Спробуйте ще</string>
+    <string name="try_again">Знову</string>
     <string name="ok_button">Ок</string>
     <string name="to_message">" -> "</string>
     <string name="rout_from_message">Вкажить місце відправлення</string>
@@ -106,7 +107,32 @@
     <string name="NO_SMOKE">Некурячий водій</string>
     <string name="ENGLISH">Англомовний водій</string>
     <string name="CABLE">Трос</string>
-    <string name="FUEL">Підвезення бензину</string>
+    <string name="FUEL">Підвезення палива</string>
     <string name="WIRES">Провід</string>
     <string name="SMOKE">Я куритиму</string>
+
+    <string name="add_services">Додатково</string>
+    <string name="time_limit">Превышение времени выполнения</string>
+    <string name="slow_internet">Низька швидкість інтернету</string>
+    <string name="update_message">Необхідно провести оновлення</string>
+    <string name="update_url">Оновити додаток</string>
+    <string name="new_version">Доступна нова версія</string>
+    <string name="news_of_version">У новій версії покращено продуктивність та додано нові зручні функції</string>
+    <string name="Street_hint">Вулиця</string>
+    <string name="gps">GPS</string>
+    <string name="btn_cost">Підтвердити</string>
+    <string name="texthist">Попередні адреси</string>
+    <string name="routs">Швидке замовлення</string>
+    <string name="on_map">По мапі</string>
+    <string name="add_cost_message">Збільшіть вартість поїздки для швидкого пошуку машини</string>
+    <string name="from_text">Звідки</string>
+    <string name="to_text">Куди</string>
+    <string name="serve">Подача</string>
+    <string name="coment">Коментар</string>
+    <string name="services">ПОСЛУГИ</string>
+    <string name="resettimetoorder">Змініть дату або час для попереднього замовлення</string>
+    <string name="my_routs">Позначьте маршрути для видалення</string>
+    <string name="no_routs">Немає маршрутів</string>
+    <string name="cheng">Змінити</string>
+    <string name="delete_routs">видалити обрані маршрути</string>
 </resources>

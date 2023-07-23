@@ -7,6 +7,31 @@
     tools:layout_editor_absoluteX="6dp"
     tools:layout_editor_absoluteY="8dp">
 
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:text="Тариф:"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="MissingConstraints" />
+
+
+    <Spinner
+        android:id="@+id/list_tariff_arr"
+        android:layout_width="wrap_content"
+        android:layout_height="28dp"
+        android:gravity="center_vertical"
+        android:minHeight="50sp"
+        android:textAppearance="?android:attr/textAppearanceListItemSmall"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView4"
+        tools:ignore="MissingConstraints" />
 
     <AutoCompleteTextView
         android:id="@+id/text_from"
@@ -18,7 +43,6 @@
         android:dropDownWidth="wrap_content"
         android:dropDownHeight="130sp"
         android:dropDownSelector="@color/teal_200"
-        android:textSize="16sp"
         android:gravity="top|left"
         android:hint="@string/from_edit"
         android:inputType="textMultiLine"
@@ -26,10 +50,11 @@
         android:maxLines="3"
         android:minLines="1"
 
+        android:textSize="16sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintHorizontal_bias="0.526"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/list_tariff_arr" />
 
     <EditText
         android:id="@+id/from_number"
@@ -39,38 +64,37 @@
         android:text=" "
         android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/text_from" />
 
     <CheckBox
         android:id="@+id/on_city"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="20sp"
+        android:layout_height="20sp"
         app:layout_constraintBottom_toTopOf="@+id/text_to"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintHorizontal_bias="0.501"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/from_number"
+        app:layout_constraintTop_toBottomOf="@+id/textView5"
         app:layout_constraintVertical_bias="0.0" />
 
     <TextView
+        android:id="@+id/textView5"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="52dp"
-        android:layout_marginBottom="12dp"
         android:text="@string/on_city_tv"
-        app:layout_constraintBottom_toTopOf="@+id/text_to"
-        app:layout_constraintStart_toStartOf="@+id/on_city"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/from_number"
         tools:ignore="MissingConstraints" />
 
     <AutoCompleteTextView
         android:id="@+id/text_to"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="16sp"
         android:layout_marginHorizontal="10sp"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="68dp"
         android:backgroundTint="@color/colorAccent"
         android:dropDownSelector="@color/teal_200"
         android:gravity="top|left"
@@ -79,9 +103,10 @@
         android:lines="3"
         android:maxLines="3"
         android:minLines="1"
+        android:textSize="16sp"
 
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.473"
+        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/from_number"
         tools:ignore="MissingConstraints" />
@@ -94,21 +119,18 @@
         android:text=" "
         android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/text_to" />
-
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="409dp"
+    <Button
+        android:id="@+id/btnAdd"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        android:visibility="invisible"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.5"
+        android:layout_margin="@dimen/activity_horizontal_margin"
+        android:gravity="center"
+        android:text="@string/add_services"
+        app:layout_constraintTop_toBottomOf="@+id/to_number"
+        tools:layout_editor_absoluteX="1dp"
         tools:ignore="MissingConstraints" />
 
     <androidx.constraintlayout.widget.Guideline

@@ -53,11 +53,11 @@ public class ResultSONParser {
         ResultFromThread first = new ResultFromThread(exchanger);
 
         JSONObject jsonarray = new JSONObject(first.message);
-
+        Log.d("TAG", "sendURL jsonarray: "   + jsonarray);
          if(jsonarray.getString("resp_result").equals("200")) {
              costMap.put("resp_result", "200");
+             costMap.put("message", jsonarray.getString("message"));
          } else {
-             Log.d("TAG", "sendURL: " + jsonarray.getString("message"));
              costMap.put("resp_result", "0");
              costMap.put("message", jsonarray.getString("message"));
          }

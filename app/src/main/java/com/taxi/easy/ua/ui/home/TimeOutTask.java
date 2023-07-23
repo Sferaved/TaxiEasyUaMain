@@ -5,7 +5,7 @@ import java.util.TimerTask;
 
 public class TimeOutTask extends TimerTask {
     private Thread thread;
-    private Timer timer;
+    public Timer timer;
 
     public TimeOutTask(Thread thread, Timer timer) {
         this.thread = thread;
