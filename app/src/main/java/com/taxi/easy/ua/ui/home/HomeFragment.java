@@ -38,6 +38,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
@@ -435,7 +436,21 @@ public class HomeFragment extends Fragment {
         mapbut.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(getActivity(), OpenStreetMapActivity.class));
+                if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+                    checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                    checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+
+                }
+                if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    startActivity(new Intent(getActivity(), OpenStreetMapActivity.class));
+                } else {
+                    HomeFragment newFragment = new HomeFragment();
+                    FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+                    transaction.replace(getId(), newFragment);
+                    transaction.addToBackStack(null);
+                    transaction.commit();
+                }
             }
         });
 
@@ -498,6 +513,13 @@ public class HomeFragment extends Fragment {
 
         return root;
     }
+    private void checkPermission(String permission, int requestCode) {
+        // Checking if permission is not granted
+        if (ContextCompat.checkSelfPermission(getContext(), permission) == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(getActivity(), new String[]{permission}, requestCode);
+        }
+    }
+
     private Map <String, String> routChoice(int i) {
         Map <String, String> rout = new HashMap<>();
         SQLiteDatabase database = getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);

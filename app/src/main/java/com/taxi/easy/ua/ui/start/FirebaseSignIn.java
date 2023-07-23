@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -28,6 +29,9 @@ import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract;
 import com.firebase.ui.auth.IdpResponse;
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
@@ -54,16 +58,19 @@ public class FirebaseSignIn extends AppCompatActivity {
 
     static FloatingActionButton fab, btn_again;
     public static final int READ_CALL_PHONE = 0;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.start_layout);
-//        Toast.makeText(this, R.string.check_message, Toast.LENGTH_LONG).show();
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+        }
         ImageView mImageView = findViewById(R.id.imageView2);
         Animation sunRiseAnimation = AnimationUtils.loadAnimation(this, R.anim.sun_rise);
         // Подключаем анимацию к нужному View
         mImageView.startAnimation(sunRiseAnimation);
-
 
 
         fab = findViewById(R.id.fab);
@@ -91,7 +98,7 @@ public class FirebaseSignIn extends AppCompatActivity {
                 .build();
         try {
             signInLauncher.launch(signInIntent);
-            } catch (NullPointerException e) {
+        } catch (NullPointerException e) {
             Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
         }
     }
@@ -125,67 +132,88 @@ public class FirebaseSignIn extends AppCompatActivity {
     private void onSignInResult(FirebaseAuthUIAuthenticationResult result) throws MalformedURLException, JSONException, InterruptedException {
         MainActivity.verifyOrder = false;
 
-    try {
-        if (result.getResultCode() == RESULT_OK) {
-            // Successfully signed in
-            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-            StartActivity.userEmail = user.getEmail();
-            StartActivity.displayName = user.getDisplayName();
+        try {
+            if (result.getResultCode() == RESULT_OK) {
+                // Successfully signed in
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                StartActivity.userEmail = user.getEmail();
+                StartActivity.displayName = user.getDisplayName();
 
-            addUser();
-            if(blackList()) {
-                Log.d("TAG", "onSignInResult: " + user.getEmail() + " " + user.getDisplayName());
-                if(switchState()) {
-                    version();
-                    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                        Intent intent = new Intent(FirebaseSignIn.this, MainActivity.class);
-                        startActivity(intent);
-                    } else {
-                        Intent intent = new Intent(FirebaseSignIn.this, OpenStreetMapActivity.class);
-                        startActivity(intent);
-                    }
+                addUser();
+                if (blackList()) {
+                    checkLocationServiceEnabled(new LocationServiceCallback() {
+                        @Override
+                        public void onLocationServiceResult(boolean isEnabled) throws MalformedURLException {
+                            // Обработайте результат isEnabled здесь
+                            if (isEnabled) {
+                                version();
+                                if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                    Intent intent = new Intent(FirebaseSignIn.this, MainActivity.class);
+                                    startActivity(intent);
+                                } else {
+                                    Intent intent = new Intent(FirebaseSignIn.this, OpenStreetMapActivity.class);
+                                    startActivity(intent);
+                                }
+                            } else {
+                                Intent intent = new Intent(FirebaseSignIn.this, MainActivity.class);
+                                startActivity(intent);
+                            }
+                        }
+                    });
+
+                    MainActivity.verifyOrder = true;
+
                 } else {
-                    Intent intent = new Intent(FirebaseSignIn.this, MainActivity.class);
-                    startActivity(intent);
+                    Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
                 }
-                MainActivity.verifyOrder = true;
-
             } else {
+                // Sign in failed. If response is null the user canceled the
+                // sign-in flow using the back button. Otherwise check
+                // response.getError().getErrorCode() and handle the error.
+                // ...
                 Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
+                btn_again.setVisibility(View.VISIBLE);
+
+
             }
-        } else {
-            // Sign in failed. If response is null the user canceled the
-            // sign-in flow using the back button. Otherwise check
-            // response.getError().getErrorCode() and handle the error.
-            // ...
+        } catch (NullPointerException e) {
             Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
-            btn_again.setVisibility(View.VISIBLE);
-
-
         }
-    } catch (NullPointerException e) {
-        Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
     }
+
+    private void checkLocationServiceEnabled(LocationServiceCallback callback) throws MalformedURLException {
+        Context context = getApplicationContext(); // Получите контекст вашего приложения
+
+        FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(context);
+
+        // Проверяем, доступны ли данные о местоположении
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            callback.onLocationServiceResult(false);
+            return;
+        }
+
+        Task<Location> locationTask = fusedLocationClient.getLastLocation();
+        locationTask.addOnCompleteListener(task -> {
+            if (task.isSuccessful() && task.getResult() != null) {
+                try {
+                    callback.onLocationServiceResult(true);
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                }
+            } else {
+                try {
+                    callback.onLocationServiceResult(false);
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
     }
-    private boolean  switchState() {
-        LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        boolean gps_enabled = false;
-        boolean network_enabled = false;
-
-        try {
-            gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        } catch(Exception ex) {}
-
-        try {
-            network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-        } catch(Exception ex) {}
-
-        if(!gps_enabled || !network_enabled) {
-            return false;
-        } else
-
-            return true;
-    };
+    // Интерфейс колбэка
+    public interface LocationServiceCallback {
+        void onLocationServiceResult(boolean isEnabled) throws MalformedURLException;
+    }
     public void checkPermission(String permission, int requestCode) {
         // Checking if permission is not granted
         if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) {

@@ -212,12 +212,8 @@ public class StartActivity extends Activity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.start_layout);
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-        } else {
-            setContentView(R.layout.start_layout);
             try_again_button = findViewById(R.id.try_again_button);
             try_again_button.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -225,7 +221,6 @@ public class StartActivity extends Activity {
                     startActivity(new Intent(StartActivity.this, StartActivity.class));
                 }
             });
-        }
 
 
 
@@ -360,10 +355,6 @@ public class StartActivity extends Activity {
     }
     public boolean isConnectedToGoogle() {
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-        }
 
         Toast.makeText(this, R.string.check_message, Toast.LENGTH_LONG).show();
         ImageView mImageView = findViewById(R.id.imageView2);
