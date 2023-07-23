@@ -1575,9 +1575,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                     for (String cn : c.getColumnNames()) {
                         str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
                         list.add(c.getString(c.getColumnIndex(cn)));
-
                     }
-
                 } while (c.moveToNext());
             }
         }
@@ -1597,11 +1595,9 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         if(mPhoneNumber != null) {
             String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
             boolean val = Pattern.compile(PHONE_PATTERN).matcher(mPhoneNumber).matches();
-            Log.d("TAG", "onClick No validate: " + val);
+
             if (val == false) {
                 Toast.makeText(map.getContext(), fp , Toast.LENGTH_SHORT).show();
-                Log.d("TAG", "onClick:phoneNumber.getText().toString() " + mPhoneNumber);
-
             } else {
                 StartActivity.insertRecordsUser(mPhoneNumber);
                 StartActivity.verifyPhone = true;
