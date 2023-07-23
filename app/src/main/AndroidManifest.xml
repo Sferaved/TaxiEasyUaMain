@@ -64,6 +64,9 @@
         <activity android:name=".ui.open_map.OpenStreetMapActivity"
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar"
             android:exported="true"/>
+        <activity android:name=".ui.start.StopActivity" />
+        <activity android:name=".ui.start.UpdateActivity" />
+        <activity android:name=".ui.start.GoogleSignInActivity" />
 
         <receiver android:name=".NetworkChangeReceiver" />
     </application>

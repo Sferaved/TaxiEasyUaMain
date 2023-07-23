@@ -1,6 +1,6 @@
 <resources>
-    <string name="version_code">1.601</string>
-    <string name="version">Версія: 1.601</string>
+    <string name="version_code">1.602</string>
+    <string name="version">Версія: 1.602</string>
 
     <string name="app_name">Таксі Київ</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
