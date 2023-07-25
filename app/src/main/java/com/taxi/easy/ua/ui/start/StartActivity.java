@@ -36,7 +36,6 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.maps.Kyiv1;
 import com.taxi.easy.ua.ui.maps.Kyiv10;
-import com.taxi.easy.ua.ui.maps.Kyiv11;
 import com.taxi.easy.ua.ui.maps.Kyiv2;
 import com.taxi.easy.ua.ui.maps.Kyiv3;
 import com.taxi.easy.ua.ui.maps.Kyiv4;
@@ -81,10 +80,9 @@ public class StartActivity extends Activity {
 //    public static String[] arrayStreet = Odessa.street();
 //    public static String api = "apiTest";
 //    public static GeoPoint initialGeoPoint = new GeoPoint(46.4825, 30.7233); // Координаты Одесса
+
     public static String api = "api160";
-
-    public static GeoPoint initialGeoPoint = new GeoPoint(50.4501, 30.5234); // Координаты Киева
-
+//    public static GeoPoint initialGeoPoint = new GeoPoint(50.4501, 30.5234); // Координаты Киева
     public static String[] arrayStreet = join(Kyiv1.street(),
             Kyiv2.street(),
             Kyiv3.street(),
@@ -94,10 +92,8 @@ public class StartActivity extends Activity {
             Kyiv7.street(),
             Kyiv8.street(),
             Kyiv9.street(),
-            Kyiv10.street(),
-            Kyiv11.street());
-
-
+            Kyiv10.street()
+    );
     public static String[] join(String[] a1,
                                 String [] a2,
                                 String [] a3,
@@ -107,8 +103,7 @@ public class StartActivity extends Activity {
                                 String [] a7,
                                 String [] a8,
                                 String [] a9,
-                                String [] a10,
-                                String [] a11
+                                String [] a10
     )
     {
         String [] c = new String[a1.length +
@@ -120,8 +115,7 @@ public class StartActivity extends Activity {
                 a7.length +
                 a8.length +
                 a9.length +
-                a10.length +
-                a11.length];
+                a10.length];
 
         System.arraycopy(a1, 0, c, 0, a1.length);
         System.arraycopy(a2, 0, c, a1.length, a2.length);
@@ -169,16 +163,6 @@ public class StartActivity extends Activity {
                 + a7.length
                 + a8.length
                 + a9.length, a10.length);
-        System.arraycopy(a11, 0, c, a1.length
-                + a2.length
-                + a3.length
-                + a4.length
-                + a5.length
-                + a6.length
-                + a7.length
-                + a8.length
-                + a9.length
-                + a10.length, a11.length);
 
         return c;
     }

@@ -259,25 +259,25 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
         progressBar = findViewById(R.id.progressBar);
 
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);
-        LayoutInflater inflater = this.getLayoutInflater();
-        View view = inflater.inflate(R.layout.check_out_layout, null);
-        builder.setView(view);
-
-        // Устанавливаем отрицательную кнопку (Отмена)
-        builder.setNegativeButton(getString(R.string.cancel_button), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                progressBar.setVisibility(View.INVISIBLE);
-                alertDialog.dismiss();
-                 Intent intent = new Intent(OpenStreetMapActivity.this, MainActivity.class);
-                startActivity(intent);
-            }
-        });
-
-        // Создаем и показываем диалог
-        alertDialog = builder.show();
-
+//        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);
+//        LayoutInflater inflater = this.getLayoutInflater();
+//        View view = inflater.inflate(R.layout.check_out_layout, null);
+//        builder.setView(view);
+//
+//        // Устанавливаем отрицательную кнопку (Отмена)
+//        builder.setNegativeButton(getString(R.string.cancel_button), new DialogInterface.OnClickListener() {
+//            @Override
+//            public void onClick(DialogInterface dialog, int which) {
+//                progressBar.setVisibility(View.INVISIBLE);
+//                alertDialog.dismiss();
+//                 Intent intent = new Intent(OpenStreetMapActivity.this, MainActivity.class);
+//                startActivity(intent);
+//            }
+//        });
+//
+//        // Создаем и показываем диалог
+//        alertDialog = builder.show();
+        Toast.makeText(this, getString(R.string.check_position), Toast.LENGTH_SHORT).show();
         array = arrayAdressAdapter();
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
@@ -782,7 +782,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         return verify;
     }
     private void dialogFromToGeo() throws MalformedURLException, InterruptedException, JSONException {
-        alertDialog.dismiss();
+//        alertDialog.dismiss();
         if(connected()) {
 
             MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);
