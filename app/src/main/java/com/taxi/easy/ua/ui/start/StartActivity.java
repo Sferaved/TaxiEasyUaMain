@@ -1,6 +1,5 @@
 package com.taxi.easy.ua.ui.start;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlarmManager;
@@ -64,7 +63,7 @@ import java.util.concurrent.Exchanger;
 import javax.net.ssl.HttpsURLConnection;
 
 public class StartActivity extends Activity {
-    public static final String DB_NAME = "data_23072023_1";
+    public static final String DB_NAME = "data_25072023_5";
     public static final String TABLE_USER_INFO = "userInfo";
     public static final String TABLE_SETTINGS_INFO = "settingsInfo";
     public static final String TABLE_ORDERS_INFO = "ordersInfo";
@@ -214,13 +213,13 @@ public class StartActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.start_layout);
 
-            try_again_button = findViewById(R.id.try_again_button);
-            try_again_button.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    startActivity(new Intent(StartActivity.this, StartActivity.class));
-                }
-            });
+        try_again_button = findViewById(R.id.try_again_button);
+        try_again_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(StartActivity.this, StartActivity.class));
+            }
+        });
 
 
 
@@ -285,10 +284,10 @@ public class StartActivity extends Activity {
             try_again_button.setVisibility(View.VISIBLE);
             setRepeatingAlarm();
         }
-            fab = findViewById(R.id.fab);
-            btn_again = findViewById(R.id.btn_again);
+        fab = findViewById(R.id.fab);
+        btn_again = findViewById(R.id.btn_again);
 
-            intent = new Intent(this, MainActivity.class);
+        intent = new Intent(this, MainActivity.class);
 
         try {
             initDB();
@@ -298,39 +297,39 @@ public class StartActivity extends Activity {
 
 
         fab.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent = new Intent(Intent.ACTION_DIAL);
-                    intent.setData(Uri.parse("tel:0674443804"));
-                    startActivity(intent);
-                }
-            });
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_DIAL);
+                intent.setData(Uri.parse("tel:0674443804"));
+                startActivity(intent);
+            }
+        });
 
 
-       btn_again.setOnClickListener(new View.OnClickListener() {
-           @Override
-           public void onClick(View v) {
+        btn_again.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
 //               finish();
-               intent = new Intent(StartActivity.this, StartActivity.class);
-               startActivity(intent);
-           }
-       });
+                intent = new Intent(StartActivity.this, StartActivity.class);
+                startActivity(intent);
+            }
+        });
 
-       if(!hasConnection()) {
-           btn_again.setVisibility(View.VISIBLE);
-           Toast.makeText(StartActivity.this, getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
-       } else {
-           try {
-               startIp();
+        if(!hasConnection()) {
+            btn_again.setVisibility(View.VISIBLE);
+            Toast.makeText(StartActivity.this, getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
+        } else {
+            try {
+                startIp();
 
-               intent = new Intent(this, FirebaseSignIn.class);
+                intent = new Intent(this, FirebaseSignIn.class);
 //               intent = new Intent(this, MainActivity.class);
-               startActivity(intent);
-           } catch (MalformedURLException e) {
-               btn_again.setVisibility(View.VISIBLE);
-               Toast.makeText(this, R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
-           }
-       }
+                startActivity(intent);
+            } catch (MalformedURLException e) {
+                btn_again.setVisibility(View.VISIBLE);
+                Toast.makeText(this, R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
+            }
+        }
 
 
     }
@@ -362,44 +361,44 @@ public class StartActivity extends Activity {
         // Подключаем анимацию к нужному View
         mImageView.startAnimation(sunRiseAnimation);
 
-            AsyncTask.execute(() -> {
+        AsyncTask.execute(() -> {
 
-                try {
-                    String googleEndpoint = "https://www.google.com";
-                    long startTime = System.currentTimeMillis();
+            try {
+                String googleEndpoint = "https://www.google.com";
+                long startTime = System.currentTimeMillis();
 
-                    URL url = new URL(googleEndpoint);
-                    HttpsURLConnection connection = null;
-                    connection = (HttpsURLConnection) url.openConnection();
-                    connection.setDoInput(true);
-                    connection.setRequestMethod("GET");
-                    connection.setConnectTimeout(2000); // Установите тайм-аут подключения в миллисекундах
-                    connection.connect();
+                URL url = new URL(googleEndpoint);
+                HttpsURLConnection connection = null;
+                connection = (HttpsURLConnection) url.openConnection();
+                connection.setDoInput(true);
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(2000); // Установите тайм-аут подключения в миллисекундах
+                connection.connect();
 
-                    long endTime = System.currentTimeMillis();
-                    long responseTime = endTime - startTime;
+                long endTime = System.currentTimeMillis();
+                long responseTime = endTime - startTime;
 
-                        // Проверка успешности ответа и времени подключения
-                        if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                            Log.d("TAG", "isConnectedToGoogle: Подключение к Google выполнено успешно. Время ответа: " + responseTime + " мс");
-                            if (responseTime >= 2000) {
-                                Intent intent = new Intent(StartActivity.this, StopActivity.class);
-                                startActivity(intent);
+                // Проверка успешности ответа и времени подключения
+                if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                    Log.d("TAG", "isConnectedToGoogle: Подключение к Google выполнено успешно. Время ответа: " + responseTime + " мс");
+                    if (responseTime >= 2000) {
+                        Intent intent = new Intent(StartActivity.this, StopActivity.class);
+                        startActivity(intent);
 
-                            }
-                        } else {
-                            Log.d("TAG", "Не удалось подключиться к Google. Код ответа: " + connection.getResponseCode());
-                            Intent intent = new Intent(StartActivity.this, StopActivity.class);
-                            startActivity(intent);
-                        }
-                    connection.disconnect();
-                } catch (IOException e) {
-                    Log.d("TAG","Не удалось подключиться к Google. Код ответа: " );
+                    }
+                } else {
+                    Log.d("TAG", "Не удалось подключиться к Google. Код ответа: " + connection.getResponseCode());
                     Intent intent = new Intent(StartActivity.this, StopActivity.class);
                     startActivity(intent);
                 }
+                connection.disconnect();
+            } catch (IOException e) {
+                Log.d("TAG","Не удалось подключиться к Google. Код ответа: " );
+                Intent intent = new Intent(StartActivity.this, StopActivity.class);
+                startActivity(intent);
+            }
 
-            });
+        });
 
 
 
@@ -473,7 +472,14 @@ public class StartActivity extends Activity {
         Log.d("TAG", "initDB: " + database);
 
         database.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_USER_INFO + "(id integer primary key autoincrement," +
+                " verifyOrder text," +
                 " phone_number text);");
+
+        cursorDb = database.query(TABLE_USER_INFO, null, null, null, null, null, null);
+        if (cursorDb.getCount() == 0) {
+            insertUserInfo();
+        }
+
 
         database.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_SETTINGS_INFO + "(id integer primary key autoincrement," +
                 " type_auto text," +
@@ -598,6 +604,22 @@ public class StartActivity extends Activity {
             database.endTransaction();
         }
     }
+    private void insertUserInfo() {
+        String sql = "INSERT INTO " + TABLE_USER_INFO + " VALUES(?,?,?);";
+        SQLiteStatement statement = database.compileStatement(sql);
+        database.beginTransaction();
+        try {
+            statement.clearBindings();
+            statement.bindString(2, "0");
+            statement.bindString(3, "+380");
+
+            statement.execute();
+            database.setTransactionSuccessful();
+
+        } finally {
+            database.endTransaction();
+        }
+    }
     public static void resetRecordsAddServices() {
         ContentValues cv = new ContentValues();
 
@@ -611,12 +633,12 @@ public class StartActivity extends Activity {
     }
 
     public static void insertRecordsUser(String phoneNumber) {
-        String sql = "INSERT INTO " + TABLE_USER_INFO + " VALUES(?,?);";
+        String sql = "INSERT INTO " + TABLE_USER_INFO + " VALUES(?,?,?);";
         SQLiteStatement statement = database.compileStatement(sql);
         database.beginTransaction();
         try {
             statement.clearBindings();
-            statement.bindString(2, phoneNumber);
+            statement.bindString(3, phoneNumber);
 
             statement.execute();
             database.setTransactionSuccessful();
@@ -638,7 +660,7 @@ public class StartActivity extends Activity {
         Cursor cursor_from = database.query(TABLE_ORDERS_INFO,
                 null, selection, selectionArgs, null, null, null);
         Log.d("TAG", "insertRecordsOrders: cursor_from.getCount()" + cursor_from.getCount());
-                selection = "to_street = ?";
+        selection = "to_street = ?";
         selectionArgs = new String[] {to};
 
         Cursor cursor_to = database.query(TABLE_ORDERS_INFO,
@@ -678,7 +700,7 @@ public class StartActivity extends Activity {
             } finally {
                 database.endTransaction();
             }
-            Log.d("TAG", "insertRecordsOrders 654654654: " + logCursor(TABLE_ORDERS_INFO));
+
         }
 
         cursor_from.close();

@@ -19,12 +19,10 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentGalleryBinding;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.start.StartActivity;
 
 import java.util.ArrayList;
@@ -37,6 +35,8 @@ public class GalleryFragment extends Fragment {
     private ListView listView;
     private String[] array;
     private static final int CM_DELETE_ID = 1;
+    TextView textView;
+    Button button;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -46,7 +46,7 @@ public class GalleryFragment extends Fragment {
         binding = FragmentGalleryBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        final TextView textView = binding.textGallery;
+        textView = binding.textGallery;
         textView.setText(R.string.my_routs);
 
         listView = root.findViewById(R.id.listView);
@@ -61,7 +61,7 @@ public class GalleryFragment extends Fragment {
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                     Button button = binding.delBut;
+                     button = binding.delBut;
                      button.setVisibility(View.VISIBLE);
                     button.setOnClickListener(new View.OnClickListener() {
                         @Override
@@ -129,7 +129,7 @@ public class GalleryFragment extends Fragment {
                 selectedPositions.add(pos);
             }
         }
-        reIndexOrders();
+//        reIndexOrders();
         for (int position : selectedPositions) {
             int i = position + 1;
 
@@ -140,11 +140,18 @@ public class GalleryFragment extends Fragment {
             database.close();
         }
         reIndexOrders();
-        GalleryFragment newFragment = new GalleryFragment();
-        FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-        transaction.replace(getId(), newFragment);
-        transaction.addToBackStack(null);
-        transaction.commit();
+        array = arrayToRoutsAdapter();
+        if (array != null) {
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.services_adapter_layout, array);
+            listView.setAdapter(adapter);
+        } else {
+            // Если массив пустой, отобразите текст "no_routs" вместо списка
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.services_adapter_layout, new String[]{});
+            listView.setAdapter(adapter);
+            textView.setText(R.string.no_routs);
+            button.setVisibility(View.INVISIBLE);
+        }
+
 
     }
 
@@ -162,12 +169,12 @@ public class GalleryFragment extends Fragment {
                                 routMaps.get(i).get("to_number").toString();
                     } else if(!routMaps.get(i).get("to_street").toString().equals(routMaps.get(i).get("to_number").toString())) {
                         arrayRouts[i] = routMaps.get(i).get("from_street").toString() +
-                                OpenStreetMapActivity.tom +
+                                getString(R.string.to_message) +
                                 routMaps.get(i).get("to_street").toString() + " " +
                                 routMaps.get(i).get("to_number").toString();
                     } else {
                         arrayRouts[i] = routMaps.get(i).get("from_street").toString()  +
-                                OpenStreetMapActivity.tom +
+                                getString(R.string.to_message) +
                                 routMaps.get(i).get("to_street").toString();
 
                     }

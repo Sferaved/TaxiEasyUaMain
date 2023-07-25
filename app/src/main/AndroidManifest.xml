@@ -37,7 +37,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TaxiEasyUa"
         tools:targetApi="31">
-
+        <activity
+            android:name=".ui.finish.FinishActivity"
+            android:exported="false" />
         <meta-data
             android:name="visicom.API_KEY"
             android:value="@string/visicom_key_storage" />

@@ -10,6 +10,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -41,6 +43,7 @@ import com.taxi.easy.ua.databinding.ActivityMainBinding;
 import com.taxi.easy.ua.ui.home.MyPhoneDialogFragment;
 import com.taxi.easy.ua.ui.start.StartActivity;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -49,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
     NetworkChangeReceiver networkChangeReceiver;
-    public static boolean verifyOrder = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -176,10 +179,10 @@ public class MainActivity extends AppCompatActivity {
         @SuppressLint({"MissingInflatedId", "LocalSuppress"})
         EditText phoneNumber = view.findViewById(R.id.phoneNumber);
 
-        List<String> stringList =  StartActivity.logCursor(StartActivity.TABLE_USER_INFO);
-        Log.d("TAG", "phoneNumberChange stringList: " + stringList.size());
+        List<String> stringList =  logCursor(StartActivity.TABLE_USER_INFO, getApplicationContext());
+
         if(stringList.size() != 0) {
-            phoneNumber.setText(stringList.get(1));
+            phoneNumber.setText(stringList.get(2));
 
 
 //        String result = phoneNumber.getText().toString();
@@ -204,14 +207,29 @@ public class MainActivity extends AppCompatActivity {
                 }).setNegativeButton(cancel_button, null)
                 .show();
         } else {
-            if (!StartActivity.verifyPhone) {
+            if (!verifyPhone(getApplicationContext())) {
                 getPhoneNumber();
             }
-            if (!StartActivity.verifyPhone) {
+            if (!verifyPhone(getApplicationContext())) {
                 MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment();
                 bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
             }
         }
+    }
+
+    private static boolean verifyPhone(Context context) {
+        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursor = database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+        boolean verify = true;
+        if (cursor.getCount() == 1) {
+
+            if (logCursor(StartActivity.TABLE_USER_INFO, context).get(2).equals("+380")) {
+                verify = false;
+            }
+            cursor.close();
+        }
+
+        return verify;
     }
 
     private void getPhoneNumber () {
@@ -300,4 +318,27 @@ public class MainActivity extends AppCompatActivity {
         unregisterReceiver(networkChangeReceiver);
         super.onStop();
     }
+    @SuppressLint("Range")
+    public static List<String> logCursor(String table, Context context) {
+        List<String> list = new ArrayList<>();
+        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor c = database.query(table, null, null, null, null, null, null);
+        if (c != null) {
+            if (c.moveToFirst()) {
+                String str;
+                do {
+                    str = "";
+                    for (String cn : c.getColumnNames()) {
+                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
+                        list.add(c.getString(c.getColumnIndex(cn)));
+
+                    }
+
+                } while (c.moveToNext());
+            }
+        }
+        database.close();
+        return list;
+    }
+
 }

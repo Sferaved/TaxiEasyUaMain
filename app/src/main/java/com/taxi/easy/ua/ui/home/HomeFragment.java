@@ -14,6 +14,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteStatement;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -47,12 +48,12 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentHomeBinding;
-import com.taxi.easy.ua.ui.gallery.GalleryFragment;
+import com.taxi.easy.ua.ui.finish.FinishActivity;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
-import com.taxi.easy.ua.ui.start.ResultSONParser;
 import com.taxi.easy.ua.ui.start.StartActivity;
+import com.taxi.easy.ua.ui.start.ResultSONParser;
 
 import org.json.JSONException;
 import org.osmdroid.util.GeoPoint;
@@ -263,7 +264,7 @@ public class HomeFragment extends Fragment {
                                 Toast.makeText(getActivity(), getString(R.string.error_message) + message, Toast.LENGTH_SHORT).show();
                             }
                             if (!orderCost.equals("0")) {
-                                if(!MainActivity.verifyOrder) {
+                                if(!verifyOrder(getContext())) {
                                     Toast.makeText(getActivity(), getString(R.string.cost_of_order) + orderCost + getString(R.string.firebase_false_message), Toast.LENGTH_SHORT).show();
                                 } else {
 
@@ -299,10 +300,10 @@ public class HomeFragment extends Fragment {
                                             costView.setText(String.valueOf(StartActivity.cost));
                                         }
                                     });
-                                    if (!StartActivity.verifyPhone) {
+                                    if (!verifyPhone(getContext())) {
                                         getPhoneNumber();
                                     }
-                                    if (!StartActivity.verifyPhone) {
+                                    if (!verifyPhone(getContext())) {
                                         MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment();
                                         bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                                     }
@@ -312,7 +313,7 @@ public class HomeFragment extends Fragment {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
                                                     if(connected()) {
-                                                        if (StartActivity.verifyPhone) {
+                                                        if (verifyPhone(getContext())) {
                                                             try {
                                                                 String urlOrder = getTaxiUrlSearch(from, from_number.getText().toString(), to, to_number.getText().toString(), "orderSearch", getActivity());
                                                                 Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
@@ -334,25 +335,28 @@ public class HomeFragment extends Fragment {
                                                                                 to_name + " " + to_number.getText() + "." +
                                                                                 getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
                                                                     }
-                                                                    Toast.makeText(getActivity(), messageResult, Toast.LENGTH_LONG).show();
-
+//                                                                    Toast.makeText(getActivity(), messageResult, Toast.LENGTH_LONG).show();
+                                                                    Intent intent = new Intent(getActivity(), FinishActivity.class);
+                                                                    intent.putExtra("messageResult_key", messageResult);
+                                                                    startActivity(intent);
                                                                     if(from_name.equals(to_name)) {
                                                                         if(!sendUrlMap.get("lat").equals("0")) {
-                                                                            StartActivity.insertRecordsOrders(
+                                                                            insertRecordsOrders(
                                                                                     from_name, from_name,
                                                                                     from_number.getText().toString(), from_number.getText().toString(),
                                                                                     (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
-                                                                                    (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng")
+                                                                                    (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
+                                                                                    getContext()
                                                                             );
                                                                         }
                                                                     } else {
 
                                                                         if(!sendUrlMap.get("lat").equals("0")) {
-                                                                            StartActivity.insertRecordsOrders(
+                                                                            insertRecordsOrders(
                                                                                     from_name, to_name,
                                                                                     from_number.getText().toString(), to_number.getText().toString(),
                                                                                     (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
-                                                                                    (String) sendUrlMap.get("lat"), (String) sendUrlMap.get("lng")
+                                                                                    (String) sendUrlMap.get("lat"), (String) sendUrlMap.get("lng"), getContext()
                                                                             );
                                                                         }
                                                                     }
@@ -512,6 +516,50 @@ public class HomeFragment extends Fragment {
         });
 
         return root;
+    }
+
+    private boolean verifyOrder(Context context) {
+        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursor = database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+
+        boolean verify = true;
+        if (cursor.getCount() == 1) {
+
+            if (logCursor(StartActivity.TABLE_USER_INFO, context).get(1).equals("0")) {
+                verify = false;
+            }
+            cursor.close();
+        }
+
+        return verify;
+    }
+
+    private boolean verifyPhone(Context context) {
+        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursor = database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+        boolean verify = true;
+        if (cursor.getCount() == 1) {
+
+            if (logCursor(StartActivity.TABLE_USER_INFO, context).get(2).equals("+380")) {
+                verify = false;
+            }
+            cursor.close();
+        }
+
+        return verify;
+    }
+    public static void updateRecordsUser(String result, Context context) {
+        ContentValues cv = new ContentValues();
+
+        cv.put("phone_number", result);
+
+        // обновляем по id
+        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+        int updCount = database.update(StartActivity.TABLE_USER_INFO, cv, "id = ?",
+                new String[] { "1" });
+        Log.d("TAG", "updated rows count = " + updCount);
+
+
     }
     private void checkPermission(String permission, int requestCode) {
         // Checking if permission is not granted
@@ -722,12 +770,10 @@ public class HomeFragment extends Fragment {
                                                             FromAddressString + getString(R.string.to_message) + ToAddressString +
                                                             getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH);
 
-                                                    Toast.makeText(getActivity(), messageResult, Toast.LENGTH_LONG).show();
-                                                    HomeFragment newFragment = new HomeFragment();
-                                                    FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-                                                    transaction.replace(getId(), newFragment);
-                                                    transaction.addToBackStack(null);
-                                                    transaction.commit();
+//                                                    Toast.makeText(getActivity(), messageResult, Toast.LENGTH_LONG).show();
+                                                    Intent intent = new Intent(getActivity(), FinishActivity.class);
+                                                    intent.putExtra("messageResult_key", messageResult);
+                                                    startActivity(intent);
                                                 } else {
                                                     message = (String) sendUrlMapCost.get("message");
 
@@ -806,14 +852,14 @@ public class HomeFragment extends Fragment {
         if(urlAPI.equals("costSearch")) {
             Cursor c = database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
             if (c.getCount() == 1) {
-                phoneNumber = logCursor(StartActivity.TABLE_USER_INFO, context).get(1);
+                phoneNumber = logCursor(StartActivity.TABLE_USER_INFO, context).get(2);
                 c.close();
             }
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + StartActivity.displayName ;
         }
 
         if(urlAPI.equals("orderSearch")) {
-            phoneNumber = logCursor(StartActivity.TABLE_USER_INFO, context).get(1);
+            phoneNumber = logCursor(StartActivity.TABLE_USER_INFO, context).get(2);
 
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
                     + StartActivity.displayName  + "/" + StartActivity.addCost + "/" + time + "/" + comment + "/" + date;
@@ -911,7 +957,7 @@ public class HomeFragment extends Fragment {
 //                getActivity().finish();
 
             } else {
-                StartActivity.insertRecordsUser(mPhoneNumber);
+                updateRecordsUser(mPhoneNumber, getContext());
             }
         }
 
@@ -946,14 +992,14 @@ public class HomeFragment extends Fragment {
             Cursor c = database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
 
             if (c.getCount() == 1) {
-                phoneNumber = logCursor(StartActivity.TABLE_USER_INFO, context).get(1);
+                phoneNumber = logCursor(StartActivity.TABLE_USER_INFO, context).get(2);
                 c.close();
             }
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + StartActivity.displayName + "(" + StartActivity.userEmail + ")";
         }
 
         if(urlAPI.equals("orderSearchMarkers")) {
-            phoneNumber = logCursor(StartActivity.TABLE_USER_INFO, context).get(1);
+            phoneNumber = logCursor(StartActivity.TABLE_USER_INFO, context).get(2);
 
 
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
@@ -1006,5 +1052,54 @@ public class HomeFragment extends Fragment {
 
 
         return url;
+    }
+
+    private static void insertRecordsOrders( String from, String to,
+                                            String from_number, String to_number,
+                                            String from_lat, String from_lng,
+                                            String to_lat, String to_lng, Context context) {
+
+        String selection = "from_street = ?";
+        String[] selectionArgs = new String[] {from};
+        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursor_from = database.query(StartActivity.TABLE_ORDERS_INFO,
+                null, selection, selectionArgs, null, null, null);
+
+        selection = "to_street = ?";
+        selectionArgs = new String[] {to};
+
+        Cursor cursor_to = database.query(StartActivity.TABLE_ORDERS_INFO,
+                null, selection, selectionArgs, null, null, null);
+
+
+
+        if (cursor_from.getCount() == 0 || cursor_to.getCount() == 0) {
+
+            String sql = "INSERT INTO " + StartActivity.TABLE_ORDERS_INFO + " VALUES(?,?,?,?,?,?,?,?,?);";
+            SQLiteStatement statement = database.compileStatement(sql);
+            database.beginTransaction();
+            try {
+                statement.clearBindings();
+                statement.bindString(2, from);
+                statement.bindString(3, from_number);
+                statement.bindString(4, from_lat);
+                statement.bindString(5, from_lng);
+                statement.bindString(6, to);
+                statement.bindString(7, to_number);
+                statement.bindString(8, to_lat);
+                statement.bindString(9, to_lng);
+
+                statement.execute();
+                database.setTransactionSuccessful();
+
+            } finally {
+                database.endTransaction();
+            }
+
+        }
+
+        cursor_from.close();
+        cursor_to.close();
+
     }
 }
