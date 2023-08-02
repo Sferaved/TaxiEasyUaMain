@@ -69,7 +69,7 @@ public class StartActivity extends Activity {
     public static String userEmail, displayName;
 
     public static final String  apiTest = "apiTest";
-    public static final String  apiKyiv = "apiPas170";
+    public static final String  apiKyiv = "apiPas1700";
 
 
     public static long addCost, cost;
@@ -560,22 +560,37 @@ public class StartActivity extends Activity {
                     if (status != null) {
                         String result = status.getResponse();
                         String message = getString(R.string.your_city);
-
+                        SQLiteDatabase database = openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+                        ContentValues cv = new ContentValues();
                         switch (result){
                             case "Kyiv City":
                                 message += getString(R.string.Kyiv_city);
+                                cv = new ContentValues();
+                                cv.put("tarif", "Базовий онлайн");
+                                database.update(StartActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                                        new String[] { "1" });
                                 break;
                             case "Odessa":
                                 message += getString(R.string.Odessa);
+                                cv.put("tarif", "Базовый");
+                                database.update(StartActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                                        new String[] { "1" });
+                                database.close();
                                 break;
                             default:
                                 message += getString(R.string.Odessa);
+                                cv.put("tarif", "Базовый");
+                                database.update(StartActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                                        new String[] { "1" });
+                                database.close();
                                 break;
                         }
-                        SQLiteDatabase database = openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+
                         updateCity(result);
                         database.close();
                         Toast.makeText(StartActivity.this, message, Toast.LENGTH_SHORT).show();
+
+
                     }
                 }
             }
