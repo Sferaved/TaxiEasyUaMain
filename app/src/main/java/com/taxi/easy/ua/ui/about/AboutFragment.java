@@ -13,9 +13,8 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.databinding.FragmentAboutBinding;
-
+import  com.taxi.easy.ua.R;
+import  com.taxi.easy.ua.databinding.FragmentAboutBinding;
 
 public class AboutFragment extends Fragment {
 

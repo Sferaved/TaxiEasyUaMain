@@ -21,9 +21,9 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.databinding.FragmentGalleryBinding;
-import com.taxi.easy.ua.ui.start.StartActivity;
+import  com.taxi.easy.ua.R;
+import  com.taxi.easy.ua.databinding.FragmentGalleryBinding;
+import  com.taxi.easy.ua.ui.start.StartActivity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -129,7 +129,7 @@ public class GalleryFragment extends Fragment {
                 selectedPositions.add(pos);
             }
         }
-//        reIndexOrders();
+
         for (int position : selectedPositions) {
             int i = position + 1;
 
@@ -149,8 +149,8 @@ public class GalleryFragment extends Fragment {
             ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.services_adapter_layout, new String[]{});
             listView.setAdapter(adapter);
             textView.setText(R.string.no_routs);
-            button.setVisibility(View.INVISIBLE);
         }
+        button.setVisibility(View.INVISIBLE);
 
 
     }

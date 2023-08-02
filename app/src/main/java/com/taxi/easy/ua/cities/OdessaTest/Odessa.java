@@ -1,8 +1,8 @@
-package com.taxi.easy.ua.ui.maps;
+package com.taxi.easy.ua.cities.OdessaTest;
 
 public class Odessa {
 
-    public static String[]  street() {
+    public static String[]  arrayStreet() {
         return new String[]{
                 "10 АПРЕЛЯ УЛ.",
         "10-Я ЛИНИЯ (КИЕВСКИЙ Р-Н, ДЕРИБАСОВКА)",

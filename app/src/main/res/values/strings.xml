@@ -1,6 +1,6 @@
 <resources>
-    <string name="version_code">1.609</string>
-    <string name="version">Версия: 1.609</string>
+    <string name="version_code">1.700</string>
+    <string name="version">Версия: 1.700</string>
 
     <string name="app_name">Такси Киев</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -55,7 +55,7 @@
     <string name="make_rout_message">Сформируйте маршрут</string>
     <string name="error_message">"Ошибка: "</string>
     <string name="to_point">"Место назначения: "</string>
-    <string name="cost_of_order">"Стоимость поездки: "</string>
+    <string name="cost_of_order">" Стоимость поездки: "</string>
     <string name="firebase_false_message">грн. Извините, без проверки Google-аккаунта заказ невозможен.</string>
     <string name="UAH">грн</string>
     <string name="order">Заказать</string>
@@ -80,7 +80,7 @@
     <string name="from_edit">Откуда</string>
     <string name="sms_code">Код проверки со смс-сообщения</string>
     <string name="android">Андроид-приложение для скорых и дешевых поездок по Киеву и области.</string>
-    <string name="good_day">Приветствую. Нашел великолепное приложение для поездок на такси. \n \n Советую попробовать по ссылке в официальном магазине Google: \n\n https://play.google.com/store/apps/details?id=com.taxi.easy.ua \n\n Хорошего дня. \n Еще увидимся.</string>
+    <string name="good_day">Приветствую. Нашел великолепное приложение для поездок на такси. \n \n Советую попробовать по ссылке в официальном магазине Google: \n\n https://play.google.com/store/apps/details?id= com.taxi.easy.ua \n\n Хорошего дня. \n Еще увидимся.</string>
     <string name="share">Посоветовать другу приложение...</string>
     <string name="no_email_agent">Почтовый клиент не установлен.</string>
     <string name="check_position">Ожидайте, происходит определение Вашего местоположения...</string>
@@ -94,8 +94,6 @@
     <string name="end_point_marker">Место назначения</string>
     <string name="error_firebase_start">Ошибка проверки. Наберите оператора.</string>
     <string name="address_error_message">Ошибка ввода адреса</string>
-
-
 
 
     <string name="BAGGAGE">Загрузка салона</string>
@@ -139,5 +137,20 @@
     <string name="delete_routs">удалить выбранные маршруты</string>
     <string name="text_result">Ваш заказ</string>
     <string name="btn_again_text">Заказать еще</string>
+    <string name="textStatus">Статус заказа</string>
+    <string name="cancel_order">Отменить заказ</string>
+    <string name="ex_st_1">Ожидается поиск машины (для предварительного заказа)</string>
+    <string name="ex_st_2">Машина найдена.</string>
+    <string name="ex_st_3">" Номер авто: "</string>
+    <string name="ex_st_4">" Телефон водителя: "</string>
+    <string name="ex_st_5">" Ожидаемое время подачи: "</string>
+    <string name="ex_st_0">Выполняется поиск машины</string>
+    <string name="your_city">"Ваш город "</string>
+    <string name="Kyiv_city">Киев</string>
+    <string name="Odessa">Одесса</string>
+    <string name="gps_message">Для использовния карты включите GPS</string>
+    <string name="city">Город</string>
+    <string name="change_message">"Смена базы адресов. "</string>
+
 
 </resources>

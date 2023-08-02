@@ -7,7 +7,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 
-import com.taxi.easy.ua.R;
+import  com.taxi.easy.ua.R;
 
 public class CustomListAdapter extends BaseAdapter {
 

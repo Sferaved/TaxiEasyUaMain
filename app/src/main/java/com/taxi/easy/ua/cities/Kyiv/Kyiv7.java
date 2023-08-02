@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.maps;
+package com.taxi.easy.ua.cities.Kyiv;
 
 public class Kyiv7 {
     public static String[] street() {

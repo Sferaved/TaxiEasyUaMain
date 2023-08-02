@@ -18,8 +18,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.start.StartActivity;
+import  com.taxi.easy.ua.R;
+import  com.taxi.easy.ua.ui.start.StartActivity;
 
 import java.util.regex.Pattern;
 
@@ -72,5 +72,6 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
 
 
     }
+
 }
 

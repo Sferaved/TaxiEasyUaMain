@@ -5,6 +5,8 @@ import static android.content.Context.MODE_PRIVATE;
 import android.annotation.SuppressLint;
 import android.app.TimePickerDialog;
 import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.util.SparseBooleanArray;
@@ -23,10 +25,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.start.StartActivity;
+import  com.taxi.easy.ua.R;
+import  com.taxi.easy.ua.ui.start.StartActivity;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -84,7 +87,7 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
         ArrayAdapter<String> adapterSet = new ArrayAdapter<>(view.getContext(), R.layout.services_adapter_layout, arrayService);
         listView.setAdapter(adapterSet);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-        List<String> services = StartActivity.logCursor(StartActivity.TABLE_SERVICE_INFO);
+        List<String> services = logCursor(StartActivity.TABLE_SERVICE_INFO, view.getContext());
         for (int i = 0; i < arrayServiceCode.length; i++) {
             if(services.get(i+1).equals("1")) {
                 listView.setItemChecked(i,true);
@@ -106,16 +109,13 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
         spinner.setAdapter(adapterTariff);
         spinner.setPrompt("Title");
         spinner.setBackgroundResource(R.drawable.spinner_border);
-        StartActivity.cursorDb = StartActivity.database.query(StartActivity.TABLE_SETTINGS_INFO, null, null, null, null, null, null);
-        String tariffOld =  StartActivity.logCursor(StartActivity.TABLE_SETTINGS_INFO).get(2);
-        if (StartActivity.cursorDb != null && !StartActivity.cursorDb.isClosed())
-            StartActivity.cursorDb.close();
+
+        String tariffOld =  logCursor(StartActivity.TABLE_SETTINGS_INFO,view.getContext()).get(2);
         for (int i = 0; i < tariffArr.length; i++) {
             if(tariffArr[i].equals(tariffOld)) {
                 spinner.setSelection(i);
             }
         }
-
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -124,8 +124,10 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
                 cv.put("tarif", tariff);
 
                 // обновляем по id
-                StartActivity.database.update(StartActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                SQLiteDatabase database = view.getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+                database.update(StartActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                         new String[] { "1" });
+                database.close();
             }
 
             @Override
@@ -147,7 +149,28 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
 
         return view;
     }
+    @SuppressLint("Range")
+    private List<String> logCursor(String table, Context context) {
+        List<String> list = new ArrayList<>();
+        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor c = database.query(table, null, null, null, null, null, null);
+        if (c != null) {
+            if (c.moveToFirst()) {
+                String str;
+                do {
+                    str = "";
+                    for (String cn : c.getColumnNames()) {
+                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
+                        list.add(c.getString(c.getColumnIndex(cn)));
 
+                    }
+
+                } while (c.moveToNext());
+            }
+        }
+        database.close();
+        return list;
+    }
     @Override
     public void onPause() {
         super.onPause();

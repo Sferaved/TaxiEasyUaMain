@@ -1,6 +1,6 @@
 <resources>
-    <string name="version_code">1.609</string>
-    <string name="version">Версія: 1.609</string>
+    <string name="version_code">1.700</string>
+    <string name="version">Версія: 1.700</string>
 
     <string name="app_name">Таксі Київ</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -55,11 +55,11 @@
     <string name="make_rout_message">Сформуйте маршрут</string>
     <string name="error_message">"Помілка: "</string>
     <string name="to_point">"Місце призначення: "</string>
-    <string name="cost_of_order">"Вартість поїздки: "</string>
+    <string name="cost_of_order">" Вартість поїздки: "</string>
     <string name="firebase_false_message">грн. Вибачте, без перевірки Google-акаунту замовлення не можливе.</string>
     <string name="UAH">грн</string>
     <string name="order">Замовити</string>
-    <string name="thanks_message">"Дякуемо за замовлення "</string>
+    <string name="thanks_message">"Дякуємо за замовлення "</string>
     <string name="call_of_order">" Очикуйте дзвонка оператора. Вартість поїздки: "</string>
     <string name="next_try">" Спробуйте ще або зателефонуйте оператору."</string>
     <string name="help">Підтримка</string>
@@ -80,7 +80,7 @@
     <string name="from_edit">Звідки</string>
     <string name="sms_code">Код перевіркі зі смс-повідомлення</string>
     <string name="android">Андроїд-додаток для швидких та дешевих поїздок по Києву та області.</string>
-    <string name="good_day">Мої вітання. \n \n Знайшов чудовий додаток для поїздок на таксі. \n \n Раджу спробувати за посиланням в офіційному магазині Google: \n\n https://play.google.com/store/apps/details?id=com.taxi.easy.ua \n\n Гарного дня. \n Ще побачимось.</string>
+    <string name="good_day">Мої вітання. \n \n Знайшов чудовий додаток для поїздок на таксі. \n \n Раджу спробувати за посиланням в офіційному магазині Google: \n\n https://play.google.com/store/apps/details?id= com.taxi.easy.ua \n\n Гарного дня. \n Ще побачимось.</string>
     <string name="share">Порадити другові додаток...</string>
     <string name="no_email_agent">Поштовий клієнт не встановлено.</string>
     <string name="check_position">Зачекайте, відбувається визначення Вашого розташування...</string>
@@ -137,4 +137,18 @@
     <string name="delete_routs">видалити обрані маршрути</string>
     <string name="text_result">Ваше замовлення</string>
     <string name="btn_again_text">Замовити ще</string>
+    <string name="textStatus">Статус замовлення</string>
+    <string name="cancel_order">Скасувати замовлення</string>
+    <string name="ex_st_1">Очікується пошук машини (для попереднього замовлення)</string>
+    <string name="ex_st_2">Знайдена машина.</string>
+    <string name="ex_st_3">" Номер авто: "</string>
+    <string name="ex_st_4">" Телефон водія: "</string>
+    <string name="ex_st_5">" Очікуваний час подачі: "</string>
+    <string name="ex_st_0">Здійснюється пошук машини</string>
+    <string name="your_city">"Ваше місто "</string>
+    <string name="Kyiv_city">Київ</string>
+    <string name="Odessa">Одеса</string>
+    <string name="gps_message">Для використання карти увімкніть GPS</string>
+    <string name="city">Місто</string>
+    <string name="change_message">"Зміна бази адрес."</string>
 </resources>

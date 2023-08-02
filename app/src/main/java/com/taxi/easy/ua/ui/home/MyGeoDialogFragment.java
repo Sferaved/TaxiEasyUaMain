@@ -12,8 +12,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-import com.taxi.easy.ua.MainActivity;
-import com.taxi.easy.ua.R;
+import  com.taxi.easy.ua.MainActivity;
+import  com.taxi.easy.ua.R;
 
 
 public class MyGeoDialogFragment extends BottomSheetDialogFragment {

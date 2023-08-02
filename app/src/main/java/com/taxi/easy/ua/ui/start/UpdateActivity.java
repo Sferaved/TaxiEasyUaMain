@@ -15,7 +15,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.taxi.easy.ua.R;
+import  com.taxi.easy.ua.R;
 
 public class UpdateActivity extends Activity {
     static FloatingActionButton fab;
@@ -56,7 +56,7 @@ public class UpdateActivity extends Activity {
                    Toast.makeText(UpdateActivity.this, getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
                } else {
                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                   intent.setData(Uri.parse("https://play.google.com/store/apps/details?id=com.taxi.easy.ua&pli=1"));
+                   intent.setData(Uri.parse("https://play.google.com/store/apps/details?id= com.taxi.easy.ua"));
                    startActivity(intent);
                }
            }
