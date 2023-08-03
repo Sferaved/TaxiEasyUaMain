@@ -57,6 +57,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import  com.taxi.easy.ua.MainActivity;
 import  com.taxi.easy.ua.NetworkChangeReceiver;
 import  com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ServerConnection;
 import  com.taxi.easy.ua.cities.Kyiv.KyivCity;
 import  com.taxi.easy.ua.cities.OdessaTest.Odessa;
 import  com.taxi.easy.ua.ui.finish.FinishActivity;
@@ -67,6 +68,7 @@ import  com.taxi.easy.ua.ui.maps.FromJSONParser;
 import  com.taxi.easy.ua.ui.maps.ToJSONParser;
 import  com.taxi.easy.ua.ui.start.ResultSONParser;
 import  com.taxi.easy.ua.ui.start.StartActivity;
+import com.taxi.easy.ua.ui.start.StopActivity;
 
 import org.json.JSONException;
 import org.osmdroid.api.IMapController;
@@ -87,6 +89,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 
@@ -342,7 +345,6 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                     dialogFromToGeo();
                 } catch (MalformedURLException | InterruptedException | JSONException e) {
                     Toast.makeText(getApplicationContext(), getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
-                    finish();
                 }
 
             }
@@ -563,6 +565,29 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
     }
+
+    public static CompletableFuture<Boolean> checkConnectionAsync() {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+
+        ServerConnection.checkConnection("https://m.easy-order-taxi.site/", new ServerConnection.ConnectionCallback() {
+            @Override
+            public void onConnectionResult(boolean isConnected) {
+                future.complete(isConnected);
+            }
+        });
+
+        return future;
+    }
+    private static boolean hasServer() {
+        CompletableFuture<Boolean> connectionFuture = checkConnectionAsync();
+        boolean isConnected = false;
+        try {
+            isConnected = connectionFuture.get();
+        } catch (Exception e) {
+
+        }
+        return  isConnected;
+    };
     private static boolean connected() {
 
         Boolean hasConnect = false;
@@ -582,16 +607,13 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             hasConnect = true;
         }
 
-        if (!hasConnect) {
-            Toast.makeText(map.getContext(), vi, Toast.LENGTH_LONG).show();
-        }
-        Log.d("TAG", "connected: " + hasConnect);
         return hasConnect;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     public static void dialogMarkers(FragmentManager fragmentManager) throws MalformedURLException, JSONException, InterruptedException {
-        if(endPoint != null) {
+        if(hasServer()){
+            if(endPoint != null) {
 
             Log.d("TAG", "onResume: endPoint" +  endPoint.getLatitude());
             map.getOverlays().remove(OpenStreetMapActivity.m);
@@ -782,6 +804,9 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
             OpenStreetMapActivity.showRout(startPoint, endPoint);
         };
+        } else {
+            Toast.makeText(map.getContext(), R.string.server_error_connected, Toast.LENGTH_SHORT).show();
+        }
     }
 
     private static boolean verifyOrder(Context context) {
@@ -817,7 +842,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
     }
     private void dialogFromToGeo() throws MalformedURLException, InterruptedException, JSONException {
 //        alertDialog.dismiss();
-        if(connected()) {
+        if(hasServer()) {
 
             MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);
             LayoutInflater inflater = this.getLayoutInflater();
@@ -1129,12 +1154,12 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                     }).show();
 
         }  else {
-            Toast.makeText(OpenStreetMapActivity.this, getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
+            Toast.makeText(OpenStreetMapActivity.this, getString(R.string.server_error_connected), Toast.LENGTH_LONG).show();
         }
     }
     private void dialogFromToGeoAdress(String[] array) throws MalformedURLException, InterruptedException, JSONException {
 
-        if(connected()) {
+        if(hasServer()) {
 
             MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);
             LayoutInflater inflater = this.getLayoutInflater();
@@ -1357,7 +1382,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                     })
                     .show();
         } else {
-            Toast.makeText(OpenStreetMapActivity.this, getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
+            Toast.makeText(OpenStreetMapActivity.this, getString(R.string.server_error_connected), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -1441,7 +1466,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
     }
     @RequiresApi(api = Build.VERSION_CODES.O)
     private static String getTaxiUrlSearchGeo(double originLatitude, double originLongitude, String to, String to_number, String urlAPI, Context context) {
-
+    if(hasServer()) {
         //  Проверка даты и времени
 
         List<String> stringList = logCursor(StartActivity.TABLE_ADD_SERVICE_INFO, context);
@@ -1522,101 +1547,107 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/" + parameters + "/" + result;
         Log.d("TAG", "getTaxiUrlSearch services: " + url);
 
-
-
-
         return url;
+    } else  {
+        Toast.makeText(context, context.getString(R.string.server_error_connected), Toast.LENGTH_LONG).show();
+        return null;
+    }
+
     }
     @RequiresApi(api = Build.VERSION_CODES.O)
     public static String getTaxiUrlSearchMarkers(double originLatitude, double originLongitude,
                                                  double toLatitude, double toLongitude,
                                                  String urlAPI, Context context) {
         //  Проверка даты и времени
+        if(hasServer()) {
+            List<String> stringList = logCursor(StartActivity.TABLE_ADD_SERVICE_INFO, context);
+            String time = stringList.get(1);
+            String comment = stringList.get(2);
+            String date = stringList.get(3);
 
-        List<String> stringList = logCursor(StartActivity.TABLE_ADD_SERVICE_INFO, context);
-        String time = stringList.get(1);
-        String comment = stringList.get(2);
-        String date = stringList.get(3);
+            // Origin of route
+            String str_origin = originLatitude + "/" + originLongitude;
 
-        // Origin of route
-        String str_origin = originLatitude + "/" + originLongitude;
+            // Destination of route
+            String str_dest = toLatitude + "/" + toLongitude;
 
-        // Destination of route
-        String str_dest = toLatitude + "/" + toLongitude;
-
-//        Cursor cursorDb = StartActivity.database.query(StartActivity.TABLE_SETTINGS_INFO, null, null, null, null, null, null);
-        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-        String tarif = logCursor(StartActivity.TABLE_SETTINGS_INFO, context).get(2);
+    //        Cursor cursorDb = StartActivity.database.query(StartActivity.TABLE_SETTINGS_INFO, null, null, null, null, null, null);
+            SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+            String tarif = logCursor(StartActivity.TABLE_SETTINGS_INFO, context).get(2);
 
 
-        // Building the parameters to the web service
+            // Building the parameters to the web service
 
-        String parameters = null;
-        String phoneNumber = "no phone";
-        if(urlAPI.equals("costSearchMarkers")) {
-            Cursor c = database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+            String parameters = null;
+            String phoneNumber = "no phone";
+            if(urlAPI.equals("costSearchMarkers")) {
+                Cursor c = database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
 
-            if (c.getCount() == 1) {
+                if (c.getCount() == 1) {
+                    phoneNumber = logCursor(StartActivity.TABLE_USER_INFO, context).get(2);
+                    c.close();
+                }
+                parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + StartActivity.displayName + "(" + StartActivity.userEmail + ")";
+            }
+
+            if(urlAPI.equals("orderSearchMarkers")) {
                 phoneNumber = logCursor(StartActivity.TABLE_USER_INFO, context).get(2);
-                c.close();
+
+
+                parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
+                        + StartActivity.displayName  + "/" + StartActivity.addCost + "/" + time + "/" + comment + "/" + date;
+
+                ContentValues cv = new ContentValues();
+
+                cv.put("time", "no_time");
+                cv.put("comment", "no_comment");
+                cv.put("date", "no_date");
+
+                // обновляем по id
+                database.update(StartActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+                        new String[] { "1" });
+
             }
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + StartActivity.displayName + "(" + StartActivity.userEmail + ")";
-        }
 
-        if(urlAPI.equals("orderSearchMarkers")) {
-            phoneNumber = logCursor(StartActivity.TABLE_USER_INFO, context).get(2);
-
-
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + StartActivity.displayName  + "/" + StartActivity.addCost + "/" + time + "/" + comment + "/" + date;
-
-            ContentValues cv = new ContentValues();
-
-            cv.put("time", "no_time");
-            cv.put("comment", "no_comment");
-            cv.put("date", "no_date");
-
-            // обновляем по id
-            database.update(StartActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
-                    new String[] { "1" });
-
-        }
-
-        // Building the url to the web service
-        List<String> services = logCursor(StartActivity.TABLE_SERVICE_INFO, context);
-        List<String> servicesChecked = new ArrayList<>();
-        String result;
-        boolean servicesVer = false;
-        for (int i = 1; i <= 15 ; i++) {
-            if(services.get(i).equals("1")) {
-                servicesVer = true;
-                break;
-            }
-        }
-        if(servicesVer) {
-            for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
-                if(services.get(i+1).equals("1")) {
-                    servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
+            // Building the url to the web service
+            List<String> services = logCursor(StartActivity.TABLE_SERVICE_INFO, context);
+            List<String> servicesChecked = new ArrayList<>();
+            String result;
+            boolean servicesVer = false;
+            for (int i = 1; i <= 15 ; i++) {
+                if(services.get(i).equals("1")) {
+                    servicesVer = true;
+                    break;
                 }
             }
-            for (int i = 0; i < servicesChecked.size(); i++) {
-                if(servicesChecked.get(i).equals("CHECK_OUT")) {
-                    servicesChecked.set(i, "CHECK");
+            if(servicesVer) {
+                for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
+                    if(services.get(i+1).equals("1")) {
+                        servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
+                    }
                 }
+                for (int i = 0; i < servicesChecked.size(); i++) {
+                    if(servicesChecked.get(i).equals("CHECK_OUT")) {
+                        servicesChecked.set(i, "CHECK");
+                    }
+                }
+                result = String.join("*", servicesChecked);
+                Log.d("TAG", "getTaxiUrlSearchGeo result:" + result + "/");
+            } else {
+                result = "no_extra_charge_codes";
             }
-            result = String.join("*", servicesChecked);
-            Log.d("TAG", "getTaxiUrlSearchGeo result:" + result + "/");
-        } else {
-            result = "no_extra_charge_codes";
+
+            String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/" + parameters + "/" + result;
+
+
+            database.close();
+
+
+            return url;
+        } else  {
+            Toast.makeText(context, context.getString(R.string.server_error_connected), Toast.LENGTH_LONG).show();
+            return null;
         }
-
-        String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/" + parameters + "/" + result;
-
-
-        database.close();
-
-
-        return url;
     }
 
     @SuppressLint("Range")

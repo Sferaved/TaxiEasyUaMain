@@ -68,7 +68,6 @@
             android:exported="true"/>
         <activity android:name=".ui.start.StopActivity" />
         <activity android:name=".ui.start.UpdateActivity" />
-        <activity android:name=".ui.start.GoogleSignInActivity" />
 
         <receiver android:name=".NetworkChangeReceiver" />
     </application>
