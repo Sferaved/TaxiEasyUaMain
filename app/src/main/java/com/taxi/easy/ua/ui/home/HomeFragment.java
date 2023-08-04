@@ -3,7 +3,7 @@ package com.taxi.easy.ua.ui.home;
 
 import static android.content.Context.MODE_PRIVATE;
 import static android.graphics.Color.RED;
-import static  com.taxi.easy.ua.R.string.address_error_message;
+import static com.taxi.easy.ua.R.string.address_error_message;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -46,18 +46,18 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import  com.taxi.easy.ua.MainActivity;
-import  com.taxi.easy.ua.R;
+import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ServerConnection;
-import  com.taxi.easy.ua.cities.Kyiv.KyivCity;
-import  com.taxi.easy.ua.cities.OdessaTest.Odessa;
-import  com.taxi.easy.ua.databinding.FragmentHomeBinding;
-import  com.taxi.easy.ua.ui.finish.FinishActivity;
-import  com.taxi.easy.ua.ui.maps.CostJSONParser;
-import  com.taxi.easy.ua.ui.maps.ToJSONParser;
-import  com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
-import  com.taxi.easy.ua.ui.start.ResultSONParser;
-import  com.taxi.easy.ua.ui.start.StartActivity;
+import com.taxi.easy.ua.cities.Kyiv.KyivCity;
+import com.taxi.easy.ua.cities.OdessaTest.Odessa;
+import com.taxi.easy.ua.databinding.FragmentHomeBinding;
+import com.taxi.easy.ua.ui.finish.FinishActivity;
+import com.taxi.easy.ua.ui.maps.CostJSONParser;
+import com.taxi.easy.ua.ui.maps.ToJSONParser;
+import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
+import com.taxi.easy.ua.ui.start.ResultSONParser;
+import com.taxi.easy.ua.ui.start.StartActivity;
 
 import org.json.JSONException;
 import org.osmdroid.util.GeoPoint;

@@ -1,8 +1,8 @@
 package com.taxi.easy.ua;
 
-import static  com.taxi.easy.ua.R.string.cancel_button;
-import static  com.taxi.easy.ua.R.string.format_phone;
-import static  com.taxi.easy.ua.R.string.verify_internet;
+import static com.taxi.easy.ua.R.string.cancel_button;
+import static com.taxi.easy.ua.R.string.format_phone;
+import static com.taxi.easy.ua.R.string.verify_internet;
 
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
@@ -43,9 +43,9 @@ import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
-import  com.taxi.easy.ua.databinding.ActivityMainBinding;
-import  com.taxi.easy.ua.ui.home.MyPhoneDialogFragment;
-import  com.taxi.easy.ua.ui.start.StartActivity;
+import com.taxi.easy.ua.databinding.ActivityMainBinding;
+import com.taxi.easy.ua.ui.home.MyPhoneDialogFragment;
+import com.taxi.easy.ua.ui.start.StartActivity;
 
 import java.util.ArrayList;
 import java.util.List;

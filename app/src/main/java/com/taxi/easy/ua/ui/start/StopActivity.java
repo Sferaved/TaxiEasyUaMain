@@ -2,20 +2,16 @@ package com.taxi.easy.ua.ui.start;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import  com.taxi.easy.ua.R;
+import com.taxi.easy.ua.R;
 
 public class StopActivity extends Activity {
     static FloatingActionButton fab, btn_again;

@@ -21,9 +21,9 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import  com.taxi.easy.ua.R;
-import  com.taxi.easy.ua.databinding.FragmentGalleryBinding;
-import  com.taxi.easy.ua.ui.start.StartActivity;
+import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.databinding.FragmentGalleryBinding;
+import com.taxi.easy.ua.ui.start.StartActivity;
 
 import java.util.ArrayList;
 import java.util.HashMap;

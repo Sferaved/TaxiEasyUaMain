@@ -1,6 +1,6 @@
 <resources>
-    <string name="version_code">1.702</string>
-    <string name="version">Версія: 1.702</string>
+    <string name="version_code">1.703</string>
+    <string name="version">Версія: 1.703</string>
 
     <string name="app_name">Таксі Київ</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -60,7 +60,7 @@
     <string name="UAH">грн</string>
     <string name="order">Замовити</string>
     <string name="thanks_message">"Дякуємо за замовлення "</string>
-    <string name="call_of_order">" Очикуйте дзвонка оператора. Вартість поїздки: "</string>
+    <string name="call_of_order">" Очікуйте дзвінка оператора. Вартість поїздки: "</string>
     <string name="next_try">" Спробуйте ще або зателефонуйте оператору."</string>
     <string name="help">Підтримка</string>
     <string name="show_to_point">Вкажіть місце призначення</string>

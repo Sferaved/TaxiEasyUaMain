@@ -21,10 +21,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import  com.taxi.easy.ua.MainActivity;
-import  com.taxi.easy.ua.R;
-import  com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
-import  com.taxi.easy.ua.ui.start.StartActivity;
+import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
+import com.taxi.easy.ua.ui.start.StartActivity;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

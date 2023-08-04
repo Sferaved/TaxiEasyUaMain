@@ -15,7 +15,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import  com.taxi.easy.ua.R;
+import com.taxi.easy.ua.R;
 
 public class UpdateActivity extends Activity {
     static FloatingActionButton fab;

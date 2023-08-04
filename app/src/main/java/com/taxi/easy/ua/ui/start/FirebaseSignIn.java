@@ -43,11 +43,11 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import  com.taxi.easy.ua.MainActivity;
-import  com.taxi.easy.ua.NotificationHelper;
-import  com.taxi.easy.ua.R;
-import  com.taxi.easy.ua.ui.maps.CostJSONParser;
-import  com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
+import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.NotificationHelper;
+import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.maps.CostJSONParser;
+import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 
 import org.json.JSONException;
 
