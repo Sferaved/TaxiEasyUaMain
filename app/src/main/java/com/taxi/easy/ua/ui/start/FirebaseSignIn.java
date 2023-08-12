@@ -18,9 +18,6 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -80,10 +77,7 @@ public class FirebaseSignIn extends AppCompatActivity {
             checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
 
         }
-        ImageView mImageView = findViewById(R.id.imageView2);
-        Animation sunRiseAnimation = AnimationUtils.loadAnimation(this, R.anim.sun_rise);
-        // Подключаем анимацию к нужному View
-        mImageView.startAnimation(sunRiseAnimation);
+
         List<String> stringListArr = logCursor(StartActivity.CITY_INFO);
         switch (stringListArr.get(1)){
             case "Kyiv City":
@@ -123,7 +117,8 @@ public class FirebaseSignIn extends AppCompatActivity {
         try {
             signInLauncher.launch(signInIntent);
         } catch (NullPointerException e) {
-            Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
+           finish();
+           startActivity(new Intent(FirebaseSignIn.this, StopActivity.class));
         }
     }
 
@@ -171,7 +166,7 @@ public class FirebaseSignIn extends AppCompatActivity {
                     try {
                         onSignInResult(result);
                     } catch (MalformedURLException | JSONException | InterruptedException e) {
-                        throw new RuntimeException(e);
+                        Log.d("TAG", "onCreate:" + new RuntimeException(e));
                     }
                 }
             }
@@ -462,13 +457,13 @@ public class FirebaseSignIn extends AppCompatActivity {
                 try {
                     callback.onLocationServiceResult(true);
                 } catch (MalformedURLException e) {
-                    throw new RuntimeException(e);
+                    Log.d("TAG", "onCreate:" + new RuntimeException(e));
                 }
             } else {
                 try {
                     callback.onLocationServiceResult(false);
                 } catch (MalformedURLException e) {
-                    throw new RuntimeException(e);
+                    Log.d("TAG", "onCreate:" + new RuntimeException(e));
                 }
             }
         });
@@ -497,7 +492,7 @@ public class FirebaseSignIn extends AppCompatActivity {
                 urlConnection.setDoInput(true);
                 urlConnection.getResponseCode();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                Log.d("TAG", "onCreate:" + new RuntimeException(e));
             }
             urlConnection.disconnect();
         });
@@ -541,7 +536,7 @@ public class FirebaseSignIn extends AppCompatActivity {
         try {
             sendUrlMapCost = ResultSONParser.sendURL(url);
         } catch (MalformedURLException | InterruptedException | JSONException e) {
-            throw new RuntimeException(e);
+            Log.d("TAG", "onCreate:" + new RuntimeException(e));
         }
 
         String message = (String) sendUrlMapCost.get("message");

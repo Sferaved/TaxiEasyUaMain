@@ -300,7 +300,7 @@ public class FinishActivity extends AppCompatActivity {
         try {
             date = inputFormat.parse(requiredTime);
         } catch (ParseException e) {
-            throw new RuntimeException(e);
+            Log.d("TAG", "onCreate:" + new RuntimeException(e));
         }
 
         // Форматируем дату и время в украинском формате

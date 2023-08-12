@@ -3,6 +3,7 @@ package com.taxi.easy.ua.ui.open_map;
 
 import android.content.Context;
 import android.os.Build;
+import android.util.Log;
 import android.view.MotionEvent;
 
 import org.json.JSONException;
@@ -51,7 +52,7 @@ public class MarkerOverlay extends Overlay {
                 OpenStreetMapActivity.dialogMarkers(OpenStreetMapActivity.fragmentManager);
             }
         } catch (MalformedURLException | JSONException | InterruptedException e) {
-            throw new RuntimeException(e);
+            Log.d("TAG", "onCreate:" + new RuntimeException(e));
         }
 
         return true;

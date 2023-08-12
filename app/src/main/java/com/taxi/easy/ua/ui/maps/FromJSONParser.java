@@ -43,9 +43,9 @@ public class FromJSONParser {
 
                 }
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                Log.d("TAG", "onCreate:" + new RuntimeException(e));
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                Log.d("TAG", "onCreate:" + new RuntimeException(e));
             }
             urlConnection.disconnect();
         });

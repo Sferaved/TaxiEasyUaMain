@@ -1,6 +1,6 @@
 <resources>
-    <string name="version_code">1.703</string>
-    <string name="version">Версия: 1.703</string>
+    <string name="version_code">1.704</string>
+    <string name="version">Версия: 1.704</string>
 
     <string name="app_name">Такси Киев</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -88,7 +88,7 @@
     <string name="make_order_message">Совершите хотя бы одну поездку</string>
     <string name="to_adress_message">Куда едем?</string>
     <string name="coastMarkersMessage">"Стоимость поездки по маршруту "</string>
-    <string name="please_phone_message">Без информации о номере телефона заказ невозможен</string>
+    <string name="please_phone_message">Это приложение  передает номер Вашего мобильного телефона для включения функции заказа такси. Без информации о номере телефона заказ такси невозможен. Введя номер телефона и нажав кнопку СОХРАНИТЬ Вы подтверждаете согласие на передачу номера Вашего телефона диспетчеру для поиска автомобиля и сохранение его для следующих заказов такси.</string>
     <string name="check_message">Ожидайте, идет подключение...</string>
     <string name="find_of_map">Попробуйте найти на карте</string>
     <string name="end_point_marker">Место назначения</string>
@@ -152,6 +152,7 @@
     <string name="city">Город</string>
     <string name="change_message">"Смена базы адресов. "</string>
     <string name="server_error_connected">Сервер не принял запрос, наберите операторов</string>
-
+    <string name="GDPR">Применяется Общий регламент защиты персональных данных (GDPR) ЕС. Выполняя эти действия, пользователь соглашается с Правилами конфедиционности и осознает с какой целью собираются данные, а также то, является ли ввод информации добровольным или обязательным для пользования соответствующей услугой.</string>
+    <string name="ok_gdpr">Согласиться</string>
 
 </resources>

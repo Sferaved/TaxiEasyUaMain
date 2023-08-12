@@ -11,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -26,14 +27,19 @@ import java.util.regex.Pattern;
 
 public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
     EditText phoneNumber;
-
+    Button button;
+    CheckBox checkBox;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.phone_verify_layout, container, false);
         phoneNumber = view.findViewById(R.id.phoneNumber);
-        Button button = view.findViewById(R.id.ok_button);
+//        phoneNumber.setVisibility(View.INVISIBLE);
+        button = view.findViewById(R.id.ok_button);
+//        button.setVisibility(View.INVISIBLE);
+        checkBox = view.findViewById(R.id.checkbox);
+
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -52,6 +58,25 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         });
 
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        checkBox.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(checkBox.isChecked()) {
+                    phoneNumber.setVisibility(View.VISIBLE);
+                    button.setVisibility(View.VISIBLE);
+
+                } else {
+                    phoneNumber.setVisibility(View.INVISIBLE);
+                    button.setVisibility(View.INVISIBLE);
+                }
+            }
+        });
+
     }
 
     @Override

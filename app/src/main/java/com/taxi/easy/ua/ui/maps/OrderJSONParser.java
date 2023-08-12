@@ -42,7 +42,7 @@ public class OrderJSONParser {
                     exchanger.exchange(convertStreamToString(in));
                 }
             } catch (IOException | InterruptedException e) {
-                throw new RuntimeException(e);
+                Log.d("TAG", "onCreate:" + new RuntimeException(e));
             }
             urlConnection.disconnect();
         });

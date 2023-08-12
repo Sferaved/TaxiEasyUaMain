@@ -97,23 +97,18 @@ public class OpenStreetMapActivity extends AppCompatActivity {
     private LocationManager locationManager;
 
     private IMapController mapController;
-    EditText from_number, to_number;
-    private String from, to, messageResult, from_geo;
+    EditText to_number;
+    private String to, messageResult, from_geo;
     public String[] arrayStreet;
     static FloatingActionButton fab, fab_call, fab_open_map, fab_add;
 
-    private TextView textViewFrom;
     private static double startLat, startLan, finishLat, finishLan;
     static MapView map = null;
     private static String api;
     public static GeoPoint startPoint;
     public static GeoPoint endPoint;
-    public GeoPoint endPointHome;
     static Switch gpsSwitch;
     private static String[] array;
-    int on_city = 0;
-    String to_str;
-    String to_numb_str;
 
     ArrayList<Map> adressArr;
     AlertDialog  coastDialog;
@@ -155,6 +150,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
     Dialog alertDialog;
+
     @SuppressLint("MissingInflatedId")
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -191,6 +187,19 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
         inflater = getLayoutInflater();
         view = inflater.inflate(R.layout.phone_verify_layout, null);
+        map = findViewById(R.id.map);
+        map.setTileSource(TileSourceFactory.MAPNIK);
+
+        mapController = map.getController();
+        startLat = 50.27;
+        startLan = 30.31;
+        GeoPoint initialGeoPoint = new GeoPoint(startLat, startLan);
+        map.getController().setCenter(initialGeoPoint);
+
+        map.setBuiltInZoomControls(true);
+        map.setMultiTouchControls(true);
+        mapController.setZoom(16);
+        map.setClickable(true);
 
         List<String> stringList = logCursor(StartActivity.CITY_INFO, this);
         switch (stringList.get(1)){
@@ -267,16 +276,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             }
         });
 
-        map = findViewById(R.id.map);
-        map.setTileSource(TileSourceFactory.MAPNIK);
 
-
-        map.setBuiltInZoomControls(true);
-        map.setMultiTouchControls(true);
-
-        mapController = map.getController();
-        mapController.setZoom(16);
-        map.setClickable(true);
 
         progressBar = findViewById(R.id.progressBar);
 
@@ -331,7 +331,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                     MarkerOverlay markerOverlay = new MarkerOverlay(OpenStreetMapActivity.this);
                     map.getOverlays().add(markerOverlay);
                     setMarker(startLat, startLan, FromAdressString);
-                    GeoPoint initialGeoPoint = new GeoPoint(startLat, longitude);
+                    GeoPoint initialGeoPoint = new GeoPoint(startLat, startLan);
                     map.getController().setCenter(initialGeoPoint);
 
                     map.invalidate();
@@ -770,7 +770,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
                                         } catch (MalformedURLException | InterruptedException |
                                                  JSONException e) {
-                                            throw new RuntimeException(e);
+                                             
                                         }
                                     }
                                     else {
@@ -913,7 +913,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                         try {
                             sendUrlMapCost = ResultSONParser.sendURL(url);
                         } catch (MalformedURLException | InterruptedException | JSONException e) {
-                            throw new RuntimeException(e);
+                             
                         }
 
                         String orderCost = (String) sendUrlMapCost.get("message");
@@ -1021,6 +1021,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                                             }
                                             builderAddCost
                                                     .setPositiveButton(getString(R.string.order), new DialogInterface.OnClickListener() {
+                                                        @RequiresApi(api = Build.VERSION_CODES.O_MR1)
                                                         @Override
                                                         public void onClick(DialogInterface dialog, int which) {
 
@@ -1105,7 +1106,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                                                                             MalformedURLException |
                                                                             InterruptedException |
                                                                             JSONException e) {
-                                                                        throw new RuntimeException(e);
+                                                                        
                                                                     }
                                                                 }
                                                                 else {
@@ -1259,6 +1260,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                                             }
                                             builderAddCost
                                                     .setPositiveButton(getString(R.string.order), new DialogInterface.OnClickListener() {
+                                                        @SuppressLint("NewApi")
                                                         @Override
                                                         public void onClick(DialogInterface dialog, int which) {
 
@@ -1342,7 +1344,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                                                                             MalformedURLException |
                                                                             InterruptedException |
                                                                             JSONException e) {
-                                                                        throw new RuntimeException(e);
+                                                                        
                                                                     }
                                                                 }
                                                                 else {
