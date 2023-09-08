@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/constraint"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/new_background_color">
+
+
+    <TextView
+        android:id="@+id/num1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:fontFamily="@font/regular"
+        android:text="1"
+        android:textColor="#D9D9D9"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toStartOf="@+id/textGeo"
+        app:layout_constraintTop_toBottomOf="@+id/textfrom" />
+
+    <TextView
+        android:id="@+id/textGeo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:layout_marginTop="4sp"
+        android:background="@drawable/input"
+        android:ems="10"
+        android:fontFamily="@font/light"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textfrom"
+        tools:ignore="MissingConstraints" />
+
+
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="47sp"
+        android:layout_height="44sp"
+        android:layout_marginTop="4dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textGeo" />
+
+    <TextView
+        android:id="@+id/num2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4sp"
+        android:fontFamily="@font/regular"
+        android:text="2"
+        android:textColor="#D9D9D9"
+
+        android:textSize="16sp"
+        app:layout_constraintEnd_toStartOf="@+id/text_to"
+        app:layout_constraintTop_toBottomOf="@+id/textwhere"
+        tools:ignore="MissingConstraints" />
+
+    <TextView
+        android:id="@+id/text_to"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/input"
+        android:ems="10"
+        android:fontFamily="@font/light"
+
+        android:inputType="textMultiLine"
+
+        android:textColor="#D9D9D9"
+        android:textColorHint="#ABD9D9D9"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/num2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textwhere"
+        tools:ignore="MissingConstraints" />
+
+    <TextView
+        android:id="@+id/textfrom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/light"
+        android:text="@string/from_text"
+        android:textColor="#9DA0A8"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="@+id/num1"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/textwhere"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/light"
+
+        android:text="@string/to_text"
+        android:textColor="#9DA0A8"
+        android:textSize="16sp"
+        app:layout_constraintStart_toStartOf="@+id/num2"
+        app:layout_constraintTop_toBottomOf="@+id/textGeo" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnAdd"
+        android:layout_width="293sp"
+        android:layout_height="wrap_content"
+
+        android:layout_marginTop="8dp"
+        android:background="@drawable/buttons"
+        android:fontFamily="@font/regular"
+        android:text="@string/add_services"
+        android:textAlignment="center"
+
+        android:textColor="#D9D9D9"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/change" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/change"
+        android:layout_width="293sp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/buttons"
+        android:text="@string/change"
+        android:textColor="@color/white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text_to" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_minus"
+        android:layout_width="60sp"
+        android:layout_height="60sp"
+        android:layout_marginTop="16sp"
+        android:gravity="center"
+        android:text="-"
+
+        android:textSize="30sp"
+        app:layout_constraintEnd_toStartOf="@+id/text_view_cost"
+        app:layout_constraintHorizontal_bias="0.79"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnAdd" />
+
+    <TextView
+        android:id="@+id/text_view_cost"
+        android:layout_width="100sp"
+        android:layout_height="60sp"
+        android:layout_margin="@dimen/activity_vertical_margin"
+
+        android:layout_marginTop="4sp"
+        android:background="@drawable/input"
+        android:ems="10"
+        android:fontFamily="@font/light"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:textSize="25sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnAdd"
+        tools:ignore="MissingConstraints" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_plus"
+        android:layout_width="60sp"
+        android:layout_height="60sp"
+        android:layout_marginTop="16sp"
+        android:backgroundTint="@color/colorAccent"
+        android:gravity="center"
+        android:text="+"
+
+        android:textSize="30sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.154"
+        app:layout_constraintStart_toEndOf="@+id/text_view_cost"
+        app:layout_constraintTop_toBottomOf="@+id/btnAdd"
+        tools:ignore="MissingConstraints" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnOrder"
+        android:layout_width="293sp"
+        android:layout_height="45sp"
+        android:layout_marginTop="12sp"
+        android:layout_marginBottom="12sp"
+        android:background="@drawable/buttons"
+        android:fontFamily="@font/regular"
+        android:insetLeft="0sp"
+        android:insetTop="0sp"
+        android:insetRight="0sp"
+        android:insetBottom="0sp"
+        android:text="@string/btn_cost"
+
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text_view_cost"
+        app:layout_constraintVertical_bias="0.0" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

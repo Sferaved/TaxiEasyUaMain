@@ -2,7 +2,7 @@
     <string name="version_code">1.705</string>
     <string name="version">Версія: 1.705</string>
 
-    <string name="app_name">Таксі Київ</string>
+    <string name="app_name">Таксі Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
     <string name="back4app_app_id">01YGF894m3NJRXT1BlH6qPo9pUfDlG9sqi9K9mIL</string>
     <string name="back4app_client_key">T5f5GuT1UCmaiJn8Dek3sVmayGuJa2jfelQR6V6f</string>
@@ -10,8 +10,8 @@
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Таксі Київ заказ онлайн Лайт</string>
-    <string name="nav_header_subtitle">Швидкі поїздки по Києву та області</string>
+    <string name="nav_header_title">Таксі Украина заказ онлайн Лайт</string>
+    <string name="nav_header_subtitle">Швидкі поїздки по містам України</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Налаштування</string>
 
@@ -45,7 +45,7 @@
     <string name="gps_on">Увімкнути</string>
     <string name="gps_info">Щоб покращити роботу програми, увімкніть на пристрої геолокацію Google</string>
     <string name="gps_on_button">включить gps</string>
-    <string name="wellcome">Ласкаво просимо. Сформуйте маршрут або виберіть улюблений.</string>
+    <string name="wellcome">Сформуйте маршрут або виберіть улюблений.</string>
     <string name="verify_phone">Перевірка телефону</string>
     <string name="format_phone">Формат вводу номера телефону: +380936665544</string>
     <string name="sent_button">Відправити</string>
@@ -79,7 +79,7 @@
     <string name="to_edit">Куди</string>
     <string name="from_edit">Звідки</string>
     <string name="sms_code">Код перевіркі зі смс-повідомлення</string>
-    <string name="android">Андроїд-додаток для швидких та дешевих поїздок по Києву та області.</string>
+    <string name="android">Андроїд-додаток для швидких та дешевих поїздок при замовленні онлайн.</string>
     <string name="good_day">Мої вітання. \n \n Знайшов чудовий додаток для поїздок на таксі. \n \n Раджу спробувати за посиланням в офіційному магазині Google: \n\n https://play.google.com/store/apps/details?id=com.taxi.easy.ua \n\n Гарного дня. \n Ще побачимось.</string>
     <string name="share">Порадити другові додаток...</string>
     <string name="no_email_agent">Поштовий клієнт не встановлено.</string>
@@ -120,9 +120,9 @@
     <string name="news_of_version">У новій версії покращено продуктивність та додано нові зручні функції</string>
     <string name="Street_hint">Вулиця</string>
     <string name="gps">GPS</string>
-    <string name="btn_cost">Підтвердити</string>
+    <string name="btn_cost">Замовити</string>
     <string name="texthist">Попередні адреси</string>
-    <string name="routs">Швидке замовлення</string>
+    <string name="routs">Мої адреси</string>
     <string name="on_map">По мапі</string>
     <string name="add_cost_message">Збільшіть вартість поїздки для швидкого пошуку машини</string>
     <string name="from_text">Звідки</string>
@@ -131,10 +131,10 @@
     <string name="coment">Коментар</string>
     <string name="services">ПОСЛУГИ</string>
     <string name="resettimetoorder">Змініть дату або час для попереднього замовлення</string>
-    <string name="my_routs">Позначьте маршрути для видалення</string>
+    <string name="my_routs">Оберить маршрут</string>
     <string name="no_routs">Немає маршрутів</string>
     <string name="cheng">Змінити</string>
-    <string name="delete_routs">видалити обрані маршрути</string>
+    <string name="delete_routs">видалити</string>
     <string name="text_result">Ваше замовлення</string>
     <string name="btn_again_text">Замовити ще</string>
     <string name="textStatus">Статус замовлення</string>
@@ -152,6 +152,30 @@
     <string name="city">Місто</string>
     <string name="change_message">"Зміна бази адрес."</string>
     <string name="server_error_connected">Сервер не прийняв запит, наберіть операторів</string>
-    <string name="GDPR">Користувач погоджується с Правиламі конфедійціності  Загального регламенту захисту персональних даних (GDPR) ЄС та усвідомлює з що введення інформації про телефон є обовязковим для замовлеення таксі.</string>
-    <string name="ok_gdpr">Погодитися</string>
+    <string name="GspR">Користувач погоджується з Правилами конфіденційності Загального регламенту захисту персональних даних (GspR) ЄС та усвідомлює, що введення інформації про телефон є обов\'язковим для замовлення таксі.</string>
+    <string name="ok_gspr">Погодитись</string>
+    <string name="Dnipro_city">Дніпро</string>
+    <string name="city_change">Виберіть місто</string>
+    <string name="Zaporizhzhia">Запоріжжя</string>
+    <string name="Cherkasy">Черкаси</string>
+    <string name="OdessaTest">Одеса (Тест)</string>
+    <string name="disc_text">Змінити вартість на</string>
+    <string name="email_sent">Повідомлення відправлено</string>
+    <string name="send_like">Оцінити додаток</string>
+    <string name="send_email_admin">Повідомити про проблему</string>
+    <string name="SA_subject">Повідомлення № I-</string>
+    <string name="SA_message_start">Текст Вашого повідомленя: </string>
+    <string name="SA_info_pas">Інформація про додаток: </string>
+    <string name="SA_info_city">База адрес міста </string>
+    <string name="SA_pas_text">Додаток: </string>
+    <string name="SA_user_text">Користувач: </string>
+    <string name="SA_email">Електронна пошта: </string>
+    <string name="SA_phone_text">"Телефон: </string>
+    <string name="black_list_message">Вибачьте, Ви не можете замовляти подорожі. За інформацією зверніться до оператора.</string>
+    <string name="action_help">ДОПОМОГА</string>
+    <string name="cost_of_road">Вартість поїздки вибраним маршрутом складе</string>
+    <string name="btn_geo_text">Доступ до геопозиції</string>
+    <string name="on_geo_loc_mes">Для роботи з карткою дозвольте доступ до програми для визначення Вашого розташування</string>
+    <string name="OK">Ок</string>
+    <string name="to_marker_mes">Позначте маркером на карті місце висадки</string>
 </resources>

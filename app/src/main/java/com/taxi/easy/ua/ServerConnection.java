@@ -1,6 +1,8 @@
 package com.taxi.easy.ua;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -15,6 +17,8 @@ public class ServerConnection {
     }
 
     public static void checkConnection(String url, ConnectionCallback callback) {
+        Logger.getLogger(OkHttpClient.class.getName()).setLevel(Level.FINE); // Установите уровень логирования FINE
+
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
                 .url(url)
@@ -25,12 +29,16 @@ public class ServerConnection {
             public void onResponse(Call call, Response response) throws IOException {
                 boolean isConnected = response.isSuccessful();
                 callback.onConnectionResult(isConnected);
+
+                response.close(); // Закрыть тело ответа
             }
 
             @Override
             public void onFailure(Call call, IOException e) {
+                e.printStackTrace(); // Вывести исключение для отладки
                 callback.onConnectionResult(false);
             }
         });
     }
+
 }

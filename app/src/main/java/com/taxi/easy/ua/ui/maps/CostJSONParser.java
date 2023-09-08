@@ -1,6 +1,6 @@
 package com.taxi.easy.ua.ui.maps;
 
-import android.os.AsyncTask;
+
 import android.util.Log;
 
 import org.json.JSONException;
@@ -15,7 +15,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Exchanger;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -25,55 +29,74 @@ public class CostJSONParser {
         sendURL(urlString);
     }
 
-    public static Map<String, String> sendURL(String urlString) throws MalformedURLException, InterruptedException, JSONException {
+    public static Map<String, String> sendURL(String urlString) throws MalformedURLException {
 
+        URL url = new URL(urlString);
         Log.d("TAG", "sendURL: " + urlString);
         Map<String, String> costMap = new HashMap<>();
 
-        URL url = new URL(urlString);
-
-        Exchanger<String> exchanger = new Exchanger<>();
-
-        AsyncTask.execute(() -> {
+        Callable<String> asyncTaskCallable = () -> {
             HttpsURLConnection urlConnection = null;
             try {
                 urlConnection = (HttpsURLConnection) url.openConnection();
                 urlConnection.setDoInput(true);
                 if (urlConnection.getResponseCode() == 200) {
                     InputStream in = new BufferedInputStream(urlConnection.getInputStream());
-                    exchanger.exchange(convertStreamToString(in));
+                    return convertStreamToString(in);
                 } else {
-
+                    return "400";
                 }
-            } catch (IOException e) {
-                Log.d("TAG", "onCreate:" + new RuntimeException(e));
-            } catch (InterruptedException e) {
-                Log.d("TAG", "onCreate:" + new RuntimeException(e));
+            } catch (IOException ignored) {
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
             }
-            urlConnection.disconnect();
-        });
+            return null;
+        };
 
-        ResultFromThread first = new ResultFromThread(exchanger);
+        Future<String> asyncTaskFuture = Executors.newSingleThreadExecutor().submit(asyncTaskCallable);
 
-        JSONObject jsonarray = new JSONObject(first.message);
+        try {
+            String response = asyncTaskFuture.get(10, TimeUnit.SECONDS);
+            Log.d("TAG", "sendURL: response " + response);
+            if (response != null) {
+                if (response.equals("400")) {
+                    costMap.put("order_cost", "0");
+                    costMap.put("message", "Сталася помілка");
 
-         if(!jsonarray.getString("order_cost").equals("0")) {
-             costMap.put("dispatching_order_uid", jsonarray.getString("dispatching_order_uid"));
-             costMap.put("order_cost", jsonarray.getString("order_cost"));
-             costMap.put("add_cost", jsonarray.getString("add_cost"));
-             costMap.put("recommended_add_cost", jsonarray.getString("recommended_add_cost"));
-             costMap.put("currency", jsonarray.getString("currency"));
-             costMap.put("discount_trip", jsonarray.getString("discount_trip"));
-             costMap.put("can_pay_bonuses", jsonarray.getString("can_pay_bonuses"));
-             costMap.put("can_pay_cashless", jsonarray.getString("can_pay_cashless"));
-         }else {
-             Log.d("TAG", "sendURL: " + jsonarray.getString("Message"));
-             costMap.put("order_cost", "0");
-             costMap.put("message", jsonarray.getString("Message"));
-         }
+                } else {
+                    JSONObject jsonarray = new JSONObject(response);
+
+                    if (!jsonarray.getString("order_cost").equals("0")) {
+                         costMap.put("order_cost", jsonarray.getString("order_cost"));
+                    }else {
+                        Log.d("TAG", "sendURL: " + jsonarray.getString("Message"));
+                        costMap.put("order_cost", "0");
+                        costMap.put("message", jsonarray.getString("Message"));
+                    }
+                }
+            } else {
+                costMap.put("order_cost", "0");
+                costMap.put("message", "Сталася помілка");
+            }
             return costMap;
+        } catch (TimeoutException e) {
+            e.printStackTrace();
+            asyncTaskFuture.cancel(true);
+            costMap.put("order_cost", "0");
+            costMap.put("message", "Сталася помілка");
+            return costMap;
+        } catch (Exception e) {
+            e.printStackTrace();
+            asyncTaskFuture.cancel(true);
+            costMap.put("order_cost", "0");
+            costMap.put("message", "Сталася помілка");
+            return costMap;
+        }
 
     }
+
     private static String convertStreamToString(InputStream is) {
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
         StringBuilder sb = new StringBuilder();
@@ -95,15 +118,5 @@ public class CostJSONParser {
 
         return sb.toString();
     }
-
-    public static class ResultFromThread {
-        public String message;
-
-        public ResultFromThread(Exchanger<String> exchanger) throws InterruptedException {
-            this.message = exchanger.exchange(message);
-        }
-
-    }
-
 
 }

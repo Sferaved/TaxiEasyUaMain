@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    tools:layout_editor_absoluteX="6dp"
-    tools:layout_editor_absoluteY="8dp">
+    tools:layout_editor_absoluteX="6sp"
+    tools:layout_editor_absoluteY="8sp">
 
     <TextView
         android:id="@+id/textView4"
@@ -23,7 +23,7 @@
     <Spinner
         android:id="@+id/list_tariff_arr"
         android:layout_width="wrap_content"
-        android:layout_height="28dp"
+        android:layout_height="28sp"
         android:gravity="center_vertical"
         android:minHeight="50sp"
         android:textAppearance="?android:attr/textAppearanceListItemSmall"
@@ -94,7 +94,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="10sp"
-        android:layout_marginTop="68dp"
+        android:layout_marginTop="68sp"
         android:backgroundTint="@color/colorAccent"
         android:dropDownSelector="@color/teal_200"
         android:gravity="top|left"
@@ -130,7 +130,7 @@
         android:gravity="center"
         android:text="@string/add_services"
         app:layout_constraintTop_toBottomOf="@+id/to_number"
-        tools:layout_editor_absoluteX="1dp"
+        tools:layout_editor_absoluteX="1sp"
         tools:ignore="MissingConstraints" />
 
     <androidx.constraintlayout.widget.Guideline
@@ -138,14 +138,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintGuide_begin="20dp" />
+        app:layout_constraintGuide_begin="20sp" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline3"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintGuide_begin="20dp" />
+        app:layout_constraintGuide_begin="20sp" />
 
     <androidx.constraintlayout.widget.Barrier
         android:id="@+id/barrier2"

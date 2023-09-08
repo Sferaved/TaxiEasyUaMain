@@ -23,7 +23,7 @@
     <Spinner
         android:id="@+id/list_tariff"
         android:layout_width="wrap_content"
-        android:layout_height="28dp"
+        android:layout_height="28sp"
         android:gravity="center_vertical"
         android:minHeight="50sp"
         android:textAppearance="?android:attr/textAppearanceListItemSmall"

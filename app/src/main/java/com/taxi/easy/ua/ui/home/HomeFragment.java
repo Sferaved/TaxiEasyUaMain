@@ -12,9 +12,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
+import android.graphics.BlendMode;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -32,7 +34,6 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -41,26 +42,28 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ServerConnection;
+import com.taxi.easy.ua.cities.Cherkasy.Cherkasy;
+import com.taxi.easy.ua.cities.Dnipro.Dnipro;
 import com.taxi.easy.ua.cities.Kyiv.KyivCity;
-import com.taxi.easy.ua.cities.OdessaTest.Odessa;
+import com.taxi.easy.ua.cities.Odessa.Odessa;
+import com.taxi.easy.ua.cities.Odessa.OdessaTest;
+import com.taxi.easy.ua.cities.Zaporizhzhia.Zaporizhzhia;
 import com.taxi.easy.ua.databinding.FragmentHomeBinding;
 import com.taxi.easy.ua.ui.finish.FinishActivity;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
-import com.taxi.easy.ua.ui.start.StartActivity;
 
 import org.json.JSONException;
-import org.osmdroid.util.GeoPoint;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -74,24 +77,28 @@ import java.util.regex.Pattern;
 public class HomeFragment extends Fragment {
 
     private FragmentHomeBinding binding;
-    private String from, to;
-    EditText from_number, to_number;
+    public static String from, to;
+    public static EditText from_number, to_number;
     String messageResult;
-    private Spinner listView;
-    Button button;
-    private String[] array;
-    private String api;
-    public String[] arrayStreet;
-    static FloatingActionButton fab_call;
+
+
+    public  static String api;
+
+    FloatingActionButton fab_call, fab_map;
     private final String TAG = "TAG";
     private static final int CM_DELETE_ID = 1;
-    String from_street_rout, to_street_rout;
-    private int selectedPosition = -1;
-    Button mapbut, gpsbut, buttonAddServices;
-    AppCompatButton btncost;
-    String FromAddressString, ToAddressString;
-    Integer selectedItem;
 
+    private int selectesposition = -1;
+    Button gpsbut;
+    AppCompatButton btn_order, buttonAddServices, btn_minus, btn_plus, btnGeo, on_map;
+    public String FromAddressString, ToAddressString;
+    Integer selectedItem;
+    private long firstCost;
+    public static long addCost, cost;
+    private static String[] arrayStreet;
+    private String numberFlagFrom = "1", numberFlagTo = "1";
+
+    public static String  from_numberCost, toCost, to_numberCost;
     public static String[] arrayServiceCode() {
         return new String[]{
                 "BAGGAGE",
@@ -99,7 +106,6 @@ public class HomeFragment extends Fragment {
                 "CONDIT",
                 "MEET",
                 "COURIER",
-                "TERMINAL",
                 "CHECK_OUT",
                 "BABY_SEAT",
                 "DRIVER",
@@ -111,355 +117,319 @@ public class HomeFragment extends Fragment {
                 "SMOKE",
         };
     }
+    public static TextView text_view_cost;
+
+    long MIN_COST_VALUE, MAX_COST_VALUE;
+    AutoCompleteTextView textViewFrom, textViewTo;
+    ArrayAdapter<String> adapter;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
 
-
-
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-
-
-        List<String> stringList = logCursor(StartActivity.CITY_INFO, getActivity());
-        switch (stringList.get(1)){
-            case "Kyiv City":
-                arrayStreet = KyivCity.arrayStreet();
-                api = StartActivity.apiKyiv;
-                break;
-            case "Odessa":
-                arrayStreet = Odessa.arrayStreet();
-                api = StartActivity.apiTest;
-                break;
-            default:
-                arrayStreet = Odessa.arrayStreet();
-                api = StartActivity.apiTest;
-                break;
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, getActivity());
+        Log.d("TAG", "onViewCreated: " + stringList);
+        if(stringList.size() !=0 ) {
+            switch (stringList.get(1)){
+                case "Dnipropetrovsk Oblast":
+                    arrayStreet = Dnipro.arrayStreet();
+                    api = MainActivity.apiDnipro;
+                    break;
+                case "Zaporizhzhia":
+                    arrayStreet = Zaporizhzhia.arrayStreet();
+                    api = MainActivity.apiZaporizhzhia;
+                    break;
+                case "Cherkasy Oblast":
+                    arrayStreet = Cherkasy.arrayStreet();
+                    api = MainActivity.apiCherkasy;
+                    break;
+                case "Odessa":
+                    arrayStreet = Odessa.arrayStreet();
+                    api = MainActivity.apiOdessa;
+                    break;
+                case "OdessaTest":
+                    arrayStreet = OdessaTest.arrayStreet();
+                    api = MainActivity.apiTest;
+                    break;
+                default:
+                    arrayStreet = KyivCity.arrayStreet();
+                    api = MainActivity.apiKyiv;
+                    break;
+            };
+            adapter = new ArrayAdapter<>(getActivity(),android.R.layout.simple_dropdown_item_1line, arrayStreet);
         }
 
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(),
-                android.R.layout.simple_dropdown_item_1line, arrayStreet);
-
-        AutoCompleteTextView textViewFrom =binding.textFrom;
-        textViewFrom.setAdapter(adapter);
-        Log.d("TAG", "onCreateView startPoint: " + OpenStreetMapActivity.from_name + OpenStreetMapActivity.from_house);
-        if(OpenStreetMapActivity.from_name != null && !OpenStreetMapActivity.from_name.equals("name")) {
-            textViewFrom.setText(OpenStreetMapActivity.from_name);
-            from = OpenStreetMapActivity.from_name;
+        text_view_cost = binding.textViewCost;
+        btnGeo = binding.btnGeo;
+        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            btnGeo.setVisibility(View.VISIBLE);
+        }  else {
+            btnGeo.setVisibility(View.INVISIBLE);
         }
-        from_number = binding.fromNumber;
-        if(hasServer()){
-            if((OpenStreetMapActivity.from_house != null) && !OpenStreetMapActivity.from_house.equals("house")) {
-                String url = "https://m.easy-order-taxi.site/" + api + "/android/autocompleteSearchComboHid/" + from;
-
-                Map sendUrlMapCost = null;
-                try {
-                    sendUrlMapCost = ResultSONParser.sendURL(url);
-                } catch (MalformedURLException | InterruptedException | JSONException e) {
-                    Toast.makeText(getActivity(), R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
-                }
-
-                String orderCost = (String) sendUrlMapCost.get("message");
-                if (orderCost.equals("200")) {
-                    Toast.makeText(getActivity(), R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
-                } else if (orderCost.equals("400")) {
-                    textViewFrom.setTextColor(RED);
-                    Toast.makeText(getActivity(), address_error_message, Toast.LENGTH_SHORT).show();
-                } else if (orderCost.equals("1")) {
-                    from_number.setVisibility(View.VISIBLE);
-                    from_number.setText(OpenStreetMapActivity.from_house);
-                    from_number.requestFocus();
-                } else if (orderCost.equals("0")) {
-                    from_number.setText(" ");
-                    from_number.setVisibility(View.INVISIBLE);
-                }
-            }
-        } else {
-            Toast.makeText(getActivity(), R.string.server_error_connected, Toast.LENGTH_SHORT).show();
-        }
-        if(hasServer()){
-            textViewFrom.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @SuppressLint("ResourceAsColor")
+        btnGeo.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                selectedPosition = position; // Обновляем выбранную позицию
-                adapter.notifyDataSetChanged(); // Обновляем вид списка
+            public void onClick(View v) {
+                checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+            }
+        });
+        btn_minus = binding.btnMinus;
+        btn_plus= binding.btnPlus;
+        btn_minus.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                MIN_COST_VALUE = (long) (cost * 0.1);
+                MAX_COST_VALUE = cost * 3;
 
-                    if(connected()) {
-                        from = String.valueOf(adapter.getItem(position));
-                        if (from.indexOf("/") != -1) {
-                            from = from.substring(0,  from.indexOf("/"));
-                        };
-
-                        String url = "https://m.easy-order-taxi.site/" + api + "/android/autocompleteSearchComboHid/" + from;
-
-                        Map sendUrlMapCost = null;
-                        try {
-                            sendUrlMapCost = ResultSONParser.sendURL(url);
-                        } catch (MalformedURLException | InterruptedException | JSONException e) {
-                            Toast.makeText(getActivity(), R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
-                        }
-
-                        String orderCost = (String) sendUrlMapCost.get("message");
-                        if (orderCost.equals("200")) {
-                            Toast.makeText(getActivity(), R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
-                        } else if (orderCost.equals("400")) {
-                            textViewFrom.setTextColor(RED);
-                            Toast.makeText(getActivity(), address_error_message, Toast.LENGTH_SHORT).show();
-                        } else if (orderCost.equals("1")) {
-                            from_number.setVisibility(View.VISIBLE);
-                            from_number.setText(" ");
-                            from_number.requestFocus();
-                        } else if (orderCost.equals("0")) {
-                            from_number.setText(" ");
-                            from_number.setVisibility(View.INVISIBLE);
-                        }
-                    } else {
-                        Toast.makeText(getActivity(), getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
-                    }
+                cost -= 5;
+                addCost -= 5;
+                if (cost <= MIN_COST_VALUE) {
+                    cost = MIN_COST_VALUE;
+                    addCost = MIN_COST_VALUE - cost;
+                }
+                text_view_cost.setText(String.valueOf(cost));
 
             }
         });
-        } else {
-            Toast.makeText(getActivity(), R.string.server_error_connected, Toast.LENGTH_SHORT).show();
-        }
-        AutoCompleteTextView textViewTo =binding.textTo;
-        textViewTo.setAdapter(adapter);
-        to_number = binding.toNumber;
-        if(hasServer()){
-            textViewTo.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                                              @Override
-             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                   if (connected()) {
-                                                      to = String.valueOf(adapter.getItem(position));
-                                                      if (to.indexOf("/") != -1) {
-                                                          to = to.substring(0, to.indexOf("/"));
-                                                      }
-                                                      ;
-                                                      String url = "https://m.easy-order-taxi.site/" + api + "/android/autocompleteSearchComboHid/" + to;
 
-                                                      Map sendUrlMapCost = null;
-                                                      try {
-                                                          sendUrlMapCost = ResultSONParser.sendURL(url);
-                                                      } catch (MalformedURLException | InterruptedException | JSONException e) {
-                                                          Toast.makeText(getActivity(), R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
-                                                      }
+        btn_plus.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                MIN_COST_VALUE = (long) (cost * 0.1);
+                MAX_COST_VALUE = cost * 3;
 
-                                                      String orderCost = (String) sendUrlMapCost.get("message");
-
-                                                      if (orderCost.equals("200")) {
-                                                          Toast.makeText(getActivity(), R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
-                                                      } else if (orderCost.equals("400")) {
-                                                          textViewTo.setTextColor(RED);
-                                                          Toast.makeText(getActivity(), address_error_message, Toast.LENGTH_SHORT).show();
-                                                      } else if (orderCost.equals("1")) {
-                                                          to_number.setVisibility(View.VISIBLE);
-                                                          to_number.setText(" ");
-                                                          to_number.requestFocus();
-                                                      }  else if (orderCost.equals("0")) {
-                                                          to_number.setText(" ");
-                                                          to_number.setVisibility(View.INVISIBLE);
-                                                      }
-                                                  }
+                cost += 5;
+                addCost += 5;
+                if (cost <= MIN_COST_VALUE) {
+                    cost = MIN_COST_VALUE;
+                    addCost = MIN_COST_VALUE - cost;
                 }
-             });
-        } else {
-            Toast.makeText(getActivity(), R.string.server_error_connected, Toast.LENGTH_SHORT).show();
-        }
+                text_view_cost.setText(String.valueOf(cost));
+            }
+        });
 
-        btncost = binding.btnCost;
-        btncost.setOnClickListener(new View.OnClickListener() {
+
+
+
+        textViewFrom =binding.textFrom;
+        textViewFrom.setAdapter(adapter);
+        textViewTo =binding.textTo;
+        textViewTo.setAdapter(adapter);
+
+        from_number = binding.fromNumber;
+//        from_number.addTextChangedListener(new TextWatcher() {
+//            private String previousText = " ";
+//            @Override
+//            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+//                // Вызывается перед изменением текста
+//                previousText = charSequence.toString();
+//            }
+//
+//            @Override
+//            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+//            }
+//
+//            @Override
+//            public void afterTextChanged(Editable editable) {
+//                // Вызывается после изменения текста
+//                String newText = editable.toString();
+//                // Проверяем, что новая длина текста больше предыдущей длины
+//                if (newText.length() > previousText.length())  {
+//                    Log.d("TAG", "onTextChanged: newText" + "/" + newText + "/");
+//
+//                    Log.d("TAG", "onTextChanged: numberFlagTo" + "/" + numberFlagTo + "/");
+//                    Log.d("TAG", "onTextChanged: charSequence.length()222" + "/" + newText + "/");
+//                    if (newText.equals(" ")) {
+//                        // CharSequene пустая
+//                        from_numberCost = "1";
+//                    } else if (newText.equals("XXX")) {
+//
+//                        from_numberCost = " ";
+//                    } else {
+//                        // CharSequene не пустая
+//                        from_numberCost = newText;
+//                    }
+//                    // Вызывается во время изменения текста
+//                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+//                        from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+//                        from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+//                    } else {
+//                        ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+//                    }
+//                    Log.d("TAG", "onTextChanged: newText " + newText);
+//                    if (to == null) {
+//                        toCost = from;
+//                        to_numberCost = from_numberCost;
+//                    } else {
+//                        toCost = to;
+//                    }
+//                    if(!textViewFrom.getText().toString().isEmpty()) {
+//                        try {
+//                            String urlCost = null;
+//                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+//                                urlCost = getTaxiUrlSearch(from, from_numberCost, toCost, to_numberCost, "costSearch", getActivity());
+//                            }
+//
+//                            Map sendUrlMapCost = CostJSONParser.sendURL(urlCost);
+//                            String orderCost = (String) sendUrlMapCost.get("order_cost");
+//                            String message = (String) sendUrlMapCost.get("message");
+//
+//                            if (orderCost.equals("0")) {
+//                                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+//                                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+//
+//                                text_view_cost.setVisibility(View.INVISIBLE);
+//                                btn_minus.setVisibility(View.INVISIBLE);
+//                                btn_plus.setVisibility(View.INVISIBLE);
+//                                buttonAddServices.setVisibility(View.INVISIBLE);
+//                            }
+//                            if (!orderCost.equals("0")) {
+//                                text_view_cost.setVisibility(View.VISIBLE);
+//                                btn_minus.setVisibility(View.VISIBLE);
+//                                btn_plus.setVisibility(View.VISIBLE);
+//                                buttonAddServices.setVisibility(View.VISIBLE);
+//                                btn_order.setVisibility(View.VISIBLE);
+//
+//                                String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
+//                                long discountInt = Integer.parseInt(discountText);
+//                                long discount;
+//
+//                                cost = Long.parseLong(orderCost);
+//
+//                                MIN_COST_VALUE = (long) ((long) cost * 0.1);
+//                                MAX_COST_VALUE = cost * 3;
+//                                firstCost = cost;
+//
+//                                discount = firstCost * discountInt / 100;
+//                                cost = firstCost + discount;
+//                                addCost = discount;
+//                                text_view_cost.setText(Long.toString(cost));
+//
+//                            } else {
+//                                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+//                                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+//                            }
+//
+//                        } catch (MalformedURLException e) {
+//                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+//                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+//                        }
+//                    }
+//                }
+//                // Обновляем предыдущий текст
+//                previousText = newText;
+//            }
+//        });
+
+        to_number = binding.toNumber;
+//        to_number.addTextChangedListener(new TextWatcher() {
+//            private String previousText = " ";
+//            @Override
+//            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+//                // Вызывается перед изменением текста
+//                previousText = charSequence.toString();
+//            }
+//
+//            @Override
+//            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+//
+//
+//            }
+//
+//            @Override
+//            public void afterTextChanged(Editable editable) {
+//                String newText = editable.toString();
+//                // Проверяем, что новая длина текста больше предыдущей длины
+//                if (newText.length() > previousText.length())  {
+//                    String to_numberCost;
+//                    Log.d("TAG", "onTextChanged: charSequence.toString()2222222" + "/" + newText + "/");
+//                    Log.d("TAG", "onTextChanged: numberFlagTo2222222" + "/" + numberFlagTo + "/");
+//                    if (newText.equals(" ")) {
+//                        // CharSequene пустая
+//                        to_numberCost = "1";
+//                    } else if (newText.equals("XXX")) {
+//
+//                        to_numberCost = " ";
+//                    } else {
+//                        // CharSequene не пустая
+//                        to_numberCost = newText;
+//                    }
+//                    // Вызывается во время изменения текста
+//                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+//                        to_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+//                        to_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+//                    } else {
+//                        ViewCompat.setBackgroundTintList(to_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+//                    }
+//                    Log.d("TAG", "onTextChanged: newText " + newText);
+//                    try {
+//                        String urlCost = null;
+//                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+//                            urlCost = getTaxiUrlSearch(from, from_numberCost, toCost, to_numberCost, "costSearch", getActivity());
+//                        }
+//
+//                        Map sendUrlMapCost = CostJSONParser.sendURL(urlCost);
+//                        String orderCost = (String) sendUrlMapCost.get("order_cost");
+//                        String message = (String) sendUrlMapCost.get("message");
+//
+//                        if (orderCost.equals("0")) {
+//                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+//                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+//
+//                            text_view_cost.setVisibility(View.INVISIBLE);
+//                            btn_minus.setVisibility(View.INVISIBLE);
+//                            btn_plus.setVisibility(View.INVISIBLE);
+//                            buttonAddServices.setVisibility(View.INVISIBLE);
+//                        }
+//                        if (!orderCost.equals("0")) {
+//                            text_view_cost.setVisibility(View.VISIBLE);
+//                            btn_minus.setVisibility(View.VISIBLE);
+//                            btn_plus.setVisibility(View.VISIBLE);
+//                            buttonAddServices.setVisibility(View.VISIBLE);
+//                            btn_order.setVisibility(View.VISIBLE);
+//
+//                            String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
+//                            long discountInt = Integer.parseInt(discountText);
+//                            long discount;
+//
+//                            cost = Long.parseLong(orderCost);
+//
+//                            MIN_COST_VALUE = (long) ((long) cost * 0.1);
+//                            MAX_COST_VALUE = cost * 3;
+//                            firstCost = cost;
+//
+//                            discount = firstCost * discountInt / 100;
+//                            cost = firstCost + discount;
+//                            addCost = discount;
+//                            text_view_cost.setText(Long.toString(cost));
+//
+//                        } else {
+//                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+//                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+//                        }
+//
+//                    } catch (MalformedURLException e) {
+//                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+//                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+//                    }
+//                }
+//                // Обновляем предыдущий текст
+//                previousText = newText;
+//            }
+//        });
+
+        btn_order = binding.btnOrder;
+        btn_order.setOnClickListener(new View.OnClickListener() {
             @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onClick(View v) {
                 if(connected()) {
-                    if (from == null) {
-                        Toast.makeText(getActivity(), getString(R.string.rout_from_message), Toast.LENGTH_SHORT).show();
-                    }
-                    else {
-                        if (to == null) {
-                            to = from;
-                            to_number.setText(from_number.getText());
-                        }
-                        try {
-                            String urlCost = getTaxiUrlSearch(from, from_number.getText().toString(), to, to_number.getText().toString(), "costSearch", getActivity());
-
-                            Log.d("TAG", "onClick urlCost: " + urlCost);
-
-                            Map sendUrlMapCost = CostJSONParser.sendURL(urlCost);
-                            String orderCost = (String) sendUrlMapCost.get("order_cost");
-                            String message = (String) sendUrlMapCost.get("message");
-
-
-                            if (orderCost.equals("0")) {
-                                Log.d("TAG", "onClick 9998465465465: ");
-                                if (to.equals(from)) {
-                                    textViewTo.setText("");
-                                    to = null;
-                                }
-                                Toast.makeText(getActivity(), getString(R.string.error_message) + message, Toast.LENGTH_SHORT).show();
-                            }
-                            if (!orderCost.equals("0")) {
-                                if(!verifyOrder(getContext())) {
-                                    Toast.makeText(getActivity(), getString(R.string.cost_of_order) + orderCost + getString(R.string.firebase_false_message), Toast.LENGTH_SHORT).show();
-                                } else {
-
-                                    MaterialAlertDialogBuilder builderAddCost = new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme);
-                                    LayoutInflater inflaterCost = getActivity().getLayoutInflater();
-
-                                    View view_cost = inflaterCost.inflate(R.layout.add_cost_layout, null);
-                                    builderAddCost.setView(view_cost);
-                                    TextView costView = view_cost.findViewById(R.id.cost);
-                                    costView.setText(orderCost);
-                                    StartActivity.cost = Long.parseLong(orderCost);
-                                    StartActivity.addCost = 0;
-                                    Button btn_minus = view_cost.findViewById(R.id.btn_minus);
-                                    Button btn_plus = view_cost.findViewById(R.id.btn_plus);
-
-                                    btn_minus.setOnClickListener(new View.OnClickListener() {
-                                        @Override
-                                        public void onClick(View v) {
-
-                                            if(StartActivity.addCost != 0) {
-                                                StartActivity.addCost -= 5;
-                                                StartActivity.cost -= 5;
-                                                costView.setText(String.valueOf(StartActivity.cost));
-                                            }
-                                        }
-                                    });
-                                    btn_plus.setOnClickListener(new View.OnClickListener() {
-                                        @Override
-                                        public void onClick(View v) {
-                                            StartActivity.addCost += 5;
-                                            StartActivity.cost += 5;
-                                            Log.d(TAG, "onClick StartActivity.addCost " + StartActivity.addCost);
-                                            costView.setText(String.valueOf(StartActivity.cost));
-                                        }
-                                    });
-                                    if (!verifyPhone(getContext())) {
-                                        getPhoneNumber();
-                                    }
-                                    if (!verifyPhone(getContext())) {
-                                        MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment();
-                                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                                    }
-
-                                    builderAddCost
-                                            .setPositiveButton(getString(R.string.order), new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialog, int which) {
-                                                    if(connected()) {
-                                                        if (verifyPhone(getContext())) {
-                                                            try {
-                                                                String urlOrder = getTaxiUrlSearch(from, from_number.getText().toString(), to, to_number.getText().toString(), "orderSearch", getActivity());
-                                                                Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
-
-                                                                String orderWeb = (String) sendUrlMap.get("order_cost");
-                                                                if (!orderWeb.equals("0")) {
-
-                                                                    String from_name = (String) sendUrlMap.get("routefrom");
-                                                                    String to_name = (String) sendUrlMap.get("routeto");
-                                                                    if (from_name.equals(to_name)) {
-                                                                        messageResult = getString(R.string.thanks_message) +
-                                                                                from_name + " " + from_number.getText() + " " +  getString(R.string.on_city) +
-                                                                                getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
-
-
-                                                                    } else {
-                                                                        messageResult =  getString(R.string.thanks_message) +
-                                                                                from_name + " " + from_number.getText() + " " + getString(R.string.to_message) +
-                                                                                to_name + " " + to_number.getText() + "." +
-                                                                                getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
-                                                                    }
-//                                                                    Toast.makeText(getActivity(), messageResult, Toast.LENGTH_LONG).show();
-                                                                    Intent intent = new Intent(getActivity(), FinishActivity.class);
-                                                                    intent.putExtra("messageResult_key", messageResult);
-                                                                    intent.putExtra("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
-                                                                    startActivity(intent);
-                                                                    if(from_name.equals(to_name)) {
-                                                                        if(!sendUrlMap.get("lat").equals("0")) {
-                                                                            insertRecordsOrders(
-                                                                                    from_name, from_name,
-                                                                                    from_number.getText().toString(), from_number.getText().toString(),
-                                                                                    (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
-                                                                                    (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
-                                                                                    getContext()
-                                                                            );
-                                                                        }
-                                                                    } else {
-
-                                                                        if(!sendUrlMap.get("lat").equals("0")) {
-                                                                            insertRecordsOrders(
-                                                                                    from_name, to_name,
-                                                                                    from_number.getText().toString(), to_number.getText().toString(),
-                                                                                    (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
-                                                                                    (String) sendUrlMap.get("lat"), (String) sendUrlMap.get("lng"), getContext()
-                                                                            );
-                                                                        }
-                                                                    }
-                                                                    HomeFragment newFragment = new HomeFragment();
-                                                                    FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-                                                                    transaction.replace(getId(), newFragment);
-                                                                    transaction.addToBackStack(null);
-                                                                    transaction.commit();
-                                                                } else {
-                                                                    String message = (String) sendUrlMap.get("message");
-                                                                    MaterialAlertDialogBuilder alertDialogBuilder = new MaterialAlertDialogBuilder(getContext(), R.style.AlertDialogTheme);
-                                                                    LayoutInflater inflater = getActivity().getLayoutInflater();
-                                                                    View view = inflater.inflate(R.layout.free_message_layout, null);
-                                                                    TextView alertMessage = view.findViewById(R.id.text_message);
-                                                                    alertMessage.setText(message);
-                                                                    alertDialogBuilder.setView(view);
-
-                                                                    alertDialogBuilder.setPositiveButton(getString(R.string.help), new DialogInterface.OnClickListener() {
-                                                                                @Override
-                                                                                public void onClick(DialogInterface dialog, int which) {
-                                                                                    Intent intent = new Intent(Intent.ACTION_DIAL);
-                                                                                    intent.setData(Uri.parse("tel:0674443804"));
-                                                                                    startActivity(intent);
-
-                                                                                }
-                                                                            })
-                                                                            .setNegativeButton(getString(R.string.try_again),null)
-                                                                            .show();
-                                                                }
-
-
-                                                            } catch (MalformedURLException |
-                                                                     InterruptedException |
-                                                                     JSONException e) {
-                                                                Toast.makeText(getActivity(), getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
-                                                            }
-                                                        } else {
-                                                            Toast.makeText(getActivity(), getString(R.string.please_phone_message), Toast.LENGTH_SHORT).show();
-
-                                                        }
-                                                    }  else {
-                                                        Toast.makeText(getActivity(), getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
-                                                    }
-                                                }})
-                                            .setNegativeButton(getString(R.string.cancel_button), new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialog, int which) {
-
-                                                    HomeFragment newFragment = new HomeFragment();
-                                                    FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-                                                    transaction.replace(getId(), newFragment);
-                                                    transaction.addToBackStack(null);
-                                                    transaction.commit();
-                                                }
-                                            })
-                                            .show();
-                                }
-                            }
-
-                        } catch (MalformedURLException | InterruptedException |
-                                 JSONException e) {
-                            Toast.makeText(getActivity(), getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
-                        }
-                    }
+                   order();
                 } else {
-                    Toast.makeText(getActivity(), getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
             }
         });
@@ -473,57 +443,152 @@ public class HomeFragment extends Fragment {
         });
 
         fab_call = binding.fabCall;
-        mapbut = binding.mapbut;
-        mapbut.setOnClickListener(new View.OnClickListener() {
+        fab_map = binding.fabOpenMap;
+        fab_map.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                LocationManager lm = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
-                boolean gps_enabled = false;
-                boolean network_enabled = false;
+                if(!verifyOrder(getContext())) {
 
-                try {
-                    gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-                } catch(Exception ex) {
-                }
+                    MyBottomSheetBlackListFragment bottomSheetDialogFragment = new MyBottomSheetBlackListFragment("orderCost");
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                } else {
+                    LocationManager lm = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
+                    boolean gps_enabled = false;
+                    boolean network_enabled = false;
 
-                try {
-                    network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-                } catch(Exception ex) {
-                }
+                    try {
+                        gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+                    } catch(Exception ex) {
+                    }
 
-                if(!gps_enabled || !network_enabled) {
-                    // notify user
-                    MaterialAlertDialogBuilder builder =  new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme);
-                    LayoutInflater inflater = getActivity().getLayoutInflater();
+                    try {
+                        network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+                    } catch(Exception ex) {
+                    }
 
-                    View view_cost = inflater.inflate(R.layout.message_layout, null);
-                    builder.setView(view_cost);
-                    TextView message = view_cost.findViewById(R.id.textMessage);
-                    message.setText(R.string.gps_info);
-                    builder.setPositiveButton(R.string.gps_on, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-                                    getActivity().startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
-                                }
-                            })
-                            .setNegativeButton(R.string.cancel_button, null)
-                            .show();
-                }  else  if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    if(!gps_enabled || !network_enabled) {
+                        // notify user
+                        MaterialAlertDialogBuilder builder =  new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme);
+                        LayoutInflater inflater = getActivity().getLayoutInflater();
 
-                    checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                    checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                        View view_cost = inflater.inflate(R.layout.message_layout, null);
+                        builder.setView(view_cost);
+                        TextView message = view_cost.findViewById(R.id.textMessage);
+                        message.setText(R.string.gps_info);
+                        builder.setPositiveButton(R.string.gps_on, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                                        getActivity().startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                                    }
+                                })
+                                .setNegativeButton(R.string.cancel_button, null)
+                                .show();
+                    }  else  {
+                        // Разрешения уже предоставлены, выполнить ваш код
+                        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.on_geo_loc_mes));
+                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                            btnGeo.setVisibility(View.VISIBLE);
+                        }  else {
+                            btnGeo.setVisibility(View.INVISIBLE);
+                            Intent intent = new Intent(getActivity(), OpenStreetMapActivity.class);
+                            startActivity(intent);
+                        }
 
-                } else if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                    startActivity(new Intent(getActivity(), OpenStreetMapActivity.class));
+                    }
                 }
             }
         });
 
+        on_map = binding.btnMap;
+        on_map.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!verifyOrder(getContext())) {
+
+                    MyBottomSheetBlackListFragment bottomSheetDialogFragment = new MyBottomSheetBlackListFragment("orderCost");
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                } else {
+                    LocationManager lm = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
+                    boolean gps_enabled = false;
+                    boolean network_enabled = false;
+
+                    try {
+                        gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+                    } catch(Exception ex) {
+                    }
+
+                    try {
+                        network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+                    } catch(Exception ex) {
+                    }
+
+                    if(!gps_enabled || !network_enabled) {
+                        // notify user
+                        MaterialAlertDialogBuilder builder =  new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme);
+                        LayoutInflater inflater = getActivity().getLayoutInflater();
+
+                        View view_cost = inflater.inflate(R.layout.message_layout, null);
+                        builder.setView(view_cost);
+                        TextView message = view_cost.findViewById(R.id.textMessage);
+                        message.setText(R.string.gps_info);
+                        builder.setPositiveButton(R.string.gps_on, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                                        getActivity().startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                                    }
+                                })
+                                .setNegativeButton(R.string.cancel_button, null)
+                                .show();
+                    }  else  {
+                        // Разрешения уже предоставлены, выполнить ваш код
+                        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.on_geo_loc_mes));
+                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                            btnGeo.setVisibility(View.VISIBLE);
+                        }  else {
+                            btnGeo.setVisibility(View.INVISIBLE);
+                            Intent intent = new Intent(getActivity(), OpenStreetMapActivity.class);
+                            startActivity(intent);
+                        }
+
+                    }
+                }
+            }
+        });
         fab_call.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(Intent.ACTION_DIAL);
-                intent.setData(Uri.parse("tel:0674443804"));
+                String phone;
+                List<String> stringList = logCursor(MainActivity.CITY_INFO, getActivity());
+                switch (stringList.get(1)){
+                    case "Kyiv City":
+                        phone = "tel:0674443804";
+                        break;
+                    case "Dnipropetrovsk Oblast":
+                        phone = "tel:0667257070";
+                        break;
+                    case "Odessa":
+                        phone = "tel:0737257070";
+                        break;
+                    case "Zaporizhzhia":
+                        phone = "tel:0687257070";
+                        break;
+                    case "Cherkasy Oblast":
+                        phone = "tel:0962294243";
+                        break;
+                    default:
+                        phone = "tel:0674443804";
+                        break;
+                }
+                intent.setData(Uri.parse(phone));
                 startActivity(intent);
             }
         });
@@ -537,75 +602,496 @@ public class HomeFragment extends Fragment {
             }
         });
 
-        button = binding.btnRouts;
-        listView = binding.list;
-        array = arrayToRoutsAdapter ();
-        if(array != null)  {
-            ArrayAdapter<String> adapterRouts = new ArrayAdapter<>(getActivity(),  R.layout.custom_list_item, array);
-            listView.setAdapter(adapterRouts);
+        return root;
+    }
+    public void checkPermission(String permission, int requestCode) {
+        // Checking if permission is not granted
+        if (ContextCompat.checkSelfPermission(getActivity(), permission) == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(getActivity(), new String[]{permission}, requestCode);
 
-            listView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    // Обработка выбора элемента
-                    selectedItem = position;
-                    // Дополнительный код по обработке выбора элемента
-                }
-                @Override
-                public void onNothingSelected(AdapterView<?> parent) {
-                    // Код, если ни один элемент не выбран
-                }
-            });
+        }
+    }
+    @Override
+    public void onResume() {
+        super.onResume();
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, getActivity());
+        Log.d("TAG", "onViewCreated: " + stringList);
+        if (stringList.size() != 0) {
+            rout();
 
-            button.setVisibility(View.VISIBLE);
-        } else {
-            button.setVisibility(View.INVISIBLE);
+            text_view_cost.setVisibility(View.INVISIBLE);
+            btn_minus.setVisibility(View.INVISIBLE);
+            btn_plus.setVisibility(View.INVISIBLE);
+            buttonAddServices.setVisibility(View.INVISIBLE);
+            btn_order.setVisibility(View.INVISIBLE);
+            cost = 0;
+            addCost = 0;
+            from = null;
+            to = null;
+            text_view_cost.setText("");
+            textViewFrom.setText("");
+            from_number.setText("");
+            textViewTo.setText("");
+            to_number.setText("");
         }
 
-        button.setOnClickListener(new View.OnClickListener() {
+
+    }
+
+    @SuppressLint("Range")
+    private void rout() {
+        textViewFrom.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @SuppressLint("ResourceAsColor")
             @Override
-            public void onClick(View view) {
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//                selectesposition = position; // Обновляем выбранную позицию
+//                adapter.notifyDataSetChanged(); // Обновляем вид списка
+                Log.d(TAG, "onItemClick: textViewTo.getText().toString()" + textViewTo.getText().toString());
+
+                if (textViewTo.getText().toString().isEmpty()) {
+                        to = null;
+                } else {
+                    to = textViewTo.getText().toString();
+                }
+                if (numberFlagTo.equals("0")) {
+                    to_number.setText(" ");
+                }
+                Log.d(TAG, "onItemClick: to" + to);
+                if(connected()) {
+                    from = String.valueOf(adapter.getItem(position));
+                    if (from.indexOf("/") != -1) {
+                        from = from.substring(0,  from.indexOf("/"));
+                    };
+
+
+                    String url = "https://m.easy-order-taxi.site/" + api + "/android/autocompleteSearchComboHid/" + from;
+
+                    Map sendUrlMapCost = null;
                     try {
-                        if(hasServer()) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                dialogFromToOneRout(routChoice(selectedItem + 1));
-                            }
-                        } else {
-                            Toast.makeText(getActivity(), R.string.server_error_connected, Toast.LENGTH_SHORT).show();
-                        }
+                        sendUrlMapCost = ResultSONParser.sendURL(url);
                     } catch (MalformedURLException | InterruptedException | JSONException e) {
-                        Toast.makeText(getActivity(), getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_firebase_start));
+                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                     }
+                    assert sendUrlMapCost != null;
+                    String orderCost = (String) sendUrlMapCost.get("message");
+                    switch (Objects.requireNonNull(orderCost)) {
+                        case "200": {
+                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_firebase_start));
+                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                            break;
+                        }
+                        case "400": {
+                            textViewFrom.setTextColor(RED);
+                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(address_error_message));
+                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                            break;
+                        }
+                        case "1":
+                            from_number.setVisibility(View.VISIBLE);
+                            from_number.requestFocus();
+                            numberFlagFrom = "1";
+                            from_number.setText("1");
+                            cost();
+                            from_number.setText(" ");
+                            break;
+                        case "0":
+                            from_number.setText(" ");
+                            from_number.setVisibility(View.INVISIBLE);
+                            numberFlagFrom = "0";
+                            cost();
+                            break;
+                        default:
+                            Log.d(TAG, "onItemClick: " + new IllegalStateException("Unexpected value: " + Objects.requireNonNull(orderCost)));
+                    }
+
+                } else {
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                }
 
             }
         });
 
-        return root;
+        from_number.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (!hasFocus) {
+                    if (!from_number.getText().toString().equals(" ")) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                            from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+                        } else {
+                            ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                        }
+                   }
+                } else {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                        from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+                    } else {
+                        ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                    }
+                }
+            }
+        });
+        textViewTo.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//                    selectesposition = position; // Обновляем выбранную позицию
+//                    adapter.notifyDataSetChanged(); // Обновляем вид списка
+
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment;
+
+                    if (connected()) {
+                        to = String.valueOf(adapter.getItem(position));
+                        if (to.indexOf("/") != -1) {
+                            to = to.substring(0, to.indexOf("/"));
+                        }
+                         String url = "https://m.easy-order-taxi.site/" + api + "/android/autocompleteSearchComboHid/" + to;
+
+                        Map sendUrlMapCost = null;
+                        try {
+                            sendUrlMapCost = ResultSONParser.sendURL(url);
+                        } catch (MalformedURLException | InterruptedException | JSONException e) {
+                            Toast.makeText(getActivity(), R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
+                        }
+
+                        String orderCost = (String) sendUrlMapCost.get("message");
+                        Log.d(TAG, "onItemClick: orderCost" + orderCost);
+                        switch (Objects.requireNonNull(orderCost)) {
+                            case "200":
+                                bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_firebase_start));
+                                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                                break;
+                            case "400":
+                                textViewTo.setTextColor(RED);
+                                bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.address_error_message));
+                                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                                break;
+                            case "1":
+                                to_number.setVisibility(View.VISIBLE);
+                                to_number.requestFocus();
+                                numberFlagTo = "1";
+                                to_number.setText("1");
+                                cost();
+                                to_number.setText(" ");
+                                break;
+                            case "0":
+                                to_number.setText(" ");
+                                to_number.setVisibility(View.INVISIBLE);
+                                numberFlagTo = "0";
+                                cost();
+                                break;
+                            default:
+                                Log.d(TAG, "onItemClick: " + new IllegalStateException("Unexpected value: " + Objects.requireNonNull(orderCost)));
+                        }
+                        if (textViewFrom.getText().toString().isEmpty()) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                textViewFrom.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                                textViewFrom.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+                            } else {
+                                ViewCompat.setBackgroundTintList(textViewFrom, ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                            }
+
+                        }
+
+                }
+                    else {
+                        bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    }
+            };
+
+        });
+
+    }
+    @SuppressLint("ResourceAsColor")
+    private void cost(){
+        textViewTo.setVisibility(View.VISIBLE);
+        binding.textwhere.setVisibility(View.VISIBLE);
+        binding.num2.setVisibility(View.VISIBLE);
+
+
+        if (numberFlagFrom.equals("1") && from_number.getText().toString().equals(" ")) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+                from_number.requestFocus();
+            } else {
+                ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                from_number.requestFocus();
+            }
+            from_numberCost = "1";
+        } else {
+
+            if (numberFlagFrom.equals("0")) {
+                from_numberCost = " ";
+            } else{
+                from_numberCost = from_number.getText().toString();
+            }
+        }
+
+        if (numberFlagTo.equals("1") && to_number.getText().toString().equals(" ")) {
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                to_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                to_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+                to_number.requestFocus();
+            } else {
+                ViewCompat.setBackgroundTintList(to_number, ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+            }
+            to_numberCost = "1";
+        } else {
+            if (numberFlagTo.equals("0")) {
+                to_numberCost = " ";
+            } else{
+                to_numberCost = to_number.getText().toString();
+            }
+
+        }
+        Log.d(TAG, "cost: numberFlagTo " + numberFlagTo);
+
+        if (to == null) {
+            toCost = from;
+            to_numberCost = from_numberCost;
+        } else {
+            toCost = to;
+        }
+
+
+        try {
+            String urlCost = null;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                urlCost = getTaxiUrlSearch(from, from_numberCost, toCost, to_numberCost, "costSearch", getActivity());
+            }
+
+            Map sendUrlMapCost = CostJSONParser.sendURL(urlCost);
+            String orderCost = (String) sendUrlMapCost.get("order_cost");
+            String message = (String) sendUrlMapCost.get("message");
+
+            if (orderCost.equals("0")) {
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+
+                text_view_cost.setVisibility(View.INVISIBLE);
+                btn_minus.setVisibility(View.INVISIBLE);
+                btn_plus.setVisibility(View.INVISIBLE);
+                buttonAddServices.setVisibility(View.INVISIBLE);
+            }
+            if (!orderCost.equals("0")) {
+                text_view_cost.setVisibility(View.VISIBLE);
+                btn_minus.setVisibility(View.VISIBLE);
+                btn_plus.setVisibility(View.VISIBLE);
+                buttonAddServices.setVisibility(View.VISIBLE);
+                btn_order.setVisibility(View.VISIBLE);
+
+                String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
+                long discountInt = Integer.parseInt(discountText);
+                long discount;
+
+                cost = Long.parseLong(orderCost);
+
+                MIN_COST_VALUE = (long) ((long) cost * 0.1);
+                MAX_COST_VALUE = cost * 3;
+                firstCost = cost;
+
+                discount = firstCost * discountInt / 100;
+                addCost = discount;
+                cost = firstCost + discount;
+                text_view_cost.setText(Long.toString(cost));
+
+            } else {
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+            }
+
+        } catch (MalformedURLException e) {
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+        }
+    }
+    @SuppressLint("ResourceAsColor")
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private void order() {
+        if(!verifyOrder(getContext())) {
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.black_list_message));
+            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+            return;
+        }
+        boolean stop = false;
+        if (numberFlagFrom.equals("1") && from_number.getText().toString().equals(" ")) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+                from_number.requestFocus();
+            } else {
+                ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                from_number.requestFocus();
+            }
+            stop = true;
+        }
+        if (numberFlagTo.equals("1") && to_number.getText().toString().equals(" ")) {
+            to_number.setBackgroundTintList(ColorStateList.valueOf(R.color.selected_text_color));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                to_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                to_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+                to_number.requestFocus();
+            } else {
+               ViewCompat.setBackgroundTintList(to_number, ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                to_number.requestFocus();
+            }
+            stop = true;
+
+        }
+        if(stop) {return;}
+
+        if (numberFlagFrom.equals("1") && !from_number.getText().toString().equals(" ")) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+                from_number.requestFocus();
+            } else {
+                ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                from_number.requestFocus();
+            }
+
+        }
+        if (numberFlagTo.equals("1") && !to_number.getText().toString().equals(" ")) {
+            to_number.setBackgroundTintList(ColorStateList.valueOf(R.color.selected_text_color));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                to_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                to_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+                to_number.requestFocus();
+            } else {
+                ViewCompat.setBackgroundTintList(to_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                to_number.requestFocus();
+            }
+
+
+        }
+
+
+        String from_numberCost;
+        if(from_number.getText().toString().equals(" ")) {
+            from_numberCost = " ";
+        } else {
+
+            from_numberCost = from_number.getText().toString();
+        }
+        String toCost, to_numberCost;
+        if (to == null) {
+            toCost = from;
+            to_numberCost = from_number.getText().toString();
+        } else {
+            toCost = to;
+            to_numberCost = to_number.getText().toString();
+        }
+
+        if (!verifyPhone(getContext())) {
+            getPhoneNumber();
+        }
+        if (!verifyPhone(getContext())) {
+            MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment();
+            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+        }
+        if(connected()) {
+            if (verifyPhone(getContext())) {
+                try {
+                    String urlOrder = getTaxiUrlSearch(from, from_numberCost, toCost, to_numberCost, "orderSearch", getActivity());
+                    Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
+
+                    String orderWeb = (String) sendUrlMap.get("order_cost");
+                    if (!orderWeb.equals("0")) {
+
+                        String from_name = (String) sendUrlMap.get("routefrom");
+                        String to_name = (String) sendUrlMap.get("routeto");
+                        if (from_name.equals(to_name)) {
+                            messageResult = getString(R.string.thanks_message) +
+                                    from_name + " " + from_number.getText() + " " +  getString(R.string.on_city) +
+                                    getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
+
+
+                        } else {
+                            messageResult =  getString(R.string.thanks_message) +
+                                    from_name + " " + from_number.getText() + " " + getString(R.string.to_message) +
+                                    to_name + " " + to_number.getText() + "." +
+                                    getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
+                        }
+                        Log.d(TAG, "order: sendUrlMap.get(\"from_lat\")" + sendUrlMap.get("from_lat"));
+                        Log.d(TAG, "order: sendUrlMap.get(\"lat\")" + sendUrlMap.get("lat"));
+                        if(!sendUrlMap.get("from_lat").equals("0") && !sendUrlMap.get("lat").equals("0")) {
+                            if(from_name.equals(to_name)) {
+                                insertRecordsOrders(
+                                        from_name, from_name,
+                                        from_number.getText().toString(), from_number.getText().toString(),
+                                        (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
+                                        (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
+                                        getContext()
+                                );
+                            } else {
+                                insertRecordsOrders(
+                                        from_name, to_name,
+                                        from_number.getText().toString(), to_number.getText().toString(),
+                                        (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
+                                        (String) sendUrlMap.get("lat"), (String) sendUrlMap.get("lng"), getContext()
+                                );
+
+                            }
+                        }
+
+                        Intent intent = new Intent(getActivity(), FinishActivity.class);
+                        intent.putExtra("messageResult_key", messageResult);
+                        intent.putExtra("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
+                        startActivity(intent);
+
+                    } else {
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    }
+
+
+                } catch (MalformedURLException e) {
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                }
+            }
+        } else {
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+        }
+
+
+
+
+
+
     }
 
+
     private boolean verifyOrder(Context context) {
-        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor = database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursor = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
 
         boolean verify = true;
         if (cursor.getCount() == 1) {
 
-            if (logCursor(StartActivity.TABLE_USER_INFO, context).get(1).equals("0")) {
-                verify = false;
+            if (logCursor(MainActivity.TABLE_USER_INFO, context).get(1).equals("0")) {
+                verify = false;Log.d("TAG", "verifyOrder:verify " +verify);
             }
             cursor.close();
         }
-
+        database.close();
         return verify;
     }
 
     private boolean verifyPhone(Context context) {
-        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor = database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursor = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
         boolean verify = true;
         if (cursor.getCount() == 1) {
 
-            if (logCursor(StartActivity.TABLE_USER_INFO, context).get(2).equals("+380")) {
+            if (logCursor(MainActivity.TABLE_USER_INFO, context).get(2).equals("+380")) {
                 verify = false;
             }
             cursor.close();
@@ -613,72 +1099,20 @@ public class HomeFragment extends Fragment {
 
         return verify;
     }
-    public static void updateRecordsUser(String result, Context context) {
+    private void updateRecordsUser(String result, Context context) {
         ContentValues cv = new ContentValues();
 
         cv.put("phone_number", result);
 
         // обновляем по id
-        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-        int updCount = database.update(StartActivity.TABLE_USER_INFO, cv, "id = ?",
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        int updCount = database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
                 new String[] { "1" });
         Log.d("TAG", "updated rows count = " + updCount);
 
 
     }
-    private void checkPermission(String permission, int requestCode) {
-        // Checking if permission is not granted
-        if (ContextCompat.checkSelfPermission(getContext(), permission) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(getActivity(), new String[]{permission}, requestCode);
-        }
-    }
-    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001; // Произвольный код для запроса разрешений
 
-
-// Другой код вашего Fragment или Activity...
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        Log.d("TAG", "onRequestPermissionsResult requestCode: " + requestCode);
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED
-                    && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
-                Intent intent = new Intent(getActivity(), OpenStreetMapActivity.class);
-                // Разрешения получены, теперь можно продолжить обновление местоположения
-                startActivity(intent);
-            } else {
-                // Пользователь не предоставил необходимые разрешения, переход на MainActivity
-                Intent intent = new Intent(getActivity(), MainActivity.class);
-                startActivity(intent);
-            }
-        }
-    }
-
-
-    private Map <String, String> routChoice(int i) {
-        Map <String, String> rout = new HashMap<>();
-        SQLiteDatabase database = getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor c = database.query(StartActivity.TABLE_ORDERS_INFO, null, null, null, null, null, null);
-        c.move(i);
-        rout.put("id", c.getString(c.getColumnIndexOrThrow ("id")));
-        rout.put("from_lat", c.getString(c.getColumnIndexOrThrow ("from_lat")));
-        rout.put("from_lng", c.getString(c.getColumnIndexOrThrow ("from_lng")));
-        rout.put("to_lat", c.getString(c.getColumnIndexOrThrow ("to_lat")));
-        rout.put("to_lng", c.getString(c.getColumnIndexOrThrow ("to_lng")));
-        rout.put("from_street", c.getString(c.getColumnIndexOrThrow ("from_street")));
-        rout.put("from_number", c.getString(c.getColumnIndexOrThrow ("from_number")));
-        rout.put("to_street", c.getString(c.getColumnIndexOrThrow ("to_street")));
-        rout.put("to_number", c.getString(c.getColumnIndexOrThrow ("to_number")));
-
-        Log.d("TAG", "routMaps: " + rout);
-        return rout;
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-    }
     @Override
     public void onDestroyView() {
         super.onDestroyView();
@@ -687,8 +1121,8 @@ public class HomeFragment extends Fragment {
     public static ArrayList<Map> routMaps(Context context) {
         Map <String, String> routs;
         ArrayList<Map> routsArr = new ArrayList<>();
-        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor c = database.query(StartActivity.TABLE_ORDERS_INFO, null, null, null, null, null, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor c = database.query(MainActivity.TABLE_ORDERS_INFO, null, null, null, null, null, null);
         int i = 0;
         if (c != null) {
             if (c.moveToFirst()) {
@@ -786,160 +1220,18 @@ public class HomeFragment extends Fragment {
 
         return hasConnect;
     }
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    private void dialogFromToOneRout(Map <String, String> rout) throws MalformedURLException, InterruptedException, JSONException {
-        if(connected()) {
-            Log.d("TAG", "dialogFromToOneRout: " + rout.toString());
-            Double from_lat =  Double.valueOf(rout.get("from_lat"));
-            Double from_lng = Double.valueOf(rout.get("from_lng"));
-            Double to_lat = Double.valueOf(rout.get("to_lat"));
-            Double to_lng = Double.valueOf(rout.get("to_lng"));
-            FromAddressString = rout.get("from_street") + rout.get("from_number") ;
-            Log.d("TAG", "dialogFromToOneRout: FromAddressString" + FromAddressString);
-            ToAddressString = rout.get("to_street") + rout.get("to_number");
-            if(rout.get("from_street").equals(rout.get("to_street"))) {
-                ToAddressString =  getString(R.string.on_city_tv);;
-            }
-            Log.d("TAG", "dialogFromToOneRout: ToAddressString" + ToAddressString);
-
-                String urlCost = getTaxiUrlSearchMarkers(from_lat, from_lng,
-                        to_lat, to_lng, "costSearchMarkers", getContext());
-
-                Map<String, String> sendUrlMapCost = ToJSONParser.sendURL(urlCost);
-
-                String message = (String) sendUrlMapCost.get("message");
-                String orderCost = (String) sendUrlMapCost.get("order_cost");
-
-                GeoPoint startPoint = new GeoPoint(from_lat, to_lat);
-
-                if (orderCost.equals("0")) {
-                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
-//                    coastOfRoad(startPoint, message);
-                }
-                if (!orderCost.equals("0")) {
-
-                    MaterialAlertDialogBuilder builderAddCost = new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme);
-                    LayoutInflater inflater = getActivity().getLayoutInflater();
-
-                    View view_cost = inflater.inflate(R.layout.add_cost_layout, null);
-                    builderAddCost.setView(view_cost);
-                    TextView costView = view_cost.findViewById(R.id.cost);
-                    costView.setText(orderCost);
-                    StartActivity.cost = Long.parseLong(orderCost);
-                    StartActivity.addCost = 0;
-                    Button btn_minus = view_cost.findViewById(R.id.btn_minus);
-                    Button btn_plus = view_cost.findViewById(R.id.btn_plus);
-
-                    btn_minus.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-
-                            if(StartActivity.addCost != 0) {
-                                StartActivity.addCost -= 5;
-                                StartActivity.cost -= 5;
-                                costView.setText(String.valueOf(StartActivity.cost));
-                            }
-                        }
-                    });
-                    btn_plus.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            StartActivity.addCost += 5;
-                            StartActivity.cost += 5;
-                            costView.setText(String.valueOf(StartActivity.cost));
-                        }
-                    });
-
-                    builderAddCost
-                            .setPositiveButton(getString(R.string.order), new DialogInterface.OnClickListener() {
-                                @RequiresApi(api = Build.VERSION_CODES.O)
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    if(connected()) {
-                                        try {
-                                            String urlCost = getTaxiUrlSearchMarkers(from_lat, from_lng,
-                                                    to_lat, to_lng, "orderSearchMarkers", getContext());
-
-                                            Map<String, String> sendUrlMapCost = ToJSONParser.sendURL(urlCost);
-
-                                            String message = (String) sendUrlMapCost.get("message");
-                                            String orderCost = (String) sendUrlMapCost.get("order_cost");
-
-                                            if (orderCost.equals("0")) {
-                                                Toast.makeText(getActivity(), OpenStreetMapActivity.em + message, Toast.LENGTH_LONG).show();
-                                            }
-                                            if (!orderCost.equals("0")) {
-                                                String orderWeb = (String) sendUrlMapCost.get("order_cost");
-                                                if (!orderWeb.equals("0")) {
-
-                                                    String messageResult = getString(R.string.thanks_message) +
-                                                            FromAddressString + getString(R.string.to_message) + ToAddressString +
-                                                            getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH);
-
-//                                                    Toast.makeText(getActivity(), messageResult, Toast.LENGTH_LONG).show();
-                                                    Intent intent = new Intent(getActivity(), FinishActivity.class);
-                                                    intent.putExtra("messageResult_key", messageResult);
-                                                    intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMapCost.get("dispatching_order_uid")));
-                                                    startActivity(intent);
-                                                } else {
-                                                    message = (String) sendUrlMapCost.get("message");
-
-                                                    MaterialAlertDialogBuilder alertDialogBuilder = new MaterialAlertDialogBuilder(getActivity(), R.style.AlertDialogTheme);
-                                                    LayoutInflater inflater = LayoutInflater.from(getActivity());
-                                                    View view = inflater.inflate(R.layout.free_message_layout, null);
-                                                    TextView alertMessage = view.findViewById(R.id.text_message);
-                                                    alertMessage.setText(message);
-                                                    alertDialogBuilder.setView(view);
-
-                                                    alertDialogBuilder.setPositiveButton(OpenStreetMapActivity.hlp, new DialogInterface.OnClickListener() {
-                                                                @SuppressLint("SuspiciousIndentation")
-                                                                @Override
-                                                                public void onClick(DialogInterface dialog, int which) {
-                                                                    Intent intent = new Intent(Intent.ACTION_DIAL);
-                                                                    intent.setData(Uri.parse("tel:0674443804"));
-                                                                    getActivity().startActivity(intent);
-                                                                }
-                                                            })
-                                                            .setNegativeButton(OpenStreetMapActivity.tra, new DialogInterface.OnClickListener() {
-                                                                @Override
-                                                                public void onClick(DialogInterface dialog, int which) {
-                                                                    Intent intent = new Intent(getActivity(), MainActivity.class);
-                                                                    getActivity().startActivity(intent);
-                                                                }
-                                                            })
-                                                            .show();
-                                                }
-                                            }
-
-                                        } catch (MalformedURLException | InterruptedException |
-                                                 JSONException e) {
-                                            Toast.makeText(getActivity(), getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
-                                        }
-                                    } else {
-                                        Toast.makeText(getActivity(), getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
-                                    }
-                                }})
-                            .setNegativeButton(getString(R.string.cancel_button), null)
-                            .show();
-
-                }
-
-            } else {
-            Toast.makeText(getActivity(), getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
-        }
-    }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     private String getTaxiUrlSearch(String from, String from_number, String to, String to_number, String urlAPI, Context context) {
 
             //  Проверка даты и времени
 
-            List<String> stringList = logCursor(StartActivity.TABLE_ADD_SERVICE_INFO, context);
+            List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
             String time = stringList.get(1);
             String comment = stringList.get(2);
             String date = stringList.get(3);
 
-
+        Log.d(TAG, "getTaxiUrlSearch: addCost" + addCost);
 
         // Origin of route
         String str_origin = from + "/" + from_number;
@@ -947,29 +1239,31 @@ public class HomeFragment extends Fragment {
         // Destination of route
         String str_dest = to + "/" + to_number;
 
-        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
-        String tarif =  logCursor(StartActivity.TABLE_SETTINGS_INFO, context).get(2);
+        String tarif =  logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(2);
 
         // Building the parameters to the web service
 
         String parameters = null;
         String phoneNumber = "no phone";
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+        String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
 
         if(urlAPI.equals("costSearch")) {
-            Cursor c = database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+            Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
             if (c.getCount() == 1) {
-                phoneNumber = logCursor(StartActivity.TABLE_USER_INFO, context).get(2);
+                phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
                 c.close();
             }
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + StartActivity.displayName ;
+            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + displayName + "(" + userEmail + ")";
         }
 
         if(urlAPI.equals("orderSearch")) {
-            phoneNumber = logCursor(StartActivity.TABLE_USER_INFO, context).get(2);
+            phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
 
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + StartActivity.displayName  + "/" + StartActivity.addCost + "/" + time + "/" + comment + "/" + date;
+                    + displayName  + "/" + addCost + "/" + time + "/" + comment + "/" + date;
 
             ContentValues cv = new ContentValues();
 
@@ -978,18 +1272,18 @@ public class HomeFragment extends Fragment {
             cv.put("date", "no_date");
 
             // обновляем по id
-            database.update(StartActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
                     new String[] { "1" });
 
         }
 
         // Building the url to the web service
 // Building the url to the web service
-        List<String> services = logCursor(StartActivity.TABLE_SERVICE_INFO, context);
+        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
         List<String> servicesChecked = new ArrayList<>();
         String result;
         boolean servicesVer = false;
-        for (int i = 1; i <= 15 ; i++) {
+        for (int i = 1; i <= 14 ; i++) {
             if(services.get(i).equals("1")) {
                 servicesVer = true;
                 break;
@@ -1022,9 +1316,9 @@ public class HomeFragment extends Fragment {
     }
 
     @SuppressLint("Range")
-    public static List<String> logCursor(String table, Context context) {
+    public List<String> logCursor(String table, Context context) {
         List<String> list = new ArrayList<>();
-        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = getActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(table, null, null, null, null, null, null);
         if (c != null) {
             if (c.moveToFirst()) {
@@ -1040,7 +1334,7 @@ public class HomeFragment extends Fragment {
                 } while (c.moveToNext());
             }
         }
-        database.close();
+
         return list;
     }
     private void getPhoneNumber () {
@@ -1075,7 +1369,7 @@ public class HomeFragment extends Fragment {
                                                  String urlAPI, Context context) {
         //  Проверка даты и времени
 
-        List<String> stringList = logCursor(StartActivity.TABLE_ADD_SERVICE_INFO, context);
+        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
         String time = stringList.get(1);
         String comment = stringList.get(2);
         String date = stringList.get(3);
@@ -1086,31 +1380,35 @@ public class HomeFragment extends Fragment {
         // Destination of route
         String str_dest = toLatitude + "/" + toLongitude;
 
-//        Cursor cursorDb = StartActivity.database.query(StartActivity.TABLE_SETTINGS_INFO, null, null, null, null, null, null);
-        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-        String tarif = logCursor(StartActivity.TABLE_SETTINGS_INFO, context).get(2);
+//        Cursor cursorDb = MainActivity.database.query(MainActivity.TABLE_SETTINGS_INFO, null, null, null, null, null, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        String tarif = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(2);
 
 
         // Building the parameters to the web service
 
         String parameters = null;
         String phoneNumber = "no phone";
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+        String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
+
+
         if(urlAPI.equals("costSearchMarkers")) {
-            Cursor c = database.query(StartActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+            Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
 
             if (c.getCount() == 1) {
-                phoneNumber = logCursor(StartActivity.TABLE_USER_INFO, context).get(2);
+                phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
                 c.close();
             }
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + StartActivity.displayName + "(" + StartActivity.userEmail + ")";
+            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + displayName + "(" + userEmail + ")";
         }
 
-        if(urlAPI.equals("orderSearchMarkers")) {
-            phoneNumber = logCursor(StartActivity.TABLE_USER_INFO, context).get(2);
+        if(urlAPI.equals("orderSearch")) {
+            phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
 
 
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + StartActivity.displayName  + "/" + StartActivity.addCost + "/" + time + "/" + comment + "/" + date;
+                    + displayName  + "/" + addCost + "/" + time + "/" + comment + "/" + date;
 
             ContentValues cv = new ContentValues();
 
@@ -1119,17 +1417,17 @@ public class HomeFragment extends Fragment {
             cv.put("date", "no_date");
 
             // обновляем по id
-            database.update(StartActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
                     new String[] { "1" });
 
         }
 
         // Building the url to the web service
-        List<String> services = logCursor(StartActivity.TABLE_SERVICE_INFO, context);
+        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
         List<String> servicesChecked = new ArrayList<>();
         String result;
         boolean servicesVer = false;
-        for (int i = 1; i <= 15 ; i++) {
+        for (int i = 1; i <= 14 ; i++) {
             if(services.get(i).equals("1")) {
                 servicesVer = true;
                 break;
@@ -1168,21 +1466,21 @@ public class HomeFragment extends Fragment {
 
         String selection = "from_street = ?";
         String[] selectionArgs = new String[] {from};
-        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor_from = database.query(StartActivity.TABLE_ORDERS_INFO,
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursor_from = database.query(MainActivity.TABLE_ORDERS_INFO,
                 null, selection, selectionArgs, null, null, null);
 
         selection = "to_street = ?";
         selectionArgs = new String[] {to};
 
-        Cursor cursor_to = database.query(StartActivity.TABLE_ORDERS_INFO,
+        Cursor cursor_to = database.query(MainActivity.TABLE_ORDERS_INFO,
                 null, selection, selectionArgs, null, null, null);
 
 
 
         if (cursor_from.getCount() == 0 || cursor_to.getCount() == 0) {
 
-            String sql = "INSERT INTO " + StartActivity.TABLE_ORDERS_INFO + " VALUES(?,?,?,?,?,?,?,?,?);";
+            String sql = "INSERT INTO " + MainActivity.TABLE_ORDERS_INFO + " VALUES(?,?,?,?,?,?,?,?,?);";
             SQLiteStatement statement = database.compileStatement(sql);
             database.beginTransaction();
             try {
@@ -1209,4 +1507,5 @@ public class HomeFragment extends Fragment {
         cursor_to.close();
 
     }
+
 }

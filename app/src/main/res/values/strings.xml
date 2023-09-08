@@ -2,7 +2,7 @@
     <string name="version_code">1.705</string>
     <string name="version">Версия: 1.705</string>
 
-    <string name="app_name">Такси Киев</string>
+    <string name="app_name">Такси Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
     <string name="back4app_app_id">01YGF894m3NJRXT1BlH6qPo9pUfDlG9sqi9K9mIL</string>
     <string name="back4app_client_key">T5f5GuT1UCmaiJn8Dek3sVmayGuJa2jfelQR6V6f</string>
@@ -10,8 +10,8 @@
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Такси Киев заказ онлайн Лайт</string>
-    <string name="nav_header_subtitle">Быстрые поездки по Киеву и области</string>
+    <string name="nav_header_title">Такси Украина заказ онлайн Лайт</string>
+    <string name="nav_header_subtitle">Быстрые поездки по городам Украины</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Настройки</string>
 
@@ -45,7 +45,7 @@
     <string name="gps_on">Включить</string>
     <string name="gps_info">Чтобы улучшить работу программы, включите на устройстве геолокацию Google</string>
     <string name="gps_on_button">включит gps</string>
-    <string name="wellcome">Добро пожаловать. Сформируйте маршрут или выберите любимый.</string>
+    <string name="wellcome">Сформируйте маршрут или выберите любимый.</string>
     <string name="verify_phone">Проверка телефона</string>
     <string name="format_phone">Формат ввода телефонного номера: +380936665544</string>
     <string name="sent_button">Отправить</string>
@@ -79,8 +79,8 @@
     <string name="to_edit">Куда</string>
     <string name="from_edit">Откуда</string>
     <string name="sms_code">Код проверки со смс-сообщения</string>
-    <string name="android">Андроид-приложение для скорых и дешевых поездок по Киеву и области.</string>
-    <string name="good_day">Приветствую. Нашел великолепное приложение для поездок на такси. \n \n Советую попробовать по ссылке в официальном магазине Google: \n\n https://play.google.com/store/apps/details?id= com.taxi.easy.ua \n\n Хорошего дня. \n Еще увидимся.</string>
+    <string name="android">Андроид-приложение для скорых и дешевых поездок при заказе онлайн.</string>
+    <string name="good_day">Приветствую. Нашел великолепное приложение для поездок на такси. \n \n Советую попробовать по ссылке в официальном магазине Google: \n\n https://play.google.com/store/apps/details?id=com.taxi.easy.ua \n\n Хорошего дня. \n Еще увидимся.</string>
     <string name="share">Посоветовать другу приложение...</string>
     <string name="no_email_agent">Почтовый клиент не установлен.</string>
     <string name="check_position">Ожидайте, происходит определение Вашего местоположения...</string>
@@ -120,9 +120,9 @@
     <string name="news_of_version">В новой версии улучшена производительность и добавлены новые удобные функции</string>
     <string name="Street_hint">Улица</string>
     <string name="gps">GPS</string>
-    <string name="btn_cost">Подтвердить</string>
+    <string name="btn_cost">Заказать</string>
     <string name="texthist">Предыдущие адреса</string>
-    <string name="routs">Быстрый заказ</string>
+    <string name="routs">Мои адреса</string>
     <string name="on_map">По карте</string>
     <string name="add_cost_message">Увеличьте стоимость поездки для более быстрого поиска машины</string>
     <string name="from_text">Откуда</string>
@@ -131,10 +131,10 @@
     <string name="coment">Комментарий</string>
     <string name="services">УСЛУГИ</string>
     <string name="resettimetoorder">Измените дату или время для предварительного заказа</string>
-    <string name="my_routs">Отметьте маршруты для удаления</string>
+    <string name="my_routs">Отметьте маршрут</string>
     <string name="no_routs">Нет маршрутов</string>
     <string name="cheng">Изменить</string>
-    <string name="delete_routs">удалить выбранные маршруты</string>
+    <string name="delete_routs">удалить</string>
     <string name="text_result">Ваш заказ</string>
     <string name="btn_again_text">Заказать еще</string>
     <string name="textStatus">Статус заказа</string>
@@ -152,7 +152,31 @@
     <string name="city">Город</string>
     <string name="change_message">"Смена базы адресов. "</string>
     <string name="server_error_connected">Сервер не принял запрос, наберите операторов</string>
-    <string name="GDPR">Пользователь соглашается с Правилами конфедиционности Общего регламента защиты персональных данных (GDPR) ЕС и осознает, что ввод информации о телефоне является обязательным для заказа такси.</string>
-    <string name="ok_gdpr">Согласиться</string>
+    <string name="GspR">Пользователь соглашается с Правилами конфеденциальности Общего регламента защиты персональных данных (GspR) ЕС и осознает, что ввод информации о телефоне является обязательным для заказа такси.</string>
+    <string name="ok_gspr">Согласиться</string>
+    <string name="Dnipro_city">Днепр</string>
+    <string name="city_change">Выберите город</string>
+    <string name="Zaporizhzhia">Запорожье</string>
+    <string name="Cherkasy">Черкассы</string>
+    <string name="OdessaTest">Одесса (Тест)</string>
+    <string name="disc_text">Изменить стоимость на</string>
+    <string name="email_sent">Сообщение отправлено</string>
+    <string name="send_like">Оценить приложение</string>
+    <string name="send_email_admin">Сообщить про проблему</string>
+    <string name="SA_subject">Сообщение № I-</string>
+    <string name="SA_message_start">Текст Вашего сообщения: </string>
+    <string name="SA_info_pas">Информация о приложении: </string>
+    <string name="SA_info_city">База адресов города </string>
+    <string name="SA_pas_text">Приложение: </string>
+    <string name="SA_user_text">Пользователь: </string>
+    <string name="SA_email">Электронная почта: </string>
+    <string name="SA_phone_text">Телефон: </string>
+    <string name="black_list_message">Извините, Вы не можете заказывать поездки. За информацией обратитесь к оператору.</string>
+    <string name="action_help">ПОДДЕРЖКА</string>
+    <string name="cost_of_road">Стоимость поездки по выбранному маршруту составит</string>
+    <string name="btn_geo_text">Доступ к геопозиции</string>
+    <string name="on_geo_loc_mes">Для работы с картой разрешите доступ приложению к определнию Вашего местоположения</string>
+    <string name="OK">Ок</string>
+    <string name="to_marker_mes">Отметьте маркером на карте место высадки</string>
 
 </resources>

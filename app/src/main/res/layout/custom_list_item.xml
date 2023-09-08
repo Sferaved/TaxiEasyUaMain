@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:textAppearance="?android:attr/textAppearanceListItemSmall"
-    android:padding="10dp"
+    android:padding="10sp"
     android:background="#689194"
     android:textColor="@color/text_color_selector" />
 

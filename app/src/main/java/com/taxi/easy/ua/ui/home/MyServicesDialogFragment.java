@@ -25,8 +25,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.start.StartActivity;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -43,6 +43,7 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
     private TextView tvSelectedTime;
     private Calendar calendar;
 
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -55,7 +56,7 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
                 getString(R.string.CONDIT),
                 getString(R.string.MEET),
                 getString(R.string.COURIER),
-                getString(R.string.TERMINAL),
+//                getString(R.string.TERMINAL),
                 getString(R.string.CHECK),
                 getString(R.string.BABY_SEAT),
                 getString(R.string.DRIVER),
@@ -72,7 +73,7 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
                 "CONDIT",
                 "MEET",
                 "COURIER",
-                "TERMINAL",
+//                "TERMINAL",
                 "CHECK_OUT",
                 "BABY_SEAT",
                 "DRIVER",
@@ -87,7 +88,7 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
         ArrayAdapter<String> adapterSet = new ArrayAdapter<>(view.getContext(), R.layout.services_adapter_layout, arrayService);
         listView.setAdapter(adapterSet);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-        List<String> services = logCursor(StartActivity.TABLE_SERVICE_INFO, view.getContext());
+        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, view.getContext());
         for (int i = 0; i < arrayServiceCode.length; i++) {
             if(services.get(i+1).equals("1")) {
                 listView.setItemChecked(i,true);
@@ -95,6 +96,7 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
         }
 
         String[] tariffArr = new String[]{
+                " ",
                 "Базовий онлайн",
                 "Базовый",
                 "Универсал",
@@ -110,7 +112,7 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
         spinner.setPrompt("Title");
         spinner.setBackgroundResource(R.drawable.spinner_border);
 
-        String tariffOld =  logCursor(StartActivity.TABLE_SETTINGS_INFO,view.getContext()).get(2);
+        String tariffOld =  logCursor(MainActivity.TABLE_SETTINGS_INFO,view.getContext()).get(2);
         for (int i = 0; i < tariffArr.length; i++) {
             if(tariffArr[i].equals(tariffOld)) {
                 spinner.setSelection(i);
@@ -124,8 +126,8 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
                 cv.put("tarif", tariff);
 
                 // обновляем по id
-                SQLiteDatabase database = view.getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-                database.update(StartActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                SQLiteDatabase database = view.getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                         new String[] { "1" });
                 database.close();
             }
@@ -147,12 +149,13 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
             }
         });
 
+
         return view;
     }
     @SuppressLint("Range")
     private List<String> logCursor(String table, Context context) {
         List<String> list = new ArrayList<>();
-        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(table, null, null, null, null, null, null);
         if (c != null) {
             if (c.moveToFirst()) {
@@ -176,10 +179,10 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
         super.onPause();
 
         for (int i = 0; i < 15; i++) {
-            SQLiteDatabase database = getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             ContentValues cv = new ContentValues();
             cv.put(arrayServiceCode[i], "0");
-            database.update(StartActivity.TABLE_SERVICE_INFO, cv, "id = ?",
+            database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?",
                     new String[] { "1" });
             database.close();
         }
@@ -190,8 +193,8 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
             if(booleanArray.get(booleanArray.keyAt(i))) {
                 ContentValues cv = new ContentValues();
                 cv.put(arrayServiceCode[booleanArray.keyAt(i)], "1");
-                SQLiteDatabase database = getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-                database.update(StartActivity.TABLE_SERVICE_INFO, cv, "id = ?",
+                SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?",
                         new String[] { "1" });
                 database.close();
 

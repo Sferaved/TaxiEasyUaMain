@@ -19,7 +19,7 @@
     <Spinner
         android:id="@+id/list_tariff"
         android:layout_width="wrap_content"
-        android:layout_height="28dp"
+        android:layout_height="28sp"
         android:gravity="center_vertical"
         android:minHeight="50sp"
         android:textAppearance="?android:attr/textAppearanceListItemSmall"
@@ -33,7 +33,7 @@
         android:id="@+id/btn_pick_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="52dp"
+        android:layout_marginEnd="52sp"
         android:text="Выбрать время"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/list_tariff" />
@@ -42,7 +42,7 @@
         android:id="@+id/tv_selected_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="12sp"
         android:text="Выбранное время: "
         app:layout_constraintEnd_toStartOf="@+id/btn_pick_time"
         app:layout_constraintHorizontal_bias="0.507"
@@ -51,8 +51,8 @@
 
     <ListView
         android:id="@+id/list"
-        android:layout_width="477dp"
-        android:layout_height="615dp"
+        android:layout_width="477sp"
+        android:layout_height="615sp"
         android:minHeight="20sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

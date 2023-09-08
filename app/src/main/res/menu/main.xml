@@ -30,6 +30,14 @@
         android:orderInCategory="100"
         android:title="@string/send_email" />
     <item
+        android:id="@+id/send_email_admin"
+        android:orderInCategory="100"
+        android:title="@string/send_email_admin" />
+    <item
+        android:id="@+id/send_like"
+        android:orderInCategory="100"
+        android:title="@string/send_like" />
+    <item
         android:id="@+id/action_exit"
         android:orderInCategory="100"
         android:title="@string/action_exit"

@@ -11,12 +11,14 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -30,9 +32,11 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.start.StartActivity;
+import com.taxi.easy.ua.ui.maps.CostJSONParser;
 
+import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -42,6 +46,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 
 public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
@@ -51,8 +56,11 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
     public static String[] arrayServiceCode;
     private TextView tvSelectedTime, tvSelectedDate;
     private Calendar calendar;
-    private EditText komenterinp;
-
+    private EditText komenterinp, discount;
+    Button btn_min, btn_plus;
+    long discountFist;
+    final static long MIN_VALUE = -90;
+    final static long MAX_VALUE = 200;
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Nullable
     @Override
@@ -66,7 +74,6 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 getString(R.string.CONDIT),
                 getString(R.string.MEET),
                 getString(R.string.COURIER),
-                getString(R.string.TERMINAL),
                 getString(R.string.CHECK),
                 getString(R.string.BABY_SEAT),
                 getString(R.string.DRIVER),
@@ -83,7 +90,6 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 "CONDIT",
                 "MEET",
                 "COURIER",
-                "TERMINAL",
                 "CHECK_OUT",
                 "BABY_SEAT",
                 "DRIVER",
@@ -99,7 +105,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         listView.setAdapter(adapterSet);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
 
-        List<String> services = logCursor(StartActivity.TABLE_SERVICE_INFO, getContext());
+        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, getContext());
         for (int i = 0; i < arrayServiceCode.length; i++) {
             if(services.get(i+1).equals("1")) {
                 listView.setItemChecked(i,true);
@@ -107,6 +113,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         }
 
         String[] tariffArr = new String[]{
+                " ",
                 "Базовий онлайн",
                 "Базовый",
                 "Универсал",
@@ -122,9 +129,9 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         spinner.setPrompt("Title");
         spinner.setBackgroundResource(R.drawable.spinner_border);
 
-        SQLiteDatabase database = getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursorDb = database.query(StartActivity.TABLE_SETTINGS_INFO, null, null, null, null, null, null);
-        String tariffOld =  logCursor(StartActivity.TABLE_SETTINGS_INFO,getContext()).get(2);
+        SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursorDb = database.query(MainActivity.TABLE_SETTINGS_INFO, null, null, null, null, null, null);
+        String tariffOld =  logCursor(MainActivity.TABLE_SETTINGS_INFO,getContext()).get(2);
         if (cursorDb != null && !cursorDb.isClosed())
             cursorDb.close();
         for (int i = 0; i < tariffArr.length; i++) {
@@ -141,8 +148,8 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 cv.put("tarif", tariff);
 
                 // обновляем по id
-                SQLiteDatabase database = getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-                database.update(StartActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                         new String[] { "1" });
                 database.close();
             }
@@ -163,19 +170,47 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 showTimePickerDialog();
             }
         });
-//
-//        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
-//        String formattedTime = sdf.format(calendar.getTime());
-//        tvSelectedTime.setText(formattedTime);
-
-//        // Установленное время больше или равно текущему времени
-//        tvSelectedTime.setText(formattedTime);
-//
-//        ContentValues cv = new ContentValues();
-//        cv.put("time", formattedTime);
-//        database.update(StartActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[] { "1" });
 
         komenterinp = view.findViewById(R.id.komenterinp);
+        discount = view.findViewById(R.id.discinp);
+
+
+        discount.setText(logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3));
+        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
+        discountFist =  Integer.parseInt(discountText);
+
+
+        btn_min = view.findViewById(R.id.btn_minus);
+        btn_min.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                discountFist -= 5;
+                if (discountFist <= MIN_VALUE) {
+                    discountFist = MIN_VALUE;
+                }
+                if(discountFist > 0) {
+                    discount.setText("+" + String.valueOf(discountFist));
+                } else {
+                    discount.setText( String.valueOf(discountFist));
+                }
+            }
+        });
+        btn_plus = view.findViewById(R.id.btn_plus);
+        btn_plus.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                discountFist += 5;
+                if (discountFist >= MAX_VALUE) {
+                    discountFist = MAX_VALUE;
+                }
+                if(discountFist > 0) {
+                    discount.setText("+" + String.valueOf(discountFist));
+                } else {
+                    discount.setText( String.valueOf(discountFist));
+                }
+            }
+        });
+
         tvSelectedDate = view.findViewById(R.id.tv_selected_date);
         LocalDate currentDate = LocalDate.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
@@ -184,8 +219,8 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         cv.put("date", currentDate.format(formatter));
 
         // обновляем по id
-        database = getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-        database.update(StartActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+        database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
                 new String[] { "1" });
 
         tvSelectedDate.setOnClickListener(new View.OnClickListener() {
@@ -210,6 +245,9 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         });
 
         database.close();
+
+
+
         return view;
     }
     // Метод для обновления отображаемой даты
@@ -221,20 +259,21 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         cv.put("date", formattedDate);
 
         // Обновляем по id
-        SQLiteDatabase database = getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-        database.update(StartActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[] { "1" });
+        SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[] { "1" });
         database.close();
     }
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onPause() {
         super.onPause();
+        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, getContext());
 
-        for (int i = 0; i < 15; i++) {
+        for (int i = 0; i < services.size()-1; i++) {
             ContentValues cv = new ContentValues();
             cv.put(arrayServiceCode[i], "0");
-            SQLiteDatabase database = getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(StartActivity.TABLE_SERVICE_INFO, cv, "id = ?",
+            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?",
                     new String[] { "1" });
             database.close();
         }
@@ -244,8 +283,8 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
             if(booleanArray.get(booleanArray.keyAt(i))) {
                 ContentValues cv = new ContentValues();
                 cv.put(arrayServiceCode[booleanArray.keyAt(i)], "1");
-                SQLiteDatabase database = getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-                database.update(StartActivity.TABLE_SERVICE_INFO, cv, "id = ?",
+                SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?",
                         new String[] { "1" });
                 database.close();
 
@@ -259,13 +298,27 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
             cv.put("comment", commentText);
 
             // обновляем по id
-            SQLiteDatabase database = getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(StartActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+                    new String[]{"1"});
+            database.close();
+        }
+
+        String discountText = discount.getText().toString();
+        if (!discountText.isEmpty()) {
+
+            ContentValues cv = new ContentValues();
+
+            cv.put("discount", discountText);
+
+            // обновляем по id
+            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                     new String[]{"1"});
             database.close();
         }
         //Проверка даты времени
-        List<String> stringList = logCursor(StartActivity.TABLE_ADD_SERVICE_INFO, getContext());
+        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, getContext());
         String time = stringList.get(1);
         String date = stringList.get(3);
 
@@ -284,8 +337,8 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 cv.put("date", date);
 
                 // обновляем по id
-                SQLiteDatabase database = getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-                database.update(StartActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+                SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
                         new String[] { "1" });
                 database.close();
 
@@ -316,8 +369,8 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 cv.put("date", date);
 
                 // обновляем по id
-                SQLiteDatabase database = getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-                database.update(StartActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+                SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
                         new String[] { "1" });
                 database.close();
             }
@@ -329,12 +382,131 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
             cv.put("date", "no_date");
 
             // обновляем по id
-            SQLiteDatabase database = getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(StartActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
                     new String[] { "1" });
             database.close();
         }
+        try {
+            HomeFragment.text_view_cost.setText(changeCost());
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
 
+    }
+    private String changeCost() throws MalformedURLException {
+        String newCost = "0";
+        String url = getTaxiUrlSearch(HomeFragment.from, HomeFragment.from_numberCost,
+                HomeFragment.toCost, HomeFragment.to_numberCost, "costSearch", getActivity());
+
+        Map<String, String> sendUrl = CostJSONParser.sendURL(url);
+
+        String mes = (String) sendUrl.get("message");
+        String orderC = (String) sendUrl.get("order_cost");
+        Log.d("TAG", "onPausedawdddddddwdadwdawdaw orderC : " + orderC );
+        if (orderC.equals("0")) {
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(mes);
+            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+        }
+        if (!orderC.equals("0")) {
+
+            Long  firstCost = Long.parseLong(orderC);
+
+            String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
+            long discountInt = Integer.parseInt(discountText);
+            long discount;
+
+            discount = firstCost * discountInt / 100;
+            newCost = Long.toString(firstCost + discount);
+
+            HomeFragment.cost = firstCost + discount;
+            HomeFragment.addCost = discount;
+
+        }
+        return newCost;
+    }
+    private String getTaxiUrlSearch(String from, String from_number, String to, String to_number, String urlAPI, Context context) {
+
+        // Origin of route
+        String str_origin = from + "/" + from_number;
+
+        // Destination of route
+        String str_dest = to + "/" + to_number;
+
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+
+        String tarif =  logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(2);
+
+        // Building the parameters to the web service
+
+        String parameters = null;
+        String phoneNumber = "no phone";
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+        String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
+
+        if(urlAPI.equals("costSearch")) {
+            Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+            if (c.getCount() == 1) {
+                phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
+                c.close();
+            }
+            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + displayName + "(" + userEmail + ")";
+        }
+
+
+        // Building the url to the web service
+// Building the url to the web service
+        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
+        List<String> servicesChecked = new ArrayList<>();
+        String result;
+        boolean servicesVer = false;
+        for (int i = 1; i <= 14 ; i++) {
+            if(services.get(i).equals("1")) {
+                servicesVer = true;
+                break;
+            }
+        }
+        if(servicesVer) {
+            for (int i = 0; i < arrayServiceCode().length; i++) {
+                if(services.get(i+1).equals("1")) {
+                    servicesChecked.add(arrayServiceCode()[i]);
+                }
+            }
+            for (int i = 0; i < servicesChecked.size(); i++) {
+                if(servicesChecked.get(i).equals("CHECK_OUT")) {
+                    servicesChecked.set(i, "CHECK");
+                }
+            }
+            result = String.join("*", servicesChecked);
+            Log.d("TAG", "getTaxiUrlSearchGeo result:" + result + "/");
+        } else {
+            result = "no_extra_charge_codes";
+        }
+
+        String url = "https://m.easy-order-taxi.site/" + HomeFragment.api + "/android/" + urlAPI + "/" + parameters + "/" + result;
+
+        Log.d("TAG", "getTaxiUrlSearch: " + url);
+
+
+        return url;
+    }
+    public static String[] arrayServiceCode() {
+        return new String[]{
+                "BAGGAGE",
+                "ANIMAL",
+                "CONDIT",
+                "MEET",
+                "COURIER",
+                "CHECK_OUT",
+                "BABY_SEAT",
+                "DRIVER",
+                "NO_SMOKE",
+                "ENGLISH",
+                "CABLE",
+                "FUEL",
+                "WIRES",
+                "SMOKE",
+        };
     }
     private void showTimePickerDialog() {
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
@@ -359,8 +531,8 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                             cv.put("time", formattedTime);
 
                             // Обновляем по id
-                            SQLiteDatabase database = getContext().openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
-                            database.update(StartActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[] { "1" });
+                            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[] { "1" });
                             database.close();
 
                     }
@@ -377,7 +549,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
     @SuppressLint("Range")
     public static List<String> logCursor(String table, Context context) {
         List<String> list = new ArrayList<>();
-        SQLiteDatabase database = context.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(table, null, null, null, null, null, null);
         if (c != null) {
             if (c.moveToFirst()) {

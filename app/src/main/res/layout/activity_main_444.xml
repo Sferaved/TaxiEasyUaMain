@@ -33,9 +33,9 @@
 
     <EditText
         android:id="@+id/podaczainp"
-        android:layout_width="160dp"
-        android:layout_height="33dp"
-        android:layout_marginTop="20dp"
+        android:layout_width="160sp"
+        android:layout_height="33sp"
+        android:layout_marginTop="20sp"
         android:background="@drawable/input"
         android:ems="10"
         android:fontFamily="@font/regular"
@@ -49,9 +49,9 @@
 
     <EditText
         android:id="@+id/phonenum"
-        android:layout_width="160dp"
-        android:layout_height="33dp"
-        android:layout_marginTop="13dp"
+        android:layout_width="160sp"
+        android:layout_height="33sp"
+        android:layout_marginTop="13sp"
         android:background="@drawable/input"
         android:ems="10"
         android:fontFamily="@font/regular"
@@ -65,9 +65,9 @@
 
     <EditText
         android:id="@+id/komenterinp"
-        android:layout_width="315dp"
-        android:layout_height="36dp"
-        android:layout_marginTop="20dp"
+        android:layout_width="315sp"
+        android:layout_height="36sp"
+        android:layout_marginTop="20sp"
         android:background="@drawable/input"
         android:ems="10"
         android:fontFamily="@font/regular"
@@ -85,7 +85,7 @@
         android:id="@+id/komentar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
+        android:layout_marginStart="5sp"
         android:fontFamily="@font/light"
         android:text="Коментар"
         android:textColor="#9DA0A8"
@@ -97,7 +97,7 @@
         android:id="@+id/maintext"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="11dp"
+        android:layout_marginTop="11sp"
         android:fontFamily="@font/medium"
         android:text="ПОСЛУГИ"
         android:textColor="#D9D9D9"
@@ -108,9 +108,9 @@
 
     <CheckBox
         android:id="@+id/dostawabox"
-        android:layout_width="30dp"
-        android:layout_height="26dp"
-        android:layout_marginTop="5dp"
+        android:layout_width="30sp"
+        android:layout_height="26sp"
+        android:layout_marginTop="5sp"
         android:textColor="#689093"
         android:textSize="0sp"
         app:layout_constraintEnd_toEndOf="@+id/komenterinp"
@@ -118,9 +118,9 @@
 
     <CheckBox
         android:id="@+id/kondecbox"
-        android:layout_width="30dp"
-        android:layout_height="26dp"
-        android:layout_marginTop="6dp"
+        android:layout_width="30sp"
+        android:layout_height="26sp"
+        android:layout_marginTop="6sp"
         android:textColor="#689093"
         android:textSize="0sp"
         app:layout_constraintEnd_toEndOf="@+id/dostawabox"
@@ -128,9 +128,9 @@
 
     <CheckBox
         android:id="@+id/bagazhbox"
-        android:layout_width="30dp"
-        android:layout_height="26dp"
-        android:layout_marginTop="6dp"
+        android:layout_width="30sp"
+        android:layout_height="26sp"
+        android:layout_marginTop="6sp"
         android:textColor="#689093"
         android:textSize="0sp"
         app:layout_constraintEnd_toEndOf="@+id/kondecbox"
@@ -138,9 +138,9 @@
 
     <CheckBox
         android:id="@+id/animbox"
-        android:layout_width="30dp"
-        android:layout_height="26dp"
-        android:layout_marginTop="6dp"
+        android:layout_width="30sp"
+        android:layout_height="26sp"
+        android:layout_marginTop="6sp"
         android:textColor="#689093"
         android:textSize="0sp"
         app:layout_constraintEnd_toEndOf="@+id/bagazhbox"
@@ -148,9 +148,9 @@
 
     <CheckBox
         android:id="@+id/salonbox"
-        android:layout_width="30dp"
-        android:layout_height="26dp"
-        android:layout_marginTop="6dp"
+        android:layout_width="30sp"
+        android:layout_height="26sp"
+        android:layout_marginTop="6sp"
         android:textColor="#689093"
         android:textSize="0sp"
         app:layout_constraintEnd_toEndOf="@+id/animbox"
@@ -158,9 +158,9 @@
 
     <CheckBox
         android:id="@+id/garantbox"
-        android:layout_width="30dp"
-        android:layout_height="26dp"
-        android:layout_marginTop="6dp"
+        android:layout_width="30sp"
+        android:layout_height="26sp"
+        android:layout_marginTop="6sp"
         android:textColor="#689093"
         android:textSize="0sp"
         app:layout_constraintEnd_toEndOf="@+id/salonbox"
@@ -168,9 +168,9 @@
 
     <CheckBox
         android:id="@+id/tablebox"
-        android:layout_width="30dp"
-        android:layout_height="26dp"
-        android:layout_marginTop="6dp"
+        android:layout_width="30sp"
+        android:layout_height="26sp"
+        android:layout_marginTop="6sp"
         android:textColor="#689093"
         android:textSize="0sp"
         app:layout_constraintEnd_toEndOf="@+id/garantbox"
@@ -178,9 +178,9 @@
 
     <CheckBox
         android:id="@+id/driverbox"
-        android:layout_width="30dp"
-        android:layout_height="26dp"
-        android:layout_marginTop="6dp"
+        android:layout_width="30sp"
+        android:layout_height="26sp"
+        android:layout_marginTop="6sp"
         android:textColor="#689093"
         android:textSize="0sp"
         app:layout_constraintEnd_toEndOf="@+id/tablebox"
@@ -188,9 +188,9 @@
 
     <CheckBox
         android:id="@+id/drotybox"
-        android:layout_width="30dp"
-        android:layout_height="26dp"
-        android:layout_marginTop="6dp"
+        android:layout_width="30sp"
+        android:layout_height="26sp"
+        android:layout_marginTop="6sp"
         android:textColor="#689093"
         android:textSize="0sp"
         app:layout_constraintEnd_toEndOf="@+id/driverbox"
@@ -198,9 +198,9 @@
 
     <CheckBox
         android:id="@+id/nosmokebox"
-        android:layout_width="30dp"
-        android:layout_height="26dp"
-        android:layout_marginTop="6dp"
+        android:layout_width="30sp"
+        android:layout_height="26sp"
+        android:layout_marginTop="6sp"
         android:textColor="#689093"
         android:textSize="0sp"
         app:layout_constraintEnd_toEndOf="@+id/drotybox"
@@ -208,9 +208,9 @@
 
     <CheckBox
         android:id="@+id/krislobox"
-        android:layout_width="30dp"
-        android:layout_height="26dp"
-        android:layout_marginTop="6dp"
+        android:layout_width="30sp"
+        android:layout_height="26sp"
+        android:layout_marginTop="6sp"
         android:textColor="#689093"
         android:textSize="0sp"
         app:layout_constraintEnd_toEndOf="@+id/smokebox"
@@ -218,9 +218,9 @@
 
     <CheckBox
         android:id="@+id/krislobox2"
-        android:layout_width="30dp"
-        android:layout_height="26dp"
-        android:layout_marginTop="6dp"
+        android:layout_width="30sp"
+        android:layout_height="26sp"
+        android:layout_marginTop="6sp"
         android:textColor="#689093"
         android:textSize="0sp"
         app:layout_constraintEnd_toEndOf="@+id/krislobox"
@@ -228,9 +228,9 @@
 
     <CheckBox
         android:id="@+id/smokebox"
-        android:layout_width="30dp"
-        android:layout_height="26dp"
-        android:layout_marginTop="6dp"
+        android:layout_width="30sp"
+        android:layout_height="26sp"
+        android:layout_marginTop="6sp"
         android:textColor="#689093"
         android:textSize="0sp"
         app:layout_constraintEnd_toEndOf="@+id/nosmokebox"
@@ -360,7 +360,7 @@
         android:id="@+id/animtext"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="5dp"
+        android:layout_marginBottom="5sp"
         android:text="・Їду з твариною"
         android:textColor="#D9D9D9"
         app:layout_constraintBottom_toBottomOf="@+id/animbox"
@@ -369,14 +369,14 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/orderbut"
-        android:layout_width="185dp"
-        android:layout_height="60dp"
+        android:layout_width="185sp"
+        android:layout_height="60sp"
         android:background="@drawable/zamov"
         android:fontFamily="@font/medium"
-        android:insetLeft="0dp"
-        android:insetTop="0dp"
-        android:insetRight="0dp"
-        android:insetBottom="0dp"
+        android:insetLeft="0sp"
+        android:insetTop="0sp"
+        android:insetRight="0sp"
+        android:insetBottom="0sp"
         android:text="Замовити"
         android:textAlignment="center"
         android:textColor="#D9D9D9"
@@ -389,7 +389,7 @@
         android:id="@+id/textView7"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="5dp"
+        android:layout_marginBottom="5sp"
         android:fontFamily="@font/medium"
         android:text="Сума"
         android:textColor="#D9D9D9"
@@ -401,14 +401,14 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/plusbut"
-        android:layout_width="50dp"
-        android:layout_height="34dp"
+        android:layout_width="50sp"
+        android:layout_height="34sp"
         android:background="@drawable/plus"
         android:fontFamily="@font/regular"
-        android:insetLeft="0dp"
-        android:insetTop="0dp"
-        android:insetRight="0dp"
-        android:insetBottom="0dp"
+        android:insetLeft="0sp"
+        android:insetTop="0sp"
+        android:insetRight="0sp"
+        android:insetBottom="0sp"
         android:text="+"
         android:textAlignment="center"
         android:textColor="#D9D9D9"
@@ -418,15 +418,15 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/minusbut"
-        android:layout_width="50dp"
-        android:layout_height="34dp"
-        android:layout_marginStart="10dp"
+        android:layout_width="50sp"
+        android:layout_height="34sp"
+        android:layout_marginStart="10sp"
         android:background="@drawable/minus"
         android:fontFamily="@font/regular"
-        android:insetLeft="0dp"
-        android:insetTop="0dp"
-        android:insetRight="0dp"
-        android:insetBottom="0dp"
+        android:insetLeft="0sp"
+        android:insetTop="0sp"
+        android:insetRight="0sp"
+        android:insetBottom="0sp"
         android:text="-"
         android:textAlignment="center"
         android:textColor="#D9D9D9"

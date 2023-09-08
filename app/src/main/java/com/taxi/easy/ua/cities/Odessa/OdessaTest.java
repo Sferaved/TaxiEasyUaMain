@@ -1,6 +1,6 @@
-package com.taxi.easy.ua.cities.OdessaTest;
+package com.taxi.easy.ua.cities.Odessa;
 
-public class Odessa {
+public class OdessaTest {
 
     public static String[]  arrayStreet() {
         return new String[]{

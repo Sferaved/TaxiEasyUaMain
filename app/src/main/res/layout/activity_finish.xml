@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#434C5E">
 
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
     <TextView
         android:id="@+id/textResult"
 
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="16sp"
         android:fontFamily="@font/light"
         android:text="@string/text_result"
         android:textColor="#9DA0A8"
@@ -26,7 +29,7 @@
         android:layout_width="293sp"
         android:layout_height="wrap_content"
         android:gravity="left"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="4sp"
         android:background="@drawable/input"
         android:ems="10"
         android:fontFamily="@font/light"
@@ -43,8 +46,8 @@
 
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="4dp"
-        android:layout_marginTop="28dp"
+        android:layout_marginStart="4sp"
+        android:layout_marginTop="28sp"
         android:fontFamily="@font/light"
         android:text="@string/textStatus"
         android:textColor="#9DA0A8"
@@ -57,7 +60,7 @@
 
         android:layout_width="293sp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="4sp"
         android:background="@drawable/input"
         android:ems="10"
         android:fontFamily="@font/light"
@@ -75,7 +78,7 @@
         android:layout_width="293sp"
         android:layout_height="45sp"
 
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="24sp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
         android:text="@string/textStatus"
@@ -91,7 +94,7 @@
         android:layout_width="293sp"
         android:layout_height="45sp"
 
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="8sp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
         android:text="@string/cancel_order"
@@ -107,7 +110,7 @@
         android:layout_width="293sp"
         android:layout_height="45sp"
 
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="8sp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
         android:text="@string/btn_again_text"
@@ -123,7 +126,7 @@
         android:layout_width="293sp"
         android:layout_height="45sp"
 
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="8sp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
         android:text="@string/action_exit"
@@ -134,18 +137,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btn_again" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_call"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginBottom="30sp"
-        android:contentDescription="@string/call_admin"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.962"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_again"
-        app:layout_constraintVertical_bias="1.0"
-        app:srcCompat="@android:drawable/stat_sys_phone_call_forward" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_call"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="8sp"
+            android:contentDescription="@string/call_admin"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.952"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btn_cancel"
+            app:layout_constraintVertical_bias="1.0"
+            app:srcCompat="@android:drawable/stat_sys_phone_call_forward" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

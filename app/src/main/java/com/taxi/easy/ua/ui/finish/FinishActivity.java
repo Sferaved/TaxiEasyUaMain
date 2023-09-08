@@ -1,15 +1,15 @@
 package com.taxi.easy.ua.ui.finish;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -18,13 +18,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
-import com.taxi.easy.ua.ui.start.StartActivity;
+import com.taxi.easy.ua.ui.home.MyBottomSheetBlackListFragment;
+import com.taxi.easy.ua.ui.maps.CostJSONParser;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -32,15 +31,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class FinishActivity extends AppCompatActivity {
-    private TextView text_full_message, text_status;
-    private Button btn_reset_status, btn_cancel_order, btn_again, btn_cancel;
-    private FloatingActionButton fab_cal;
+    private TextView text_status;
     String api;
     String baseUrl = "https://m.easy-order-taxi.site";
     @SuppressLint("MissingInflatedId")
@@ -48,22 +46,31 @@ public class FinishActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_finish);
-
-        List<String> stringListArr = logCursor(StartActivity.CITY_INFO);
+        new VerifyUserTask().execute();
+        List<String> stringListArr = logCursor(MainActivity.CITY_INFO);
         switch (stringListArr.get(1)){
             case "Kyiv City":
-                api = StartActivity.apiKyiv;
+                api = MainActivity.apiKyiv;
+                break;
+            case "Dnipropetrovsk Oblast":
+                api = MainActivity.apiDnipro;
                 break;
             case "Odessa":
-                api = StartActivity.apiTest;
+                api = MainActivity.apiOdessa;
+                break;
+            case "Zaporizhzhia":
+                api = MainActivity.apiZaporizhzhia;
+                break;
+            case "Cherkasy Oblast":
+                api = MainActivity.apiCherkasy;
                 break;
             default:
-                api = StartActivity.apiTest;
+                api = MainActivity.apiKyiv;
                 break;
         }
         String parameterValue = getIntent().getStringExtra("messageResult_key");
 
-        text_full_message = findViewById(R.id.text_full_message);
+        TextView text_full_message = findViewById(R.id.text_full_message);
         text_full_message.setText(parameterValue);
 
         String UID_key = getIntent().getStringExtra("UID_key");
@@ -72,7 +79,7 @@ public class FinishActivity extends AppCompatActivity {
         statusOrderWithDifferentValue(UID_key);
 
 
-        btn_reset_status = findViewById(R.id.btn_reset_status);
+        Button btn_reset_status = findViewById(R.id.btn_reset_status);
         btn_reset_status.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -84,60 +91,94 @@ public class FinishActivity extends AppCompatActivity {
             }
         });
 
-        btn_cancel_order = findViewById(R.id.btn_cancel_order);
+        Button btn_cancel_order = findViewById(R.id.btn_cancel_order);
         btn_cancel_order.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if(connected()){
                     cancelOrderWithDifferentValue(UID_key);
                 } else {
-//                    String result = getString(R.string.next_try);
-                    String result = "111111111111";
-                    text_status.setText(result);
+                    text_status.setText(R.string.verify_internet);
                 }
             }
         });
 
-        btn_again = findViewById(R.id.btn_again);
+        Button btn_again = findViewById(R.id.btn_again);
         btn_again.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(connected()){
-                    if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                        startActivity(intent);
-                    } else {
-                        Intent intent = new Intent(getApplicationContext(), OpenStreetMapActivity.class);
-                        startActivity(intent);
-                    }
+                if(!verifyOrder()) {
+                    MyBottomSheetBlackListFragment bottomSheetDialogFragment = new MyBottomSheetBlackListFragment("orderCost");
+                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 } else {
-                    {
+                    if(connected()){
+                        startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                    } else {
                         Toast.makeText(getApplicationContext(), getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
                     }
                 }
             }
         });
 
-        btn_cancel = findViewById(R.id.btn_cancel);
+        Button btn_cancel = findViewById(R.id.btn_cancel);
         btn_cancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 finishAffinity();
             }
         });
-        fab_cal = findViewById(R.id.fab_call);
+        FloatingActionButton fab_cal = findViewById(R.id.fab_call);
         fab_cal.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(Intent.ACTION_DIAL);
-                intent.setData(Uri.parse("tel:0674443804"));
+                String phone;
+                List<String> stringList = logCursor(MainActivity.CITY_INFO);
+                switch (stringList.get(1)){
+                    case "Kyiv City":
+                        phone = "tel:0674443804";
+                        break;
+                    case "Dnipropetrovsk Oblast":
+                        phone = "tel:0667257070";
+                        break;
+                    case "Odessa":
+                        phone = "tel:0737257070";
+                        break;
+                    case "Zaporizhzhia":
+                        phone = "tel:0687257070";
+                        break;
+                    case "Cherkasy Oblast":
+                        phone = "tel:0962294243";
+                        break;
+                    default:
+                        phone = "tel:0674443804";
+                        break;
+                }
+                intent.setData(Uri.parse(phone));
                 startActivity(intent);
             }
         });
     }
+
+
+    private boolean verifyOrder() {
+        SQLiteDatabase database = this.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursor = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+
+        boolean verify = true;
+        if (cursor.getCount() == 1) {
+
+            if (logCursor(MainActivity.TABLE_USER_INFO).get(1).equals("0")) {
+                verify = false;Log.d("TAG", "verifyOrder:verify " +verify);
+            }
+            cursor.close();
+        }
+        database.close();
+        return verify;
+    }
     private boolean connected() {
 
-        Boolean hasConnect = false;
+        boolean hasConnect = false;
 
         ConnectivityManager cm = (ConnectivityManager) this.getSystemService(
                 Context.CONNECTIVITY_SERVICE);
@@ -154,15 +195,12 @@ public class FinishActivity extends AppCompatActivity {
             hasConnect = true;
         }
 
-        if (!hasConnect) {
-            Toast.makeText(this, getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
-        }
         return hasConnect;
     }
     @SuppressLint("Range")
     private List<String> logCursor(String table) {
         List<String> list = new ArrayList<>();
-        SQLiteDatabase database = this.openOrCreateDatabase(StartActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = this.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(table, null, null, null, null, null, null);
         if (c != null) {
             if (c.moveToFirst()) {
@@ -185,7 +223,7 @@ public class FinishActivity extends AppCompatActivity {
 
         String url = baseUrl + "/" + api + "/android/webordersCancel/" + value;
         Call<Status> call = ApiClient.getApiService().cancelOrder(url);
-        Log.d("TAG", "cancelOrderWithDifferentValue cancelOrderUrl: " + url);
+//        Log.d("TAG", "cancelOrderWithDifferentValue cancelOrderUrl: " + url);
         call.enqueue(new Callback<Status>() {
             @Override
             public void onResponse(Call<Status> call, Response<Status> response) {
@@ -197,7 +235,7 @@ public class FinishActivity extends AppCompatActivity {
                     }
                 } else {
                     // Обработка неуспешного ответа
-                    text_status.setText("Ошибка запроса к серверу");
+                    text_status.setText(R.string.verify_internet);
                 }
             }
 
@@ -207,7 +245,7 @@ public class FinishActivity extends AppCompatActivity {
                 String errorMessage = t.getMessage();
                 t.printStackTrace();
                 Log.d("TAG", "onFailure: " + errorMessage);
-                text_status.setText("Ошибка запроса к серверу");
+                text_status.setText(R.string.verify_internet);
             }
         });
     }
@@ -228,6 +266,7 @@ public class FinishActivity extends AppCompatActivity {
 
                     // Далее вы можете использовать полученные данные из orderResponse
                     // например:
+                    assert orderResponse != null;
                     String executionStatus = orderResponse.getExecutionStatus();
                     String orderCarInfo = orderResponse.getOrderCarInfo();
                     String driverPhone = orderResponse.getDriverPhone();
@@ -272,21 +311,13 @@ public class FinishActivity extends AppCompatActivity {
                     text_status.setText(message);
 
                 } else {
-                    // Обработка ошибки, если запрос был выполнен не успешно
-                    // например:
-                    String errorBody = response.errorBody().toString();
-                    // Обрабатываем ошибку в зависимости от вашего случая
-                    text_status.setText(errorBody);
+                    text_status.setText(getString(R.string.ex_st_0));
                 }
             }
 
             @Override
             public void onFailure(Call<OrderResponse> call, Throwable t) {
-                // Обработка ошибки, если запрос не удался
-                // например:
-                String errorMessage = t.getMessage();
-                // Обрабатываем ошибку в зависимости от вашего случая
-                text_status.setText(errorMessage);
+                text_status.setText(getString(R.string.ex_st_0));
             }
         });
     }
@@ -306,5 +337,38 @@ public class FinishActivity extends AppCompatActivity {
         // Форматируем дату и время в украинском формате
         return outputFormat.format(date);
 
+    }
+
+    public class VerifyUserTask extends AsyncTask<Void, Void, Map<String, String>> {
+        private Exception exception;
+        @Override
+        protected Map<String, String> doInBackground(Void... voids) {
+            String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
+
+            String url = "https://m.easy-order-taxi.site/" + MainActivity.apiKyiv  + "/android/verifyBlackListUser/" + userEmail;
+            try {
+                return CostJSONParser.sendURL(url);
+            } catch (Exception e) {
+                exception = e;
+                return null;
+            }
+
+        }
+
+        @Override
+        protected void onPostExecute(Map<String, String> sendUrlMap) {
+            String message = sendUrlMap.get("message");
+            ContentValues cv = new ContentValues();
+            SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            if (message != null) {
+
+                if (message.equals("В черном списке")) {
+
+                    cv.put("verifyOrder", "0");
+                    database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+                }
+            }
+            database.close();
+        }
     }
 }
