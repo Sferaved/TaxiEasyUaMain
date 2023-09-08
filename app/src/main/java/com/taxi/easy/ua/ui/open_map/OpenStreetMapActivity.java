@@ -461,6 +461,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                         finish();
                     }
                     FromAdressString = (String) sendUrlFrom.get("route_address_from");
+
                     updateMyPosition(startLat, startLan, FromAdressString);
                     bottomSheetDialogFragment = MyGeoDialogFragment.newInstance(FromAdressString);
                     bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());

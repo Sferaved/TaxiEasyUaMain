@@ -22,6 +22,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.cities.Odessa.OdessaTest;
 import com.taxi.easy.ua.ui.home.MyBottomSheetBlackListFragment;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 
@@ -63,6 +64,9 @@ public class FinishActivity extends AppCompatActivity {
                 break;
             case "Cherkasy Oblast":
                 api = MainActivity.apiCherkasy;
+                break;
+            case "OdessaTest":
+                api = MainActivity.apiTest;
                 break;
             default:
                 api = MainActivity.apiKyiv;

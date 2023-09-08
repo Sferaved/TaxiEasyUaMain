@@ -424,11 +424,15 @@ public class MyGeoDialogFragment extends BottomSheetDialogFragment {
                                     Toast.makeText(getActivity(), getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
 
                                 }
+
+
                                 OpenStreetMapActivity.FromAdressString = (String) sendUrlFrom.get("route_address_from");
                                 updateMyPosition(OpenStreetMapActivity.startLat, OpenStreetMapActivity.startLan, OpenStreetMapActivity.FromAdressString);
 
                                  startActivity(new Intent(getActivity(), OpenStreetMapActivity.class));
                             }
+                            Log.d("TAG", "onLocationResult: OpenStreetMapActivity.startLat" + OpenStreetMapActivity.startLat);
+                            Log.d("TAG", "onLocationResult: OpenStreetMapActivity.startLan" + OpenStreetMapActivity.startLan);
                         }
 
                     };
