@@ -57,7 +57,7 @@ public class ToJSONParser {
         Future<String> asyncTaskFuture = Executors.newSingleThreadExecutor().submit(asyncTaskCallable);
 
         try {
-            String response = asyncTaskFuture.get(10, TimeUnit.SECONDS);
+            String response = asyncTaskFuture.get(20, TimeUnit.SECONDS);
             if (response != null) {
                 if (response.equals("400")) {
                     costMap.put("order_cost", "0");
@@ -77,6 +77,17 @@ public class ToJSONParser {
                         costMap.put("routefromnumber", jsonarray.getString("routefromnumber"));
                         costMap.put("routeto", jsonarray.getString("routeto"));
                         costMap.put("to_number", jsonarray.getString("to_number"));
+
+                        if(jsonarray.has("doubleOrder")) {
+                            costMap.put("doubleOrder", jsonarray.getString("doubleOrder"));
+                        }
+                        if(jsonarray.has("dispatching_order_uid_Double")) {
+                            costMap.put("dispatching_order_uid_Double", jsonarray.getString("dispatching_order_uid_Double"));
+                        } else {
+                            costMap.put("dispatching_order_uid_Double", " ");
+                        }
+
+
                     } else {
                         costMap.put("order_cost", "0");
                         costMap.put("message", jsonarray.getString("Message"));

@@ -7,13 +7,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,54 +27,40 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
-    TextView textViewInfo;
-    AppCompatButton btn_help;
-    String errorMessage;
+public class MyBottomSheetGPSFragment extends BottomSheetDialogFragment {
 
-    public MyBottomSheetErrorFragment(String errorMessage) {
-        this.errorMessage = errorMessage;
-    }
+    AppCompatButton btn_ok, btn_no;
 
+
+    @SuppressLint("MissingInflatedId")
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.error_list_layout, container, false);
+        View view = inflater.inflate(R.layout.gps_layout, container, false);
 
-        btn_help = view.findViewById(R.id.btn_help);
-        btn_help.setOnClickListener(new View.OnClickListener() {
+
+        btn_ok = view.findViewById(R.id.btn_ok);
+        btn_ok.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                List<String> stringList = logCursor(MainActivity.CITY_INFO, getContext());
-                Intent intent = new Intent(Intent.ACTION_DIAL);
-                String phone;
-                switch (stringList.get(1)){
-                    case "Kyiv City":
-                        phone = "tel:0674443804";
-                        break;
-                    case "Dnipropetrovsk Oblast":
-                        phone = "tel:0667257070";
-                        break;
-                    case "Odessa":
-                        phone = "tel:0737257070";
-                        break;
-                    case "Zaporizhzhia":
-                        phone = "tel:0687257070";
-                        break;
-                    case "Cherkasy Oblast":
-                        phone = "tel:0962294243";
-                        break;
-                    default:
-                        phone = "tel:0674443804";
-                        break;
-                }
-                intent.setData(Uri.parse(phone));
-                startActivity(intent);
+                dismiss();
+                HomeFragment.progressBar.setVisibility(View.INVISIBLE);
+                requireActivity().startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
             }
         });
-        textViewInfo = view.findViewById(R.id.textViewInfo);
-        textViewInfo.setText(errorMessage);
+
+        btn_no = view.findViewById(R.id.btn_no);
+        btn_no.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dismiss();
+                HomeFragment.progressBar.setVisibility(View.INVISIBLE);
+            }
+        });
+        HomeFragment.progressBar.setVisibility(View.INVISIBLE);
+
+
 
         return view;
     }
@@ -102,11 +87,5 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         database.close();
         return list;
     }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        HomeFragment.progressBar.setVisibility(View.INVISIBLE);
-    }
-}
+   }
 

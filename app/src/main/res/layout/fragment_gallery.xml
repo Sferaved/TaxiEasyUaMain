@@ -31,7 +31,7 @@
     <ListView
         android:id="@+id/listView"
         android:layout_width="match_parent"
-        android:layout_height="140sp"
+        android:layout_height="200sp"
         android:layout_marginTop="8sp"
         android:divider="@color/colorAccent"
         android:dividerHeight="1sp"
@@ -76,13 +76,13 @@
         android:id="@+id/btn_minus"
         android:layout_width="60sp"
         android:layout_height="60sp"
-        android:layout_marginTop="16sp"
-        android:layout_marginEnd="12dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
         android:gravity="center"
         android:text="-"
         android:textSize="30sp"
         app:layout_constraintEnd_toStartOf="@+id/text_view_cost"
-        app:layout_constraintTop_toBottomOf="@+id/btnAdd" />
+        app:layout_constraintTop_toBottomOf="@+id/btnBonus" />
 
     <TextView
         android:id="@+id/text_view_cost"
@@ -99,21 +99,21 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btnAdd"
+        app:layout_constraintTop_toBottomOf="@+id/btnBonus"
         tools:ignore="MissingConstraints" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_plus"
         android:layout_width="60sp"
         android:layout_height="60sp"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="16sp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
         android:backgroundTint="@color/colorAccent"
         android:gravity="center"
         android:text="+"
         android:textSize="30sp"
         app:layout_constraintStart_toEndOf="@+id/text_view_cost"
-        app:layout_constraintTop_toBottomOf="@+id/btnAdd"
+        app:layout_constraintTop_toBottomOf="@+id/btnBonus"
         tools:ignore="MissingConstraints" />
 
     <androidx.appcompat.widget.AppCompatButton
@@ -130,6 +130,21 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/del_but" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnBonus"
+        android:layout_width="293sp"
+        android:layout_height="45sp"
+        android:layout_marginTop="12sp"
+        android:background="@drawable/buttons"
+        android:fontFamily="@font/regular"
+        android:text="@string/btn_bonus"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnAdd" />
 
     <ProgressBar
         android:id="@+id/progress_bar"

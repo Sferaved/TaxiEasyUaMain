@@ -14,6 +14,7 @@
         android:background="@drawable/input"
         android:ellipsize="end"
         android:ems="10"
+        android:textColor="@color/white"
         android:fontFamily="@font/regular"
         android:gravity="center"
         android:textSize="16sp"

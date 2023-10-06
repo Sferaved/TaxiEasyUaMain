@@ -36,6 +36,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -46,41 +48,67 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
+import com.firebase.ui.auth.AuthUI;
+import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract;
+import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.ApiService;
+import com.taxi.easy.ua.ui.finish.BonusResponse;
 import com.taxi.easy.ua.ui.finish.City;
-import com.taxi.easy.ua.ui.home.MyPhoneDialogFragment;
+import com.taxi.easy.ua.ui.home.HomeFragment;
+import com.taxi.easy.ua.ui.home.MyBottomSheetCityFragment;
+import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
-import com.taxi.easy.ua.ui.start.FirebaseSignIn;
 
 import org.json.JSONException;
 
-import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
+
+import javax.net.ssl.HttpsURLConnection;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
-    public static final String DB_NAME = "data_08092023_4";
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        HomeFragment.progressBar.setVisibility(View.INVISIBLE);
+    }
+
+    public static final String DB_NAME = "data_02102023_6";
     public static final String TABLE_USER_INFO = "userInfo";
     public static final String TABLE_SETTINGS_INFO = "settingsInfo";
     public static final String TABLE_ORDERS_INFO = "ordersInfo";
     public static final String TABLE_SERVICE_INFO = "serviceInfo";
     public static final String TABLE_ADD_SERVICE_INFO = "serviceAddInfo";
     public static final String CITY_INFO = "cityInfo";
+    public static final String ROUT_HOME = "routHome";
+    public static final String ROUT_GEO = "routGeo";
+    public static final String ROUT_MARKER = "routMarker";
+    String TAG = "TAG";
 
     public static final String TABLE_POSITION_INFO = "myPosition";
     public static Cursor cursorDb;
@@ -89,16 +117,13 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     NetworkChangeReceiver networkChangeReceiver;
     String  cityNew;
-    private static final int REQUEST_LOCATION_PERMISSION = 1;
-    private FusedLocationProviderClient fusedLocationProviderClient;
-    private LocationCallback locationCallback;
     public static final String  apiTest = "apiTest";
     public static final String  apiKyiv = "apiPas1001";
     public static final String  apiDnipro = "apiPas1001_Dnipro";
     public static final String  apiOdessa = "apiPas1001_Odessa";
     public static final String  apiZaporizhzhia = "apiPas1001_Zaporizhzhia";
     public static final String  apiCherkasy = "apiPas1001_Cherkasy";
-//    public static String  api = "apiPas2";
+
     public static String  api;
     public static SQLiteDatabase database;
 
@@ -119,7 +144,7 @@ public class MainActivity extends AppCompatActivity {
             "OdessaTest"
     };
     String message;
-    private Semaphore semaphore = new Semaphore(0);
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -139,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
             // Passing each menu ID as a set of Ids because each
             // menu should be considered as top level destinations.
             mAppBarConfiguration = new AppBarConfiguration.Builder(
-                    R.id.nav_home, R.id.nav_gallery, R.id.nav_about)
+                    R.id.nav_home, R.id.nav_gallery, R.id.nav_about, R.id.nav_uid, R.id.nav_bonus)
                     .setOpenableLayout(drawer)
                     .build();
 
@@ -147,7 +172,6 @@ public class MainActivity extends AppCompatActivity {
             NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
             NavigationUI.setupWithNavController(navigationView, navController);
             networkChangeReceiver = new NetworkChangeReceiver();
-
     }
 
     @Override
@@ -155,10 +179,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
     }
-    private boolean databaseExists(String dbName) {
-        File dbFile = getDatabasePath(dbName);
-        return dbFile.exists();
-    }
+    @SuppressLint("SuspiciousIndentation")
     public void initDB() throws MalformedURLException, JSONException, InterruptedException {
 //        this.deleteDatabase(DB_NAME);
 
@@ -170,7 +191,8 @@ public class MainActivity extends AppCompatActivity {
                 " verifyOrder text," +
                 " phone_number text," +
                 " email text," +
-                " username text);");
+                " username text," +
+                " bonus text);");
 
         cursorDb = database.query(TABLE_USER_INFO, null, null, null, null, null, null);
         if (cursorDb.getCount() == 0) {
@@ -183,7 +205,8 @@ public class MainActivity extends AppCompatActivity {
         database.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_SETTINGS_INFO + "(id integer primary key autoincrement," +
                 " type_auto text," +
                 " tarif text," +
-                " discount text);");
+                " discount text," +
+                " bonusPayment text);");
 
         cursorDb = database.query(TABLE_SETTINGS_INFO, null, null, null, null, null, null);
         if (cursorDb.getCount() == 0) {
@@ -191,6 +214,7 @@ public class MainActivity extends AppCompatActivity {
             settings.add("usually");
             settings.add(" ");
             settings.add("0");
+            settings.add("nal_payment");
             insertFirstSettings(settings);
             if (cursorDb != null && !cursorDb.isClosed())
                 cursorDb.close();
@@ -254,23 +278,96 @@ public class MainActivity extends AppCompatActivity {
 
         database.execSQL("CREATE TABLE IF NOT EXISTS " + CITY_INFO + "(id integer primary key autoincrement," +
                 " city text);");
-
+        cursorDb = database.query(CITY_INFO, null, null, null, null, null, null);
+        if (cursorDb.getCount() == 0) {
+            insertCity("Kyiv City");
+            api = apiKyiv;
+        }
         cursorDb = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
         verifyPhone = cursorDb.getCount() == 1;
         if (cursorDb != null && !cursorDb.isClosed())
             cursorDb.close();
 
-        cursorDb = database.query(CITY_INFO, null, null, null, null, null, null);
+        database.execSQL("CREATE TABLE IF NOT EXISTS " + ROUT_HOME + "(id integer primary key autoincrement," +
+                " from_street text," +
+                " from_number text," +
+                " to_street text," +
+                " to_number text);");
+        cursorDb = database.query(ROUT_HOME, null, null, null, null, null, null);
         if (cursorDb.getCount() == 0) {
-            getLocalIpAddress();
+            Log.d("TAG", "initDB: ROUT_HOME");
+            insertRoutHome();
         }
+        if (cursorDb != null && !cursorDb.isClosed())
+        cursorDb.close();
+
+        database.execSQL("CREATE TABLE IF NOT EXISTS " + ROUT_GEO + "(id integer primary key autoincrement," +
+                " startLat double," +
+                " startLan double," +
+                " toCost text," +
+                " to_numberCost text);");
+        cursorDb = database.query(ROUT_GEO, null, null, null, null, null, null);
+        if (cursorDb.getCount() == 0) {
+            insertRoutGeo();
+        }
+        if (cursorDb != null && !cursorDb.isClosed())
+            cursorDb.close();
+
+        database.execSQL("CREATE TABLE IF NOT EXISTS " + ROUT_MARKER + "(id integer primary key autoincrement," +
+                " startLat double," +
+                " startLan double," +
+                " to_lat double," +
+                " to_lng double);");
+        cursorDb = database.query(ROUT_MARKER, null, null, null, null, null, null);
+        if (cursorDb.getCount() == 0) {
+            insertRoutMarker();
+        }
+        if (cursorDb != null && !cursorDb.isClosed())
+            cursorDb.close();
 
         newUser();
 
     }
 
+
+
+    String baseUrl = "https://m.easy-order-taxi.site";
+    private void fetchBonus(String value) {
+        String url = baseUrl + "/bonus/bonusUserShow/" + value;
+        Call<BonusResponse> call = ApiClient.getApiService().getBonus(url);
+        Log.d("TAG", "fetchBonus: " + url);
+        call.enqueue(new Callback<BonusResponse>() {
+            @Override
+            public void onResponse(Call<BonusResponse> call, Response<BonusResponse> response) {
+                BonusResponse bonusResponse = response.body();
+                if (response.isSuccessful()) {
+                    String bonus = String.valueOf(bonusResponse.getBonus());
+
+                    ContentValues cv = new ContentValues();
+                    cv.put("bonus", bonus);
+                    SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
+                            new String[] { "1" });
+                    database.close();
+
+                    Log.d("TAG", "onResponse: logCursor(TABLE_USER_INFO).get(4)" + logCursor(TABLE_USER_INFO).get(5));
+                } else {
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<BonusResponse> call, Throwable t) {
+                // Обработка ошибок сети или других ошибок
+                String errorMessage = t.getMessage();
+                t.printStackTrace();
+                // Дополнительная обработка ошибки
+            }
+        });
+    }
     private void insertFirstSettings(List<String> settings) {
-        String sql = "INSERT INTO " + TABLE_SETTINGS_INFO + " VALUES(?,?,?,?);";
+        String sql = "INSERT INTO " + TABLE_SETTINGS_INFO + " VALUES(?,?,?,?,?);";
         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         SQLiteStatement statement = database.compileStatement(sql);
         database.beginTransaction();
@@ -279,8 +376,7 @@ public class MainActivity extends AppCompatActivity {
             statement.bindString(2, settings.get(0));
             statement.bindString(3, settings.get(1));
             statement.bindString(4, settings.get(2));
-
-
+            statement.bindString(5, settings.get(3));
             statement.execute();
             database.setTransactionSuccessful();
 
@@ -340,10 +436,7 @@ public class MainActivity extends AppCompatActivity {
     }
     private void insertUserInfo() {
 
-
-
-
-        String sql = "INSERT INTO " + TABLE_USER_INFO + " VALUES(?,?,?,?,?);";
+        String sql = "INSERT INTO " + TABLE_USER_INFO + " VALUES(?,?,?,?,?,?);";
         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         SQLiteStatement statement = database.compileStatement(sql);
         database.beginTransaction();
@@ -353,6 +446,7 @@ public class MainActivity extends AppCompatActivity {
             statement.bindString(3, "+380");
             statement.bindString(4, "email");
             statement.bindString(5, "username");
+            statement.bindString(6, "0");
 
             statement.execute();
             database.setTransactionSuccessful();
@@ -377,56 +471,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void getLocalIpAddress() {
-
+        HomeFragment.progressBar.setVisibility(View.VISIBLE);
         List<String> city = logCursor(CITY_INFO);
 
 
-        if(city.size() == 0) {
+        if(city.size() != 0) {
             ApiService apiService = ApiClient.getApiService();
 
             Call<City> call = apiService.cityOrder();
 
             call.enqueue(new Callback<City>() {
                 @Override
-                public void onResponse(Call<City> call, Response<City> response) {
+                public void onResponse(@NonNull Call<City> call, @NonNull Response<City> response) {
                     if (response.isSuccessful()) {
                         City status = response.body();
                         if (status != null) {
                             String result = status.getResponse();
-                            String message =getString(R.string.your_city);
+                            Log.d("TAG", "onResponse:result " + result);
 
-                            insertCity(result);
-                            List<String> stringList = logCursor(CITY_INFO);
-                            Log.d("TAG", "onCreate: insertCity"  + stringList);
-                            Log.d("TAG", "onResponse: " + result);
-                            switch (result){
-                                case "Kyiv City":
-                                    message += getString(R.string.Kyiv_city);
-                                    break;
-                                case "Dnipropetrovsk Oblast":
-                                    message += getString(R.string.Dnipro_city);
-                                    break;
-                                case "Odessa":
-                                    message += getString(R.string.Odessa);
-                                    break;
-                                case "Zaporizhzhia":
-                                    message += getString(R.string.Zaporizhzhia);
-                                    break;
-                                case "Cherkasy Oblast":
-                                    message += getString(R.string.Cherkasy);
-                                    break;
-                                default:
-                                    message += result;
-                                    break;
+                            if (!isFinishing() && !getSupportFragmentManager().isStateSaved()) {
+                                MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(result);
+                                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                             }
-                            database.close();
-                            Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
-                            finishAffinity();
-                            startActivity(new Intent(MainActivity.this, MainActivity.class));
+
+
                         }
-                    }
-                    else {
-                        Toast.makeText(MainActivity.this, R.string.verify_internet, Toast.LENGTH_SHORT).show();
+                    } else {
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                     }
                 }
 
@@ -500,6 +572,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    @SuppressLint("IntentReset")
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.phone_settings) {
@@ -540,8 +613,8 @@ public class MainActivity extends AppCompatActivity {
 
             try {
                 startActivity(Intent.createChooser(emailIntent, getString(R.string.share)));
-            } catch (android.content.ActivityNotFoundException ex) {
-                Toast.makeText(this, getString(R.string.no_email_agent), Toast.LENGTH_SHORT).show();
+            } catch (android.content.ActivityNotFoundException ignored) {
+
             }
 
         }
@@ -565,6 +638,7 @@ public class MainActivity extends AppCompatActivity {
         return randomString.toString();
     }
 
+    @SuppressLint("IntentReset")
     private void sendEmailAdmin () {
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         String city;
@@ -615,8 +689,8 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             startActivity(Intent.createChooser(emailIntent, subject));
-        } catch (android.content.ActivityNotFoundException ex) {
-            Toast.makeText(this, getString(R.string.no_email_agent), Toast.LENGTH_SHORT).show();
+        } catch (android.content.ActivityNotFoundException ignored) {
+
         }
 
 
@@ -676,15 +750,30 @@ public class MainActivity extends AppCompatActivity {
                         database.close();
 
                         Toast.makeText(MainActivity.this, getString(R.string.change_message) + message   , Toast.LENGTH_SHORT).show();
-                        finish();
-                        startActivity(new Intent(MainActivity.this, MainActivity.class));
+
+                        NavController navController = Navigation.findNavController(MainActivity.this, R.id.nav_host_fragment_content_main);
+                        resetRoutHome();
+                        navController.navigate(R.id.nav_home);
 
                     }
                 }).setNegativeButton(cancel_button, null)
                 .show();
 
     }
+    public void resetRoutHome() {
+        ContentValues cv = new ContentValues();
 
+        cv.put("from_street", " ");
+        cv.put("from_number", " ");
+        cv.put("to_street", " ");
+        cv.put("to_number", " ");
+
+        // обновляем по id
+        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.update(MainActivity.ROUT_HOME, cv, "id = ?",
+                new String[] { "1" });
+        database.close();
+    }
     public void eventGps() {
         LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
         boolean gps_enabled = false;
@@ -709,8 +798,7 @@ public class MainActivity extends AppCompatActivity {
             builder.setView(view_cost);
             TextView message = view_cost.findViewById(R.id.textMessage);
             message.setText(R.string.gps_info);
-            builder.setMessage(R.string.gps_info)
-                    .setPositiveButton(R.string.gps_on, new DialogInterface.OnClickListener() {
+            builder.setPositiveButton(R.string.gps_on, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface paramDialogInterface, int paramInt) {
                             startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
@@ -762,14 +850,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }).setNegativeButton(cancel_button, null)
                 .show();
-        } else {
-            if (!verifyPhone()) {
-                getPhoneNumber();
-            }
-            if (!verifyPhone()) {
-                MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment();
-                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-            }
         }
     }
     private void updateRecordsUser(String result) {
@@ -941,128 +1021,235 @@ public class MainActivity extends AppCompatActivity {
         database.close();
         return list;
     }
-    public void newUser() throws MalformedURLException {
+    public void newUser() {
         String userEmail = logCursor(TABLE_USER_INFO).get(3);
         Log.d("TAG", "newUser: " + userEmail);
         if(userEmail.equals("email")) {
-
-            startActivity(new Intent(MainActivity.this, FirebaseSignIn.class));
-//            startActivity(new Intent(this, GoogleSignInActivity.class));
-      } else {
-//            if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-//                    && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//
-//                checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//                checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//            }
-//            verifyAccess();
+            startFireBase();
+        } else {
             new VerifyUserTask().execute();
+
         }
 
+    }
+
+    private void startFireBase() {
+        startSignInInBackground();
+    }
+    private void startSignInInBackground() {
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                // Инициализация FirebaseApp
+                FirebaseApp.initializeApp(MainActivity.this);
+
+                // Choose authentication providers
+                List<AuthUI.IdpConfig> providers = Arrays.asList(
+                        new AuthUI.IdpConfig.GoogleBuilder().build());
+
+                // Create and launch sign-in intent
+                Intent signInIntent = AuthUI.getInstance()
+                        .createSignInIntentBuilder()
+                        .setAvailableProviders(providers)
+                        .build();
+                try {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            signInLauncher.launch(signInIntent);
+                        }
+                    });
+                } catch (NullPointerException ignored) {
+
+                }
+            }
+        });
+        thread.start();
+    }
+
+
+    private final ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
+            new FirebaseAuthUIActivityResultContract(),
+            new ActivityResultCallback<FirebaseAuthUIAuthenticationResult>() {
+                @Override
+                public void onActivityResult(FirebaseAuthUIAuthenticationResult result) {
+                    try {
+                        onSignInResult(result);
+                    } catch (MalformedURLException | JSONException | InterruptedException e) {
+                        Log.d("TAG", "onCreate:" + new RuntimeException(e));
+                    }
+                }
+            }
+    );
+
+
+    private void onSignInResult(FirebaseAuthUIAuthenticationResult result) throws MalformedURLException, JSONException, InterruptedException {
+        ContentValues cv = new ContentValues();
+        try {
+            if (result.getResultCode() == RESULT_OK) {
+                // Successfully signed in
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+
+                updateRecordsUserInfo("email", user.getEmail());
+                updateRecordsUserInfo("username", user.getDisplayName());
+
+                addUser(user.getDisplayName(), user.getEmail()) ;
+
+                getLocalIpAddress();
+
+                fetchBonus(user.getEmail());
+
+                cv.put("verifyOrder", "1");
+                SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+                database.close();
+
+            } else {
+
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.firebase_error));
+                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                cv.put("verifyOrder", "0");
+                SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+                database.close();
+            }
+        } catch (NullPointerException e) {
+
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.firebase_error));
+            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+            cv.put("verifyOrder", "0");
+            SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+            database.close();
+        }
+    }
+
+    private void addUser(String displayName , String userEmail) {
+        String urlString = "https://m.easy-order-taxi.site/android/addUser/" + displayName  + "/" + userEmail;
+
+        Callable<Void> addUserCallable = () -> {
+            URL url = new URL(urlString);
+            Log.d("TAG", "sendURL: " + urlString);
+
+            HttpsURLConnection urlConnection = null;
+            try {
+                urlConnection = (HttpsURLConnection) url.openConnection();
+                urlConnection.setDoInput(true);
+//                urlConnection.getResponseCode();
+                Log.d("TAG", "addUser: urlConnection.getResponseCode(); " + urlConnection.getResponseCode());
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+            }
+
+            return null;
+        };
+
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        Future<Void> addUserFuture = executorService.submit(addUserCallable);
+
+        // Дождитесь завершения выполнения задачи с тайм-аутом
+        try {
+            addUserFuture.get(10, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            // Обработка ошибок
+            e.printStackTrace();
+        } finally {
+            // Завершите исполнителя
+            executorService.shutdown();
+        }
+    }
+
+    private void updateRecordsUserInfo(String userInfo, String result) {
+        SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        ContentValues cv = new ContentValues();
+
+        cv.put(userInfo, result);
+
+        // обновляем по id
+        database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
+                new String[] { "1" });
+        database.close();
+    }
+    private void insertRoutHome() {
+        String sql = "INSERT INTO " + MainActivity.ROUT_HOME + " VALUES(?,?,?,?,?);";
+
+        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteStatement statement = database.compileStatement(sql);
+        database.beginTransaction();
+        try {
+            statement.clearBindings();
+            statement.bindString(2, " ");
+            statement.bindString(3, " ");
+            statement.bindString(4, " ");
+            statement.bindString(5, " ");
+
+            statement.execute();
+            database.setTransactionSuccessful();
+
+        } finally {
+            database.endTransaction();
+        }
+        database.close();
+    }
+
+    private void insertRoutGeo() {
+        String sql = "INSERT INTO " + MainActivity.ROUT_GEO + " VALUES(?,?,?,?,?);";
+
+        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteStatement statement = database.compileStatement(sql);
+        database.beginTransaction();
+        try {
+            statement.clearBindings();
+            statement.bindDouble(2, 0);
+            statement.bindDouble(3, 0);
+            statement.bindString(4, " ");
+            statement.bindString(5, " ");
+
+            statement.execute();
+            database.setTransactionSuccessful();
+
+        } finally {
+            database.endTransaction();
+        }
+        database.close();
 
     }
-//    private void verifyAccess() throws MalformedURLException {
-//     LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-//     boolean gpsEnabled = false;
-//     try {
-//         gpsEnabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-//     } catch (Exception ignored) {
-//     }
-//
-////                 Если GPS выключен, выводим диалог с предложением его включить
-//     if (!gpsEnabled) {
-//         openGPSSettings();
-//     } else {
-//         // Проверяем состояние Location Service с помощью колбэка
-//         checkLocationServiceEnabled(new FirebaseSignIn.LocationServiceCallback() {
-//             @Override
-//             public void onLocationServiceResult(boolean isEnabled) throws MalformedURLException {
-//                 if (isEnabled) {
-//                     // Проверяем разрешения на местоположение
-//                     if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-//                             && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//
-//                         checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//                         checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//                     }
-//                 }
-//
-//             }
-//         });
-//     }
-// }
+
+    private void insertRoutMarker() {
+        String sql = "INSERT INTO " + MainActivity.ROUT_MARKER + " VALUES(?,?,?,?,?);";
+
+        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteStatement statement = database.compileStatement(sql);
+        database.beginTransaction();
+        try {
+            statement.clearBindings();
+            statement.bindDouble(2, 0);
+            statement.bindDouble(3, 0);
+            statement.bindDouble(4, 0);
+            statement.bindDouble(5, 0);
+
+
+            statement.execute();
+            database.setTransactionSuccessful();
+
+        } finally {
+            database.endTransaction();
+        }
+        database.close();
+    }
+
+
+
     public void checkPermission(String permission, int requestCode) {
         // Checking if permission is not granted
         if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) {
             ActivityCompat.requestPermissions(this, new String[]{permission}, requestCode);
         }
     }
-    private static final int REQUEST_ENABLE_GPS = 1001;
-//    private void openGPSSettings() {
-//        // Проверяем, включен ли GPS
-//        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-//        boolean isGPSEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-//
-//        if (!isGPSEnabled) {
-//            // Если GPS не включен, открываем окно настроек для GPS
-//            MaterialAlertDialogBuilder builder =  new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);
-//            LayoutInflater inflater = this.getLayoutInflater();
-//
-//            View view_cost = inflater.inflate(R.layout.message_layout, null);
-//            builder.setView(view_cost);
-//            TextView message = view_cost.findViewById(R.id.textMessage);
-//            message.setText(R.string.gps_info);
-//            builder.setPositiveButton(R.string.gps_on, new DialogInterface.OnClickListener() {
-//                        @Override
-//                        public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-//                            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-//                            startActivityForResult(intent, REQUEST_ENABLE_GPS);
-//                        }
-//                    })
-//                    .setNegativeButton(R.string.cancel_button, null)
-//                    .show();
-//
-//        } else {
-//            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-//                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-//                startActivity(new Intent(this, OpenStreetMapActivity.class));
-//            } else {
-//                startActivity(new Intent(this, MainActivity.class));
-//            }
-//
-//        }
-//    }
-//    private void checkLocationServiceEnabled(FirebaseSignIn.LocationServiceCallback callback) throws MalformedURLException {
-//        Context context = getApplicationContext(); // Получите контекст вашего приложения
-//
-//        FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(context);
-//
-//        // Проверяем, доступны ли данные о местоположении
-//        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-//                ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//            callback.onLocationServiceResult(false);
-//            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//            return;
-//        }
-//
-//        Task<Location> locationTask = fusedLocationClient.getLastLocation();
-//        locationTask.addOnCompleteListener(task -> {
-//            if (task.isSuccessful() && task.getResult() != null) {
-//                try {
-//                    callback.onLocationServiceResult(true);
-//                } catch (MalformedURLException e) {
-//                    Log.d("TAG", "onCreate:" + new RuntimeException(e));
-//                }
-//            } else {
-//                try {
-//                    callback.onLocationServiceResult(false);
-//                } catch (MalformedURLException e) {
-//                    Log.d("TAG", "onCreate:" + new RuntimeException(e));
-//                }
-//            }
-//        });
-//    }
 
     @SuppressLint("StaticFieldLeak")
     public class VerifyUserTask extends AsyncTask<Void, Void, Map<String, String>> {
@@ -1071,7 +1258,7 @@ public class MainActivity extends AppCompatActivity {
         protected Map<String, String> doInBackground(Void... voids) {
             String userEmail = logCursor(TABLE_USER_INFO).get(3);
 
-            String url = "https://m.easy-order-taxi.site/" + MainActivity.apiKyiv  + "/android/verifyBlackListUser/" + userEmail;
+            String url = "https://m.easy-order-taxi.site/android/verifyBlackListUser/" + userEmail + "/" + "com.taxi.easy.ua";
             try {
                 return CostJSONParser.sendURL(url);
             } catch (Exception e) {

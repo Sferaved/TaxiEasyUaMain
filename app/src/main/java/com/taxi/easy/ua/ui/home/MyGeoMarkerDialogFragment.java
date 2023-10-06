@@ -18,12 +18,14 @@ import android.os.Build;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -35,11 +37,7 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
@@ -50,11 +48,13 @@ import com.taxi.easy.ua.cities.Odessa.Odessa;
 import com.taxi.easy.ua.cities.Odessa.OdessaTest;
 import com.taxi.easy.ua.cities.Zaporizhzhia.Zaporizhzhia;
 import com.taxi.easy.ua.ui.finish.FinishActivity;
+import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -63,24 +63,21 @@ import java.util.regex.Pattern;
 
 public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
     public TextView geoText;
-    AppCompatButton button, old_address, btn_minus, btn_plus, btnOrder;
+    AppCompatButton button, btn_minus, btn_plus, btnOrder, buttonBonus;
     public String[] arrayStreet;
     private static String api;
-    ArrayList<Map> adressArr;
     long firstCost;
 
     public static TextView text_view_cost, textViewTo;
     public static EditText to_number;
 
     public static String numberFlagTo;
-    private FusedLocationProviderClient fusedLocationProviderClient;
-    private LocationCallback locationCallback;
-    private static final int REQUEST_LOCATION_PERMISSION = 1;
+
     static MyGeoMarkerDialogFragment fragment;
     public static long cost;
     public static long addCost;
     public static String to;
-    private ProgressBar progressBar;
+    public static ProgressBar progressBar;
 
     public static MyGeoMarkerDialogFragment newInstance(String fromGeo) {
         fragment = new MyGeoMarkerDialogFragment();
@@ -91,6 +88,7 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.geo_marker_layout, container, false);
+        getDialog().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
 
         final int initialMarginBottom = 0;
 
@@ -117,7 +115,7 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
                 myLinearLayout.setLayoutParams(layoutParams);
             }
         });
-        setCancelable(false);
+//        setCancelable(false);
 
             List<String> stringList = logCursor(MainActivity.CITY_INFO, getActivity());
         switch (stringList.get(1)){
@@ -185,6 +183,9 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
 
         textViewTo = view.findViewById(R.id.text_to);
         textViewTo.setText(OpenStreetMapActivity.ToAdressString);
+        int inputTypeTo = textViewTo.getInputType() | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS;
+        textViewTo.setInputType(inputTypeTo);
+
         btn_minus = view.findViewById(R.id.btn_minus);
         btn_plus = view.findViewById(R.id.btn_plus);
         btnOrder = view.findViewById(R.id.btnOrder);
@@ -194,7 +195,9 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(getActivity(), MainActivity.class));
+                OpenStreetMapActivity.progressBar.setVisibility(View.VISIBLE);
+                geoText.setText("");
+                startActivity(new Intent(getActivity(), OpenStreetMapActivity.class));
             }
         });
 
@@ -212,65 +215,65 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
             @Override
             public void onClick(View v) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    progressBar.setVisibility(View.VISIBLE);
+                    OpenStreetMapActivity.progressBar.setVisibility(View.VISIBLE);
+                    List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+
+                    switch (stringList.get(1)) {
+                        case "Kyiv City":
+                        case "Dnipropetrovsk Oblast":
+                        case "Odessa":
+                        case "Zaporizhzhia":
+                        case "Cherkasy Oblast":
+                            break;
+                        case "OdessaTest":
+                            List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
+                            String bonusPayment =  stringListInfo.get(4);
+                            if(bonusPayment.equals("bonus_payment")) {
+                                String bonus = logCursor(MainActivity.TABLE_USER_INFO, getActivity()).get(5);
+                                if(Long.parseLong(bonus) < cost * 100 ) {
+                                    paymentType("nal_payment");
+                                }
+                            }
+                            break;
+                    }
                     order();
                 }
             }
         });
+        buttonBonus = view.findViewById(R.id.btnBonus);
         startCost();
         OpenStreetMapActivity.progressBar.setVisibility(View.INVISIBLE);
 
+        buttonBonus.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                MyBottomSheetBonusFragment bottomSheetDialogFragment = new MyBottomSheetBonusFragment(Long.parseLong(text_view_cost.getText().toString()), "marker", api, text_view_cost, "GeoMarker");
+                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+            }
+        });
         return view;
     }
 
-    @SuppressLint("UseRequireInsteadOfGet")
-    private void startLocationUpdates() {
-        LocationRequest locationRequest = createLocationRequest();
-        if (ActivityCompat.checkSelfPermission(Objects.requireNonNull(getContext()), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-            return;
-        }
-        fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
-        updateMyPosition(OpenStreetMapActivity.startLat, OpenStreetMapActivity.startLan, OpenStreetMapActivity.FromAdressString);
-    }
-    public void checkPermission(String permission, int requestCode) {
-        // Checking if permission is not granted
-        if (ContextCompat.checkSelfPermission(getActivity(), permission) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(getActivity(), new String[]{permission}, requestCode);
-
-        }
-    }
-    private void updateMyPosition(Double startLat, Double startLan, String position) {
-        SQLiteDatabase database = getActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        ContentValues cv = new ContentValues();
-
-        cv.put("startLat", startLat);
-        database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
-                new String[] { "1" });
-        cv.put("startLan", startLan);
-        database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
-                new String[] { "1" });
-        cv.put("position", position);
-        database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
-                new String[] { "1" });
-        database.close();
-
-    }
     private void startCost() {
         String urlCost = null;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            urlCost = getTaxiUrlSearchMarkers(OpenStreetMapActivity.startLat, OpenStreetMapActivity.startLan,
-                    OpenStreetMapActivity.finishLat, OpenStreetMapActivity.finishLan, "costSearchMarkers", getActivity());
+            List<String> settings = new ArrayList<>();
+            settings.add(String.valueOf(OpenStreetMapActivity.startLat));
+            settings.add(String.valueOf(OpenStreetMapActivity.startLan));
+            settings.add(String.valueOf(OpenStreetMapActivity.finishLat));
+            settings.add(String.valueOf(OpenStreetMapActivity.finishLan));
+
+            updateRoutMarker(settings);
+            urlCost = getTaxiUrlSearchMarkers( "costSearchMarkers", getActivity());
         }
 
         Map<String, String> sendUrlMapCost = null;
         try {
-            sendUrlMapCost = ToJSONParser.sendURL(urlCost);
+            sendUrlMapCost = CostJSONParser.sendURL(urlCost);
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
-
+        OpenStreetMapActivity.progressBar.setVisibility(View.INVISIBLE);
         String message = sendUrlMapCost.get("message");
         String orderCost = sendUrlMapCost.get("order_cost");
         Log.d("TAG", "startCost: orderCost " + orderCost);
@@ -281,7 +284,7 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
         }
         if (!orderCost.equals("0")) {
 
-            String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
+            String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireContext()).get(3);
             long discountInt = Integer.parseInt(discountText);
             long discount;
             firstCost = Long.parseLong(orderCost);
@@ -290,11 +293,9 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
             addCost = discount;
             text_view_cost.setText(String.valueOf(firstCost));
             firstCost = Long.parseLong(text_view_cost.getText().toString());
-            Log.d("TAG", "startCost: firstCost " + firstCost);
-            Log.d("TAG", "startCost: addCost " + addCost);
+
             long MIN_COST_VALUE = (long) (firstCost * 0.1);
             long MAX_COST_VALUE = firstCost * 3;
-
 
             btn_minus.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -307,7 +308,6 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
                     }
                     Log.d("TAG", "startCost: addCost " + addCost);
                     text_view_cost.setText(String.valueOf(firstCost));
-
                 }
             });
 
@@ -331,11 +331,16 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public static String getTaxiUrlSearchMarkers(double originLatitude, double originLongitude,
-                                                 double toLatitude, double toLongitude,
-                                                 String urlAPI, Context context) {
-        //  Проверка даты и времени
-//        if(hasServer()) {
+    public static String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
+
+        List<String> stringListRout = logCursor(MainActivity.ROUT_MARKER, context);
+        Log.d("TAG", "getTaxiUrlSearch: stringListRout" + stringListRout);
+
+        double originLatitude = Double.parseDouble(stringListRout.get(1));
+        double originLongitude = Double.parseDouble(stringListRout.get(2));
+        double toLatitude = Double.parseDouble(stringListRout.get(3));
+        double toLongitude = Double.parseDouble(stringListRout.get(4));
+
 
         List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
         String time = stringList.get(1);
@@ -343,15 +348,17 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
         String date = stringList.get(3);
 
         // Origin of route
-        String str_origin = originLatitude + "/" + originLongitude;
+        String str_origin = String.valueOf(originLatitude) + "/" + String.valueOf(originLongitude);
 
         // Destination of route
-        String str_dest = toLatitude + "/" + toLongitude;
+        String str_dest = String.valueOf(toLatitude) + "/" + String.valueOf(toLongitude);
 
         //        Cursor cursorDb = MainActivity.database.query(MainActivity.TABLE_SETTINGS_INFO, null, null, null, null, null, null);
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        String tarif = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(2);
 
+        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
+        String tarif =  stringListInfo.get(2);
+        String bonusPayment =  stringListInfo.get(4);
 
         // Building the parameters to the web service
 
@@ -367,14 +374,15 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
                 phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
                 c.close();
             }
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + displayName + "(" + userEmail + ")";
+            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
+                    + displayName + "*" + userEmail  + "*" + bonusPayment;
         }
         if(urlAPI.equals("orderSearchMarkers")) {
             phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
 
 
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + displayName  + "/" + addCost + "/" + time + "/" + comment + "/" + date;
+                    + displayName + "*" + userEmail  + "*" + bonusPayment + "/" + addCost + "/" + time + "/" + comment + "/" + date;
 
             ContentValues cv = new ContentValues();
 
@@ -453,7 +461,7 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
     @Override
     public void onPause() {
         super.onPause();
-
+        OpenStreetMapActivity.fab_open_marker.setVisibility(View.VISIBLE);
 //        startActivity(new Intent(getActivity(), OpenStreetMapActivity.class));
     }
     @SuppressLint("Range")
@@ -493,15 +501,16 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
             getPhoneNumber();
         }
         if (!verifyPhone(getContext())) {
-            MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment();
+            MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment("marker");
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-            progressBar.setVisibility(View.INVISIBLE);
+            OpenStreetMapActivity.progressBar.setVisibility(View.INVISIBLE);
         }
         if(connected()) {
             if (verifyPhone(getContext())) {
                 try {
-                    String urlOrder = getTaxiUrlSearchMarkers(OpenStreetMapActivity.startLat, OpenStreetMapActivity.startLan,
-                            OpenStreetMapActivity.finishLat, OpenStreetMapActivity.finishLan, "orderSearchMarkers", getActivity());
+
+
+                    String urlOrder = getTaxiUrlSearchMarkers("orderSearchMarkers", getActivity());
                     Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
                     Log.d("TAG", "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
 
@@ -521,10 +530,15 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
                                 );
                             }
                         } else {
-                            to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
+                            if(sendUrlMap.get("routeto").equals("Точка на карте")) {
+                                to_name = getActivity().getString(R.string.end_point_marker);
+                            } else {
+                                to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
+                            }
+
                             if (!sendUrlMap.get("lat").equals("0")) {
                                 insertRecordsOrders(
-                                        sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"),
+                                        sendUrlMap.get("routefrom"), to_name,
                                         sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
                                         Double.toString(OpenStreetMapActivity.startLat), Double.toString(OpenStreetMapActivity.startLan),
                                         sendUrlMap.get("lat"), sendUrlMap.get("lng"), getActivity()
@@ -539,13 +553,15 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
 
                         Intent intent = new Intent(getActivity(), FinishActivity.class);
                         intent.putExtra("messageResult_key", messageResult);
+                        intent.putExtra("messageCost_key", orderWeb);
+                        intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
                         intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
                         startActivity(intent);
                     } else {
 
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(sendUrlMap.get("message"));
                         bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                        progressBar.setVisibility(View.INVISIBLE);
+                        OpenStreetMapActivity.progressBar.setVisibility(View.INVISIBLE);
                     }
 
 
@@ -558,7 +574,7 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
         } else {
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-            progressBar.setVisibility(View.INVISIBLE);
+            OpenStreetMapActivity.progressBar.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -603,7 +619,6 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
             return;
         }
         mPhoneNumber = tMgr.getLine1Number();
-//        mPhoneNumber = null;
         if(mPhoneNumber != null) {
             String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
             boolean val = Pattern.compile(PHONE_PATTERN).matcher(mPhoneNumber).matches();
@@ -611,8 +626,6 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
             if (val == false) {
                 Toast.makeText(getActivity(), getString(R.string.format_phone) , Toast.LENGTH_SHORT).show();
                 Log.d("TAG", "onClick:phoneNumber.getText().toString() " + mPhoneNumber);
-//                getActivity().finish();
-
             } else {
                 updateRecordsUser(mPhoneNumber, getContext());
             }
@@ -680,123 +693,29 @@ public class MyGeoMarkerDialogFragment extends BottomSheetDialogFragment {
         cursor_to.close();
 
     }
+    private void updateRoutMarker(List<String> settings) {
+        ContentValues cv = new ContentValues();
 
-     @RequiresApi(api = Build.VERSION_CODES.O)
-    private String getTaxiUrlSearchGeo(double originLatitude, double originLongitude,
-                                              String to, String to_number,
-                                              String urlAPI, Context context) {
-//    if(hasServer()) {
-        //  Проверка даты и времени
+        cv.put("startLat",  Double.parseDouble(settings.get(0)));
+        cv.put("startLan", Double.parseDouble(settings.get(1)));
+        cv.put("to_lat", Double.parseDouble(settings.get(2)));
+        cv.put("to_lng", Double.parseDouble(settings.get(3)));
 
-         if(to_number.equals("XXX")) {
-             to_number = " ";
-         }
-        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
-        String time = stringList.get(1);
-        String comment = stringList.get(2);
-        String date = stringList.get(3);
-
-        // Origin of route
-        String str_origin = originLatitude + "/" + originLongitude;
-
-        // Destination of route
-        String str_dest = to + "/" + to_number;
-
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        String tarif = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(2);
-
-
-        // Building the parameters to the web service
-
-        String parameters = null;
-        String phoneNumber = "no phone";
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-        String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
-
-        if(urlAPI.equals("costSearchGeo")) {
-            Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-
-            if (c.getCount() == 1) {
-                phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
-                c.close();
-            }
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + displayName + "(" + userEmail + ")";
-        }
-
-        if(urlAPI.equals("orderSearchGeo")) {
-            phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
-
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + displayName  + "/" + addCost + "/" + time + "/" + comment + "/" + date;
-
-            ContentValues cv = new ContentValues();
-
-            cv.put("time", "no_time");
-            cv.put("comment", "no_comment");
-            cv.put("date", "no_date");
-
-            // обновляем по id
-            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
-                    new String[] { "1" });
-        }
-
-        // Building the url to the web service
-        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
-        List<String> servicesChecked = new ArrayList<>();
-        String result;
-        boolean servicesVer = false;
-        for (int i = 1; i < services.size()-1 ; i++) {
-            if(services.get(i).equals("1")) {
-                servicesVer = true;
-                break;
-            }
-        }
-        if(servicesVer) {
-            for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
-                if(services.get(i+1).equals("1")) {
-                    servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
-                }
-            }
-            for (int i = 0; i < servicesChecked.size(); i++) {
-                if(servicesChecked.get(i).equals("CHECK_OUT")) {
-                    servicesChecked.set(i, "CHECK");
-                }
-            }
-            result = String.join("*", servicesChecked);
-            Log.d("TAG", "getTaxiUrlSearchGeo result:" + result + "/");
-        } else {
-            result = "no_extra_charge_codes";
-        }
-
-        String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/" + parameters + "/" + result;
-        Log.d("TAG", "getTaxiUrlSearch services: " + url);
-
-        return url;
-
-
-    }
-    private void stopLocationUpdates() {
-        fusedLocationProviderClient.removeLocationUpdates(locationCallback);
+        // обновляем по id
+        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
+                new String[] { "1" });
+        database.close();
     }
 
-    private LocationRequest createLocationRequest() {
-        LocationRequest locationRequest = new LocationRequest();
-        locationRequest.setInterval(1000); // Интервал обновления местоположения в миллисекундах
-        locationRequest.setFastestInterval(100); // Самый быстрый интервал обновления местоположения в миллисекундах
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY); // Приоритет точного местоположения
-        return locationRequest;
-    }
-
-    private void requestLocationPermission() {
-        if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
-                Manifest.permission.ACCESS_FINE_LOCATION)) {
-            // Показываем объяснение пользователю, почему мы запрашиваем разрешение
-            // Можно использовать диалоговое окно или другой пользовательский интерфейс
-        } else {
-            ActivityCompat.requestPermissions(getActivity(),
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    REQUEST_LOCATION_PERMISSION);
-        }
+    private void paymentType(String paymentCode) {
+        ContentValues cv = new ContentValues();
+        cv.put("bonusPayment", paymentCode);
+        // обновляем по id
+        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                new String[] { "1" });
+        database.close();
     }
 }
 

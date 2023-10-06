@@ -396,8 +396,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
     }
     private String changeCost() throws MalformedURLException {
         String newCost = "0";
-        String url = getTaxiUrlSearch(HomeFragment.from, HomeFragment.from_numberCost,
-                HomeFragment.toCost, HomeFragment.to_numberCost, "costSearch", getActivity());
+        String url = getTaxiUrlSearch("costSearch", getActivity());
 
         Map<String, String> sendUrl = CostJSONParser.sendURL(url);
 
@@ -425,8 +424,13 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         }
         return newCost;
     }
-    private String getTaxiUrlSearch(String from, String from_number, String to, String to_number, String urlAPI, Context context) {
+    private String getTaxiUrlSearch(String urlAPI, Context context) {
+        List<String> stringListRout = logCursor(MainActivity.ROUT_HOME, context);
 
+        String from = stringListRout.get(1);
+        String from_number = stringListRout.get(2);
+        String to = stringListRout.get(3);
+        String to_number = stringListRout.get(4);
         // Origin of route
         String str_origin = from + "/" + from_number;
 
@@ -435,8 +439,10 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
 
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
-        String tarif =  logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(2);
 
+        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
+        String tarif =  stringListInfo.get(2);
+        String bonusPayment =  stringListInfo.get(4);
         // Building the parameters to the web service
 
         String parameters = null;
@@ -450,7 +456,8 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
                 c.close();
             }
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/" + displayName + "(" + userEmail + ")";
+            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
+                    + displayName + "*" + userEmail  + "*" + bonusPayment;
         }
 
 

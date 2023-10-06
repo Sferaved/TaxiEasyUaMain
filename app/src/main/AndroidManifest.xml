@@ -69,7 +69,9 @@
             android:screenOrientation="portrait"/>
         <activity android:name=".ui.start.UpdateActivity"
             android:screenOrientation="portrait"/>
-
+        <activity
+            android:name=".ui.start.GoogleSignInActivity"
+            android:screenOrientation="portrait" />
         <receiver android:name=".NetworkChangeReceiver" />
     </application>
 

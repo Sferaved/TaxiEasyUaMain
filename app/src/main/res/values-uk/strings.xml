@@ -1,6 +1,6 @@
 <resources>
-    <string name="version_code">1.706</string>
-    <string name="version">Версія: 1.706</string>
+    <string name="version_code">1.707</string>
+    <string name="version">Версія: 1.707</string>
 
     <string name="app_name">Таксі Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -10,10 +10,11 @@
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Таксі Украина заказ онлайн Лайт</string>
+    <string name="nav_header_title">Таксі Україна замовлення онлайн Лайт</string>
     <string name="nav_header_subtitle">Швидкі поїздки по містам України</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Налаштування</string>
+
 
     <string name="menu_maps">Мапа</string>
     <string name="menu_home">За адресою</string>
@@ -59,7 +60,7 @@
     <string name="firebase_false_message">грн. Вибачте, без перевірки Google-акаунту замовлення не можливе.</string>
     <string name="UAH">грн</string>
     <string name="order">Замовити</string>
-    <string name="thanks_message">"Дякуємо за замовлення "</string>
+    <string name="thanks_message">"Дякуємо за замовлення від "</string>
     <string name="call_of_order">" Очікуйте дзвінка оператора. Вартість поїздки: "</string>
     <string name="next_try">" Спробуйте ще або зателефонуйте оператору."</string>
     <string name="help">Підтримка</string>
@@ -88,8 +89,7 @@
     <string name="make_order_message">Здійсніть хоча б одну поїздку</string>
     <string name="to_adress_message">Куди їдемо?</string>
     <string name="coastMarkersMessage">"Вартість подорожі по маршруту "</string>
-    <string name="please_phone_message">Ця програма передає номер Вашого мобільного телефону для увімкнення функції замовлення таксі. Без інформації про номер телефону замовлення таксі неможливе. Введіть номер телефону та натисніть кнопку ЗБЕРІГТИ Ви підтверджуєте згоду на передачу номера Вашого телефону диспетчеру для пошуку автомобіля та збереження його для наступних замовлень таксі.</string>
-    <string name="check_message">Чекайте, йде підключення.</string>
+    <string name="please_phone_message">Додаток передає номер Вашого мобільного телефону для включення функції замовлення таксі. Натиснувши кнопку Зберегти Ви підтверджуєте згоду на передачу номера телефону диспетчеру для пошуку автомобіля та збереження його для наступних замовлень.</string><string name="check_message">Чекайте, йде підключення.</string>
     <string name="find_of_map">Спробуйте знайти на карті</string>
     <string name="end_point_marker">Місце призначення</string>
     <string name="error_firebase_start">Помилка перевірки. Наберіть оператора.</string>
@@ -152,8 +152,8 @@
     <string name="city">Місто</string>
     <string name="change_message">"Зміна бази адрес."</string>
     <string name="server_error_connected">Сервер не прийняв запит, наберіть операторів</string>
-    <string name="GspR">Користувач погоджується з Правилами конфіденційності Загального регламенту захисту персональних даних (GspR) ЄС та усвідомлює, що введення інформації про телефон є обов\'язковим для замовлення таксі.</string>
-    <string name="ok_gspr">Погодитись</string>
+    <string name="GDPR"></string>
+    <string name="ok_GDPR">Погодитись</string>
     <string name="Dnipro_city">Дніпро</string>
     <string name="city_change">Виберіть місто</string>
     <string name="Zaporizhzhia">Запоріжжя</string>
@@ -178,4 +178,54 @@
     <string name="on_geo_loc_mes">Для роботи з карткою дозвольте доступ до програми для визначення Вашого розташування</string>
     <string name="OK">Ок</string>
     <string name="to_marker_mes">Позначте маркером на карті місце висадки</string>
+    <string name="set_marker">Відзначити по мапі</string>
+    <string name="uid_menu">Історія замовлень</string>
+    <string name="close_resone_def">Уточнить у диспетчера</string>
+    <string name="close_resone_in_work">В обробці</string>
+    <string name="close_resone_0">Виконаний</string>
+    <string name="close_resone_1">Знятий клієнтом</string>
+    <string name="close_resone_2">Не виконано</string>
+    <string name="close_resone_3">Не виконано</string>
+    <string name="close_resone_4">Не виконано</string>
+    <string name="close_resone_5">Не виконано</string>
+    <string name="close_resone_6">Знятий клієнтом</string>
+    <string name="close_resone_7">Знятий клієнтом</string>
+    <string name="close_resone_8">Виконаний</string>
+    <string name="close_resone_9">Знятий клієнтом</string>
+    <string name="close_resone_from">"Від "</string>
+    <string name="close_resone_to">" до "</string>
+    <string name="close_resone_cost">", вартість: "</string>
+    <string name="close_resone_time">", время заказу: "</string>
+    <string name="close_resone_text">", стан: "</string>
+    <string name="startPoint">Місце посадки</string>
+    <string name="my_bonus">"Доступно бонусів: "</string>
+    <string name="add_bonus">"Вам нараховано"</string>
+    <string name="bonus">"бонусів"</string>
+    <string name="sent_bonus">Використовувати</string>
+    <string name="no_bonus">У Вас немає доступних бонусів</string>
+    <string name="btn_bonus">Спосіб оплати</string>
+    <string name="nobonuspayment">Недостатньо бонусів. Оплата готівкою.</string>
+    <string name="nal_payment">Готівкою</string>
+    <string name="bonus_payment">Бонуси</string>
+    <string name="def_status">Уточніть у диспетчера</string>
+    <string name="block_mes">Заблоковано</string>
+    <string name="bon">бонусів</string>
+    <string name="my_bonus_menu">Мої бонуси</string>
+    <string name="update_bonus">отримати бонуси</string>
+    <string name="upd_bonus_info">Оновіть інформацію про ваші бонуси</string>
+    <string name="bonus_text_0">Не забудьте забрати бонус за наступні сутки.</string>
+    <string name="bonus_text_1">Правила нарахування бонусів:</string>
+    <string name="bonus_text_2">- Реєстрація в додатку - 1 бонус;</string>
+    <string name="bonus_text_3">- Перше замовлення - 1 бонус;</string>
+    <string name="bonus_text_4">- Виконаний маршрут - 1 бонус за кожну 1 цілу гривню із суми виконання;</string>
+    <string name="bonus_text_5">- Вхід до додатку  - 1 бонус нараховується не більше 1 разу на добу.</string>
+    <string name="bonus_text_6">Бонуси можна використовувати при замовленні поїздок за умови можливості такого сервісу у вибраній Вами базі адрес, а також якщо вартість поїздки повністю покривається доступними бонусами з розрахунку 100 бонусів = 1 грн.</string>
+    <string name="bonus_text_7">Для отримання актуальної інформації та нарахування бонусів - натисніть кнопку - ОТРИМАТИ БОНУСИ</string>
+    <string name="payment_type_ok">Застосувати вибір</string>
+    <string name="bonus_upd_mes">Інформацію про кількість бонусів оновлено</string>
+    <string name="start_point_text">Місце відправлення</string>
+    <string name="order_after_phone">"Для замовлення натисніть кнопку "</string>
+    <string name="clear_home">Очистити поля</string>
+    <string name="google_payment">Google Pay</string>
+
 </resources>

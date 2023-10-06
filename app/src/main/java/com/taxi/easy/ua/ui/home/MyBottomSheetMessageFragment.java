@@ -31,17 +31,17 @@ import java.util.List;
 public class MyBottomSheetMessageFragment extends BottomSheetDialogFragment {
     TextView textViewInfo;
     AppCompatButton btn_help;
-    String errorMessage;
+    String message;
 
-    public MyBottomSheetMessageFragment(String errorMessage) {
-        this.errorMessage = errorMessage;
+    public MyBottomSheetMessageFragment(String message) {
+        this.message = message;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.error_list_layout, container, false);
+        View view = inflater.inflate(R.layout.message_list_layout, container, false);
 
         btn_help = view.findViewById(R.id.btn_help);
         btn_help.setOnClickListener(new View.OnClickListener() {
@@ -75,7 +75,7 @@ public class MyBottomSheetMessageFragment extends BottomSheetDialogFragment {
             }
         });
         textViewInfo = view.findViewById(R.id.textViewInfo);
-        textViewInfo.setText(errorMessage);
+        textViewInfo.setText(message);
 
         return view;
     }

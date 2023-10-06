@@ -1,6 +1,6 @@
 <resources>
-    <string name="version_code">1.706</string>
-    <string name="version">Версия: 1.706</string>
+    <string name="version_code">1.707</string>
+    <string name="version">Версия: 1.707</string>
 
     <string name="app_name">Такси Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -32,7 +32,7 @@
     <string name="action_exit">Выход</string>
     <string name="delete_record">удалить?</string>
     <string name="make_rout">Создать маршрут</string>
-    <string name="call_admin">Вызов оператору</string>
+    <string name="call_admin">Вызов оператора</string>
     <string name="email_friend">Рассказать другу</string>
     <!-- <string name="default_web_client_id">356539267738-5bs72asrar11ud7ckcis68ophlnm3gfj.apps.googleusercontent.com</string>-->
     <!--  <string name="default_web_client_id">356539267738-0v3d1nsci9g7fij8cemnlid7cfalvdo2.apps.googleusercontent.com</string>-->
@@ -59,7 +59,7 @@
     <string name="firebase_false_message">грн. Извините, без проверки Google-аккаунта заказ невозможен.</string>
     <string name="UAH">грн</string>
     <string name="order">Заказать</string>
-    <string name="thanks_message">"Спасибо за заказ "</string>
+    <string name="thanks_message">"Спасибо за заказ от "</string>
     <string name="call_of_order">" Ожидайте звонка оператора. Стоимость поездки: "</string>
     <string name="next_try">" Попробуйте еще или позвоните оператору."</string>
     <string name="help">Поддержка</string>
@@ -88,7 +88,7 @@
     <string name="make_order_message">Совершите хотя бы одну поездку</string>
     <string name="to_adress_message">Куда едем?</string>
     <string name="coastMarkersMessage">"Стоимость поездки по маршруту "</string>
-    <string name="please_phone_message">Это приложение  передает номер Вашего мобильного телефона для включения функции заказа такси. Без информации о номере телефона заказ такси невозможен. Введя номер телефона и нажав кнопку СОХРАНИТЬ Вы подтверждаете согласие на передачу номера Вашего телефона диспетчеру для поиска автомобиля и сохранение его для следующих заказов такси.</string>
+    <string name="please_phone_message">Это приложение  передает номер Вашего мобильного телефона для включения функции заказа такси. Нажав кнопку СОХРАНИТЬ Вы подтверждаете согласие на передачу номера Вашего телефона диспетчеру для поиска автомобиля и сохранение его для следующих заказов.</string>
     <string name="check_message">Ожидайте, идет подключение...</string>
     <string name="find_of_map">Попробуйте найти на карте</string>
     <string name="end_point_marker">Место назначения</string>
@@ -152,8 +152,8 @@
     <string name="city">Город</string>
     <string name="change_message">"Смена базы адресов. "</string>
     <string name="server_error_connected">Сервер не принял запрос, наберите операторов</string>
-    <string name="GspR">Пользователь соглашается с Правилами конфеденциальности Общего регламента защиты персональных данных (GspR) ЕС и осознает, что ввод информации о телефоне является обязательным для заказа такси.</string>
-    <string name="ok_gspr">Согласиться</string>
+    <string name="GDPR"> </string>
+    <string name="ok_GDPR">Согласиться</string>
     <string name="Dnipro_city">Днепр</string>
     <string name="city_change">Выберите город</string>
     <string name="Zaporizhzhia">Запорожье</string>
@@ -178,5 +178,53 @@
     <string name="on_geo_loc_mes">Для работы с картой разрешите доступ приложению к определнию Вашего местоположения</string>
     <string name="OK">Ок</string>
     <string name="to_marker_mes">Отметьте маркером на карте место высадки</string>
-
+    <string name="set_marker">Отметить на карте</string>
+    <string name="uid_menu">История заказов</string>
+    <string name="close_resone_def">Уточните у диспетчера</string>
+    <string name="close_resone_in_work">В обработке</string>
+    <string name="close_resone_0">Выполнен</string>
+    <string name="close_resone_1">Снят клиентом </string>
+    <string name="close_resone_2">Не выполнено</string>
+    <string name="close_resone_3">Не выполнено </string>
+    <string name="close_resone_4">Не выполнено </string>
+    <string name="close_resone_5">Не выполнено</string>
+    <string name="close_resone_6">Снят клиентом</string>
+    <string name="close_resone_7">Снят клиентом</string>
+    <string name="close_resone_8">Выполнен</string>
+    <string name="close_resone_9">Снят клиентом</string>
+    <string name="close_resone_from">"От "</string>
+    <string name="close_resone_to">" до: "</string>
+    <string name="close_resone_cost">", стоимость: "</string>
+    <string name="close_resone_time">", время заказа: "</string>
+    <string name="close_resone_text">", состояние: "</string>
+    <string name="startPoint">Место посадки</string>
+    <string name="my_bonus">"Доступно бонусов: "</string>
+    <string name="add_bonus">"Вам начислено "</string>
+    <string name="bonus">" бонусов"</string>
+    <string name="sent_bonus">Использовать</string>
+    <string name="no_bonus">У Вас нет доступных бонусов</string>
+    <string name="btn_bonus">Способ оплаты</string>
+    <string name="nobonuspayment">Недостаточно бонусов. Оплата наличными.</string>
+    <string name="nal_payment">Наличными</string>
+    <string name="bonus_payment">Бонусы</string>
+    <string name="def_status">Уточните у диспетчера</string>
+    <string name="block_mes">Заблокировано </string>
+    <string name="bon"> бонусов</string>
+    <string name="my_bonus_menu">Мои бонусы</string>
+    <string name="update_bonus">получить бонусы</string>
+    <string name="upd_bonus_info">Обновите информацию о ваших бонусах</string>
+    <string name="bonus_text_0"> Не забудьте забрать бонус за следующие сутки.</string>
+    <string name="bonus_text_1">Правила начисления бонусов:</string>
+    <string name="bonus_text_2">- Регистрация в приложении - 1 бонус;</string>
+    <string name="bonus_text_3">- Первый заказ - 1 бонус;</string>
+    <string name="bonus_text_4">- Выполненный маршрут - 1 бонус за каждую 1 целую гривну из суммы выполнения;</string>
+    <string name="bonus_text_5">- Вход в приложение – 1 бонус начисляется не более 1 раза в сутки.</string>
+    <string name="bonus_text_6">Бонусы можно использовать при заказе поездок при условии возможности такого сервиса в выбранной Вами базе адресов, а также если стоимость поездки полностью покрывается доступными бонусами из расчета 100 бонусов = 1 грн.</string>
+    <string name="bonus_text_7">Для получения актуальной информации и начисления бонусов - нажмите кнопку - ПОЛУЧИТЬ БОНУСЫ</string>
+    <string name="payment_type_ok">Применить выбор</string>
+    <string name="bonus_upd_mes">Информация о количестве бонусов обновлена</string>
+    <string name="start_point_text">Точка посадки</string>
+    <string name="order_after_phone">"Для заказа нажмите кнопку "</string>
+    <string name="clear_home">Очистить поля</string>
+    <string name="google_payment">Google Pay</string>
 </resources>

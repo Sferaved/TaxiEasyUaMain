@@ -11,25 +11,27 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.cities.Odessa.OdessaTest;
 import com.taxi.easy.ua.ui.home.MyBottomSheetBlackListFragment;
+import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -37,11 +39,16 @@ import java.util.Map;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class FinishActivity extends AppCompatActivity {
     private TextView text_status;
     String api;
     String baseUrl = "https://m.easy-order-taxi.site";
+    Map<String, String> receivedMap;
+    String UID_key;
+    Thread thread;
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,11 +80,14 @@ public class FinishActivity extends AppCompatActivity {
                 break;
         }
         String parameterValue = getIntent().getStringExtra("messageResult_key");
+        String parameterCost = getIntent().getStringExtra("messageCost_key");
+        receivedMap = (HashMap<String, String>) getIntent().getSerializableExtra("sendUrlMap");
 
+        Log.d("TAG", "onCreate: receivedMap" + receivedMap.toString());
         TextView text_full_message = findViewById(R.id.text_full_message);
         text_full_message.setText(parameterValue);
 
-        String UID_key = getIntent().getStringExtra("UID_key");
+        UID_key = getIntent().getStringExtra("UID_key");
 
         text_status = findViewById(R.id.text_status);
         statusOrderWithDifferentValue(UID_key);
@@ -90,17 +100,45 @@ public class FinishActivity extends AppCompatActivity {
                 if(connected()){
                     statusOrderWithDifferentValue(UID_key);
                 } else {
-                    Toast.makeText(getApplicationContext(), getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
             }
         });
 
         Button btn_cancel_order = findViewById(R.id.btn_cancel_order);
+        long delayMillis = 5 * 60 * 1000;
+
+        Handler handler = new Handler();
+
+        List<String> stringList = logCursor(MainActivity.TABLE_SETTINGS_INFO);
+        String bonusPayment =  stringList.get(4);
+
+         if (bonusPayment.equals("bonus_payment")) {
+             String baseUrl = "https://m.easy-order-taxi.site";
+             String url = baseUrl + "/bonusBalance/recordsBloke/" + UID_key;
+             Log.d("TAG", "onCreate: doubleOrder):  " +receivedMap.get("doubleOrder") );
+
+
+             fetchBonus(url);
+             handler.postDelayed(new Runnable() {
+                 @Override
+                 public void run() {
+                     btn_cancel_order.setVisibility(View.INVISIBLE);
+                 }
+             }, delayMillis);
+         }
         btn_cancel_order.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if(connected()){
                     cancelOrderWithDifferentValue(UID_key);
+                    if(!receivedMap.get("dispatching_order_uid_Double").equals(" ")) {
+                        cancelOrderWithDifferentValue(receivedMap.get("dispatching_order_uid_Double"));
+                    }
+                    if (thread != null && thread.isAlive()) {
+                        thread.interrupt();
+                    }
                 } else {
                     text_status.setText(R.string.verify_internet);
                 }
@@ -118,7 +156,8 @@ public class FinishActivity extends AppCompatActivity {
                     if(connected()){
                         startActivity(new Intent(getApplicationContext(), MainActivity.class));
                     } else {
-                        Toast.makeText(getApplicationContext(), getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                     }
                 }
             }
@@ -164,6 +203,82 @@ public class FinishActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        List<String> stringList = logCursor(MainActivity.TABLE_SETTINGS_INFO);
+        String bonusPayment =  stringList.get(4);
+        if (bonusPayment.equals("bonus_payment")) {
+           thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    // Здесь вызывайте вашу функцию fetchCarFound()
+                    fetchCarFound();
+                }
+            });
+           thread.start();
+        }
+    }
+
+    private void fetchBonus(String url) {
+
+        Call<BonusResponse> call = ApiClient.getApiService().getBonus(url);
+        Log.d("TAG", "fetchBonus: " + url);
+        call.enqueue(new Callback<BonusResponse>() {
+            @Override
+            public void onResponse(Call<BonusResponse> call, Response<BonusResponse> response) {
+                BonusResponse bonusResponse = response.body();
+                if (response.isSuccessful()) {
+
+                    String bonus = String.valueOf(bonusResponse.getBonus());
+                    String message = getString(R.string.block_mes) + " " + bonus + " " + getString(R.string.bon);
+
+                    MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
+                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+
+                } else {
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<BonusResponse> call, Throwable t) {
+                // Обработка ошибок сети или других ошибок
+                String errorMessage = t.getMessage();
+                t.printStackTrace();
+                // Дополнительная обработка ошибки
+            }
+        });
+    }
+    private void fetchCarFound() {
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl) // Замените BASE_URL на ваш базовый URL сервера
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+// Создайте экземпляр ApiService
+        ApiService apiService = retrofit.create(ApiService.class);
+
+// Вызов метода startNewProcessExecutionStatus с передачей параметров
+        Call<Void> call = apiService.startNewProcessExecutionStatus(
+                receivedMap.get("doubleOrder")
+        );
+        String url = call.request().url().toString();
+        Log.d("TAG", "URL запроса: " + url);
+        call.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                // Обработайте ошибку при выполнении запроса
+            }
+        });
+
+    }
 
     private boolean verifyOrder() {
         SQLiteDatabase database = this.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -173,7 +288,7 @@ public class FinishActivity extends AppCompatActivity {
         if (cursor.getCount() == 1) {
 
             if (logCursor(MainActivity.TABLE_USER_INFO).get(1).equals("0")) {
-                verify = false;Log.d("TAG", "verifyOrder:verify " +verify);
+                verify = false;
             }
             cursor.close();
         }
@@ -227,15 +342,17 @@ public class FinishActivity extends AppCompatActivity {
 
         String url = baseUrl + "/" + api + "/android/webordersCancel/" + value;
         Call<Status> call = ApiClient.getApiService().cancelOrder(url);
-//        Log.d("TAG", "cancelOrderWithDifferentValue cancelOrderUrl: " + url);
+        Log.d("TAG", "cancelOrderWithDifferentValue cancelOrderUrl: " + url);
         call.enqueue(new Callback<Status>() {
             @Override
             public void onResponse(Call<Status> call, Response<Status> response) {
                 if (response.isSuccessful()) {
                     Status status = response.body();
                     if (status != null) {
-                        String result = status.getResponse();
+                        String result =  String.valueOf(status.getResponse());
                         text_status.setText(result); // Установите текстовое значение в text_status
+                    } else {
+                        text_status.setText(R.string.verify_internet);
                     }
                 } else {
                     // Обработка неуспешного ответа
@@ -308,20 +425,20 @@ public class FinishActivity extends AppCompatActivity {
                             message = messageBuilder.toString();
                             break;
                         default:
-                            message = getString(R.string.ex_st_0);
+                            message = getString(R.string.def_status);
                             break;
                     }
 
                     text_status.setText(message);
 
                 } else {
-                    text_status.setText(getString(R.string.ex_st_0));
+                    text_status.setText(getString(R.string.def_status));
                 }
             }
 
             @Override
             public void onFailure(Call<OrderResponse> call, Throwable t) {
-                text_status.setText(getString(R.string.ex_st_0));
+                text_status.setText(getString(R.string.def_status));
             }
         });
     }
@@ -349,7 +466,7 @@ public class FinishActivity extends AppCompatActivity {
         protected Map<String, String> doInBackground(Void... voids) {
             String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
 
-            String url = "https://m.easy-order-taxi.site/" + MainActivity.apiKyiv  + "/android/verifyBlackListUser/" + userEmail;
+            String url = "https://m.easy-order-taxi.site/android/verifyBlackListUser/" + userEmail + "/" + "com.taxi.easy.ua";
             try {
                 return CostJSONParser.sendURL(url);
             } catch (Exception e) {

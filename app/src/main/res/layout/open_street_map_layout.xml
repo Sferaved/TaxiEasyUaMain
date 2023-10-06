@@ -10,8 +10,8 @@
         android:id="@+id/map"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:layout_editor_absoluteX="30sp"
-        tools:layout_editor_absoluteY="41sp">
+        tools:layout_editor_absoluteX="-8dp"
+        tools:layout_editor_absoluteY="0dp">
 
 
     </org.osmdroid.views.MapView>
@@ -21,8 +21,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginStart="8sp"
+
         android:layout_marginTop="8sp"
+        android:layout_marginStart="8sp"
         android:contentDescription="@string/make_rout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -49,7 +50,7 @@
         android:layout_height="wrap_content"
         android:text="GPS"
         android:layout_marginBottom="20sp"
-        app:layout_constraintBottom_toTopOf="@+id/fab_open_map"
+        app:layout_constraintBottom_toTopOf="@+id/fab_open_marker"
         app:layout_constraintEnd_toEndOf="parent" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -57,14 +58,26 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginBottom="140sp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="10sp"
+        android:contentDescription="@string/open_maps"
+        app:layout_constraintBottom_toTopOf="@+id/fab_call"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.954"
         app:layout_constraintStart_toStartOf="parent"
-        android:contentDescription="@string/open_maps"
         app:srcCompat="@android:drawable/ic_media_play" />
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_open_marker"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="10sp"
+        android:contentDescription="@string/open_maps"
+        app:layout_constraintBottom_toTopOf="@+id/fab_open_map"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.954"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@android:drawable/ic_menu_set_as" />
 
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -72,7 +85,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginBottom="70sp"
+
+        android:layout_marginBottom="30sp"
         android:contentDescription="@string/call_admin"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

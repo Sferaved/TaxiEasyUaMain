@@ -16,6 +16,14 @@
             android:id="@+id/nav_gallery"
             android:icon="@drawable/ic_menu_gallery"
             android:title="@string/menu_gallery" />
+        <item
+            android:id="@+id/nav_uid"
+            android:icon="@drawable/ic_menu_gallery"
+            android:title="@string/uid_menu" />
+        <item
+            android:id="@+id/nav_bonus"
+            android:icon="@drawable/ic_menu_gallery"
+            android:title="@string/my_bonus_menu" />
 
          <item
             android:id="@+id/nav_about"

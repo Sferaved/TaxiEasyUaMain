@@ -25,4 +25,5 @@
     <color name="light_blue_A400">#FF00B0FF</color>
     <color name="black_overlay">#66000000</color>
     <color name="edit">#689194</color>
+    <color name="disabledText">#888888</color>
 </resources>
