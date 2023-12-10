@@ -3,8 +3,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/nav_home">
+    app:startDestination="@+id/nav_visicom">
 
+    <fragment
+        android:id="@+id/nav_visicom"
+        android:name="com.taxi.easy.ua.ui.visicom.VisicomFragment"
+        android:label="@string/main_page"
+        tools:layout="@layout/fragment_visicom" />
     <fragment
         android:id="@+id/nav_home"
         android:name="com.taxi.easy.ua.ui.home.HomeFragment"
@@ -15,6 +20,7 @@
         android:name="com.taxi.easy.ua.ui.gallery.GalleryFragment"
         android:label="@string/menu_gallery"
         tools:layout="@layout/fragment_gallery" />
+
     <fragment
         android:id="@+id/nav_uid"
         android:name="com.taxi.easy.ua.ui.uid.UIDFragment"
@@ -25,6 +31,12 @@
         android:name="com.taxi.easy.ua.ui.bonus.BonusFragment"
         android:label="@string/my_bonus_menu"
         tools:layout="@layout/fragment_bonus" />
+
+    <fragment
+        android:id="@+id/nav_card"
+        android:name="com.taxi.easy.ua.ui.card.CardFragment"
+        android:label="@string/my_card_pay"
+        tools:layout="@layout/fragment_card" />
 
     <fragment
         android:id="@+id/nav_about"

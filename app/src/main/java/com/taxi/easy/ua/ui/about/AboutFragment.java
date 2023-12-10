@@ -4,6 +4,9 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,7 +30,26 @@ public class AboutFragment extends Fragment {
 
         binding = FragmentAboutBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
+        TextView textSite = binding.textSite;
 
+        // Текст, который вы хотите отображать
+        String displayText = getString(R.string.my_site);
+
+        final String url = "https://play.google.com/store/apps/dev?id=8830024160014473355";
+
+        SpannableString spannableString = new SpannableString(displayText);
+        ClickableSpan clickableSpan = new ClickableSpan() {
+            @Override
+            public void onClick(View widget) {
+                // Обработка нажатия на ссылку
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                startActivity(intent);
+            }
+        };
+        spannableString.setSpan(clickableSpan, 0, displayText.length(), SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        textSite.setText(spannableString);
+        textSite.setMovementMethod(LinkMovementMethod.getInstance());
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @SuppressLint("IntentReset")
             @Override
@@ -55,12 +77,10 @@ public class AboutFragment extends Fragment {
 
 
         final TextView textViewAuthor = binding.textAuthor;
-        final TextView textViewSite = binding.textSite;
         final TextView textViewEmail = binding.textEmail;
         final TextView textViewBuild = binding.textBuild;
 
         aboutViewModel.getTextAuthor().observe(getViewLifecycleOwner(), textViewAuthor::setText);
-        aboutViewModel.getTextSite().observe(getViewLifecycleOwner(), textViewSite::setText);
         aboutViewModel.getTextEmail().observe(getViewLifecycleOwner(), textViewEmail::setText);
         aboutViewModel.getTextBuild().observe(getViewLifecycleOwner(), textViewBuild::setText);
 

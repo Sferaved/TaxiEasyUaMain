@@ -276,7 +276,7 @@
         android:text="@string/btn_cost"
 
         android:textAlignment="center"
-        android:textColor="#D9D9D9"
+        android:textColor="@color/colorAccent"
         android:textSize="16sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

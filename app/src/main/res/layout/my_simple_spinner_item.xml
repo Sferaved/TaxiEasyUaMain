@@ -7,6 +7,7 @@
     android:fontFamily="@font/regular"
     android:gravity="center_horizontal"
     android:textColor="@color/white"
+
     android:textSize="22sp"
     android:background="#689194"
     android:singleLine="true"

@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color_new"
+    tools:context=".ui.home.HomeFragment">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            android:layout_width="48sp"
+            android:layout_height="48sp"
+
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toStartOf="@+id/gpsbut"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/gpsbut"
+            android:layout_width="55sp"
+            android:layout_height="45sp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/buttons"
+            android:fontFamily="@font/regular"
+            android:insetLeft="0sp"
+            android:insetTop="0sp"
+            android:insetRight="0sp"
+            android:insetBottom="0sp"
+            android:text="@string/gps"
+            android:textAlignment="center"
+            android:textColor="#D9D9D9"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnGeo"
+            android:layout_width="293sp"
+            android:layout_height="45sp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/buttons"
+            android:fontFamily="@font/regular"
+            android:text="@string/btn_geo_text"
+            android:textAlignment="center"
+            android:textColor="#D9D9D9"
+            android:visibility="gone"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/num1"
+            android:layout_width="11dp"
+            android:layout_height="18dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:fontFamily="@font/regular"
+            android:text="1"
+            android:textColor="#D9D9D9"
+            android:textSize="14sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textfrom" />
+
+        <TextView
+            android:id="@+id/textGeo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:background="@drawable/input"
+            android:ems="10"
+            android:visibility="invisible"
+            android:minHeight="48sp"
+            android:fontFamily="@font/light"
+            android:hint="@string/Street_hint"
+            android:textColor="@color/white"
+            android:textColorHint="#ABD9D9D9"
+            android:textSize="18sp"
+            app:layout_constraintStart_toEndOf="@+id/num1"
+            app:layout_constraintTop_toBottomOf="@+id/textfrom"
+            tools:ignore="MissingConstraints" />
+
+        <ImageButton
+            android:id="@+id/btn_clear_from"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/buttons"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_clear_24dp"
+            android:visibility="invisible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.109"
+            app:layout_constraintStart_toEndOf="@+id/textGeo"
+            app:layout_constraintTop_toBottomOf="@+id/textfrom" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_clear_from_text"
+            android:layout_width="200sp"
+            android:layout_height="48sp"
+
+
+            android:layout_marginTop="8dp"
+            android:background="@drawable/buttons"
+            android:scaleType="centerInside"
+            android:textColor="@color/white"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.139"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textfrom" />
+
+        <TextView
+            android:id="@+id/num2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:fontFamily="@font/regular"
+            android:text="2"
+            android:textColor="#D9D9D9"
+            android:textSize="14sp"
+            android:visibility="invisible"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textwhere"
+            tools:ignore="MissingConstraints" />
+
+
+        <TextView
+            android:id="@+id/text_to"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:background="@drawable/input"
+            android:ems="10"
+            android:fontFamily="@font/light"
+            android:hint="@string/Street_hint"
+            android:minHeight="48sp"
+            android:textColor="@color/white"
+            android:textColorHint="#ABD9D9D9"
+            android:textSize="18sp"
+            android:visibility="invisible"
+            app:layout_constraintStart_toEndOf="@+id/num2"
+            app:layout_constraintTop_toBottomOf="@+id/textwhere"
+            tools:ignore="MissingConstraints" />
+
+
+        <ImageButton
+            android:id="@+id/btn_clear_to"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/buttons"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_clear_24dp"
+            android:visibility="invisible"
+
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.179"
+            app:layout_constraintStart_toEndOf="@+id/text_to"
+            app:layout_constraintTop_toBottomOf="@+id/textwhere" />
+
+        <TextView
+            android:id="@+id/textfrom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="32dp"
+            android:fontFamily="@font/light"
+            android:text="@string/from_text"
+            android:textColor="#9DA0A8"
+            android:textSize="14sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/change"
+            android:layout_width="200sp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/buttons"
+            android:text="@string/change"
+            android:visibility="gone"
+            android:textColor="#D9D9D9"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.139"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textGeo" />
+
+        <TextView
+            android:id="@+id/textwhere"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="12dp"
+            android:fontFamily="@font/light"
+            android:text="@string/to_edit"
+            android:textColor="#9DA0A8"
+            android:textSize="14sp"
+            android:visibility="invisible"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/change" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnAdd"
+            android:layout_width="293sp"
+            android:layout_height="wrap_content"
+
+            android:layout_marginTop="8dp"
+            android:background="@drawable/buttons"
+
+            android:fontFamily="@font/regular"
+            android:text="@string/add_services"
+            android:textAlignment="center"
+            android:textColor="#D9D9D9"
+            android:visibility="invisible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_to" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnBonus"
+            android:layout_width="293sp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/buttons"
+            android:fontFamily="@font/regular"
+            android:text="@string/btn_bonus"
+            android:textAlignment="center"
+
+            android:textColor="#D9D9D9"
+            android:visibility="invisible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btnAdd" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_minus"
+            android:layout_width="60sp"
+            android:layout_height="60sp"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:text="-"
+            android:textSize="30sp"
+            android:visibility="invisible"
+            app:layout_constraintEnd_toStartOf="@+id/text_view_cost"
+            app:layout_constraintHorizontal_bias="0.79"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btnBonus" />
+
+        <TextView
+            android:id="@+id/text_view_cost"
+            android:layout_width="100sp"
+            android:layout_height="60sp"
+            android:layout_margin="@dimen/activity_vertical_margin"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/input"
+            android:ems="10"
+            android:fontFamily="@font/light"
+            android:gravity="center"
+            android:textColor="@color/white"
+            android:textSize="25sp"
+            android:visibility="invisible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.498"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btnBonus"
+            tools:ignore="MissingConstraints" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_plus"
+            android:layout_width="60sp"
+            android:layout_height="60sp"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="@color/colorAccent"
+            android:gravity="center"
+            android:text="+"
+            android:textSize="30sp"
+            android:visibility="invisible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.16"
+            app:layout_constraintStart_toEndOf="@+id/text_view_cost"
+            app:layout_constraintTop_toBottomOf="@+id/btnBonus"
+            tools:ignore="MissingConstraints" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnOrder"
+            android:layout_width="293sp"
+            android:layout_height="45sp"
+            android:layout_marginTop="12sp"
+            android:layout_marginBottom="12sp"
+            android:background="@drawable/buttons"
+            android:fontFamily="@font/regular"
+            android:insetLeft="0sp"
+            android:insetTop="0sp"
+            android:insetRight="0sp"
+            android:insetBottom="0sp"
+            android:text="@string/btn_cost"
+            android:textAlignment="center"
+            android:textColor="@color/colorAccent"
+            android:textSize="16sp"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_view_cost"
+            app:layout_constraintVertical_bias="0.0" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_call"
+            android:layout_width="52sp"
+            android:layout_height="139sp"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="4dp"
+            android:layout_marginTop="8dp"
+            android:contentDescription="@string/call_admin"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.976"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btnOrder"
+            app:srcCompat="@android:drawable/stat_sys_phone_call_forward" />
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guideline4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_end="488sp" />
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>

@@ -1,0 +1,90 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color_new"
+    tools:context=".ui.uid.UIDFragment">
+
+
+    <TextView
+        android:id="@+id/text_bonus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8sp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="8sp"
+        android:fontFamily="@font/regular"
+
+        android:minHeight="30sp"
+
+        android:textAlignment="center"
+        android:textColor="@color/white"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="RtlCompat" />
+
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnBonus"
+        tools:ignore="MissingConstraints" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnSum"
+        android:layout_width="293sp"
+        android:layout_height="45sp"
+        android:layout_marginTop="8sp"
+        android:background="@drawable/buttons"
+        android:fontFamily="@font/regular"
+        android:text="@string/update_count"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+
+        android:textSize="15sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text_bonus" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnPay"
+        android:layout_width="293sp"
+        android:layout_height="45sp"
+        android:layout_marginTop="8sp"
+        android:background="@drawable/buttons"
+        android:fontFamily="@font/regular"
+        android:text="@string/pay_count"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+
+        android:textSize="15sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnSum" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnOrder"
+        android:layout_width="293sp"
+        android:layout_height="45sp"
+        android:layout_marginTop="8sp"
+        android:background="@drawable/buttons"
+        android:fontFamily="@font/regular"
+
+        android:text="@string/order"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        android:textSize="15sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnPay" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

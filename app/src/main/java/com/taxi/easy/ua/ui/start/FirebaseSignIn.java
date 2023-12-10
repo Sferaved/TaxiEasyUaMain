@@ -259,14 +259,8 @@ public class FirebaseSignIn extends AppCompatActivity {
         }
     }
 
-    // Интерфейс колбэка
-    public interface LocationServiceCallback {
-        void onLocationServiceResult(boolean isEnabled) throws MalformedURLException;
-    }
-
-
     private void addUser(String displayName, String userEmail) {
-        String urlString = "https://m.easy-order-taxi.site/" + MainActivity.apiKyiv + "/android/addUser/" + displayName + "/" + userEmail;
+        String urlString = "https://m.easy-order-taxi.site/" + MainActivity.api + "/android/addUser/" + displayName + "/" + userEmail;
 
         Callable<Void> addUserCallable = () -> {
             URL url = new URL(urlString);

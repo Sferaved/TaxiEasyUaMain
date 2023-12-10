@@ -47,28 +47,9 @@ public class StopActivity extends Activity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(Intent.ACTION_DIAL);
-                String phone;
+
                 List<String> stringList = logCursor(MainActivity.CITY_INFO);
-                switch (stringList.get(1)){
-                    case "Kyiv City":
-                        phone = "tel:0674443804";
-                        break;
-                    case "Dnipropetrovsk Oblast":
-                        phone = "tel:0667257070";
-                        break;
-                    case "Odessa":
-                        phone = "tel:0737257070";
-                        break;
-                    case "Zaporizhzhia":
-                        phone = "tel:0687257070";
-                        break;
-                    case "Cherkasy Oblast":
-                        phone = "tel:0962294243";
-                        break;
-                    default:
-                        phone = "tel:0674443804";
-                        break;
-                }
+                String phone = stringList.get(3);
                 intent.setData(Uri.parse(phone));
                 startActivity(intent);
             }

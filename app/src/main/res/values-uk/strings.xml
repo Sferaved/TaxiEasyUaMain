@@ -1,6 +1,8 @@
 <resources>
-    <string name="version_code">1.707</string>
-    <string name="version">Версія: 1.707</string>
+    <string name="application">PAS1</string>
+
+    <string name="version_code">1.708</string>
+    <string name="version">Версія: 1.708</string>
 
     <string name="app_name">Таксі Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -14,7 +16,6 @@
     <string name="nav_header_subtitle">Швидкі поїздки по містам України</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Налаштування</string>
-
 
     <string name="menu_maps">Мапа</string>
     <string name="menu_home">За адресою</string>
@@ -39,7 +40,7 @@
     <!--<string name="default_web_client_id">356539267738-0v3d1nsci9g7fij8cemnlid7cfalvdo2.apps.googleusercontent.com</string>-->
     <string name="my_phone">Мій телефон</string>
     <string name="open_maps">Замовити по мапе</string>
-    <string name="driver">Робота водієм</string>
+    <string name="driver">Робота водієм (реклама)</string>
     <string name="send_email">Поділитися</string>
     <string name="gps_ok">У Вас все добре</string>
     <string name="cancel_button">Ні, дякую</string>
@@ -54,7 +55,7 @@
     <string name="save_button">Зберегти</string>
     <string name="you_this">"Ви зараз тут: "</string>
     <string name="make_rout_message">Сформуйте маршрут</string>
-    <string name="error_message">"Помілка: "</string>
+    <string name="error_message">Відбулася помилка.</string>
     <string name="to_point">"Місце призначення: "</string>
     <string name="cost_of_order">" Вартість поїздки: "</string>
     <string name="firebase_false_message">грн. Вибачте, без перевірки Google-акаунту замовлення не можливе.</string>
@@ -65,7 +66,7 @@
     <string name="next_try">" Спробуйте ще або зателефонуйте оператору."</string>
     <string name="help">Підтримка</string>
     <string name="show_to_point">Вкажіть місце призначення</string>
-    <string name="change">ЗМІНИТИ</string>
+    <string name="change">по GPS</string>
     <string name="on_city">" по місту."</string>
     <string name="on_city_tv">" по місту"</string>
     <string name="help_button">Підтримка</string>
@@ -123,7 +124,7 @@
     <string name="btn_cost">Замовити</string>
     <string name="texthist">Попередні адреси</string>
     <string name="routs">Мої адреси</string>
-    <string name="on_map">По мапі</string>
+    <string name="on_map">по мапі</string>
     <string name="add_cost_message">Збільшіть вартість поїздки для швидкого пошуку машини</string>
     <string name="from_text">Звідки</string>
     <string name="to_text">Куди</string>
@@ -150,9 +151,9 @@
     <string name="Odessa">Одеса</string>
     <string name="gps_message">Для використання карти увімкніть GPS</string>
     <string name="city">Місто</string>
-    <string name="change_message">"Зміна бази адрес."</string>
+    <string name="change_message">"Зміна бази адрес. "</string>
     <string name="server_error_connected">Сервер не прийняв запит, наберіть операторів</string>
-    <string name="GDPR"></string>
+    <string name="GDPR">GDPR</string>
     <string name="ok_GDPR">Погодитись</string>
     <string name="Dnipro_city">Дніпро</string>
     <string name="city_change">Виберіть місто</string>
@@ -204,7 +205,7 @@
     <string name="sent_bonus">Використовувати</string>
     <string name="no_bonus">У Вас немає доступних бонусів</string>
     <string name="btn_bonus">Спосіб оплати</string>
-    <string name="nobonuspayment">Недостатньо бонусів. Оплата готівкою.</string>
+    <string name="nopayment_type">Недостатньо бонусів. Оплата готівкою.</string>
     <string name="nal_payment">Готівкою</string>
     <string name="bonus_payment">Бонуси</string>
     <string name="def_status">Уточніть у диспетчера</string>
@@ -226,6 +227,85 @@
     <string name="start_point_text">Місце відправлення</string>
     <string name="order_after_phone">"Для замовлення натисніть кнопку "</string>
     <string name="clear_home">Очистити поля</string>
-    <string name="google_payment">Google Pay</string>
+    <string name="card_payment">Карткою</string>
+
+    <string name="lbl_card_number">Номер картки:</string>
+    <string name="lbl_expd">Термін дії:</string>
+    <string name="hint_mm">ММ</string>
+    <string name="hint_yy">ГГ</string>
+    <string name="lbl_cvv">CVV:</string>
+    <string name="e_invalid_card_number">Неправильний номер картки</string>
+    <string name="e_invalid_yy">Невірний рік</string>
+    <string name="e_invalid_mm">Невірний місяць</string>
+    <string name="e_invalid_date">Неправильний термін дії</string>
+    <string name="e_invalid_cvv">Неправильний cvv</string>
+
+    <string name="lbl_amount">Сума до сплати (грн):</string>
+    <string name="lbl_ccy">Валюта:</string>
+    <string name="lbl_email">Електронна адреса:</string>
+    <string name="lbl_description">Опис:</string>
+    <string name="btn_pay_google">Google Pay</string>
+    <string name="btn_pay_card">Карткою</string>
+    <string name="e_invalid_amount">Недійсна сума</string>
+    <string name="e_invalid_email">Недійсна електронна адреса</string>
+    <string name="e_invalid_description">Введіть опис</string>
+    <string name="e_google_pay_unsupported">GooglePay не підтримується</string>
+    <string name="e_google_pay_canceled">GooglePay скасовано</string>
+    <string name="update_count">Перевірити баланс</string>
+    <string name="pay_count">Поповнити рахунок</string>
+    <string name="my_card_pay">Платіжна карта</string>
+    <string name="my_site">Відвідайте наш сайт</string>
+    <!--    <string name="fondy_message">Сплата за послугі таксі.</string>-->
+    <string name="fondy_message"> Інша допоміжна діяльність у сфері транспорту</string>
+    <string name="fondy_revers_message">"Повернення платежу: "</string>
+    <string name="fondy_pay">Сплатити картою</string>
+    <string name="cost_of_road_fondy">Вартість поїздки: </string>
+    <string name="payment_error">Помилка платежу. Виберіть інший спосіб оплати.</string>
+    <string name="return_pay">Повернення замовлення.</string>
+    <string name="return_pay_error">Помилка повернення платежу.</string>
+    <string name="btn_pay_return">Повернути оплату</string>
+    <string name="check_pay_return">Чекайте на повернення платежу</string>
+    <string name="btn_return">Повернутись до додатку</string>
+    <string name="fondy_back">Для замовлення поїздки після успішної оплати або для вибору іншого способу платежу - натисніть на своєму телефоні кнопку \"Повернутись\" (стрілочка \"Назад\").</string>
+    <string name="fondy_back_ver">Після успішної перевірки - натисніть на своєму телефоні кнопку \"Повернутись\" (стрілочка \"Назад\").</string>
+    <string name="phone_input_error">Без введення номера телефону замовлення не можливе.</string>
+    <string name="pay_failure">Відбулася помилка платежу. Спробуйте інший спосіб оплати.</string>
+    <string name="link_card">Прив\'язати карту</string>
+    <string name="delink_card">Видалити прив\'язку</string>
+    <string name="link_card_succesfuly">Ваша карта перевірена та готова до оплати подорожей.</string>
+    <string name="un_link_token">Прив\'язка платіжної картки видалена з додатку.</string>
+    <string name="cancel_card">Завершити</string>
+    <string name="mono_payment">Монобанк</string>
+    <string name="pay_to_driver"> Оплата водію готівкою.</string>
+    <string name="call_btn_cancel">Скасувати подорож можна через дзвінок оператору.</string>
+    <string name="no_cards">Немає прив\'язаних карток для оплати</string>
+    <string name="del_button">Видалити</string>
+    <string name="take_token">Вибрати</string>
+    <string name="pay_failure_mes">Оплата не пройшла</string>
+    <string name="nal_pay_message">Спосіб оплати поїздки - готівкою водію.</string>
+    <string name="max_limit_message">Досягнуто максимальну межу суми замовлення цим способом оплати.\n Замовити оплатою готівкою?</string>
+    <string name="house_vis_mes">вкажіть номер будинку</string>
+    <string name="address_on_map">визначити по мапі</string>
+    <string name="address_take">застосувати</string>
+    <string name="main_page">Головна</string>
+    <string name="search_text">Пошук адреси</string>
+    <string name="drag_marker">Для уточнення місцезнаходження пересувайте маркер</string>
+    <string name="drag_marker_bottom">Натисніть на маркер та перемістіть його для уточнення розташування</string>
+    <string name="menu_city">Таксі міста </string>
+    <string name="city_kyiv">Київ та області</string>
+    <string name="city_dnipro">Дніпро</string>
+    <string name="city_odessa">Одеса</string>
+    <string name="city_zaporizhzhia">Запоріжжя</string>
+    <string name="city_cherkasy">Черкаси</string>
+    <string name="tail1">Карти для міста \'</string>
+    <string name="tail2">\' успішно завантажено</string>
+    <string name="rout_fin">Виберіть із списку номер будинку</string>
+    <string name="hi_mes">Вас вітає</string>
+    <string name="change_mes">Відсутні результати. Спробуйте змінити параметри пошуку</string>
+    <string name="two_point_mes">2. Вкажіть місце висадки на карті</string>
+    <string name="gdpr0">Політика конфіденційності</string>
+    <string name="gdpr1">Ми цінуємо вашу довірливість та прагнемо забезпечити надійний захист ваших особистих даних. Ця політика конфіденційності пояснює, як ми збираємо, використовуємо та захищаємо ваші особисті дані в рамках використання нашої програми.</string>
+    <string name="gdpr2">Для забезпечення функціональності замовлення таксі у нашому додатку, ми збираємо та зберігаємо номери мобільних телефонів користувачів. Ці дані необхідні для зв\'язку з вами та забезпечення послуги замовлення таксі.</string>
+    <string name="gdpr3">Використовуючи нашу програму та надаючи нам свої особисті дані, ви висловлюєте свою згоду на збір, використання та передачу цих даних відповідно до цієї політики конфіденційності. Ми докладаємо всіх необхідних заходів для забезпечення безпеки ваших особистих даних та запобігання несанкціонованому доступу до них. Наш додаток дотримується положень Загального регламенту захисту персональних даних (GDPR) Європейського Союзу щодо збору, використання та обробки особистих даних. Ви маєте право в будь-який час запросити доступ до ваших особистих даних, внести зміни або видалити їх з нашої бази даних. Для цього зв\'яжіться з нами за адресою taxi.easy.ua@gmail.com. Використовуючи нашу програму, ви погоджуєтесь з умовами нашої політики конфіденційності. Ми залишаємо за собою право вносити зміни до цієї політики, про що ви будете повідомлені. Ви маєте право в будь-який час запросити доступ до ваших особистих даних, внести зміни або видалити їх з нашої бази даних. Для цього зв\'яжіться з нами за адресою taxi.easy.ua@gmail.com. Якщо у вас є додаткові запитання або запити щодо вашої конфіденційності та даних, будь ласка, зв\'яжіться з нами за вказаною нижче контактною адресою.</string>
 
 </resources>

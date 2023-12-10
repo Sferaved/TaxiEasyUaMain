@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:textAppearance="?android:attr/textAppearanceListItemSmall"
     android:padding="10sp"
-    android:background="#689194"
+    android:background="@color/background_color"
     android:textColor="@color/text_color_selector" />
 
 

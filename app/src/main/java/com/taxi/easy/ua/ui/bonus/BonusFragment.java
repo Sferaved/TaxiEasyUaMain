@@ -33,7 +33,6 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentBonusBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.BonusResponse;
-import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 
 import java.util.ArrayList;
@@ -51,13 +50,14 @@ public class BonusFragment extends Fragment {
     private TextView textView;
     private NetworkChangeReceiver networkChangeReceiver;
     private ProgressBar progressBar;
+    private TextView text0;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentBonusBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-        getActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-
+        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        text0 =  binding.text0;
         networkChangeReceiver = new NetworkChangeReceiver();
         progressBar = binding.progressBar;
         return root;
@@ -67,7 +67,7 @@ public class BonusFragment extends Fragment {
     public void onResume() {
         super.onResume();
         textView = binding.textBonus;
-        String bonus = logCursor(MainActivity.TABLE_USER_INFO, getActivity()).get(5);
+        String bonus = logCursor(MainActivity.TABLE_USER_INFO, requireActivity()).get(5);
         if(bonus == null) {
             bonus = getString(R.string.upd_bonus_info);
         } else {
@@ -78,20 +78,21 @@ public class BonusFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 if(connected()) {
-                    @SuppressLint("UseRequireInsteadOfGet") String email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(getActivity())).get(3);
+                    @SuppressLint("UseRequireInsteadOfGet")
+                    String email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(requireActivity())).get(3);
                     progressBar.setVisibility(View.VISIBLE);
-                    textView.setVisibility(View.INVISIBLE);
-                    binding.text0.setVisibility(View.INVISIBLE);
+                    textView.setVisibility(View.GONE);
+                    binding.text0.setVisibility(View.GONE);
                     binding.text7.setVisibility(View.GONE);
                     btnBonus.setVisibility(View.GONE);
 
-                    fetchBonus(email, getActivity());
+                    fetchBonus(email, requireActivity());
                 }
             }
         });
 
         // Ваш текущий фрагмент или активность
-        NavController navController = Navigation.findNavController(getActivity(), R.id.nav_host_fragment_content_main);
+        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
 
 // Переход к фрагменту HomeFragment
 
@@ -99,7 +100,7 @@ public class BonusFragment extends Fragment {
         btnOrder.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                navController.navigate(R.id.nav_home);
+                navController.navigate(R.id.nav_visicom);
             }
         });
 
@@ -109,9 +110,9 @@ public class BonusFragment extends Fragment {
 
     private boolean connected() {
 
-        Boolean hasConnect = false;
+        boolean hasConnect = false;
 
-        ConnectivityManager cm = (ConnectivityManager) getActivity().getSystemService(
+        ConnectivityManager cm = (ConnectivityManager) requireActivity().getSystemService(
                 CONNECTIVITY_SERVICE);
         NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         if (wifiNetwork != null && wifiNetwork.isConnected()) {
@@ -127,14 +128,13 @@ public class BonusFragment extends Fragment {
         }
 
         if (!hasConnect) {
-            Toast.makeText(getActivity(), verify_internet, Toast.LENGTH_LONG).show();
+            Toast.makeText(requireActivity(), verify_internet, Toast.LENGTH_LONG).show();
         }
         Log.d("TAG", "connected: " + hasConnect);
         return hasConnect;
     }
 
     String baseUrl = "https://m.easy-order-taxi.site";
-    private List<RouteResponse> routeList = new ArrayList<>();
 
     private void fetchBonus(String value, Context context) {
         String url = baseUrl + "/bonus/bonusUserShow/" + value;
@@ -143,7 +143,7 @@ public class BonusFragment extends Fragment {
         call.enqueue(new Callback<BonusResponse>() {
             @Override
             public void onResponse(@NonNull Call<BonusResponse> call, @NonNull Response<BonusResponse> response) {
-                if (getActivity() == null) {
+                if (requireActivity() == null) {
                     // Фрагмент больше не привязан к активности, выход из метода.
                     return;
                 }
@@ -161,8 +161,8 @@ public class BonusFragment extends Fragment {
 
                     textView.setText(getString(R.string.my_bonus) + bonus);
                     textView.setVisibility(View.VISIBLE);
-                    binding.text0.setVisibility(View.VISIBLE);
-                    binding.text0.setText(R.string.bonus_upd_mes);
+                    text0.setVisibility(View.GONE);
+                    text0.setText(R.string.bonus_upd_mes);
 
 
                     Log.d("TAG", "onResponse: " + bonus);
@@ -183,7 +183,7 @@ public class BonusFragment extends Fragment {
     }
 
 
-     @SuppressLint("Range")
+    @SuppressLint("Range")
     public List<String> logCursor(String table, Context context) {
         List<String> list = new ArrayList<>();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);

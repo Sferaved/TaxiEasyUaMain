@@ -5,13 +5,14 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/nav_home"
+            android:id="@+id/nav_visicom"
             android:icon="@android:drawable/ic_media_play"
+            android:title="@string/main_page" />
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@android:drawable/ic_menu_gallery"
             android:title="@string/menu_home" />
-<!--        <item-->
-<!--            android:id="@+id/nav_maps"-->
-<!--            android:icon="@android:drawable/ic_dialog_map"-->
-<!--            android:title="@string/menu_maps" />-->
+
         <item
             android:id="@+id/nav_gallery"
             android:icon="@drawable/ic_menu_gallery"
@@ -24,8 +25,12 @@
             android:id="@+id/nav_bonus"
             android:icon="@drawable/ic_menu_gallery"
             android:title="@string/my_bonus_menu" />
+        <item
+            android:id="@+id/nav_card"
+            android:icon="@drawable/ic_menu_gallery"
+            android:title="@string/my_card_pay" />
 
-         <item
+        <item
             android:id="@+id/nav_about"
             android:icon="@android:drawable/ic_menu_info_details"
             android:title="@string/menu_about" />

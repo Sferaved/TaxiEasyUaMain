@@ -1,12 +1,7 @@
 package com.taxi.easy.ua.ui.home;
 
-import static android.content.Context.MODE_PRIVATE;
-
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -20,11 +15,8 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.AppCompatButton;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 
 
 public class MyBottomSheetGPSFragment extends BottomSheetDialogFragment {
@@ -45,7 +37,12 @@ public class MyBottomSheetGPSFragment extends BottomSheetDialogFragment {
             @Override
             public void onClick(View v) {
                 dismiss();
-                HomeFragment.progressBar.setVisibility(View.INVISIBLE);
+                if(HomeFragment.progressBar != null) {
+                    HomeFragment.progressBar.setVisibility(View.INVISIBLE);
+                }
+                if(VisicomFragment.progressBar != null) {
+                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+                }
                 requireActivity().startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
             }
         });
@@ -55,37 +52,22 @@ public class MyBottomSheetGPSFragment extends BottomSheetDialogFragment {
             @Override
             public void onClick(View v) {
                 dismiss();
-                HomeFragment.progressBar.setVisibility(View.INVISIBLE);
+                if(HomeFragment.progressBar != null) {
+                    HomeFragment.progressBar.setVisibility(View.INVISIBLE);
+                }
+                if(VisicomFragment.progressBar != null) {
+                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+                }
             }
         });
-        HomeFragment.progressBar.setVisibility(View.INVISIBLE);
-
-
-
+        if(HomeFragment.progressBar != null) {
+            HomeFragment.progressBar.setVisibility(View.INVISIBLE);
+        }
+        if(VisicomFragment.progressBar != null) {
+            VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+        }
         return view;
     }
 
-    @SuppressLint("Range")
-    private List<String> logCursor(String table, Context context) {
-        List<String> list = new ArrayList<>();
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor c = database.query(table, null, null, null, null, null, null);
-        if (c != null) {
-            if (c.moveToFirst()) {
-                String str;
-                do {
-                    str = "";
-                    for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
-
-                    }
-
-                } while (c.moveToNext());
-            }
-        }
-        database.close();
-        return list;
-    }
-   }
+}
 

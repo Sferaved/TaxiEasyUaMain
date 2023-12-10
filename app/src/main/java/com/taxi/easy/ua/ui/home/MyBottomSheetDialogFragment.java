@@ -9,6 +9,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -30,12 +31,17 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.room.Room;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.home.room.AppDatabase;
+import com.taxi.easy.ua.ui.home.room.RouteCost;
+import com.taxi.easy.ua.ui.home.room.RouteCostDao;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -178,7 +184,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         discount.setText(logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3));
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
         discountFist =  Integer.parseInt(discountText);
-
+        Log.d("TAG", "discountFist" + discountFist);
 
         btn_min = view.findViewById(R.id.btn_minus);
         btn_min.setOnClickListener(new View.OnClickListener() {
@@ -259,7 +265,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         cv.put("date", formattedDate);
 
         // Обновляем по id
-        SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[] { "1" });
         database.close();
     }
@@ -267,12 +273,12 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
     @Override
     public void onPause() {
         super.onPause();
-        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, getContext());
+        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, requireActivity());
 
-        for (int i = 0; i < services.size()-1; i++) {
+        for (int i = 0; i < Math.min(services.size(), arrayServiceCode.length); i++) {
             ContentValues cv = new ContentValues();
             cv.put(arrayServiceCode[i], "0");
-            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?",
                     new String[] { "1" });
             database.close();
@@ -388,48 +394,104 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
             database.close();
         }
         try {
-            HomeFragment.text_view_cost.setText(changeCost());
-        } catch (MalformedURLException e) {
+            String newCost = changeCost();
+            HomeFragment.text_view_cost.setText(newCost);
+            insertRouteCostToDatabase(newCost);
+        } catch (MalformedURLException | UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
 
     }
-    private String changeCost() throws MalformedURLException {
+    private String changeCost() throws MalformedURLException, UnsupportedEncodingException {
         String newCost = "0";
-        String url = getTaxiUrlSearch("costSearch", getActivity());
+        String url = getTaxiUrlSearch("costSearch", requireActivity());
 
         Map<String, String> sendUrl = CostJSONParser.sendURL(url);
 
-        String mes = (String) sendUrl.get("message");
-        String orderC = (String) sendUrl.get("order_cost");
-        Log.d("TAG", "onPausedawdddddddwdadwdawdaw orderC : " + orderC );
+        String message = requireActivity().getString(R.string.error_message);
+        String orderC = sendUrl.get("order_cost");
+
         if (orderC.equals("0")) {
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(mes);
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
         }
         if (!orderC.equals("0")) {
 
-            Long  firstCost = Long.parseLong(orderC);
+            long firstCost = Long.parseLong(orderC);
 
             String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
             long discountInt = Integer.parseInt(discountText);
-            long discount;
+            long discount = firstCost * discountInt / 100;
 
-            discount = firstCost * discountInt / 100;
-            newCost = Long.toString(firstCost + discount);
+            updateAddCost(String.valueOf(discount));
 
-            HomeFragment.cost = firstCost + discount;
-            HomeFragment.addCost = discount;
-
+            newCost = String.valueOf(firstCost + discount);
         }
         return newCost;
     }
-    private String getTaxiUrlSearch(String urlAPI, Context context) {
+    private void updateAddCost(String addCost) {
+        ContentValues cv = new ContentValues();
+        Log.d("TAG", "updateAddCost: addCost" + addCost);
+        cv.put("addCost", addCost);
+
+        // обновляем по id
+        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                new String[] { "1" });
+        database.close();
+    }
+    private void insertRouteCostToDatabase(String text_view_cost) {
+        AppDatabase db = Room.databaseBuilder(requireActivity(), AppDatabase.class, "app-database")
+                .addMigrations(AppDatabase.MIGRATION_1_3) // Добавьте миграцию
+                .build();
+        RouteCostDao routeCostDao = db.routeCostDao();
+        int routeId = HomeFragment.routeIdToCheck; // Получите routeId
+        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
+        String tarif =  stringListInfo.get(2);
+        String payment_type =  stringListInfo.get(4);
+        String addCost = stringListInfo.get(5);
+
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                RouteCost existingRouteCost = routeCostDao.getRouteCost(routeId);
+                if (existingRouteCost == null) {
+                    // Записи с таким routeId ещё нет, выполните вставку
+                    RouteCost routeCost = new RouteCost();
+                    routeCost.routeId = routeId; // установите уникальный идентификатор
+
+                    routeCost.text_view_cost = text_view_cost;
+                    routeCost.tarif = tarif;
+                    routeCost.payment_type = payment_type;
+                    routeCost.addCost = addCost;
+
+                    routeCostDao.insert(routeCost);
+                } else {
+                    // Запись с таким routeId уже существует, выполните обновление
+
+                    existingRouteCost.text_view_cost = text_view_cost;
+                    existingRouteCost.tarif = tarif;
+                    existingRouteCost.payment_type = payment_type;
+                    existingRouteCost.addCost = addCost;
+
+                    routeCostDao.update(existingRouteCost); // Обновление существующей записи
+                }
+            }
+        });
+    }
+    private String getTaxiUrlSearch(String urlAPI, Context context) throws UnsupportedEncodingException {
         List<String> stringListRout = logCursor(MainActivity.ROUT_HOME, context);
 
-        String from = stringListRout.get(1);
+        String originalString = stringListRout.get(1);
+        int indexOfSlash = originalString.indexOf("/");
+        String from = (indexOfSlash != -1) ? originalString.substring(0, indexOfSlash) : originalString;
+
         String from_number = stringListRout.get(2);
-        String to = stringListRout.get(3);
+
+        originalString = stringListRout.get(3);
+        indexOfSlash = originalString.indexOf("/");
+        String to = (indexOfSlash != -1) ? originalString.substring(0, indexOfSlash) : originalString;
+
         String to_number = stringListRout.get(4);
         // Origin of route
         String str_origin = from + "/" + from_number;
@@ -442,7 +504,8 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
 
         List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
         String tarif =  stringListInfo.get(2);
-        String bonusPayment =  stringListInfo.get(4);
+        String payment_type =  stringListInfo.get(4);
+
         // Building the parameters to the web service
 
         String parameters = null;
@@ -457,7 +520,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 c.close();
             }
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + displayName + "*" + userEmail  + "*" + bonusPayment;
+                    + displayName + "*" + userEmail  + "*" + payment_type;
         }
 
 
@@ -489,8 +552,13 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         } else {
             result = "no_extra_charge_codes";
         }
+        List<String> listCity = logCursor(MainActivity.CITY_INFO, requireActivity());
+        String city = listCity.get(1);
+        String api = listCity.get(2);
 
-        String url = "https://m.easy-order-taxi.site/" + HomeFragment.api + "/android/" + urlAPI + "/" + parameters + "/" + result;
+        String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
+                + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
+
 
         Log.d("TAG", "getTaxiUrlSearch: " + url);
 

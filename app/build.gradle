@@ -12,8 +12,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 33
-        versionCode 1707
-        versionName '1.707'
+        versionCode 1708
+        versionName '1.708'
         multiDexEnabled true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
@@ -83,5 +83,13 @@ dependencies {
         implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0") {
             because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
         }
-    }
+     }
+    implementation 'com.google.android.gms:play-services-base:18.2.0'
+    implementation 'com.google.android.gms:play-services-wallet:19.2.1'
+
+    implementation "androidx.room:room-runtime:2.4.0" // Убедитесь, что версия соответствует вашей версии Room
+    annotationProcessor "androidx.room:room-compiler:2.4.0" // То же касается версии здесь
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.9.1'
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+    implementation 'com.squareup.picasso:picasso:2.71828'
 }

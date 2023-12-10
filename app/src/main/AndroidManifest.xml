@@ -17,12 +17,23 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+
+
+
+    <!-- Один раз достаточно -->
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+
 
     <application
         android:allowBackup="true"
@@ -34,12 +45,32 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TaxiEasyUa"
         tools:targetApi="31">
-        <activity
-            android:name=".ui.finish.FinishActivity"
-            android:exported="false" />
+
+        <meta-data
+            android:name="com.google.android.gms.wallet.api.enabled"
+            android:value="true" />
+        <meta-data
+            android:name="com.parse.SERVER_URL"
+            android:value="@string/back4app_server_url" />
+        <meta-data
+            android:name="com.parse.APPLICATION_ID"
+            android:value="@string/back4app_app_id" />
+        <meta-data
+            android:name="com.parse.CLIENT_KEY"
+            android:value="@string/back4app_client_key" />
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="@string/google_maps_key_storage" />
         <meta-data
             android:name="visicom.API_KEY"
             android:value="@string/visicom_key_storage" />
+        <meta-data
+            android:name="androidx.room.RoomDatabase.VERSION"
+            android:value="3" />
+        <meta-data
+            android:name="com.google.android.gms.wallet.api.enabled"
+            android:value="true" />
+        <!-- Определение SplashScreen API -->
 
         <activity
             android:name=".MainActivity"
@@ -54,7 +85,9 @@
             </intent-filter>
         </activity>
 
-
+        <activity
+            android:name=".ui.finish.FinishActivity"
+            android:exported="false" />
         <activity
             android:name=".ui.start.FirebaseSignIn"
             android:screenOrientation="portrait"
@@ -73,8 +106,22 @@
             android:name=".ui.start.GoogleSignInActivity"
             android:screenOrientation="portrait" />
         <receiver android:name=".NetworkChangeReceiver" />
+
+        <activity android:name=".ui.open_map.OpenStreetMapVisicomActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.TaxiEasyUa.NoActionBar"
+            tools:ignore="Instantiatable"
+            />
+        <activity android:name=".ui.open_map.visicom.ActivityVisicomOnePage"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.TaxiEasyUa.NoActionBar"
+            tools:ignore="Instantiatable" />
+
+        <receiver android:name=".NetworkChangeReceiver" />
+
+
     </application>
-
-
 
 </manifest>

@@ -63,7 +63,7 @@ public class UIDFragment extends Fragment {
         networkChangeReceiver = new NetworkChangeReceiver();
 
         if(connected()) {
-            @SuppressLint("UseRequireInsteadOfGet") String email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(getActivity())).get(3);
+            @SuppressLint("UseRequireInsteadOfGet") String email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(requireActivity())).get(3);
             fetchRoutes(email);
         }
         return root;
@@ -72,7 +72,7 @@ public class UIDFragment extends Fragment {
 
         Boolean hasConnect = false;
 
-        ConnectivityManager cm = (ConnectivityManager) getActivity().getSystemService(
+        ConnectivityManager cm = (ConnectivityManager) requireActivity().getSystemService(
                 CONNECTIVITY_SERVICE);
         NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         if (wifiNetwork != null && wifiNetwork.isConnected()) {
@@ -88,7 +88,7 @@ public class UIDFragment extends Fragment {
         }
 
         if (!hasConnect) {
-            Toast.makeText(getActivity(), verify_internet, Toast.LENGTH_LONG).show();
+            Toast.makeText(requireActivity(), verify_internet, Toast.LENGTH_LONG).show();
         }
         Log.d("TAG", "connected: " + hasConnect);
         return hasConnect;
@@ -204,7 +204,7 @@ public class UIDFragment extends Fragment {
         }
         Log.d("TAG", "processRouteList: array " + Arrays.toString(array));
         if(array != null) {
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.drop_down_layout, array);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(requireActivity(), R.layout.drop_down_layout, array);
             listView.setAdapter(adapter);
 
         }
