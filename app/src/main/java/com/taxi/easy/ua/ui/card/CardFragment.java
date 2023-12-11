@@ -150,13 +150,11 @@ public class CardFragment extends Fragment {
                 if (cardMaps != null && !cardMaps.isEmpty()) {
                     CustomCardAdapter listAdapter = new CustomCardAdapter(requireActivity(), cardMaps, table);
                     listView.setAdapter(listAdapter);
-
                 } else {
                     textCard.setVisibility(View.VISIBLE);
                     listView.setVisibility(View.GONE);
                     textCard.setText(R.string.no_cards);
                 }
-                progressBar.setVisibility(View.GONE);
             }
 
             @Override
@@ -165,6 +163,7 @@ public class CardFragment extends Fragment {
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             }
         });
+        progressBar.setVisibility(View.GONE);
     }
 
     @SuppressLint("Range")
