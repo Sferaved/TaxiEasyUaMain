@@ -120,7 +120,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_visicom_address_layout);
-
+        Log.d(TAG, "onCreate: ");
         start = getIntent().getStringExtra("start");
         end = getIntent().getStringExtra("end");
 
