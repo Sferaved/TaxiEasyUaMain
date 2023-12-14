@@ -29,9 +29,6 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
 
-
-
-    <!-- Один раз достаточно -->
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
 
 
@@ -61,9 +58,7 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key_storage" />
-        <meta-data
-            android:name="visicom.API_KEY"
-            android:value="@string/visicom_key_storage" />
+
         <meta-data
             android:name="androidx.room.RoomDatabase.VERSION"
             android:value="3" />

@@ -805,6 +805,8 @@ public class FinishActivity extends AppCompatActivity {
             }
         }
         database.close();
+        assert c != null;
+        c.close();
         return list;
     }
     private void cancelOrder(String value) {

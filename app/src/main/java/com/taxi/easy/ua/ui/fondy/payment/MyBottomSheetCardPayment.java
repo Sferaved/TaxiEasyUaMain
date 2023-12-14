@@ -89,7 +89,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
         View view = inflater.inflate(R.layout.activity_fondy_payment, container, false);
         webView = view.findViewById(R.id.webView);
         email = logCursor(MainActivity.TABLE_USER_INFO, requireActivity()).get(3);
-        pay_method =  pay_system();
+        pay_method =  pay_system(getContext());
 
         // Настройка WebView
         webView.getSettings().setJavaScriptEnabled(true);
@@ -456,7 +456,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
     }
 
-    private String pay_system() {
+    private String pay_system(Context context) {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
@@ -482,15 +482,15 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                             paymentCodeNew = "mono_payment";
                             break;
                     }
-                    if(isAdded()){
+//                    if(isAdded()){
                         ContentValues cv = new ContentValues();
                         cv.put("payment_type", paymentCodeNew);
                         // обновляем по id
-                        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                                 new String[] { "1" });
                         database.close();
-                    }
+//                    }
 
 
                 } else {
@@ -502,10 +502,10 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(Call<ResponsePaySystem> call, Throwable t) {
-                if (isAdded()) {
+//                if (isAdded()) {
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                }
+//                }
             }
         });
         return logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(4);

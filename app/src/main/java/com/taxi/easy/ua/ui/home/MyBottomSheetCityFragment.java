@@ -4,6 +4,7 @@ import static android.content.Context.MODE_PRIVATE;
 
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -143,8 +144,8 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 new String[]{"1"});
         database.close();
 
-        cityMaxPay(cityCode[positionFirst]);
-        merchantFondy(cityCode[positionFirst]);
+        cityMaxPay(cityCode[positionFirst], getContext());
+        merchantFondy(cityCode[positionFirst], getContext());
         listView.setItemChecked(positionFirst, true);
         int positionFirstOld = positionFirst;
 
@@ -194,8 +195,8 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                             new String[]{"1"});
                     database.close();
 
-                    cityMaxPay(cityCode[positionFirst]);
-                    merchantFondy(cityCode[positionFirst]);
+                    cityMaxPay(cityCode[positionFirst], getContext());
+                    merchantFondy(cityCode[positionFirst], getContext());
 
                     NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
                     resetRoutHome();
@@ -316,7 +317,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         super.onDismiss(dialog);
     }
 
-    private void cityMaxPay(String city) {
+    private void cityMaxPay(String city, Context context) {
         CityService cityService = CityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
@@ -334,13 +335,12 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         ContentValues cv = new ContentValues();
                         cv.put("card_max_pay", cardMaxPay);
                         cv.put("bonus_max_pay", bonusMaxPay);
-                        if (isAdded()) {
-                            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+
+                            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                             database.update(MainActivity.CITY_INFO, cv, "id = ?",
                                     new String[]{"1"});
 
                             database.close();
-                        }
 
 
                         // Добавьте здесь код для обработки полученных значений
@@ -357,7 +357,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         });
     }
 
-    private void merchantFondy(String city) {
+    private void merchantFondy(String city, Context context) {
         CityService cityService = CityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
@@ -377,13 +377,13 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         cv.put("merchant_fondy", merchant_fondy);
                         cv.put("fondy_key_storage", fondy_key_storage);
 
-                        if (isAdded()) {
-                            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+
+                            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                             database.update(MainActivity.CITY_INFO, cv, "id = ?",
                                     new String[]{"1"});
 
                             database.close();
-                        }
+
 
 
                         Log.d(TAG, "onResponse: merchant_fondy" + merchant_fondy);

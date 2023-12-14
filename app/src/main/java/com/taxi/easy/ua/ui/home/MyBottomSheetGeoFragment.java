@@ -184,7 +184,12 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
 
         discount.setText(logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3));
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
-        discountFist = Long.parseLong(discountText);
+        try {
+            discountFist = Long.parseLong(discountText);
+        } catch (NumberFormatException e) {
+            // Handle the case where the expression cannot be evaluated
+            e.printStackTrace();
+        }
 
 
         btn_min = view.findViewById(R.id.btn_minus);

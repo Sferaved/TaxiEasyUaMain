@@ -82,7 +82,7 @@ public class CardFragment extends Fragment {
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         progressBar = binding.progressBar;
-        progressBar.setVisibility(View.VISIBLE);
+
         textCard = binding.textCard;
         listView = binding.listView;
 
@@ -96,7 +96,7 @@ public class CardFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-
+        progressBar.setVisibility(View.VISIBLE);
         btnCardLink  = binding.btnCardLink;
 
         paySystem(new PaySystemCallback() {
@@ -124,6 +124,7 @@ public class CardFragment extends Fragment {
                             }
 
                         } else {
+                            progressBar.setVisibility(View.GONE);
                             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
                             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                         }
@@ -150,6 +151,7 @@ public class CardFragment extends Fragment {
                 if (cardMaps != null && !cardMaps.isEmpty()) {
                     CustomCardAdapter listAdapter = new CustomCardAdapter(requireActivity(), cardMaps, table);
                     listView.setAdapter(listAdapter);
+                    progressBar.setVisibility(View.GONE);
                 } else {
                     textCard.setVisibility(View.VISIBLE);
                     listView.setVisibility(View.GONE);
@@ -159,6 +161,7 @@ public class CardFragment extends Fragment {
 
             @Override
             public void onPaySystemFailure(String errorMessage) {
+                progressBar.setVisibility(View.GONE);
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(errorMessage);
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             }

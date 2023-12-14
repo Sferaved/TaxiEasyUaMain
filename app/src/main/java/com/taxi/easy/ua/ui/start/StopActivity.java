@@ -98,6 +98,8 @@ public class StopActivity extends Activity {
             }
         }
         database.close();
+        assert c != null;
+        c.close();
         return list;
     }
 }

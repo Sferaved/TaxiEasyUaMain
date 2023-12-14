@@ -28,7 +28,10 @@
         android:layout_height="45sp"
         android:layout_marginTop="16sp"
         android:layout_marginBottom="16sp"
+        android:background="@drawable/buttons"
+
         android:backgroundTint="@color/colorAccent"
+
         android:fontFamily="@font/regular"
         android:text="@string/action_help"
         android:textAlignment="center"

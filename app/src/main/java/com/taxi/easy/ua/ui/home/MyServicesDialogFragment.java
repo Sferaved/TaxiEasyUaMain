@@ -172,6 +172,8 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
             }
         }
         database.close();
+        assert c != null;
+        c.close();
         return list;
     }
     @Override

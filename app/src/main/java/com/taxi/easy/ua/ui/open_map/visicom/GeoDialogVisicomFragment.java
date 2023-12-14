@@ -64,6 +64,9 @@ import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
+import com.taxi.easy.ua.ui.open_map.visicom.key.ApiCallback;
+import com.taxi.easy.ua.ui.open_map.visicom.key.ApiClient;
+import com.taxi.easy.ua.ui.open_map.visicom.key.ApiResponse;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
 
 import org.json.JSONException;
@@ -79,8 +82,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
-public class GeoDialogVisicomFragment extends BottomSheetDialogFragment {
+
+public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implements ApiCallback{
     private static final String TAG = "TAG_GEO";
     public static AppCompatButton button, old_address, btn_minus, btn_plus, btnOrder, buttonBonus;
     public static TextView geoText;
@@ -134,7 +141,8 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment {
         }
 
         buttonBonus = view.findViewById(R.id.btnBonus);
-        apiKey = requireActivity().getString(R.string.visicom_key_storage);
+
+        visicomKey(this);
 
         if (!routMaps().isEmpty()) {
             adressArr = new ArrayList<>(routMaps().size());
@@ -1424,7 +1432,51 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment {
         }
 
     }
+    private void visicomKey(final ApiCallback callback) {
+        ApiClient.getVisicomKeyInfo(new Callback<ApiResponse>() {
+            @Override
+            public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                if (response.isSuccessful()) {
+                    ApiResponse apiResponse = response.body();
+                    if (apiResponse != null) {
+                        String keyVisicom = apiResponse.getKeyVisicom();
+                        Log.d("ApiResponse", "keyVisicom: " + keyVisicom);
 
+                        // Теперь у вас есть ключ Visicom для дальнейшего использования
+                        callback.onVisicomKeyReceived(keyVisicom);
+                    }
+                } else {
+                    // Обработка ошибки
+                    Log.e("ApiResponse", "Error: " + response.code());
+                    callback.onApiError(response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse> call, Throwable t) {
+                // Обработка ошибки
+                Log.e("ApiResponse", "Failed to make API call", t);
+                callback.onApiFailure(t);
+            }
+        },
+            getString(R.string.application)
+        );
+    }
+    @Override
+    public void onVisicomKeyReceived(String key) {
+        Log.d(TAG, "onVisicomKeyReceived: " + key);
+        apiKey = key;
+    }
+
+    @Override
+    public void onApiError(int errorCode) {
+
+    }
+
+    @Override
+    public void onApiFailure(Throwable t) {
+
+    }
 }
 
 

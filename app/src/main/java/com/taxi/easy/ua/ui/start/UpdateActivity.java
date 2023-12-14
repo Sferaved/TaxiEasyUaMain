@@ -133,6 +133,8 @@ public class UpdateActivity extends Activity {
             }
         }
         database.close();
+        assert c != null;
+        c.close();
         return list;
     }
 

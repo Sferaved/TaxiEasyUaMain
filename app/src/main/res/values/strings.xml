@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.710</string>
-    <string name="version">Версия: 1.710</string>
+    <string name="version_code">1.711</string>
+    <string name="version">Версия: 1.711</string>
 
     <string name="app_name">Такси Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -290,7 +290,7 @@
     <string name="search_text">Поиск адреса</string>
     <string name="drag_marker">Для уточнения местоположения передвигайте маркер</string>
     <string name="drag_marker_bottom">Нажмите на маркер и переместите его для уточнения местоположения</string>
-    <string name="menu_city">Такси города </string>
+    <string name="menu_city">Заказ города </string>
     <string name="city_kyiv">Киев и области</string>
     <string name="city_dnipro">Днепр</string>
     <string name="city_odessa">Одесса</string>

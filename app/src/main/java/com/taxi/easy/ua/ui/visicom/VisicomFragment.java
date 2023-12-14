@@ -38,8 +38,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
@@ -59,6 +57,8 @@ import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.open_map.visicom.ActivityVisicomOnePage;
+import com.taxi.easy.ua.ui.open_map.visicom.key.ApiCallback;
+import com.taxi.easy.ua.ui.open_map.visicom.key.ApiResponse;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -73,18 +73,16 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class VisicomFragment extends Fragment {
+public class VisicomFragment extends Fragment  implements ApiCallback{
 
     public static ProgressBar progressBar;
     private FragmentVisicomBinding binding;
     private static final String TAG = "TAG_VISICOM";
     private MyPhoneDialogFragment bottomSheetDialogFragment;
-    private static final int REQUEST_LOCATION_PERMISSION = 1;
-    private FusedLocationProviderClient fusedLocationProviderClient;
-    private LocationCallback locationCallback;
+
     FloatingActionButton fab_call;
 
-    public static AppCompatButton button, btn_change, btn_minus, btn_plus, btnOrder, buttonBonus, gpsbut;
+    public static AppCompatButton button,  btn_minus, btn_plus, btnOrder, buttonBonus, gpsbut;
     public static TextView geoText;
     static String api;
 
@@ -116,6 +114,7 @@ public class VisicomFragment extends Fragment {
 
     public static ImageButton btn_clear_from, btn_clear_to;
     public static TextView textwhere, num2;
+    private AlertDialog alertDialog;
 
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -125,6 +124,8 @@ public class VisicomFragment extends Fragment {
         binding = FragmentVisicomBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
         progressBar = binding.progressBar;
+
+        visicomKey(this);
 
         fab_call = binding.fabCall;
         fab_call.setOnClickListener(new View.OnClickListener() {
@@ -141,7 +142,7 @@ public class VisicomFragment extends Fragment {
 
 
         buttonBonus = binding.btnBonus;
-        apiKey = requireActivity().getString(R.string.visicom_key_storage);
+
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
         api =  stringList.get(2);
@@ -258,6 +259,8 @@ public class VisicomFragment extends Fragment {
                     Log.d(TAG, "onClick: pay_method " + pay_method );
                     List<String> stringListCity = logCursor(MainActivity.CITY_INFO, requireActivity());
                     String card_max_pay = stringListCity.get(4);
+                    Log.d(TAG, "onClick:card_max_pay " + card_max_pay);
+
                     String bonus_max_pay = stringListCity.get(5);
                     switch (pay_method) {
                         case "bonus_payment":
@@ -375,7 +378,13 @@ public class VisicomFragment extends Fragment {
         }
         return root;
     }
-
+    @Override
+    public void onPause() {
+        super.onPause();
+        if(alertDialog != null && alertDialog.isShowing()) {
+            alertDialog.dismiss();
+        }
+    }
     public void checkPermission(String permission, int requestCode) {
         // Checking if permission is not granted
         if (ContextCompat.checkSelfPermission(requireActivity(), permission) == PackageManager.PERMISSION_DENIED) {
@@ -392,7 +401,7 @@ public class VisicomFragment extends Fragment {
     @SuppressLint("Range")
     private List<String> logCursor(String table, Context context) {
         List<String> list = new ArrayList<>();
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(table, null, null, null, null, null, null);
         if (c != null) {
             if (c.moveToFirst()) {
@@ -409,6 +418,8 @@ public class VisicomFragment extends Fragment {
             }
         }
         database.close();
+        assert c != null;
+        c.close();
         return list;
     }
 
@@ -514,9 +525,12 @@ public class VisicomFragment extends Fragment {
         String finish = cursor.getString(cursor.getColumnIndex("finish"));
         Log.d(TAG, "getTaxiUrlSearchMarkers: start " + start);
         // Заменяем символ '/' в строках
-        start = start.replace("/", "|");
-        finish = finish.replace("/", "|");
-
+        if(start != null) {
+            start = start.replace("/", "|");
+        }
+        if(finish != null) {
+            finish = finish.replace("/", "|");
+        }
         // Origin of route
         String str_origin = originLatitude + "/" + originLongitude;
 
@@ -843,7 +857,7 @@ public class VisicomFragment extends Fragment {
         LayoutInflater inflater = LayoutInflater.from(requireActivity());
         View dialogView = inflater.inflate(R.layout.custom_dialog_layout, null);
 
-        AlertDialog alertDialog = new AlertDialog.Builder(requireActivity()).create();
+        alertDialog = new AlertDialog.Builder(requireActivity()).create();
         alertDialog.setView(dialogView);
         alertDialog.setCancelable(false);
         // Настраиваем элементы макета
@@ -977,7 +991,51 @@ public class VisicomFragment extends Fragment {
 
                     VisicomFragment.btn_clear_from_text.setVisibility(View.GONE);
         }
+    }
 
+    private void visicomKey(final ApiCallback callback) {
+        com.taxi.easy.ua.ui.open_map.visicom.key.ApiClient.getVisicomKeyInfo(new Callback<ApiResponse>() {
+            @Override
+            public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                if (response.isSuccessful()) {
+                    ApiResponse apiResponse = response.body();
+                    if (apiResponse != null) {
+                        String keyVisicom = apiResponse.getKeyVisicom();
+                        Log.d("ApiResponse", "keyVisicom: " + keyVisicom);
+
+                        // Теперь у вас есть ключ Visicom для дальнейшего использования
+                        callback.onVisicomKeyReceived(keyVisicom);
+                    }
+                } else {
+                    // Обработка ошибки
+                    Log.e("ApiResponse", "Error: " + response.code());
+                    callback.onApiError(response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
+                // Обработка ошибки
+                Log.e("ApiResponse", "Failed to make API call", t);
+                callback.onApiFailure(t);
+            }
+        },
+                getString(R.string.application)
+        );
+    }
+    @Override
+    public void onVisicomKeyReceived(String key) {
+        Log.d(TAG, "onVisicomKeyReceived: " + key);
+        apiKey = key;
+    }
+
+    @Override
+    public void onApiError(int errorCode) {
+
+    }
+
+    @Override
+    public void onApiFailure(Throwable t) {
 
     }
 }
