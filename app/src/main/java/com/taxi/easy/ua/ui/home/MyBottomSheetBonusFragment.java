@@ -5,7 +5,6 @@ import static android.content.Context.MODE_PRIVATE;
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
@@ -113,26 +112,21 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         String city = stringList.get(1);
         //
-        if(Long.parseLong(bonus) <= cost * 100 ) {
-            switch (city) {
-                case "Kyiv City":
-                case "Dnipropetrovsk Oblast":
-                case "Odessa":
-                case "Zaporizhzhia":
-                case "Cherkasy Oblast":
-                case "OdessaTest":
+
+        switch (city) {
+            case "Kyiv City":
+            case "Dnipropetrovsk Oblast":
+            case "Odessa":
+            case "Zaporizhzhia":
+            case "Cherkasy Oblast":
+                adapter.setItemEnabled(1, false);
+            case "OdessaTest":
+                if(Long.parseLong(bonus) <= cost * 100 ) {
                     adapter.setItemEnabled(1, false);
-                    listView.setItemChecked(0, true);
-                    paymentType(arrayCode [0], requireContext());
-                    adapter.setItemEnabled(2, false);
                     break;
-            }
-        } else {
-//            listView.setItemChecked(0, true);
-//            paymentType(arrayCode [0], requireContext());
-//            adapter.setItemEnabled(1, false);
-//            adapter.setItemEnabled(2, false);
+                }
         }
+
         merchantFondy(city, getContext());
 //        switch (city) {
 //            case "Kyiv City":
@@ -205,7 +199,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                         ContentValues cv = new ContentValues();
                         cv.put("card_max_pay", cardMaxPay);
                         cv.put("bonus_max_pay", bonusMaxPay);
-                        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                              database.update(MainActivity.CITY_INFO, cv, "id = ?",
                                     new String[]{"1"});
                              database.close();
@@ -241,10 +235,10 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                         cv.put("merchant_fondy", merchant_fondy);
                         cv.put("fondy_key_storage", fondy_key_storage);
 
-
+                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                             database.update(MainActivity.CITY_INFO, cv, "id = ?",
                                     new String[]{"1"});
-
+                        database.close();
 
                         Log.d(TAG, "onResponse: merchant_fondy" + merchant_fondy);
                         Log.d(TAG, "onResponse: fondy_key_storage" + fondy_key_storage);
@@ -281,10 +275,10 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         cv.put("payment_type", paymentCode);
         // обновляем по id
 //        if(isAdded()){
-
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                     new String[] { "1" });
-
+            database.close();
 //        }
         reCount();
     }
@@ -311,19 +305,19 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             case "mono_payment":
                 listView.setItemChecked(2, true);
                 pos = 2;
-                paySystem(new CardFragment.PaySystemCallback() {
-                    @Override
-                    public void onPaySystemResult(String paymentCode) {
-                        Log.d(TAG, "onPaySystemResult: paymentCode" + paymentCode);
-                        // Здесь вы можете использовать полученное значение paymentCode
-                        paymentType(paymentCode, requireContext());
-
-                    }
-
-                    @Override
-                    public void onPaySystemFailure(String errorMessage) {
-                    }
-                });
+//                paySystem(new CardFragment.PaySystemCallback() {
+//                    @Override
+//                    public void onPaySystemResult(String paymentCode) {
+//                        Log.d(TAG, "onPaySystemResult: paymentCode" + paymentCode);
+//                        // Здесь вы можете использовать полученное значение paymentCode
+//                        paymentType(paymentCode, requireContext());
+//
+//                    }
+//
+//                    @Override
+//                    public void onPaySystemFailure(String errorMessage) {
+//                    }
+//                });
 
                 break;
         }
@@ -372,12 +366,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         });
     }
 
-    @Override
-    public void onDismiss(@NonNull DialogInterface dialog) {
-        super.onDismiss(dialog);
-
-    }
-
     public void reCount() {
         Log.d(TAG, "onDismiss: rout " + rout);
         if(rout.equals("home")) {
@@ -418,32 +406,36 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             Map<String, String> sendUrlMapCost = null;
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", getContext());
+                    if (isAdded() && getActivity() != null) {
+                        urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", getActivity());
+                        sendUrlMapCost = CostJSONParser.sendURL(urlCost);
+                        assert sendUrlMapCost != null;
+                        String orderCost = (String) sendUrlMapCost.get("order_cost");
+                        Log.d(TAG, "onDismiss: orderCost " + orderCost);
+                        assert orderCost != null;
+                        if (!orderCost.equals("0")) {
+                            String costUpdate;
+                            String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
+                            long discountInt = Integer.parseInt(discountText);
+                            long discount;
+                            long firstCost = Long.parseLong(orderCost);
+                            discount = firstCost * discountInt / 100;
+
+                            firstCost = firstCost + discount;
+                            updateAddCost(String.valueOf(discount));
+
+                            VisicomFragment.firstCostForMin = firstCost;
+                            costUpdate = String.valueOf(firstCost);
+                            textView.setText(costUpdate);
+                        }
+                    }
                 }
 
-                sendUrlMapCost = CostJSONParser.sendURL(urlCost);
+
             } catch (MalformedURLException ignored) {
 
             }
-            assert sendUrlMapCost != null;
-            String orderCost = (String) sendUrlMapCost.get("order_cost");
-            Log.d(TAG, "onDismiss: orderCost " + orderCost);
-            assert orderCost != null;
-            if (!orderCost.equals("0")) {
-                String costUpdate;
-                String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
-                long discountInt = Integer.parseInt(discountText);
-                long discount;
-                long firstCost = Long.parseLong(orderCost);
-                discount = firstCost * discountInt / 100;
 
-                firstCost = firstCost + discount;
-                updateAddCost(String.valueOf(discount));
-
-                VisicomFragment.firstCostForMin = firstCost;
-                costUpdate = String.valueOf(firstCost);
-                textView.setText(costUpdate);
-            }
         }
         progressBar.setVisibility(View.GONE);
         btn_ok.setVisibility(View.VISIBLE);
@@ -454,10 +446,10 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         cv.put("addCost", addCost);
 
         // обновляем по id
-
+        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
-
+        database.close();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -545,16 +537,57 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         return url;
     }
 
+    @SuppressLint("Range")
     @RequiresApi(api = Build.VERSION_CODES.O)
     private String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
 
-        List<String> stringListRout = logCursor(MainActivity.ROUT_MARKER);
-        Log.d(TAG, "getTaxiUrlSearch: stringListRout" + stringListRout);
+//        List<String> stringListRout = logCursor(MainActivity.ROUT_MARKER);
+//        Log.d(TAG, "getTaxiUrlSearch: stringListRout" + stringListRout);
+//
+//        double originLatitude = Double.parseDouble(stringListRout.get(1));
+//        double originLongitude = Double.parseDouble(stringListRout.get(2));
+//        double toLatitude = Double.parseDouble(stringListRout.get(3));
+//        double toLongitude = Double.parseDouble(stringListRout.get(4));
+        double originLatitude = 0;
+        double originLongitude = 0;
+        double toLatitude = 0;
+        double toLongitude = 0;
 
-        double originLatitude = Double.parseDouble(stringListRout.get(1));
-        double originLongitude = Double.parseDouble(stringListRout.get(2));
-        double toLatitude = Double.parseDouble(stringListRout.get(3));
-        double toLongitude = Double.parseDouble(stringListRout.get(4));
+        String[] projection = {
+                "startLat",
+                "startLan",
+                "to_lat",
+                "to_lng"
+        };
+
+        String selection = "id = ?";
+        String[] selectionArgs = { "1" }; // предполагается, что вы хотите получить данные для записи с id=1
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursor = database.query(
+                MainActivity.ROUT_MARKER, // имя таблицы
+                projection,   // столбцы, которые вы хотите получить
+                selection,    // условие выборки
+                selectionArgs,// аргументы условия выборки
+                null,         // группировка строк
+                null,         // условие группировки строк
+                null          // порядок сортировки
+        );
+
+        if (cursor != null && cursor.moveToFirst()) {
+            originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
+            originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
+            toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+            toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+
+            // Теперь у вас есть значения из базы данных
+            Log.d(TAG, "StartLat: " + originLatitude + ", StartLan: " + originLongitude + ", ToLat: " + toLatitude + ", ToLng: " + toLongitude);
+
+            cursor.close();
+        } else {
+            // Обработка случая, когда данных нет
+            Log.e(TAG, "No data found in ROUT_MARKER table");
+        }
+
 
         // Origin of route
         String str_origin = originLatitude + "/" + originLongitude;
@@ -619,7 +652,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
-
+        database.close();
         return url;
     }
 
@@ -660,6 +693,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     private List<String> logCursor(String table) {
         List<String> list = new ArrayList<>();
 
+        SQLiteDatabase  database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(table, null, null, null, null, null, null);
         if (c != null) {
             if (c.moveToFirst()) {
@@ -678,6 +712,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         assert c != null;
         c.close();
+        database.close();
         return list;
     }
    }

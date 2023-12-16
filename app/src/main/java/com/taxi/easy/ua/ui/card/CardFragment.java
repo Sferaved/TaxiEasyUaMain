@@ -86,7 +86,6 @@ public class CardFragment extends Fragment {
         textCard = binding.textCard;
         listView = binding.listView;
 
-
         networkChangeReceiver = new NetworkChangeReceiver();
         email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(requireActivity())).get(3);
 
@@ -96,9 +95,7 @@ public class CardFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        progressBar.setVisibility(View.VISIBLE);
         btnCardLink  = binding.btnCardLink;
-
         paySystem(new PaySystemCallback() {
             @Override
             public void onPaySystemResult(String paymentCode) {
@@ -122,6 +119,7 @@ public class CardFragment extends Fragment {
                                     getUrlToPaymentMono(MainActivity.order_id, messageFondy);
                                     break;
                             }
+                            progressBar.setVisibility(View.GONE);
 
                         } else {
                             progressBar.setVisibility(View.GONE);
@@ -130,9 +128,6 @@ public class CardFragment extends Fragment {
                         }
                     }
                 });
-                Log.d(TAG, "onResume: " + logCursor(MainActivity.TABLE_FONDY_CARDS, requireActivity()));
-
-                // Создайте или откройте базу данных по имени MainActivity.DB_NAME
 
                 ArrayList<Map<String, String>> cardMaps = new ArrayList<>();
 
@@ -147,7 +142,6 @@ public class CardFragment extends Fragment {
                         break;
                 }
 
-                Log.d(TAG, "onResume: cardMaps" + cardMaps);
                 if (cardMaps != null && !cardMaps.isEmpty()) {
                     CustomCardAdapter listAdapter = new CustomCardAdapter(requireActivity(), cardMaps, table);
                     listView.setAdapter(listAdapter);
@@ -156,6 +150,7 @@ public class CardFragment extends Fragment {
                     textCard.setVisibility(View.VISIBLE);
                     listView.setVisibility(View.GONE);
                     textCard.setText(R.string.no_cards);
+                    progressBar.setVisibility(View.GONE);
                 }
             }
 
@@ -394,16 +389,18 @@ public class CardFragment extends Fragment {
                         }
                     } catch (JsonSyntaxException e) {
                         // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
-                        Log.e("TAG1", "Error parsing JSON response: " + e.getMessage());
+
                     }
                 } else {
                     // Обработка ошибки
                     Log.d("TAG1", "onFailure: " + response.code());
                 }
+                progressBar.setVisibility(View.GONE);
             }
 
             @Override
-            public void onFailure(Call<ApiResponsePay<SuccessResponseDataPay>> call, Throwable t) {
+            public void onFailure(@NonNull Call<ApiResponsePay<SuccessResponseDataPay>> call, @NonNull Throwable t) {
+                progressBar.setVisibility(View.GONE);
                 Log.d("TAG1", "onFailure1111: " + t.toString());
             }
 
