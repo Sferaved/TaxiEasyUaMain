@@ -27,7 +27,7 @@
     <ScrollView
         android:id="@+id/layout_scroll"
         android:layout_width="match_parent"
-        android:layout_height="250dp"
+        android:layout_height="450dp"
         android:layout_marginTop="8sp"
         app:layout_constraintTop_toBottomOf="@+id/textView1"
         tools:layout_editor_absoluteX="0dp">
@@ -62,10 +62,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="8sp"
-                android:gravity="left|fill_horizontal"
+                android:gravity="fill_horizontal"
                 android:text="@string/gdpr3"
                 android:textColor="@color/white"
                 android:textSize="12sp" />
+
 
         </LinearLayout>
     </ScrollView>
@@ -86,40 +87,6 @@
         tools:ignore="MissingConstraints" />
 
     <TextView
-        android:id="@+id/text_author"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8sp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8sp"
-        android:textAlignment="center"
-        android:textColor="@color/white"
-        android:text="@string/my_name"
-        android:textSize="12sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/layout_scroll"
-        tools:ignore="RtlCompat" />
-
-    <TextView
-        android:id="@+id/text_site"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8sp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8sp"
-        android:autoLink="web"
-        android:textAlignment="center"
-        android:textColor="@color/white"
-        android:textSize="12sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/text_author"
-        tools:ignore="RtlCompat" />
-
-    <TextView
         android:id="@+id/text_email"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -133,7 +100,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/text_site"
+        app:layout_constraintTop_toBottomOf="@+id/layout_scroll"
         tools:ignore="RtlCompat" />
 
     <TextView
@@ -141,16 +108,16 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="8sp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="4dp"
         android:layout_marginEnd="8sp"
         android:autoLink="email"
         android:textAlignment="center"
         android:textColor="@color/white"
         android:textSize="12sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/text_version"
+        app:layout_constraintTop_toBottomOf="@+id/text_email"
         tools:ignore="RtlCompat" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -166,18 +133,4 @@
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@android:drawable/ic_dialog_email" />
 
-    <TextView
-        android:id="@+id/text_version"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="8sp"
-        android:text="@string/version"
-        android:textAlignment="center"
-        android:textColor="@color/white"
-        android:textSize="12sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/text_email"
-        tools:ignore="RtlCompat" />
 </androidx.constraintlayout.widget.ConstraintLayout>

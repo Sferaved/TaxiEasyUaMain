@@ -9,10 +9,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Bitmap;
-import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
@@ -63,8 +59,6 @@ import com.taxi.easy.ua.utils.LocaleHelper;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.osmdroid.util.GeoPoint;
-import org.osmdroid.views.overlay.Marker;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -204,8 +198,15 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
             @Override
             public void beforeTextChanged(CharSequence s, int start, int before, int after) {
                 // Пользователь удаляет символы, если before > 0
-                if (before > 0) {
+                String inputString = s.toString();
+                int charCount = inputString.length();
+                if (before > 0 && charCount > 2) {
                    positionChecked = 0;
+                    if (startPoint == null) {
+                        performAddressSearch(inputString, "start");
+                    } else if (!startPoint.equals(inputString)) {
+                        performAddressSearch(inputString, "start");
+                    }
                 }
             }
 
@@ -215,13 +216,13 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                 int charCount = inputString.length();
                 Log.d(TAG, "onTextChanged: " + inputString);
                 if (charCount > 2) {
+//                    performAddressSearch(inputString, "start");
                     if (startPoint == null) {
                         performAddressSearch(inputString, "start");
                     } else if (!startPoint.equals(inputString)) {
                         performAddressSearch(inputString, "start");
                     }
 
-//                    performAddressSearch(inputString, "start");
                     textGeoError.setVisibility(View.GONE);
                 }
                 btn_clear_from.setVisibility(View.VISIBLE);
@@ -240,9 +241,16 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
         toEditAddress.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int before, int after) {
-                // Пользователь удаляет символы, если before > 0
-                if (before > 0) {
+                String inputString = s.toString();
+                int charCount = inputString.length();
+                if (before > 0 && charCount > 2) {
                     positionChecked = 0;
+//                    performAddressSearch(inputString, "finish");
+                    if (finishPoint == null) {
+                        performAddressSearch(inputString, "finish");
+                    } else if (!finishPoint.equals(inputString)) {
+                        performAddressSearch(inputString, "finish");
+                    }
                 }
             }
             @Override
@@ -252,13 +260,14 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                 int charCount = inputString.length();
 
                 if (charCount > 2) {
-//                    if (finishPoint == null) {
-//                        performAddressSearch(inputString, "finish");
-//                    } else if (!finishPoint.equals(inputString)) {
-//                        performAddressSearch(inputString, "finish");
-//                    }
-                    performAddressSearch(inputString, "finish");
+//                    performAddressSearch(inputString, "finish");
+                    if (finishPoint == null) {
+                        performAddressSearch(inputString, "finish");
+                    } else if (!finishPoint.equals(inputString)) {
+                        performAddressSearch(inputString, "finish");
+                    }
                 }
+
                 btn_clear_to.setVisibility(View.VISIBLE);
                 text_toError.setVisibility(View.GONE);
             }
@@ -275,6 +284,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                 fromEditAddress.setText("");
                 btn_clear_from.setVisibility(View.INVISIBLE);
                 textGeoError.setVisibility(View.GONE);
+//                performAddressSearch("", "start");
             }
         });
         btn_clear_to = findViewById(R.id.btn_clear_to);
@@ -284,6 +294,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                 toEditAddress.setText("");
                 btn_clear_to.setVisibility(View.INVISIBLE);
                 text_toError.setVisibility(View.GONE);
+//                addresses = new ArrayList<>();
+//                coordinatesList = new ArrayList<>(); // Список для хранения координат
             }
         });
 
@@ -356,67 +368,71 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
         btn_ok.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                progressBar.setVisibility(View.VISIBLE);
+
                 if(start.equals("ok")) {
+                    verifyRoutStart = false;
+                    verifyBuildingStart = false;
+
                     if (fromEditAddress.getText().toString().contains("\t")) {
                         verifyRoutStart = true;
-                    }
-                    if (fromEditAddress.getText().toString().contains("\f")) {
+                        verifyBuildingStart = true;
+                    } else  {
                         verifyBuildingStart = false;
                     }
+                    if (!verifyBuildingStart) {
+                        textGeoError.setVisibility(View.VISIBLE);
+                        textGeoError.setText(R.string.house_vis_mes);
+
+                        fromEditAddress.requestFocus();
+                        fromEditAddress.setSelection(fromEditAddress.getText().toString().length());
+                        KeyboardUtils.showKeyboard(getApplicationContext(), fromEditAddress);
+                    } else if (!verifyRoutStart) {
+                        textGeoError.setVisibility(View.VISIBLE);
+                        textGeoError.setText(R.string.rout_fin);
+
+                        fromEditAddress.requestFocus();
+                        fromEditAddress.setSelection(fromEditAddress.getText().toString().length());
+                        KeyboardUtils.showKeyboard(getApplicationContext(), fromEditAddress);
+                    }
+                    if (verifyRoutStart && verifyBuildingStart) {
+                        startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                    }
                 }
+                if(end.equals("ok")) {
+                    verifyRoutFinish = false;
+                    verifyRoutFinish = false;
 
-                if (verifyBuildingStart) {
-                    textGeoError.setVisibility(View.VISIBLE);
-                    textGeoError.setText(R.string.house_vis_mes);
-
-                    fromEditAddress.requestFocus();
-                    fromEditAddress.setSelection(fromEditAddress.getText().toString().length());
-                    KeyboardUtils.showKeyboard(getApplicationContext(), fromEditAddress);
-                } else if (!verifyRoutStart) {
-                    textGeoError.setVisibility(View.VISIBLE);
-                    textGeoError.setText(R.string.rout_fin);
-
-                    fromEditAddress.requestFocus();
-                    fromEditAddress.setSelection(fromEditAddress.getText().toString().length());
-                    KeyboardUtils.showKeyboard(getApplicationContext(), fromEditAddress);
-                }
-                Log.d(TAG, "onClick: " + toEditAddress.getText().toString());
-                VisicomFragment.textViewTo.setText(toEditAddress.getText().toString());
-                if (toEditAddress.getText().toString().equals(getString(R.string.on_city_tv))) {
-                    verifyBuildingFinish = false;
-                    verifyRoutFinish = true;
-                } else {
-                    if (toEditAddress.getText().toString().contains("\t")) {
+                    if (toEditAddress.getText().toString().equals(getString(R.string.on_city_tv))) {
                         verifyRoutFinish = true;
-
-                    }
-                    if (toEditAddress.getText().toString().contains("\f")) {
                         verifyBuildingFinish = true;
-
                     } else {
-                        verifyBuildingFinish = false;
+                        if (toEditAddress.getText().toString().contains("\t")) {
+                            verifyRoutFinish = true;
+                            verifyBuildingFinish = true;
+                        }
+                        if (toEditAddress.getText().toString().contains("\f")) {
+                            verifyBuildingFinish = false;
+                        }
                     }
-                }
-                Log.d(TAG, "onClick:verifyBuildingFinish " + verifyBuildingFinish);
-                if (verifyBuildingFinish) {
-                    text_toError.setVisibility(View.VISIBLE);
-                    text_toError.setText(R.string.house_vis_mes);
+                    if (!verifyBuildingFinish) {
+                        text_toError.setVisibility(View.VISIBLE);
+                        text_toError.setText(R.string.house_vis_mes);
 
-                    toEditAddress.requestFocus();
-                    toEditAddress.setSelection(toEditAddress.getText().toString().length());
-                    KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
-                } else if (!verifyRoutFinish) {
-                    text_toError.setVisibility(View.VISIBLE);
-                    text_toError.setText(R.string.rout_fin);
+                        toEditAddress.requestFocus();
+                        toEditAddress.setSelection(toEditAddress.getText().toString().length());
+                        KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
+                    }else if (!verifyRoutFinish) {
+                        text_toError.setVisibility(View.VISIBLE);
+                        text_toError.setText(R.string.rout_fin);
 
-                    toEditAddress.requestFocus();
-                    toEditAddress.setSelection(toEditAddress.getText().toString().length());
-                    KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
-                }
+                        toEditAddress.requestFocus();
+                        toEditAddress.setSelection(toEditAddress.getText().toString().length());
+                        KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
+                    }
 
-                if (!verifyBuildingStart && !verifyBuildingFinish && verifyRoutStart && verifyRoutFinish) {
-                    startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                    if (verifyRoutFinish && verifyBuildingFinish) {
+                        startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                    }
                 }
 
             }
@@ -745,32 +761,37 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
 
             if (!inputText.substring(3).contains("\f")) {
 
-                url = url + "?categories=adr_street&text=" + inputText + "&key=" + apiKey;
-                if (point.equals("start")) {
-                    verifyBuildingStart = true;
-                } else {
-                    verifyBuildingFinish = true;
-                }
+                url = url
+                        + "?"
+                        + "categories=poi_railway_station"
+                        + ",poi_bus_station"
+                        + ",poi_airport_terminal"
+                        + ",poi_airport"
+                        + ",poi_shopping_centre"
+                        + ",poi_night_club"
+                        + ",poi_hotel_and_motel"
+                        + ",poi_cafe_bar"
+                        + ",poi_restaurant"
+                        + ",poi_entertaining_complex"
+                        + ",poi_supermarket"
+                        + ",poi_grocery"
+                        + ",poi_swimming_pool"
+                        + ",poi_sports_complexe"
+                        + ",poi_underground_railway_station"
+                        + ",adr_street"
+                        + "&"
+                        + "text=" + inputText + "&key=" + apiKey;
+
             } else {
 
-                Log.d(TAG, "performAddressSearch: inputText1111 " + inputText);
                 String number = numbers(inputText);
-
-                Log.d(TAG, "performAddressSearch: inputText" + inputTextBuild());
 
                 if (positionChecked != 0) {
                     inputText = inputTextBuild() + ", " + number;
                 }
 
-
                 url = url + "?categories=adr_address&text=" + inputText + "&key=" + apiKey;
 
-                Log.d(TAG, "performAddressSearch: 6666666666 " + url);
-                if (point.equals("start")) {
-                    verifyBuildingStart = false;
-                } else {
-                    verifyBuildingFinish = false;
-                }
             }
 
             Request request = new Request.Builder()
@@ -822,7 +843,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
     private void processAddressData(String responseData, String point) {
         try {
             JSONObject jsonResponse = new JSONObject(responseData);
-            Log.d(TAG, "processAddressData:jsonResponse " + jsonResponse);
+            Log.d("TAG_RESP", "processAddressData:jsonResponse " + jsonResponse);
 
             if (jsonResponse.has("features")) {
                 addresses = new ArrayList<>();
@@ -835,150 +856,188 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                 // Ваши дополнительные действия с features
                 for (int i = 0; i < features.length(); i++) {
                     JSONObject properties = features.getJSONObject(i).getJSONObject("properties");
-                    Log.d(TAG, "processAddressData:properties " + properties);
+                    Log.d(TAG, "processAddressData:properties " + i + " - " + properties);
                     JSONObject geoCentroid = features.getJSONObject(i).getJSONObject("geo_centroid");
 
-                    if (!properties.getString("country_code").equals("ua")) {
-                        Log.d(TAG, "processAddressData: Skipped address - Country is not Україна");
-                        continue;
-                    }
+                    if (properties.getString("country_code").equals("ua")) {
+                        switch (properties.getString("categories")) {
+                            case "adr_street":
+                                String settlement = properties.optString("settlement", "").toLowerCase();
+                                String city = citySearch.toLowerCase();
+                                String address;
+                                if (settlement.contains(city)) {
+                                    double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
+                                    double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
+                                    if (properties.has("zone")) {
+                                        address = String.format("%s %s (%s)\f",
+                                                properties.getString("type"),
+                                                properties.getString("name"),
+                                                properties.getString("zone"));
 
-                    if (properties.getString("categories").equals("adr_street")) {
+                                        addAddressOne(
+                                                address,
+                                                properties.getString("name"),
+                                                "",
+                                                properties.getString("settlement"),
+                                                longitude,
+                                                latitude);
+                                    } else {
+                                        address = String.format("%s %s\f ",
+                                                properties.getString("type"),
+                                                properties.getString("name"));
+                                        addAddressOne(
+                                                address,
+                                                properties.getString("name"),
+                                                "",
+                                                properties.getString("settlement"),
+                                                longitude,
+                                                latitude);
+                                    }
 
-                        String settlement = properties.optString("settlement", "").toLowerCase();
-                        String city = citySearch.toLowerCase();
-                        String address;
+                                }
+                                // Проверка по Киевской области
+                                if (citySearch.equals("Київ") || citySearch.equals("Киев")) {
+                                    if (checkWordInArray(properties.getString("settlement"), kyivRegionArr)) {
+                                        address = String.format("%s %s (%s)\f ",
+                                                properties.getString("type"),
+                                                properties.getString("name"),
+                                                properties.getString("settlement"));
 
-                        if (settlement.contains(city)) {
-                            if (properties.has("zone")) {
-                                address = String.format("%s %s (%s)\f",
-                                        properties.getString("type"),
-                                        properties.getString("name"),
-                                        properties.getString("zone"));
-                                addresses.add(new String[]{
-                                        address,
-                                        properties.getString("name"),
-                                        properties.getString("zone"),
-                                        properties.getString("settlement"),
-                                });
-                            } else {
-                                address = String.format("%s %s\f ",
-                                        properties.getString("type"),
-                                        properties.getString("name"));
-                                addresses.add(new String[]{
-                                        address,
-                                        properties.getString("name"),
-                                        "",
-                                        properties.getString("settlement"),
-                                });
-                            }
+                                        double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
+                                        double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
 
-                            double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
-                            double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
+                                        addAddressOne(
+                                                address,
+                                                properties.getString("name"),
+                                                "",
+                                                properties.getString("settlement"),
+                                                longitude,
+                                                latitude);
+                                    }
+                                }
+                                break;
+                            case "adr_address":
+                                settlement = properties.optString("settlement", "").toLowerCase();
+                                city = citySearch.toLowerCase();
 
-                            coordinatesList.add(new double[]{longitude, latitude});
-                        }
+                                if (settlement.contains(city)) {
+                                    Log.d(TAG, "processAddressData: properties ййй" + properties);
+                                    double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
+                                    double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
+                                    if (properties.has("zone")) {
+                                        // Получение элементов отдельно
 
-                        // Проверка по Киевской области
+                                        Log.d(TAG, "processAddressData: zone" + zone);
 
-                        if (citySearch.equals("Київ") || citySearch.equals("Киев")) {
-                            if (checkWordInArray(properties.getString("settlement"), kyivRegionArr)) {
-                                address = String.format("%s %s (%s)\f ",
-                                        properties.getString("type"),
-                                        properties.getString("name"),
-                                        properties.getString("settlement"));
+                                        if (properties.getString("zone").equals(zone)) {
+                                            address = String.format("%s %s %s %s %s %s \t",
 
+                                                    properties.getString("street_type"),
+                                                    properties.getString("street"),
+                                                    properties.getString("name"),
+                                                    properties.getString("zone"),
+                                                    properties.getString("settlement_type"),
+                                                    properties.getString("settlement"));
+                                            addAddressOne(
+                                                    address,
+                                                    "",
+                                                    "",
+                                                    "",
+                                                    longitude,
+                                                    latitude);
+                                        }
 
-                                addresses.add(new String[]{
-                                        address,
-                                        properties.getString("name"),
-                                        "",
-                                        properties.getString("settlement"),
-                                });
-                                double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
-                                double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
+                                    } else {
+                                        address = String.format("%s %s %s %s %s \t",
 
-                                coordinatesList.add(new double[]{longitude, latitude});
-                            }
-                        }
+                                                properties.getString("street_type"),
+                                                properties.getString("street"),
+                                                properties.getString("name"),
+                                                properties.getString("settlement_type"),
+                                                properties.getString("settlement"));
+                                        addAddressOne(
+                                                address,
+                                                "",
+                                                "",
+                                                "",
+                                                longitude,
+                                                latitude);
+                                    }
 
-                    }
-                    if (properties.getString("categories").equals("adr_address")) {
-                        String settlement = properties.optString("settlement", "").toLowerCase();
-                        String city = citySearch.toLowerCase();
-                        String address;
+                                }
+                                // Проверка по Киевской области
 
-                        if (settlement.contains(city)) {
-                            Log.d(TAG, "processAddressData: properties ййй" + properties);
-                            if (properties.has("zone")) {
-                                // Получение элементов отдельно
+                                if (citySearch.equals("Київ") || citySearch.equals("Киев")) {
+                                    Log.d(TAG, "processAddressData:citySearch " + citySearch);
+                                    if (checkWordInArray(properties.getString("settlement"), kyivRegionArr)) {
+                                        address = String.format("%s %s %s %s %s  \t",
+                                                properties.getString("street_type"),
+                                                properties.getString("street"),
+                                                properties.getString("name"),
+                                                properties.getString("settlement_type"),
+                                                properties.getString("settlement"));
 
-                                Log.d(TAG, "processAddressData: zone" + zone);
-                                if (properties.getString("zone").equals(zone)) {
-                                    address = String.format("%s %s %s %s %s %s \t",
+                                        Log.d(TAG, "processAddressData: address" + address);
+                                        double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
+                                        double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
 
-                                            properties.getString("street_type"),
-                                            properties.getString("street"),
-                                            properties.getString("name"),
-                                            properties.getString("zone"),
-                                            properties.getString("settlement_type"),
-                                            properties.getString("settlement"));
-                                    addresses.add(new String[]{
+//                                        coordinatesList.add(new double[]{longitude, latitude});
+                                        addAddressOne(
+                                                address,
+                                                "",
+                                                "",
+                                                "",
+                                                longitude,
+                                                latitude);
+                                    }
+                                }
+                                break;
+                            case "poi_railway_station":
+                            case "poi_bus_station":
+                            case "poi_airport_terminal":
+                            case "poi_airport":
+                                settlement = properties.optString("address", "").toLowerCase();
+                                city = citySearch.toLowerCase();
+
+                                if (settlement.contains(city)) {
+                                    Log.d(TAG, "poi_railway_station" + properties);
+                                    address = String.format("%s %s\t",
+                                            properties.getString("vitrine"),
+                                            properties.getString("address"));
+
+                                    double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
+                                    double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
+                                    Log.d(TAG, "processAddressData: latitude longitude" + latitude + " " + longitude);
+
+                                    addAddressOne(
                                             address,
                                             "",
                                             "",
                                             "",
-                                    });
-
+                                            longitude,
+                                            latitude);
                                 }
 
-                            } else {
-                                address = String.format("%s %s %s %s %s \t",
+                            default:
+                                settlement = properties.optString("address", "").toLowerCase();
+                                city = citySearch.toLowerCase();
 
-                                        properties.getString("street_type"),
-                                        properties.getString("street"),
-                                        properties.getString("name"),
-                                        properties.getString("settlement_type"),
-                                        properties.getString("settlement"));
-                                addresses.add(new String[]{
-                                        address,
-                                        "",
-                                        "",
-                                        "",
-                                });
-                            }
+                                if (settlement.contains(city)) {
+                                    address = String.format("%s %s\t",
+                                            properties.getString("vitrine"),
+                                            properties.getString("address"));
 
-
-                            double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
-                            double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
-                            Log.d(TAG, "processAddressData: latitude longitude" + latitude + " " + longitude);
-
-                            coordinatesList.add(new double[]{longitude, latitude});
-                        }
-                        // Проверка по Киевской области
-
-                        if (citySearch.equals("Київ") || citySearch.equals("Киев")) {
-                            Log.d(TAG, "processAddressData:citySearch " + citySearch);
-                            if (checkWordInArray(properties.getString("settlement"), kyivRegionArr)) {
-                                address = String.format("%s %s %s %s %s  \t",
-                                        properties.getString("street_type"),
-                                        properties.getString("street"),
-                                        properties.getString("name"),
-                                        properties.getString("settlement_type"),
-                                        properties.getString("settlement"));
-
-                                Log.d(TAG, "processAddressData: address" + address);
-                                addresses.add(new String[]{
-                                        address,
-                                        "",
-                                        "",
-                                        "",
-                                });
-                                double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
-                                double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
-
-                                coordinatesList.add(new double[]{longitude, latitude});
-                            }
+                                    double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
+                                    double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
+                                    addAddressOne(
+                                            address,
+                                            "",
+                                            "",
+                                            "",
+                                            longitude,
+                                            latitude);
+                                }
+                                break;
                         }
                     }
                 }
@@ -989,10 +1048,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                 JSONObject properties = jsonResponse.getJSONObject("properties");
                 JSONObject geoCentroid = jsonResponse.getJSONObject("geo_centroid");
 
-// Теперь вы можете использовать значения properties и geoCentroid по вашему усмотрению
-                Log.d(TAG, "processAddressData: properties " + properties);
-                Log.d(TAG, "processAddressData: geoCentroid " + geoCentroid);
-
                 if (properties.getString("country_code").equals("ua")) {
 
                     if (properties.getString("categories").equals("adr_street")) {
@@ -1002,33 +1057,33 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                     String address;
 
                     if (settlement.contains(city)) {
+                        double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
+                        double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
+
                         if (properties.has("zone")) {
                             address = String.format("%s %s (%s)\f ",
                                     properties.getString("type"),
                                     properties.getString("name"),
                                     properties.getString("zone"));
-                            addresses.add(new String[]{
+                            addAddressOne(
                                     address,
                                     properties.getString("name"),
                                     properties.getString("zone"),
                                     properties.getString("settlement"),
-                            });
+                                    longitude,
+                                    latitude);
                         } else {
                             address = String.format("%s %s\f ",
                                     properties.getString("type"),
                                     properties.getString("name"));
-                            addresses.add(new String[]{
+                            addAddressOne(
                                     address,
                                     properties.getString("name"),
                                     "",
                                     properties.getString("settlement"),
-                            });
+                                    longitude,
+                                    latitude);
                         }
-
-                        double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
-                        double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
-
-                        coordinatesList.add(new double[]{longitude, latitude});
                     }
 
                     // Проверка по Киевской области
@@ -1040,20 +1095,18 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                                     properties.getString("name"),
                                     properties.getString("settlement"));
 
+                            double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
+                            double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
 
-                            addresses.add(new String[]{
+                            addAddressOne(
                                     address,
                                     properties.getString("name"),
                                     "",
                                     properties.getString("settlement"),
-                            });
-                            double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
-                            double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
-
-                            coordinatesList.add(new double[]{longitude, latitude});
+                                    longitude,
+                                    latitude);
                         }
                     }
-
                 }
                     if (properties.getString("categories").equals("adr_address")) {
                     String settlement = properties.optString("settlement", "").toLowerCase();
@@ -1061,7 +1114,10 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                     String address;
 
                     if (settlement.contains(city)) {
-                        Log.d(TAG, "processAddressData: properties ййй" + properties);
+
+                        double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
+                        double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
+
                         if (properties.has("zone")) {
                             // Получение элементов отдельно
 
@@ -1075,13 +1131,13 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                                         properties.getString("zone"),
                                         properties.getString("settlement_type"),
                                         properties.getString("settlement"));
-                                addresses.add(new String[]{
+                                addAddressOne(
                                         address,
                                         "",
                                         "",
                                         "",
-                                });
-
+                                        longitude,
+                                        latitude);
                             }
 
                         } else {
@@ -1092,20 +1148,17 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                                     properties.getString("name"),
                                     properties.getString("settlement_type"),
                                     properties.getString("settlement"));
-                            addresses.add(new String[]{
+                            addAddressOne(
                                     address,
                                     "",
                                     "",
                                     "",
-                            });
+                                    longitude,
+                                    latitude);
                         }
 
 
-                        double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
-                        double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
-                        Log.d(TAG, "processAddressData: latitude longitude" + latitude + " " + longitude);
-
-                        coordinatesList.add(new double[]{longitude, latitude});
+                       Log.d(TAG, "processAddressData: latitude longitude" + latitude + " " + longitude);
                     }
                     // Проверка по Киевской области
 
@@ -1119,33 +1172,34 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                                     properties.getString("settlement_type"),
                                     properties.getString("settlement"));
 
-                            Log.d(TAG, "processAddressData: address" + address);
-                            addresses.add(new String[]{
+                            double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
+                            double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
+
+                            addAddressOne(
                                     address,
                                     "",
                                     "",
                                     "",
-                            });
-                            double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
-                            double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
-
-                            coordinatesList.add(new double[]{longitude, latitude});
+                                    longitude,
+                                    latitude);
                         }
                     }
                 }
                 }
             }
+            String newAddress = getString(R.string.address_on_map);
 
+            boolean isAddressExists = false;
+            for (String[] address : addresses) {
+                if (address.length > 0 && address[0].equals(newAddress)) {
+                    isAddressExists = true;
+                    break;
+                }
+            }
 
-
-
-
-            addresses.add(new String[]{
-                    getString(R.string.address_on_map),
-                    "",
-                    "",
-                    "",
-            });
+            if (!isAddressExists) {
+                addresses.add(new String[]{newAddress, "", "", ""});
+            }
 
             if (addresses.size() != 0) {
                 new Handler(Looper.getMainLooper()).post(() -> {
@@ -1170,11 +1224,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                     addressListView.setAdapter(addressAdapter);
                     addressListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
                     addressListView.setItemChecked(0, true);
-                    if (point.equals("start")) {
-                        verifyRoutStart = false;
-                    } else if (point.equals("finish")) {
-                        verifyRoutFinish = false;
-                    }
+
                     addressListView.setOnItemClickListener((parent, viewC, position, id) -> {
 
                         positionChecked = position;
@@ -1211,43 +1261,50 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                                 startPoint = addressesList.get(position);
                                 fromEditAddress.setText(startPoint);
                                 fromEditAddress.setSelection(startPoint.length());
-
+                                if (fromEditAddress.getText().toString().contains("\t")) {
+                                    verifyRoutStart = true;
+                                    verifyBuildingStart = false;
+                                }
+                                if (fromEditAddress.getText().toString().contains("\f")) {
+                                    verifyRoutStart = false;
+                                    verifyBuildingStart = true;
+                                }
                                 if (!verifyBuildingStart) {
                                     verifyRoutStart = true;
                                     List<String> settings = new ArrayList<>();
 
+                                    settings.add(Double.toString(coordinates[1]));
+                                    settings.add(Double.toString(coordinates[0]));
+                                    if (toEditAddress.getText().toString().equals(getString(R.string.on_city_tv))) {
+                                        settings.add(Double.toString(coordinates[1]));
+                                        settings.add(Double.toString(coordinates[0]));
+                                        settings.add(addressesList.get(position));
+                                        settings.add(getString(R.string.on_city_tv));
+                                    } else {
+                                        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                                        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                                        Cursor cursor = database.rawQuery(query, null);
 
-                                            settings.add(Double.toString(coordinates[1]));
-                                            settings.add(Double.toString(coordinates[0]));
-                                            if (toEditAddress.getText().toString().equals(getString(R.string.on_city_tv))) {
-                                                settings.add(Double.toString(coordinates[1]));
-                                                settings.add(Double.toString(coordinates[0]));
-                                                settings.add(addressesList.get(position));
-                                                settings.add(getString(R.string.on_city_tv));
-                                            } else {
-                                                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                                                SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                                                Cursor cursor = database.rawQuery(query, null);
+                                        cursor.moveToFirst();
 
-                                                cursor.moveToFirst();
-
-                                                // Получите значения полей из первой записи
+                                        // Получите значения полей из первой записи
 
 
-                                                @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                                                @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                                                cursor.close();
-                                                database.close();
+                                        @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                                        @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+                                        cursor.close();
+                                        database.close();
 
-                                                settings.add(String.valueOf(toLatitude));
-                                                settings.add(String.valueOf(toLongitude));
-                                                settings.add(addressesList.get(position));
-                                                settings.add(toEditAddress.getText().toString());
-                                            }
-                                            updateRoutMarker(settings);
-                                            updateMyPosition(coordinates[1], coordinates[0], startPoint, getApplicationContext());
-                                            VisicomFragment.geoText.setText(startPoint);
-                                            Log.d(TAG, "processAddressData: startPoint " + startPoint);
+                                        settings.add(String.valueOf(toLatitude));
+                                        settings.add(String.valueOf(toLongitude));
+                                        settings.add(addressesList.get(position));
+                                        settings.add(toEditAddress.getText().toString());
+                                    }
+                                    updateRoutMarker(settings);
+                                    updateMyPosition(coordinates[1], coordinates[0], startPoint, getApplicationContext());
+                                    VisicomFragment.geoText.setText(startPoint);
+                                    Log.d(TAG, "processAddressData: startPoint " + startPoint);
+
                                 }
                             } else if (point.equals("finish")) {
                                 finishPoint = addressesList.get(position);
@@ -1364,66 +1421,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
         }
         return numbersAfterComma;
     }
-
-
-    private void showRoutMap(GeoPoint geoPoint) {
-        if (OpenStreetMapVisicomActivity.marker != null) {
-            OpenStreetMapVisicomActivity.map.getOverlays().remove(OpenStreetMapVisicomActivity.marker);
-            OpenStreetMapVisicomActivity.map.invalidate();
-            OpenStreetMapVisicomActivity.marker = null;
-        }
-
-
-        OpenStreetMapVisicomActivity.marker = new Marker(OpenStreetMapVisicomActivity.map);
-        OpenStreetMapVisicomActivity.marker.setPosition(geoPoint);
-        OpenStreetMapVisicomActivity.marker.setTextLabelBackgroundColor(
-                Color.TRANSPARENT
-        );
-        OpenStreetMapVisicomActivity.marker.setTextLabelForegroundColor(
-                Color.RED
-        );
-        OpenStreetMapVisicomActivity.marker.setTextLabelFontSize(40);
-        OpenStreetMapVisicomActivity.marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-        String unuString = new String(Character.toChars(0x1F449));
-
-        OpenStreetMapVisicomActivity.marker.setTitle("2." + unuString + OpenStreetMapVisicomActivity.ToAdressString);
-
-        @SuppressLint("UseCompatLoadingForDrawables") Drawable originalDrawable = getResources().getDrawable(R.drawable.marker_green);
-        int width = 48;
-        int height = 48;
-        Bitmap bitmap = Bitmap.createScaledBitmap(((BitmapDrawable) originalDrawable).getBitmap(), width, height, false);
-
-        // Создайте новый Drawable из уменьшенного изображения
-        Drawable scaledDrawable = new BitmapDrawable(getResources(), bitmap);
-        OpenStreetMapVisicomActivity.marker.setIcon(scaledDrawable);
-
-        OpenStreetMapVisicomActivity.marker.showInfoWindow();
-
-        OpenStreetMapVisicomActivity.map.getOverlays().add(OpenStreetMapVisicomActivity.marker);
-
-        GeoPoint initialGeoPoint = new GeoPoint(geoPoint.getLatitude() - 0.01, geoPoint.getLongitude());
-        OpenStreetMapVisicomActivity.map.getController().setCenter(initialGeoPoint);
-        double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO).get(4));
-        OpenStreetMapVisicomActivity.mapController.setZoom(newZoomLevel);
-
-        OpenStreetMapVisicomActivity.map.invalidate();
-
-        GeoPoint startPoint = new GeoPoint(OpenStreetMapVisicomActivity.startLat, OpenStreetMapVisicomActivity.startLan);
-
-        OpenStreetMapVisicomActivity.showRout(startPoint, OpenStreetMapVisicomActivity.endPoint);
-    }
-
-    private void updateAddCost(String addCost) {
-        ContentValues cv = new ContentValues();
-        Log.d("TAG", "updateAddCost: addCost" + addCost);
-        cv.put("addCost", addCost);
-
-        // обновляем по id
-        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                new String[]{"1"});
-        database.close();
-    }
     private void updateRoutMarker(List<String> settings) {
         Log.d(TAG, "updateRoutMarker: " + settings.toString());
         ContentValues cv = new ContentValues();
@@ -1474,91 +1471,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
         SQLiteDatabase db = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         @SuppressLint("Recycle") Cursor c = db.query(MainActivity.TABLE_ORDERS_INFO, null, null, null, null, null, null);
 
-//        if (c != null) {
-//            if (c.moveToFirst()) {
-//                do {
-//
-//                    addresses.add(new String[]{
-//                            c.getString(c.getColumnIndexOrThrow ("from_street")),
-//                            "",
-//                            "",
-//                            "",
-//                    });
-//                    double longitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow ("from_lng")));
-//                    double latitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow ("from_lat")));
-//
-//                    coordinatesList.add(new double[]{longitude, latitude});
-//                    addresses.add(new String[]{
-//                            c.getString(c.getColumnIndexOrThrow ("to_street")),
-//                            "",
-//                            "",
-//                            "",
-//                    });
-//                    longitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow ("to_lng")));
-//                    latitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow ("to_lat")));
-//
-//                    coordinatesList.add(new double[]{longitude, latitude});
-//
-//                } while (c.moveToNext());
-//            }
-//            btn_ok.setVisibility(View.VISIBLE);
-//        }
-//        if (c != null) {
-//            if (c.moveToFirst()) {
-//                do {
-//                    // Получаем данные из курсора
-//                    String fromStreet = c.getString(c.getColumnIndexOrThrow("from_street"));
-//                    String toStreet = c.getString(c.getColumnIndexOrThrow("to_street"));
-//
-//                    // Проверяем, есть ли уже такая запись в addresses
-//                    boolean fromAddressExists = addresses.stream().anyMatch(a -> a[0].equals(fromStreet));
-//                    boolean toAddressExists = addresses.stream().anyMatch(a -> a[0].equals(toStreet));
-//
-//                    // Если записи нет, добавляем
-//                    if (!fromAddressExists) {
-//                        addresses.add(new String[]{fromStreet, "", "", ""});
-//                        double fromLongitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("from_lng")));
-//                        double fromLatitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("from_lat")));
-//                        coordinatesList.add(new double[]{fromLongitude, fromLatitude});
-//                    }
-//
-//                    if (!toAddressExists) {
-//                        addresses.add(new String[]{toStreet, "", "", ""});
-//                        double toLongitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("to_lng")));
-//                        double toLatitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("to_lat")));
-//                        coordinatesList.add(new double[]{toLongitude, toLatitude});
-//                    }
-//
-//                } while (c.moveToNext());
-//            }
-//        }
-//        if (c != null) {
-//            if (c.moveToFirst()) {
-//                Set<String> uniqueAddressesSet = new HashSet<>();
-//
-//                do {
-//                    // Получаем данные из курсора
-//                    String fromStreet = c.getString(c.getColumnIndexOrThrow("from_street"));
-//                    String toStreet = c.getString(c.getColumnIndexOrThrow("to_street"));
-//
-//                    // Проверяем, есть ли уже такая запись в множестве
-//                    if (uniqueAddressesSet.add(fromStreet)) {
-//                        addresses.add(new String[]{fromStreet, "", "", ""});
-//                        double fromLongitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("from_lng")));
-//                        double fromLatitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("from_lat")));
-//                        coordinatesList.add(new double[]{fromLongitude, fromLatitude});
-//                    }
-//
-//                    if (uniqueAddressesSet.add(toStreet)) {
-//                        addresses.add(new String[]{toStreet, "", "", ""});
-//                        double toLongitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("to_lng")));
-//                        double toLatitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("to_lat")));
-//                        coordinatesList.add(new double[]{toLongitude, toLatitude});
-//                    }
-//
-//                } while (c.moveToNext());
-//            }
-//        }
         if (c != null) {
             if (c.moveToFirst()) {
                 Set<String> uniqueAddressesSet = new HashSet<>();
@@ -1590,51 +1502,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                 } while (c.moveToNext());
             }
         }
-//
-//       if (c != null && c.moveToFirst()) {
-//            do {
-//                String fromStreet = c.getString(c.getColumnIndexOrThrow("from_street"));
-//                fromStreet = fromStreet.trim();
-//                Log.d(TAG, "oldAddresses:fromStreet " + fromStreet);
-//                String toStreet = c.getString(c.getColumnIndexOrThrow("to_street"));
-//                toStreet = toStreet.trim();
-//                Log.d(TAG, "oldAddresses:toStreet " + toStreet);
-//                addresses.add(new String[]{fromStreet});
-//                double fromLongitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("from_lng")));
-//                double fromLatitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("from_lat")));
-//                coordinatesList.add(new double[]{fromLongitude, fromLatitude});
-//                List<String[]> copyOfAddresses = new ArrayList<>(addresses);
-//
-//                for (String[] address : copyOfAddresses) {
-//                        if(!address.equals(fromStreet)) {
-//                            addresses.add(new String[]{fromStreet});
-//                            fromLongitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("from_lng")));
-//                            fromLatitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("from_lat")));
-//                            coordinatesList.add(new double[]{fromLongitude, fromLatitude});
-//                        }
-//
-//
-//                        if (!toStreet.equals(getString(R.string.on_city_tv))) {
-//                            // Например, добавление в addresses и coordinatesList
-//                            if(!address.equals(toStreet)) {
-//                                addresses.add(new String[]{toStreet});
-//                                double toLongitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("to_lng")));
-//                                double toLatitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("to_lat")));
-//                                coordinatesList.add(new double[]{toLongitude, toLatitude});
-//                            }
-//
-//                        }
-//
-//
-//
-//            }
-//
-//
-//
-//            } while (c.moveToNext());
-//        }
-
-
 
         btn_ok.setVisibility(View.VISIBLE);
         db.close();
@@ -1821,6 +1688,27 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
     @Override
     public void onApiFailure(Throwable t) {
 
+    }
+    private void addAddressOne (
+            String newAddress1,
+            String newAddress2,
+            String newAddress3,
+            String newAddress4,
+            double longitude,
+            double latitude
+    ) {
+        boolean isAddressExists = false;
+        for (String[] address : addresses) {
+            if (address.length > 0 && address[0].equals(newAddress1)) {
+                isAddressExists = true;
+                break;
+            }
+        }
+
+        if (!isAddressExists) {
+            addresses.add(new String[]{newAddress1, newAddress2, newAddress3, newAddress4});
+            coordinatesList.add(new double[]{longitude, latitude});
+        }
     }
 }
 

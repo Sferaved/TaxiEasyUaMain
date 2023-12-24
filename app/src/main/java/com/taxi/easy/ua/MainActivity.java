@@ -21,6 +21,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -33,6 +34,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -65,6 +67,7 @@ import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.phone.ApiClientPhone;
 
 import org.json.JSONException;
 
@@ -101,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    public static final String DB_NAME = "data_16122023_1";
+    public static final String DB_NAME = "data_20122023_1";
 
     /**
      * Table section
@@ -155,7 +158,7 @@ public class MainActivity extends AppCompatActivity {
             // Passing each menu ID as a set of Ids because each
             // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-              R.id.nav_visicom, R.id.nav_home, R.id.nav_gallery, R.id.nav_about, R.id.nav_uid, R.id.nav_bonus, R.id.nav_card)
+              R.id.nav_visicom, R.id.nav_home, R.id.nav_gallery, R.id.nav_about, R.id.nav_uid, R.id.nav_bonus, R.id.nav_card, R.id.nav_author)
              .setOpenableLayout(drawer)
              .build();
         navMenu = navigationView.getMenu();
@@ -937,7 +940,7 @@ public class MainActivity extends AppCompatActivity {
                 updateRecordsUserInfo("username", user.getDisplayName());
 
                 addUser(user.getDisplayName(), user.getEmail()) ;
-
+                userPhoneFromServer (user.getEmail());
 
 
 //                fetchBonus(user.getEmail());
@@ -1191,7 +1194,7 @@ public class MainActivity extends AppCompatActivity {
         protected Map<String, String> doInBackground(Void... voids) {
             String userEmail = logCursor(TABLE_USER_INFO).get(3);
 
-            String url = "https://m.easy-order-taxi.site/android/verifyBlackListUser/" + userEmail + "/" + "com.taxi.easy.ua";
+            String url = "https://m.easy-order-taxi.site/android/verifyBlackListUser/" + userEmail + "/" + getString(R.string.application);
             try {
                 return CostJSONParser.sendURL(url);
             } catch (Exception e) {
@@ -1201,6 +1204,7 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
         @Override
         protected void onPostExecute(Map<String, String> sendUrlMap) {
             String message = sendUrlMap.get("message");
@@ -1226,11 +1230,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private static final String PREFS_NAME = "MyPrefsFile";
-    private static final String LAST_NOTIFICATION_TIME_KEY = "lastNotificationTime";
+    private static final String PREFS_NAME = "MyPrefsFileNew";
+    private static final String LAST_NOTIFICATION_TIME_KEY = "lastNotificationTimeNew";
 //    private static final long ONE_DAY_IN_MILLISECONDS = 0; // 24 часа в миллисекундах
     private static final long ONE_DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
 
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     private void version(String versionApi) throws MalformedURLException {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             checkPermission(Manifest.permission.POST_NOTIFICATIONS, PackageManager.PERMISSION_GRANTED);
@@ -1350,4 +1355,39 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void userPhoneFromServer (String email) {
+        ApiClientPhone apiClient = new ApiClientPhone();
+
+        apiClient.getUserPhone(email, new ApiClientPhone.OnUserPhoneResponseListener() {
+            @Override
+            public void onSuccess(String phone) {
+                // Обработка успешного ответа
+                Log.d("UserPhone", "Phone: " + phone);
+
+                // Check if phone is not null
+                if (phone != null) {
+                    String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
+                    boolean val = Pattern.compile(PHONE_PATTERN).matcher(phone).matches();
+
+                    if (val) {
+                        MainActivity.verifyPhone = true;
+                        updateRecordsUser(phone);
+                    } else {
+                        // Handle case where phone doesn't match the pattern
+                        Log.e("UserPhone", "Phone does not match pattern");
+                    }
+                } else {
+                    // Handle case where phone is null
+                    Log.e("UserPhone", "Phone is null");
+                }
+            }
+
+
+            @Override
+            public void onError(String error) {
+                // Обработка ошибки
+                Log.e("UserPhone", "Error: " + error);
+            }
+        });
+    }
 }

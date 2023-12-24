@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.about;
+package com.taxi.easy.ua.ui.author;
 
 import android.os.Build;
 
@@ -9,7 +9,7 @@ import androidx.lifecycle.ViewModel;
 
 import java.time.LocalDate;
 
-public class AboutViewModel extends ViewModel {
+public class AuthorViewModel extends ViewModel {
 
 
     private final MutableLiveData<String> mText_author = new MutableLiveData<>();
@@ -17,7 +17,7 @@ public class AboutViewModel extends ViewModel {
     private final MutableLiveData<String> mText_build = new MutableLiveData<>();
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public AboutViewModel() {
+    public AuthorViewModel() {
         mText_email.setValue("taxi.easy.ua@gmail.com");
         LocalDate currentDate = LocalDate.now();
         int currentYear = currentDate.getYear();

@@ -423,6 +423,7 @@ public class HomeFragment extends Fragment {
             public void onClick(View v) {
                 List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
                 String api =  stringList.get(2);
+                updateAddCost("0");
                 MyBottomSheetBonusFragment bottomSheetDialogFragment = new MyBottomSheetBonusFragment(
                         Long.parseLong(text_view_cost.getText().toString()),
                         "home",

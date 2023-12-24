@@ -184,6 +184,7 @@ public class VisicomFragment extends Fragment  implements ApiCallback{
         buttonBonus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                updateAddCost("0");
                 MyBottomSheetBonusFragment bottomSheetDialogFragment = new MyBottomSheetBonusFragment(Long.parseLong(text_view_cost.getText().toString()), geo_marker, api, text_view_cost);
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             }
@@ -208,27 +209,26 @@ public class VisicomFragment extends Fragment  implements ApiCallback{
         });
 
         btn_minus.setOnClickListener(v -> {
-            List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
-            addCost = Long.parseLong(stringListInfo.get(5));
-            firstCost -= 5;
-            addCost -= 5;
-            if (firstCost <= MIN_COST_VALUE) {
-                firstCost = MIN_COST_VALUE;
-                addCost = MIN_COST_VALUE - firstCostForMin;
+            if (cost >= MIN_COST_VALUE) {
+                List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
+                addCost = Long.parseLong(stringListInfo.get(5));
+                cost = Long.parseLong(text_view_cost.getText().toString());
+                cost -= 5;
+                addCost -= 5;
+
+                updateAddCost(String.valueOf(addCost));
+                text_view_cost.setText(String.valueOf(cost));
             }
-            updateAddCost(String.valueOf(addCost));
-            Log.d("TAG", "startCost: addCost " + addCost);
-            text_view_cost.setText(String.valueOf(firstCost));
         });
 
         btn_plus.setOnClickListener(v -> {
             List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
             addCost = Long.parseLong(stringListInfo.get(5));
-            firstCost += 5;
+            cost = Long.parseLong(text_view_cost.getText().toString());
+            cost += 5;
             addCost += 5;
             updateAddCost(String.valueOf(addCost));
-            Log.d("TAG", "startCost: addCost " + addCost);
-            text_view_cost.setText(String.valueOf(firstCost));
+            text_view_cost.setText(String.valueOf(cost));
         });
         btnOrder.setOnClickListener(new View.OnClickListener() {
             @Override

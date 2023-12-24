@@ -72,7 +72,7 @@ public class GalleryFragment extends Fragment {
     public static Double to_lng;
     long MIN_COST_VALUE;
     private String pay_method;
-    private long costFirstForMin;
+    public static long costFirstForMin;
     private ArrayAdapter<String> listAdapter;
     private String urlOrder;
     private long discount;
@@ -262,6 +262,7 @@ public class GalleryFragment extends Fragment {
             public void onClick(View v) {
                 List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
                 String api =  stringList.get(2);
+                updateAddCost("0");
                 MyBottomSheetBonusFragment bottomSheetDialogFragment = new MyBottomSheetBonusFragment(Long.parseLong(text_view_cost.getText().toString()), "marker", api, text_view_cost) ;
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             }
