@@ -442,11 +442,11 @@ public class VisicomFragment extends Fragment  implements ApiCallback{
                             String result = status.getResponse();
                             Log.d("TAG", "onResponse:result " + result);
                             MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(result);
-                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                            bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
                         }
                     } else {
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
                     }
                 }
 
@@ -748,7 +748,8 @@ public class VisicomFragment extends Fragment  implements ApiCallback{
         boolean verify = true;
         if (cursor.getCount() == 1) {
 
-            if (logCursor(MainActivity.TABLE_USER_INFO, context).get(2).equals("+380")) {
+            if (logCursor(MainActivity.TABLE_USER_INFO, context).get(2).equals("+380") ||
+                !MainActivity.verifyPhone) {
                 verify = false;
             }
             cursor.close();

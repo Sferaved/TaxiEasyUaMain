@@ -308,9 +308,13 @@ public class CardFragment extends Fragment {
 
             @Override
             public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
-                // Обработка ошибки
-                callback.onPaySystemFailure(getString(R.string.verify_internet));
+                // Проверяем, что фрагмент присоединен к контексту
+                if (isAdded()) {
+                    // Обработка ошибки
+                    callback.onPaySystemFailure(getString(R.string.verify_internet));
+                }
             }
+
         });
     }
 

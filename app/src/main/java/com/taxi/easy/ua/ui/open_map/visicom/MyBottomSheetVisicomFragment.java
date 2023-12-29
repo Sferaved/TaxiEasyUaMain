@@ -373,8 +373,8 @@ public class MyBottomSheetVisicomFragment extends BottomSheetDialogFragment impl
                     double longitude = firstLocation.getLongitude();
 
 
-                    List<String> stringList = logCursor(MainActivity.CITY_INFO, getContext());
-                    String api =  stringList.get(2);
+//                    List<String> stringList = logCursor(MainActivity.CITY_INFO, getContext());
+//                    String api =  stringList.get(2);
 
                     String urlFrom = urlBase + "/android/fromSearchGeo/" + latitude + "/" + longitude;
                     Map sendUrlFrom = null;

@@ -199,14 +199,15 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
             public void beforeTextChanged(CharSequence s, int start, int before, int after) {
                 // Пользователь удаляет символы, если before > 0
                 String inputString = s.toString();
+
                 int charCount = inputString.length();
                 if (before > 0 && charCount > 2) {
                    positionChecked = 0;
-                    if (startPoint == null) {
-                        performAddressSearch(inputString, "start");
-                    } else if (!startPoint.equals(inputString)) {
-                        performAddressSearch(inputString, "start");
-                    }
+//                    if (startPoint == null) {
+//                        performAddressSearch(inputString, "start");
+//                    } else if (!startPoint.equals(inputString)) {
+//                        performAddressSearch(inputString, "start");
+//                    }
                 }
             }
 
@@ -216,12 +217,17 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                 int charCount = inputString.length();
                 Log.d(TAG, "onTextChanged: " + inputString);
                 if (charCount > 2) {
+                    Log.d(TAG, "onTextChanged:startPoint " + startPoint);
+                    Log.d(TAG, "onTextChanged:fromEditAddress.getText().toString() " + fromEditAddress.getText().toString());
 //                    performAddressSearch(inputString, "start");
                     if (startPoint == null) {
                         performAddressSearch(inputString, "start");
                     } else if (!startPoint.equals(inputString)) {
                         performAddressSearch(inputString, "start");
                     }
+//                    else {
+//                        performAddressSearch(fromEditAddress.getText().toString() + "1", "start");
+//                    }
 
                     textGeoError.setVisibility(View.GONE);
                 }
@@ -246,11 +252,11 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                 if (before > 0 && charCount > 2) {
                     positionChecked = 0;
 //                    performAddressSearch(inputString, "finish");
-                    if (finishPoint == null) {
-                        performAddressSearch(inputString, "finish");
-                    } else if (!finishPoint.equals(inputString)) {
-                        performAddressSearch(inputString, "finish");
-                    }
+//                    if (finishPoint == null) {
+//                        performAddressSearch(inputString, "finish");
+//                    } else if (!finishPoint.equals(inputString)) {
+//                        performAddressSearch(inputString, "finish");
+//                    }
                 }
             }
             @Override
@@ -284,6 +290,11 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                 fromEditAddress.setText("");
                 btn_clear_from.setVisibility(View.INVISIBLE);
                 textGeoError.setVisibility(View.GONE);
+                Log.d(TAG, "onClick: wwww");
+                fromEditAddress.requestFocus();
+                KeyboardUtils.showKeyboard(getApplicationContext(), fromEditAddress);
+
+//                KeyboardUtils.showKeyboard(getApplicationContext(), fromEditAddress);
 //                performAddressSearch("", "start");
             }
         });
@@ -294,6 +305,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                 toEditAddress.setText("");
                 btn_clear_to.setVisibility(View.INVISIBLE);
                 text_toError.setVisibility(View.GONE);
+                toEditAddress.requestFocus();
+                KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
 //                addresses = new ArrayList<>();
 //                coordinatesList = new ArrayList<>(); // Список для хранения координат
             }
@@ -783,12 +796,17 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                         + "text=" + inputText + "&key=" + apiKey;
 
             } else {
-
+                Log.d(TAG, "performAddressSearch:positionChecked  " + positionChecked);
                 String number = numbers(inputText);
-
+//                if(number == null) {
+//                    number = "1";
+//                }
                 if (positionChecked != 0) {
                     inputText = inputTextBuild() + ", " + number;
                 }
+//                else {
+//                    inputText = fromEditAddress.getText().toString() + ", " + "1";
+//                }
 
                 url = url + "?categories=adr_address&text=" + inputText + "&key=" + apiKey;
 
@@ -843,7 +861,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
     private void processAddressData(String responseData, String point) {
         try {
             JSONObject jsonResponse = new JSONObject(responseData);
-            Log.d("TAG_RESP", "processAddressData:jsonResponse " + jsonResponse);
+            Log.d(TAG, "processAddressData:jsonResponse " + jsonResponse);
 
             if (jsonResponse.has("features")) {
                 addresses = new ArrayList<>();
@@ -856,7 +874,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                 // Ваши дополнительные действия с features
                 for (int i = 0; i < features.length(); i++) {
                     JSONObject properties = features.getJSONObject(i).getJSONObject("properties");
-                    Log.d(TAG, "processAddressData:properties " + i + " - " + properties);
+//                    Log.d(TAG, "processAddressData:properties " + i + " - " + properties);
                     JSONObject geoCentroid = features.getJSONObject(i).getJSONObject("geo_centroid");
 
                     if (properties.getString("country_code").equals("ua")) {
@@ -1483,7 +1501,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                     toStreet = toStreet.trim();
                     // Проверяем, есть ли уже такая запись в множестве
                     if (uniqueAddressesSet.add(fromStreet)) {
-                        addresses.add(new String[]{fromStreet});
+                        addresses.add(new String[]{fromStreet + "\t"});
                         double fromLongitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("from_lng")));
                         double fromLatitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("from_lat")));
                         coordinatesList.add(new double[]{fromLongitude, fromLatitude});
@@ -1493,7 +1511,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity implements ApiCall
                      if (!toStreet.equals("по місту") && !toStreet.equals("по городу")) {
 
                          if (uniqueAddressesSet.add(toStreet) && !toStreet.equals(fromStreet)) {
-                             addresses.add(new String[]{toStreet});
+                             addresses.add(new String[]{toStreet + "\t"});
                              double toLongitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("to_lng")));
                              double toLatitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("to_lat")));
                              coordinatesList.add(new double[]{toLongitude, toLatitude});

@@ -54,8 +54,6 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
     CheckBox checkBox;
     String page;
     private String TAG = "TAG";
-    private SQLiteDatabase database;
-    private String urlOrder;
     private String messageFondy;
     private String amount;
 
@@ -72,6 +70,14 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         button = view.findViewById(R.id.ok_button);
         checkBox = view.findViewById(R.id.checkbox);
         messageFondy = getString(R.string.fondy_message);
+        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+        if (c.getCount() == 1) {
+            String phone = logCursor(MainActivity.TABLE_USER_INFO).get(2);
+            phoneNumber.setText(phone);
+            c.close();
+        }
+        database.close();
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -351,12 +357,6 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         database.close();
 
         return url;
-    }
-
-    public void onAttach(@NonNull Context context) {
-        super.onAttach(context);
-        // Получаем контекст активности
-        database = context.openOrCreateDatabase(MainActivity.DB_NAME, Context.MODE_PRIVATE, null);
     }
     private void orderHome() {
         if (connected()) {

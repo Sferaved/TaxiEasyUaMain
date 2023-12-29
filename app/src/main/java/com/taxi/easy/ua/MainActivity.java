@@ -104,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    public static final String DB_NAME = "data_20122023_1";
+    public static final String DB_NAME = "data_28122023_0";
 
     /**
      * Table section
@@ -869,7 +869,7 @@ public class MainActivity extends AppCompatActivity {
     }
     public void newUser() {
         String userEmail = logCursor(TABLE_USER_INFO).get(3);
-        Log.d("TAG", "newUser: " + userEmail);
+        Log.d(TAG, "newUser: " + userEmail);
         if(userEmail.equals("email")) {
             startFireBase();
         } else {
@@ -888,7 +888,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 // Инициализация FirebaseApp
                 FirebaseApp.initializeApp(MainActivity.this);
-
+                Log.d(TAG, "run: ");
                 // Choose authentication providers
                 List<AuthUI.IdpConfig> providers = Arrays.asList(
                         new AuthUI.IdpConfig.GoogleBuilder().build());
@@ -922,7 +922,7 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         onSignInResult(result);
                     } catch (MalformedURLException | JSONException | InterruptedException e) {
-                        Log.d("TAG", "onCreate:" + new RuntimeException(e));
+                        Log.d(TAG, "onCreate:" + new RuntimeException(e));
                     }
                 }
             }
@@ -1357,7 +1357,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void userPhoneFromServer (String email) {
         ApiClientPhone apiClient = new ApiClientPhone();
-
+        MainActivity.verifyPhone = false;
         apiClient.getUserPhone(email, new ApiClientPhone.OnUserPhoneResponseListener() {
             @Override
             public void onSuccess(String phone) {
@@ -1370,7 +1370,6 @@ public class MainActivity extends AppCompatActivity {
                     boolean val = Pattern.compile(PHONE_PATTERN).matcher(phone).matches();
 
                     if (val) {
-                        MainActivity.verifyPhone = true;
                         updateRecordsUser(phone);
                     } else {
                         // Handle case where phone doesn't match the pattern

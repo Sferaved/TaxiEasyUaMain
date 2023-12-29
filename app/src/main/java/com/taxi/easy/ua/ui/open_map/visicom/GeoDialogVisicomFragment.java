@@ -1231,7 +1231,8 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
         boolean verify = true;
         if (cursor.getCount() == 1) {
 
-            if (logCursor(MainActivity.TABLE_USER_INFO, context).get(2).equals("+380")) {
+            if (logCursor(MainActivity.TABLE_USER_INFO, context).get(2).equals("+380") ||
+                    !MainActivity.verifyPhone) {
                 verify = false;
             }
             cursor.close();

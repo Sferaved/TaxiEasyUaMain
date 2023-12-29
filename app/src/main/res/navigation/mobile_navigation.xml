@@ -43,4 +43,9 @@
         android:name="com.taxi.easy.ua.ui.about.AboutFragment"
         android:label="@string/menu_about"
         tools:layout="@layout/fragment_about" />
+    <fragment
+        android:id="@+id/nav_author"
+        android:name="com.taxi.easy.ua.ui.author.AuthorFragment"
+        android:label="@string/author_about"
+        tools:layout="@layout/fragment_about" />
 </navigation>

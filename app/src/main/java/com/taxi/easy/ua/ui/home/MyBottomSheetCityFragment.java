@@ -226,38 +226,38 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
     private void updateMyPosition(String city) {
 
-        Double startLat;
-        Double startLan;
+        double startLat;
+        double startLan;
         String position;
 
         switch (city){
             case "Dnipropetrovsk Oblast":
                 // Днепр
-                position = "просп.Дмитра Яворницького (Карла Маркса), буд.52, місто Дніпро";
+                position = "просп.Дмитра Яворницького (Карла Маркса), буд.52, місто Дніпро\t";
                 startLat = 48.4647;
                 startLan = 35.0462;
                 break;
             case "Odessa":
             case "OdessaTest":
                 // Одесса
-                position = "вул.Пантелеймонівська, буд. 64, місто Одеса";
+                position = "вул.Пантелеймонівська, буд. 64, місто Одеса\t";
                 startLat = 46.4694;
                 startLan = 30.7404;
                 break;
             case "Zaporizhzhia":
                 // Запорожье
-                position = "просп. Соборний, буд. 139, місто Запоріжжя";
+                position = "просп. Соборний, буд. 139, місто Запоріжжя\t";
                 startLat = 47.84015;
                 startLan = 35.13634;
                 break;
             case "Cherkasy Oblast":
                 // Черкассы
-                position = "вул.Байди Вишневецького, буд.36, місто Черкаси";
+                position = "вул.Байди Вишневецького, буд.36, місто Черкаси\t";
                 startLat = 49.44469;
                 startLan = 32.05728;
                 break;
             default:
-                position = "вул.Хрещатик, буд.22, місто Київ";
+                position = "вул.Хрещатик, буд.22, місто Київ\t";
                 startLat = 50.4501;
                 startLan = 30.5234;
                 break;
