@@ -10,6 +10,7 @@ public class City {
     public void setResponse(String response) {
         this.response = response;
     }
+
 }
 
 

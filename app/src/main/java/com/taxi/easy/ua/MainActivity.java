@@ -58,6 +58,9 @@ import com.taxi.easy.ua.cities.api.CityResponseMerchantFondy;
 import com.taxi.easy.ua.cities.api.CityService;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
 import com.taxi.easy.ua.ui.card.CardInfo;
+import com.taxi.easy.ua.ui.finish.ApiClient;
+import com.taxi.easy.ua.ui.finish.ApiService;
+import com.taxi.easy.ua.ui.finish.City;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
 import com.taxi.easy.ua.ui.home.HomeFragment;
@@ -67,11 +70,14 @@ import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
+import com.taxi.easy.ua.utils.ip.CountryResponse;
+import com.taxi.easy.ua.utils.ip.IPUtil;
+import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.phone.ApiClientPhone;
 
 import org.json.JSONException;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -104,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    public static final String DB_NAME = "data_28122023_0";
+    public static final String DB_NAME = "data_07012024_1";
 
     /**
      * Table section
@@ -140,6 +146,10 @@ public class MainActivity extends AppCompatActivity {
     public static SQLiteDatabase database;
     public static Menu navMenu;
     public static MenuItem navVisicomMenuItem;
+    public static String countryState;
+    private static String verifyInternet;
+    private static androidx.fragment.app.FragmentManager fragmentManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -169,57 +179,16 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
         networkChangeReceiver = new NetworkChangeReceiver();
+        verifyInternet = getString(R.string.verify_internet);
 
+        fragmentManager = getSupportFragmentManager();
 
     }
     @Override
     protected void onResume() {
         super.onResume();
-         // Получаем путь к базе данных
-        String dbPath = getDatabasePath(MainActivity.DB_NAME).getAbsolutePath();
-        File dbFile = new File(dbPath);
-        // Проверяем существование файла базы данных
-        if (dbFile.exists()) {
-            SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        // Получаем путь к базе данных
 
-            Cursor c = database.query(CITY_INFO, null, null, null, null, null, null);
-            if(c.getCount() != 0) {
-                List<String> listCity = logCursor(CITY_INFO);
-                String city = listCity.get(1);
-
-                String cityMenu;
-                switch (city) {
-                    case "Dnipropetrovsk Oblast":
-                        cityMenu = getString(R.string.city_dnipro);
-                        break;
-                    case "Odessa":
-                        cityMenu = getString(R.string.city_odessa);
-                        break;
-                    case "Zaporizhzhia":
-                        cityMenu = getString(R.string.city_zaporizhzhia);
-                        break;
-                    case "Cherkasy Oblast":
-                        cityMenu = getString(R.string.city_cherkasy);
-                        break;
-                    case "OdessaTest":
-                        cityMenu = "Test";
-                        break;
-                    default:
-                        cityMenu = getString(R.string.city_kyiv);
-                }
-
-
-                if (MainActivity.navVisicomMenuItem != null) {
-                    // Новый текст элемента меню
-                    String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-
-                    // Изменяем текст элемента меню
-                    MainActivity.navVisicomMenuItem.setTitle(newTitle);
-                }
-            }
-
-            database.close();
-        }
 
     }
     @Override
@@ -867,6 +836,7 @@ public class MainActivity extends AppCompatActivity {
         db.close();
         return list;
     }
+
     public void newUser() {
         String userEmail = logCursor(TABLE_USER_INFO).get(3);
         Log.d(TAG, "newUser: " + userEmail);
@@ -874,7 +844,6 @@ public class MainActivity extends AppCompatActivity {
             startFireBase();
         } else {
             new VerifyUserTask().execute();
-
         }
 
     }
@@ -882,31 +851,67 @@ public class MainActivity extends AppCompatActivity {
     private void startFireBase() {
         startSignInInBackground();
     }
+//    private void startSignInInBackground() {
+//        Thread thread = new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                // Инициализация FirebaseApp
+//                FirebaseApp.initializeApp(MainActivity.this);
+//                Log.d(TAG, "run: ");
+//                // Choose authentication providers
+//                List<AuthUI.IdpConfig> providers = Arrays.asList(
+//                        new AuthUI.IdpConfig.GoogleBuilder().build());
+//
+//                // Create and launch sign-in intent
+//                Intent signInIntent = AuthUI.getInstance()
+//                        .createSignInIntentBuilder()
+//                        .setAvailableProviders(providers)
+//                        .build();
+//                try {
+//                    runOnUiThread(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            signInLauncher.launch(signInIntent);
+//                        }
+//                    });
+//                } catch (NullPointerException e) {
+//                    Log.e(TAG, "NullPointerException during sign-in launch", e);
+//                    e.printStackTrace();
+//                }
+//
+//            }
+//        });
+//        thread.start();
+//    }
+
     private void startSignInInBackground() {
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
-                // Инициализация FirebaseApp
-                FirebaseApp.initializeApp(MainActivity.this);
-                Log.d(TAG, "run: ");
-                // Choose authentication providers
-                List<AuthUI.IdpConfig> providers = Arrays.asList(
-                        new AuthUI.IdpConfig.GoogleBuilder().build());
-
-                // Create and launch sign-in intent
-                Intent signInIntent = AuthUI.getInstance()
-                        .createSignInIntentBuilder()
-                        .setAvailableProviders(providers)
-                        .build();
                 try {
+                    // Инициализация FirebaseApp
+                    FirebaseApp.initializeApp(MainActivity.this);
+                    Log.d(TAG, "FirebaseApp initialized");
+
+                    // Choose authentication providers
+                    List<AuthUI.IdpConfig> providers = Arrays.asList(
+                            new AuthUI.IdpConfig.GoogleBuilder().build());
+
+                    // Create and launch sign-in intent
+                    Intent signInIntent = AuthUI.getInstance()
+                            .createSignInIntentBuilder()
+                            .setAvailableProviders(providers)
+                            .build();
+
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             signInLauncher.launch(signInIntent);
                         }
                     });
-                } catch (NullPointerException ignored) {
-
+                } catch (Exception e) {
+                    Log.e(TAG, "Error during Firebase initialization or sign-in", e);
+                    e.printStackTrace();
                 }
             }
         });
@@ -915,6 +920,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private final ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
+            
             new FirebaseAuthUIActivityResultContract(),
             new ActivityResultCallback<FirebaseAuthUIAuthenticationResult>() {
                 @Override
@@ -931,7 +937,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void onSignInResult(FirebaseAuthUIAuthenticationResult result) throws MalformedURLException, JSONException, InterruptedException {
         ContentValues cv = new ContentValues();
+        Log.d(TAG, "onSignInResult: ");
         try {
+            Log.d(TAG, "onSignInResult: result.getResultCode() " + result.getResultCode());
             if (result.getResultCode() == RESULT_OK) {
                 // Successfully signed in
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -949,9 +957,51 @@ public class MainActivity extends AppCompatActivity {
                 getCardToken("mono", TABLE_MONO_CARDS, user.getEmail());
 
                 cv.put("verifyOrder", "1");
+
                 SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                 database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-                database.close();
+
+                Cursor c = database.query(CITY_INFO, null, null, null, null, null, null);
+                if(c.getCount() != 0) {
+                    List<String> listCity = logCursor(CITY_INFO);
+                    String city = listCity.get(1);
+                    Log.d(TAG, "onResume:city www " + city +"/");
+                    if(city.equals("")) {
+                        new GetPublicIPAddressTask().execute();
+                    } else {
+                        String cityMenu;
+                        switch (city) {
+                            case "Dnipropetrovsk Oblast":
+                                cityMenu = " " + getString(R.string.city_dnipro);
+                                break;
+                            case "Odessa":
+                                cityMenu = " " + getString(R.string.city_odessa);
+                                break;
+                            case "Zaporizhzhia":
+                                cityMenu = " " + getString(R.string.city_zaporizhzhia);
+                                break;
+                            case "Cherkasy Oblast":
+                                cityMenu = " " + getString(R.string.city_cherkasy);
+                                break;
+                            case "foreign countries":
+                                cityMenu = "";
+                                break;
+                            case "OdessaTest":
+                                cityMenu = " " + "Test";
+                                break;
+                            default:
+                                cityMenu = " " + getString(R.string.city_kyiv);
+                        }
+                        if (MainActivity.navVisicomMenuItem != null) {
+                            // Новый текст элемента меню
+                            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+
+                            // Изменяем текст элемента меню
+                            MainActivity.navVisicomMenuItem.setTitle(newTitle);
+                        }
+                    }
+                    database.close();
+                }
 
             } else {
 
@@ -1224,6 +1274,49 @@ public class MainActivity extends AppCompatActivity {
                     }
                     cv.put("verifyOrder", "1");
                     database.update(TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+
+                    Cursor c = database.query(CITY_INFO, null, null, null, null, null, null);
+                    if(c.getCount() != 0) {
+                        List<String> listCity = logCursor(CITY_INFO);
+                        String city = listCity.get(1);
+                        Log.d(TAG, "onResume:city www " + city +"/");
+                        if(city.equals("")) {
+                            new GetPublicIPAddressTask().execute();
+                        } else {
+                            String cityMenu;
+                            switch (city) {
+                                case "Dnipropetrovsk Oblast":
+                                    cityMenu = " " + getString(R.string.city_dnipro);
+                                    break;
+                                case "Odessa":
+                                    cityMenu = " " + getString(R.string.city_odessa);
+                                    break;
+                                case "Zaporizhzhia":
+                                    cityMenu = " " + getString(R.string.city_zaporizhzhia);
+                                    break;
+                                case "Cherkasy Oblast":
+                                    cityMenu = " " + getString(R.string.city_cherkasy);
+                                    break;
+                                case "foreign countries":
+                                    cityMenu = "";
+                                    break;
+                                case "OdessaTest":
+                                    cityMenu = " " + "Test";
+                                    break;
+                                default:
+                                    cityMenu = " " + getString(R.string.city_kyiv);
+                            }
+                            if (MainActivity.navVisicomMenuItem != null) {
+                                // Новый текст элемента меню
+                                String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+
+                                // Изменяем текст элемента меню
+                                MainActivity.navVisicomMenuItem.setTitle(newTitle);
+                            }
+                        }
+
+                    }
+
                 }
             }
             database.close();
@@ -1389,4 +1482,91 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+    private static class GetPublicIPAddressTask extends AsyncTask<Void, Void, String> {
+
+        @Override
+        protected String doInBackground(Void... voids) {
+            return IPUtil.getPublicIPAddress();
+        }
+
+        @Override
+        protected void onPostExecute(String ipAddress) {
+            if (ipAddress != null) {
+                Log.d(TAG, "onCreate: Local IP Address: " + ipAddress);
+                getCountryByIP(ipAddress);
+                getCityByIP(ipAddress);
+            } else {
+                getCountryByIP("31.202.139.47");
+                getCityByIP("31.202.139.47");
+            }
+        }
+    }
+    public static void getCountryByIP(String ipAddress) {
+        ApiServiceCountry apiService = RetrofitClient.getClient().create(ApiServiceCountry.class);
+        Call<CountryResponse> call = apiService.getCountryByIP(ipAddress);
+
+        call.enqueue(new Callback<CountryResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<CountryResponse> call, @NonNull Response<CountryResponse> response) {
+                if (response.isSuccessful()) {
+                    CountryResponse countryResponse = response.body();
+                    if (countryResponse != null) {
+                        countryState = countryResponse.getCountry();
+                    } else {
+                        countryState = "UA";
+                    }
+                } else {
+                    countryState = "UA";
+                }
+                Log.d(TAG, "countryState  " + countryState);
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<CountryResponse> call, @NonNull Throwable t) {
+                Log.e(TAG, "Error: " + t.getMessage());
+            }
+        });
+    }
+
+    private static void getCityByIP(String ip) {
+
+//        List<String> city = logCursor(MainActivity.CITY_INFO);
+//        Log.d(TAG, "getLocalIpAddress: city.get(1)" + city.get(1));
+//        if(city.equals("")) {
+            VisicomFragment.progressBar.setVisibility(View.VISIBLE);
+        ApiService apiService = ApiClient.getApiService();
+
+        Call<City> call = apiService.cityByIp(ip);
+
+        call.enqueue(new Callback<City>() {
+            @Override
+            public void onResponse(@NonNull Call<City> call, @NonNull Response<City> response) {
+                if (response.isSuccessful()) {
+                    City status = response.body();
+                    if (status != null) {
+                        String result = status.getResponse();
+                        Log.d("TAG", "onResponse:result " + result);
+
+                        MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(result);
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+
+                    }
+                } else {
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(verifyInternet);
+                    bottomSheetDialogFragment.show(bottomSheetDialogFragment.getParentFragmentManager(), bottomSheetDialogFragment.getTag());
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<City> call, @NonNull Throwable t) {
+                // Обработка ошибок сети или других ошибок
+                String errorMessage = t.getMessage();
+                t.printStackTrace();
+                Log.d("TAG", "onFailure: " + errorMessage);
+
+            }
+        });
+//        }
+    }
+
 }

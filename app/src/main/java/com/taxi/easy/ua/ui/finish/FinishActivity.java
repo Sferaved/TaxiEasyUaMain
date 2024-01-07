@@ -702,7 +702,7 @@ public class FinishActivity extends AppCompatActivity {
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
-// Создайте экземпляр ApiService
+// Создайте экземпляр ApiServiceMapbox
         ApiService apiService = retrofit.create(ApiService.class);
 
 // Вызов метода startNewProcessExecutionStatus с передачей параметров

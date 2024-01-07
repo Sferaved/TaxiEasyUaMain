@@ -89,7 +89,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     public static FloatingActionButton fab, fab_call, fab_open_map, fab_open_marker;
 
     public static double startLat, startLan, finishLat, finishLan;
-    public static MapView map = null;
+    public static MapView map;
     public static String api;
     public static GeoPoint startPoint;
     public static GeoPoint endPoint;
@@ -98,8 +98,6 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     public static Polyline roadOverlay;
     public static Marker m, marker;
     public static String FromAdressString, ToAdressString;
-    public static String cm, UAH, em, co, fb, vi, fp, ord, onc, tm, tom, ntr, hlp,
-            tra, plm, epm, tlm, sbt, cbt, vph, coo;
     LayoutInflater inflater;
     @SuppressLint("StaticFieldLeak")
     static View view;
@@ -116,6 +114,8 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     private static String finishMarker;
     private static Drawable originalDrawable;
     private static Drawable scaledDrawable;
+    private static String startPointNoText;
+    private static String endPointNoText;
 
     public static String[] arrayServiceCode() {
         return new String[]{
@@ -151,6 +151,9 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.open_street_map_layout);
 
+        startPointNoText = getString(R.string.startPoint);
+        endPointNoText = getString(R.string.end_point_marker);
+
         startMarker = getIntent().getStringExtra("startMarker");
         finishMarker = getIntent().getStringExtra("finishMarker");
 
@@ -180,29 +183,6 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
         FromAdressString = getString(R.string.startPoint);
         ToAdressString = getString(R.string.end_point_marker);
-        cm = getString(R.string.coastMarkersMessage);
-        UAH = getString(R.string.UAH);
-        em = getString(R.string.error_message);
-        co = getString(R.string.call_of_order);
-        fb = getString(R.string.firebase_false_message);
-        vi = getString(R.string.verify_internet);
-        fp = getString(R.string.format_phone);
-        ord = getString(R.string.order);
-        onc = getString(R.string.on_city_tv);
-        tm = getString(R.string.thanks_message);
-        tom = getString(R.string.to_message);
-        ntr = getString(R.string.next_try);
-        hlp = getString(R.string.help);
-        tra = getString(R.string.try_again);
-        plm = getString(R.string.please_phone_message);
-        epm = getString(R.string.end_point_marker);
-        tlm = getString(R.string.time_limit);
-        sbt = getString(R.string.sent_button);
-        cbt = getString(R.string.cancel_button);
-        vph = getString(R.string.verify_phone);
-        coo = getString(R.string.cost_of_order);
-
-
 
         progressBar = findViewById(R.id.progressBar);
         progressBar.setVisibility(View.INVISIBLE);
@@ -212,7 +192,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         fab_call = findViewById(R.id.fab_call);
         fab_open_map = findViewById(R.id.fab_open_map);
         fab_open_map.setOnClickListener(v -> {
-//            finish();
+
             startActivity(new Intent(OpenStreetMapVisicomActivity.this, MainActivity.class));
         });
         fab_open_marker = findViewById(R.id.fab_open_marker);
@@ -274,6 +254,20 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         mapController.setZoom(newZoomLevel);
         map.setClickable(true);
         map.setTileSource(TileSourceFactory.MAPNIK);
+//        map.setTileSource(TileSourceFactory.WIKIMEDIA);
+//        map.setTileSource(TileSourceFactory.PUBLIC_TRANSPORT);
+//        map.setTileSource(TileSourceFactory.CLOUDMADESTANDARDTILES);
+//        map.setTileSource(TileSourceFactory.CLOUDMADESMALLTILES);
+//        map.setTileSource(TileSourceFactory.FIETS_OVERLAY_NL);
+//        map.setTileSource(TileSourceFactory.BASE_OVERLAY_NL);
+//        map.setTileSource(TileSourceFactory.ROADS_OVERLAY_NL);
+//        map.setTileSource(TileSourceFactory.HIKEBIKEMAP);
+// *       map.setTileSource(TileSourceFactory.OPEN_SEAMAP);
+//        map.setTileSource(TileSourceFactory.USGS_SAT);
+//        map.setTileSource(TileSourceFactory.ChartbundleWAC);
+//        map.setTileSource(TileSourceFactory.ChartbundleENRH);
+//        map.setTileSource(TileSourceFactory.ChartbundleENRL);
+//        map.setTileSource(TileSourceFactory.OpenTopo);
         map.setOnTouchListener(new View.OnTouchListener() {
             @SuppressLint("ClickableViewAccessibility")
             @Override
@@ -295,9 +289,6 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
             }
         });
 
-
-
-        Log.d(TAG, "switchToRegion: FromAdressString" + FromAdressString);
     }
 
     private static void updateMyPosition(Double startLat, Double startLan, String position, Context context) {
@@ -468,7 +459,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         Call<ApiResponse> call = apiService.reverseAddress(latitude, longitude);
         call.enqueue(new Callback<ApiResponse>() {
             @Override
-            public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+            public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
                 if (response.isSuccessful()) {
                     ApiResponse apiResponse = response.body();
                     if (apiResponse != null) {
@@ -477,9 +468,11 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                             if (startMarker.equals("ok")) {
                                 if (!result.equals("404")) {
                                     FromAdressString = result;
+                                } else {
+                                    FromAdressString = startPointNoText;
                                 }
 
-                                if (map != null) {
+                                if (map != null && map.getRepository() != null) {
                                     m = new Marker(map);
                                     m.setPosition(startPoint);
                                     m.setTextLabelBackgroundColor(
@@ -543,7 +536,10 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                             if (finishMarker.equals("ok")) {
                                 if (!result.equals("404")) {
                                     ToAdressString = result;
+                                } else {
+                                    FromAdressString = endPointNoText;
                                 }
+                                assert map != null;
                                 marker = new Marker(map);
                                 marker.setPosition(new GeoPoint(endPoint.getLatitude(), endPoint.getLongitude()));
                                 marker.setTextLabelBackgroundColor(
@@ -588,7 +584,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<ApiResponse> call, Throwable t) {
+            public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
                 // Обработка ошибок
             }
         });
@@ -1114,5 +1110,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
         return result;
     }
+
+
 
 }

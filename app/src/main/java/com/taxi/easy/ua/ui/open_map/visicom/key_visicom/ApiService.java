@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.open_map.visicom.key;
+package com.taxi.easy.ua.ui.open_map.visicom.key_visicom;
 
 import retrofit2.Call;
 import retrofit2.http.GET;

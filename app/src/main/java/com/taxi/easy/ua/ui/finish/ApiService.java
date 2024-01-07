@@ -19,6 +19,10 @@ public interface ApiService {
 
     @GET("/ip/city")
     Call<City> cityOrder();
+    @GET("/ip/ipCityOne/{ip}")
+    Call<City> cityByIp(
+            @Path("ip") String ip
+    );
 
     @GET()
     Call<List<RouteResponse>> getRoutes(@Url String url);

@@ -99,6 +99,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
     public static GeoDialogVisicomFragment bottomSheetDialogFragment;
     private String city;
 
+
     public static String[] arrayServiceCode() {
         return new String[]{
                 "BAGGAGE",
@@ -228,6 +229,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         mapController.setZoom(newZoomLevel);
         map.setClickable(true);
         map.setTileSource(TileSourceFactory.MAPNIK);
+//        map.setTileSource(TileSourceFactory.OpenTopo);
         switch (city){
             case "Dnipropetrovsk Oblast":
                 // Днепр

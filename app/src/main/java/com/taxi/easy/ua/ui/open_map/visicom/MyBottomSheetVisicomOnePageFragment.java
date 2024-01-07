@@ -53,9 +53,9 @@ import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapVisicomActivity;
-import com.taxi.easy.ua.ui.open_map.visicom.key.ApiCallback;
-import com.taxi.easy.ua.ui.open_map.visicom.key.ApiClient;
-import com.taxi.easy.ua.ui.open_map.visicom.key.ApiResponse;
+import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiCallback;
+import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiClient;
+import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiResponse;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.KeyboardUtils;
 
@@ -1391,14 +1391,14 @@ public class MyBottomSheetVisicomOnePageFragment extends BottomSheetDialogFragme
                     ApiResponse apiResponse = response.body();
                     if (apiResponse != null) {
                         String keyVisicom = apiResponse.getKeyVisicom();
-                        Log.d("ApiResponse", "keyVisicom: " + keyVisicom);
+                        Log.d("ApiResponseMapbox", "keyVisicom: " + keyVisicom);
 
                         // Теперь у вас есть ключ Visicom для дальнейшего использования
                         callback.onVisicomKeyReceived(keyVisicom);
                     }
                 } else {
                     // Обработка ошибки
-                    Log.e("ApiResponse", "Error: " + response.code());
+                    Log.e("ApiResponseMapbox", "Error: " + response.code());
                     callback.onApiError(response.code());
                 }
             }
@@ -1406,7 +1406,7 @@ public class MyBottomSheetVisicomOnePageFragment extends BottomSheetDialogFragme
             @Override
             public void onFailure(Call<ApiResponse> call, Throwable t) {
                 // Обработка ошибки
-                Log.e("ApiResponse", "Failed to make API call", t);
+                Log.e("ApiResponseMapbox", "Failed to make API call", t);
                 callback.onApiFailure(t);
             }
                                     },

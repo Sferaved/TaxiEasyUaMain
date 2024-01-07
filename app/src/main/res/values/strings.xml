@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.715</string>
-    <string name="version">Версия: 1.715</string>
+    <string name="version_code">1.716</string>
+    <string name="version">Версия: 1.716</string>
 
     <string name="app_name">Такси Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -291,12 +291,12 @@
     <string name="search_text">Поиск адреса</string>
     <string name="drag_marker">Для уточнения местоположения передвигайте маркер</string>
     <string name="drag_marker_bottom">Нажмите на маркер и переместите его для уточнения местоположения</string>
-    <string name="menu_city">Заказ г.</string>
-    <string name="city_kyiv">Киев и области</string>
-    <string name="city_dnipro">Днепр</string>
-    <string name="city_odessa">Одесса</string>
-    <string name="city_zaporizhzhia">Запорожье</string>
-    <string name="city_cherkasy">Черкассы</string>
+    <string name="menu_city">Заказ </string>
+    <string name="city_kyiv">г.Киев и области</string>
+    <string name="city_dnipro">г.Днепр</string>
+    <string name="city_odessa">г.Одесса</string>
+    <string name="city_zaporizhzhia">г.Запорожье</string>
+    <string name="city_cherkasy"> г.Черкассы</string>
     <string name="tail1">Карты для города \'</string>
     <string name="tail2">\' успешно загружены</string>
     <string name="rout_fin">Выбирите из списка номер дома</string>
@@ -310,4 +310,6 @@
     <string name="my_name">Андрей Коржов</string>
     <string name="conf">Конфеденциальность</string>
     <string name="author_about">Об авторе</string>
+    <string name="foreign_countries">не в Украине</string>
+    <string name="order_in">"заказ в "</string>
 </resources>

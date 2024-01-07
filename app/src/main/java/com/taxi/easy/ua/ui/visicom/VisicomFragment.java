@@ -42,12 +42,8 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentVisicomBinding;
-import com.taxi.easy.ua.ui.finish.ApiClient;
-import com.taxi.easy.ua.ui.finish.ApiService;
-import com.taxi.easy.ua.ui.finish.City;
 import com.taxi.easy.ua.ui.finish.FinishActivity;
 import com.taxi.easy.ua.ui.home.MyBottomSheetBonusFragment;
-import com.taxi.easy.ua.ui.home.MyBottomSheetCityFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGeoFragment;
@@ -57,8 +53,8 @@ import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.open_map.visicom.ActivityVisicomOnePage;
-import com.taxi.easy.ua.ui.open_map.visicom.key.ApiCallback;
-import com.taxi.easy.ua.ui.open_map.visicom.key.ApiResponse;
+import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiCallback;
+import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiResponse;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -372,10 +368,7 @@ public class VisicomFragment extends Fragment  implements ApiCallback{
 
         });
 
-        getLocalIpAddress();
-        if(!newRout()) {
-            visicomCost();
-        }
+
         return root;
     }
     @Override
@@ -422,45 +415,63 @@ public class VisicomFragment extends Fragment  implements ApiCallback{
         c.close();
         return list;
     }
-
-    private void getLocalIpAddress() {
-
-        List<String> city = logCursor(MainActivity.CITY_INFO, requireActivity());
-        Log.d(TAG, "getLocalIpAddress: city.get(1)" + city.get(1));
-        if(city.size() != 0 && city.get(1).equals("")) {
-//            VisicomFragment.progressBar.setVisibility(View.VISIBLE);
-            ApiService apiService = ApiClient.getApiService();
-
-            Call<City> call = apiService.cityOrder();
-
-            call.enqueue(new Callback<City>() {
-                @Override
-                public void onResponse(@NonNull Call<City> call, @NonNull Response<City> response) {
-                    if (response.isSuccessful()) {
-                        City status = response.body();
-                        if (status != null) {
-                            String result = status.getResponse();
-                            Log.d("TAG", "onResponse:result " + result);
-                            MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(result);
-                            bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
-                        }
-                    } else {
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<City> call, Throwable t) {
-                    // Обработка ошибок сети или других ошибок
-                    String errorMessage = t.getMessage();
-                    t.printStackTrace();
-                    Log.d("TAG", "onFailure: " + errorMessage);
-
-                }
-            });
-        }
-    }
+//    private class GetPublicIPAddressTask extends AsyncTask<Void, Void, String> {
+//
+//        @Override
+//        protected String doInBackground(Void... voids) {
+//            return IPUtil.getPublicIPAddress();
+//        }
+//
+//        @Override
+//        protected void onPostExecute(String ipAddress) {
+//            if (ipAddress != null) {
+//                Log.d(TAG, "onCreate: Local IP Address: " + ipAddress);
+//                getLocalIpAddress(ipAddress);
+//            } else {
+//
+//            }
+//        }
+//    }
+//    private void getLocalIpAddress(String ip) {
+//
+////        List<String> city = logCursor(MainActivity.CITY_INFO, requireActivity());
+////        Log.d(TAG, "getLocalIpAddress: city.get(1)" + city.get(1));
+////        if(city.size() != 0 && city.get(1).equals("")) {
+////            VisicomFragment.progressBar.setVisibility(View.VISIBLE);
+//            ApiService apiService = ApiClient.getApiService();
+//
+//            Call<City> call = apiService.cityByIp(ip);
+//
+//            call.enqueue(new Callback<City>() {
+//                @Override
+//                public void onResponse(@NonNull Call<City> call, @NonNull Response<City> response) {
+//                    if (response.isSuccessful()) {
+//                        City status = response.body();
+//                        if (status != null) {
+//                            String result = status.getResponse();
+//                            Log.d("TAG", "onResponse:result " + result);
+//                            if(isAdded()) {
+//                                MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(result);
+//                                bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
+//                            }
+//                        }
+//                    } else {
+//                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+//                        bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
+//                    }
+//                }
+//
+//                @Override
+//                public void onFailure(Call<City> call, Throwable t) {
+//                    // Обработка ошибок сети или других ошибок
+//                    String errorMessage = t.getMessage();
+//                    t.printStackTrace();
+//                    Log.d("TAG", "onFailure: " + errorMessage);
+//
+//                }
+//            });
+////        }
+//    }
     private void updateAddCost(String addCost) {
         ContentValues cv = new ContentValues();
         Log.d(TAG, "updateAddCost: addCost" + addCost);
@@ -927,7 +938,9 @@ public class VisicomFragment extends Fragment  implements ApiCallback{
     @Override
     public void onResume() {
         super.onResume();
-
+        if(!newRout()) {
+            visicomCost();
+        }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -995,21 +1008,21 @@ public class VisicomFragment extends Fragment  implements ApiCallback{
     }
 
     private void visicomKey(final ApiCallback callback) {
-        com.taxi.easy.ua.ui.open_map.visicom.key.ApiClient.getVisicomKeyInfo(new Callback<ApiResponse>() {
+        com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiClient.getVisicomKeyInfo(new Callback<ApiResponse>() {
             @Override
             public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                 if (response.isSuccessful()) {
                     ApiResponse apiResponse = response.body();
                     if (apiResponse != null) {
                         String keyVisicom = apiResponse.getKeyVisicom();
-                        Log.d("ApiResponse", "keyVisicom: " + keyVisicom);
+                        Log.d("ApiResponseMapbox", "keyVisicom: " + keyVisicom);
 
                         // Теперь у вас есть ключ Visicom для дальнейшего использования
                         callback.onVisicomKeyReceived(keyVisicom);
                     }
                 } else {
                     // Обработка ошибки
-                    Log.e("ApiResponse", "Error: " + response.code());
+                    Log.e("ApiResponseMapbox", "Error: " + response.code());
                     callback.onApiError(response.code());
                 }
             }
@@ -1017,7 +1030,7 @@ public class VisicomFragment extends Fragment  implements ApiCallback{
             @Override
             public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
                 // Обработка ошибки
-                Log.e("ApiResponse", "Failed to make API call", t);
+                Log.e("ApiResponseMapbox", "Failed to make API call", t);
                 callback.onApiFailure(t);
             }
         },

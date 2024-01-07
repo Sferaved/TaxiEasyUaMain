@@ -3,6 +3,8 @@ package com.taxi.easy.ua.ui.finish;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -12,6 +14,15 @@ public class ApiClient {
     private static Retrofit retrofit = null;
 
     public static ApiService getApiService() {
+        //Логирование****
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(loggingInterceptor)
+                .build();
+        //****
+
         if (retrofit == null) {
             Gson gson = new GsonBuilder()
                     .setLenient()
@@ -19,6 +30,7 @@ public class ApiClient {
 
             retrofit = new Retrofit.Builder()
                     .baseUrl(BASE_URL)
+                    .client(client)
                     .addConverterFactory(GsonConverterFactory.create(gson))
                     .build();
         }
