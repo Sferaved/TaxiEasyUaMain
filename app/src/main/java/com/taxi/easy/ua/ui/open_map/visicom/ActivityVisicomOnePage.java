@@ -795,25 +795,24 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
     private void performAddressSearch(String inputText, String point) {
 
-        testConnectionTime("https://api.visicom.ua/data-api/5.0/uk/", apiKey, 500, new ConnectionSpeedTestCallback() {
-            @Override
-            public void onConnectionTestResult(boolean isConnectionFast, long duration) {
-                Log.d("SpeedTest", "connectionTime: " + duration);
-                Log.d("SpeedTest", "testConnectionTime: timeLimitMillis: 1000");
-                Log.d("SpeedTest", "testConnectionTime: res: " + isConnectionFast);
-                if (!isConnectionFast) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.d(TAG, "Скорость подключения превышает ограничение времени или произошла ошибка");
-                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-//                            finish();
-                        }
-                    });
-                }
-            }
-        });
+//        testConnectionTime("https://api.visicom.ua/data-api/5.0/uk/", apiKey, 1000, new ConnectionSpeedTestCallback() {
+//            @Override
+//            public void onConnectionTestResult(boolean isConnectionFast, long duration) {
+//                Log.d("SpeedTest", "connectionTime: " + duration);
+//                Log.d("SpeedTest", "testConnectionTime: timeLimitMillis: 1000");
+//                Log.d("SpeedTest", "testConnectionTime: res: " + isConnectionFast);
+//                if (!isConnectionFast) {
+//                    runOnUiThread(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            Log.d(TAG, "Скорость подключения превышает ограничение времени или произошла ошибка");
+//                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+//                            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+//                        }
+//                    });
+//                }
+//            }
+//        });
         try {
             String apiUrl = "https://api.visicom.ua/data-api/5.0/";
             String url = apiUrl  + LocaleHelper.getLocale() + "/geocode.json";
@@ -872,17 +871,21 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                         processAddressData(responseData, point);
                     } catch (Exception e) {
                         e.printStackTrace();
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                     }
                 }
 
                 @Override
                 public void onFailure(@NonNull okhttp3.Call call, @NonNull IOException e) {
-                    e.printStackTrace();
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
             });
         } catch (Exception e) {
             e.printStackTrace();
-            // Log the exception or display an error message
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
         }
 
 
@@ -1871,109 +1874,14 @@ public class ActivityVisicomOnePage extends AppCompatActivity
         });
     }
 
-     private void geoSearch() throws IOException {
-         Geocoder geocoder = new Geocoder(this);
-         String address = "Дер Одесса";
-         List<Address> addresses = geocoder.getFromLocationName(address, 100);
-         if (addresses != null && addresses.size() > 0) {
-             for (int i = 0; i < addresses.size(); i++) {
-                 Address currentAddress = addresses.get(i);
-                 Log.d(TAG, "Address #" + i + ": " + currentAddress.getAddressLine(0));
-                 Log.d(TAG, "Latitude: " + currentAddress.getLatitude());
-                 Log.d(TAG, "Longitude: " + currentAddress.getLongitude());
-                 // Дополнительные свойства Address могут быть доступны
-             }
-         } else {
-             Log.d(TAG, "No matching addresses found.");
-         }
-
-     }
-     private void geoSearch2() throws IOException {
-         String locationName = "Nowy Swiat";
-         int maxResults = 20;
-         double lowerLeftLatitude = 44.38;
-         double lowerLeftLongitude = 22.13;
-         double upperRightLatitude = 52.38;
-         double upperRightLongitude = 40.18;
-
-
-
-         try {
-             Geocoder geocoder = new Geocoder(this);
-             List<Address> addresses = geocoder.getFromLocationName(
-                     locationName, maxResults, lowerLeftLatitude, lowerLeftLongitude, upperRightLatitude, upperRightLongitude);
-
-             if (addresses != null && addresses.size() > 0) {
-                 for (int i = 0; i < addresses.size(); i++) {
-                     Address currentAddress = addresses.get(i);
-                     Log.d(TAG, "Address #" + i + ": " + currentAddress.getAddressLine(0));
-                     Log.d(TAG, "Latitude: " + currentAddress.getLatitude());
-                     Log.d(TAG, "Longitude: " + currentAddress.getLongitude());
-                     // Дополнительные свойства Address могут быть доступны
-                 }
-             } else {
-                 Log.d(TAG, "No matching addresses found.");
-             }
-         } catch (IOException e) {
-             e.printStackTrace();
-         }
-
-     }
-
-    private void performGeocoding() {
-        String location = "Ришельевская 1";
-        String format = "geojson";
-
-        NominatimApiService apiService = NominatimApiClient.getApiService();
-
-//        String query = "Your Query";
-//        String format = "geojson";
-//        int addressDetails = 1;
-//        int limit = 10;
-//        String street = "Дерибасовска 1";
-//        String city = "Одеса";
-//        String country = "Украина";
-//
-//        Call<List<NominatimPlace>> call = apiService.search(format, addressDetails, limit, street, city, country);
-        Call<List<NominatimPlace>> call = apiService.search(location, format);
-
-
-        call.enqueue(new Callback<List<NominatimPlace>>() {
-            @Override
-            public void onResponse(@NonNull Call<List<NominatimPlace>> call, @NonNull Response<List<NominatimPlace>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    List<NominatimPlace> places = response.body();
-                    for (NominatimPlace place : places) {
-                        Log.d("NominatimPlace", place.toString());
-                        // Делайте что-то с результатами
-                    }
-                } else {
-                    // Обработка ошибки
-                }
-            }
-
-            @Override
-            public void onFailure(Call<List<NominatimPlace>> call, Throwable t) {
-                // Обработка ошибки
-            }
-        });
-    }
     private void mapBoxSearch(String address, String point) {
         // Создаем Retrofit-клиент
         MapboxService mapboxService = MapboxApiClient.create();
 
-        // Указываем адрес, который хотим найти
-//        String address = "Nowy Swiat 15";
-//        String address = "Науки проспект 45";
-
-                // Выполняем асинхронный запрос
-//        Call<MapboxResponse> call = mapboxService.getLocation(address, "pl", MAPBOX_API_KEY);
         Call<MapboxResponse> call = mapboxService.getLocation(address, apiKeyMapBox);
         call.enqueue(new Callback<MapboxResponse>() {
             @Override
             public void onResponse(Call<MapboxResponse> call, Response<MapboxResponse> response) {
-
-
                 if (response.isSuccessful()) {
                     // Обработка успешного ответа
                     MapboxResponse mapboxResponse = response.body();
@@ -1982,6 +1890,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                 } else {
                     // Обработка ошибки
                     Log.d(TAG, "Error: " + response.code() + " " + response.message());
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
             }
 
@@ -1989,6 +1899,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity
             public void onFailure(@NonNull Call<MapboxResponse> call, @NonNull Throwable t) {
                 // Обработка ошибки при выполнении запроса
                 t.printStackTrace();
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
             }
         });
 
