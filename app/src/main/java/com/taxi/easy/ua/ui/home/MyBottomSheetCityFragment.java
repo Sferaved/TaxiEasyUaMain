@@ -106,31 +106,56 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             List<String> listCity = logCursor(MainActivity.CITY_INFO);
             city = listCity.get(1);
         }
-        switch (city) {
+        switch (cityCode[positionFirst]){
             case "Dnipropetrovsk Oblast":
                 positionFirst = 1;
+                phoneNumber = Dnipropetrovsk_Oblast_phone;
+                cityMenu = getString(R.string.city_dnipro);
+                MainActivity.countryState = "UA";
                 break;
             case "Odessa":
                 positionFirst = 2;
+                phoneNumber = Odessa_phone;
+                cityMenu = getString(R.string.city_odessa);
+                MainActivity.countryState = "UA";
                 break;
             case "Zaporizhzhia":
                 positionFirst = 3;
+                phoneNumber = Zaporizhzhia_phone;
+                cityMenu = getString(R.string.city_zaporizhzhia);
+                MainActivity.countryState = "UA";
                 break;
             case "Cherkasy Oblast":
                 positionFirst = 4;
+                phoneNumber = Cherkasy_Oblast_phone;
+                cityMenu = getString(R.string.city_cherkasy);
+                MainActivity.countryState = "UA";
                 break;
             case "OdessaTest":
                 positionFirst = 5;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = "Test";
+                MainActivity.countryState = "UA";
                 break;
             case "foreign countries":
                 positionFirst = 6;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.foreign_countries);
+                MainActivity.countryState = "FC";
                 break;
             default:
+                phoneNumber = Kyiv_City_phone;
                 positionFirst = 0;
+                cityMenu = getString(R.string.city_kyiv);
+                MainActivity.countryState = "UA";
                 break;
         }
         Log.d(TAG, "onCreateView: city" + city);
+
         listView.setItemChecked(positionFirst, true);
+        resetRoutHome();
+        resetRoutMarker();
+        updateMyPosition(cityCode[positionFirst]);
         int positionFirstOld = positionFirst;
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -180,7 +205,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         MainActivity.countryState = "UA";
                         break;
                 }
-                if (positionFirstOld != positionFirst) {
+//                if (positionFirstOld != positionFirst) {
 
                     if (positionFirst == 6) {
                         cityMaxPay(cityCode[0], getContext());
@@ -189,34 +214,14 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         cityMaxPay(cityCode[positionFirst], getContext());
                         merchantFondy(cityCode[positionFirst], getContext());
                     }
-
-
                     resetRoutHome();
                     resetRoutMarker();
-
                     updateMyPosition(cityCode[positionFirst]);
 
+//                }
 
 
-                    NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-                    navController.navigate(R.id.nav_visicom);
-                    if (positionFirst != 6) {
-                        message = getString(R.string.change_message) + getString(R.string.hi_mes) + " " + getString(R.string.order_in) + cityMenu + ".";
-                    } else {
-                        message = getString(R.string.change_message);
-                    }
-                }
 
-
-                if (MainActivity.navVisicomMenuItem != null) {
-                    // Новый текст элемента меню
-                    String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-                    // Изменяем текст элемента меню
-                    MainActivity.navVisicomMenuItem.setTitle(newTitle);
-                    if (positionFirstOld != positionFirst) {
-                        Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
-                    }
-                }
 
                 dismiss();
             }
@@ -327,7 +332,24 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {
+
         super.onDismiss(dialog);
+        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+        navController.navigate(R.id.nav_visicom);
+        if (positionFirst != 6) {
+            message = getString(R.string.change_message) + getString(R.string.hi_mes) + " " + getString(R.string.order_in) + cityMenu + ".";
+        } else {
+            message = getString(R.string.change_message);
+        }
+        if (MainActivity.navVisicomMenuItem != null) {
+            // Новый текст элемента меню
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            // Изменяем текст элемента меню
+            MainActivity.navVisicomMenuItem.setTitle(newTitle);
+
+            Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
+
+        }
     }
 
     private void cityMaxPay(String city, Context context) {

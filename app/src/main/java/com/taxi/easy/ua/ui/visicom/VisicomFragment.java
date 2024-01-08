@@ -415,63 +415,7 @@ public class VisicomFragment extends Fragment  implements ApiCallback{
         c.close();
         return list;
     }
-//    private class GetPublicIPAddressTask extends AsyncTask<Void, Void, String> {
-//
-//        @Override
-//        protected String doInBackground(Void... voids) {
-//            return IPUtil.getPublicIPAddress();
-//        }
-//
-//        @Override
-//        protected void onPostExecute(String ipAddress) {
-//            if (ipAddress != null) {
-//                Log.d(TAG, "onCreate: Local IP Address: " + ipAddress);
-//                getLocalIpAddress(ipAddress);
-//            } else {
-//
-//            }
-//        }
-//    }
-//    private void getLocalIpAddress(String ip) {
-//
-////        List<String> city = logCursor(MainActivity.CITY_INFO, requireActivity());
-////        Log.d(TAG, "getLocalIpAddress: city.get(1)" + city.get(1));
-////        if(city.size() != 0 && city.get(1).equals("")) {
-////            VisicomFragment.progressBar.setVisibility(View.VISIBLE);
-//            ApiService apiService = ApiClient.getApiService();
-//
-//            Call<City> call = apiService.cityByIp(ip);
-//
-//            call.enqueue(new Callback<City>() {
-//                @Override
-//                public void onResponse(@NonNull Call<City> call, @NonNull Response<City> response) {
-//                    if (response.isSuccessful()) {
-//                        City status = response.body();
-//                        if (status != null) {
-//                            String result = status.getResponse();
-//                            Log.d("TAG", "onResponse:result " + result);
-//                            if(isAdded()) {
-//                                MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(result);
-//                                bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
-//                            }
-//                        }
-//                    } else {
-//                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-//                        bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
-//                    }
-//                }
-//
-//                @Override
-//                public void onFailure(Call<City> call, Throwable t) {
-//                    // Обработка ошибок сети или других ошибок
-//                    String errorMessage = t.getMessage();
-//                    t.printStackTrace();
-//                    Log.d("TAG", "onFailure: " + errorMessage);
-//
-//                }
-//            });
-////        }
-//    }
+
     private void updateAddCost(String addCost) {
         ContentValues cv = new ContentValues();
         Log.d(TAG, "updateAddCost: addCost" + addCost);

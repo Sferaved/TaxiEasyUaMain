@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    public static final String DB_NAME = "data_07012024_2";
+    public static final String DB_NAME = "data_08012024_0";
 
     /**
      * Table section
@@ -1551,10 +1551,11 @@ public class MainActivity extends AppCompatActivity {
                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                     }
-                } else {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(verifyInternet);
-                    bottomSheetDialogFragment.show(bottomSheetDialogFragment.getParentFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
+//                else {
+//                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(verifyInternet);
+//                    bottomSheetDialogFragment.show(bottomSheetDialogFragment.getParentFragmentManager(), bottomSheetDialogFragment.getTag());
+//                }
             }
 
             @Override
