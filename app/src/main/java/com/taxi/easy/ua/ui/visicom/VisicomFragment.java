@@ -415,7 +415,7 @@ public class VisicomFragment extends Fragment{
         binding = null;
     }
     @SuppressLint("Range")
-    private List<String> logCursor(String table, Context context) {
+    private static List<String> logCursor(String table, Context context) {
         List<String> list = new ArrayList<>();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(table, null, null, null, null, null, null);
@@ -916,7 +916,10 @@ public class VisicomFragment extends Fragment{
             btn_clear_from.setVisibility(View.INVISIBLE);
             btn_clear_to.setVisibility(View.INVISIBLE);
             FragmentManager fragmentManager = getChildFragmentManager();
-            new GetPublicIPAddressTask(fragmentManager).execute();
+            List<String> listCity = logCursor(MainActivity.CITY_INFO, requireActivity());
+            String city = listCity.get(1);
+
+            new GetPublicIPAddressTask(fragmentManager, city).execute();
         } else {
             btn_clear_from_text.setVisibility(View.VISIBLE);
             textfrom.setVisibility(View.VISIBLE);
@@ -1008,9 +1011,11 @@ public class VisicomFragment extends Fragment{
 
     private static class GetPublicIPAddressTask extends AsyncTask<Void, Void, String> {
         FragmentManager fragmentManager;
+        String city;
 
-        public GetPublicIPAddressTask(FragmentManager fragmentManager) {
+        public GetPublicIPAddressTask(FragmentManager fragmentManager, String city) {
             this.fragmentManager = fragmentManager;
+            this.city = city;
         }
 
         @Override
@@ -1022,7 +1027,7 @@ public class VisicomFragment extends Fragment{
         protected void onPostExecute(String ipAddress) {
             if (ipAddress != null) {
                 Log.d(TAG, "onCreate: Local IP Address: " + ipAddress);
-                getCountryByIP(ipAddress);
+                getCountryByIP(ipAddress, city);
              } else {
                 MainActivity.countryState = "UA";
 
@@ -1032,7 +1037,7 @@ public class VisicomFragment extends Fragment{
             }
         }
     }
-    private static void getCountryByIP(String ipAddress) {
+    private static void getCountryByIP(String ipAddress, String city) {
         ApiServiceCountry apiService = RetrofitClient.getClient().create(ApiServiceCountry.class);
         Call<CountryResponse> call = apiService.getCountryByIP(ipAddress);
 
@@ -1053,14 +1058,18 @@ public class VisicomFragment extends Fragment{
                 Log.d(TAG, "countryState  " + MainActivity.countryState);
 
 
-                textfrom.setVisibility(View.VISIBLE);
-                num1.setVisibility(View.VISIBLE);
-                btn_clear_from.setVisibility(View.VISIBLE);
-//                if(!textViewTo.equals("")) {
-//                    btn_clear_to.setVisibility(View.VISIBLE);
-//                } else {
-//                    btn_clear_to.setVisibility(View.INVISIBLE);
-//                }
+                if (!city.equals("")) {
+                    textfrom.setVisibility(View.VISIBLE);
+
+                    num1.setVisibility(View.VISIBLE);
+                    btn_clear_from.setVisibility(View.VISIBLE);
+                    if(!textViewTo.equals("")) {
+                        btn_clear_to.setVisibility(View.VISIBLE);
+                    } else {
+                        btn_clear_to.setVisibility(View.INVISIBLE);
+                    }
+                }
+
 
             }
 

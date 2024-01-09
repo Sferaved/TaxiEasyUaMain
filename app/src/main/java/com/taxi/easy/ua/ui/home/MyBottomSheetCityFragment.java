@@ -107,8 +107,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         listView.setAdapter(adapter);
         listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 
-//        List<String> listCity = logCursor(MainActivity.CITY_INFO);
-//        city = listCity.get(1);
+
         switch (city){
             case "Dnipropetrovsk Oblast":
                 positionFirst = 1;

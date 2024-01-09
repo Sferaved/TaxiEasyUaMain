@@ -111,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    public static final String DB_NAME = "data_09012024_50";
+    public static final String DB_NAME = "data_09012024_56";
 
     /**
      * Table section
@@ -149,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
     public static MenuItem navVisicomMenuItem;
     public static String countryState;
     private static String verifyInternet;
-    private static androidx.fragment.app.FragmentManager fragmentManager;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -182,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
         networkChangeReceiver = new NetworkChangeReceiver();
         verifyInternet = getString(R.string.verify_internet);
 
-        fragmentManager = getSupportFragmentManager();
+
 
     }
     @Override
@@ -314,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
         cursorDb = database.query(CITY_INFO, null, null, null, null, null, null);
         if (cursorDb.getCount() == 0) {
             List<String> settings = new ArrayList<>();
-            settings.add("Kyiv City"); //1
+            settings.add(""); //1
             settings.add(api); //2
             settings.add(Kyiv_City_phone); //3
             settings.add("5000"); //4
@@ -894,7 +894,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onActivityResult(FirebaseAuthUIAuthenticationResult result) {
                     try {
-                        onSignInResult(result);
+                        onSignInResult(result, getSupportFragmentManager());
                     } catch (MalformedURLException | JSONException | InterruptedException e) {
                         Log.d(TAG, "onCreate:" + new RuntimeException(e));
                     }
@@ -903,7 +903,7 @@ public class MainActivity extends AppCompatActivity {
     );
 
 
-    private void onSignInResult(FirebaseAuthUIAuthenticationResult result) throws MalformedURLException, JSONException, InterruptedException {
+    private void onSignInResult(FirebaseAuthUIAuthenticationResult result, FragmentManager fm) throws MalformedURLException, JSONException, InterruptedException {
         ContentValues cv = new ContentValues();
         Log.d(TAG, "onSignInResult: ");
         try {
@@ -926,7 +926,7 @@ public class MainActivity extends AppCompatActivity {
                 SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                 database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
                 database.close();
-                new GetPublicIPAddressTask(getSupportFragmentManager()).execute();
+                new GetPublicIPAddressTask(fm).execute();
 
 
             } else {
@@ -1460,11 +1460,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private static void getCityByIP(String ip, FragmentManager fragmentManager) {
-
-//        List<String> city = logCursor(MainActivity.CITY_INFO);
-//        Log.d(TAG, "getLocalIpAddress: city.get(1)" + city.get(1));
-//        if(city.equals("")) {
+    private static void getCityByIP(String ip, FragmentManager fm) {
 
         ApiService apiService = ApiClient.getApiService();
 
@@ -1480,13 +1476,10 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("TAG", "onResponse:result " + result);
 
                         MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(result);
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fm, bottomSheetDialogFragment.getTag());
                     }
                 }
-//                else {
-//                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(verifyInternet);
-//                    bottomSheetDialogFragment.show(bottomSheetDialogFragment.getParentFragmentManager(), bottomSheetDialogFragment.getTag());
-//                }
+
             }
 
             @Override
