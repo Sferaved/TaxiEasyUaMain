@@ -39,6 +39,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -110,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    public static final String DB_NAME = "data_08012024_0";
+    public static final String DB_NAME = "data_09012024_50";
 
     /**
      * Table section
@@ -313,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
         cursorDb = database.query(CITY_INFO, null, null, null, null, null, null);
         if (cursorDb.getCount() == 0) {
             List<String> settings = new ArrayList<>();
-            settings.add(""); //1
+            settings.add("Kyiv City"); //1
             settings.add(api); //2
             settings.add(Kyiv_City_phone); //3
             settings.add("5000"); //4
@@ -585,8 +586,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (item.getItemId() == R.id.nav_city) {
-//            cityChange();
-            MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment();
+            List<String> listCity = logCursor(MainActivity.CITY_INFO);
+            String city = listCity.get(1);
+            MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city);
             bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
         }
 
@@ -841,6 +843,7 @@ public class MainActivity extends AppCompatActivity {
         String userEmail = logCursor(TABLE_USER_INFO).get(3);
         Log.d(TAG, "newUser: " + userEmail);
         if(userEmail.equals("email")) {
+            Toast.makeText(this, R.string.checking, Toast.LENGTH_SHORT).show();
             startFireBase();
         } else {
             new VerifyUserTask().execute();
@@ -851,73 +854,38 @@ public class MainActivity extends AppCompatActivity {
     private void startFireBase() {
         startSignInInBackground();
     }
-//    private void startSignInInBackground() {
-//        Thread thread = new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                // Инициализация FirebaseApp
-//                FirebaseApp.initializeApp(MainActivity.this);
-//                Log.d(TAG, "run: ");
-//                // Choose authentication providers
-//                List<AuthUI.IdpConfig> providers = Arrays.asList(
-//                        new AuthUI.IdpConfig.GoogleBuilder().build());
-//
-//                // Create and launch sign-in intent
-//                Intent signInIntent = AuthUI.getInstance()
-//                        .createSignInIntentBuilder()
-//                        .setAvailableProviders(providers)
-//                        .build();
-//                try {
-//                    runOnUiThread(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            signInLauncher.launch(signInIntent);
-//                        }
-//                    });
-//                } catch (NullPointerException e) {
-//                    Log.e(TAG, "NullPointerException during sign-in launch", e);
-//                    e.printStackTrace();
-//                }
-//
-//            }
-//        });
-//        thread.start();
-//    }
-
     private void startSignInInBackground() {
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
+                // Инициализация FirebaseApp
+                FirebaseApp.initializeApp(MainActivity.this);
+                Log.d(TAG, "run: ");
+                // Choose authentication providers
+                List<AuthUI.IdpConfig> providers = Arrays.asList(
+                        new AuthUI.IdpConfig.GoogleBuilder().build());
+
+                // Create and launch sign-in intent
+                Intent signInIntent = AuthUI.getInstance()
+                        .createSignInIntentBuilder()
+                        .setAvailableProviders(providers)
+                        .build();
                 try {
-                    // Инициализация FirebaseApp
-                    FirebaseApp.initializeApp(MainActivity.this);
-                    Log.d(TAG, "FirebaseApp initialized");
-
-                    // Choose authentication providers
-                    List<AuthUI.IdpConfig> providers = Arrays.asList(
-                            new AuthUI.IdpConfig.GoogleBuilder().build());
-
-                    // Create and launch sign-in intent
-                    Intent signInIntent = AuthUI.getInstance()
-                            .createSignInIntentBuilder()
-                            .setAvailableProviders(providers)
-                            .build();
-
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             signInLauncher.launch(signInIntent);
                         }
                     });
-                } catch (Exception e) {
-                    Log.e(TAG, "Error during Firebase initialization or sign-in", e);
+                } catch (NullPointerException e) {
+                    Log.e(TAG, "NullPointerException during sign-in launch", e);
                     e.printStackTrace();
                 }
+
             }
         });
         thread.start();
     }
-
 
     private final ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
             
@@ -950,9 +918,6 @@ public class MainActivity extends AppCompatActivity {
                 addUser(user.getDisplayName(), user.getEmail()) ;
                 userPhoneFromServer (user.getEmail());
 
-
-//                fetchBonus(user.getEmail());
-
                 getCardToken("fondy", TABLE_FONDY_CARDS, user.getEmail());
                 getCardToken("mono", TABLE_MONO_CARDS, user.getEmail());
 
@@ -960,48 +925,9 @@ public class MainActivity extends AppCompatActivity {
 
                 SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                 database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+                database.close();
+                new GetPublicIPAddressTask(getSupportFragmentManager()).execute();
 
-                Cursor c = database.query(CITY_INFO, null, null, null, null, null, null);
-                if(c.getCount() != 0) {
-                    List<String> listCity = logCursor(CITY_INFO);
-                    String city = listCity.get(1);
-                    Log.d(TAG, "onResume:city www " + city +"/");
-                    if(city.equals("")) {
-                        new GetPublicIPAddressTask().execute();
-                    } else {
-                        String cityMenu;
-                        switch (city) {
-                            case "Dnipropetrovsk Oblast":
-                                cityMenu = " " + getString(R.string.city_dnipro);
-                                break;
-                            case "Odessa":
-                                cityMenu = " " + getString(R.string.city_odessa);
-                                break;
-                            case "Zaporizhzhia":
-                                cityMenu = " " + getString(R.string.city_zaporizhzhia);
-                                break;
-                            case "Cherkasy Oblast":
-                                cityMenu = " " + getString(R.string.city_cherkasy);
-                                break;
-                            case "foreign countries":
-                                cityMenu = "";
-                                break;
-                            case "OdessaTest":
-                                cityMenu = " " + "Test";
-                                break;
-                            default:
-                                cityMenu = " " + getString(R.string.city_kyiv);
-                        }
-                        if (MainActivity.navVisicomMenuItem != null) {
-                            // Новый текст элемента меню
-                            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-
-                            // Изменяем текст элемента меню
-                            MainActivity.navVisicomMenuItem.setTitle(newTitle);
-                        }
-                    }
-                    database.close();
-                }
 
             } else {
 
@@ -1021,6 +947,7 @@ public class MainActivity extends AppCompatActivity {
             database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
             database.close();
         }
+//        VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
     }
 
     private void addUser(String displayName , String userEmail) {
@@ -1274,48 +1201,48 @@ public class MainActivity extends AppCompatActivity {
                     }
                     cv.put("verifyOrder", "1");
                     database.update(TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-
-                    Cursor c = database.query(CITY_INFO, null, null, null, null, null, null);
-                    if(c.getCount() != 0) {
-                        List<String> listCity = logCursor(CITY_INFO);
-                        String city = listCity.get(1);
-                        Log.d(TAG, "onResume:city www " + city +"/");
-                        if(city.equals("")) {
-                            new GetPublicIPAddressTask().execute();
-                        } else {
-                            String cityMenu;
-                            switch (city) {
-                                case "Dnipropetrovsk Oblast":
-                                    cityMenu = " " + getString(R.string.city_dnipro);
-                                    break;
-                                case "Odessa":
-                                    cityMenu = " " + getString(R.string.city_odessa);
-                                    break;
-                                case "Zaporizhzhia":
-                                    cityMenu = " " + getString(R.string.city_zaporizhzhia);
-                                    break;
-                                case "Cherkasy Oblast":
-                                    cityMenu = " " + getString(R.string.city_cherkasy);
-                                    break;
-                                case "foreign countries":
-                                    cityMenu = "";
-                                    break;
-                                case "OdessaTest":
-                                    cityMenu = " " + "Test";
-                                    break;
-                                default:
-                                    cityMenu = " " + getString(R.string.city_kyiv);
-                            }
-                            if (MainActivity.navVisicomMenuItem != null) {
-                                // Новый текст элемента меню
-                                String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-
-                                // Изменяем текст элемента меню
-                                MainActivity.navVisicomMenuItem.setTitle(newTitle);
-                            }
-                        }
-
-                    }
+//
+//                    Cursor c = database.query(CITY_INFO, null, null, null, null, null, null);
+//                    if(c.getCount() != 0) {
+//                        List<String> listCity = logCursor(CITY_INFO);
+//                        String city = listCity.get(1);
+//                        Log.d(TAG, "onResume:city www " + city +"/");
+////                        if(city.equals("")) {
+////                            new GetPublicIPAddressTask().execute();
+////                        } else {
+//                            String cityMenu;
+//                            switch (city) {
+//                                case "Dnipropetrovsk Oblast":
+//                                    cityMenu = " " + getString(R.string.city_dnipro);
+//                                    break;
+//                                case "Odessa":
+//                                    cityMenu = " " + getString(R.string.city_odessa);
+//                                    break;
+//                                case "Zaporizhzhia":
+//                                    cityMenu = " " + getString(R.string.city_zaporizhzhia);
+//                                    break;
+//                                case "Cherkasy Oblast":
+//                                    cityMenu = " " + getString(R.string.city_cherkasy);
+//                                    break;
+//                                case "foreign countries":
+//                                    cityMenu = "";
+//                                    break;
+//                                case "OdessaTest":
+//                                    cityMenu = " " + "Test";
+//                                    break;
+//                                default:
+//                                    cityMenu = " " + getString(R.string.city_kyiv);
+//                            }
+//                            if (MainActivity.navVisicomMenuItem != null) {
+//                                // Новый текст элемента меню
+//                                String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+//
+//                                // Изменяем текст элемента меню
+//                                MainActivity.navVisicomMenuItem.setTitle(newTitle);
+//                            }
+////                        }
+//
+//                    }
 
                 }
             }
@@ -1482,7 +1409,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-    private static class GetPublicIPAddressTask extends AsyncTask<Void, Void, String> {
+    public static class GetPublicIPAddressTask extends AsyncTask<Void, Void, String> {
+        FragmentManager fragmentManager;
+
+        public GetPublicIPAddressTask(FragmentManager fragmentManager) {
+            this.fragmentManager = fragmentManager;
+        }
 
         @Override
         protected String doInBackground(Void... voids) {
@@ -1493,11 +1425,11 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(String ipAddress) {
             if (ipAddress != null) {
                 Log.d(TAG, "onCreate: Local IP Address: " + ipAddress);
-                getCountryByIP(ipAddress);
-                getCityByIP(ipAddress);
+//                getCountryByIP(ipAddress);
+                getCityByIP(ipAddress, fragmentManager);
             } else {
-                getCountryByIP("31.202.139.47");
-                getCityByIP("31.202.139.47");
+//                getCountryByIP("31.202.139.47");
+                getCityByIP("31.202.139.47",fragmentManager);
             }
         }
     }
@@ -1528,12 +1460,12 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private static void getCityByIP(String ip) {
+    private static void getCityByIP(String ip, FragmentManager fragmentManager) {
 
 //        List<String> city = logCursor(MainActivity.CITY_INFO);
 //        Log.d(TAG, "getLocalIpAddress: city.get(1)" + city.get(1));
 //        if(city.equals("")) {
-            VisicomFragment.progressBar.setVisibility(View.VISIBLE);
+
         ApiService apiService = ApiClient.getApiService();
 
         Call<City> call = apiService.cityByIp(ip);
@@ -1549,7 +1481,6 @@ public class MainActivity extends AppCompatActivity {
 
                         MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(result);
                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-
                     }
                 }
 //                else {
