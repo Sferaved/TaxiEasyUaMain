@@ -109,6 +109,12 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
 
         switch (city){
+            case "Kyiv City":positionFirst = 0;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_kyiv);
+                MainActivity.countryState = "UA";
+                break;
+
             case "Dnipropetrovsk Oblast":
                 positionFirst = 1;
                 phoneNumber = Dnipropetrovsk_Oblast_phone;
@@ -155,6 +161,11 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 positionFirst = position;
                 switch (cityCode[positionFirst]){
+                    case "Kyiv City":positionFirst = 0;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_kyiv);
+                        MainActivity.countryState = "UA";
+                        break;
                     case "Dnipropetrovsk Oblast":
                         positionFirst = 1;
                         phoneNumber = Dnipropetrovsk_Oblast_phone;
@@ -221,6 +232,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         double startLat;
         double startLan;
         String position;
+        Log.d(TAG, "updateMyPosition:city "+ city);
         switch (city){
             case "Dnipropetrovsk Oblast":
             case "Odessa":
@@ -235,6 +247,11 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         }
 
         switch (city){
+            case "Kyiv City":positionFirst = 0;
+                position = "вул. Хрещатик 16 місто Київ\t";
+                startLat = 50.451107;
+                startLan = 30.524907;
+                break;
             case "Dnipropetrovsk Oblast":
                 // Днепр
                 position = "просп.Дмитра Яворницького (Карла Маркса), буд.52, місто Дніпро\t";

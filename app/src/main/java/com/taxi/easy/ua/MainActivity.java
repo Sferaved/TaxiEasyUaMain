@@ -111,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    public static final String DB_NAME = "data_09012024_56";
+    public static final String DB_NAME = "data_09012024_58";
 
     /**
      * Table section
@@ -1476,7 +1476,15 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("TAG", "onResponse:result " + result);
 
                         MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(result);
-                        bottomSheetDialogFragment.show(fm, bottomSheetDialogFragment.getTag());
+//                        bottomSheetDialogFragment.show(fm, bottomSheetDialogFragment.getTag());
+                        // Добавим проверку на состояние фрагмента перед вызовом show()
+                        if (!fm.isStateSaved()) {
+                            bottomSheetDialogFragment.show(fm, bottomSheetDialogFragment.getTag());
+                        } else {
+                            // Состояние фрагмента уже было сохранено, невозможно выполнить транзакцию
+                            // Обработайте это событие соответствующим образом (возможно, отложите показ фрагмента)
+                            Log.w("TAG", "Fragment state is already saved. Cannot perform transaction.");
+                        }
                     }
                 }
 

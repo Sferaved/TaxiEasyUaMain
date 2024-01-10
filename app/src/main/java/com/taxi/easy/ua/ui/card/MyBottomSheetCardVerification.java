@@ -346,25 +346,28 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
     }
 
     private void updateCardFragment() {
-        // Создаем новый экземпляр фрагмента
-        CardFragment newFragment = new CardFragment();
+        // Проверяем, привязан ли фрагмент к активности
+        if (isAdded()) {
+            // Создаем новый экземпляр фрагмента
+            CardFragment newFragment = new CardFragment();
 
-// Получаем менеджер фрагментов
-        FragmentManager fragmentManager = requireActivity().getSupportFragmentManager(); // Если вы используете AppCompatActivity
+            // Получаем менеджер фрагментов
+            FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
 
-// Начинаем транзакцию фрагментов
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
+            // Начинаем транзакцию фрагментов
+            FragmentTransaction transaction = fragmentManager.beginTransaction();
 
-// Заменяем текущий фрагмент новым
-        transaction.replace(R.id.fragment_card, newFragment); // R.id.fragment_container - это ID контейнера, в котором находится ваш фрагмент
+            // Заменяем текущий фрагмент новым
+            transaction.replace(R.id.fragment_card, newFragment);
 
-// Добавляем транзакцию в стек возврата
-        transaction.addToBackStack(null);
+            // Добавляем транзакцию в стек возврата
+            transaction.addToBackStack(null);
 
-// Применяем транзакцию
-        transaction.commit();
-
+            // Применяем транзакцию
+            transaction.commit();
+        }
     }
+
 
     @SuppressLint("Range")
     private ArrayList<Map<String, String>> getCardMapsFromDatabase() {

@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.722</string>
-    <string name="version">Версія: 1.722</string>
+    <string name="version_code">1.724</string>
+    <string name="version">Версія: 1.724</string>
 
     <string name="app_name">Таксі Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
