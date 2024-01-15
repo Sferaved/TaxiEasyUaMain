@@ -173,7 +173,12 @@ public class MyBottomSheetTokenFragment extends BottomSheetDialogFragment {
     }
 
     private void cancelOrderDismiss(String value) {
-        String url = FinishActivity.baseUrl + "/" + FinishActivity.api + "/android/webordersCancel/" + value;
+        List<String> listCity = logCursor(MainActivity.CITY_INFO, requireActivity());
+        String city = listCity.get(1);
+        String api = listCity.get(2);
+
+        String url = FinishActivity.baseUrl + "/" + api + "/android/webordersCancel/" + value + "/" + city  + "/" + requireActivity().getString(R.string.application);
+
         Call<Status> call = ApiClient.getApiService().cancelOrder(url);
         Log.d("TAG", "cancelOrderWithDifferentValue cancelOrderUrl: " + url);
 

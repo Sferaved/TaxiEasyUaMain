@@ -70,20 +70,20 @@ public static Map<String, String> sendURL(String urlString) throws MalformedURLE
             }
         } else {
             costMap.put("order_cost", "0");
-            costMap.put("message", "Сталася помілка");
+            costMap.put("message", "Сталася помилка");
         }
         return costMap;
     } catch (TimeoutException e) {
         e.printStackTrace();
         asyncTaskFuture.cancel(true);
         costMap.put("order_cost", "0");
-        costMap.put("message", "Сталася помілка");
+        costMap.put("message", "Сталася помилка");
         return costMap;
     } catch (Exception e) {
         e.printStackTrace();
         asyncTaskFuture.cancel(true);
         costMap.put("order_cost", "0");
-        costMap.put("message", "Сталася помілка");
+        costMap.put("message", "Сталася помилка");
         return costMap;
     }
 

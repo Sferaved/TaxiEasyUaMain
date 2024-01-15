@@ -103,14 +103,28 @@ public class UIDFragment extends Fragment {
         Log.d("TAG", "fetchRoutes: " + url);
         call.enqueue(new Callback<List<RouteResponse>>() {
             @Override
-            public void onResponse(Call<List<RouteResponse>> call, Response<List<RouteResponse>> response) {
+            public void onResponse(@NonNull Call<List<RouteResponse>> call, @NonNull Response<List<RouteResponse>> response) {
                 progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful()) {
                     List<RouteResponse> routes = response.body();
-
+                    Log.d("TAG", "onResponse: " + routes);
                     if (routes != null && !routes.isEmpty()) {
-                        routeList.addAll(routes);
-                        processRouteList();
+                        boolean hasRouteWithAsterisk = false;
+                        for (RouteResponse route : routes) {
+                            if ("*".equals(route.getRouteFrom())) {
+                                // Найден объект с routefrom = "*"
+                                hasRouteWithAsterisk = true;
+                                break;  // Выход из цикла, так как условие уже выполнено
+                            }
+                        }
+                        if (!hasRouteWithAsterisk) {
+                            routeList.addAll(routes);
+                            processRouteList();
+                        }  else {
+                            binding.textUid.setVisibility(View.VISIBLE);
+                            binding.textUid.setText(R.string.no_routs);
+                        }
+
                     } else {
                         binding.textUid.setVisibility(View.VISIBLE);
                         binding.textUid.setText(R.string.no_routs);

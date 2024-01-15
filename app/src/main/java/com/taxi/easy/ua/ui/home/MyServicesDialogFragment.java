@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 
 
 public class MyServicesDialogFragment extends BottomSheetDialogFragment {
@@ -96,7 +97,7 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
         }
 
         String[] tariffArr = new String[]{
-                " ",
+                "Старт",
                 "Базовий онлайн",
                 "Базовый",
                 "Универсал",
@@ -122,6 +123,9 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 tariff = tariffArr[position];
+                if(tariff.equals("Старт")) {
+                    tariff = " ";
+                }
                 ContentValues cv = new ContentValues();
                 cv.put("tarif", tariff);
 
@@ -205,6 +209,11 @@ public class MyServicesDialogFragment extends BottomSheetDialogFragment {
 
     }
     private void showTimePickerDialog() {
+        TimeZone timeZone = TimeZone.getDefault();
+
+        // Create a Calendar instance with the device's time zone
+        Calendar calendar = Calendar.getInstance(timeZone);
+
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
         int minute = calendar.get(Calendar.MINUTE);
 

@@ -66,7 +66,7 @@ public class CardFragment extends Fragment {
     private String baseUrl = "https://m.easy-order-taxi.site";
     private String messageFondy;
     public static ProgressBar progressBar;
-    private String TAG = "TAG3";
+    private String TAG = "TAG_CARD";
     String email;
     String amount = "100";
     public static TextView textCard;

@@ -48,6 +48,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 
 public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
@@ -66,6 +67,9 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
 
     public MyBottomSheetGeoFragment(TextView texViewCost) {
         this.texViewCost = texViewCost;
+    }
+
+    public MyBottomSheetGeoFragment() {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -120,7 +124,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         }
 
         String[] tariffArr = new String[]{
-                " ",
+                "Старт",
                 "Базовий онлайн",
                 "Базовый",
                 "Универсал",
@@ -151,6 +155,9 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 tariff = tariffArr[position];
+                if(tariff.equals("Старт")) {
+                    tariff = " ";
+                }
                 ContentValues cv = new ContentValues();
                 cv.put("tarif", tariff);
 
@@ -400,14 +407,14 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             database.close();
         }
         try {
-            texViewCost.setText(changeCost());
+            changeCost();
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
 
     }
     @RequiresApi(api = Build.VERSION_CODES.O)
-    private String changeCost() throws MalformedURLException {
+    private void changeCost() throws MalformedURLException {
         String newCost = "0";
 
         String  url = getTaxiUrlSearchMarkers("costSearchMarkers", requireActivity());
@@ -432,9 +439,11 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             updateAddCost(String.valueOf(discount));
 
             newCost = String.valueOf(firstCost + discount);
+            if (texViewCost != null) {
+                texViewCost.setText(newCost);
+            }
 
         }
-        return newCost;
     }
 
     private void updateRoutMarker(List<String> settings) {
@@ -655,6 +664,11 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         return url;
     }
     private void showTimePickerDialog() {
+        TimeZone timeZone = TimeZone.getDefault();
+
+        // Create a Calendar instance with the device's time zone
+        Calendar calendar = Calendar.getInstance(timeZone);
+
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
         int minute = calendar.get(Calendar.MINUTE);
 

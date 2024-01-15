@@ -61,7 +61,7 @@ public class ToJSONParser {
             if (response != null) {
                 if (response.equals("400")) {
                     costMap.put("order_cost", "0");
-                    costMap.put("message", "Сталася помілка");
+                    costMap.put("message", "Сталася помилка");
                 } else {
                     JSONObject jsonarray = new JSONObject(response);
 
@@ -95,20 +95,20 @@ public class ToJSONParser {
                 }
             } else {
                 costMap.put("order_cost", "0");
-                costMap.put("message", "Сталася помілка");
+                costMap.put("message", "Сталася помилка");
             }
             return costMap;
         }  catch (TimeoutException e) {
             e.printStackTrace();
             asyncTaskFuture.cancel(true);
             costMap.put("order_cost", "0");
-            costMap.put("message", "Сталася помілка");
+            costMap.put("message", "Сталася помилка");
             return costMap;
         } catch (Exception e) {
             e.printStackTrace();
             asyncTaskFuture.cancel(true);
             costMap.put("order_cost", "0");
-            costMap.put("message", "Сталася помілка");
+            costMap.put("message", "Сталася помилка");
             return costMap;
         }
     }

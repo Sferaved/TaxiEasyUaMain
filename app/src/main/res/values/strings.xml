@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.724</string>
-    <string name="version">Версия: 1.724</string>
+    <string name="version_code">1.725</string>
+    <string name="version">Версия: 1.725</string>
 
     <string name="app_name">Такси Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -97,7 +97,7 @@
     <string name="address_error_message">Ошибка ввода адреса</string>
 
     <string name="BAGGAGE">Загрузка салона</string>
-    <string name="ANIMAL">Животное</string>,
+    <string name="ANIMAL">Животное</string>
     <string name="CONDIT">Кондиционер</string>
     <string name="MEET">Встреча с табличкой</string>
     <string name="COURIER">Курьер. доставка</string>
@@ -313,4 +313,7 @@
     <string name="foreign_countries">другое</string>
     <string name="order_in">"заказ в "</string>
     <string name="checking">Ожидайте, идет проверка данных ...</string>
+    <string name="time_out_text">Отмена поездки по таймауту оплаты. Попробуйте еще.</string>
+    <string name="pay_cancel">Поездка отменена  через отсутствие оплаты. Попробуйте еще.</string>
+    <string name="ex_st_canceled">Заказ снят. Поробуйте еще.</string>
 </resources>

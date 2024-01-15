@@ -56,7 +56,9 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
     private String TAG = "TAG";
     private String messageFondy;
     private String amount;
-
+    public MyPhoneDialogFragment() {
+        // Пустой конструктор без аргументов
+    }
     public MyPhoneDialogFragment(String page, String amount) {
         this.page = page;
         this.amount = amount;

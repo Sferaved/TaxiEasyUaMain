@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<safetynet xmlns:android="http://schemas.android.com/apk/res/android">
+    <splash>
+        <background>
+            <!-- Здесь можете указать цвет фона или изображение -->
+            <color android:color="@color/background_color" />
+        </background>
+        <logo>
+            <!-- Здесь можете указать логотип заставки -->
+            <drawable android:drawable="@drawable/logo" />
+        </logo>
+    </splash>
+</safetynet>

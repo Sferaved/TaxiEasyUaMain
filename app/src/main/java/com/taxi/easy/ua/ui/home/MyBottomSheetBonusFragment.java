@@ -129,27 +129,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         }
 
         merchantFondy(city, getContext());
-//        switch (city) {
-//            case "Kyiv City":
-//            case "Dnipropetrovsk Oblast":
-//            case "Odessa":
-//            case "Zaporizhzhia":
-//            case "Cherkasy Oblast":
-//                ContentValues cv = new ContentValues();
-//                cv.put("merchant_fondy", "");
-//                cv.put("fondy_key_storage", "");
-//
-//                SQLiteDatabase database = requireContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-//                database.update(MainActivity.CITY_INFO, cv, "id = ?",
-//                        new String[]{"1"});
-//                database.close();
-//                adapter.setItemEnabled(2, false);
-//                break;
-//            case "OdessaTest":
-//                merchantFondy(city, getContext());
-//                break;
-//        }
-
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override

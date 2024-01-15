@@ -522,17 +522,31 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
         @Override
         protected String doInBackground(Void... voids) {
-            return IPUtil.getPublicIPAddress();
+            try {
+                return IPUtil.getPublicIPAddress();
+            } catch (Exception e) {
+                // Log the exception
+                Log.e(TAG, "Exception in doInBackground: " + e.getMessage());
+                // Return null or handle the exception as needed
+                return null;
+            }
         }
 
         @Override
         protected void onPostExecute(String ipAddress) {
-            if (ipAddress != null) {
-                Log.d(TAG, "onCreate: Local IP Address: " + ipAddress);
-                getCountryByIP(ipAddress);
-            } else {
-                MainActivity.countryState = "UA";
+            try {
+                if (ipAddress != null) {
+                    Log.d(TAG, "onCreate: Local IP Address: " + ipAddress);
+                    getCountryByIP(ipAddress);
+                } else {
+                    MainActivity.countryState = "UA";
+                }
+            } catch (Exception e) {
+                // Log the exception
+                Log.e(TAG, "Exception in onPostExecute: " + e.getMessage());
+                // Handle the exception as needed
             }
+
         }
     }
     private static void getCountryByIP(String ipAddress) {

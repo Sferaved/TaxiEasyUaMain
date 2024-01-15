@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.ui.card;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -59,9 +60,15 @@ public class CustomCardAdapterToken extends ArrayAdapter<Map<String, String>> {
             }
             String masked_card = cardMap.get("masked_card");
             holder.cardText.setText(masked_card);
-
             String bank_name = cardMap.get("bank_name");
-            holder.bankText.setText(bank_name);
+
+            Log.d("TAG", "getView:bank_name " + bank_name);
+            if(!bank_name.equals("SOME BANK IN UA COUNTRY")) {
+                holder.bankText.setText(bank_name);
+            } else {
+                holder.bankText.setText("");
+            }
+
 
             holder.checkBox.setChecked(position == selectedPosition);
             rectoken = cardMap.get("rectoken");

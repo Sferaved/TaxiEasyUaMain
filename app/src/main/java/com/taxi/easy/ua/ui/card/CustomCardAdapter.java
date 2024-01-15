@@ -83,7 +83,15 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             holder.cardText.setText(masked_card);
 
             String bank_name = cardMap.get("bank_name");
-            holder.bankText.setText(bank_name);
+            Log.d("TAG", "getView:11111 bank_name" +  bank_name);
+
+            assert bank_name != null;
+            if(!bank_name.equals("SOME BANK IN UA COUNTRY")) {
+                holder.bankText.setText(bank_name);
+            } else {
+                holder.bankText.setText("");
+            }
+
 
             selectedPosition = getCheckRectoken(table);
             Log.d("TAG", "getView: " + selectedPosition);

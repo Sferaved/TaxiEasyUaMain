@@ -76,6 +76,8 @@ import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.IPUtil;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.phone.ApiClientPhone;
+import com.taxi.easy.ua.utils.user.ApiServiceUser;
+import com.taxi.easy.ua.utils.user.UserResponse;
 
 import org.json.JSONException;
 
@@ -111,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    public static final String DB_NAME = "data_09012024_58";
+    public static final String DB_NAME = "data_12012024_0";
 
     /**
      * Table section
@@ -730,11 +732,13 @@ public class MainActivity extends AppCompatActivity {
 
         @SuppressLint({"MissingInflatedId", "LocalSuppress"})
         EditText phoneNumber = view.findViewById(R.id.phoneNumber);
+        EditText userName = view.findViewById(R.id.userName);
 
         List<String> stringList =  logCursor(MainActivity.TABLE_USER_INFO);
 
         if(stringList.size() != 0) {
             phoneNumber.setText(stringList.get(2));
+            userName.setText(stringList.get(4));
 
 
 //        String result = phoneNumber.getText().toString();
@@ -752,7 +756,12 @@ public class MainActivity extends AppCompatActivity {
                                 Log.d("TAG", "onClick:phoneNumber.getText().toString() " + phoneNumber.getText().toString());
 
                             } else {
-                               updateRecordsUser(phoneNumber.getText().toString());
+                               updateRecordsUser("phone_number", phoneNumber.getText().toString());
+                               String newName = userName.getText().toString();
+                               if (newName.trim().isEmpty()) {
+                                   newName = "No_name";
+                               }
+                               updateRecordsUser("username", newName);
                             }
                         }
                     }
@@ -760,10 +769,10 @@ public class MainActivity extends AppCompatActivity {
                 .show();
         }
     }
-    private void updateRecordsUser(String result) {
+    private void updateRecordsUser(String field, String result) {
         ContentValues cv = new ContentValues();
 
-        cv.put("phone_number", result);
+        cv.put(field, result);
 
         // обновляем по id
         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -912,10 +921,10 @@ public class MainActivity extends AppCompatActivity {
                 // Successfully signed in
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
-                updateRecordsUserInfo("email", user.getEmail());
-                updateRecordsUserInfo("username", user.getDisplayName());
+                updateRecordsUserInfo("email", user.getEmail(), getApplicationContext());
 
-                addUser(user.getDisplayName(), user.getEmail()) ;
+//                addUser(user.getDisplayName(), user.getEmail()) ;
+                addUserNoName(user.getEmail(), getApplicationContext());
                 userPhoneFromServer (user.getEmail());
 
                 getCardToken("fondy", TABLE_FONDY_CARDS, user.getEmail());
@@ -989,8 +998,42 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void updateRecordsUserInfo(String userInfo, String result) {
-        SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+    public static void addUserNoName(String email, Context context) {
+        // Создание объекта Retrofit
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://m.easy-order-taxi.site/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        // Создание экземпляра ApiService
+        ApiServiceUser apiService = retrofit.create(ApiServiceUser.class);
+
+        // Вызов метода addUserNoName
+        Call<UserResponse> call = apiService.addUserNoName(email);
+
+        // Асинхронный вызов
+        call.enqueue(new Callback<UserResponse>() {
+            @Override
+            public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
+                if (response.isSuccessful()) {
+                    UserResponse userResponse = response.body();
+                    if (userResponse != null) {
+                        updateRecordsUserInfo("username", userResponse.getUserName(), context);
+
+                    }
+                } else {
+                    updateRecordsUserInfo("username", "no_name", context);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UserResponse> call, Throwable t) {
+                System.out.println("Network Error: " + t.getMessage());
+            }
+        });
+    }
+    private static void updateRecordsUserInfo(String userInfo, String result, Context context) {
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         ContentValues cv = new ContentValues();
 
         cv.put(userInfo, result);
@@ -1201,48 +1244,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                     cv.put("verifyOrder", "1");
                     database.update(TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-//
-//                    Cursor c = database.query(CITY_INFO, null, null, null, null, null, null);
-//                    if(c.getCount() != 0) {
-//                        List<String> listCity = logCursor(CITY_INFO);
-//                        String city = listCity.get(1);
-//                        Log.d(TAG, "onResume:city www " + city +"/");
-////                        if(city.equals("")) {
-////                            new GetPublicIPAddressTask().execute();
-////                        } else {
-//                            String cityMenu;
-//                            switch (city) {
-//                                case "Dnipropetrovsk Oblast":
-//                                    cityMenu = " " + getString(R.string.city_dnipro);
-//                                    break;
-//                                case "Odessa":
-//                                    cityMenu = " " + getString(R.string.city_odessa);
-//                                    break;
-//                                case "Zaporizhzhia":
-//                                    cityMenu = " " + getString(R.string.city_zaporizhzhia);
-//                                    break;
-//                                case "Cherkasy Oblast":
-//                                    cityMenu = " " + getString(R.string.city_cherkasy);
-//                                    break;
-//                                case "foreign countries":
-//                                    cityMenu = "";
-//                                    break;
-//                                case "OdessaTest":
-//                                    cityMenu = " " + "Test";
-//                                    break;
-//                                default:
-//                                    cityMenu = " " + getString(R.string.city_kyiv);
-//                            }
-//                            if (MainActivity.navVisicomMenuItem != null) {
-//                                // Новый текст элемента меню
-//                                String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-//
-//                                // Изменяем текст элемента меню
-//                                MainActivity.navVisicomMenuItem.setTitle(newTitle);
-//                            }
-////                        }
-//
-//                    }
 
                 }
             }
@@ -1390,7 +1391,7 @@ public class MainActivity extends AppCompatActivity {
                     boolean val = Pattern.compile(PHONE_PATTERN).matcher(phone).matches();
 
                     if (val) {
-                        updateRecordsUser(phone);
+                        updateRecordsUser("phone_number", phone);
                     } else {
                         // Handle case where phone doesn't match the pattern
                         Log.e("UserPhone", "Phone does not match pattern");
@@ -1409,7 +1410,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-    public static class GetPublicIPAddressTask extends AsyncTask<Void, Void, String> {
+    private static class GetPublicIPAddressTask extends AsyncTask<Void, Void, String> {
         FragmentManager fragmentManager;
 
         public GetPublicIPAddressTask(FragmentManager fragmentManager) {
@@ -1418,19 +1419,33 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected String doInBackground(Void... voids) {
-            return IPUtil.getPublicIPAddress();
+            try {
+                return IPUtil.getPublicIPAddress();
+            } catch (Exception e) {
+                // Log the exception
+                Log.e(TAG, "Exception in doInBackground: " + e.getMessage());
+                // Return null or handle the exception as needed
+                return null;
+            }
         }
 
         @Override
         protected void onPostExecute(String ipAddress) {
-            if (ipAddress != null) {
-                Log.d(TAG, "onCreate: Local IP Address: " + ipAddress);
+            try {
+                if (ipAddress != null) {
+                    Log.d(TAG, "onCreate: Local IP Address: " + ipAddress);
 //                getCountryByIP(ipAddress);
-                getCityByIP(ipAddress, fragmentManager);
-            } else {
+                    getCityByIP(ipAddress, fragmentManager);
+                } else {
 //                getCountryByIP("31.202.139.47");
-                getCityByIP("31.202.139.47",fragmentManager);
+                    getCityByIP("31.202.139.47",fragmentManager);
+                }
+            } catch (Exception e) {
+                // Log the exception
+                Log.e(TAG, "Exception in onPostExecute: " + e.getMessage());
+                // Handle the exception as needed
             }
+
         }
     }
     public static void getCountryByIP(String ipAddress) {

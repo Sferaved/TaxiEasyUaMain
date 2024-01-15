@@ -237,13 +237,13 @@ public class HomeFragment extends Fragment {
         btn_minus.setOnClickListener(v -> {
             Log.d(TAG, "onCreateView: cost " +cost);
             Log.d(TAG, "onCreateView: MIN_COST_VALUE " +MIN_COST_VALUE);
-            if (cost >= MIN_COST_VALUE) {
+
                 List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
                 addCost = Long.parseLong(stringListInfo.get(5));
                 cost = Long.parseLong(text_view_cost.getText().toString());
                 cost -= 5;
                 addCost -= 5;
-
+            if (cost >= MIN_COST_VALUE) {
                 updateAddCost(String.valueOf(addCost));
                 text_view_cost.setText(String.valueOf(cost));
             }
@@ -400,7 +400,7 @@ public class HomeFragment extends Fragment {
         fab_call.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                getRevers("V_20231111101558754_3SV9", "повернення замовлення", "2500");
+                getRevers("V_20240113144017635_1XZW", "повернення замовлення", "6000");
 
                 Intent intent = new Intent(Intent.ACTION_DIAL);
                 List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());

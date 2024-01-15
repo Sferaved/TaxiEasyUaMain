@@ -52,8 +52,6 @@ import com.taxi.easy.ua.ui.mono.cancel.RequestCancelMono;
 import com.taxi.easy.ua.ui.mono.cancel.ResponseCancelMono;
 import com.taxi.easy.ua.ui.mono.payment.RequestPayMono;
 import com.taxi.easy.ua.ui.mono.payment.ResponsePayMono;
-import com.taxi.easy.ua.ui.payment_system.PayApi;
-import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -75,7 +73,6 @@ public class FinishActivity extends AppCompatActivity {
     private static final String TAG = "TAG_FINISH";
     public static TextView text_status;
 
-    public static String api;
     public static String baseUrl = "https://m.easy-order-taxi.site";
     Map<String, String> receivedMap;
     public static String uid;
@@ -89,7 +86,9 @@ public class FinishActivity extends AppCompatActivity {
     public static String uid_Double;
     public static Button btn_reset_status;
     public static Button btn_cancel_order;
-
+    private long delayMillis;
+    public static Runnable myRunnable;
+    public static Handler handler;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -100,37 +99,13 @@ public class FinishActivity extends AppCompatActivity {
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
         Log.d(TAG, "onCreate: " + pay_method);
         messageFondy = getString(R.string.fondy_message);
-        api = MainActivity.api;
-//        List<String> stringListArr = logCursor(MainActivity.CITY_INFO);
-//        switch (stringListArr.get(1)){
-//            case "Kyiv City":
-//
-//                break;
-//            case "Dnipropetrovsk Oblast":
-//                api = MainActivity.apiDnipro;
-//                break;
-//            case "Odessa":
-//                api = MainActivity.apiOdessa;
-//                break;
-//            case "Zaporizhzhia":
-//                api = MainActivity.apiZaporizhzhia;
-//                break;
-//            case "Cherkasy Oblast":
-//                api = MainActivity.apiCherkasy;
-//                break;
-//            case "OdessaTest":
-//                api = MainActivity.apiTest;
-//                break;
-//            default:
-//                api = MainActivity.apiKyiv;
-//                break;
-//        }
+
         messageResult = getIntent().getStringExtra("messageResult_key");
 
         receivedMap = (HashMap<String, String>) getIntent().getSerializableExtra("sendUrlMap");
         amount = receivedMap.get("order_cost") + "00";
 
-        Log.d("TAG", "onCreate: receivedMap" + receivedMap.toString());
+        Log.d(TAG, "onCreate: receivedMap" + receivedMap.toString());
         text_full_message = findViewById(R.id.text_full_message);
         text_full_message.setText(messageResult);
 
@@ -155,9 +130,9 @@ public class FinishActivity extends AppCompatActivity {
         });
 
         btn_cancel_order = findViewById(R.id.btn_cancel_order);
-        long delayMillis = 5 * 60 * 1000;
+        delayMillis = 5 * 60 * 1000;
 
-        Handler handler = new Handler();
+        handler = new Handler();
 
         if (pay_method.equals("bonus_payment")) {
 
@@ -192,8 +167,7 @@ public class FinishActivity extends AppCompatActivity {
              */
             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
             callOrderIdMemory(MainActivity.order_id, uid, pay_method);
-
-            handler.postDelayed(new Runnable() {
+            myRunnable = new Runnable() {
                 @Override
                 public void run() {
                     MainActivity.order_id = null;
@@ -212,7 +186,8 @@ public class FinishActivity extends AppCompatActivity {
                         }
                     });
                 }
-            }, delayMillis);
+            };
+            handler.postDelayed(myRunnable, delayMillis);
         }
 
 
@@ -232,6 +207,7 @@ public class FinishActivity extends AppCompatActivity {
                 }
                 btn_reset_status.setVisibility(View.GONE);
                 btn_cancel_order.setVisibility(View.GONE);
+                handler.removeCallbacks(myRunnable);
             }
         });
 
@@ -275,15 +251,12 @@ public class FinishActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-
+        infoPaymentType();
         switch (pay_method) {
             case "fondy_payment":
                 payFondy();
                 break;
             case "mono_payment":
-
-
-
                 String reference = MainActivity.order_id;
                 String comment = getString(R.string.fondy_message);
 
@@ -340,19 +313,20 @@ public class FinishActivity extends AppCompatActivity {
 
 
         StatusRequestToken statusRequest = new StatusRequestToken(paymentRequest);
-        Log.d("TAG1", "getUrlToPayment: " + statusRequest);
+        Log.d(TAG, "getUrlToPayment: " + statusRequest);
 
         Call<ApiResponseToken<SuccessResponseDataToken>> call = paymentApi.makePayment(statusRequest);
+
 
         call.enqueue(new Callback<ApiResponseToken<SuccessResponseDataToken>>() {
 
             @Override
             public void onResponse(@NonNull Call<ApiResponseToken<SuccessResponseDataToken>> call, Response<ApiResponseToken<SuccessResponseDataToken>> response) {
-                Log.d("TAG1", "onResponse: 1111" + response.code());
+                Log.d(TAG, "onResponse: 1111" + response.code());
                 if (response.isSuccessful()) {
                     ApiResponseToken<SuccessResponseDataToken> apiResponse = response.body();
 
-                    Log.d("TAG1", "onResponse: " +  new Gson().toJson(apiResponse));
+                    Log.d(TAG, "onResponse: " +  new Gson().toJson(apiResponse));
                     try {
                         SuccessResponseDataToken responseBody = response.body().getResponse();;
 
@@ -364,8 +338,8 @@ public class FinishActivity extends AppCompatActivity {
                                 // Обработка ответа об ошибке
                                 String errorResponseMessage = responseBody.getErrorMessage();
                                 String errorResponseCode = responseBody.getErrorCode();
-                                Log.d("TAG1", "onResponse: errorResponseMessage " + errorResponseMessage);
-                                Log.d("TAG1", "onResponse: errorResponseCode" + errorResponseCode);
+                                Log.d(TAG, "onResponse: errorResponseMessage " + errorResponseMessage);
+                                Log.d(TAG, "onResponse: errorResponseCode" + errorResponseCode);
 
                                 Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                                 getUrlToPaymentFondy(messageFondy, amount);
@@ -377,23 +351,24 @@ public class FinishActivity extends AppCompatActivity {
                         }
                     } catch (JsonSyntaxException e) {
                         // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
-                        Log.e("TAG1", "Error parsing JSON response: " + e.getMessage());
+                        Log.e(TAG, "Error parsing JSON response: " + e.getMessage());
                         Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                         getUrlToPaymentFondy(messageFondy, amount);
                     }
                 } else {
                     // Обработка ошибки
-                    Log.d("TAG1", "onFailure: " + response.code());
+                    Log.d(TAG, "onFailure: " + response.code());
                     Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                     
                     getUrlToPaymentFondy(messageFondy, amount);
                 }
+
             }
 
             @Override
             public void onFailure(Call<ApiResponseToken<SuccessResponseDataToken>> call, Throwable t) {
-                Log.d("TAG1", "onFailure1111: " + t.toString());
+                Log.d(TAG, "onFailure1111: " + t.toString());
                 Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                 getUrlToPaymentFondy(messageFondy, amount);
@@ -415,7 +390,7 @@ public class FinishActivity extends AppCompatActivity {
             if (cursor.moveToFirst()) {
                 do {
                     result = cursor.getString(cursor.getColumnIndex("rectoken"));
-                    Log.d("TAG", "Found rectoken with rectoken_check = 1: " + result);
+                    Log.d(TAG, "Found rectoken with rectoken_check = 1: " + result);
                 } while (cursor.moveToNext());
             }
             cursor.close();
@@ -450,7 +425,7 @@ public class FinishActivity extends AppCompatActivity {
 
 
         StatusRequestPay statusRequest = new StatusRequestPay(paymentRequest);
-        Log.d("TAG1", "getUrlToPayment: " + statusRequest.toString());
+        Log.d(TAG, "getUrlToPayment: " + statusRequest.toString());
 
         Call<ApiResponsePay<SuccessResponseDataPay>> call = paymentApi.makePayment(statusRequest);
 
@@ -458,11 +433,11 @@ public class FinishActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(@NonNull Call<ApiResponsePay<SuccessResponseDataPay>> call, Response<ApiResponsePay<SuccessResponseDataPay>> response) {
-                Log.d("TAG1", "onResponse: 1111" + response.code());
+                Log.d(TAG, "onResponse: 1111" + response.code());
                 if (response.isSuccessful()) {
                     ApiResponsePay<SuccessResponseDataPay> apiResponse = response.body();
 
-                    Log.d("TAG1", "onResponse: " +  new Gson().toJson(apiResponse));
+                    Log.d(TAG, "onResponse: " +  new Gson().toJson(apiResponse));
                     try {
                         SuccessResponseDataPay responseBody = response.body().getResponse();;
 
@@ -485,8 +460,8 @@ public class FinishActivity extends AppCompatActivity {
                                 // Обработка ответа об ошибке
                                 String errorResponseMessage = responseBody.getErrorMessage();
                                 String errorResponseCode = responseBody.getErrorCode();
-                                Log.d("TAG1", "onResponse: errorResponseMessage " + errorResponseMessage);
-                                Log.d("TAG1", "onResponse: errorResponseCode" + errorResponseCode);
+                                Log.d(TAG, "onResponse: errorResponseMessage " + errorResponseMessage);
+                                Log.d(TAG, "onResponse: errorResponseCode" + errorResponseCode);
                                 cancelOrderDismiss(uid);
                                 cancelOrderDismiss(uid_Double);
                                 // Отобразить сообщение об ошибке пользователю
@@ -500,21 +475,23 @@ public class FinishActivity extends AppCompatActivity {
                         }
                     } catch (JsonSyntaxException e) {
                         // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
-                        Log.e("TAG1", "Error parsing JSON response: " + e.getMessage());
+                        Log.e(TAG, "Error parsing JSON response: " + e.getMessage());
                         cancelOrderDismiss(uid);
                         cancelOrderDismiss(uid_Double);
                     }
                 } else {
                     // Обработка ошибки
-                    Log.d("TAG1", "onFailure: " + response.code());
+                    Log.d(TAG, "onFailure: " + response.code());
                     cancelOrderDismiss(uid);
                     cancelOrderDismiss(uid_Double);
                 }
+
             }
 
             @Override
             public void onFailure(@NonNull Call<ApiResponsePay<SuccessResponseDataPay>> call, Throwable t) {
-                Log.d("TAG1", "onFailure1111: " + t.toString());
+                Log.d(TAG, "onFailure1111: " + t.toString());
+
                 cancelOrderDismiss(uid);
                 cancelOrderDismiss(uid_Double);
             }
@@ -524,9 +501,15 @@ public class FinishActivity extends AppCompatActivity {
     }
 
     private void cancelOrderDismiss(String value) {
-        String url = baseUrl + "/" + FinishActivity.api + "/android/webordersCancel/" + value;
+        List<String> listCity = logCursor(MainActivity.CITY_INFO);
+        String city = listCity.get(1);
+        String api = listCity.get(2);
+
+
+        String url = baseUrl + "/" + api + "/android/webordersCancel/" + value + "/" + city  + "/" + getString(R.string.application);
+
         Call<Status> call = ApiClient.getApiService().cancelOrder(url);
-        Log.d("TAG", "cancelOrderWithDifferentValue cancelOrderUrl: " + url);
+        Log.d(TAG, "cancelOrderWithDifferentValue cancelOrderUrl: " + url);
 
         call.enqueue(new Callback<Status>() {
             @Override
@@ -535,7 +518,7 @@ public class FinishActivity extends AppCompatActivity {
                 if (status != null) {
 
                     String result =  String.valueOf(status.getResponse());
-                    Log.d("TAG", "onResponse: result" + result);
+                    Log.d(TAG, "onResponse: result" + result);
                     FinishActivity.text_status.setText(result + getString(R.string.pay_failure));
 
                 } else {
@@ -548,7 +531,7 @@ public class FinishActivity extends AppCompatActivity {
                 // Обработка ошибок сети или других ошибок
                 String errorMessage = t.getMessage();
                 t.printStackTrace();
-                Log.d("TAG", "onFailure: " + errorMessage);
+                Log.d(TAG, "onFailure: " + errorMessage);
 
             }
         });
@@ -569,7 +552,7 @@ public class FinishActivity extends AppCompatActivity {
                 comment
         );
 
-        Log.d("TAG1", "getUrlToPayment: " + paymentRequest.toString());
+        Log.d(TAG, "getUrlToPayment: " + paymentRequest.toString());
 
         String token = getResources().getString(R.string.mono_key_storage); // Получение токена из ресурсов
         Call<ResponsePayMono> call = monoApi.invoiceCreate(token, paymentRequest);
@@ -578,11 +561,11 @@ public class FinishActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(@NonNull Call<ResponsePayMono> call, Response<ResponsePayMono> response) {
-                Log.d("TAG1", "onResponse: 1111" + response.code());
+                Log.d(TAG, "onResponse: 1111" + response.code());
                 if (response.isSuccessful()) {
                     ResponsePayMono apiResponse = response.body();
 
-                    Log.d("TAG1", "onResponse: " +  new Gson().toJson(apiResponse));
+                    Log.d(TAG, "onResponse: " +  new Gson().toJson(apiResponse));
                     try {
                         String pageUrl = response.body().getPageUrl();;
                         MainActivity.invoiceId = response.body().getInvoiceId();;
@@ -607,13 +590,13 @@ public class FinishActivity extends AppCompatActivity {
 
                     } catch (JsonSyntaxException e) {
                         // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
-                        Log.e("TAG1", "Error parsing JSON response: " + e.getMessage());
+                        Log.e(TAG, "Error parsing JSON response: " + e.getMessage());
                         cancelOrderDismiss(uid);
                         cancelOrderDismiss(uid_Double);
                     }
                 } else {
                     // Обработка ошибки
-                    Log.d("TAG1", "onFailure: " + response.code());
+                    Log.d(TAG, "onFailure: " + response.code());
                     cancelOrderDismiss(uid);
                     cancelOrderDismiss(uid_Double);
                 }
@@ -621,7 +604,7 @@ public class FinishActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ResponsePayMono> call, Throwable t) {
-                Log.d("TAG1", "onFailure1111: " + t.toString());
+                Log.d(TAG, "onFailure1111: " + t.toString());
                 cancelOrderDismiss(uid);
                 cancelOrderDismiss(uid_Double);
             }
@@ -631,7 +614,7 @@ public class FinishActivity extends AppCompatActivity {
     }
     private void updateAddCost(String addCost) {
         ContentValues cv = new ContentValues();
-        Log.d("TAG", "updateAddCost: addCost" + addCost);
+        Log.d(TAG, "updateAddCost: addCost" + addCost);
         cv.put("addCost", addCost);
 
         // обновляем по id
@@ -643,19 +626,20 @@ public class FinishActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
+    }
+    private void infoPaymentType() {
         if (pay_method.equals("bonus_payment")
                 || pay_method.equals("card_payment")
                 || pay_method.equals("fondy_payment")
                 || pay_method.equals("mono_payment")) {
-           thread = new Thread(new Runnable() {
+            thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     // Здесь вызывайте вашу функцию fetchCarFound()
                     fetchCarFound();
                 }
             });
-           thread.start();
+            thread.start();
         } else {
             String message = getString(R.string.nal_pay_message);
 
@@ -663,11 +647,10 @@ public class FinishActivity extends AppCompatActivity {
             bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
         }
     }
-
     private void fetchBonus(String url) {
 
         Call<BonusResponse> call = ApiClient.getApiService().getBonus(url);
-        Log.d("TAG", "fetchBonus: " + url);
+        Log.d(TAG, "fetchBonus: " + url);
         call.enqueue(new Callback<BonusResponse>() {
             @Override
             public void onResponse(Call<BonusResponse> call, Response<BonusResponse> response) {
@@ -710,7 +693,7 @@ public class FinishActivity extends AppCompatActivity {
                 receivedMap.get("doubleOrder")
         );
         String url = call.request().url().toString();
-        Log.d("TAG", "URL запроса: " + url);
+        Log.d(TAG, "URL запроса: " + url);
         call.enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
@@ -810,9 +793,14 @@ public class FinishActivity extends AppCompatActivity {
         return list;
     }
     private void cancelOrder(String value) {
-        String url = baseUrl + "/" + api + "/android/webordersCancel/" + value;
+        List<String> listCity = logCursor(MainActivity.CITY_INFO);
+        String city = listCity.get(1);
+        String api = listCity.get(2);
+
+        String url = baseUrl + "/" + api + "/android/webordersCancel/" + value + "/" + city  + "/" + getString(R.string.application);
+
         Call<Status> call = ApiClient.getApiService().cancelOrder(url);
-        Log.d("TAG", "cancelOrderWithDifferentValue cancelOrderUrl: " + url);
+        Log.d(TAG, "cancelOrderWithDifferentValue cancelOrderUrl: " + url);
 
         call.enqueue(new Callback<Status>() {
             @Override
@@ -821,7 +809,7 @@ public class FinishActivity extends AppCompatActivity {
                     Status status = response.body();
                     if (status != null) {
                         String result =  String.valueOf(status.getResponse());
-                        Log.d("TAG", "onResponse: result" + result);
+                        Log.d(TAG, "onResponse: result" + result);
                         text_status.setText(result);
                         String comment = getString(R.string.fondy_revers_message) + getString(R.string.fondy_message);;
 
@@ -847,65 +835,11 @@ public class FinishActivity extends AppCompatActivity {
                 // Обработка ошибок сети или других ошибок
                 String errorMessage = t.getMessage();
                 t.printStackTrace();
-                Log.d("TAG", "onFailure: " + errorMessage);
+                Log.d(TAG, "onFailure: " + errorMessage);
                 text_status.setText(R.string.verify_internet);
             }
         });
     }
-
-    private String pay_system() {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        PayApi apiService = retrofit.create(PayApi.class);
-        Call<ResponsePaySystem> call = apiService.getPaySystem();
-        call.enqueue(new Callback<ResponsePaySystem>() {
-            @Override
-            public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
-                if (response.isSuccessful()) {
-                    // Обработка успешного ответа
-                    ResponsePaySystem responsePaySystem = response.body();
-                    assert responsePaySystem != null;
-                    String paymentCode = responsePaySystem.getPay_system();
-                    String paymentCodeNew = "fondy";
-
-                    switch (paymentCode) {
-                        case "fondy":
-                            paymentCodeNew = "fondy_payment";
-                            break;
-                        case "mono":
-                            paymentCodeNew = "mono_payment";
-                            break;
-                    }
-
-                        ContentValues cv = new ContentValues();
-                        cv.put("payment_type", paymentCodeNew);
-                        // обновляем по id
-                        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                                new String[] { "1" });
-                        database.close();
-
-
-
-                } else {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-
-                }
-            }
-
-            @Override
-            public void onFailure(Call<ResponsePaySystem> call, Throwable t) {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-            }
-        });
-        return logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
-    }
-
     private void getRevers(String orderId, String comment, String amount) {
 
         Retrofit retrofit = new Retrofit.Builder()
@@ -922,10 +856,10 @@ public class FinishActivity extends AppCompatActivity {
                 orderId,
                 comment,
                 amount,
-               MERCHANT_ID,
+                MERCHANT_ID,
                 merchantPassword
         );
-        Log.d("TAG1", "getRevers: " + reversRequestData.toString());
+        Log.d(TAG, "getRevers: " + reversRequestData.toString());
         ReversRequestSent reversRequestSent = new ReversRequestSent(reversRequestData);
 
 
@@ -937,22 +871,22 @@ public class FinishActivity extends AppCompatActivity {
 
                 if (response.isSuccessful()) {
                     ApiResponseRev<SuccessResponseDataRevers> apiResponse = response.body();
-                    Log.d("TAG1", "JSON Response: " + new Gson().toJson(apiResponse));
+                    Log.d(TAG, "JSON Response: " + new Gson().toJson(apiResponse));
                     if (apiResponse != null) {
                         SuccessResponseDataRevers responseData = apiResponse.getResponse();
-                        Log.d("TAG1", "onResponse: " + responseData.toString());
+                        Log.d(TAG, "onResponse: " + responseData.toString());
                         if (responseData != null) {
                             // Обработка успешного ответа
-                            Log.d("TAG1", "onResponse: " + responseData.toString());
+                            Log.d(TAG, "onResponse: " + responseData.toString());
 
                         }
                     }
                 } else {
                     // Обработка ошибки запроса
-                    Log.d("TAG", "onResponse: Ошибка запроса, код " + response.code());
+                    Log.d(TAG, "onResponse: Ошибка запроса, код " + response.code());
                     try {
                         String errorBody = response.errorBody().string();
-                        Log.d("TAG", "onResponse: Тело ошибки: " + errorBody);
+                        Log.d(TAG, "onResponse: Тело ошибки: " + errorBody);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -962,7 +896,7 @@ public class FinishActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<ApiResponseRev<SuccessResponseDataRevers>> call, Throwable t) {
                 // Обработка ошибки сети или другие ошибки
-                Log.d("TAG", "onFailure: Ошибка сети: " + t.getMessage());
+                Log.d(TAG, "onFailure: Ошибка сети: " + t.getMessage());
             }
         });
 
@@ -985,7 +919,7 @@ public class FinishActivity extends AppCompatActivity {
                 extRef,
                 amount
         );
-        Log.d("TAG1", "getRevers: " + paymentRequest.toString());
+        Log.d(TAG, "getRevers: " + paymentRequest.toString());
 
         String token = getResources().getString(R.string.mono_key_storage); // Получение токена из ресурсов
         Call<ResponseCancelMono> call = monoApi.invoiceCancel(token, paymentRequest);
@@ -996,34 +930,34 @@ public class FinishActivity extends AppCompatActivity {
 
                 if (response.isSuccessful()) {
                     ResponseCancelMono apiResponse = response.body();
-                    Log.d("TAG2", "JSON Response: " + new Gson().toJson(apiResponse));
+                    Log.d(TAG, "JSON Response: " + new Gson().toJson(apiResponse));
                     if (apiResponse != null) {
                         String responseData = apiResponse.getStatus();
-                        Log.d("TAG2", "onResponse: " + responseData.toString());
+                        Log.d(TAG, "onResponse: " + responseData.toString());
                         // Обработка успешного ответа
 
                         switch (responseData) {
                             case "processing":
-                                Log.d("TAG2", "onResponse: " + "заява на скасування знаходиться в обробці");
+                                Log.d(TAG, "onResponse: " + "заява на скасування знаходиться в обробці");
                                 break;
                             case "success":
-                                Log.d("TAG2", "onResponse: " + "заяву на скасування виконано успішно");
+                                Log.d(TAG, "onResponse: " + "заяву на скасування виконано успішно");
                                 break;
                             case "failure":
-                                Log.d("TAG2", "onResponse: " + "неуспішне скасування");
-                                Log.d("TAG2", "onResponse: ErrCode: " + apiResponse.getErrCode());
-                                Log.d("TAG2", "onResponse: ErrText: " + apiResponse.getErrText());
+                                Log.d(TAG, "onResponse: " + "неуспішне скасування");
+                                Log.d(TAG, "onResponse: ErrCode: " + apiResponse.getErrCode());
+                                Log.d(TAG, "onResponse: ErrText: " + apiResponse.getErrText());
                                 break;
                         }
 
                     }
                 } else {
                     // Обработка ошибки запроса
-                    Log.d("TAG2", "onResponse: Ошибка запроса, код " + response.code());
+                    Log.d(TAG, "onResponse: Ошибка запроса, код " + response.code());
                     try {
                         assert response.errorBody() != null;
                         String errorBody = response.errorBody().string();
-                        Log.d("TAG2", "onResponse: Тело ошибки: " + errorBody);
+                        Log.d(TAG, "onResponse: Тело ошибки: " + errorBody);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -1033,17 +967,22 @@ public class FinishActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<ResponseCancelMono> call, Throwable t) {
                 // Обработка ошибки сети или другие ошибки
-                Log.d("TAG2", "onFailure: Ошибка сети: " + t.getMessage());
+                Log.d(TAG, "onFailure: Ошибка сети: " + t.getMessage());
             }
         });
 
     }
 
     private void statusOrderWithDifferentValue(String value) {
-        String url = baseUrl + "/" + api + "/android/historyUIDStatus/" + value;
+
+        List<String> listCity = logCursor(MainActivity.CITY_INFO);
+        String city = listCity.get(1);
+        String api = listCity.get(2);
+
+        String url = baseUrl + "/" + api + "/android/historyUIDStatus/" + value + "/" + city  + "/" + getString(R.string.application);
 
         Call<OrderResponse> call = ApiClient.getApiService().statusOrder(url);
-        Log.d("TAG", "cancelOrderWithDifferentValue cancelOrderUrl: " + url);
+        Log.d(TAG, "/android/historyUIDStatus/: " + url);
 
         // Выполняем запрос асинхронно
         call.enqueue(new Callback<OrderResponse>() {
@@ -1073,6 +1012,9 @@ public class FinishActivity extends AppCompatActivity {
                             break;
                         case "SearchesForCar":
                             message = getString(R.string.ex_st_0);
+                            break;
+                        case "Canceled":
+                            message = getString(R.string.ex_st_canceled);
                             break;
                         case "CarFound":
                             // Формируем сообщение с учетом возможных пустых значений переменных
@@ -1120,7 +1062,7 @@ public class FinishActivity extends AppCompatActivity {
         try {
             date = inputFormat.parse(requiredTime);
         } catch (ParseException e) {
-            Log.d("TAG", "onCreate:" + new RuntimeException(e));
+            Log.d(TAG, "onCreate:" + new RuntimeException(e));
         }
 
         // Форматируем дату и время в украинском формате
@@ -1160,5 +1102,6 @@ public class FinishActivity extends AppCompatActivity {
             database.close();
         }
     }
+
 
 }
