@@ -20,6 +20,7 @@ import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -209,9 +210,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity
         });
 
         fromEditAddress = findViewById(R.id.textGeo);
-        if(VisicomFragment.geoText.getText().toString() != null) {
-            fromEditAddress.setText(VisicomFragment.geoText.getText().toString());
-        }
 
         int inputType = fromEditAddress.getInputType() | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS;
         fromEditAddress.setInputType(inputType);
@@ -330,7 +328,15 @@ public class ActivityVisicomOnePage extends AppCompatActivity
         btn_ok.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if(start.equals("ok")){
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(fromEditAddress.getWindowToken(), 0);
 
+                }
+                if(end.equals("ok")) {
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(toEditAddress.getWindowToken(), 0);
+                }
                 if(start.equals("ok")) {
                     verifyRoutStart = false;
                     verifyBuildingStart = false;
@@ -393,12 +399,28 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                     }
 
                     if (verifyRoutFinish && verifyBuildingFinish) {
-                        startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                        new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            finish();
+                        }
+                        }, 200);
+
                     }
                 }
 
             }
         });
+        if(start.equals("ok")){
+            fromEditAddress.requestFocus();
+            fromEditAddress.setSelection(fromEditAddress.getText().toString().length());
+            KeyboardUtils.showKeyboard(getApplicationContext(), fromEditAddress);
+        }
+        if(end.equals("ok")) {
+            toEditAddress.requestFocus();
+            toEditAddress.setSelection(toEditAddress.getText().toString().length());
+            KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
+        }
     }
 
 
@@ -1501,7 +1523,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
                                             VisicomFragment.textViewTo.setText(addressesList.get(position));
                                             VisicomFragment.btn_clear_to.setVisibility(View.VISIBLE);
-                                            if (!toEditAddress.getText().toString().equals("")) {
+                                Log.d(TAG, "processAddressData: ");
+//                                            if (!toEditAddress.getText().toString().equals("")) {
                                                 String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
                                                 SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                                                 Cursor cursor = database.rawQuery(query, null);
@@ -1520,11 +1543,12 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                                                 settings.add(Double.toString(originLongitude));
                                                 settings.add(Double.toString(coordinates[1]));
                                                 settings.add(Double.toString(coordinates[0]));
+                                                Log.d(TAG, "processAddressData:fromEditAddress.getText().toString() " + fromEditAddress.getText().toString());
 
-                                                settings.add(fromEditAddress.getText().toString());
+                                                settings.add(VisicomFragment.geoText.getText().toString());
                                                 settings.add(addressesList.get(position));
                                                 updateRoutMarker(settings);
-                                            }
+//                                            }
 
 
                                     Log.d(TAG, "settings: " + settings);
@@ -1791,8 +1815,10 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                         List<String> settings = new ArrayList<>();
 
                         VisicomFragment.textViewTo.setText(addressesList.get(position));
+                        Log.d(TAG, "oldAddresses: " + addressesList.get(position));
                         VisicomFragment.btn_clear_to.setVisibility(View.VISIBLE);
-                        if (!fromEditAddress.getText().toString().equals("")) {
+                        Log.d(TAG, "oldAddresses:2222 "+ VisicomFragment.geoText.getText().toString());
+                        if (!VisicomFragment.geoText.getText().toString().equals("")) {
                             String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
                             SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                             Cursor cursor = database.rawQuery(query, null);
@@ -1812,7 +1838,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                             settings.add(Double.toString(coordinates[1]));
                             settings.add(Double.toString(coordinates[0]));
 
-                            settings.add(fromEditAddress.getText().toString());
+                            settings.add(VisicomFragment.geoText.getText().toString());
                             settings.add(addressesList.get(position));
                             updateRoutMarker(settings);
                         }

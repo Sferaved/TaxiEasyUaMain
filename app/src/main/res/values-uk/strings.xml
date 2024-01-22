@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.725</string>
-    <string name="version">Версія: 1.725</string>
+    <string name="version_code">1.728</string>
+    <string name="version">Версія: 1.728</string>
 
     <string name="app_name">Таксі Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -316,4 +316,7 @@
     <string name="time_out_text">Скасування поїздки по таймауту оплати. Спробуйте ще.</string>
     <string name="pay_cancel">Поїздку скасовано через відсутність оплати. Спробуйте ще.</string>
     <string name="ex_st_canceled">Заказ скасовано. Спробуйте ще.</string>
+    <string name="search">Пошук адреси...</string>
+    <string name="account_verify">Відбувається перевірка реєстрації...</string>
+    <string name="city_search">Визначається Ваше місцезнаходження...</string>
 </resources>

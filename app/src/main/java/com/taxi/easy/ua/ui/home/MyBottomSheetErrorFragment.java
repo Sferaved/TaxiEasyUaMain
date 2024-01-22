@@ -57,11 +57,12 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         });
         textViewInfo = view.findViewById(R.id.textViewInfo);
 
-        if(!errorMessage.equals("null")) {
+        if (errorMessage != null && !errorMessage.equals("null")) {
             textViewInfo.setText(errorMessage);
         } else {
             textViewInfo.setText(getString(R.string.error_message));
         }
+
         return view;
     }
 

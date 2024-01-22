@@ -22,6 +22,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -76,6 +77,7 @@ public class GalleryFragment extends Fragment {
     private ArrayAdapter<String> listAdapter;
     private String urlOrder;
     private long discount;
+    private ImageButton scrollButtonDown, scrollButtonUp;
 
     public static String[] arrayServiceCode() {
         return new String[]{
@@ -106,7 +108,9 @@ public class GalleryFragment extends Fragment {
 
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
-//        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(3);
+        scrollButtonUp = binding.scrollButtonUp;
+        scrollButtonDown = binding.scrollButtonDown;
+
         addCost = 0;
         updateAddCost(String.valueOf(addCost));
 
@@ -167,7 +171,30 @@ public class GalleryFragment extends Fragment {
         btnRouts.setVisibility(View.INVISIBLE);
 
         array = arrayToRoutsAdapter ();
+
         if(array != null) {
+            scrollButtonDown.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    // Определяем следующую позицию для прокрутки
+                    int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
+
+                    // Проверяем, чтобы не прокручивать за пределы списка
+                    if (nextVisiblePosition < array.length) {
+                        // Плавно прокручиваем к следующей позиции
+                        listView.smoothScrollToPosition(nextVisiblePosition);
+                    }
+                }
+            });
+
+            scrollButtonUp.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    int offset = -1; // или другое значение, чтобы указать направление прокрутки
+                    listView.smoothScrollByOffset(offset);
+                }
+            });
+
             listAdapter = new ArrayAdapter<>(requireActivity(), R.layout.services_adapter_layout, array);
             listView.setAdapter(listAdapter);
             listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
@@ -176,6 +203,13 @@ public class GalleryFragment extends Fragment {
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    int desiredHeight = 500; // Ваше желаемое значение высоты в пикселях
+                    ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
+                    layoutParams.height = desiredHeight;
+                    listView.setLayoutParams(layoutParams);
+                    scrollButtonDown.setVisibility(View.VISIBLE);
+                    scrollButtonUp.setVisibility(View.VISIBLE);
+
                     del_but.setVisibility(View.VISIBLE);
                     btnRouts.setVisibility(View.VISIBLE);
                     text_view_cost.setVisibility(View.VISIBLE);

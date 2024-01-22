@@ -464,7 +464,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                     ApiResponse apiResponse = response.body();
                     if (apiResponse != null) {
                         String result = apiResponse.getResult();
-                        if (map.getRepository() != null) {
+                        if (map != null && map.getRepository() != null) {
                             if (startMarker.equals("ok")) {
                                 if (!result.equals("404")) {
                                     FromAdressString = result;

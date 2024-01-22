@@ -102,7 +102,7 @@
             android:layout_width="200sp"
             android:layout_height="48sp"
 
-
+            android:visibility="invisible"
             android:layout_marginTop="8dp"
             android:background="@drawable/buttons"
             android:scaleType="centerInside"
