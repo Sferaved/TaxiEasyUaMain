@@ -310,7 +310,7 @@
     <string name="my_name">Андрій Коржов</string>
     <string name="conf">Конфіденційність</string>
     <string name="author_about">Про автора</string>
-    <string name="foreign_countries">інше</string>
+    <string name="foreign_countries">Інше</string>
     <string name="order_in">"заказ в "</string>
     <string name="checking">Чекайте, йде перевірка даних.</string>
     <string name="time_out_text">Скасування поїздки по таймауту оплати. Спробуйте ще.</string>
