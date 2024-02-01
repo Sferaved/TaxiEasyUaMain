@@ -145,8 +145,9 @@
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/gpsbut"
-            android:layout_width="55sp"
-            android:layout_height="45sp"
+
+            android:layout_width="100sp"
+            android:layout_height="44sp"
             android:layout_marginTop="16sp"
             android:layout_marginEnd="8sp"
             android:background="@drawable/buttons"
@@ -155,7 +156,8 @@
             android:insetTop="0sp"
             android:insetRight="0sp"
             android:insetBottom="0sp"
-            android:text="@string/gps"
+            android:text="@string/on_map"
+
             android:textAlignment="center"
             android:textColor="#D9D9D9"
             app:layout_constraintEnd_toEndOf="parent"
@@ -191,6 +193,7 @@
             android:fontFamily="@font/regular"
             android:insetLeft="0sp"
             android:insetTop="0sp"
+            android:visibility="invisible"
             android:insetRight="0sp"
             android:insetBottom="0sp"
             android:text="@string/on_map"

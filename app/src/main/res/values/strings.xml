@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.728</string>
-    <string name="version">Версия: 1.728</string>
+    <string name="version_code">1.729</string>
+    <string name="version">Версия: 1.729</string>
 
     <string name="app_name">Такси Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -18,7 +18,7 @@
     <string name="action_settings">Настройки</string>
 
     <string name="menu_maps">Карта</string>
-    <string name="menu_home">По адресу</string>
+    <string name="menu_home">По адресу (старое)</string>
     <string name="menu_gallery">Мои маршруты</string>
     <string name="menu_slideshow">Slideshow</string>
     <string name="menu_about">О приложении</string>
@@ -118,6 +118,7 @@
     <string name="update_message">Необходимо произвести обновление</string>
     <string name="update_url">Обновить приложение</string>
     <string name="new_version">Доступна новая версия</string>
+    <string name="new_message">Сообщение</string>
     <string name="news_of_version">В новой версии улучшена производительность и добавлены новые удобные функции</string>
     <string name="Street_hint">Улица</string>
     <string name="gps">GPS</string>
@@ -319,4 +320,6 @@
     <string name="search">Поиск адреса ...</string>
     <string name="account_verify">Идет проверка регистрации...</string>
     <string name="city_search">Определяется Ваше местоположение...</string>
+    <string name="city_loc">город </string>
+    <string name="new_order_notify">Закажите поездку по выгодной цене.</string>
 </resources>

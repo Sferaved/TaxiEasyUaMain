@@ -47,7 +47,39 @@ public class NotificationHelper {
 
         // Отображение уведомления
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-        int notificationId = 1;
+        int notificationId = generateUniqueNotificationId(); // Generate a unique ID for each notification
+
+        if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+
+            return;
+        }
+        notificationManager.notify(notificationId, builder.build());
+    }
+    public static void showNotificationMessage(Context context, String title, String message) {
+        // Создание канала уведомлений для Android 8.0 (API level 26) и выше
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
+            channel.setDescription(CHANNEL_DESCRIPTION);
+            channel.enableLights(true);
+            channel.setLightColor(Color.RED);
+            channel.enableVibration(true);
+            NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        // Интент для открытия URL-адреса при нажатии на уведомление
+
+        // Построение уведомления с кнопкой действия
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true);
+
+        // Отображение уведомления
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
+        int notificationId = generateUniqueNotificationId(); // Generate a unique ID for each notification
 
         if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
 
@@ -56,4 +88,40 @@ public class NotificationHelper {
         notificationManager.notify(notificationId, builder.build());
     }
 
+    public static void showNotificationMessageOpen(Context context, String title, String message, PendingIntent pendingIntent) {
+        // Создание канала уведомлений для Android 8.0 (API level 26) и выше
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
+            channel.setDescription(CHANNEL_DESCRIPTION);
+            channel.enableLights(true);
+            channel.setLightColor(Color.RED);
+            channel.enableVibration(true);
+            NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+
+             // Построение уведомления с кнопкой действия
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent); // Добавление действия при нажатии на всё уведомление
+        ;
+
+        // Отображение уведомления
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
+        int notificationId = generateUniqueNotificationId(); // Generate a unique ID for each notification
+
+        if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+
+            return;
+        }
+        notificationManager.notify(notificationId, builder.build());
+    }
+    private static int generateUniqueNotificationId() {
+        // Generate a unique ID based on the current time
+        return (int) System.currentTimeMillis();
+    }
 }

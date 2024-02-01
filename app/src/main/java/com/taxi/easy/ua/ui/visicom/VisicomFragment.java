@@ -2,6 +2,7 @@ package com.taxi.easy.ua.ui.visicom;
 
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.taxi.easy.ua.R.string.verify_internet;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -93,7 +94,7 @@ public class VisicomFragment extends Fragment{
     private static final int REQUEST_LOCATION_PERMISSION = 1;
     FloatingActionButton fab_call;
 
-    public static AppCompatButton button,  btn_minus, btn_plus, btnOrder, buttonBonus, gpsbut;
+    public static AppCompatButton btn_minus, btn_plus, btnOrder, buttonBonus, gpsbut;
     public static TextView geoText;
     static String api;
 
@@ -127,6 +128,7 @@ public class VisicomFragment extends Fragment{
     private String cityMenu;
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
+
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -375,6 +377,7 @@ public class VisicomFragment extends Fragment{
         if(!verifyOrder(requireContext())) {
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.black_list_message));
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+            progressBar.setVisibility(View.INVISIBLE);
             return;
         }
 
@@ -384,7 +387,7 @@ public class VisicomFragment extends Fragment{
             getPhoneNumber();
         }
         if (!verifyPhone(requireActivity())) {
-            bottomSheetDialogFragment = new MyPhoneDialogFragment("visicom", text_view_cost.getText().toString());
+            bottomSheetDialogFragment = new MyPhoneDialogFragment("visicom", text_view_cost.getText().toString(), true);
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             progressBar.setVisibility(View.INVISIBLE);
         }
@@ -650,6 +653,8 @@ public class VisicomFragment extends Fragment{
     @Override
     public void onResume() {
         super.onResume();
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+        api =  stringList.get(2);
 
 
         fab_call = binding.fabCall;
@@ -672,8 +677,8 @@ public class VisicomFragment extends Fragment{
         textfrom.setVisibility(View.INVISIBLE);
         num1.setVisibility(View.INVISIBLE);
 
-        List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
-        api =  stringList.get(2);
+
+
 
 
         addCost = 0;
@@ -787,6 +792,9 @@ public class VisicomFragment extends Fragment{
                     }
 
                     Log.d(TAG, "onClick: pay_method " + pay_method );
+
+
+
                     List<String> stringListCity = logCursor(MainActivity.CITY_INFO, requireActivity());
                     String card_max_pay = stringListCity.get(4);
                     Log.d(TAG, "onClick:card_max_pay " + card_max_pay);
@@ -956,9 +964,11 @@ public class VisicomFragment extends Fragment{
             FragmentManager fragmentManager = getChildFragmentManager();
 
             try {
-                new GetPublicIPAddressTask(fragmentManager, city).execute().get(MainActivity.MAX_TASK_EXECUTION_TIME_SECONDS, TimeUnit.SECONDS);
+                new GetPublicIPAddressTask(fragmentManager, city, requireActivity()).execute().get(MainActivity.MAX_TASK_EXECUTION_TIME_SECONDS, TimeUnit.SECONDS);
             } catch (ExecutionException | InterruptedException | TimeoutException e) {
                 MainActivity.countryState = "UA";
+                Toast.makeText(requireActivity(), requireActivity().getString(verify_internet), Toast.LENGTH_SHORT).show();
+                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
             }
         }
 //        else {
@@ -1006,7 +1016,6 @@ public class VisicomFragment extends Fragment{
             textfrom.setVisibility(View.INVISIBLE);
             num1.setVisibility(View.INVISIBLE);
         } else {
-
             btn_clear_from_text.setVisibility(View.INVISIBLE);
             new Handler().postDelayed(new Runnable() {
                 @Override
@@ -1014,7 +1023,10 @@ public class VisicomFragment extends Fragment{
                     visicomCost();
                 }
             }, 100);
+
+
         }
+
     }
 
     private void firstLocation() {
@@ -1050,6 +1062,7 @@ public class VisicomFragment extends Fragment{
                              JSONException e) {
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
                         bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        progressBar.setVisibility(View.INVISIBLE);
                     }
                     assert sendUrlFrom != null;
                     String FromAdressString = (String) sendUrlFrom.get("route_address_from");
@@ -1192,7 +1205,9 @@ public class VisicomFragment extends Fragment{
         fusedLocationProviderClient.removeLocationUpdates(locationCallback);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     private void visicomCost() {
+
         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
         SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor cursor = database.rawQuery(query, null);
@@ -1234,7 +1249,11 @@ public class VisicomFragment extends Fragment{
                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
             }
-
+            progressBar.setVisibility(View.INVISIBLE);
+            textfrom.setVisibility(View.INVISIBLE);
+            num1.setVisibility(View.INVISIBLE);
+            btn_clear_from.setVisibility(View.INVISIBLE);
+            btn_clear_to.setVisibility(View.INVISIBLE);
         } else {
             Log.d(TAG, "visicomCost: ++++");
             String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireContext()).get(3);
@@ -1265,6 +1284,7 @@ public class VisicomFragment extends Fragment{
                 textViewTo.setVisibility(View.VISIBLE);
 
                 btnAdd.setVisibility(View.VISIBLE);
+
                 buttonBonus.setVisibility(View.VISIBLE);
                 btn_minus.setVisibility(View.VISIBLE);
                 text_view_cost.setVisibility(View.VISIBLE);
@@ -1274,16 +1294,24 @@ public class VisicomFragment extends Fragment{
                 btn_clear_from_text.setVisibility(View.GONE);
 
             }
+            if (!verifyPhone(requireActivity())) {
+                bottomSheetDialogFragment = new MyPhoneDialogFragment("visicom", text_view_cost.getText().toString(), false);
+                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                progressBar.setVisibility(View.INVISIBLE);
+            }
+
         }
     }
 
     private static class GetPublicIPAddressTask extends AsyncTask<Void, Void, String> {
         FragmentManager fragmentManager;
         String city;
+        Context context;
 
-        public GetPublicIPAddressTask(FragmentManager fragmentManager, String city) {
+        public GetPublicIPAddressTask(FragmentManager fragmentManager, String city, Context context) {
             this.fragmentManager = fragmentManager;
             this.city = city;
+            this.context = context;
         }
 
         @Override
@@ -1303,7 +1331,7 @@ public class VisicomFragment extends Fragment{
             try {
                 if (ipAddress != null) {
                     Log.d(TAG, "onPostExecute: Local IP Address: " + ipAddress);
-                    getCountryByIP(ipAddress, city);
+                    getCountryByIP(ipAddress, city, context);
                 } else {
                     MainActivity.countryState = "UA";
 
@@ -1315,12 +1343,13 @@ public class VisicomFragment extends Fragment{
                 // Log the exception
                 Log.e(TAG, "Exception in onPostExecute: " + e.getMessage());
                 MainActivity.countryState = "UA";
-                // Handle the exception as needed
+                Toast.makeText(context, context.getString(verify_internet), Toast.LENGTH_SHORT).show();
+                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
             }
         }
     }
 
-    private static void getCountryByIP(String ipAddress, String city) {
+    private static void getCountryByIP(String ipAddress, String city, Context context) {
         ApiServiceCountry apiService = RetrofitClient.getClient().create(ApiServiceCountry.class);
         Call<CountryResponse> call = apiService.getCountryByIP(ipAddress);
 
@@ -1359,6 +1388,8 @@ public class VisicomFragment extends Fragment{
             @Override
             public void onFailure(@NonNull Call<CountryResponse> call, @NonNull Throwable t) {
                 Log.e(TAG, "Error: " + t.getMessage());
+                Toast.makeText(context, context.getString(verify_internet), Toast.LENGTH_SHORT).show();
+                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
             }
         });
     }

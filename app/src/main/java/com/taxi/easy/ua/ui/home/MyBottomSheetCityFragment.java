@@ -85,7 +85,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     String phoneNumber;
 
     @SuppressLint("MissingInflatedId")
-    @RequiresApi(api = Build.VERSION_CODES.O)
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -106,7 +106,6 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(requireActivity(), R.layout.services_adapter_layout, cityList);
         listView.setAdapter(adapter);
         listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-
 
         switch (city){
             case "Kyiv City":positionFirst = 0;
@@ -226,7 +225,6 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
         return view;
     }
-
     private void updateMyPosition(String city) {
 
         double startLat;

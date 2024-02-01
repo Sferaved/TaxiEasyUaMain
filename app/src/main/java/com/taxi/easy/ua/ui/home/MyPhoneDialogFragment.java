@@ -56,12 +56,12 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
     private String TAG = "TAG";
     private String messageFondy;
     private String amount;
-    public MyPhoneDialogFragment() {
-        // Пустой конструктор без аргументов
-    }
-    public MyPhoneDialogFragment(String page, String amount) {
+    private boolean order;
+
+    public MyPhoneDialogFragment(String page, String amount, boolean order) {
         this.page = page;
         this.amount = amount;
+        this.order = order;
     }
 
     @Nullable
@@ -103,7 +103,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                     updateRecordsUser(phoneNumber.getText().toString(), requireActivity());
                     String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && order) {
                         List<String> stringListCity = logCursor(MainActivity.CITY_INFO);
                         String card_max_pay = stringListCity.get(4);
                         String bonus_max_pay = stringListCity.get(5);
@@ -155,15 +155,10 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                                 }
                         }
 
+                    } else {
+                        dismiss();
                     }
-
-
-
-
-
-
-
-                }
+              }
             }
         });
         return view;
@@ -719,6 +714,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         cursor_to.close();
 
     }
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {
         super.onDismiss(dialog);
@@ -726,6 +722,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         if (imm != null && requireActivity().getCurrentFocus() != null) {
             imm.hideSoftInputFromWindow(requireActivity().getCurrentFocus().getWindowToken(), 0);
         }
+
     }
 
     @Override

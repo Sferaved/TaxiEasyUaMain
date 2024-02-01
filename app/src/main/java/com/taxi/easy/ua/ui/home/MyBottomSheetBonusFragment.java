@@ -5,6 +5,7 @@ import static android.content.Context.MODE_PRIVATE;
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
@@ -37,6 +38,7 @@ import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.permissions.UserPermissions;
 
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -67,7 +69,8 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     ProgressBar progressBar;
     CustomArrayAdapter adapter;
     private static SQLiteDatabase database;
-
+    private static String[] userPayPermissions;
+    private static String email;
     public MyBottomSheetBonusFragment() {
     }
 
@@ -78,6 +81,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         this.rout = rout;
         this.api = api;
         this.textView = textView;
+
     }
 
     @SuppressLint({"MissingInflatedId", "Range"})
@@ -86,6 +90,10 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.bonus_list_layout, container, false);
+
+        email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
+        UserPermissions.getPermissions(email, getActivity());
+
         progressBar = view.findViewById(R.id.progress);
         database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         listView = view.findViewById(R.id.listViewBonus);
@@ -110,6 +118,10 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 dismiss();
             }
         });
+
+
+        userPayPermissions = UserPermissions.getUserPayPermissions(requireActivity());
+
         fistItem();
 
         String bonus = logCursor(MainActivity.TABLE_USER_INFO).get(5);
@@ -130,9 +142,20 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     adapter.setItemEnabled(1, false);
                     break;
                 }
+                if(userPayPermissions[0].equals("0")) {
+                    adapter.setItemEnabled(1, false);
+                }
+                if(userPayPermissions[1].equals("0")) {
+                    adapter.setItemEnabled(2, false);
+                }
+
         }
 
-        merchantFondy(city, getContext());
+        if(userPayPermissions[1].equals("0")) {
+            adapter.setItemEnabled(2, false);
+        } else {
+            merchantFondy(city, getContext());
+        }
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -143,18 +166,23 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 pos = position;
                 Log.d(TAG, "onItemClick: pos " + pos);
                 if (pos == 2) {
-                    paySystem(new CardFragment.PaySystemCallback() {
-                        @Override
-                        public void onPaySystemResult(String paymentCode) {
-                            Log.d(TAG, "onPaySystemResult: paymentCode" + paymentCode);
-                            // Здесь вы можете использовать полученное значение paymentCode
-                             paymentType(paymentCode, requireContext());
-                        }
+                    if(userPayPermissions[0].equals("0")) {
+                        adapter.setItemEnabled(2, false);
+                    } else {
+                        paySystem(new CardFragment.PaySystemCallback() {
+                            @Override
+                            public void onPaySystemResult(String paymentCode) {
+                                Log.d(TAG, "onPaySystemResult: paymentCode" + paymentCode);
+                                // Здесь вы можете использовать полученное значение paymentCode
+                                paymentType(paymentCode, requireContext());
+                            }
 
-                        @Override
-                        public void onPaySystemFailure(String errorMessage) {
-                        }
-                    });
+                            @Override
+                            public void onPaySystemFailure(String errorMessage) {
+                            }
+                        });
+                    }
+
                 } else {
                     paymentType(arrayCode [pos], requireContext());
                 }
@@ -220,8 +248,8 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                         cv.put("fondy_key_storage", fondy_key_storage);
 
                         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                            database.update(MainActivity.CITY_INFO, cv, "id = ?",
-                                    new String[]{"1"});
+                        database.update(MainActivity.CITY_INFO, cv, "id = ?",
+                                new String[]{"1"});
                         database.close();
 
                         Log.d(TAG, "onResponse: merchant_fondy" + merchant_fondy);
@@ -232,11 +260,10 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                             listView.setItemChecked(0, true);
                             paymentType(arrayCode [0], context);
                         } else {
+
                             adapter.setItemEnabled(2, true);
                             cityMaxPay(city, context);
                         }
-
-                        // Добавьте здесь код для обработки полученных значений
                     }
                 } else {
                     Log.e("Request", "Failed. Error code: " + response.code());
@@ -278,30 +305,37 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 listView.setItemChecked(0, true);
                 pos = 0;
                 paymentType(arrayCode [pos], requireContext());
+                if(userPayPermissions[1].equals("0")) {
+                    adapter.setItemEnabled(2, false);
+                } else {
+                    adapter.setItemEnabled(2, true);
+                }
                 break;
             case "bonus_payment":
-                listView.setItemChecked(1, true);
-                pos = 1;
-                paymentType(arrayCode [pos], requireContext());
+
+                if(userPayPermissions[0].equals("0")) {
+                    adapter.setItemEnabled(1, false);
+                } else {
+                    listView.setItemChecked(1, true);
+                    pos = 1;
+                    paymentType(arrayCode [pos], requireContext());
+                }
+
+                if(userPayPermissions[1].equals("0")) {
+                    adapter.setItemEnabled(2, false);
+                } else {
+                    adapter.setItemEnabled(2, true);
+                }
                 break;
             case "card_payment":
             case "fondy_payment":
             case "mono_payment":
-                listView.setItemChecked(2, true);
-                pos = 2;
-//                paySystem(new CardFragment.PaySystemCallback() {
-//                    @Override
-//                    public void onPaySystemResult(String paymentCode) {
-//                        Log.d(TAG, "onPaySystemResult: paymentCode" + paymentCode);
-//                        // Здесь вы можете использовать полученное значение paymentCode
-//                        paymentType(paymentCode, requireContext());
-//
-//                    }
-//
-//                    @Override
-//                    public void onPaySystemFailure(String errorMessage) {
-//                    }
-//                });
+                if(userPayPermissions[1].equals("0")) {
+                    adapter.setItemEnabled(2, false);
+                } else  {
+                    listView.setItemChecked(2, true);
+                    pos = 2;
+                }
 
                 break;
         }
@@ -348,6 +382,12 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 callback.onPaySystemFailure(getString(R.string.verify_internet));
             }
         });
+    }
+
+    @Override
+    public void onDismiss(@NonNull DialogInterface dialog) {
+        super.onDismiss(dialog);
+        UserPermissions.getPermissions(email, getActivity());
     }
 
     public void reCount() {
