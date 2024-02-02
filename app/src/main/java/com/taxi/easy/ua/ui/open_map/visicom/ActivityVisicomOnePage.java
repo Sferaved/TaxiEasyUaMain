@@ -868,8 +868,10 @@ public class ActivityVisicomOnePage extends AppCompatActivity
             } else {
                 verifyBuildingFinish = false;
             }
-
+            String modifiedText = "";
+            Log.d(TAG, "performAddressSearch:modifiedText " + modifiedText);
             if (!inputText.substring(3).contains("\f")) {
+                modifiedText = inputText.replaceAll("[\f\t]", " ");
                 url = url
                         + "?"
                         + "categories=poi_railway_station"
@@ -889,17 +891,17 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                         + ",poi_underground_railway_station"
                         + ",adr_street"
                         + "&l=20"
-                        + "&text=" + inputText + "&key=" + apiKey;
+                        + "&text=" + modifiedText + "&key=" + apiKey;
 
             } else {
                 Log.d(TAG, "performAddressSearch:positionChecked  " + positionChecked);
-                String number = numbers(inputText);
+                String number = numbers(modifiedText);
 
                 if (positionChecked != 0) {
                     inputText = inputTextBuild() + ", " + number;
                 }
-
-                url = url + "?categories=adr_address&text=" + inputText
+                modifiedText = inputText.replaceAll("[\f\t]", " ");
+                url = url + "?categories=adr_address&text=" + modifiedText
                         + "&l=20" + "&key=" + apiKey;
 
             }
@@ -1000,7 +1002,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                                                 longitude,
                                                 latitude);
                                     } else {
-                                        address = String.format("%s %s\f ",
+                                        address = String.format("%s %s\f",
                                                 properties.getString("type"),
                                                 properties.getString("name"));
                                         addAddressOne(
@@ -1028,7 +1030,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                                                 longitude,
                                                 latitude);
                                     } else {
-                                        address = String.format("%s %s\f ",
+                                        address = String.format("%s %s\f",
                                                 properties.getString("type"),
                                                 properties.getString("name"));
                                         addAddressOne(
@@ -1043,7 +1045,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                                 // Проверка по Киевской области
                                 if (citySearch.equals("Київ") || citySearch.equals("Киев")) {
                                     if (checkWordInArray(properties.getString("settlement"), kyivRegionArr)) {
-                                        address = String.format("%s %s (%s)\f ",
+                                        address = String.format("%s %s (%s)\f",
                                                 properties.getString("type"),
                                                 properties.getString("name"),
                                                 properties.getString("settlement"));
@@ -1075,7 +1077,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                                         Log.d(TAG, "processAddressData: zone" + zone);
 
 
-                                            address = String.format("%s %s %s %s %s %s \t",
+                                            address = String.format("%s %s %s %s %s %s\t",
 
                                                     properties.getString("street_type"),
                                                     properties.getString("street"),
@@ -1093,7 +1095,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
 
                                     } else {
-                                        address = String.format("%s %s %s %s %s \t",
+                                        address = String.format("%s %s %s %s %s\t",
 
                                                 properties.getString("street_type"),
                                                 properties.getString("street"),
@@ -1118,7 +1120,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
                                         Log.d(TAG, "processAddressData: zone" + zone);
 
-                                        address = String.format("%s %s %s %s %s %s \t",
+                                        address = String.format("%s %s %s %s %s %s\t",
                                                 properties.getString("street_type"),
                                                 properties.getString("street"),
                                                 properties.getString("name"),
@@ -1136,7 +1138,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
 
                                     } else {
-                                        address = String.format("%s %s %s %s %s \t",
+                                        address = String.format("%s %s %s %s %s\t",
 
                                                 properties.getString("street_type"),
                                                 properties.getString("street"),
@@ -1158,7 +1160,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                                 if (citySearch.equals("Київ") || citySearch.equals("Киев")) {
                                     Log.d(TAG, "processAddressData:citySearch " + citySearch);
                                     if (checkWordInArray(properties.getString("settlement"), kyivRegionArr)) {
-                                        address = String.format("%s %s %s %s %s  \t",
+                                        address = String.format("%s %s %s %s %s\t",
                                                 properties.getString("street_type"),
                                                 properties.getString("street"),
                                                 properties.getString("name"),
@@ -1345,7 +1347,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                                 double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
 
                                 if (properties.has("zone")) {
-                                    address = String.format("%s %s (%s)\f ",
+                                    address = String.format("%s %s (%s)\f",
                                             properties.getString("type"),
                                             properties.getString("name"),
                                             properties.getString("zone"));
@@ -1357,7 +1359,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                                             longitude,
                                             latitude);
                                 } else {
-                                    address = String.format("%s %s\f ",
+                                    address = String.format("%s %s\f",
                                             properties.getString("type"),
                                             properties.getString("name"));
                                     addAddressOne(
@@ -1374,7 +1376,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
                             if (citySearch.equals("Київ") || citySearch.equals("Киев")) {
                                 if (checkWordInArray(properties.getString("settlement"), kyivRegionArr)) {
-                                    address = String.format("%s %s (%s)\f ",
+                                    address = String.format("%s %s (%s)\f",
                                             properties.getString("type"),
                                             properties.getString("name"),
                                             properties.getString("settlement"));
@@ -1407,7 +1409,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
                                     Log.d(TAG, "processAddressData: zone" + zone);
                                     if (properties.getString("zone").equals(zone)) {
-                                        address = String.format("%s %s %s %s %s %s  \t",
+                                        address = String.format("%s %s %s %s %s %s\t",
 
                                                 properties.getString("street_type"),
                                                 properties.getString("street"),
@@ -1425,7 +1427,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                                     }
 
                                 } else {
-                                    address = String.format("%s %s %s, %s %s  \t",
+                                    address = String.format("%s %s %s, %s %s\t",
 
                                             properties.getString("street_type"),
                                             properties.getString("street"),
@@ -1449,7 +1451,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                             if (citySearch.equals("Київ") || citySearch.equals("Киев")) {
                                 Log.d(TAG, "processAddressData:citySearch " + citySearch);
                                 if (checkWordInArray(properties.getString("settlement"), kyivRegionArr)) {
-                                    address = String.format("%s %s %s %s %s  \t",
+                                    address = String.format("%s %s %s %s %s\t",
                                             properties.getString("street_type"),
                                             properties.getString("street"),
                                             properties.getString("name"),
