@@ -1,16 +1,12 @@
 package com.taxi.easy.ua.ui.card;
 
-import static android.content.Context.CONNECTIVITY_SERVICE;
 import static android.content.Context.MODE_PRIVATE;
-import static com.taxi.easy.ua.R.string.verify_internet;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -19,11 +15,12 @@ import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -43,6 +40,7 @@ import com.taxi.easy.ua.ui.mono.cancel.RequestCancelMono;
 import com.taxi.easy.ua.ui.mono.cancel.ResponseCancelMono;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
+import com.taxi.easy.ua.utils.connect.NetworkUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -74,9 +72,13 @@ public class CardFragment extends Fragment {
     public static ListView listView;
     public static String table;
     String pay_method;
-
+    NavController navController;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+        navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+            navController.navigate(R.id.nav_visicom);
+        }
         binding = FragmentCardBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
@@ -95,6 +97,7 @@ public class CardFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+
         btnCardLink  = binding.btnCardLink;
         paySystem(new PaySystemCallback() {
             @Override
@@ -107,7 +110,10 @@ public class CardFragment extends Fragment {
                         progressBar.setVisibility(View.VISIBLE);
 
                         Log.d(TAG, "onClick: " + pay_method);
-                        if (connected()) {
+                        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+                            navController.navigate(R.id.nav_visicom);
+                        } else {
                             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getActivity());
                             messageFondy = getString(R.string.fondy_message);
 
@@ -121,10 +127,6 @@ public class CardFragment extends Fragment {
                             }
                             progressBar.setVisibility(View.GONE);
 
-                        } else {
-                            progressBar.setVisibility(View.GONE);
-                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                         }
                     }
                 });
@@ -410,32 +412,6 @@ public class CardFragment extends Fragment {
 
 
         });
-    }
-
-    private boolean connected() {
-
-        Boolean hasConnect = false;
-
-        ConnectivityManager cm = (ConnectivityManager) requireActivity().getSystemService(
-                CONNECTIVITY_SERVICE);
-        NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        if (wifiNetwork != null && wifiNetwork.isConnected()) {
-            hasConnect = true;
-        }
-        NetworkInfo mobileNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
-        if (mobileNetwork != null && mobileNetwork.isConnected()) {
-            hasConnect = true;
-        }
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        if (activeNetwork != null && activeNetwork.isConnected()) {
-            hasConnect = true;
-        }
-
-        if (!hasConnect) {
-            Toast.makeText(requireActivity(), verify_internet, Toast.LENGTH_LONG).show();
-        }
-        Log.d("TAG", "connected: " + hasConnect);
-        return hasConnect;
     }
 
     @SuppressLint("Range")

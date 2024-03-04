@@ -27,6 +27,7 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -65,6 +66,7 @@ import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.KeyboardUtils;
 import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.connect.ConnectionSpeedTester;
+import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.ip.OnIPAddressReceivedListener;
 
 import org.json.JSONArray;
@@ -206,6 +208,46 @@ public class ActivityVisicomOnePage extends AppCompatActivity
         btn_no.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+
+                    VisicomFragment.btn_clear_from.setVisibility(View.INVISIBLE);
+                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
+                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
+                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+
+                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
+                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
+                    VisicomFragment.btn_clear_from_text.setText(getString(R.string.try_again));
+                    VisicomFragment.btn_clear_from_text.setVisibility(View.VISIBLE);
+                    VisicomFragment.btn_clear_from_text.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                        }
+                    });
+                    VisicomFragment.geoText.setVisibility(View.INVISIBLE);
+                    progressBar.setVisibility(View.INVISIBLE);
+
+                    btn_clear_from.setVisibility(View.INVISIBLE);
+                    btn_clear_to.setVisibility(View.INVISIBLE);
+
+                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
+                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
+                    VisicomFragment.textwhere.setVisibility(View.INVISIBLE);
+                    VisicomFragment.num2.setVisibility(View.INVISIBLE);
+                    VisicomFragment.textViewTo.setVisibility(View.INVISIBLE);
+
+                    VisicomFragment.btnAdd.setVisibility(View.INVISIBLE);
+
+                    VisicomFragment.buttonBonus.setVisibility(View.INVISIBLE);
+                    VisicomFragment.btn_minus.setVisibility(View.INVISIBLE);
+                    VisicomFragment.text_view_cost.setVisibility(View.INVISIBLE);
+                    VisicomFragment.btn_plus.setVisibility(View.INVISIBLE);
+                    VisicomFragment.btnOrder.setVisibility(View.INVISIBLE);
+                    VisicomFragment.btn_clear_to.setVisibility(View.INVISIBLE);
+
+
+                }
                finish();
             }
         });
@@ -285,12 +327,14 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                     bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 }  else  {
                     // Разрешения уже предоставлены, выполнить ваш код
-                    if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+                        Toast.makeText(getApplicationContext(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
+                    } else if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                             && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                         checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
                         checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                    }  else {
-                        firstLocation();
+                    } else  {
+                            firstLocation();
                     }
                 }
             }
@@ -329,6 +373,46 @@ public class ActivityVisicomOnePage extends AppCompatActivity
         btn_ok.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+
+                    VisicomFragment.btn_clear_from.setVisibility(View.INVISIBLE);
+                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
+                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
+                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+
+                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
+                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
+                    VisicomFragment.btn_clear_from_text.setText(getString(R.string.try_again));
+                    VisicomFragment.btn_clear_from_text.setVisibility(View.VISIBLE);
+                    VisicomFragment.btn_clear_from_text.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                        }
+                    });
+                    VisicomFragment.geoText.setVisibility(View.INVISIBLE);
+                    progressBar.setVisibility(View.INVISIBLE);
+
+                    btn_clear_from.setVisibility(View.INVISIBLE);
+                    btn_clear_to.setVisibility(View.INVISIBLE);
+
+                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
+                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
+                    VisicomFragment.textwhere.setVisibility(View.INVISIBLE);
+                    VisicomFragment.num2.setVisibility(View.INVISIBLE);
+                    VisicomFragment.textViewTo.setVisibility(View.INVISIBLE);
+
+                    VisicomFragment.btnAdd.setVisibility(View.INVISIBLE);
+
+                    VisicomFragment.buttonBonus.setVisibility(View.INVISIBLE);
+                    VisicomFragment.btn_minus.setVisibility(View.INVISIBLE);
+                    VisicomFragment.text_view_cost.setVisibility(View.INVISIBLE);
+                    VisicomFragment.btn_plus.setVisibility(View.INVISIBLE);
+                    VisicomFragment.btnOrder.setVisibility(View.INVISIBLE);
+                    VisicomFragment.btn_clear_to.setVisibility(View.INVISIBLE);
+                    finish();
+
+                }
                 if(extraExit) {
                     new Handler().postDelayed(new Runnable() {
                         @Override
@@ -411,6 +495,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                             new Handler().postDelayed(new Runnable() {
                                 @Override
                                 public void run() {
+
                                     finish();
                                 }
                             }, 200);

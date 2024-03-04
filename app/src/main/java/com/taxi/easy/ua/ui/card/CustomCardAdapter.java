@@ -215,7 +215,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
                     reIndexCardsFondy();
                     Toast.makeText(getContext(), getContext().getString(R.string.un_link_token), Toast.LENGTH_LONG).show();
                 } else {
-                    Toast.makeText(getContext(), getContext().getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
+//                    Toast.makeText(getContext(), getContext().getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
                 }
             }
 

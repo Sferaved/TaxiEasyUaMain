@@ -113,9 +113,9 @@ public class FinishActivity extends AppCompatActivity {
         uid_Double = receivedMap.get("dispatching_order_uid_Double");
 
         text_status = findViewById(R.id.text_status);
-        statusOrderWithDifferentValue(uid);
+//        statusOrderWithDifferentValue(uid);
 
-
+        text_status.setText(getString(R.string.ex_st_0));
         btn_reset_status = findViewById(R.id.btn_reset_status);
         btn_reset_status.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1025,6 +1025,16 @@ public class FinishActivity extends AppCompatActivity {
                             }
 
                             if (driverPhone != null && !driverPhone.isEmpty()) {
+                                Log.d(TAG, "onResponse:driverPhone " + driverPhone);
+                                btn_reset_status.setText(getString(R.string.phone_driver));
+                                btn_reset_status.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        Intent intent = new Intent(Intent.ACTION_DIAL);
+                                        intent.setData(Uri.parse("tel:" + driverPhone));
+                                        startActivity(intent);
+                                    }
+                                });
                                 messageBuilder.append(getString(R.string.ex_st_4)).append(driverPhone);
                             }
 

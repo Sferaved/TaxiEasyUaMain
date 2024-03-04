@@ -20,6 +20,8 @@ public class RouteResponse {
 
     @SerializedName("closeReason")
     private String closeReason;
+    @SerializedName("auto")
+    private String auto;
 
     @SerializedName("created_at")
     private String createdAt;
@@ -64,6 +66,10 @@ public class RouteResponse {
 
     public void setWebCost(String webCost) {
         this.webCost = webCost;
+    }
+
+    public String getAuto() {
+        return auto;
     }
 
     public String getCloseReason() {

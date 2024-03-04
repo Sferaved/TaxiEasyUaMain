@@ -77,6 +77,7 @@ import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
+import com.taxi.easy.ua.utils.connect.NetworkUtils;
 
 import org.json.JSONException;
 
@@ -154,10 +155,13 @@ public class HomeFragment extends Fragment {
     long MIN_COST_VALUE;
     AutoCompleteTextView textViewFrom, textViewTo;
     ArrayAdapter<String> adapter;
-
+    NavController navController;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-
+        navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+            navController.navigate(R.id.nav_visicom);
+        }
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
         finiched = true;
@@ -580,6 +584,7 @@ public class HomeFragment extends Fragment {
                 progressBar.setVisibility(View.INVISIBLE);
 
             } else {
+                message = getString(R.string.error_message);
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             }
@@ -735,7 +740,6 @@ public class HomeFragment extends Fragment {
         addCost = 0;
         updateAddCost(String.valueOf(addCost));
         btn_clear = binding.btnClear;
-        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
 
         textViewTo.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
@@ -772,7 +776,14 @@ public class HomeFragment extends Fragment {
             btn_plus.setVisibility(View.INVISIBLE);
             buttonAddServices.setVisibility(View.INVISIBLE);
             buttonBonus.setVisibility(View.INVISIBLE);
+            textViewFrom.setText("");
+            from_number.setText("");
+            from_number.setVisibility(View.INVISIBLE);
+            textViewTo.setText("");
+            textViewTo.setVisibility(View.INVISIBLE);
             btn_clear.setVisibility(View.INVISIBLE);
+            binding.textTo.setVisibility(View.INVISIBLE);
+            binding.num2.setVisibility(View.INVISIBLE);
 
             btn_order.setVisibility(View.INVISIBLE);
 
@@ -1072,6 +1083,7 @@ public class HomeFragment extends Fragment {
             insertRouteCostToDatabase();
 
         } else {
+            message = getString(R.string.error_message);
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
 
@@ -1080,6 +1092,14 @@ public class HomeFragment extends Fragment {
             btn_plus.setVisibility(View.INVISIBLE);
             buttonAddServices.setVisibility(View.INVISIBLE);
             buttonBonus.setVisibility(View.INVISIBLE);
+            textViewFrom.setText("");
+            from_number.setText("");
+            from_number.setVisibility(View.INVISIBLE);
+            textViewTo.setText("");
+            textViewTo.setVisibility(View.INVISIBLE);
+            btn_clear.setVisibility(View.INVISIBLE);
+            binding.textTo.setVisibility(View.INVISIBLE);
+            binding.num2.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -1269,6 +1289,7 @@ public class HomeFragment extends Fragment {
             String message = (String) sendUrlMapCost.get("message");
 
             if (orderCost.equals("0")) {
+                message = getString(R.string.error_message);
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
 
@@ -1277,8 +1298,17 @@ public class HomeFragment extends Fragment {
                 btn_plus.setVisibility(View.INVISIBLE);
                 buttonAddServices.setVisibility(View.INVISIBLE);
                 buttonBonus.setVisibility(View.INVISIBLE);
-                btn_order.setVisibility(View.INVISIBLE);
+                textViewFrom.setText("");
+                from_number.setText("");
+                from_number.setVisibility(View.INVISIBLE);
+                textViewTo.setText("");
+                textViewTo.setVisibility(View.INVISIBLE);
                 btn_clear.setVisibility(View.INVISIBLE);
+                binding.textwhere.setVisibility(View.INVISIBLE);
+                binding.num2.setVisibility(View.INVISIBLE);
+                btn_order.setVisibility(View.INVISIBLE);
+
+
             }
             if (!orderCost.equals("0")) {
                 text_view_cost.setVisibility(View.VISIBLE);
@@ -1302,8 +1332,8 @@ public class HomeFragment extends Fragment {
                 costFirstForMin = cost;
                 MIN_COST_VALUE = (long) (cost * 0.6);
             } else {
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+//                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+//                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             }
         } catch (MalformedURLException | UnsupportedEncodingException e) {
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));

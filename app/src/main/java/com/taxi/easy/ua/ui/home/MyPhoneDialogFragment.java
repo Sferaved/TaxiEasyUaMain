@@ -49,6 +49,9 @@ import java.util.regex.Pattern;
 
 
 public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
+    public MyPhoneDialogFragment() {
+    }
+
     EditText phoneNumber;
     AppCompatButton button;
     CheckBox checkBox;
@@ -414,6 +417,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                     HomeFragment.progressBar.setVisibility(View.INVISIBLE);
 
                 } else {
+                    message = getString(R.string.error_message);
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 }

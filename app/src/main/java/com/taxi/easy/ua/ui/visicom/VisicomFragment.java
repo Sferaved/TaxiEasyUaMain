@@ -2,7 +2,6 @@ package com.taxi.easy.ua.ui.visicom;
 
 
 import static android.content.Context.MODE_PRIVATE;
-import static com.taxi.easy.ua.R.string.verify_internet;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -50,6 +49,7 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentVisicomBinding;
 import com.taxi.easy.ua.ui.finish.FinishActivity;
@@ -63,6 +63,7 @@ import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.open_map.visicom.ActivityVisicomOnePage;
+import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.IPUtil;
@@ -128,7 +129,7 @@ public class VisicomFragment extends Fragment{
     private String cityMenu;
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
-
+    private NetworkChangeReceiver networkChangeReceiver;
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -138,7 +139,7 @@ public class VisicomFragment extends Fragment{
         View root = binding.getRoot();
         progressBar = binding.progressBar;
         progressBar.setVisibility(View.VISIBLE);
-
+//        networkChangeReceiver = new NetworkChangeReceiver();
         return root;
     }
     @Override
@@ -146,6 +147,43 @@ public class VisicomFragment extends Fragment{
         super.onPause();
         if(alertDialog != null && alertDialog.isShowing()) {
             alertDialog.dismiss();
+        }
+        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+            binding.textfrom.setVisibility(View.INVISIBLE);
+            binding.textwhere.setVisibility(View.INVISIBLE);
+            btn_clear_from.setVisibility(View.INVISIBLE);
+            textfrom.setVisibility(View.INVISIBLE);
+            num1.setVisibility(View.INVISIBLE);
+            progressBar.setVisibility(View.INVISIBLE);
+
+            textfrom.setVisibility(View.INVISIBLE);
+            num1.setVisibility(View.INVISIBLE);
+            btn_clear_from_text.setText(getString(R.string.try_again));
+            btn_clear_from_text.setVisibility(View.VISIBLE);
+            btn_clear_from_text.setOnClickListener(v -> {
+                startActivity(new Intent(requireActivity(), MainActivity.class));
+            });
+            geoText.setVisibility(View.INVISIBLE);
+            progressBar.setVisibility(View.INVISIBLE);
+
+            btn_clear_from.setVisibility(View.INVISIBLE);
+            btn_clear_to.setVisibility(View.INVISIBLE);
+
+            textfrom.setVisibility(View.INVISIBLE);
+            num1.setVisibility(View.INVISIBLE);
+            textwhere.setVisibility(View.INVISIBLE);
+            num2.setVisibility(View.INVISIBLE);
+            textViewTo.setVisibility(View.INVISIBLE);
+
+            btnAdd.setVisibility(View.INVISIBLE);
+
+            buttonBonus.setVisibility(View.INVISIBLE);
+            btn_minus.setVisibility(View.INVISIBLE);
+            text_view_cost.setVisibility(View.INVISIBLE);
+            btn_plus.setVisibility(View.INVISIBLE);
+            btnOrder.setVisibility(View.INVISIBLE);
+
+
         }
     }
     public void checkPermission(String permission, int requestCode) {
@@ -368,8 +406,7 @@ public class VisicomFragment extends Fragment{
         if (activeNetwork != null && activeNetwork.isConnected()) {
             hasConnect = true;
         }
-
-        return hasConnect;
+      return hasConnect;
     }
     @SuppressLint("ResourceAsColor")
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -382,15 +419,20 @@ public class VisicomFragment extends Fragment{
         }
 
         urlOrder = getTaxiUrlSearchMarkers( "orderSearchMarkersVisicom", requireActivity());
-        Log.d(TAG, "order: urlOrder "  + urlOrder);
-        if (!verifyPhone(requireContext())) {
-            getPhoneNumber();
+        Log.d(TAG, "order:  urlOrder "  + urlOrder);
+        if(!phoneFull()) {
+            if (!verifyPhone(requireContext())) {
+                getPhoneNumber();
+            }
+            if (!verifyPhone(requireActivity())) {
+                bottomSheetDialogFragment = new MyPhoneDialogFragment("visicom", text_view_cost.getText().toString(), true);
+                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                progressBar.setVisibility(View.INVISIBLE);
+            }
+        } else {
+            MainActivity.verifyPhone = true;
         }
-        if (!verifyPhone(requireActivity())) {
-            bottomSheetDialogFragment = new MyPhoneDialogFragment("visicom", text_view_cost.getText().toString(), true);
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-            progressBar.setVisibility(View.INVISIBLE);
-        }
+
     }
     public void orderFinished() throws MalformedURLException {
         Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
@@ -498,18 +540,29 @@ public class VisicomFragment extends Fragment{
             String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
             boolean val = Pattern.compile(PHONE_PATTERN).matcher(mPhoneNumber).matches();
             Log.d("TAG", "onClick No validate: " + val);
-            if (val == false) {
+            if (!val) {
                 Toast.makeText(requireActivity(), getString(R.string.format_phone) , Toast.LENGTH_SHORT).show();
                 Log.d("TAG", "onClick:phoneNumber.getText().toString() " + mPhoneNumber);
 //                requireActivity().finish();
 
             } else {
-                updateRecordsUser(mPhoneNumber, getContext());
+                updateRecordsUser(mPhoneNumber, requireContext());
             }
         }
 
     }
+    private boolean phoneFull () {
+        List<String> stringList =  logCursor(MainActivity.TABLE_USER_INFO, requireContext());
+        String mPhoneNumber = "+380";
+        if(stringList.size() != 0) {
+            mPhoneNumber = stringList.get(2);
+        }
 
+        String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
+
+        return Pattern.compile(PHONE_PATTERN).matcher(mPhoneNumber).matches();
+
+    }
     private void updateRecordsUser(String result, Context context) {
         ContentValues cv = new ContentValues();
 
@@ -653,6 +706,7 @@ public class VisicomFragment extends Fragment{
     @Override
     public void onResume() {
         super.onResume();
+
         List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
         api =  stringList.get(2);
 
@@ -674,13 +728,8 @@ public class VisicomFragment extends Fragment{
         textfrom = binding.textfrom;
         num1 = binding.num1;
 
-        textfrom.setVisibility(View.INVISIBLE);
-        num1.setVisibility(View.INVISIBLE);
-
-
-
-
-
+//        textfrom.setVisibility(View.INVISIBLE);
+//        num1.setVisibility(View.INVISIBLE);
         addCost = 0;
         updateAddCost(String.valueOf(addCost));
 
@@ -897,55 +946,52 @@ public class VisicomFragment extends Fragment{
                 MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             }  else  {
-                // Разрешения уже предоставлены, выполнить ваш код
-                if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+                Toast.makeText(requireContext(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
+                } else if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                         && ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
                     checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
                 } else {
-                    if (isAdded() && isVisible()) {
-                        List<String> settings = new ArrayList<>();
+                        if (isAdded() && isVisible()) {
+                            List<String> settings = new ArrayList<>();
 
-                        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                        if(isAdded()) {
-                            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                            Cursor cursor = database.rawQuery(query, null);
+                            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
 
-                            cursor.moveToFirst();
+                                SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                                Cursor cursor = database.rawQuery(query, null);
 
-                            // Получите значения полей из первой записи
+                                cursor.moveToFirst();
+
+                                // Получите значения полей из первой записи
 
 
-                            @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                            @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                            @SuppressLint("Range") String ToAdressString = cursor.getString(cursor.getColumnIndex("finish"));
-                            Log.d(TAG, "autoClickButton:ToAdressString " + ToAdressString);
-                            cursor.close();
-                            database.close();
+                                @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                                @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+                                @SuppressLint("Range") String ToAdressString = cursor.getString(cursor.getColumnIndex("finish"));
+                                Log.d(TAG, "autoClickButton:ToAdressString " + ToAdressString);
+                                cursor.close();
+                                database.close();
 
-                            settings.add(Double.toString(0));
-                            settings.add(Double.toString(0));
-                            settings.add(Double.toString(toLatitude));
-                            settings.add(Double.toString(toLongitude));
-                            settings.add(getString(R.string.search));
-                            settings.add(ToAdressString);
-                        }
-                        updateRoutMarker(settings);
-                        geoText.setText(R.string.search);
-                        firstLocation();
+                                settings.add(Double.toString(0));
+                                settings.add(Double.toString(0));
+                                settings.add(Double.toString(toLatitude));
+                                settings.add(Double.toString(toLongitude));
+                                settings.add(getString(R.string.search));
+                                settings.add(ToAdressString);
+
+                            updateRoutMarker(settings);
+                            geoText.setText(R.string.search);
+                            firstLocation();
+
                     }
-                    }
+                }
 
             }
 
         });
 
         binding.textfrom.setVisibility(View.INVISIBLE);
-
-        btn_clear_from_text.setVisibility(View.INVISIBLE);
-        textfrom.setVisibility(View.INVISIBLE);
-        num1.setVisibility(View.INVISIBLE);
-
 
         Log.d(TAG, "onResume: " + MainActivity.countryState);
         List<String> listCity = logCursor(MainActivity.CITY_INFO, requireActivity());
@@ -967,17 +1013,11 @@ public class VisicomFragment extends Fragment{
                 new GetPublicIPAddressTask(fragmentManager, city, requireActivity()).execute().get(MainActivity.MAX_TASK_EXECUTION_TIME_SECONDS, TimeUnit.SECONDS);
             } catch (ExecutionException | InterruptedException | TimeoutException e) {
                 MainActivity.countryState = "UA";
-                Toast.makeText(requireActivity(), requireActivity().getString(verify_internet), Toast.LENGTH_SHORT).show();
+//                Toast.makeText(requireActivity(), requireActivity().getString(verify_internet), Toast.LENGTH_SHORT).show();
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
             }
         }
-//        else {
-//            btn_clear_from_text.setVisibility(View.VISIBLE);
-//            textfrom.setVisibility(View.VISIBLE);
-//            num1.setVisibility(View.VISIBLE);
-//            btn_clear_from_text.setVisibility(View.VISIBLE);
-//
-//        }
+
         switch (city){
             case "Kyiv City":
                 cityMenu = getString(R.string.city_kyiv);
@@ -1010,22 +1050,36 @@ public class VisicomFragment extends Fragment{
         String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
         // Изменяем текст элемента меню
         MainActivity.navVisicomMenuItem.setTitle(newTitle);
+        if (NetworkUtils.isNetworkAvailable(requireContext())) {
+            if (!newRout()) {
+                //            btn_clear_from_text.setVisibility(View.INVISIBLE);
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                            visicomCost();
+                    }
+                }, 100);
+            }
 
-        if (newRout()) {
+        } else {
+            binding.textfrom.setVisibility(View.INVISIBLE);
+            binding.textwhere.setVisibility(View.INVISIBLE);
             btn_clear_from.setVisibility(View.INVISIBLE);
             textfrom.setVisibility(View.INVISIBLE);
             num1.setVisibility(View.INVISIBLE);
-        } else {
-            btn_clear_from_text.setVisibility(View.INVISIBLE);
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    visicomCost();
-                }
-            }, 100);
+            progressBar.setVisibility(View.INVISIBLE);
+
+            textfrom.setVisibility(View.INVISIBLE);
+            num1.setVisibility(View.INVISIBLE);
+            btn_clear_from_text.setText(getString(R.string.try_again));
+            btn_clear_from_text.setVisibility(View.VISIBLE);
+            btn_clear_from_text.setOnClickListener(v -> {
+                startActivity(new Intent(requireActivity(), MainActivity.class));
+            });
 
 
         }
+
 
     }
 
@@ -1060,8 +1114,8 @@ public class VisicomFragment extends Fragment{
 
                     } catch (MalformedURLException | InterruptedException |
                              JSONException e) {
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+//                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+//                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                         progressBar.setVisibility(View.INVISIBLE);
                     }
                     assert sendUrlFrom != null;
@@ -1122,7 +1176,9 @@ public class VisicomFragment extends Fragment{
                     }
 //                    if(settings.size() != 0) {
                         updateRoutMarker(settings);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         visicomCost();
+                    }
 //                    }
 
                 }
@@ -1205,9 +1261,8 @@ public class VisicomFragment extends Fragment{
         fusedLocationProviderClient.removeLocationUpdates(locationCallback);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
-    private void visicomCost() {
 
+    private void visicomCost() {
         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
         SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor cursor = database.rawQuery(query, null);
@@ -1240,9 +1295,10 @@ public class VisicomFragment extends Fragment{
 
         assert orderCost != null;
         if (orderCost.equals("0")) {
+            message = getString(R.string.error_message);
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
 
-        // Проверяем, что активность не в состоянии сохранения
+            // Проверяем, что активность не в состоянии сохранения
             if (!requireActivity().isFinishing() && !requireActivity().isDestroyed()) {
                 // Проверяем, что фрагмент готов к выполнению транзакции
                 if (!getChildFragmentManager().isStateSaved()) {
@@ -1294,18 +1350,22 @@ public class VisicomFragment extends Fragment{
                 btn_clear_from_text.setVisibility(View.GONE);
 
             }
-            if (!verifyPhone(requireActivity())) {
-                bottomSheetDialogFragment = new MyPhoneDialogFragment("visicom", text_view_cost.getText().toString(), false);
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                progressBar.setVisibility(View.INVISIBLE);
+            if(!phoneFull()) {
+                if (!verifyPhone(requireActivity())) {
+                    bottomSheetDialogFragment = new MyPhoneDialogFragment("visicom", text_view_cost.getText().toString(), false);
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    progressBar.setVisibility(View.INVISIBLE);
+                }
+            } else {
+                MainActivity.verifyPhone = true;
             }
-
         }
-    }
+   }
 
     private static class GetPublicIPAddressTask extends AsyncTask<Void, Void, String> {
         FragmentManager fragmentManager;
         String city;
+        @SuppressLint("StaticFieldLeak")
         Context context;
 
         public GetPublicIPAddressTask(FragmentManager fragmentManager, String city, Context context) {
@@ -1343,7 +1403,7 @@ public class VisicomFragment extends Fragment{
                 // Log the exception
                 Log.e(TAG, "Exception in onPostExecute: " + e.getMessage());
                 MainActivity.countryState = "UA";
-                Toast.makeText(context, context.getString(verify_internet), Toast.LENGTH_SHORT).show();
+//                Toast.makeText(context, context.getString(verify_internet), Toast.LENGTH_SHORT).show();
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
             }
         }
@@ -1388,7 +1448,7 @@ public class VisicomFragment extends Fragment{
             @Override
             public void onFailure(@NonNull Call<CountryResponse> call, @NonNull Throwable t) {
                 Log.e(TAG, "Error: " + t.getMessage());
-                Toast.makeText(context, context.getString(verify_internet), Toast.LENGTH_SHORT).show();
+//                Toast.makeText(context, context.getString(verify_internet), Toast.LENGTH_SHORT).show();
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
             }
         });

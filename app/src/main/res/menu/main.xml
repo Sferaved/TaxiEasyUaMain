@@ -38,6 +38,10 @@
         android:orderInCategory="100"
         android:title="@string/send_like" />
     <item
+        android:id="@+id/update"
+        android:orderInCategory="100"
+        android:title="@string/update_app" />
+    <item
         android:id="@+id/action_exit"
         android:orderInCategory="100"
         android:title="@string/action_exit"

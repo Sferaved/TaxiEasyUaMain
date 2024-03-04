@@ -1154,6 +1154,7 @@ public class MyBottomSheetVisicomOnePageFragment extends BottomSheetDialogFragme
 
         assert orderCost != null;
         if (orderCost.equals("0")) {
+            message = getString(R.string.error_message);
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
         } else {

@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.731</string>
-    <string name="version">Версія: 1.731</string>
+    <string name="version_code">1.733</string>
+    <string name="version">Версія: 1.733</string>
 
     <string name="app_name">Таксі Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -42,7 +42,7 @@
     <string name="open_maps">Замовити по мапе</string>
     <string name="driver">Робота водієм (реклама)</string>
     <string name="send_email">Поділитися</string>
-    <string name="gps_ok">У Вас все добре</string>
+    <string name="gps_ok">Визначення геопозиції включено</string>
     <string name="cancel_button">Ні, дякую</string>
     <string name="gps_on">Увімкнути</string>
     <string name="gps_info">Щоб покращити роботу програми, увімкніть на пристрої геолокацію Google</string>
@@ -55,7 +55,7 @@
     <string name="save_button">Зберегти</string>
     <string name="you_this">"Ви зараз тут: "</string>
     <string name="make_rout_message">Сформуйте маршрут</string>
-    <string name="error_message">Відбулася помилка.</string>
+    <string name="error_message">Відбулася помилка. Зателефонуйте оператору</string>
     <string name="to_point">"Місце призначення: "</string>
     <string name="cost_of_order">" Вартість поїздки: "</string>
     <string name="firebase_false_message">грн. Вибачте, без перевірки Google-акаунту замовлення не можливе.</string>
@@ -70,7 +70,7 @@
     <string name="on_city">" по місту."</string>
     <string name="on_city_tv">" по місту"</string>
     <string name="help_button">Підтримка</string>
-    <string name="try_again">Знову</string>
+    <string name="try_again">Перезавантажити</string>
     <string name="ok_button">Ок</string>
     <string name="to_message">" -> "</string>
     <string name="rout_from_message">Вкажить місце відправлення</string>
@@ -322,4 +322,12 @@
     <string name="city_search">Визначається Ваше місцезнаходження...</string>
     <string name="city_loc">місто</string>
     <string name="new_order_notify">Замовте поїздку за вигідною ціною.</string>
+    <string name="id_phone_text">Надайте доступ до вбудованого ідентифікатора пристрою, щоб отримувати персоналізовані рекламні пропозиції та покращений досвід користування партнерськими сервісами. Будь-коли Ви можете запросити видалення цієї інформації.</string>
+    <string name="item_state_phone">Персоналізація</string>
+    <string name="update_rout">Оновити історію</string>
+    <string name="update_app">Оновити додаток</string>
+    <string name="upload">Завантаження оновлення...</string>
+    <string name="update_ok">У Вас встановлена актуальна версія. Немає необхідності оновлювати програму.</string>
+    <string name="phone_driver">Звонок водію</string>
+    <string name="auto_info">, авто</string>
 </resources>

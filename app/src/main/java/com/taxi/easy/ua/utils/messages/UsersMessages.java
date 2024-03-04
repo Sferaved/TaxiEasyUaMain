@@ -1,17 +1,14 @@
 package com.taxi.easy.ua.utils.messages;
 
-import static com.taxi.easy.ua.R.string.verify_internet;
-
 import android.content.Context;
 import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
-import com.taxi.easy.ua.NotificationHelper;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.notify.NotificationHelper;
 
 import java.util.List;
 
@@ -36,13 +33,10 @@ public class UsersMessages {
     private void getMessages() {
         MessageApiManager messageApiManager = new MessageApiManager();
         Call<List<Message>> call = messageApiManager.getMessages(email, context.getString(R.string.application));
-        Log.d(TAG, "getMessages: ");
-        Log.d(TAG, "Request URL: " + call.request().url());
-        Log.d(TAG, "Request Method: " + call.request().method());
+
         call.enqueue(new Callback<List<Message>>() {
             @Override
             public void onResponse(@NonNull Call<List<Message>> call, @NonNull Response<List<Message>> response) {
-                Log.d(TAG, "onResponse: ");
                 if (response.isSuccessful() && response.body() != null) {
                     List<Message> messages = response.body();
                     String textMessage = "";
@@ -57,7 +51,7 @@ public class UsersMessages {
                     notifyUser(textMessage);
                 } else {
                     // Обработка неудачного ответа...
-                    Toast.makeText(context, context.getString(verify_internet), Toast.LENGTH_SHORT).show();
+//                    Toast.makeText(context, context.getString(verify_internet), Toast.LENGTH_SHORT).show();
                     VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
 
                 }
@@ -66,8 +60,7 @@ public class UsersMessages {
             @Override
             public void onFailure(@NonNull Call<List<Message>> call, @NonNull Throwable t) {
                 // Обработка ошибки...
-                Log.e("NetworkError", "Failed to make network call", t);
-                Toast.makeText(context, context.getString(verify_internet), Toast.LENGTH_SHORT).show();
+//                Toast.makeText(context, context.getString(verify_internet), Toast.LENGTH_SHORT).show();
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
 
             }

@@ -10,8 +10,6 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -31,7 +29,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
@@ -42,6 +41,7 @@ import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGalleryFragment;
 import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
+import com.taxi.easy.ua.utils.connect.NetworkUtils;
 
 import org.json.JSONException;
 
@@ -97,11 +97,13 @@ public class GalleryFragment extends Fragment {
                 "SMOKE",
         };
     }
-
+    NavController navController;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        GalleryViewModel galleryViewModel =
-                new ViewModelProvider(this).get(GalleryViewModel.class);
+        navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+            navController.navigate(R.id.nav_visicom);
+        }
 
         binding = FragmentGalleryBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
@@ -315,13 +317,11 @@ public class GalleryFragment extends Fragment {
     @SuppressLint("ResourceAsColor")
     @RequiresApi(api = Build.VERSION_CODES.O)
     private void orderRout() {
-
-        if(connected()) {
-            urlOrder = getTaxiUrlSearchMarkers("orderSearchMarkersVisicom", requireActivity());
+        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+            navController.navigate(R.id.nav_visicom);
         } else {
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-            OpenStreetMapActivity.progressBar.setVisibility(View.INVISIBLE);
+            urlOrder = getTaxiUrlSearchMarkers("orderSearchMarkersVisicom", requireActivity());
         }
     }
     private void orderFinished() {
@@ -403,7 +403,10 @@ public class GalleryFragment extends Fragment {
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     private void dialogFromToOneRout(Map <String, String> rout) throws MalformedURLException, InterruptedException, JSONException {
-        if(connected()) {
+        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+            navController.navigate(R.id.nav_visicom);
+        } else  {
             Log.d(TAG, "dialogFromToOneRout: " + rout.toString());
             from_lat =  Double.valueOf(rout.get("from_lat"));
             from_lng = Double.valueOf(rout.get("from_lng"));
@@ -455,6 +458,7 @@ public class GalleryFragment extends Fragment {
                 costFirstForMin = cost;
                 MIN_COST_VALUE = (long) (cost*0.6);
             } else {
+                message = getString(R.string.error_message);
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
 
@@ -465,9 +469,6 @@ public class GalleryFragment extends Fragment {
                 btnAdd.setVisibility(View.INVISIBLE);
                 buttonBonus.setVisibility(View.INVISIBLE);
             }
-        } else {
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
         }
     }
     private Map <String, String> routChoice(int i) {
@@ -487,27 +488,6 @@ public class GalleryFragment extends Fragment {
 
         Log.d(TAG, "routMaps: " + rout);
         return rout;
-    }
-    private boolean connected() {
-
-        boolean hasConnect = false;
-
-        ConnectivityManager cm = (ConnectivityManager) requireActivity().getSystemService(
-                Context.CONNECTIVITY_SERVICE);
-        NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        if (wifiNetwork != null && wifiNetwork.isConnected()) {
-            hasConnect = true;
-        }
-        NetworkInfo mobileNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
-        if (mobileNetwork != null && mobileNetwork.isConnected()) {
-            hasConnect = true;
-        }
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        if (activeNetwork != null && activeNetwork.isConnected()) {
-            hasConnect = true;
-        }
-
-        return hasConnect;
     }
     @RequiresApi(api = Build.VERSION_CODES.O)
     @SuppressLint("Range")
@@ -785,6 +765,8 @@ public class GalleryFragment extends Fragment {
             btn_plus.setVisibility(View.INVISIBLE);
             btnAdd.setVisibility(View.INVISIBLE);
             buttonBonus.setVisibility(View.INVISIBLE);
+            scrollButtonDown.setVisibility(View.INVISIBLE);
+            scrollButtonUp.setVisibility(View.INVISIBLE);
 
         }
         del_but.setVisibility(View.INVISIBLE);
@@ -904,6 +886,7 @@ public class GalleryFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+
         Log.d(TAG, "onResume: selectedItem " + selectedItem);
         listView.clearChoices();
         listView.requestLayout(); // Обновляем визуальное состояние списка

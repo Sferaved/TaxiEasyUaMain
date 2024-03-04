@@ -410,6 +410,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
         String orderC = sendUrl.get("order_cost");
 
         if (orderC.equals("0")) {
+            message = getString(R.string.error_message);
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
         }

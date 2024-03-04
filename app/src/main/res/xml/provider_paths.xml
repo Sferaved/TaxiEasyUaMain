@@ -1,0 +1,11 @@
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Путь к каталогу кэша вашего приложения -->
+    <cache-path
+        name="cache"
+        path="." />
+
+    <!-- Путь к каталогу внешнего хранилища -->
+    <external-path
+        name="external"
+        path="." />
+</paths>

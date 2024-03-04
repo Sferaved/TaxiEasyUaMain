@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.731</string>
-    <string name="version">Версия: 1.731</string>
+    <string name="version_code">1.733</string>
+    <string name="version">Версия: 1.733</string>
 
     <string name="app_name">Такси Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -42,7 +42,7 @@
     <string name="open_maps">Заказать по карте</string>
     <string name="driver">Работа водителем (реклама)</string>
     <string name="send_email">Поделиться</string>
-    <string name="gps_ok">У Вас все хорошо</string>
+    <string name="gps_ok">Определение геопозиции включено</string>
     <string name="cancel_button">Нет, спасибо</string>
     <string name="gps_on">Включить</string>
     <string name="gps_info">Чтобы улучшить работу программы, включите на устройстве геолокацию Google</string>
@@ -55,7 +55,7 @@
     <string name="save_button">Сохранить</string>
     <string name="you_this">"Вы сейчас здесь: "</string>
     <string name="make_rout_message">Сформируйте маршрут</string>
-    <string name="error_message">Произошла ошибка.</string>
+    <string name="error_message">Произошла ошибка. Наберите оператора.</string>
     <string name="to_point">"Место назначения: "</string>
     <string name="cost_of_order">" Стоимость поездки: "</string>
     <string name="firebase_false_message">грн. Извините, без проверки Google-аккаунта заказ невозможен.</string>
@@ -70,7 +70,7 @@
     <string name="on_city">" по городу."</string>
     <string name="on_city_tv">" по городу"</string>
     <string name="help_button">Поддержка</string>
-    <string name="try_again">Снова</string>
+    <string name="try_again">Перезагрузить</string>
     <string name="ok_button">Ок</string>
     <string name="to_message">" -> "</string>
     <string name="rout_from_message">Укажите место отправки</string>
@@ -322,4 +322,12 @@
     <string name="city_search">Определяется Ваше местоположение...</string>
     <string name="city_loc">город </string>
     <string name="new_order_notify">Закажите поездку по выгодной цене.</string>
+    <string name="id_phone_text">Предоставьте доступ до встроенного идентификатора устройства, чтобы получать персолнализированные рекламные предложения и улучшенный опыт пользования партнерскими сервисами. В любой момент Вы можете запросить удаления этой информации.</string>
+    <string name="item_state_phone">Персонализация</string>
+    <string name="update_rout">Обновить историю</string>
+    <string name="update_app">Обновить приложение</string>
+    <string name="upload">Скачивание обновления ...</string>
+    <string name="update_ok">У Вас установлена актуальная версия. Нет необходимости обновлять приложение.</string>
+    <string name="phone_driver">Звонок водителю</string>
+    <string name="auto_info">, авто</string>
 </resources>
