@@ -89,7 +89,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             if(!bank_name.equals("SOME BANK IN UA COUNTRY")) {
                 holder.bankText.setText(bank_name);
             } else {
-                holder.bankText.setText("");
+                holder.bankText.setText("BANK IN UA");
             }
 
 
@@ -214,6 +214,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
                     // Обработка успешного ответа
                     reIndexCardsFondy();
                     Toast.makeText(getContext(), getContext().getString(R.string.un_link_token), Toast.LENGTH_LONG).show();
+
                 } else {
 //                    Toast.makeText(getContext(), getContext().getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
                 }
@@ -239,6 +240,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
                 " card_type text," +
                 " bank_name text," +
                 " rectoken text," +
+                " merchant text," +
                 " rectoken_check text);");
 
         // Копирование данных из старой таблицы во временную
@@ -253,6 +255,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
                 " card_type text," +
                 " bank_name text," +
                 " rectoken text," +
+                " merchant text," +
                 " rectoken_check text);");
 
         String query = "INSERT INTO temp_table (masked_card, card_type, bank_name, rectoken, rectoken_check) " +
@@ -274,6 +277,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             CardFragment.listView.setVisibility(View.GONE);
             CardFragment.textCard.setText(R.string.no_cards);
         }
+        CardFragment.btnCardLink.setVisibility(View.INVISIBLE);
     }
 
     // Проверка наличия таблицы в базе данных

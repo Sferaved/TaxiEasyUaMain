@@ -5,7 +5,11 @@ public class CardInfo {
     private String card_type;
     private String bank_name;
     private String rectoken;
+    private String merchant;
 
+    public String getMerchant() {
+        return merchant;
+    }
     public String getMasked_card() {
         return masked_card;
     }

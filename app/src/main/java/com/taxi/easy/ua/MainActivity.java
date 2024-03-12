@@ -127,7 +127,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
     public static String order_id;
     public static String invoiceId;
 
-    public static final String DB_NAME = "data_01022024_8";
+    public static final String DB_NAME = "data_11032024_0";
 
     /**
      * Table section
@@ -507,6 +507,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 " card_type text," +
                 " bank_name text," +
                 " rectoken text," +
+                " merchant text," +
                 " rectoken_check text);");
 
 
@@ -515,6 +516,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 " card_type text," +
                 " bank_name text," +
                 " rectoken text," +
+                " merchant text," +
                 " rectoken_check text);");
         database.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_LAST_PUSH + "(id integer primary key autoincrement," +
                 " push_date DATETIME);");
@@ -1498,10 +1500,11 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         userPhoneThread.start();
 
 // Task 4: Get card token for "fondy" in a separate thread
-        Thread fondyCardThread = new Thread(() -> {
-            getCardToken("fondy", TABLE_FONDY_CARDS, email);
-        });
-        fondyCardThread.start();
+//        Thread fondyCardThread = new Thread(() -> {
+//
+//            getCardToken("fondy", TABLE_FONDY_CARDS, email);
+//        });
+//        fondyCardThread.start();
 
 // Task 5: Get card token for "mono" in a separate thread
         Thread monoCardThread = new Thread(() -> {
@@ -1514,7 +1517,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             updateUserInfoThread.join();
             addUserNoNameThread.join();
             userPhoneThread.join();
-            fondyCardThread.join();
+//            fondyCardThread.join();
             monoCardThread.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -1691,60 +1694,66 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         CallbackService service = retrofit.create(CallbackService.class);
 
         Log.d(TAG, "getCardTokenFondy: ");
+        List<String>  arrayList = logCursor(MainActivity.CITY_INFO);
+        String MERCHANT_ID = arrayList.get(6);
+        if(MERCHANT_ID != null) {
+    // Выполните запрос
+    Call<CallbackResponse> call = service.handleCallback(email, pay_system, MERCHANT_ID);
+    String requestUrl = call.request().toString();
+    Log.d(TAG, "Request URL: " + requestUrl);
 
-        // Выполните запрос
-        Call<CallbackResponse> call = service.handleCallback(email, pay_system);
-        String requestUrl = call.request().toString();
-        Log.d(TAG, "Request URL: " + requestUrl);
-
-        call.enqueue(new Callback<CallbackResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<CallbackResponse> call, @NonNull Response<CallbackResponse> response) {
-                Log.d(TAG, "onResponse: " + response.body());
-                if (response.isSuccessful()) {
-                    CallbackResponse callbackResponse = response.body();
-                    if (callbackResponse != null) {
-                        List<CardInfo> cards = callbackResponse.getCards();
-                        Log.d(TAG, "onResponse: cards" + cards);
-                        if (cards != null && !cards.isEmpty()) {
-                            SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                            for (CardInfo cardInfo : cards) {
-                                ContentValues cv = new ContentValues();
-                                String masked_card = cardInfo.getMasked_card(); // Маска карты
-                                String card_type = cardInfo.getCard_type(); // Тип карты
-                                String bank_name = cardInfo.getBank_name(); // Название банка
-                                String rectoken = cardInfo.getRectoken(); // Токен карты
-
-                                Log.d(TAG, "onResponse: card_token: " + rectoken);
-
-                                cv.put("masked_card", masked_card);
-                                cv.put("card_type", card_type);
-                                cv.put("bank_name", bank_name);
-                                cv.put("rectoken", rectoken);
-                                cv.put("rectoken_check", "-1");
-                                database.insert(table, null, cv);
-                            }
+    call.enqueue(new Callback<CallbackResponse>() {
+        @Override
+        public void onResponse(@NonNull Call<CallbackResponse> call, @NonNull Response<CallbackResponse> response) {
+            Log.d(TAG, "onResponse: " + response.body());
+            if (response.isSuccessful()) {
+                CallbackResponse callbackResponse = response.body();
+                if (callbackResponse != null) {
+                    List<CardInfo> cards = callbackResponse.getCards();
+                    Log.d(TAG, "onResponse: cards" + cards);
+                    if (cards != null && !cards.isEmpty()) {
+                        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        for (CardInfo cardInfo : cards) {
                             ContentValues cv = new ContentValues();
-                            cv.put("rectoken_check", "1");
-                            database.update(table, cv, "id = ?",
-                                    new String[] { "1" });
-                            database.close();
+                            String masked_card = cardInfo.getMasked_card(); // Маска карты
+                            String card_type = cardInfo.getCard_type(); // Тип карты
+                            String bank_name = cardInfo.getBank_name(); // Название банка
+                            String rectoken = cardInfo.getRectoken(); // Токен карты
+                            String merchantId = cardInfo.getMerchant(); // Токен карты
+
+                            Log.d(TAG, "onResponse: card_token: " + rectoken);
+
+                            cv.put("masked_card", masked_card);
+                            cv.put("card_type", card_type);
+                            cv.put("bank_name", bank_name);
+                            cv.put("rectoken", rectoken);
+                            cv.put("merchant", merchantId);
+                            cv.put("rectoken_check", "-1");
+                            database.insert(table, null, cv);
                         }
+                        ContentValues cv = new ContentValues();
+                        cv.put("rectoken_check", "1");
+                        database.update(table, cv, "id = ?",
+                                new String[] { "1" });
+                        database.close();
                     }
-
-                } else {
-                    // Обработка случаев, когда ответ не 200 OK
                 }
-            }
 
-            @Override
-            public void onFailure(@NonNull Call<CallbackResponse> call, @NonNull Throwable t) {
-                // Обработка ошибки запроса
-                Log.d(TAG, "onResponse: failure " + t.toString());
-//                Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
-                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+            } else {
+                // Обработка случаев, когда ответ не 200 OK
             }
-        });
+        }
+
+        @Override
+        public void onFailure(@NonNull Call<CallbackResponse> call, @NonNull Throwable t) {
+            // Обработка ошибки запроса
+            Log.d(TAG, "onResponse: failure " + t.toString());
+//                Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
+            VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+        }
+    });
+}
+
 
     }
     public void checkPermission(String permission, int requestCode) {

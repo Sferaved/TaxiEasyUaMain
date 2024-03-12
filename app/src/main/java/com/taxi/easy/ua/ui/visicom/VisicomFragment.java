@@ -736,6 +736,15 @@ public class VisicomFragment extends Fragment{
         numberFlagTo = "2";
 
         geoText = binding.textGeo;
+        geoText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getContext(), ActivityVisicomOnePage.class);
+                intent.putExtra("start", "ok");
+                intent.putExtra("end", "no");
+                startActivity(intent);
+            }
+        });
 
         btn_clear_from_text = binding.btnClearFromText;
 
@@ -773,7 +782,16 @@ public class VisicomFragment extends Fragment{
         });
 
         textViewTo = binding.textTo;
-
+        textViewTo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                textViewTo.setText("");
+                Intent intent = new Intent(getContext(), ActivityVisicomOnePage.class);
+                intent.putExtra("start", "no");
+                intent.putExtra("end", "ok");
+                startActivity(intent);
+            }
+        });
 
         addresses = new ArrayList<>();
 

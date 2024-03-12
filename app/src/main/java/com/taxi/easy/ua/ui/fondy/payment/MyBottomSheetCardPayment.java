@@ -230,7 +230,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
             }
 
             @Override
-            public void onFailure(Call<ApiResponse<SuccessfulResponseData>> call, Throwable t) {
+            public void onFailure(@NonNull Call<ApiResponse<SuccessfulResponseData>> call, @NonNull Throwable t) {
                 // Обработка ошибки сети или другие ошибки
                 Log.d(TAG, "onFailure: Ошибка сети: " + t.getMessage());
 
@@ -728,7 +728,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
         CallbackService service = retrofit.create(CallbackService.class);
 
         // Выполните запрос
-        Call<CallbackResponse> call = service.handleCallback(email, pay_system);
+        Call<CallbackResponse> call = service.handleCallback(email, pay_system, MERCHANT_ID);
 
         String tableCard = "";
         switch (pay_system) {
@@ -770,7 +770,6 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                                             null,
                                             null
                                     );
-
                                     if (cursor.getCount() == 0) {
                                         // Если нет записи с таким rectoken, добавляем новую запись
                                         ContentValues cv = new ContentValues();
@@ -778,10 +777,21 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                                         cv.put("card_type", card_type);
                                         cv.put("bank_name", bank_name);
                                         cv.put("rectoken", rectoken);
+                                        cv.put("merchant", MERCHANT_ID);
                                         cv.put("rectoken_check", "1");
                                         database.insert(finalTableCard, null, cv);
-                                    }
 
+                                        cv = new ContentValues();
+                                        cv.put("rectoken_check", "0");
+
+                                        int rowsAffected = database.update(finalTableCard, cv, "merchant = ?", new String[]{MERCHANT_ID});
+
+                                        if (rowsAffected > 0) {
+                                            Log.d(TAG, "Rows affected: " + rowsAffected);
+                                        } else {
+                                            Log.d(TAG, "No rows affected");
+                                        }
+                                    }
                                     cursor.close();
                                 }
                             }

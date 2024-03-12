@@ -33,6 +33,9 @@ import com.taxi.easy.ua.cities.api.CityApiClient;
 import com.taxi.easy.ua.cities.api.CityResponse;
 import com.taxi.easy.ua.cities.api.CityResponseMerchantFondy;
 import com.taxi.easy.ua.cities.api.CityService;
+import com.taxi.easy.ua.ui.card.CardInfo;
+import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
+import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
@@ -45,7 +48,8 @@ import java.util.List;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 
 public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
@@ -345,6 +349,8 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     public void onDismiss(@NonNull DialogInterface dialog) {
 
         super.onDismiss(dialog);
+
+
         NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
         navController.navigate(R.id.nav_visicom);
         if (positionFirst != 6) {
@@ -437,6 +443,10 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         Log.d(TAG, "onResponse: merchant_fondy" + merchant_fondy);
                         Log.d(TAG, "onResponse: fondy_key_storage" + fondy_key_storage);
 
+                        if(merchant_fondy != null) {
+                            getCardToken(context, merchant_fondy);
+                        }
+
 
                         // Добавьте здесь код для обработки полученных значений
                     }
@@ -451,7 +461,81 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             }
         });
     }
+    private void getCardToken(Context context, String merchant_fondy) {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://m.easy-order-taxi.site") // Замените на фактический URL вашего сервера
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        String baseUrl = retrofit.baseUrl().toString();
 
+        Log.d(TAG, "Base URL: " + baseUrl);
+        // Создайте сервис
+        CallbackService service = retrofit.create(CallbackService.class);
+
+        Log.d(TAG, "getCardTokenFondy: ");
+
+        List<String> arrayList = logCursor(MainActivity.TABLE_USER_INFO, context);
+        String email = arrayList.get(3);
+
+            // Выполните запрос
+            Call<CallbackResponse> call = service.handleCallback(email, "fondy", merchant_fondy);
+            String requestUrl = call.request().toString();
+            Log.d(TAG, "Request URL: " + requestUrl);
+
+            call.enqueue(new Callback<CallbackResponse>() {
+                @Override
+                public void onResponse(@NonNull Call<CallbackResponse> call, @NonNull Response<CallbackResponse> response) {
+                    Log.d(TAG, "onResponse: " + response.body());
+                    if (response.isSuccessful()) {
+                        CallbackResponse callbackResponse = response.body();
+                        if (callbackResponse != null) {
+                            List<CardInfo> cards = callbackResponse.getCards();
+                            Log.d(TAG, "onResponse: cards" + cards);
+                            if (cards != null && !cards.isEmpty()) {
+                                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                                for (CardInfo cardInfo : cards) {
+                                    ContentValues cv = new ContentValues();
+                                    String masked_card = cardInfo.getMasked_card(); // Маска карты
+                                    String card_type = cardInfo.getCard_type(); // Тип карты
+                                    String bank_name = cardInfo.getBank_name(); // Название банка
+                                    String rectoken = cardInfo.getRectoken(); // Токен карты
+                                    String merchantId = cardInfo.getMerchant(); // Токен карты
+
+                                    Log.d(TAG, "onResponse: card_token: " + rectoken);
+
+                                    cv.put("masked_card", masked_card);
+                                    cv.put("card_type", card_type);
+                                    cv.put("bank_name", bank_name);
+                                    cv.put("rectoken", rectoken);
+                                    cv.put("merchant", merchantId);
+                                    cv.put("rectoken_check", "-1");
+                                    database.insert(MainActivity.TABLE_FONDY_CARDS, null, cv);
+                                }
+                                ContentValues cv = new ContentValues();
+                                cv.put("rectoken_check", "1");
+                                database.update(MainActivity.TABLE_FONDY_CARDS, cv, "id = ?",
+                                        new String[] { "1" });
+                                database.close();
+                            }
+                        }
+
+                    } else {
+                        // Обработка случаев, когда ответ не 200 OK
+                    }
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<CallbackResponse> call, @NonNull Throwable t) {
+                    // Обработка ошибки запроса
+                    Log.d(TAG, "onResponse: failure " + t.toString());
+//                Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
+                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+                }
+            });
+
+
+
+    }
     public void resetRoutHome() {
         ContentValues cv = new ContentValues();
 
@@ -494,9 +578,9 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     }
 
     @SuppressLint("Range")
-    public List<String> logCursor(String table) {
+    public List<String> logCursor(String table, Context context) {
         List<String> list = new ArrayList<>();
-        SQLiteDatabase db = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase db = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = db.query(table, null, null, null, null, null, null);
         if (c != null) {
             if (c.moveToFirst()) {
@@ -512,6 +596,8 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 } while (c.moveToNext());
             }
         }
+        assert c != null;
+        c.close();
         db.close();
         return list;
     }

@@ -252,9 +252,11 @@ public class FinishActivity extends AppCompatActivity {
             }
         });
         infoPaymentType();
+        List<String>  arrayList = logCursor(MainActivity.CITY_INFO);
+        String MERCHANT_ID = arrayList.get(6);
         switch (pay_method) {
             case "fondy_payment":
-                payFondy();
+                payFondy(MERCHANT_ID);
                 break;
             case "mono_payment":
                 String reference = MainActivity.order_id;
@@ -267,10 +269,10 @@ public class FinishActivity extends AppCompatActivity {
 
     }
     @SuppressLint("Range")
-    private void payFondy() {
+    private void payFondy(String MERCHANT_ID) {
 
 
-        String rectoken = getCheckRectoken(MainActivity.TABLE_FONDY_CARDS);
+        String rectoken = getCheckRectoken(MainActivity.TABLE_FONDY_CARDS, MERCHANT_ID);
         Log.d(TAG, "payFondy: rectoken " + rectoken);
         if (rectoken.equals("")) {
             getUrlToPaymentFondy(messageFondy, amount);
@@ -376,12 +378,12 @@ public class FinishActivity extends AppCompatActivity {
         });
     }
     @SuppressLint("Range")
-    private String getCheckRectoken(String table) {
+    private String getCheckRectoken(String table, String merchantId) {
         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
         String[] columns = {"rectoken"}; // Указываем нужное поле
-        String selection = "rectoken_check = ?";
-        String[] selectionArgs = {"1"};
+        String selection = "rectoken_check = ? AND merchant = ?";
+        String[] selectionArgs = {"1", merchantId};
         String result = "";
 
         Cursor cursor = database.query(table, columns, selection, selectionArgs, null, null, null);
@@ -390,7 +392,7 @@ public class FinishActivity extends AppCompatActivity {
             if (cursor.moveToFirst()) {
                 do {
                     result = cursor.getString(cursor.getColumnIndex("rectoken"));
-                    Log.d(TAG, "Found rectoken with rectoken_check = 1: " + result);
+                    Log.d(TAG, "Found rectoken with rectoken_check = 1 and merchant = " + merchantId + ": " + result);
                 } while (cursor.moveToNext());
             }
             cursor.close();
@@ -399,6 +401,7 @@ public class FinishActivity extends AppCompatActivity {
         database.close();
         return result;
     }
+
 
     private void getUrlToPaymentFondy(String orderDescription, String amount) {
 

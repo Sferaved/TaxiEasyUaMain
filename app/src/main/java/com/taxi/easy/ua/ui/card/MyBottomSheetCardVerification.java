@@ -147,7 +147,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
         call.enqueue(new Callback<ApiResponse<SuccessfulResponseData>>() {
             @SuppressLint("NewApi")
             @Override
-            public void onResponse(Call<ApiResponse<SuccessfulResponseData>> call, Response<ApiResponse<SuccessfulResponseData>> response) {
+            public void onResponse(@NonNull Call<ApiResponse<SuccessfulResponseData>> call, @NonNull Response<ApiResponse<SuccessfulResponseData>> response) {
                 if (response.isSuccessful()) {
                     ApiResponse<SuccessfulResponseData> apiResponse = response.body();
                     Log.d(TAG, "JSON Response: " + new Gson().toJson(apiResponse));
@@ -160,7 +160,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                         Log.d("TAG", "getResponse_description: " + responseData.getResponseDescription());
                         String orderStatus = responseData.getOrderStatus();
                         if(orderStatus.equals("approved")){
-                            getCardTokenFondy();
+                            getCardTokenFondy(MERCHANT_ID);
                             getReversFondy(MainActivity.order_id,getString(R.string.return_pay), amount);
                         };
                     }
@@ -185,7 +185,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
         });
 
     }
-    private void getCardTokenFondy() {
+    private void getCardTokenFondy(String MERCHANT_ID) {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://m.easy-order-taxi.site") // Замените на фактический URL вашего сервера
                 .addConverterFactory(GsonConverterFactory.create())
@@ -195,7 +195,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
         CallbackService service = retrofit.create(CallbackService.class);
         Log.d(TAG, "getCardTokenFondy: ");
         // Выполните запрос
-        Call<CallbackResponse> call = service.handleCallback(email, "fondy");
+        Call<CallbackResponse> call = service.handleCallback(email, "fondy", MERCHANT_ID);
         call.enqueue(new Callback<CallbackResponse>() {
             @Override
             public void onResponse(@NonNull Call<CallbackResponse> call, @NonNull Response<CallbackResponse> response) {
@@ -235,8 +235,21 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                                         cv.put("card_type", card_type);
                                         cv.put("bank_name", bank_name);
                                         cv.put("rectoken", rectoken);
+                                        cv.put("merchant", MERCHANT_ID);
                                         cv.put("rectoken_check", "1");
                                         database.insert(MainActivity.TABLE_FONDY_CARDS, null, cv);
+
+                                        cv = new ContentValues();
+                                        cv.put("rectoken_check", "0");
+
+                                        int rowsAffected = database.update(MainActivity.TABLE_FONDY_CARDS, cv, "merchant = ?", new String[]{MERCHANT_ID});
+
+                                        if (rowsAffected > 0) {
+                                            Log.d(TAG, "Rows affected: " + rowsAffected);
+                                        } else {
+                                            Log.d(TAG, "No rows affected");
+                                        }
+
                                     }
 
                                     cursor.close();

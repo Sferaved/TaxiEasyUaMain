@@ -58,7 +58,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class CardFragment extends Fragment {
 
     private @NonNull FragmentCardBinding binding;
-    private AppCompatButton btnCardLink;
+    public static AppCompatButton btnCardLink;
 
     private NetworkChangeReceiver networkChangeReceiver;
     private String baseUrl = "https://m.easy-order-taxi.site";
@@ -82,15 +82,7 @@ public class CardFragment extends Fragment {
         binding = FragmentCardBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-
-        progressBar = binding.progressBar;
-
-        textCard = binding.textCard;
-        listView = binding.listView;
-
-        networkChangeReceiver = new NetworkChangeReceiver();
-        email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(requireActivity())).get(3);
-
+        btnCardLink  = binding.btnCardLink;
         return root;
     }
 
@@ -98,72 +90,94 @@ public class CardFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
-        btnCardLink  = binding.btnCardLink;
-        paySystem(new PaySystemCallback() {
-            @Override
-            public void onPaySystemResult(String paymentCode) {
-                // Здесь вы можете использовать полученное значение paymentCode
-                pay_method = paymentCode;
-                btnCardLink.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        progressBar.setVisibility(View.VISIBLE);
 
-                        Log.d(TAG, "onClick: " + pay_method);
-                        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-                        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-                            navController.navigate(R.id.nav_visicom);
-                        } else {
-                            MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getActivity());
-                            messageFondy = getString(R.string.fondy_message);
+        List<String>  arrayList = logCursor(MainActivity.CITY_INFO, requireActivity());
+        String MERCHANT_ID = arrayList.get(6);
+        textCard = binding.textCard;
+        listView = binding.listView;
+        progressBar = binding.progressBar;
+        Log.d(TAG, "onResume: " + MERCHANT_ID);
+        if (MERCHANT_ID != null) {
+            textCard.setVisibility(View.VISIBLE);
+            listView.setVisibility(View.VISIBLE);
+            progressBar.setVisibility(View.VISIBLE);
+            networkChangeReceiver = new NetworkChangeReceiver();
+            email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(requireActivity())).get(3);
 
-                            switch (pay_method) {
-                                case "fondy_payment":
-                                    getUrlToPaymentFondy(MainActivity.order_id, messageFondy);
-                                    break;
-                                case "mono_payment":
-                                    getUrlToPaymentMono(MainActivity.order_id, messageFondy);
-                                    break;
+            paySystem(new PaySystemCallback() {
+                @Override
+                public void onPaySystemResult(String paymentCode) {
+                    // Здесь вы можете использовать полученное значение paymentCode
+                    pay_method = paymentCode;
+                    btnCardLink.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+
+
+                            Log.d(TAG, "onClick: " + pay_method);
+                            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+                                navController.navigate(R.id.nav_visicom);
+                            } else {
+                                MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getActivity());
+                                messageFondy = getString(R.string.fondy_message);
+
+                                switch (pay_method) {
+                                    case "fondy_payment":
+                                        getUrlToPaymentFondy(MainActivity.order_id, messageFondy);
+                                        break;
+                                    case "mono_payment":
+                                        getUrlToPaymentMono(MainActivity.order_id, messageFondy);
+                                        break;
+                                }
+                                progressBar.setVisibility(View.GONE);
+
                             }
-                            progressBar.setVisibility(View.GONE);
-
                         }
+                    });
+
+                    ArrayList<Map<String, String>> cardMaps = new ArrayList<>();
+
+                    switch (pay_method) {
+                        case "fondy_payment":
+                            cardMaps = getCardMapsFromDatabase(MainActivity.TABLE_FONDY_CARDS);
+                            table = MainActivity.TABLE_FONDY_CARDS;
+                            break;
+                        case "mono_payment":
+                            cardMaps = getCardMapsFromDatabase(MainActivity.TABLE_MONO_CARDS);
+                            table = MainActivity.TABLE_MONO_CARDS;
+                            break;
                     }
-                });
 
-                ArrayList<Map<String, String>> cardMaps = new ArrayList<>();
+                    if (cardMaps != null && !cardMaps.isEmpty()) {
+                        CustomCardAdapter listAdapter = new CustomCardAdapter(requireActivity(), cardMaps, table);
+                        listView.setAdapter(listAdapter);
+                        progressBar.setVisibility(View.GONE);
+                    } else {
+                        textCard.setVisibility(View.VISIBLE);
+                        listView.setVisibility(View.GONE);
+                        textCard.setText(R.string.no_cards);
+                        progressBar.setVisibility(View.GONE);
+                    }
 
-                switch (pay_method) {
-                    case "fondy_payment":
-                        cardMaps = getCardMapsFromDatabase(MainActivity.TABLE_FONDY_CARDS);
-                        table = MainActivity.TABLE_FONDY_CARDS;
-                        break;
-                    case "mono_payment":
-                        cardMaps = getCardMapsFromDatabase(MainActivity.TABLE_MONO_CARDS);
-                        table = MainActivity.TABLE_MONO_CARDS;
-                        break;
                 }
 
-                if (cardMaps != null && !cardMaps.isEmpty()) {
-                    CustomCardAdapter listAdapter = new CustomCardAdapter(requireActivity(), cardMaps, table);
-                    listView.setAdapter(listAdapter);
+                @Override
+                public void onPaySystemFailure(String errorMessage) {
                     progressBar.setVisibility(View.GONE);
-                } else {
-                    textCard.setVisibility(View.VISIBLE);
-                    listView.setVisibility(View.GONE);
-                    textCard.setText(R.string.no_cards);
-                    progressBar.setVisibility(View.GONE);
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(errorMessage);
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
-            }
+            });
 
-            @Override
-            public void onPaySystemFailure(String errorMessage) {
-                progressBar.setVisibility(View.GONE);
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(errorMessage);
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-            }
-        });
-        progressBar.setVisibility(View.GONE);
+        } else {
+            textCard.setVisibility(View.GONE);
+            btnCardLink.setVisibility(View.GONE);
+            MyBottomSheetErrorCardFragment bottomSheetDialogFragment = new MyBottomSheetErrorCardFragment(getString(R.string.city_no_cards));
+            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+
+        }
+
     }
 
     @SuppressLint("Range")
@@ -306,6 +320,7 @@ public class CardFragment extends Fragment {
                     // Обработка ошибки
                     callback.onPaySystemFailure(getString(R.string.verify_internet));
                 }
+                progressBar.setVisibility(View.GONE);
             }
 
             @Override
@@ -315,6 +330,7 @@ public class CardFragment extends Fragment {
                     // Обработка ошибки
                     callback.onPaySystemFailure(getString(R.string.verify_internet));
                 }
+                progressBar.setVisibility(View.GONE);
             }
 
         });
