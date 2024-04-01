@@ -619,38 +619,48 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
             map.invalidate();
 
             List<String> settings = new ArrayList<>();
+            // Проверяем, не являются ли textViewTo и map пустыми
+            if (VisicomFragment.textViewTo != null && map != null && map.getContext() != null) {
+                // Продолжаем выполнение кода
+                if (VisicomFragment.textViewTo.getText().toString().equals(map.getContext().getString(R.string.on_city_tv))) {
+                    settings.add(String.valueOf(startLat));
+                    settings.add(String.valueOf(startLan));
+                    settings.add(String.valueOf(startLat));
+                    settings.add(String.valueOf(startLan));
+                    settings.add(FromAdressString);
+                    settings.add(map.getContext().getString(R.string.on_city_tv));
+                } else  {
+                    String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                    SQLiteDatabase database = map.getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    Cursor cursor = database.rawQuery(query, null);
 
-            if (VisicomFragment.textViewTo.getText().toString().equals(map.getContext().getString(R.string.on_city_tv))) {
-                settings.add(String.valueOf(startLat));
-                settings.add(String.valueOf(startLan));
-                settings.add(String.valueOf(startLat));
-                settings.add(String.valueOf(startLan));
-                settings.add(FromAdressString);
-                settings.add(map.getContext().getString(R.string.on_city_tv));
-            } else  {
-               String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-               SQLiteDatabase database = map.getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-               Cursor cursor = database.rawQuery(query, null);
+                    cursor.moveToFirst();
+                    // Получите значения полей из первой записи
 
-               cursor.moveToFirst();
-               // Получите значения полей из первой записи
-
-               @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-               @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-               cursor.close();
-               database.close();
+                    @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                    @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+                    cursor.close();
+                    database.close();
 
 
-               settings.add(String.valueOf(startLat));
-               settings.add(String.valueOf(startLan));
-               settings.add(String.valueOf(toLatitude));
-               settings.add(String.valueOf(toLongitude));
+                    settings.add(String.valueOf(startLat));
+                    settings.add(String.valueOf(startLan));
+                    settings.add(String.valueOf(toLatitude));
+                    settings.add(String.valueOf(toLongitude));
 
-               settings.add(FromAdressString);
-               settings.add(VisicomFragment.textViewTo.getText().toString());
-           }
-            updateRoutMarker(settings, map.getContext());
-            updateMyPosition(startLat, startLan, FromAdressString, map.getContext());
+                    settings.add(FromAdressString);
+                    settings.add(VisicomFragment.textViewTo.getText().toString());
+                }
+                updateRoutMarker(settings, map.getContext());
+                updateMyPosition(startLat, startLan, FromAdressString, map.getContext());
+            } else {
+                // Обработка ситуации, когда textViewTo или map не были инициализированы
+                // Можете добавить здесь логирование или другие действия по вашему усмотрению
+                String message = getString(R.string.error_message);
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+            }
+
        } else {
             Log.d(TAG, "onResume: " + ContextCompat.checkSelfPermission(OpenStreetMapVisicomActivity.this, Manifest.permission.ACCESS_FINE_LOCATION));
             if(ContextCompat.checkSelfPermission(OpenStreetMapVisicomActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {

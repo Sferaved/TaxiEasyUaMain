@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.734</string>
-    <string name="version">Версия: 1.734</string>
+    <string name="version_code">1.735</string>
+    <string name="version">Версия: 1.735</string>
 
     <string name="app_name">Такси Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -331,4 +331,11 @@
     <string name="phone_driver">Звонок водителю</string>
     <string name="auto_info">, авто</string>
     <string name="city_no_cards">Оплата банковскими картами недоступна в этом населенном пункте. Мы уведомим Вас когда оплата банковскими картами станет доступной.</string>
+    <string name="pos_k">ул. Крещатик, 16 город Киев\t</string>
+    <string name="pos_d">просп.Дмитрия Яворницкого (Карла Маркса), д.52, город Днепр\t</string>
+    <string name="pos_o">ул.Пантелеймоновская, дом. 64, город Одесса\t</string>
+    <string name="pos_z">просп. Соборный, дом. 139, город Запорожье\t</string>
+    <string name="pos_c">ул.Байды Вишневецкого, д.36, город Черкассы\t</string>
+    <string name="cancel_gps">Отменить</string>
+
 </resources>

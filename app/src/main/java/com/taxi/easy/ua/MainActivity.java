@@ -930,6 +930,32 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             }
         });
     }
+    private void checkForUpdateForPush(
+            SharedPreferences SharedPreferences,
+            long currentTime
+    ) {
+        // Обновляем время последней отправки уведомления
+        SharedPreferences.Editor editor = SharedPreferences.edit();
+        editor.putLong(LAST_NOTIFICATION_TIME_KEY, currentTime);
+        editor.apply();
+
+        AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(this);
+        Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
+        appUpdateInfoTask.addOnSuccessListener(new OnSuccessListener<AppUpdateInfo>() {
+            @Override
+            public void onSuccess(AppUpdateInfo appUpdateInfo) {
+                if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
+                    // Доступны обновления
+                    Log.d("UpdateApp", "Available updates found");
+                    String title = getString(R.string.new_version);
+                    String messageNotif = getString(R.string.news_of_version);
+
+                    String urlStr = "https://play.google.com/store/apps/details?id=com.taxi.easy.ua";
+                    NotificationHelper.showNotification(MainActivity.this, title, messageNotif, urlStr);
+                }
+            }
+        });
+    }
 
 
 
@@ -1389,6 +1415,10 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             new VerifyUserTask().execute();
             UserPermissions.getPermissions(userEmail, getApplicationContext());
             new UsersMessages(userEmail, getApplicationContext());
+
+            // Проверка новой версии в маркете
+            new Thread(this::versionFromMarket).start();
+
         }
 
 
@@ -1829,11 +1859,8 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                     database.update(TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
                 } else {
                     versionServer = message;
-                    try {
-                        version(message);
-                    } catch (MalformedURLException ignored) {
+                    //                        version(message);
 
-                    }
                     cv.put("verifyOrder", "1");
                     database.update(TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
 
@@ -1881,11 +1908,24 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         }
     }
 
-    private void cityMaxPay(String $city) {
+    private void versionFromMarket()  {
+        // Получаем SharedPreferences
+        SharedPreferences SharedPreferences = getSharedPreferences(PREFS_NAME_VERSION, Context.MODE_PRIVATE);
+        // Получаем время последней отправки уведомления
+        long lastNotificationTime = SharedPreferences.getLong(LAST_NOTIFICATION_TIME_KEY, 0);
+        // Получаем текущее время
+        long currentTime = System.currentTimeMillis();
+        // Проверяем, прошло ли уже 24 часа с момента последней отправки
+        if (currentTime - lastNotificationTime >= ONE_DAY_IN_MILLISECONDS) {
+            checkForUpdateForPush(SharedPreferences, currentTime);
+        }
+    }
+
+    private void cityMaxPay(String city) {
         CityService cityService = CityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
-        Call<CityResponse> call = cityService.getMaxPayValues($city);
+        Call<CityResponse> call = cityService.getMaxPayValues(city);
 
         call.enqueue(new Callback<CityResponse>() {
             @Override

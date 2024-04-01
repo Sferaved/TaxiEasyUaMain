@@ -86,9 +86,10 @@ public class FinishActivity extends AppCompatActivity {
     public static String uid_Double;
     public static Button btn_reset_status;
     public static Button btn_cancel_order;
-    private long delayMillis;
+    private long delayMillis, delayMillisStatus;
     public static Runnable myRunnable;
-    public static Handler handler;
+    public static Handler handler, handlerStatus;
+    Runnable myTaskStatus;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -149,6 +150,7 @@ public class FinishActivity extends AppCompatActivity {
                         btn_cancel_order.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
+                                handlerStatus.removeCallbacks(myTaskStatus);
                                 Intent intent = new Intent(Intent.ACTION_DIAL);
 
                                 List<String> stringList = logCursor(MainActivity.CITY_INFO);
@@ -160,6 +162,12 @@ public class FinishActivity extends AppCompatActivity {
                     }
              }, delayMillis);
          }
+
+        handlerStatus = new Handler();
+        delayMillisStatus = 1 * 60 * 1000;
+        myTaskStatus = () -> statusOrderWithDifferentValue(uid);
+        // Запланируйте выполнение задачи
+        handlerStatus.postDelayed(myTaskStatus, delayMillisStatus);
 
         if (pay_method.equals("fondy_payment") || pay_method.equals("mono_payment")) {
             /**
@@ -177,8 +185,8 @@ public class FinishActivity extends AppCompatActivity {
                     btn_cancel_order.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
+                            handlerStatus.removeCallbacks(myTaskStatus);
                             Intent intent = new Intent(Intent.ACTION_DIAL);
-
                             List<String> stringList = logCursor(MainActivity.CITY_INFO);
                             String phone = stringList.get(3);
                             intent.setData(Uri.parse(phone));
@@ -194,6 +202,7 @@ public class FinishActivity extends AppCompatActivity {
         btn_cancel_order.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                handlerStatus.removeCallbacks(myTaskStatus);
                 if(connected()){
                     cancelOrder(uid);
                     if(!uid_Double.equals(" ")) {
@@ -235,6 +244,7 @@ public class FinishActivity extends AppCompatActivity {
         btn_cancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                handlerStatus.removeCallbacks(myTaskStatus);
                 MainActivity.order_id = null;
                 finishAffinity();
             }
@@ -243,6 +253,7 @@ public class FinishActivity extends AppCompatActivity {
         fab_cal.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                handlerStatus.removeCallbacks(myTaskStatus);
                 Intent intent = new Intent(Intent.ACTION_DIAL);
 
                 List<String> stringList = logCursor(MainActivity.CITY_INFO);

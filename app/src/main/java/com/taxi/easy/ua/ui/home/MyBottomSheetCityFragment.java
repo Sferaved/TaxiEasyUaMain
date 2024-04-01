@@ -250,37 +250,37 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
         switch (city){
             case "Kyiv City":positionFirst = 0;
-                position = "вул. Хрещатик 16 місто Київ\t";
+                position = getString(R.string.pos_k);
                 startLat = 50.451107;
                 startLan = 30.524907;
                 break;
             case "Dnipropetrovsk Oblast":
                 // Днепр
-                position = "просп.Дмитра Яворницького (Карла Маркса), буд.52, місто Дніпро\t";
+                position = getString(R.string.pos_d);
                 startLat = 48.4647;
                 startLan = 35.0462;
                 break;
             case "Odessa":
                 phoneNumber = Odessa_phone;
-                position = "вул.Пантелеймонівська, буд. 64, місто Одеса\t";
+                position = getString(R.string.pos_o);
                 startLat = 46.4694;
                 startLan = 30.7404;
                 break;
             case "Zaporizhzhia":
                 phoneNumber = Zaporizhzhia_phone;
-                position = "просп. Соборний, буд. 139, місто Запоріжжя\t";
+                position = getString(R.string.pos_z);
                 startLat = 47.84015;
                 startLan = 35.13634;
                 break;
             case "Cherkasy Oblast":
                 phoneNumber = Cherkasy_Oblast_phone;
-                position = "вул.Байди Вишневецького, буд.36, місто Черкаси\t";
+                position = getString(R.string.pos_c);
                 startLat = 49.44469;
                 startLan = 32.05728;
                 break;
             case "OdessaTest":
                 phoneNumber = Kyiv_City_phone;
-                position = "вул.Пантелеймонівська, буд. 64, місто Одеса\t";
+                position = getString(R.string.pos_o);
                 startLat = 46.4694;
                 startLan = 30.7404;
                 break;

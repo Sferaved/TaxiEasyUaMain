@@ -46,7 +46,6 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.cities.Kyiv.KyivRegion;
 import com.taxi.easy.ua.cities.Kyiv.KyivRegionRu;
-import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
@@ -80,6 +79,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -96,7 +96,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
     private static final String TAG = "TAG_VIS_ADDR";
 
-    AppCompatButton  btn_change, btnOnMap;
+    AppCompatButton btn_change, btnOnMap;
 
     ProgressBar progressBar;
     EditText fromEditAddress, toEditAddress;
@@ -128,6 +128,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
     ArrayAdapter<String> addressAdapter;
     private static String apiKeyMapBox;
     private boolean extraExit;
+    private long timeout = 50;
 
     @SuppressLint("MissingInflatedId")
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -208,6 +209,11 @@ public class ActivityVisicomOnePage extends AppCompatActivity
         btn_no.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                progressBar.setVisibility(View.VISIBLE);
+                // Получаем доступ к InputMethodManager
+                InputMethodManager immHide = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                // Пытаемся скрыть клавиатуру
+                immHide.hideSoftInputFromWindow(v.getWindowToken(), 0);
                 if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
 
                     VisicomFragment.btn_clear_from.setVisibility(View.INVISIBLE);
@@ -248,7 +254,13 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
 
                 }
-               finish();
+                                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        finish();
+                    }
+                }, timeout);
+
             }
         });
 
@@ -308,33 +320,35 @@ public class ActivityVisicomOnePage extends AppCompatActivity
         btn_change.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-                boolean gps_enabled = false;
-                boolean network_enabled = false;
 
-                try {
-                    gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-                } catch(Exception ignored) {
-                }
+                LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+                if (locationManager != null) {
+                    if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                        Log.d(TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
+                        // GPS включен, выполните ваш код здесь
+                        if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+                            Toast.makeText(getApplicationContext(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
+                        } else {
 
-                try {
-                    network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-                } catch(Exception ignored) {
-                }
+                            if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                                    && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
+                                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                            } else {
+                                String searchText = getString(R.string.search_text) + "...";
 
-                if(!gps_enabled || !network_enabled) {
-                    MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-                }  else  {
-                    // Разрешения уже предоставлены, выполнить ваш код
-                    if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-                        Toast.makeText(getApplicationContext(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
-                    } else if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                            && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                        checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                        checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                    } else  {
-                            firstLocation();
+                                progressBar.setVisibility(View.VISIBLE);
+                                Toast.makeText(ActivityVisicomOnePage.this, searchText, Toast.LENGTH_SHORT).show();
+                                firstLocation();
+
+                            }
+                        }
+
+                    } else {
+                        // GPS выключен, выполните необходимые действия
+                        // Например, показать диалоговое окно с предупреждением о включении GPS
+                        MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
+                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                     }
                 }
             }
@@ -353,7 +367,45 @@ public class ActivityVisicomOnePage extends AppCompatActivity
             fromEditAddress.setVisibility(View.GONE);
             btn_clear_from.setVisibility(View.GONE);
             textGeoError.setVisibility(View.GONE);
-            btn_change.setVisibility(View.GONE);
+            btn_change.setText(getString(R.string.on_city_tv));
+            btn_change.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    toEditAddress.setText(getString(R.string.on_city_tv));
+                    toEditAddress.setSelection(getString(R.string.on_city_tv).length());
+                    String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                    SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    Cursor cursor = database.rawQuery(query, null);
+
+                    cursor.moveToFirst();
+
+                    // Получите значения полей из первой записи
+
+
+                    @SuppressLint("Range") double startLat = cursor.getDouble(cursor.getColumnIndex("startLat"));
+                    @SuppressLint("Range") double startLan = cursor.getDouble(cursor.getColumnIndex("startLan"));
+                    @SuppressLint("Range") String start = cursor.getString(cursor.getColumnIndex("start"));
+                    cursor.close();
+                    database.close();
+                    List<String> settings = new ArrayList<>();
+                    settings.add(String.valueOf(startLat));
+                    settings.add(String.valueOf(startLan));
+                    settings.add(String.valueOf(startLat));
+                    settings.add(String.valueOf(startLan));
+                    settings.add(start);
+                    settings.add(toEditAddress.getText().toString());
+
+                    updateRoutMarker(settings);
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            // Программно нажимаем кнопку
+                            btn_ok.performClick();
+                        }
+                    }, timeout);
+                }
+            });
+
             findViewById(R.id.textfrom).setVisibility(View.GONE);
             findViewById(R.id.num1).setVisibility(View.GONE);
         }
@@ -373,6 +425,12 @@ public class ActivityVisicomOnePage extends AppCompatActivity
         btn_ok.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                progressBar.setVisibility(View.VISIBLE);
+                VisicomFragment.text_view_cost.setText("");
+                // Получаем доступ к InputMethodManager
+                InputMethodManager immHide = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                // Пытаемся скрыть клавиатуру
+                immHide.hideSoftInputFromWindow(v.getWindowToken(), 0);
                 if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
 
                     VisicomFragment.btn_clear_from.setVisibility(View.INVISIBLE);
@@ -412,6 +470,9 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                     VisicomFragment.btn_clear_to.setVisibility(View.INVISIBLE);
                     finish();
 
+                }
+                if(fromEditAddress.getText().toString().equals(getString(R.string.startPoint))) {
+                    extraExit = true;
                 }
                 if(extraExit) {
                     new Handler().postDelayed(new Runnable() {
@@ -643,7 +704,64 @@ public class ActivityVisicomOnePage extends AppCompatActivity
         return url;
     }
     private void firstLocation() {
+        // Получить менеджер ввода
+        InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+
+        inputMethodManager.hideSoftInputFromWindow(Objects.requireNonNull(getCurrentFocus()).getWindowToken(), 0);
+
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getApplicationContext());
+        Log.d(TAG, "firstLocation: ");
+        btn_change.setText(R.string.cancel_gps);
+        btn_change.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                progressBar.setVisibility(View.INVISIBLE);
+//                btn_clear_from.performClick();
+                if (fusedLocationProviderClient != null && locationCallback != null) {
+                    fusedLocationProviderClient.removeLocationUpdates(locationCallback);
+                    Log.d(TAG, "Location updates cancelled");
+                    // Дополнительные действия, которые вы хотите выполнить при отмене геопоиска
+                    // Например, изменение текста на кнопке или другие обновления интерфейса
+                    btn_change.setText(R.string.change); // Предположим, что текст на кнопке изменяется на "Start GPS"
+                }
+                btn_change.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+
+                        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+                        if (locationManager != null) {
+                            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                                Log.d(TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
+                                // GPS включен, выполните ваш код здесь
+                                if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+                                    Toast.makeText(getApplicationContext(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
+                                } else {
+
+                                    if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                                            && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                        MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
+                                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                                    } else {
+                                        String searchText = getString(R.string.search_text) + "...";
+                                        Toast.makeText(ActivityVisicomOnePage.this, searchText, Toast.LENGTH_SHORT).show();
+                                        progressBar.setVisibility(View.VISIBLE);
+                                        firstLocation();
+
+                                    }
+                                }
+
+                            } else {
+                                // GPS выключен, выполните необходимые действия
+                                // Например, показать диалоговое окно с предупреждением о включении GPS
+                                MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
+                                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
         locationCallback = new LocationCallback() {
             @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
@@ -661,28 +779,29 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                     double latitude = firstLocation.getLatitude();
                     double longitude = firstLocation.getLongitude();
 
+                    List<String> stringList = logCursor(MainActivity.CITY_INFO);
+                    String api =  stringList.get(2);
+                    String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeo/" + latitude + "/" + longitude;
+                    Map sendUrlFrom = null;
+                    try {
+                        sendUrlFrom = FromJSONParser.sendURL(urlFrom);
+                        Log.d(TAG, "onLocationResult sendUrlFrom: " + sendUrlFrom);
 
-                        List<String> stringList = logCursor(MainActivity.CITY_INFO);
-                        String api =  stringList.get(2);
-                        String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeo/" + latitude + "/" + longitude;
-                        Map sendUrlFrom = null;
-                        try {
-                            sendUrlFrom = FromJSONParser.sendURL(urlFrom);
+                    } catch (MalformedURLException | InterruptedException |
+                             JSONException ignored) {
 
-                        } catch (MalformedURLException | InterruptedException |
-                                 JSONException e) {
-                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                    }
+                    assert sendUrlFrom != null;
+                    String FromAdressString = (String) sendUrlFrom.get("route_address_from");
+                    if (FromAdressString != null) {
+                        if (FromAdressString.contains("Точка на карте")) {
+                            FromAdressString = getString(R.string.startPoint);
                         }
-                        assert sendUrlFrom != null;
-                        String FromAdressString = (String) sendUrlFrom.get("route_address_from");
-                        if (FromAdressString != null) {
-                            if (FromAdressString.equals("Точка на карте")) {
-                                FromAdressString = getString(R.string.startPoint);
-                            }
-                        }
-                        updateMyPosition(latitude, longitude, FromAdressString, getApplicationContext());
-                        fromEditAddress.setText(FromAdressString);
+                    }
+                    updateMyPosition(latitude, longitude, FromAdressString, getApplicationContext());
+                    fromEditAddress.setText(FromAdressString);
+                    progressBar.setVisibility(View.INVISIBLE);
+
                     assert FromAdressString != null;
                     if (FromAdressString != null) {
                         fromEditAddress.setSelection(FromAdressString.length());
@@ -725,13 +844,17 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                             settings.add(ToAdressString);
                         }
                         updateRoutMarker(settings);
+                        new Handler().postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                // Программно нажимаем кнопку
+                                btn_ok.performClick();
+                            }
+                        }, timeout);
 
-                        btn_ok.setVisibility(View.VISIBLE);
                     }
-
-
-
             }
+
         };
         if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
@@ -849,6 +972,34 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                     textGeoError.setVisibility(View.GONE);
                 }
                 btn_clear_from.setVisibility(View.VISIBLE);
+//                if (fromEditAddress.getText().toString().contains("\t")) {
+//                    String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+//                    SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//                    Cursor cursor = database.rawQuery(query, null);
+//
+//                    cursor.moveToFirst();
+//
+//                    // Получите значения полей из первой записи
+//
+//
+//                    @SuppressLint("Range") double startLat = cursor.getDouble(cursor.getColumnIndex("startLat"));
+//                    @SuppressLint("Range") double startLan = cursor.getDouble(cursor.getColumnIndex("startLan"));
+//                    @SuppressLint("Range") double to_lat = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+//                    @SuppressLint("Range") double to_lng = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+//                    @SuppressLint("Range") String finishPoint = cursor.getString(cursor.getColumnIndex("finish"));
+//                    cursor.close();
+//                    database.close();
+//                    List<String> settings = new ArrayList<>();
+//                    settings.add(String.valueOf(startLat));
+//                    settings.add(String.valueOf(startLan));
+//                    settings.add(String.valueOf(to_lat));
+//                    settings.add(String.valueOf(to_lng));
+//                    settings.add(fromEditAddress.getText().toString());
+//                    settings.add(finishPoint);
+//
+//                    updateRoutMarker(settings);
+//                    btn_ok.performClick();
+//                }
             }
 
             @Override
@@ -890,7 +1041,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
                 btn_clear_to.setVisibility(View.VISIBLE);
                 text_toError.setVisibility(View.GONE);
-            }
+             }
 
             @Override
             public void afterTextChanged(Editable editable) {
@@ -1004,21 +1155,21 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                         processAddressData(responseData, point);
                     } catch (Exception e) {
                         e.printStackTrace();
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+//                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+//                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                     }
                 }
 
                 @Override
                 public void onFailure(@NonNull okhttp3.Call call, @NonNull IOException e) {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+//                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+//                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
             });
         } catch (Exception e) {
             e.printStackTrace();
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+//            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+//            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
         }
 
 
@@ -1574,162 +1725,184 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                 addresses.add(new String[]{newAddress, "", "", ""});
             }
 
-            if (addresses.size() != 0) {
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    List<String> addressesList = new ArrayList<>();
-                    List<String> nameList = new ArrayList<>();
-                    List<String> zoneList = new ArrayList<>();
-                    List<String> settlementList = new ArrayList<>();
 
-                    for (String[] addressArray : addresses) {
-                        // Выбираем значение 'address' из массива и добавляем его в addressesList
-                        addressesList.add(addressArray[0]);
-                        nameList.add(addressArray[1]);
-                        zoneList.add(addressArray[2]);
-                        settlementList.add(addressArray[3]);
-                    }
-
-                    addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
-
-
-                    addressListView.setVisibility(View.VISIBLE);
-
-                    addressListView.setAdapter(addressAdapter);
-                    addressListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-                    addressListView.setItemChecked(0, true);
-
-                    addressListView.setOnItemClickListener((parent, viewC, position, id) -> {
-                        Log.d(TAG, "processAddressData:position3333 " + position);
-                        positionChecked = position;
-                        startMarker = "ok";
-                        finishMarker = "no";
-                        if (point.equals("start")) {
-                            fromEditAddress.requestFocus();
-                            fromEditAddress.setSelection(fromEditAddress.getText().toString().length());
-                            KeyboardUtils.showKeyboard(getApplicationContext(), fromEditAddress);
-                            messageInfo = getString(R.string.drag_marker_bottom);
-
-
-                        } else if (point.equals("finish")) {
-                            toEditAddress.requestFocus();
-                            toEditAddress.setSelection(toEditAddress.getText().toString().length());
-                            KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
-                            messageInfo = getString(R.string.two_point_mes);
-                            startMarker = "no";
-                            finishMarker = "ok";
-                        }
-
-                        if (position == addressesList.size() - 1) {
-                            Intent intent = new Intent(getApplicationContext(), OpenStreetMapVisicomActivity.class);
-
-                            intent.putExtra("startMarker", startMarker);
-                            intent.putExtra("finishMarker", finishMarker);
-
-                            startActivity(intent);
-                            finish();
-                        } else {
-                            double[] coordinates = coordinatesList.get(position);
-
-                            if (point.equals("start")) {
-                                Log.d(TAG, "processAddressData:coordinates " + coordinates.toString());
-                                startPoint = addressesList.get(position);
-                                fromEditAddress.setText(startPoint);
-                                fromEditAddress.setSelection(startPoint.length());
-//
-                                    List<String> settings = new ArrayList<>();
-
-                                    settings.add(Double.toString(coordinates[1]));
-                                    settings.add(Double.toString(coordinates[0]));
-                                     Log.d(TAG, "processAddressData:settings ddd " + settings.toString());
-                                    if (toEditAddress.getText().toString().equals(getString(R.string.on_city_tv))) {
-                                        settings.add(Double.toString(coordinates[1]));
-                                        settings.add(Double.toString(coordinates[0]));
-                                        settings.add(addressesList.get(position));
-                                        settings.add(getString(R.string.on_city_tv));
-                                    } else {
-                                        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                                        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                                        Cursor cursor = database.rawQuery(query, null);
-
-                                        cursor.moveToFirst();
-
-                                        // Получите значения полей из первой записи
-
-
-                                        @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                                        @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                                        cursor.close();
-                                        database.close();
-
-                                        settings.add(String.valueOf(toLatitude));
-                                        settings.add(String.valueOf(toLongitude));
-                                        settings.add(addressesList.get(position));
-                                        settings.add(toEditAddress.getText().toString());
-                                    }
-                                        Log.d(TAG, "processAddressData:settings " + settings);
-                                    updateRoutMarker(settings);
-                                    updateMyPosition(coordinates[1], coordinates[0], startPoint, getApplicationContext());
-                                    VisicomFragment.geoText.setText(startPoint);
-                                    Log.d(TAG, "processAddressData: startPoint " + startPoint);
-
-                                }
-                             else if (point.equals("finish")) {
-                                finishPoint = addressesList.get(position);
-                                toEditAddress.setText(finishPoint);
-                                toEditAddress.setSelection(finishPoint.length());
-                                btn_clear_to.setVisibility(View.VISIBLE);
-
-                                    verifyRoutFinish = true;
-                                    List<String> settings = new ArrayList<>();
-
-                                            VisicomFragment.textViewTo.setText(addressesList.get(position));
-                                            VisicomFragment.btn_clear_to.setVisibility(View.VISIBLE);
-                                Log.d(TAG, "processAddressData: ");
-//                                            if (!toEditAddress.getText().toString().equals("")) {
-                                                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                                                SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                                                Cursor cursor = database.rawQuery(query, null);
-
-                                                cursor.moveToFirst();
-
-                                                // Получите значения полей из первой записи
-
-                                                double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                                                double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
-
-                                                cursor.close();
-                                                database.close();
-
-                                                settings.add(Double.toString(originLatitude));
-                                                settings.add(Double.toString(originLongitude));
-                                                settings.add(Double.toString(coordinates[1]));
-                                                settings.add(Double.toString(coordinates[0]));
-                                                Log.d(TAG, "processAddressData:fromEditAddress.getText().toString() " + fromEditAddress.getText().toString());
-
-                                                settings.add(VisicomFragment.geoText.getText().toString());
-                                                settings.add(addressesList.get(position));
-                                                updateRoutMarker(settings);
-//                                            }
-
-
-                                    Log.d(TAG, "settings: " + settings);
-                                    toEditAddress.setSelection(addressesList.get(position).length());
-
-
-                            }
-                        }
-
-                        addressListView.setVisibility(View.INVISIBLE);
-                    });
-                    btn_ok.setVisibility(View.VISIBLE);
-
-                });
-            }
 
 
 
         } catch (JSONException e) {
             e.printStackTrace();
+        }
+        Log.d(TAG, "processAddressData: 44444444");
+        if (addresses.size() != 0) {
+            new Handler(Looper.getMainLooper()).post(() -> {
+                List<String> addressesList = new ArrayList<>();
+                List<String> nameList = new ArrayList<>();
+                List<String> zoneList = new ArrayList<>();
+                List<String> settlementList = new ArrayList<>();
+
+                for (String[] addressArray : addresses) {
+                    // Выбираем значение 'address' из массива и добавляем его в addressesList
+                    addressesList.add(addressArray[0]);
+                    nameList.add(addressArray[1]);
+                    zoneList.add(addressArray[2]);
+                    settlementList.add(addressArray[3]);
+                }
+
+                addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
+
+
+                addressListView.setVisibility(View.VISIBLE);
+
+                addressListView.setAdapter(addressAdapter);
+                addressListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+                addressListView.setItemChecked(0, true);
+
+                addressListView.setOnItemClickListener((parent, viewC, position, id) -> {
+                    Log.d(TAG, "processAddressData:position3333 " + position);
+                    positionChecked = position;
+                    startMarker = "ok";
+                    finishMarker = "no";
+                    if (point.equals("start")) {
+                        fromEditAddress.requestFocus();
+                        fromEditAddress.setSelection(fromEditAddress.getText().toString().length());
+                        KeyboardUtils.showKeyboard(getApplicationContext(), fromEditAddress);
+                        messageInfo = getString(R.string.drag_marker_bottom);
+
+
+                    } else if (point.equals("finish")) {
+                        toEditAddress.requestFocus();
+                        toEditAddress.setSelection(toEditAddress.getText().toString().length());
+                        KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
+                        messageInfo = getString(R.string.two_point_mes);
+                        startMarker = "no";
+                        finishMarker = "ok";
+                    }
+
+                    if (position == addressesList.size() - 1) {
+                        Intent intent = new Intent(getApplicationContext(), OpenStreetMapVisicomActivity.class);
+
+                        intent.putExtra("startMarker", startMarker);
+                        intent.putExtra("finishMarker", finishMarker);
+
+                        startActivity(intent);
+                        finish();
+                    } else {
+                        double[] coordinates = coordinatesList.get(position);
+
+                        if (point.equals("start")) {
+                            Log.d(TAG, "processAddressData:coordinates " + coordinates.toString());
+                            startPoint = addressesList.get(position);
+                            fromEditAddress.setText(startPoint);
+                            fromEditAddress.setSelection(startPoint.length());
+//
+                            List<String> settings = new ArrayList<>();
+
+                            settings.add(Double.toString(coordinates[1]));
+                            settings.add(Double.toString(coordinates[0]));
+                            Log.d(TAG, "processAddressData:settings ddd " + settings.toString());
+                            if (toEditAddress.getText().toString().equals(getString(R.string.on_city_tv))) {
+                                settings.add(Double.toString(coordinates[1]));
+                                settings.add(Double.toString(coordinates[0]));
+                                settings.add(addressesList.get(position));
+                                settings.add(getString(R.string.on_city_tv));
+                            } else {
+                                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                                SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                                Cursor cursor = database.rawQuery(query, null);
+
+                                cursor.moveToFirst();
+
+                                // Получите значения полей из первой записи
+
+
+                                @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                                @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+                                cursor.close();
+                                database.close();
+
+                                settings.add(String.valueOf(toLatitude));
+                                settings.add(String.valueOf(toLongitude));
+                                settings.add(addressesList.get(position));
+                                settings.add(toEditAddress.getText().toString());
+                            }
+                            Log.d(TAG, "processAddressData:settings " + settings);
+                            updateRoutMarker(settings);
+                            updateMyPosition(coordinates[1], coordinates[0], startPoint, getApplicationContext());
+                            VisicomFragment.geoText.setText(startPoint);
+                            Log.d(TAG, "processAddressData: startPoint " + startPoint);
+                            if(startPoint.contains("\t")) {
+                                new Handler().postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        // Программно нажимаем кнопку
+                                        btn_ok.performClick();
+                                    }
+                                }, timeout);
+                            }
+
+                        }
+                        else if (point.equals("finish")) {
+                            finishPoint = addressesList.get(position);
+                            toEditAddress.setText(finishPoint);
+                            toEditAddress.setSelection(finishPoint.length());
+                            btn_clear_to.setVisibility(View.VISIBLE);
+
+                            verifyRoutFinish = true;
+                            List<String> settings = new ArrayList<>();
+
+                            VisicomFragment.textViewTo.setText(addressesList.get(position));
+                            VisicomFragment.btn_clear_to.setVisibility(View.VISIBLE);
+                            Log.d(TAG, "processAddressData: ");
+//                                            if (!toEditAddress.getText().toString().equals("")) {
+                            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                            SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                            Cursor cursor = database.rawQuery(query, null);
+
+                            cursor.moveToFirst();
+
+                            // Получите значения полей из первой записи
+
+                            double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
+                            double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
+
+                            cursor.close();
+                            database.close();
+
+                            settings.add(Double.toString(originLatitude));
+                            settings.add(Double.toString(originLongitude));
+                            settings.add(Double.toString(coordinates[1]));
+                            settings.add(Double.toString(coordinates[0]));
+                            Log.d(TAG, "processAddressData:fromEditAddress.getText().toString() " + fromEditAddress.getText().toString());
+
+                            settings.add(VisicomFragment.geoText.getText().toString());
+                            settings.add(addressesList.get(position));
+                            updateRoutMarker(settings);
+//                                            }
+
+
+                            Log.d(TAG, "settings: " + settings);
+                            toEditAddress.setSelection(addressesList.get(position).length());
+                            if(addressesList.get(position).contains("\t")) {
+                                new Handler().postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        // Программно нажимаем кнопку
+                                        btn_ok.performClick();
+                                    }
+                                }, timeout);
+                            }
+
+                        }
+                    }
+
+                    addressListView.setVisibility(View.INVISIBLE);
+                    Log.d(TAG, "processAddressData:222222 " + addressesList.get(position));
+
+
+                });
+//                    btn_ok.setVisibility(View.VISIBLE);
+
+            });
         }
     }
 
@@ -1872,7 +2045,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
             }
         }
 
-        btn_ok.setVisibility(View.VISIBLE);
+        //                    btn_ok.setVisibility(View.VISIBLE);
         db.close();
         assert c != null;
         c.close();
@@ -1965,6 +2138,15 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                         updateMyPosition(coordinates[1], coordinates[0], startPoint, getApplicationContext());
                         VisicomFragment.geoText.setText(startPoint);
                         Log.d(TAG, "processAddressData: startPoint " + startPoint);
+                        if(startPoint.contains("\t")) {
+                              new Handler().postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    // Программно нажимаем кнопку
+                                    btn_ok.performClick();
+                                }
+                            }, timeout);
+                        }
                     }
                 } else if (point.equals("finish")) {
                     finishPoint = addressesList.get(position);
@@ -2007,7 +2189,15 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
                         Log.d(TAG, "settings: " + settings);
                         toEditAddress.setSelection(addressesList.get(position).length());
-
+                        if(toEditAddress.getText().toString().contains("\t")) {
+                            new Handler().postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    // Программно нажимаем кнопку
+                                    btn_ok.performClick();
+                                }
+                            }, timeout);
+                        }
                     }
                 }
             }
@@ -2190,8 +2380,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                 } else {
                     // Обработка ошибки
                     Log.d(TAG, "Error: " + response.code() + " " + response.message());
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+//                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+//                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
             }
 
@@ -2199,8 +2389,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity
             public void onFailure(@NonNull Call<MapboxResponse> call, @NonNull Throwable t) {
                 // Обработка ошибки при выполнении запроса
                 t.printStackTrace();
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+//                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+//                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
             }
         });
 
@@ -2346,7 +2536,15 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                                 updateMyPosition(coordinates[1], coordinates[0], startPoint, getApplicationContext());
                                 VisicomFragment.geoText.setText(startPoint);
                                 Log.d(TAG, "processAddressData: startPoint " + startPoint);
-
+                                if(startPoint.contains("\t")) {
+                                    new Handler().postDelayed(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            // Программно нажимаем кнопку
+                                            btn_ok.performClick();
+                                        }
+                                    }, timeout);
+                                }
                             }
                         } else if (point.equals("finish")) {
                             finishPoint = addressesList.get(position);
@@ -2387,14 +2585,22 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
                             Log.d(TAG, "settings: " + settings);
                             toEditAddress.setSelection(addressesList.get(position).length());
-
+                            if(addressesList.get(position).contains("\t")) {
+                                new Handler().postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        // Программно нажимаем кнопку
+                                        btn_ok.performClick();
+                                    }
+                                }, timeout);
+                            }
 
                         }
                     }
 
                     addressListView.setVisibility(View.INVISIBLE);
                 });
-                btn_ok.setVisibility(View.VISIBLE);
+                //                    btn_ok.setVisibility(View.VISIBLE);
 
             });
         }
