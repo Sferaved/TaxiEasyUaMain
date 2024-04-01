@@ -1384,23 +1384,23 @@ public class VisicomFragment extends Fragment{
 
                 }
             }
-            @Override
-            public void onLocationAvailability(@NonNull LocationAvailability locationAvailability) {
-                if (!locationAvailability.isLocationAvailable()) {
-                    // GPS недоступен
-                    // Добавьте здесь обработку этой ситуации
-                    String message = getString(R.string.error_message);
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-
-                    // Проверяем, что активность не в состоянии сохранения
-                    if (!requireActivity().isFinishing() && !requireActivity().isDestroyed()) {
-                        // Проверяем, что фрагмент готов к выполнению транзакции
-                        if (!getChildFragmentManager().isStateSaved()) {
-                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                        }
-                    }
-                }
-            }
+//            @Override
+//            public void onLocationAvailability(@NonNull LocationAvailability locationAvailability) {
+//                if (!locationAvailability.isLocationAvailable()) {
+//                    // GPS недоступен
+//                    // Добавьте здесь обработку этой ситуации
+//                    String message = getString(R.string.error_message);
+//                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+//
+//                    // Проверяем, что активность не в состоянии сохранения
+//                    if (!requireActivity().isFinishing() && !requireActivity().isDestroyed()) {
+//                        // Проверяем, что фрагмент готов к выполнению транзакции
+//                        if (!getChildFragmentManager().isStateSaved()) {
+//                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+//                        }
+//                    }
+//                }
+//            }
         };
         if (ContextCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
