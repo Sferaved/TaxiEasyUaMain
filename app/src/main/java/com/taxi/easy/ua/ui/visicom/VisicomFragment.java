@@ -43,7 +43,6 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationAvailability;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
@@ -417,6 +416,10 @@ public class VisicomFragment extends Fragment{
 
         urlOrder = getTaxiUrlSearchMarkers( "orderSearchMarkersVisicom", requireActivity());
         Log.d(TAG, "order:  urlOrder "  + urlOrder);
+
+
+    }
+    public void orderFinished() throws MalformedURLException {
         if(!phoneFull()) {
             if (!verifyPhone(requireContext())) {
                 getPhoneNumber();
@@ -429,66 +432,70 @@ public class VisicomFragment extends Fragment{
         } else {
             MainActivity.verifyPhone = true;
         }
+        if (verifyPhone(requireContext())) {
+            Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
+            Log.d("TAG", "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
 
-    }
-    public void orderFinished() throws MalformedURLException {
-        Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
-        Log.d("TAG", "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
-
-        String orderWeb = sendUrlMap.get("order_cost");
-        String message = requireActivity().getString(R.string.error_message);
-        if (!orderWeb.equals("0")) {
-            String to_name;
-            if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
-                to_name = getString(R.string.on_city_tv);
-                if (!sendUrlMap.get("lat").equals("0")) {
-                    insertRecordsOrders(
-                            sendUrlMap.get("routefrom"), sendUrlMap.get("routefrom"),
-                            sendUrlMap.get("routefromnumber"), sendUrlMap.get("routefromnumber"),
-                            sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                            sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                            requireActivity()
-                    );
-                }
-            } else {
-
-                if(sendUrlMap.get("routeto").equals("Точка на карте")) {
-                    to_name = requireActivity().getString(R.string.end_point_marker);
+            String orderWeb = sendUrlMap.get("order_cost");
+            String message = requireActivity().getString(R.string.error_message);
+            if (!orderWeb.equals("0")) {
+                String to_name;
+                if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
+                    to_name = getString(R.string.on_city_tv);
+                    if (!sendUrlMap.get("lat").equals("0")) {
+                        insertRecordsOrders(
+                                sendUrlMap.get("routefrom"), sendUrlMap.get("routefrom"),
+                                sendUrlMap.get("routefromnumber"), sendUrlMap.get("routefromnumber"),
+                                sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                requireActivity()
+                        );
+                    }
                 } else {
-                    to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
-                }
 
-                if (!sendUrlMap.get("lat").equals("0")) {
-                    insertRecordsOrders(
-                            sendUrlMap.get("routefrom"), to_name,
-                            sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
-                            sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                            sendUrlMap.get("lat"), sendUrlMap.get("lng"),
-                            requireActivity()
-                    );
-                }
-            }
-            String messageResult = getString(R.string.thanks_message) +
-                    sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
-                    to_name + "." +
-                    getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH);
-            String messageFondy = getString(R.string.fondy_message) + " " +
-                    sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
-                    to_name + ".";
+                    if(sendUrlMap.get("routeto").equals("Точка на карте")) {
+                        to_name = requireActivity().getString(R.string.end_point_marker);
+                    } else {
+                        to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
+                    }
 
-            Intent intent = new Intent(requireActivity(), FinishActivity.class);
-            intent.putExtra("messageResult_key", messageResult);
-            intent.putExtra("messageFondy_key", messageFondy);
-            intent.putExtra("messageCost_key", orderWeb);
-            intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
-            intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
-            startActivity(intent);
-        } else {
+                    if (!sendUrlMap.get("lat").equals("0")) {
+                        insertRecordsOrders(
+                                sendUrlMap.get("routefrom"), to_name,
+                                sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
+                                sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                sendUrlMap.get("lat"), sendUrlMap.get("lng"),
+                                requireActivity()
+                        );
+                    }
+                }
+                String messageResult = getString(R.string.thanks_message) +
+                        sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
+                        to_name + "." +
+                        getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH);
+                String messageFondy = getString(R.string.fondy_message) + " " +
+                        sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
+                        to_name + ".";
+
+                Intent intent = new Intent(requireActivity(), FinishActivity.class);
+                intent.putExtra("messageResult_key", messageResult);
+                intent.putExtra("messageFondy_key", messageFondy);
+                intent.putExtra("messageCost_key", orderWeb);
+                intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
+                intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+                startActivity(intent);
+            } else {
 
 //            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
 //            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-            progressBar.setVisibility(View.INVISIBLE);
+                progressBar.setVisibility(View.INVISIBLE);
+            }
+        } else {
+            String message = getString(R.string.phone_input_error);
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
         }
+
     }
 
     private boolean verifyOrder(Context context) {
@@ -666,9 +673,8 @@ public class VisicomFragment extends Fragment{
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         orderRout();
                     }
-                    if (verifyPhone(requireContext())) {
-                        orderFinished();
-                    }
+                    orderFinished();
+
                 } catch (MalformedURLException e) {
                     throw new RuntimeException(e);
                 }
@@ -843,7 +849,16 @@ public class VisicomFragment extends Fragment{
 
             List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
             addCost = Long.parseLong(stringListInfo.get(5));
-            cost = Long.parseLong(text_view_cost.getText().toString());
+            String costText = text_view_cost.getText().toString();
+            if (!costText.isEmpty()) {
+                try {
+                    long cost = Long.parseLong(costText);
+                    // Proceed with using the 'cost' variable
+                } catch (NumberFormatException e) {
+                    // Handle the case where the input string is not a valid long value
+                    e.printStackTrace(); // Or log the error, display an error message, etc.
+                }
+            }
             cost -= 5;
             addCost -= 5;
             if (cost >= MIN_COST_VALUE) {
@@ -903,13 +918,14 @@ public class VisicomFragment extends Fragment{
                             } else {
                                 orderRout();
 
+
                                 try {
-                                    if (verifyPhone(requireContext())) {
-                                        orderFinished();
-                                    }
+                                    orderFinished();
                                 } catch (MalformedURLException e) {
                                     throw new RuntimeException(e);
                                 }
+
+
                             }
                             break;
                         case "card_payment":
@@ -921,9 +937,9 @@ public class VisicomFragment extends Fragment{
                                 orderRout();
 
                                 try {
-                                    if (verifyPhone(requireContext())) {
+
                                         orderFinished();
-                                    }
+
                                 } catch (MalformedURLException e) {
                                     throw new RuntimeException(e);
                                 }
@@ -931,15 +947,12 @@ public class VisicomFragment extends Fragment{
                             break;
                         default:
                             orderRout();
-                            if (verifyPhone(requireContext())) {
+
                                 try {
-                                    if (verifyPhone(requireContext())) {
-                                        orderFinished();
-                                    }
+                                    orderFinished();
                                 } catch (MalformedURLException e) {
                                     throw new RuntimeException(e);
                                 }
-                            }
                             break;
 
                     }

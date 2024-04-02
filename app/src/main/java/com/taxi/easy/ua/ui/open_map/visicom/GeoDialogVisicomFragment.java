@@ -329,9 +329,7 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                                 orderRout();
 
                                 try {
-                                    if (verifyPhone(requireContext())) {
-                                        orderFinished();
-                                    }
+                                    orderFinished();
                                 } catch (MalformedURLException e) {
                                     throw new RuntimeException(e);
                                 }
@@ -346,9 +344,8 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                                 orderRout();
 
                                 try {
-                                    if (verifyPhone(requireContext())) {
-                                        orderFinished();
-                                    }
+                                    orderFinished();
+
                                 } catch (MalformedURLException e) {
                                     throw new RuntimeException(e);
                                 }
@@ -356,14 +353,10 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                             break;
                         default:
                             orderRout();
-                            if (verifyPhone(requireContext())) {
-                                try {
-                                    if (verifyPhone(requireContext())) {
-                                        orderFinished();
-                                    }
-                                } catch (MalformedURLException e) {
-                                    throw new RuntimeException(e);
-                                }
+                            try {
+                                orderFinished();
+                            } catch (MalformedURLException e) {
+                                throw new RuntimeException(e);
                             }
                             break;
 
@@ -1096,6 +1089,9 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
 
         urlOrder = getTaxiUrlSearchMarkers( "orderSearchMarkersVisicom", requireActivity());
         Log.d(TAG, "order: urlOrder "  + urlOrder);
+
+    }
+    public void orderFinished() throws MalformedURLException {
         if (!verifyPhone(requireContext())) {
             getPhoneNumber();
         }
@@ -1104,65 +1100,70 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             progressBar.setVisibility(View.INVISIBLE);
         }
-    }
-    public void orderFinished() throws MalformedURLException {
-        Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
-        Log.d("TAG", "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
+        if (verifyPhone(requireContext())) {
+            Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
+            Log.d("TAG", "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
 
-        String orderWeb = sendUrlMap.get("order_cost");
-        String message = requireActivity().getString(R.string.error_message);
-        if (!orderWeb.equals("0")) {
-            String to_name;
-            if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
-                to_name = getString(R.string.on_city_tv);
-                if (!sendUrlMap.get("lat").equals("0")) {
-                    insertRecordsOrders(
-                            sendUrlMap.get("routefrom"), sendUrlMap.get("routefrom"),
-                            sendUrlMap.get("routefromnumber"), sendUrlMap.get("routefromnumber"),
-                            sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                            sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                            requireActivity()
-                    );
+            String orderWeb = sendUrlMap.get("order_cost");
+            String message = requireActivity().getString(R.string.error_message);
+            if (!orderWeb.equals("0")) {
+                String to_name;
+                if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
+                    to_name = getString(R.string.on_city_tv);
+                    if (!sendUrlMap.get("lat").equals("0")) {
+                        insertRecordsOrders(
+                                sendUrlMap.get("routefrom"), sendUrlMap.get("routefrom"),
+                                sendUrlMap.get("routefromnumber"), sendUrlMap.get("routefromnumber"),
+                                sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                requireActivity()
+                        );
+                    }
+                } else {
+
+                    if(sendUrlMap.get("routeto").equals("Точка на карте")) {
+                        to_name = requireActivity().getString(R.string.end_point_marker);
+                    } else {
+                        to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
+                    }
+
+                    if (!sendUrlMap.get("lat").equals("0")) {
+                        insertRecordsOrders(
+                                sendUrlMap.get("routefrom"), to_name,
+                                sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
+                                sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                sendUrlMap.get("lat"), sendUrlMap.get("lng"),
+                                requireActivity()
+                        );
+                    }
                 }
+                String messageResult = getString(R.string.thanks_message) +
+                        sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
+                        to_name + "." +
+                        getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH);
+                String messageFondy = getString(R.string.fondy_message) + " " +
+                        sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
+                        to_name + ".";
+
+                Intent intent = new Intent(requireActivity(), FinishActivity.class);
+                intent.putExtra("messageResult_key", messageResult);
+                intent.putExtra("messageFondy_key", messageFondy);
+                intent.putExtra("messageCost_key", orderWeb);
+                intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
+                intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+                startActivity(intent);
             } else {
 
-                if(sendUrlMap.get("routeto").equals("Точка на карте")) {
-                    to_name = requireActivity().getString(R.string.end_point_marker);
-                } else {
-                    to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
-                }
-
-                if (!sendUrlMap.get("lat").equals("0")) {
-                    insertRecordsOrders(
-                            sendUrlMap.get("routefrom"), to_name,
-                            sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
-                            sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                            sendUrlMap.get("lat"), sendUrlMap.get("lng"),
-                            requireActivity()
-                    );
-                }
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
+                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                progressBar.setVisibility(View.INVISIBLE);
             }
-            String messageResult = getString(R.string.thanks_message) +
-                    sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
-                    to_name + "." +
-                    getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH);
-            String messageFondy = getString(R.string.fondy_message) + " " +
-                    sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
-                    to_name + ".";
-
-            Intent intent = new Intent(requireActivity(), FinishActivity.class);
-            intent.putExtra("messageResult_key", messageResult);
-            intent.putExtra("messageFondy_key", messageFondy);
-            intent.putExtra("messageCost_key", orderWeb);
-            intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
-            intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
-            startActivity(intent);
         } else {
-
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
+            String message = getString(R.string.phone_input_error);
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-            progressBar.setVisibility(View.INVISIBLE);
         }
+
     }
 
     private void updateRoutGeo(List<String> settings) {
@@ -1369,9 +1370,8 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     orderRout();
                     }
-                    if (verifyPhone(requireContext())) {
-                        orderFinished();
-                    }
+                    orderFinished();
+
                 } catch (MalformedURLException e) {
                     throw new RuntimeException(e);
                 }

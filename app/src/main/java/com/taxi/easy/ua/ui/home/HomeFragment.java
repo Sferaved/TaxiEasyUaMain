@@ -326,9 +326,8 @@ public class HomeFragment extends Fragment {
                                     } catch (UnsupportedEncodingException e) {
                                         throw new RuntimeException(e);
                                     }
-                                    if (verifyPhone(requireContext())) {
-                                        orderFinished();
-                                    }
+                                    orderFinished();
+
                                 }
                                 break;
                             case "card_payment":
@@ -342,9 +341,7 @@ public class HomeFragment extends Fragment {
                                     } catch (UnsupportedEncodingException e) {
                                         throw new RuntimeException(e);
                                     }
-                                    if (verifyPhone(requireContext())) {
-                                            orderFinished();
-                                    }
+                                    orderFinished();
                                 }
                                 break;
                             default:
@@ -353,9 +350,9 @@ public class HomeFragment extends Fragment {
                                 } catch (UnsupportedEncodingException e) {
                                     throw new RuntimeException(e);
                                 }
-                                if (verifyPhone(requireContext())) {
-                                    orderFinished();
-                                }
+
+                                orderFinished();
+
                                 break;
                         }
 
@@ -532,69 +529,83 @@ public class HomeFragment extends Fragment {
     }
 
     private void orderFinished() {
-        try {
+        if (!verifyPhone(requireContext())) {
+            getPhoneNumber();
+        }
+        if (!verifyPhone(requireActivity())) {
+            bottomSheetDialogFragment = new MyPhoneDialogFragment("home", text_view_cost.getText().toString(), true);
+            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+            progressBar.setVisibility(View.INVISIBLE);
+        }
+        if (verifyPhone(requireContext())) {
 
-            Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
+            try {
 
-            String orderWeb = sendUrlMap.get("order_cost");
-            String message = requireActivity().getString(R.string.error_message);
+                Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
 
-            if (!orderWeb.equals("0")) {
+                String orderWeb = sendUrlMap.get("order_cost");
+                String message = requireActivity().getString(R.string.error_message);
 
-                String from_name = sendUrlMap.get("routefrom");
-                String to_name = sendUrlMap.get("routeto");
-                if (from_name.equals(to_name)) {
-                    messageResult = getString(R.string.thanks_message) +
-                            from_name + " " + from_number.getText() + getString(R.string.on_city) +
-                            getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
-                } else {
-                    messageResult =  getString(R.string.thanks_message) +
-                            from_name + " " + from_number.getText() + " " + getString(R.string.to_message) +
-                            to_name + " " + to_number.getText() + "." +
-                            getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
-                }
-                Log.d(TAG, "order: sendUrlMap.get(\"from_lat\")" + sendUrlMap.get("from_lat"));
-                Log.d(TAG, "order: sendUrlMap.get(\"lat\")" + sendUrlMap.get("lat"));
-                if(!sendUrlMap.get("from_lat").equals("0") && !sendUrlMap.get("lat").equals("0")) {
-                    if(from_name.equals(to_name)) {
-                        insertRecordsOrders(
-                                from_name, from_name,
-                                from_number.getText().toString(), from_number.getText().toString(),
-                                sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                requireContext()
-                        );
+                if (!orderWeb.equals("0")) {
+
+                    String from_name = sendUrlMap.get("routefrom");
+                    String to_name = sendUrlMap.get("routeto");
+                    if (from_name.equals(to_name)) {
+                        messageResult = getString(R.string.thanks_message) +
+                                from_name + " " + from_number.getText() + getString(R.string.on_city) +
+                                getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
                     } else {
-                        insertRecordsOrders(
-                                from_name, to_name,
-                                from_number.getText().toString(), to_number.getText().toString(),
-                                sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                sendUrlMap.get("lat"), sendUrlMap.get("lng"),
-                                requireContext()
-                        );
+                        messageResult = getString(R.string.thanks_message) +
+                                from_name + " " + from_number.getText() + " " + getString(R.string.to_message) +
+                                to_name + " " + to_number.getText() + "." +
+                                getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
                     }
-                }
-                insertRouteCostToDatabase();
-                Intent intent = new Intent(requireActivity(), FinishActivity.class);
-                intent.putExtra("messageResult_key", messageResult);
-                intent.putExtra("messageCost_key", orderWeb);
-                intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
-                intent.putExtra("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
-                startActivity(intent);
-                progressBar.setVisibility(View.INVISIBLE);
+                    Log.d(TAG, "order: sendUrlMap.get(\"from_lat\")" + sendUrlMap.get("from_lat"));
+                    Log.d(TAG, "order: sendUrlMap.get(\"lat\")" + sendUrlMap.get("lat"));
+                    if (!sendUrlMap.get("from_lat").equals("0") && !sendUrlMap.get("lat").equals("0")) {
+                        if (from_name.equals(to_name)) {
+                            insertRecordsOrders(
+                                    from_name, from_name,
+                                    from_number.getText().toString(), from_number.getText().toString(),
+                                    sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                    sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                    requireContext()
+                            );
+                        } else {
+                            insertRecordsOrders(
+                                    from_name, to_name,
+                                    from_number.getText().toString(), to_number.getText().toString(),
+                                    sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                    sendUrlMap.get("lat"), sendUrlMap.get("lng"),
+                                    requireContext()
+                            );
+                        }
+                    }
+                    insertRouteCostToDatabase();
+                    Intent intent = new Intent(requireActivity(), FinishActivity.class);
+                    intent.putExtra("messageResult_key", messageResult);
+                    intent.putExtra("messageCost_key", orderWeb);
+                    intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
+                    intent.putExtra("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
+                    startActivity(intent);
+                    progressBar.setVisibility(View.INVISIBLE);
 
-            } else {
-                message = getString(R.string.error_message);
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                } else {
+                    message = getString(R.string.error_message);
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                }
+
+
+            } catch (MalformedURLException e) {
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             }
-
-
-        } catch (MalformedURLException e) {
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+        }  else {
+            String message = getString(R.string.phone_input_error);
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
         }
-
     }
     @SuppressLint("ResourceAsColor")
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -686,14 +697,7 @@ public class HomeFragment extends Fragment {
         }
 
         urlOrder = getTaxiUrlSearch( "orderSearch", requireActivity());
-        if (!verifyPhone(requireContext())) {
-            getPhoneNumber();
-        }
-        if (!verifyPhone(requireActivity())) {
-            bottomSheetDialogFragment = new MyPhoneDialogFragment("home", text_view_cost.getText().toString(), true);
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-            progressBar.setVisibility(View.INVISIBLE);
-        }
+
     }
     private void updateAddCost(String addCost) {
         ContentValues cv = new ContentValues();
@@ -1641,9 +1645,8 @@ public class HomeFragment extends Fragment {
                     throw new RuntimeException(e);
                 }
 
-                if (verifyPhone(requireContext())) {
-                    orderFinished();
-                }
+                orderFinished();
+
                 progressBar.setVisibility(View.GONE);
                 alertDialog.dismiss();
             }
