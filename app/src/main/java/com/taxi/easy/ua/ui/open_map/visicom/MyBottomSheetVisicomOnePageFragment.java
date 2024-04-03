@@ -331,6 +331,8 @@ public class MyBottomSheetVisicomOnePageFragment extends BottomSheetDialogFragme
                 }
 
                 if(!gps_enabled || !network_enabled) {
+//                    checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+//                    checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
                     MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 }  else  {
@@ -494,8 +496,10 @@ public class MyBottomSheetVisicomOnePageFragment extends BottomSheetDialogFragme
                 Manifest.permission.ACCESS_FINE_LOCATION)) {
             // Показываем объяснение пользователю, почему мы запрашиваем разрешение
             // Можно использовать диалоговое окно или другой пользовательский интерфейс
-            MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+//            MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
+//            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
         } else {
             ActivityCompat.requestPermissions(requireActivity(),
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},

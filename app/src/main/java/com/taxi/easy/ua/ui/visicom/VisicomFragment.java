@@ -812,9 +812,12 @@ public class VisicomFragment extends Fragment{
         buttonBonus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                updateAddCost("0");
-                MyBottomSheetBonusFragment bottomSheetDialogFragment = new MyBottomSheetBonusFragment(Long.parseLong(text_view_cost.getText().toString()), geo_marker, api, text_view_cost);
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                String costText = text_view_cost.getText().toString().trim();
+                if (!costText.isEmpty() && costText.matches("\\d+")) {
+                    updateAddCost("0");
+                    MyBottomSheetBonusFragment bottomSheetDialogFragment = new MyBottomSheetBonusFragment(Long.parseLong(costText), geo_marker, api, text_view_cost);
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                }
             }
         });
 
@@ -869,8 +872,20 @@ public class VisicomFragment extends Fragment{
 
         btn_plus.setOnClickListener(v -> {
             List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
-            addCost = Long.parseLong(stringListInfo.get(5));
-            cost = Long.parseLong(text_view_cost.getText().toString());
+
+
+            String costString = text_view_cost.getText().toString();
+            if (!costString.isEmpty()) {
+                cost = Long.parseLong(costString);
+            }
+
+            String addCostString = stringListInfo.get(5);
+            if (!addCostString.isEmpty()) {
+                addCost = Long.parseLong(addCostString);
+            }
+
+
+
             cost += 5;
             addCost += 5;
             updateAddCost(String.valueOf(addCost));
@@ -995,10 +1010,10 @@ public class VisicomFragment extends Fragment{
                         Toast.makeText(requireActivity(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
                     } else if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                             && ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//                        checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//                        checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                        MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                        checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+//                        MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
+//                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                     } else if (isAdded() && isVisible())  {
                             List<String> settings = new ArrayList<>();
 
@@ -1033,10 +1048,14 @@ public class VisicomFragment extends Fragment{
                 } else {
                     // GPS выключен, выполните необходимые действия
                     // Например, показать диалоговое окно с предупреждением о включении GPS
+//                    checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+//                    checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
                     MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
             } else {
+//                checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+//                checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
                 MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             }
@@ -1171,10 +1190,10 @@ public class VisicomFragment extends Fragment{
                                     Toast.makeText(requireActivity(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
                                 } else if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                                         && ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//                        checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//                        checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                                    MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
-                                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                                        checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                                        checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+//                                    MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
+//                                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                                 } else if (isAdded() && isVisible())  {
                                     List<String> settings = new ArrayList<>();
 
@@ -1209,10 +1228,14 @@ public class VisicomFragment extends Fragment{
                             } else {
                                 // GPS выключен, выполните необходимые действия
                                 // Например, показать диалоговое окно с предупреждением о включении GPS
+//                                checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+//                                checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
                                 MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
                                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                             }
                         } else {
+//                            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+//                            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
                             MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
                             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                         }
@@ -1341,10 +1364,10 @@ public class VisicomFragment extends Fragment{
                                         Toast.makeText(requireActivity(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
                                     } else if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                                             && ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//                        checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//                        checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                                        MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
-                                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                                        checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                                        checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+//                                        MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
+//                                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                                     } else if (isAdded() && isVisible())  {
                                         List<String> settings = new ArrayList<>();
 
@@ -1379,10 +1402,14 @@ public class VisicomFragment extends Fragment{
                                 } else {
                                     // GPS выключен, выполните необходимые действия
                                     // Например, показать диалоговое окно с предупреждением о включении GPS
+//                                    checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+//                                    checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
                                     MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
                                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                                 }
                             } else {
+//                                checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+//                                checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
                                 MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
                                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                             }
@@ -1445,8 +1472,10 @@ public class VisicomFragment extends Fragment{
                 Manifest.permission.ACCESS_FINE_LOCATION)) {
             // Показываем объяснение пользователю, почему мы запрашиваем разрешение
             // Можно использовать диалоговое окно или другой пользовательский интерфейс
-            MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+//            MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
+//            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
         } else {
             ActivityCompat.requestPermissions(requireActivity(),
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
@@ -1582,15 +1611,15 @@ public class VisicomFragment extends Fragment{
                 btn_clear_from_text.setVisibility(View.GONE);
 
             }
-            if(!phoneFull()) {
-                if (!verifyPhone(requireActivity())) {
-                    bottomSheetDialogFragment = new MyPhoneDialogFragment("visicom", text_view_cost.getText().toString(), false);
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                    progressBar.setVisibility(View.INVISIBLE);
-                }
-            } else {
-                MainActivity.verifyPhone = true;
-            }
+//            if(!phoneFull()) {
+//                if (!verifyPhone(requireActivity())) {
+//                    bottomSheetDialogFragment = new MyPhoneDialogFragment("visicom", text_view_cost.getText().toString(), false);
+//                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+//                    progressBar.setVisibility(View.INVISIBLE);
+//                }
+//            } else {
+//                MainActivity.verifyPhone = true;
+//            }
         }
    }
 
