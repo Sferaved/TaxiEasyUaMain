@@ -537,7 +537,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                                 if (!result.equals("404")) {
                                     ToAdressString = result;
                                 } else {
-                                    FromAdressString = endPointNoText;
+                                    ToAdressString = endPointNoText;
                                 }
                                 assert map != null;
                                 marker = new Marker(map);

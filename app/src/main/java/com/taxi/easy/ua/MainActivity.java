@@ -246,7 +246,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
     }
 
-    private void checkNotificationPermissionAndRequestIfNeeded() {
+    void checkNotificationPermissionAndRequestIfNeeded() {
         // Проверяем разрешение на отправку уведомлений
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (!notificationManager.areNotificationsEnabled()) {
@@ -1391,7 +1391,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         Log.d(TAG, "newUser: " + userEmail);
 
         if(userEmail.equals("email")) {
-
+//            checkNotificationPermissionAndRequestIfNeeded();
             new Thread(() -> insertPushDate(getApplicationContext())).start();
 
             try {
@@ -1405,12 +1405,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             }
             Toast.makeText(this, R.string.checking, Toast.LENGTH_SHORT).show();
             startFireBase();
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    checkNotificationPermissionAndRequestIfNeeded();
-                }
-            }, 15000);
+
         } else {
             new Thread(() -> updatePushDate(getApplicationContext())).start();
 
@@ -1554,7 +1549,6 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
 
     }
     // Ограничение времени в секундах

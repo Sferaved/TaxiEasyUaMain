@@ -6,9 +6,11 @@ import static android.content.Context.MODE_PRIVATE;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.app.NotificationManager;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -21,6 +23,8 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -1091,11 +1095,44 @@ public class VisicomFragment extends Fragment{
         num1.setVisibility(View.INVISIBLE);
 
         if (NetworkUtils.isNetworkAvailable(requireContext())) {
+            if(geoText.getText().toString().equals("")) {
+                btn_clear_from_text.setVisibility(View.VISIBLE);
+                String unuString = new String(Character.toChars(0x1F449));
+                unuString += " " + getString(R.string.search_text);
+                btn_clear_from_text.setText(unuString);
+                binding.textfrom.setVisibility(View.INVISIBLE);
+                binding.textwhere.setVisibility(View.INVISIBLE);
+                btn_clear_from.setVisibility(View.INVISIBLE);
+                textfrom.setVisibility(View.INVISIBLE);
+                num1.setVisibility(View.INVISIBLE);
+                progressBar.setVisibility(View.INVISIBLE);
 
+                textfrom.setVisibility(View.INVISIBLE);
+                num1.setVisibility(View.INVISIBLE);
+
+
+
+                btn_clear_from.setVisibility(View.GONE);
+                btn_clear_to.setVisibility(View.GONE);
+            }
+//            else {
+////            textfrom.setVisibility(View.VISIBLE);
+////            num1.setVisibility(View.VISIBLE);
+//                btn_clear_from_text.setVisibility(View.INVISIBLE);
+//                btn_clear_from.setVisibility(View.INVISIBLE);
+//                btn_clear_to.setVisibility(View.INVISIBLE);
+//            }
             if (!newRout()) {
-                visicomCost();
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        visicomCost();
+                    }
+                }, 200);
+
 
             } else {
+
                 progressBar.setVisibility(View.INVISIBLE);
                 binding.textwhere.setVisibility(View.INVISIBLE);
                 btn_clear_from.setVisibility(View.INVISIBLE);
@@ -1128,39 +1165,12 @@ public class VisicomFragment extends Fragment{
             btn_clear_from.setVisibility(View.GONE);
             btn_clear_to.setVisibility(View.GONE);
         }
-        Log.d(TAG, "onResume:geoText.getText().toString() " +geoText.getText().toString());
-        if(geoText.getText().toString().equals("")) {
-            btn_clear_from_text.setVisibility(View.VISIBLE);
-            String unuString = new String(Character.toChars(0x1F449));
-            unuString += " " + getString(R.string.search_text);
-            btn_clear_from_text.setText(unuString);
-            binding.textfrom.setVisibility(View.INVISIBLE);
-            binding.textwhere.setVisibility(View.INVISIBLE);
-            btn_clear_from.setVisibility(View.INVISIBLE);
-            textfrom.setVisibility(View.INVISIBLE);
-            num1.setVisibility(View.INVISIBLE);
-            progressBar.setVisibility(View.INVISIBLE);
-
-            textfrom.setVisibility(View.INVISIBLE);
-            num1.setVisibility(View.INVISIBLE);
 
 
-
-            btn_clear_from.setVisibility(View.GONE);
-            btn_clear_to.setVisibility(View.GONE);
-        } else {
-//            textfrom.setVisibility(View.VISIBLE);
-//            num1.setVisibility(View.VISIBLE);
-            btn_clear_from_text.setVisibility(View.INVISIBLE);
-            btn_clear_from.setVisibility(View.INVISIBLE);
-            btn_clear_to.setVisibility(View.INVISIBLE);
-        }
 
     }
 
-
-
-    private void firstLocation() {
+     private void firstLocation() {
         progressBar.setVisibility(View.VISIBLE);
         Toast.makeText(requireContext(), getString(R.string.search), Toast.LENGTH_SHORT).show();
 
@@ -1611,17 +1621,39 @@ public class VisicomFragment extends Fragment{
                 btn_clear_from_text.setVisibility(View.GONE);
 
             }
-//            if(!phoneFull()) {
-//                if (!verifyPhone(requireActivity())) {
-//                    bottomSheetDialogFragment = new MyPhoneDialogFragment("visicom", text_view_cost.getText().toString(), false);
-//                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-//                    progressBar.setVisibility(View.INVISIBLE);
-//                }
-//            } else {
-//                MainActivity.verifyPhone = true;
-//            }
+
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    checkNotificationPermissionAndRequestIfNeeded();
+                }
+            }, 2000);
+
         }
    }
+    void checkNotificationPermissionAndRequestIfNeeded() {
+        // Получаем доступ к настройкам приложения
+        SharedPreferences sharedPreferences = requireActivity().getPreferences(Context.MODE_PRIVATE);
+
+        // Проверяем, было ли уже запрошено разрешение
+        boolean isNotificationPermissionRequested = sharedPreferences.getBoolean("notification_permission_requested", false);
+
+        // Если разрешение еще не запрашивалось
+        if (!isNotificationPermissionRequested) {
+            // Показываем системный экран для запроса разрешения
+            NotificationManager notificationManager = (NotificationManager) requireActivity().getSystemService(Context.NOTIFICATION_SERVICE);
+            if (!notificationManager.areNotificationsEnabled()) {
+                Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                intent.putExtra(Settings.EXTRA_APP_PACKAGE, requireActivity().getPackageName());
+                startActivity(intent);
+            }
+
+            // Сохраняем информацию о том, что разрешение было запрошено
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putBoolean("notification_permission_requested", true);
+            editor.apply();
+        }
+    }
 
     private static class GetPublicIPAddressTask extends AsyncTask<Void, Void, String> {
         FragmentManager fragmentManager;

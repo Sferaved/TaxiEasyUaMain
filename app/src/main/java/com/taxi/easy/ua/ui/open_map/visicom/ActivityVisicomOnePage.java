@@ -36,6 +36,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.navigation.NavController;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -43,6 +44,7 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.cities.Kyiv.KyivRegion;
 import com.taxi.easy.ua.cities.Kyiv.KyivRegionRu;
@@ -129,7 +131,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
     private static String apiKeyMapBox;
     private boolean extraExit;
     private long timeout = 50;
-
+    NavController navController;
     @SuppressLint("MissingInflatedId")
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Nullable
@@ -141,6 +143,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
         start = getIntent().getStringExtra("start");
         end = getIntent().getStringExtra("end");
 
+        NetworkChangeReceiver networkChangeReceiver = new NetworkChangeReceiver();
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         switch (LocaleHelper.getLocale()) {
@@ -937,6 +940,11 @@ public class ActivityVisicomOnePage extends AppCompatActivity
     @Override
     public void onResume() {
         super.onResume();
+
+        if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+            startActivity(new Intent(this, MainActivity.class));
+        }
+
         if (MainActivity.countryState != null) {
             if (!MainActivity.countryState.equals("UA")) {
                 mapboxKey(this);
@@ -1121,6 +1129,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                 url = url
                         + "?"
                         + "categories=poi_railway_station"
+                        + ",adm_settlement"
                         + ",poi_bus_station"
                         + ",poi_airport_terminal"
                         + ",poi_airport"
@@ -1134,6 +1143,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                         + ",poi_grocery"
                         + ",poi_swimming_pool"
                         + ",poi_sports_complexe"
+                        + ",poi_post_office"
                         + ",poi_underground_railway_station"
                         + ",adr_street"
                         + "&l=20"
@@ -1227,6 +1237,29 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
                     if (properties.getString("country_code").equals("ua")) {
                         switch (properties.getString("categories")) {
+                            case "adm_settlement":
+
+                                // Проверка по Киевской области
+                                if (citySearch.equals("Київ") || citySearch.equals("Киев")) {
+
+                                        String addressAdm = String.format("%s %s\t",
+                                                properties.getString("type"),
+                                                properties.getString("name")
+                                        );
+
+                                        double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
+                                        double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
+
+                                        addAddressOne(
+                                                addressAdm,
+                                                "",
+                                                "",
+                                                "",
+                                                longitude,
+                                                latitude);
+
+                                }
+                                break;
                             case "adr_street":
                                 String settlement = properties.optString("settlement", "").toLowerCase();
                                 String city = citySearch.toLowerCase();
@@ -1431,6 +1464,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                             case "poi_railway_station":
                             case "poi_bus_station":
                             case "poi_airport_terminal":
+                            case "poi_post_office":
                             case "poi_airport":
                                 settlement = properties.optString("address", "").toLowerCase();
                                 city = citySearch.toLowerCase();
