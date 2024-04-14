@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.739</string>
-    <string name="version">Версія: 1.739</string>
+    <string name="version_code">1.740</string>
+    <string name="version">Версія: 1.740</string>
 
     <string name="app_name">Таксі Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -195,7 +195,7 @@
     <string name="close_resone_8">Виконаний</string>
     <string name="close_resone_9">Знятий клієнтом</string>
     <string name="close_resone_from">"Від "</string>
-    <string name="close_resone_to">" до "</string>
+    <string name="close_resone_to">" -> "</string>
     <string name="close_resone_cost">", вартість: "</string>
     <string name="close_resone_time">", время заказу: "</string>
     <string name="close_resone_text">", стан: "</string>
@@ -337,5 +337,8 @@
     <string name="pos_z">просп. Соборний, буд. 139, місто Запоріжжя\t</string>
     <string name="pos_c">вул.Байди Вишневецького, буд.36, місто Черкаси\t</string>
     <string name="cancel_gps">Скасувати</string>
-
+    <string name="ok_error">Зрозуміло</string>
+    <string name="to_nal_payment">Оплата вибраним методом на даний момент неможлива. Замовити з оплатою готівкою?</string>
+    <string name="tarif">Тариф:</string>
+    <string name="tar">Тариф</string>
 </resources>

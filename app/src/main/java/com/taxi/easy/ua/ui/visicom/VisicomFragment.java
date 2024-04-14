@@ -429,7 +429,7 @@ public class VisicomFragment extends Fragment{
                 getPhoneNumber();
             }
             if (!verifyPhone(requireActivity())) {
-                bottomSheetDialogFragment = new MyPhoneDialogFragment("visicom", text_view_cost.getText().toString(), true);
+                bottomSheetDialogFragment = new MyPhoneDialogFragment(getActivity(),"visicom", text_view_cost.getText().toString(), true);
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 progressBar.setVisibility(View.INVISIBLE);
             }
@@ -438,7 +438,7 @@ public class VisicomFragment extends Fragment{
         }
         if (verifyPhone(requireContext())) {
             Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
-            Log.d("TAG", "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
+            Log.d("T", "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
 
             String orderWeb = sendUrlMap.get("order_cost");
             String message = requireActivity().getString(R.string.error_message);
@@ -489,7 +489,8 @@ public class VisicomFragment extends Fragment{
                 intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
                 startActivity(intent);
             } else {
-
+//                String messagePaymentType = "Оплата выбранным методом в данный момент не возможна. Заказать с оплатой наличными?"
+                changePayMethodToNal();
 //            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
 //            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 progressBar.setVisibility(View.INVISIBLE);
@@ -672,6 +673,52 @@ public class VisicomFragment extends Fragment{
                         }
                         break;
                 }
+
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        orderRout();
+                    }
+                    orderFinished();
+
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                }
+                progressBar.setVisibility(View.GONE);
+                alertDialog.dismiss();
+            }
+        });
+
+        Button cancelButton = dialogView.findViewById(R.id.dialog_cancel_button);
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                progressBar.setVisibility(View.GONE);
+                alertDialog.dismiss();
+            }
+        });
+
+        alertDialog.show();
+    }
+    private void changePayMethodToNal() {
+        // Инфлейтим макет для кастомного диалога
+        LayoutInflater inflater = LayoutInflater.from(requireActivity());
+        View dialogView = inflater.inflate(R.layout.custom_dialog_layout, null);
+
+        alertDialog = new AlertDialog.Builder(requireActivity()).create();
+        alertDialog.setView(dialogView);
+        alertDialog.setCancelable(false);
+        // Настраиваем элементы макета
+
+
+        TextView messageTextView = dialogView.findViewById(R.id.dialog_message);
+        String messagePaymentType = getString(R.string.to_nal_payment);
+        messageTextView.setText(messagePaymentType);
+
+        Button okButton = dialogView.findViewById(R.id.dialog_ok_button);
+        okButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                paymentType("nal_payment");
 
                 try {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -1632,26 +1679,27 @@ public class VisicomFragment extends Fragment{
         }
    }
     void checkNotificationPermissionAndRequestIfNeeded() {
-        // Получаем доступ к настройкам приложения
-        SharedPreferences sharedPreferences = requireActivity().getPreferences(Context.MODE_PRIVATE);
+        if (isAdded()) {
+            // Получаем доступ к настройкам приложения
+            SharedPreferences sharedPreferences = requireActivity().getPreferences(Context.MODE_PRIVATE);
 
-        // Проверяем, было ли уже запрошено разрешение
-        boolean isNotificationPermissionRequested = sharedPreferences.getBoolean("notification_permission_requested", false);
+            // Проверяем, было ли уже запрошено разрешение
+            boolean isNotificationPermissionRequested = sharedPreferences.getBoolean("notification_permission_requested", false);
+            // Если разрешение еще не запрашивалось
+            if (!isNotificationPermissionRequested) {
+                // Показываем системный экран для запроса разрешения
+                NotificationManager notificationManager = (NotificationManager) requireActivity().getSystemService(Context.NOTIFICATION_SERVICE);
+                if (!notificationManager.areNotificationsEnabled()) {
+                    Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                    intent.putExtra(Settings.EXTRA_APP_PACKAGE, requireActivity().getPackageName());
+                    startActivity(intent);
+                }
 
-        // Если разрешение еще не запрашивалось
-        if (!isNotificationPermissionRequested) {
-            // Показываем системный экран для запроса разрешения
-            NotificationManager notificationManager = (NotificationManager) requireActivity().getSystemService(Context.NOTIFICATION_SERVICE);
-            if (!notificationManager.areNotificationsEnabled()) {
-                Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-                intent.putExtra(Settings.EXTRA_APP_PACKAGE, requireActivity().getPackageName());
-                startActivity(intent);
+                // Сохраняем информацию о том, что разрешение было запрошено
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putBoolean("notification_permission_requested", true);
+                editor.apply();
             }
-
-            // Сохраняем информацию о том, что разрешение было запрошено
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putBoolean("notification_permission_requested", true);
-            editor.apply();
         }
     }
 

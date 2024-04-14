@@ -26,12 +26,11 @@
         android:id="@+id/btn_help"
         android:layout_width="197sp"
         android:layout_height="45sp"
-        android:layout_marginTop="16sp"
-        android:layout_marginBottom="16sp"
+        android:layout_marginTop="12dp"
+
         android:background="@drawable/buttons"
-
+        android:layout_marginBottom="12dp"
         android:backgroundTint="@color/colorAccent"
-
         android:fontFamily="@font/regular"
         android:text="@string/action_help"
         android:textAlignment="center"
@@ -40,7 +39,24 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.495"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textViewInfo"
-        app:layout_constraintVertical_bias="0.008" />
+        app:layout_constraintTop_toBottomOf="@+id/btn_ok"
+        app:layout_constraintVertical_bias="0.005" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_ok"
+        android:layout_width="197sp"
+        android:layout_height="45sp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/buttons"
+
+        android:backgroundTint="@color/wallet_bright_foreground_disabled_holo_light"
+        android:fontFamily="@font/regular"
+        android:text="@string/ok_error"
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.495"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewInfo" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

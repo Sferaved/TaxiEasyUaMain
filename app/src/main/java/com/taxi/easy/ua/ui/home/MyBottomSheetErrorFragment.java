@@ -30,7 +30,7 @@ import java.util.List;
 
 public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
     TextView textViewInfo;
-    AppCompatButton btn_help;
+    AppCompatButton btn_help, btn_ok;
     String errorMessage;
 
     public MyBottomSheetErrorFragment(String errorMessage) {
@@ -53,6 +53,14 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
 
                 intent.setData(Uri.parse(phone));
                 startActivity(intent);
+            }
+        });
+
+        btn_ok = view.findViewById(R.id.btn_ok);
+        btn_ok.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dismiss();
             }
         });
         textViewInfo = view.findViewById(R.id.textViewInfo);

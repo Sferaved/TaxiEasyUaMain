@@ -131,12 +131,17 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         //
 
         switch (city) {
-            case "Kyiv City":
+
             case "Dnipropetrovsk Oblast":
             case "Odessa":
             case "Zaporizhzhia":
             case "Cherkasy Oblast":
                 adapter.setItemEnabled(1, false);
+                adapter.setItemEnabled(2, false);
+                break;
+            case "Kyiv City":
+                adapter.setItemEnabled(1, false);
+                break;
             case "OdessaTest":
                 if(Long.parseLong(bonus) <= cost * 100 ) {
                     adapter.setItemEnabled(1, false);
@@ -148,6 +153,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 if(userPayPermissions[1].equals("0")) {
                     adapter.setItemEnabled(2, false);
                 }
+                break;
 
         }
 

@@ -1,10 +1,10 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.739</string>
-    <string name="version">Версия: 1.739</string>
+    <string name="version_code">1.740</string>
+    <string name="version">Версия: 1.740</string>
 
-    <string name="app_name">Такси Лайт</string>
+    <string name="app_name">Taxi Light</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
     <string name="back4app_app_id">01YGF894m3NJRXT1BlH6qPo9pUfDlG9sqi9K9mIL</string>
     <string name="back4app_client_key">T5f5GuT1UCmaiJn8Dek3sVmayGuJa2jfelQR6V6f</string>
@@ -195,7 +195,7 @@
     <string name="close_resone_8">Выполнен</string>
     <string name="close_resone_9">Снят клиентом</string>
     <string name="close_resone_from">"От "</string>
-    <string name="close_resone_to">" к "</string>
+    <string name="close_resone_to">" -> "</string>
     <string name="close_resone_cost">", стоимость: "</string>
     <string name="close_resone_time">", время заказа: "</string>
     <string name="close_resone_text">", состояние: "</string>
@@ -301,7 +301,7 @@
     <string name="tail1">Карты для города \'</string>
     <string name="tail2">\' успешно загружены</string>
     <string name="rout_fin">Выбирите из списка номер дома</string>
-    <string name="hi_mes">Вас приветсвует</string>
+    <string name="hi_mes">Вас приветствует</string>
     <string name="change_mes">Отсуствуют результаты. Попробуйте изменить параметры поиска</string>
     <string name="two_point_mes">Укажите на карте место высадки</string>
     <string name="gdpr0">Политика конфиденциальности</string>
@@ -337,5 +337,7 @@
     <string name="pos_z">просп. Соборный, дом. 139, город Запорожье\t</string>
     <string name="pos_c">ул.Байды Вишневецкого, д.36, город Черкассы\t</string>
     <string name="cancel_gps">Отменить</string>
-
-</resources>
+    <string name="ok_error">Понятно</string>
+    <string name="to_nal_payment">Оплата выбранным методом в данный момент невозможна. Заказать с оплатой наличными?</string>
+    <string name="tarif">Тариф:</string>
+    <string name="tar">Тариф</string></resources>

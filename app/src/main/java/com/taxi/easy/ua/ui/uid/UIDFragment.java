@@ -246,6 +246,7 @@ public class UIDFragment extends Fragment {
                     break;
 
             }
+
             if(routeFrom.equals("Місце відправлення")) {
                 routeFrom = getString(R.string.start_point_text);
             }
@@ -254,11 +255,22 @@ public class UIDFragment extends Fragment {
             if(routeTo.equals("Точка на карте")) {
                 routeTo = getString(R.string.end_point_marker);
             }
+            if(routeTo.contains("по городу")) {
+                routeTo = getString(R.string.on_city);
+            }
+            if(routeTo.contains("по місту")) {
+                routeTo = getString(R.string.on_city);
+            }
             String routeInfo = "";
 
-            if(auto != null) {
+            if(auto == null) {
+                auto = "??";
+            }
+
+            if(routeFrom.equals(routeTo)) {
                 routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
+                        + getString(R.string.close_resone_to)
+                        + getString(R.string.on_city)
                         + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
                         + getString(R.string.auto_info) + " " + auto + " "
                         + getString(R.string.close_resone_time)
@@ -267,6 +279,7 @@ public class UIDFragment extends Fragment {
                 routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
                         + getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
                         + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
+                        + getString(R.string.auto_info) + " " + auto + " "
                         + getString(R.string.close_resone_time)
                         + createdAt + getString(R.string.close_resone_text) + closeReasonText;
             }

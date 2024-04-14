@@ -184,7 +184,7 @@
         android:layout_marginStart="16sp"
         android:layout_marginTop="16sp"
         android:fontFamily="@font/regular"
-        android:text="Тариф"
+        android:text="@string/tar"
         android:textColor="#D9D9D9"
         android:textSize="18sp"
         app:layout_constraintStart_toStartOf="parent"

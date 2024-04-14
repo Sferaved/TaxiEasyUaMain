@@ -36,7 +36,6 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.finish.FinishActivity;
 import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
-import com.taxi.easy.ua.ui.open_map.visicom.GeoDialogVisicomFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 
 import java.net.MalformedURLException;
@@ -60,8 +59,9 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
     private String messageFondy;
     private String amount;
     private boolean order;
-
-    public MyPhoneDialogFragment(String page, String amount, boolean order) {
+    private Context mContext;
+    public MyPhoneDialogFragment(Context context, String page, String amount, boolean order) {
+        this.mContext = context;
         this.page = page;
         this.amount = amount;
         this.order = order;
@@ -74,8 +74,8 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         phoneNumber = view.findViewById(R.id.phoneNumber);
         button = view.findViewById(R.id.ok_button);
         checkBox = view.findViewById(R.id.checkbox);
-        messageFondy = getString(R.string.fondy_message);
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        messageFondy = mContext.getString(R.string.fondy_message);
+        SQLiteDatabase database = mContext.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
         if (c.getCount() == 1) {
             String phone = logCursor(MainActivity.TABLE_USER_INFO).get(2);
@@ -97,13 +97,13 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                 boolean val = Pattern.compile(PHONE_PATTERN).matcher(phoneNumber.getText().toString()).matches();
 
                 if (!val) {
-                    String message = getString(R.string.format_phone);
+                    String message = mContext.getString(R.string.format_phone);
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
                 if (val) {
                     MainActivity.verifyPhone = true;
-                    updateRecordsUser(phoneNumber.getText().toString(), requireActivity());
+                    updateRecordsUser(phoneNumber.getText().toString(), mContext);
                     String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && order) {
@@ -139,7 +139,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                                             dismiss();
                                             break;
                                         case "visicom" :
-                                            orderVisicom();
+                                            orderVisicomFondy();
                                             dismiss();
                                             break;
                                     }
@@ -152,7 +152,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                                         dismiss();
                                         break;
                                     case "visicom" :
-                                        orderVisicom();
+                                        orderVisicomFondy();
                                         dismiss();
                                         break;
                                 }
@@ -172,7 +172,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
             try {
                 String urlOrder = null;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    urlOrder = getTaxiUrlSearchMarkersVisicom("orderSearchMarkersVisicom", requireActivity());
+                    urlOrder = getTaxiUrlSearchMarkersVisicom("orderSearchMarkersVisicom", mContext);
                 }
                 Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
                 Log.d("TAG", "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
@@ -182,19 +182,19 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                 if (!orderWeb.equals("0")) {
                     String to_name;
                     if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
-                        to_name = getString(R.string.on_city_tv);
+                        to_name = mContext.getString(R.string.on_city_tv);
                         if (!sendUrlMap.get("lat").equals("0")) {
                             insertRecordsOrders(
                                     sendUrlMap.get("routefrom"), sendUrlMap.get("routefrom"),
                                     sendUrlMap.get("routefromnumber"), sendUrlMap.get("routefromnumber"),
                                     sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
                                     sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                    requireActivity()
+                                    mContext
                             );
                         }
                     } else {
                         if(sendUrlMap.get("routeto").equals("Точка на карте")) {
-                            to_name = requireActivity().getString(R.string.end_point_marker);
+                            to_name = mContext.getString(R.string.end_point_marker);
                         } else {
                             to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
                         }
@@ -205,28 +205,32 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                                     sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
                                     sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
                                     sendUrlMap.get("lat"), sendUrlMap.get("lng"),
-                                    requireActivity()
+                                    mContext
                             );
                         }
                     }
-                    String messageResult = getString(R.string.thanks_message) +
-                            sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
+                    String messageResult = mContext.getString(R.string.thanks_message) +
+                            sendUrlMap.get("routefrom") + " " + mContext.getString(R.string.to_message) +
                             to_name + "." +
-                            getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH);
+                            mContext.getString(R.string.call_of_order) + orderWeb + mContext.getString(R.string.UAH);
 
 
-                    Intent intent = new Intent(requireActivity(), FinishActivity.class);
+                    Intent intent = new Intent(mContext, FinishActivity.class);
                     intent.putExtra("messageResult_key", messageResult);
                     intent.putExtra("messageCost_key", orderWeb);
                     intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
                     intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
-                    startActivity(intent);
+                    mContext.startActivity(intent);
                 } else {
-                    String message = getString(R.string.error_message);
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                    OpenStreetMapActivity.progressBar.setVisibility(View.INVISIBLE);
-                    GeoDialogVisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+                    List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
+                    String payment_type = stringListInfo.get(4);
+                    if(payment_type.equals("nal_payment")) {
+                        String message = mContext.getString(R.string.error_message);
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    } else {
+                        changePayMethodToNal();
+                    }
                 }
 
 
@@ -234,10 +238,88 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
 
             }
         } else {
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(mContext.getString(R.string.verify_internet));
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-            OpenStreetMapActivity.progressBar.setVisibility(View.INVISIBLE);
-            GeoDialogVisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+        }
+    }
+    private void orderVisicomFondy()  {
+        if(connected()) {
+            try {
+                String urlOrder = null;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    urlOrder = getTaxiUrlSearchMarkersVisicom("orderSearchMarkersVisicom", mContext);
+                }
+                Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
+                Log.d("TAG", "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
+
+                String orderWeb = sendUrlMap.get("order_cost");
+
+                if (!orderWeb.equals("0")) {
+                    String to_name;
+                    if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
+                        to_name = mContext.getString(R.string.on_city_tv);
+                        if (!sendUrlMap.get("lat").equals("0")) {
+                            insertRecordsOrders(
+                                    sendUrlMap.get("routefrom"), sendUrlMap.get("routefrom"),
+                                    sendUrlMap.get("routefromnumber"), sendUrlMap.get("routefromnumber"),
+                                    sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                    sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                    mContext
+                            );
+                        }
+                    } else {
+                        if(sendUrlMap.get("routeto").equals("Точка на карте")) {
+                            to_name = mContext.getString(R.string.end_point_marker);
+                        } else {
+                            to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
+                        }
+
+                        if (!sendUrlMap.get("lat").equals("0")) {
+                            insertRecordsOrders(
+                                    sendUrlMap.get("routefrom"), to_name,
+                                    sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
+                                    sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                    sendUrlMap.get("lat"), sendUrlMap.get("lng"),
+                                    mContext
+                            );
+                        }
+                    }
+                    String messageResult = mContext.getString(R.string.thanks_message) +
+                            sendUrlMap.get("routefrom") + " " + mContext.getString(R.string.to_message) +
+                            to_name + "." +
+                            mContext.getString(R.string.call_of_order) + orderWeb + mContext.getString(R.string.UAH);
+
+                    String messageFondy = mContext.getString(R.string.fondy_message) + " " +
+                            sendUrlMap.get("routefrom") + " " + mContext.getString(R.string.to_message) +
+                            to_name + ".";
+
+                    Intent intent = new Intent(mContext, FinishActivity.class);
+                    intent.putExtra("messageResult_key", messageResult);
+                    intent.putExtra("messageFondy_key", messageFondy);
+                    intent.putExtra("messageCost_key", orderWeb);
+                    intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
+                    intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+                    mContext.startActivity(intent);
+                } else {
+                    List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
+                    String payment_type = stringListInfo.get(4);
+                    Log.d(TAG, "orderVisicomFondy: " + payment_type);
+                    if(payment_type.equals("nal_payment")) {
+                        String message = mContext.getString(R.string.error_message);
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    } else {
+                        changePayMethodToNal();
+                    }
+                }
+
+
+            } catch (MalformedURLException ignored) {
+
+            }
+        } else {
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(mContext.getString(R.string.verify_internet));
+            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
         }
     }
 
@@ -368,23 +450,22 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                 Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
 
                 String orderWeb = sendUrlMap.get("order_cost");
-                String message = requireActivity().getString(R.string.error_message);
                 String messageResult;
                 if (!orderWeb.equals("0")) {
 
                     String from_name = (String) sendUrlMap.get("routefrom");
                     String to_name = (String) sendUrlMap.get("routeto");
                     if (from_name.equals(to_name)) {
-                        messageResult = getString(R.string.thanks_message) +
-                                from_name + " " + HomeFragment.from_number.getText() + " " + getString(R.string.on_city) +
-                                getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
+                        messageResult = mContext.getString(R.string.thanks_message) +
+                                from_name + " " + HomeFragment.from_number.getText() + " " + mContext.getString(R.string.on_city) +
+                                mContext.getString(R.string.cost_of_order) + orderWeb + mContext.getString(R.string.UAH);
 
 
                     } else {
-                        messageResult = getString(R.string.thanks_message) +
-                                from_name + " " + HomeFragment.from_number.getText() + " " + getString(R.string.to_message) +
+                        messageResult = mContext.getString(R.string.thanks_message) +
+                                from_name + " " + HomeFragment.from_number.getText() + " " + mContext.getString(R.string.to_message) +
                                 to_name + " " + HomeFragment.to_number.getText() + "." +
-                                getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
+                                mContext.getString(R.string.cost_of_order) + orderWeb + mContext.getString(R.string.UAH);
                     }
 
                     if (!sendUrlMap.get("from_lat").equals("0") && !sendUrlMap.get("lat").equals("0")) {
@@ -394,7 +475,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                                     HomeFragment.from_number.getText().toString(), HomeFragment.from_number.getText().toString(),
                                     (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
                                     (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
-                                    requireContext()
+                                    mContext
                             );
                         } else {
                             insertRecordsOrders(
@@ -402,33 +483,39 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                                     HomeFragment.from_number.getText().toString(), HomeFragment.to_number.getText().toString(),
                                     (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
                                     (String) sendUrlMap.get("lat"), (String) sendUrlMap.get("lng"),
-                                    requireContext()
+                                    mContext
                             );
 
                         }
                     }
 
-                    Intent intent = new Intent(requireActivity(), FinishActivity.class);
+                    Intent intent = new Intent(mContext, FinishActivity.class);
                     intent.putExtra("messageResult_key", messageResult);
                     intent.putExtra("messageCost_key", orderWeb);
                     intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
                     intent.putExtra("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
-                    startActivity(intent);
+                    mContext.startActivity(intent);
                     HomeFragment.progressBar.setVisibility(View.INVISIBLE);
 
                 } else {
-                    message = getString(R.string.error_message);
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
+                    String payment_type = stringListInfo.get(4);
+                    if(payment_type.equals("nal_payment")) {
+                        String message = mContext.getString(R.string.error_message);
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    } else {
+                        changePayMethodToNal();
+                    }
                 }
 
 
             } catch (MalformedURLException e) {
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(mContext.getString(R.string.verify_internet));
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             }
         } else {
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(mContext.getString(R.string.verify_internet));
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             HomeFragment.progressBar.setVisibility(View.INVISIBLE);
         }
@@ -444,7 +531,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         cv.put("to_lng", Double.parseDouble(settings.get(3)));
 
         // обновляем по id
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = mContext.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
                 new String[] { "1" });
         database.close();
@@ -453,7 +540,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
 
         Boolean hasConnect = false;
 
-        ConnectivityManager cm = (ConnectivityManager) requireActivity().getSystemService(
+        ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(
                 Context.CONNECTIVITY_SERVICE);
         NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         if (wifiNetwork != null && wifiNetwork.isConnected()) {
@@ -499,7 +586,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         // Destination of route
         String str_dest = to + "/" + to_number;
 
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = mContext.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
 
         List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
@@ -575,7 +662,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         String city = listCity.get(1);
         String api = listCity.get(2);
         String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
-                + parameters + "/" + result + "/" + city  + "/" + getContext().getString(R.string.application);
+                + parameters + "/" + result + "/" + city  + "/" + mContext.getString(R.string.application);
 
         Log.d("TAG", "getTaxiUrlSearch: " + url);
         return url;
@@ -587,10 +674,10 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         String bonus_max_pay = stringListCity.get(5);
 
         // Инфлейтим макет для кастомного диалога
-        LayoutInflater inflater = LayoutInflater.from(requireActivity());
+        LayoutInflater inflater = LayoutInflater.from(mContext);
         View dialogView = inflater.inflate(R.layout.custom_dialog_layout, null);
 
-        AlertDialog alertDialog = new AlertDialog.Builder(requireActivity()).create();
+        AlertDialog alertDialog = new AlertDialog.Builder(mContext).create();
         alertDialog.setView(dialogView);
         alertDialog.setCancelable(false);
         // Настраиваем элементы макета
@@ -606,14 +693,14 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                 switch (paymentType) {
                     case "bonus_payment":
                         if (Long.parseLong(bonus_max_pay) <= Long.parseLong(textCost) * 100) {
-                            paymentType("nal_payment");
+                            paymentType("nal_payment" , mContext);
                         }
                         break;
                     case "card_payment":
                     case "fondy_payment":
                     case "mono_payment":
                         if (Long.parseLong(card_max_pay) <= Long.parseLong(textCost)) {
-                            paymentType("nal_payment");
+                            paymentType("nal_payment", mContext);
                         }
                         break;
                 }
@@ -638,11 +725,11 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
 
         alertDialog.show();
     }
-    private void paymentType(String paymentCode) {
+    private void paymentType(String paymentCode, Context context) {
         ContentValues cv = new ContentValues();
         cv.put("payment_type", paymentCode);
         // обновляем по id
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
         database.close();
@@ -651,7 +738,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
     @SuppressLint("Range")
     public List<String> logCursor(String table) {
         List<String> list = new ArrayList<>();
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = mContext.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(table, null, null, null, null, null, null);
         if (c != null) {
             if (c.moveToFirst()) {
@@ -763,6 +850,50 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
 
 
     }
+    private AlertDialog alertDialog;
+    private void changePayMethodToNal() {
+        // Инфлейтим макет для кастомного диалога
+        LayoutInflater inflater = LayoutInflater.from(mContext);
+        View dialogView = inflater.inflate(R.layout.custom_dialog_layout, null);
 
+        alertDialog = new AlertDialog.Builder(mContext).create();
+        alertDialog.setView(dialogView);
+        alertDialog.setCancelable(false);
+        // Настраиваем элементы макета
+
+
+        TextView messageTextView = dialogView.findViewById(R.id.dialog_message);
+        String messagePaymentType = mContext.getString(R.string.to_nal_payment);
+        messageTextView.setText(messagePaymentType);
+
+        Button okButton = dialogView.findViewById(R.id.dialog_ok_button);
+        okButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                paymentType("nal_payment", mContext);
+                switch (page) {
+                    case "home" :
+                        orderHome();
+                        dismiss();
+                        break;
+                    case "visicom" :
+                        orderVisicomFondy();
+                        dismiss();
+                        break;
+                }
+                alertDialog.dismiss();
+            }
+        });
+
+        Button cancelButton = dialogView.findViewById(R.id.dialog_cancel_button);
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                alertDialog.dismiss();
+            }
+        });
+
+        alertDialog.show();
+    }
 }
 
