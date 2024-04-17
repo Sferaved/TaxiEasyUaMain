@@ -1415,7 +1415,11 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
             // Проверка новой версии в маркете
             new Thread(this::versionFromMarket).start();
+            Thread fondyCardThread = new Thread(() -> {
+                getCardToken("fondy", TABLE_FONDY_CARDS, userEmail);
 
+            });
+            fondyCardThread.start();
         }
 
 
@@ -1527,25 +1531,25 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         userPhoneThread.start();
 
 // Task 4: Get card token for "fondy" in a separate thread
-//        Thread fondyCardThread = new Thread(() -> {
-//
-//            getCardToken("fondy", TABLE_FONDY_CARDS, email);
-//        });
-//        fondyCardThread.start();
+        Thread fondyCardThread = new Thread(() -> {
+            getCardToken("fondy", TABLE_FONDY_CARDS, email);
+
+        });
+        fondyCardThread.start();
 
 // Task 5: Get card token for "mono" in a separate thread
-        Thread monoCardThread = new Thread(() -> {
-            getCardToken("mono", TABLE_MONO_CARDS, email);
-        });
-        monoCardThread.start();
+//        Thread monoCardThread = new Thread(() -> {
+//            getCardToken("mono", TABLE_MONO_CARDS, email);
+//        });
+//        monoCardThread.start();
 
 // Wait for all threads to finish (optional)
         try {
             updateUserInfoThread.join();
             addUserNoNameThread.join();
             userPhoneThread.join();
-//            fondyCardThread.join();
-            monoCardThread.join();
+            fondyCardThread.join();
+//            monoCardThread.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -1739,6 +1743,9 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                     Log.d(TAG, "onResponse: cards" + cards);
                     if (cards != null && !cards.isEmpty()) {
                         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        // Очистка таблицы
+                        database.delete(table, "1", null);
+
                         for (CardInfo cardInfo : cards) {
                             ContentValues cv = new ContentValues();
                             String masked_card = cardInfo.getMasked_card(); // Маска карты
@@ -1757,11 +1764,20 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                             cv.put("rectoken_check", "-1");
                             database.insert(table, null, cv);
                         }
-                        ContentValues cv = new ContentValues();
-                        cv.put("rectoken_check", "1");
-                        database.update(table, cv, "id = ?",
-                                new String[] { "1" });
+                        // Выбираем минимальное значение ID из таблицы
+                        Cursor cursor = database.rawQuery("SELECT MIN(id) FROM " + table, null);
+                        if (cursor != null && cursor.moveToFirst()) {
+                            // Получаем минимальное значение ID
+                            int minId = cursor.getInt(0);
+                            cursor.close();
+
+                            // Обновляем строку с минимальным ID
+                            ContentValues cv = new ContentValues();
+                            cv.put("rectoken_check", "1");
+                            database.update(table, cv, "id = ?", new String[] { String.valueOf(minId) });
+                        }
                         database.close();
+
                     }
                 }
 

@@ -2,10 +2,10 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.740</string>
-    <string name="version">Version: 1.740</string>
+    <string name="version_code">1.741</string>
+    <string name="version">Version: 1.741</string>
 
-    <string name="app_name">Taxi Ukraine 2</string>
+    <string name="app_name">Taxi Light</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
     <string name="back4app_app_id">01YGF894m3NJRXT1BlH6qPo9pUfDlG9sqi9K9mIL</string>
     <string name="back4app_client_key">T5f5GuT1UCmaiJn8Dek3sVmayGuJa2jfelQR6V6f</string>
@@ -337,6 +337,8 @@
     <string name="cancel_gps">Cancel</string>
     <string name="ok_error">Understood</string>
     <string name="to_nal_payment">Payment using the selected method is currently not possible. Order with cash payment?</string>
+    <string name="to_nal_payment_count">Payment using the selected method is currently not possible. Calculate your trip by paying in cash?</string>
     <string name="tarif">Tariff:</string>
     <string name="tar">Tariff</string>
+    <string name="double_order_error">Duplicate order. You cannot create a similar order until a car has been found for the previous order</string>
 </resources>

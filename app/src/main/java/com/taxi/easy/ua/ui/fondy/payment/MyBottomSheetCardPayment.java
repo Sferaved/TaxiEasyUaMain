@@ -93,17 +93,21 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
     private static String comment;
     private static String MERCHANT_ID;
     private static String merchantPassword;
+    private Context context;
 
     public MyBottomSheetCardPayment(
             String checkoutUrl,
             String amount,
             String uid,
-            String uid_Double) {
+            String uid_Double,
+            Context context
+    ) {
         this.checkoutUrl = checkoutUrl;
         this.amount = amount;
         this.uid = uid;
         this.uid_Double = uid_Double;
         this.hold = false;
+        this.context = context;
     }
 
 
@@ -117,16 +121,16 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
         email = logCursor(MainActivity.TABLE_USER_INFO, requireActivity()).get(3);
         pay_method =  pay_system(getContext());
   
-        timeoutText = requireContext().getString(R.string.time_out_text);
-        messageWaitingCarSearch = requireContext().getString(R.string.ex_st_1);
-        messageSearchesForCar = requireContext().getString(R.string.ex_st_0);
-        messageCanceled = requireContext().getString(R.string.ex_st_canceled);
-        messageCarFoundOrderCarInfo = requireContext().getString(R.string.ex_st_3);
-        messageCarFoundOrderdriverPhone = requireContext().getString(R.string.ex_st_4);
-        messageCarFoundRequiredTime = requireContext().getString(R.string.ex_st_5);
-        def_status = getString(R.string.def_status);
-        application = getString(R.string.application);
-        comment = getString(R.string.fondy_revers_message) + getString(R.string.fondy_message);;
+        timeoutText = context.getString(R.string.time_out_text);
+        messageWaitingCarSearch = context.getString(R.string.ex_st_1);
+        messageSearchesForCar = context.getString(R.string.ex_st_0);
+        messageCanceled = context.getString(R.string.ex_st_canceled);
+        messageCarFoundOrderCarInfo = context.getString(R.string.ex_st_3);
+        messageCarFoundOrderdriverPhone = context.getString(R.string.ex_st_4);
+        messageCarFoundRequiredTime = context.getString(R.string.ex_st_5);
+        def_status = context.getString(R.string.def_status);
+        application = context.getString(R.string.application);
+        comment = context.getString(R.string.fondy_revers_message) + context.getString(R.string.fondy_message);;
         
         List<String> listCity = logCursor(MainActivity.CITY_INFO, requireActivity());
         city = listCity.get(1);
@@ -224,7 +228,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                     // Обработка ошибки запроса
                     Log.d(TAG, "onResponse: Ошибка запроса, код " + response.code());
 
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
             }
@@ -234,7 +238,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                 // Обработка ошибки сети или другие ошибки
                 Log.d(TAG, "onFailure: Ошибка сети: " + t.getMessage());
 
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             }
         });
@@ -251,7 +255,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
         MonoApi monoApi = retrofit.create(MonoApi.class);
 
-        String token = getResources().getString(R.string.mono_key_storage); // Получение токена из ресурсов
+        String token = context.getString(R.string.mono_key_storage); // Получение токена из ресурсов
         Call<ResponseStatusMono> call = monoApi.getInvoiceStatus(token, invoiceId);
 
         call.enqueue(new Callback<ResponseStatusMono>() {
@@ -280,7 +284,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                     // Обработка ошибки запроса
                     Log.d(TAG, "onResponse: Ошибка запроса, код " + response.code());
                     cancelOrderRevers(uid);
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
             }
@@ -290,7 +294,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                 // Обработка ошибки сети или другие ошибки
                 Log.d(TAG, "onFailure: Ошибка сети: " + t.getMessage());
                 cancelOrderRevers(uid);
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             }
         });
@@ -315,7 +319,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                         Log.d(TAG, "onResponse: result" + result);
                         timeoutText = result;
 
-                        String comment = getString(R.string.fondy_revers_message) + getString(R.string.fondy_message);;
+                        String comment = context.getString(R.string.fondy_revers_message) + context.getString(R.string.fondy_message);;
                         switch (pay_method) {
                             case "fondy_payment":
                                 getReversFondy(order_id, comment, amount);
@@ -329,7 +333,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                 } else {
                     // Обработка неуспешного ответа
                     if (pay_method.equals("nal_payment")) {
-                        timeoutText = getString(R.string.verify_internet);
+                        timeoutText = context.getString(R.string.verify_internet);
                     }
                 }
             }
@@ -340,32 +344,22 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                 String errorMessage = t.getMessage();
                 t.printStackTrace();
                 Log.d(TAG, "onFailure: " + errorMessage);
-                timeoutText = getString(R.string.verify_internet);
+                timeoutText = context.getString(R.string.verify_internet);
             }
         });
     }
-    private void cancelOrderDismiss(String value) {
+    private void cancelOrderDismiss() {
 
-        String url = baseUrl + "/" + api + "/android/webordersCancel/" + value + "/" + city  + "/" + application;
-        Call<Status> call = ApiClient.getApiService().cancelOrder(url);
-        Log.d(TAG, "cancelOrderDismiss: " + url);
+        String url = baseUrl + "/" + api + "/android/webordersCancelDouble/" + uid+ "/" + uid_Double + "/" + pay_method + "/" + city  + "/" + context.getString(R.string.application);
 
+        Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
+        Log.d(TAG, "cancelOrderDouble: " + url);
         call.enqueue(new Callback<Status>() {
             @Override
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
                 Status status = response.body();
                 if (status != null) {
-
-                    String result =  String.valueOf(status.getResponse());
-                    Log.d(TAG, "onResponse: result" + result);
-                    if(!timeout) {
-                        result = timeoutText;
-                    }
-
-                    if(timeout) {
-                        FinishActivity.text_status.setText(result);
-                    }
-
+                    FinishActivity.text_status.setText(timeoutText);
                 }
             }
 
@@ -378,6 +372,53 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
             }
         });
     }
+
+    private void cancelOrderDouble() {
+        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
+        String city = listCity.get(1);
+        String api = listCity.get(2);
+
+        String url = baseUrl + "/" + api + "/android/webordersCancelDouble/" + uid+ "/" + uid_Double + "/" + pay_method + "/" + city  + "/" + context.getString(R.string.application);
+
+        Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
+        Log.d(TAG, "cancelOrderDouble: " + url);
+
+        call.enqueue(new Callback<Status>() {
+            @Override
+            public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
+                if (response.isSuccessful()) {
+                    String comment = context.getString(R.string.fondy_revers_message) + context.getString(R.string.fondy_message);;
+                    switch (pay_method) {
+                        case "fondy_payment":
+                            getReversFondy(order_id, comment, amount);
+                            break;
+                        case "mono_payment":
+                            getReversMono(invoiceId, comment, Integer.parseInt(amount));
+                            break;
+                    }
+                    FinishActivity.btn_cancel_order.setVisibility(View.GONE);
+                    FinishActivity.btn_reset_status.setVisibility(View.GONE);
+
+                    if(!timeout) {
+                        FinishActivity.text_status.setText(timeoutText);
+                    } else {
+                        FinishActivity.text_status.setText(context.getString(R.string.ex_st_canceled));
+                    }
+                } else {
+                   FinishActivity.text_status.setText(R.string.verify_internet);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
+                // Обработка ошибок сети или других ошибок
+                String errorMessage = t.getMessage();
+                t.printStackTrace();
+                Log.d(TAG, "onFailure: " + errorMessage);
+                FinishActivity.text_status.setText(R.string.verify_internet);
+            }
+        });
+    }
     private void getReversFondy(String orderId, String comment, String amount) {
 
         Retrofit retrofit = new Retrofit.Builder()
@@ -386,8 +427,6 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                 .build();
 
         ReversApi apiService = retrofit.create(ReversApi.class);
- 
-
 
         ReversRequestData reversRequestData = new ReversRequestData(
                 orderId,
@@ -459,7 +498,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
         );
         Log.d(TAG, "getRevers: " + paymentRequest.toString());
 
-        String token = getResources().getString(R.string.mono_key_storage); // Получение токена из ресурсов
+        String token = context.getString(R.string.mono_key_storage); // Получение токена из ресурсов
         Call<ResponseCancelMono> call = monoApi.invoiceCancel(token, paymentRequest);
 
         call.enqueue(new Callback<ResponseCancelMono>() {
@@ -550,7 +589,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
 
                 } else {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
 
                 }
@@ -559,7 +598,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
             @Override
             public void onFailure(Call<ResponsePaySystem> call, Throwable t) {
                 if (isAdded()) {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
             }
@@ -573,16 +612,12 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
         Log.d(TAG, "onDismiss: hold " + hold);
 
 
-        if(!timeout) {
-            FinishActivity.btn_cancel_order.setVisibility(View.GONE);
-            FinishActivity.btn_reset_status.setVisibility(View.GONE);
-            FinishActivity.handler.removeCallbacks(FinishActivity.myRunnable);
-            FinishActivity.text_status.setText(timeoutText);
-        } else  {
+        statusOrderWithDifferentValue(uid, true);
+        if(timeout) {
             stopPaymentTimer();
         }
-        statusOrderWithDifferentValue(uid, true);
-        statusOrderWithDifferentValue(uid_Double, false);
+
+//        statusOrderWithDifferentValue(uid_Double, false);
     }
 
     private void statusOrderWithDifferentValue(String value, boolean info) {
@@ -611,36 +646,25 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                         requiredTime = formatDate (orderResponse.getRequiredTime());
                     }
 
-
                     String message;
                     // Обработка различных вариантов executionStatus
                     switch (executionStatus) {
                         case "WaitingCarSearch":
                             message = messageWaitingCarSearch;
                             if(!hold && info) {
-                                FinishActivity.btn_cancel_order.setVisibility(View.GONE);
-                                FinishActivity.btn_reset_status.setVisibility(View.GONE);
-                                FinishActivity.handler.removeCallbacks(FinishActivity.myRunnable);
-                                cancelOrderDismiss(uid);
-                                cancelOrderDismiss(uid_Double);
+                                cancelOrderDouble();
                             }
                             break;
                         case "SearchesForCar":
                             message = messageSearchesForCar;
                             if(!hold && info) {
-                                FinishActivity.btn_cancel_order.setVisibility(View.GONE);
-                                FinishActivity.btn_reset_status.setVisibility(View.GONE);
-                                FinishActivity.handler.removeCallbacks(FinishActivity.myRunnable);
-                                cancelOrderDismiss(uid);
-                                cancelOrderDismiss(uid_Double);
+                                cancelOrderDouble();
                             }
                             break;
                         case "Canceled":
                             message = messageCanceled;
                             FinishActivity.btn_cancel_order.setVisibility(View.GONE);
                             FinishActivity.btn_reset_status.setVisibility(View.GONE);
-                            FinishActivity.handler.removeCallbacks(FinishActivity.myRunnable);
-                            
 
                             switch (pay_method) {
                                 case "fondy_payment":
@@ -653,7 +677,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                             break;
                         case "CarFound":
                             // Формируем сообщение с учетом возможных пустых значений переменных
-                            StringBuilder messageBuilder = new StringBuilder(getString(R.string.ex_st_2));
+                            StringBuilder messageBuilder = new StringBuilder(context.getString(R.string.ex_st_2));
 
                             if (orderCarInfo != null && !orderCarInfo.isEmpty()) {
                                 messageBuilder.append(messageCarFoundOrderCarInfo).append(orderCarInfo);
@@ -669,15 +693,14 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
                             message = messageBuilder.toString();
                             if(!hold && info) {
-                                FinishActivity.btn_cancel_order.setVisibility(View.GONE);
-                                FinishActivity.btn_reset_status.setVisibility(View.GONE);
+
                                 FinishActivity.handler.removeCallbacks(FinishActivity.myRunnable);
-                                cancelOrderDismiss(uid);
-                                cancelOrderDismiss(uid_Double);
+                                cancelOrderDouble();
                             }
                             break;
                         default:
                             message = def_status;
+                            cancelOrderDouble();
                             break;
                     }
 
@@ -685,10 +708,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                         message = timeoutText;
                     }
 
-                    if(timeout && info) {
-                        FinishActivity.text_status.setText(message);
-                    }
-
+                    FinishActivity.text_status.setText(message);
 
                 } else {
                     FinishActivity.text_status.setText(def_status);
@@ -732,12 +752,11 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
         String tableCard = "";
         switch (pay_system) {
-            case "fondy":
-                tableCard = MainActivity.TABLE_FONDY_CARDS;
-                break;
             case "mono":
                 tableCard = MainActivity.TABLE_MONO_CARDS;
                 break;
+            default:
+                tableCard = MainActivity.TABLE_FONDY_CARDS;
         }
         String finalTableCard = tableCard;
         call.enqueue(new Callback<CallbackResponse>() {
@@ -750,7 +769,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
                         if (cards != null && !cards.isEmpty()) {
                             SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-
+                            database.delete(finalTableCard, "1", null);
                             for (CardInfo cardInfo : cards) {
                                 String masked_card = cardInfo.getMasked_card(); // Маска карты
                                 String card_type = cardInfo.getCard_type(); // Тип карты
@@ -760,41 +779,28 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                                 Log.d(TAG, "onResponse: card_token 11111: " + rectoken);
 
                                 if (isAdded()) {
-                                    // Проверяем, есть ли запись с таким rectoken в таблице
-                                    Cursor cursor = database.query(
-                                            finalTableCard,
-                                            new String[]{"rectoken"},
-                                            "rectoken = ?",
-                                            new String[]{rectoken},
-                                            null,
-                                            null,
-                                            null
-                                    );
-                                    if (cursor.getCount() == 0) {
-                                        // Если нет записи с таким rectoken, добавляем новую запись
-                                        ContentValues cv = new ContentValues();
-                                        cv.put("masked_card", masked_card);
-                                        cv.put("card_type", card_type);
-                                        cv.put("bank_name", bank_name);
-                                        cv.put("rectoken", rectoken);
-                                        cv.put("merchant", MERCHANT_ID);
-                                        cv.put("rectoken_check", "1");
-                                        database.insert(finalTableCard, null, cv);
-
-                                        cv = new ContentValues();
-                                        cv.put("rectoken_check", "0");
-
-                                        int rowsAffected = database.update(finalTableCard, cv, "merchant = ?", new String[]{MERCHANT_ID});
-
-                                        if (rowsAffected > 0) {
-                                            Log.d(TAG, "Rows affected: " + rowsAffected);
-                                        } else {
-                                            Log.d(TAG, "No rows affected");
-                                        }
-                                    }
-                                    cursor.close();
+                                    // Если нет записи с таким rectoken, добавляем новую запись
+                                    ContentValues cv = new ContentValues();
+                                    cv.put("masked_card", masked_card);
+                                    cv.put("card_type", card_type);
+                                    cv.put("bank_name", bank_name);
+                                    cv.put("rectoken", rectoken);
+                                    cv.put("merchant", MERCHANT_ID);
+                                    cv.put("rectoken_check", "-1");
+                                    database.insert(finalTableCard, null, cv);
                                 }
                             }
+                            // Выбираем минимальное значение ID из таблицы
+                            Cursor cursor = database.query(finalTableCard, new String[]{"MIN(id)"}, null, null, null, null, null);
+                            if (cursor != null && cursor.moveToFirst()) {
+                                int minId = cursor.getInt(0);
+                                cursor.close();
+
+                                ContentValues cv = new ContentValues();
+                                cv.put("rectoken_check", "1");
+                                database.update(finalTableCard, cv, "id = ?", new String[] { String.valueOf(minId) });
+                            }
+
 
                             database.close();
                         }
@@ -851,8 +857,8 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
             public void onFinish() {
                 // Таймер завершился, обрабатываем таймаут
                 timeout = false;
-                cancelOrderDismiss(uid);
-                cancelOrderDismiss(uid_Double);
+                FinishActivity.text_status.setText(getResources().getString(R.string.time_out_text));
+                cancelOrderDismiss();
             }
         }.start();
     }

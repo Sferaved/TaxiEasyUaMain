@@ -16,20 +16,22 @@
 
     </org.osmdroid.views.MapView>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+
+    <ImageButton
         android:id="@+id/fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/btn_accents"
+        android:scaleType="centerInside"
+        android:src="@drawable/arrow_back_fill0_wght400_grad0_opsz24"
 
-        android:layout_marginTop="8sp"
-        android:layout_marginStart="8sp"
         android:contentDescription="@string/make_rout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@android:drawable/ic_menu_info_details"
-        tools:ignore="MissingConstraints" />
 
+        tools:ignore="MissingConstraints" />
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="409sp"

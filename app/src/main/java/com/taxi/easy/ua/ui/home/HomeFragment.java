@@ -40,7 +40,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.ColorRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -167,18 +166,7 @@ public class HomeFragment extends Fragment {
         finiched = true;
 
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                if (alertDialog != null && alertDialog.isShowing()) {
-                    alertDialog.dismiss();
-                } else {
-                    // Действия, которые нужно выполнить при нажатии кнопки "назад", если диалог не открыт
-                    // Например, вызов стандартного обработчика кнопки "назад"
-                    requireActivity().onBackPressed();
-                }
-            }
-        });
+
         progressBar = binding.progressBar;
         buttonBonus = binding.btnBonus;
 
@@ -433,7 +421,7 @@ public class HomeFragment extends Fragment {
         fab_call.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                getRevers("V_20240113144017635_1XZW", "повернення замовлення", "6000");
+//                getRevers("V_20240416093908005_L3KA", "повернення замовлення", "4000");
 
                 Intent intent = new Intent(Intent.ACTION_DIAL);
                 List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());

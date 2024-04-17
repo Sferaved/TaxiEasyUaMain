@@ -69,6 +69,13 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
             textViewInfo.setText(errorMessage);
         } else {
             textViewInfo.setText(getString(R.string.error_message));
+            btn_ok.setText(getString(R.string.try_again));
+            btn_ok.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    startActivity(new Intent(requireContext(), MainActivity.class));
+                }
+            });
         }
 
         return view;

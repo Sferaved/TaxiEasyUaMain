@@ -10,68 +10,78 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/textResult"
+        <TextView
+            android:id="@+id/textResult"
 
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16sp"
-        android:fontFamily="@font/light"
-        android:text="@string/text_result"
-        android:textColor="#9DA0A8"
-        android:textSize="14sp"
-        app:layout_constraintStart_toStartOf="@+id/text_full_message"
-        app:layout_constraintTop_toTopOf="parent" />
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16sp"
+            android:fontFamily="@font/light"
+            android:text="@string/text_result"
+            android:textColor="#9DA0A8"
+            android:textSize="14sp"
+            app:layout_constraintStart_toStartOf="@+id/text_full_message"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/text_full_message"
+        <TextView
+            android:id="@+id/text_full_message"
 
-        android:layout_width="293sp"
-        android:layout_height="wrap_content"
-        android:gravity="left"
-        android:layout_marginTop="4sp"
-        android:background="@drawable/input"
-        android:ems="10"
-        android:fontFamily="@font/light"
-        android:minHeight="48sp"
-        android:textColor="#D9D9D9"
-        android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.502"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textResult" />
+            android:layout_width="293sp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4sp"
+            android:background="@drawable/input"
+            android:ems="10"
+            android:fontFamily="@font/light"
+            android:gravity="left"
+            android:minHeight="48sp"
+            android:textColor="#D9D9D9"
+            android:textSize="18sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.502"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textResult" />
 
-    <TextView
-        android:id="@+id/textStatus"
+        <TextView
+            android:id="@+id/textStatus"
 
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="4sp"
-        android:layout_marginTop="28sp"
-        android:fontFamily="@font/light"
-        android:text="@string/textStatus"
-        android:textColor="#9DA0A8"
-        android:textSize="14sp"
-        app:layout_constraintStart_toStartOf="@+id/text_full_message"
-        app:layout_constraintTop_toBottomOf="@+id/text_full_message" />
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4sp"
+            android:layout_marginTop="28sp"
+            android:fontFamily="@font/light"
+            android:text="@string/textStatus"
+            android:textColor="#9DA0A8"
+            android:textSize="14sp"
+            app:layout_constraintStart_toStartOf="@+id/text_full_message"
+            app:layout_constraintTop_toBottomOf="@+id/text_full_message" />
 
-    <TextView
-        android:id="@+id/text_status"
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:visibility="invisible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_full_message" />
 
-        android:layout_width="293sp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4sp"
-        android:background="@drawable/input"
-        android:ems="10"
-        android:fontFamily="@font/light"
-        android:gravity="left"
-        android:minHeight="48sp"
-        android:textColor="#D9D9D9"
-        android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.502"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textStatus" />
+        <TextView
+            android:id="@+id/text_status"
+
+            android:layout_width="293sp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4sp"
+            android:background="@drawable/input"
+            android:ems="10"
+            android:fontFamily="@font/light"
+            android:gravity="left"
+            android:minHeight="48sp"
+            android:textColor="#D9D9D9"
+            android:textSize="18sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.502"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textStatus" />
 
         <Button
             android:id="@+id/btn_reset_status"
@@ -89,52 +99,52 @@
             app:layout_constraintTop_toBottomOf="@+id/text_status" />
 
         <Button
-        android:id="@+id/btn_cancel_order"
-        android:layout_width="293sp"
-        android:layout_height="45sp"
+            android:id="@+id/btn_cancel_order"
+            android:layout_width="293sp"
+            android:layout_height="45sp"
 
-        android:layout_marginTop="8sp"
-        android:background="@drawable/buttons"
-        android:fontFamily="@font/regular"
-        android:text="@string/cancel_order"
-        android:textAlignment="center"
-        android:textColor="#D9D9D9"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.502"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_reset_status" />
+            android:layout_marginTop="8sp"
+            android:background="@drawable/buttons"
+            android:fontFamily="@font/regular"
+            android:text="@string/cancel_order"
+            android:textAlignment="center"
+            android:textColor="#D9D9D9"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.502"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btn_reset_status" />
 
-    <Button
-        android:id="@+id/btn_again"
-        android:layout_width="293sp"
-        android:layout_height="45sp"
+        <Button
+            android:id="@+id/btn_again"
+            android:layout_width="293sp"
+            android:layout_height="45sp"
 
-        android:layout_marginTop="8sp"
-        android:background="@drawable/buttons"
-        android:fontFamily="@font/regular"
-        android:text="@string/btn_again_text"
-        android:textAlignment="center"
-        android:textColor="#D9D9D9"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.502"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_cancel_order" />
+            android:layout_marginTop="8sp"
+            android:background="@drawable/buttons"
+            android:fontFamily="@font/regular"
+            android:text="@string/btn_again_text"
+            android:textAlignment="center"
+            android:textColor="#D9D9D9"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.502"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btn_cancel_order" />
 
-    <Button
-        android:id="@+id/btn_cancel"
-        android:layout_width="293sp"
-        android:layout_height="45sp"
+        <Button
+            android:id="@+id/btn_cancel"
+            android:layout_width="293sp"
+            android:layout_height="45sp"
 
-        android:layout_marginTop="8sp"
-        android:background="@drawable/buttons"
-        android:fontFamily="@font/regular"
-        android:text="@string/action_exit"
-        android:textAlignment="center"
-        android:textColor="#D9D9D9"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.502"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_again" />
+            android:layout_marginTop="8sp"
+            android:background="@drawable/buttons"
+            android:fontFamily="@font/regular"
+            android:text="@string/action_exit"
+            android:textAlignment="center"
+            android:textColor="#D9D9D9"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.502"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btn_again" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_call"

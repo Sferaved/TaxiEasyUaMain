@@ -493,6 +493,8 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                             Log.d(TAG, "onResponse: cards" + cards);
                             if (cards != null && !cards.isEmpty()) {
                                 SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                                // Очистка таблицы
+                                database.delete(MainActivity.TABLE_FONDY_CARDS, "1", null);
                                 for (CardInfo cardInfo : cards) {
                                     ContentValues cv = new ContentValues();
                                     String masked_card = cardInfo.getMasked_card(); // Маска карты
@@ -511,11 +513,20 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                                     cv.put("rectoken_check", "-1");
                                     database.insert(MainActivity.TABLE_FONDY_CARDS, null, cv);
                                 }
-                                ContentValues cv = new ContentValues();
-                                cv.put("rectoken_check", "1");
-                                database.update(MainActivity.TABLE_FONDY_CARDS, cv, "id = ?",
-                                        new String[] { "1" });
+                                // Выбираем минимальное значение ID из таблицы
+                                Cursor cursor = database.rawQuery("SELECT MIN(id) FROM " + MainActivity.TABLE_FONDY_CARDS, null);
+                                if (cursor != null && cursor.moveToFirst()) {
+                                    // Получаем минимальное значение ID
+                                    int minId = cursor.getInt(0);
+                                    cursor.close();
+
+                                    // Обновляем строку с минимальным ID
+                                    ContentValues cv = new ContentValues();
+                                    cv.put("rectoken_check", "1");
+                                    database.update(MainActivity.TABLE_FONDY_CARDS, cv, "id = ?", new String[] { String.valueOf(minId) });
+                                }
                                 database.close();
+
                             }
                         }
 

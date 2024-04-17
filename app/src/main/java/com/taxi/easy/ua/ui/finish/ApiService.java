@@ -12,6 +12,8 @@ import retrofit2.http.Url;
 public interface ApiService {
     @GET
     Call<Status> cancelOrder(@Url String url);
+    @GET
+    Call<Status> cancelOrderDouble(@Url String url);
 
     @GET
     Call<OrderResponse> statusOrder(@Url String url);

@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
@@ -132,6 +133,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
     private boolean extraExit;
     private long timeout = 50;
     NavController navController;
+    LocationManager locationManager;
     @SuppressLint("MissingInflatedId")
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Nullable
@@ -587,6 +589,20 @@ public class ActivityVisicomOnePage extends AppCompatActivity
             toEditAddress.setSelection(toEditAddress.getText().toString().length());
             KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
         }
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                btn_change.setBackground(getResources().getDrawable(R.drawable.btn_red));
+                btn_change.setTextColor(Color.WHITE);
+            } else {
+                btn_change.setBackground(getResources().getDrawable(R.drawable.btn_green));
+                btn_change.setTextColor(Color.WHITE);
+            }
+        } else {
+            btn_change.setBackground(getResources().getDrawable(R.drawable.btn_yellow));
+            btn_change.setTextColor(Color.BLACK);
+        }
     }
 
 
@@ -719,6 +735,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getApplicationContext());
         Log.d(TAG, "firstLocation: ");
         btn_change.setText(R.string.cancel_gps);
+
         btn_change.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -731,11 +748,12 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                     // Например, изменение текста на кнопке или другие обновления интерфейса
                     btn_change.setText(R.string.change); // Предположим, что текст на кнопке изменяется на "Start GPS"
                 }
+
                 btn_change.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
 
-                        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
                         if (locationManager != null) {
                             if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                                 Log.d(TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));

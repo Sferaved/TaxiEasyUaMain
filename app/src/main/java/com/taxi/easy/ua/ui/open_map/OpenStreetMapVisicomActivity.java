@@ -25,6 +25,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.Toast;
@@ -86,7 +87,8 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     private static ApiService apiService;
 
     public String[] arrayStreet;
-    public static FloatingActionButton fab, fab_call, fab_open_map, fab_open_marker;
+    public static FloatingActionButton  fab_call, fab_open_map, fab_open_marker;
+    public static ImageButton fab;
 
     public static double startLat, startLan, finishLat, finishLan;
     public static MapView map;

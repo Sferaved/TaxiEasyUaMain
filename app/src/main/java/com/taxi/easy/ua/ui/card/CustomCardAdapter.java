@@ -277,7 +277,6 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             CardFragment.listView.setVisibility(View.GONE);
             CardFragment.textCard.setText(R.string.no_cards);
         }
-        CardFragment.btnCardLink.setVisibility(View.INVISIBLE);
     }
 
     // Проверка наличия таблицы в базе данных

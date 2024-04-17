@@ -15,6 +15,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
@@ -441,7 +442,7 @@ public class VisicomFragment extends Fragment{
             Log.d("T", "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
 
             String orderWeb = sendUrlMap.get("order_cost");
-            String message = requireActivity().getString(R.string.error_message);
+            String message = sendUrlMap.get("message");
             if (!orderWeb.equals("0")) {
                 String to_name;
                 if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
@@ -489,10 +490,13 @@ public class VisicomFragment extends Fragment{
                 intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
                 startActivity(intent);
             } else {
-//                String messagePaymentType = "Оплата выбранным методом в данный момент не возможна. Заказать с оплатой наличными?"
-                changePayMethodToNal();
-//            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-//            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                if (message.contains("Дублирование")) {
+                    message = getResources().getString(R.string.double_order_error);
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                } else {
+                    changePayMethodToNal();
+                }
                 progressBar.setVisibility(View.INVISIBLE);
             }
         } else {
@@ -902,28 +906,6 @@ public class VisicomFragment extends Fragment{
         btn_minus.setOnClickListener(v -> {
 
             List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
-            addCost = Long.parseLong(stringListInfo.get(5));
-            String costText = text_view_cost.getText().toString();
-            if (!costText.isEmpty()) {
-                try {
-                    long cost = Long.parseLong(costText);
-                    // Proceed with using the 'cost' variable
-                } catch (NumberFormatException e) {
-                    // Handle the case where the input string is not a valid long value
-                    e.printStackTrace(); // Or log the error, display an error message, etc.
-                }
-            }
-            cost -= 5;
-            addCost -= 5;
-            if (cost >= MIN_COST_VALUE) {
-                updateAddCost(String.valueOf(addCost));
-                text_view_cost.setText(String.valueOf(cost));
-            }
-        });
-
-        btn_plus.setOnClickListener(v -> {
-            List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
-
 
             String costString = text_view_cost.getText().toString();
             if (!costString.isEmpty()) {
@@ -935,7 +917,26 @@ public class VisicomFragment extends Fragment{
                 addCost = Long.parseLong(addCostString);
             }
 
+            cost -= 5;
+            addCost -= 5;
+            if (cost >= MIN_COST_VALUE) {
+                updateAddCost(String.valueOf(addCost));
+                text_view_cost.setText(String.valueOf(cost));
+            }
+        });
 
+        btn_plus.setOnClickListener(v -> {
+            List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
+
+            String costString = text_view_cost.getText().toString();
+            if (!costString.isEmpty()) {
+                cost = Long.parseLong(costString);
+            }
+
+            String addCostString = stringListInfo.get(5);
+            if (!addCostString.isEmpty()) {
+                addCost = Long.parseLong(addCostString);
+            }
 
             cost += 5;
             addCost += 5;
@@ -1052,8 +1053,8 @@ public class VisicomFragment extends Fragment{
         num2 = binding.num2;
 
         gpsbut = binding.gpsbut;
+        LocationManager locationManager = (LocationManager) requireActivity().getSystemService(Context.LOCATION_SERVICE);
         gpsbut.setOnClickListener(v -> {
-            LocationManager locationManager = (LocationManager) requireActivity().getSystemService(Context.LOCATION_SERVICE);
             if (locationManager != null) {
                 if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                     // GPS включен, выполните ваш код здесь
@@ -1098,20 +1099,30 @@ public class VisicomFragment extends Fragment{
 
                 } else {
                     // GPS выключен, выполните необходимые действия
-                    // Например, показать диалоговое окно с предупреждением о включении GPS
-//                    checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//                    checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+
                     MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
             } else {
-//                checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//                checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+
                 MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             }
         });
-
+        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_red));
+                gpsbut.setTextColor(Color.WHITE);
+            } else {
+                gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_green));
+                gpsbut.setTextColor(Color.WHITE);
+//                gpsbut.performClick();
+            }
+        } else {
+            gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_yellow));
+            gpsbut.setTextColor(Color.BLACK);
+        }
 
 
 
@@ -1170,6 +1181,7 @@ public class VisicomFragment extends Fragment{
 //                btn_clear_to.setVisibility(View.INVISIBLE);
 //            }
             if (!newRout()) {
+                progressBar.setVisibility(View.VISIBLE);
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {

@@ -206,7 +206,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                         List<CardInfo> cards = callbackResponse.getCards();
                         Log.d(TAG, "onResponse: cards" + cards);
                         if (cards != null && !cards.isEmpty()) {
-                            database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
                             for (CardInfo cardInfo : cards) {
                                 String masked_card = cardInfo.getMasked_card(); // Маска карты
@@ -215,49 +215,28 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                                 String rectoken = cardInfo.getRectoken(); // Токен карты
 
                                 Log.d(TAG, "onResponse: card_token: " + rectoken);
+                                ContentValues cv = new ContentValues();
+                                cv.put("masked_card", masked_card);
+                                cv.put("card_type", card_type);
+                                cv.put("bank_name", bank_name);
+                                cv.put("rectoken", rectoken);
+                                cv.put("merchant", MERCHANT_ID);
+                                cv.put("rectoken_check", "0");
+                                database.insert(MainActivity.TABLE_FONDY_CARDS, null, cv);
+                            }
+                            Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_FONDY_CARDS + " ORDER BY id DESC LIMIT 1", null);
+                            if (cursor != null && cursor.moveToFirst()) {
+                                // Получаем значение ID последней записи
+                                @SuppressLint("Range") int lastId = cursor.getInt(cursor.getColumnIndex("id"));
+                                cursor.close();
 
-
-                                    // Проверяем, есть ли запись с таким rectoken в таблице
-                                    Cursor cursor = database.query(
-                                            MainActivity.TABLE_FONDY_CARDS,
-                                            new String[]{"rectoken"},
-                                            "rectoken = ?",
-                                            new String[]{rectoken},
-                                            null,
-                                            null,
-                                            null
-                                    );
-//                                    Log.d(TAG, "onResponse: cursor.getCount() " + cursor.getCount());
-                                    if (cursor.getCount() == 0) {
-                                        // Если нет записи с таким rectoken, добавляем новую запись
-                                        ContentValues cv = new ContentValues();
-                                        cv.put("masked_card", masked_card);
-                                        cv.put("card_type", card_type);
-                                        cv.put("bank_name", bank_name);
-                                        cv.put("rectoken", rectoken);
-                                        cv.put("merchant", MERCHANT_ID);
-                                        cv.put("rectoken_check", "1");
-                                        database.insert(MainActivity.TABLE_FONDY_CARDS, null, cv);
-
-                                        cv = new ContentValues();
-                                        cv.put("rectoken_check", "0");
-
-                                        int rowsAffected = database.update(MainActivity.TABLE_FONDY_CARDS, cv, "merchant = ?", new String[]{MERCHANT_ID});
-
-                                        if (rowsAffected > 0) {
-                                            Log.d(TAG, "Rows affected: " + rowsAffected);
-                                        } else {
-                                            Log.d(TAG, "No rows affected");
-                                        }
-
-                                    }
-
-                                    cursor.close();
-
-
+                                // Обновляем строку с найденным ID
+                                ContentValues cv = new ContentValues();
+                                cv.put("rectoken_check", "1");
+                                database.update(MainActivity.TABLE_FONDY_CARDS, cv, "id = ?", new String[] { String.valueOf(lastId) });
                             }
 
-
+                            database.close();
                         }
                     }
 

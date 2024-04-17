@@ -95,6 +95,11 @@ public class CardFragment extends Fragment {
         String MERCHANT_ID = arrayList.get(6);
         textCard = binding.textCard;
         listView = binding.listView;
+        if(textCard.getVisibility() == View.VISIBLE) {
+            btnCardLink.setVisibility(View.VISIBLE);
+            listView.setVisibility(View.GONE);
+        }
+
         progressBar = binding.progressBar;
         Log.d(TAG, "onResume: " + MERCHANT_ID);
         if (MERCHANT_ID != null) {
@@ -172,7 +177,7 @@ public class CardFragment extends Fragment {
 
         } else {
             textCard.setVisibility(View.GONE);
-            btnCardLink.setVisibility(View.GONE);
+//            btnCardLink.setVisibility(View.GONE);
             MyBottomSheetErrorCardFragment bottomSheetDialogFragment = new MyBottomSheetErrorCardFragment(getString(R.string.city_no_cards));
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
 
@@ -188,22 +193,20 @@ public class CardFragment extends Fragment {
         Cursor cursor = database.query(table, null, null, null, null, null, null);
         Log.d(TAG, "getCardMapsFromDatabase: card count: " + cursor.getCount());
 
-        if (cursor != null) {
-            if (cursor.moveToFirst()) {
-                do {
-                    Map<String, String> cardMap = new HashMap<>();
-                    cardMap.put("card_type", cursor.getString(cursor.getColumnIndex("card_type")));
-                    cardMap.put("bank_name", cursor.getString(cursor.getColumnIndex("bank_name")));
-                    cardMap.put("masked_card", cursor.getString(cursor.getColumnIndex("masked_card")));
-                    cardMap.put("rectoken", cursor.getString(cursor.getColumnIndex("rectoken")));
-                    cardMap.put("rectoken_check", cursor.getString(cursor.getColumnIndex("rectoken_check")));
+        if (cursor.moveToFirst()) {
+            do {
+                Map<String, String> cardMap = new HashMap<>();
+                cardMap.put("card_type", cursor.getString(cursor.getColumnIndex("card_type")));
+                cardMap.put("bank_name", cursor.getString(cursor.getColumnIndex("bank_name")));
+                cardMap.put("masked_card", cursor.getString(cursor.getColumnIndex("masked_card")));
+                cardMap.put("rectoken", cursor.getString(cursor.getColumnIndex("rectoken")));
+                cardMap.put("rectoken_check", cursor.getString(cursor.getColumnIndex("rectoken_check")));
 
-                    cardMaps.add(cardMap);
-                } while (cursor.moveToNext());
-            }
-            cursor.close();
-
+                cardMaps.add(cardMap);
+            } while (cursor.moveToNext());
         }
+        cursor.close();
+
         database.close();
 
         return cardMaps;
@@ -418,6 +421,8 @@ public class CardFragment extends Fragment {
                     Log.d("TAG1", "onFailure: " + response.code());
                 }
                 progressBar.setVisibility(View.GONE);
+//                navController.navigate(R.id.nav_visicom);
+
             }
 
             @Override

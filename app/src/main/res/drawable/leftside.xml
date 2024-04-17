@@ -3,8 +3,8 @@
     <solid android:color="#D9D9D9" />
 
     <padding
-        android:left="10dp"
-        android:right="10dp"
-        android:bottom="10dp"
-        android:top="10dp" />
+        android:left="10sp"
+        android:right="10sp"
+        android:bottom="10sp"
+        android:top="10sp" />
 </shape>

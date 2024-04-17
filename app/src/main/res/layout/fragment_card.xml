@@ -13,34 +13,35 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="8sp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         android:layout_marginEnd="8sp"
         android:fontFamily="@font/regular"
         android:minHeight="30sp"
-        android:textAlignment="center"
 
+        android:textAlignment="center"
         android:textColor="#D9D9D9"
         android:textSize="18sp"
-        android:visibility="gone"
+        android:visibility="visible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/progress_bar"
         tools:ignore="RtlCompat" />
 
     <ListView
         android:id="@+id/listView"
         android:layout_width="match_parent"
-        android:layout_height="200sp"
-        android:layout_marginTop="12dp"
+        android:layout_height="400sp"
         android:divider="@color/colorAccent"
         android:dividerHeight="1sp"
-        android:visibility="gone"
         android:fontFamily="@font/regular"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/text_card" />
+        app:layout_constraintTop_toBottomOf="@+id/text_card"
+        app:layout_constraintVertical_bias="0.054" />
 
     <ProgressBar
         android:id="@+id/progress_bar"
@@ -58,8 +59,8 @@
         android:id="@+id/btn_card_link"
         android:layout_width="293sp"
         android:layout_height="45sp"
-        android:layout_marginTop="12dp"
 
+        android:layout_marginTop="12dp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
         android:text="@string/link_card"
@@ -68,6 +69,6 @@
         android:textSize="15sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/listView" />
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
