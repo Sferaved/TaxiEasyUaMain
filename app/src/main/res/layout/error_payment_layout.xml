@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/new_background_color">
+
+    <TextView
+        android:id="@+id/textViewInfo"
+        android:layout_width="280sp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20sp"
+        android:background="@drawable/error"
+        android:gravity="center"
+        android:text="@string/error_payment_card"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.496"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="MissingConstraints" />
+
+    <ListView
+        android:id="@+id/listView"
+        android:layout_width="match_parent"
+        android:layout_height="134dp"
+        android:layout_margin="4dp"
+        android:layout_marginTop="20dp"
+        android:divider="@color/colorAccent"
+
+        android:dividerHeight="1sp"
+        android:fontFamily="@font/regular"
+        android:visibility="visible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text_card" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_help"
+        android:layout_width="197sp"
+        android:layout_height="45sp"
+
+        android:layout_marginTop="20dp"
+        android:background="@drawable/buttons"
+        android:backgroundTint="@color/colorAccent"
+        android:fontFamily="@font/regular"
+        android:text="@string/action_help"
+        android:textAlignment="center"
+        android:textColor="@color/white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.551"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_ok" />
+
+    <TextView
+        android:id="@+id/text_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:fontFamily="@font/regular"
+        android:minHeight="30sp"
+        android:text="@string/user_cards"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        android:textSize="18sp"
+        android:visibility="visible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewInfo" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_ok"
+        android:layout_width="197sp"
+        android:layout_height="45sp"
+
+        android:layout_marginTop="8dp"
+        android:background="@drawable/buttons"
+        android:backgroundTint="@color/wallet_bright_foreground_disabled_holo_light"
+        android:fontFamily="@font/regular"
+        android:text="@string/nal_payment_btn"
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.551"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_add_card" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_add_card"
+        android:layout_width="197sp"
+        android:layout_height="45sp"
+
+        android:layout_marginTop="8dp"
+        android:background="@drawable/buttons"
+        android:backgroundTint="@color/wallet_bright_foreground_disabled_holo_light"
+        android:fontFamily="@font/regular"
+        android:text="@string/new_card_btn"
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.551"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_card" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_card"
+        android:layout_width="197sp"
+        android:layout_height="45sp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/buttons"
+        android:backgroundTint="@color/wallet_bright_foreground_disabled_holo_light"
+        android:fontFamily="@font/regular"
+        android:text="@string/chois_card_btn"
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.551"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/listView" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

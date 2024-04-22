@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.741</string>
-    <string name="version">Версия: 1.741</string>
+    <string name="version_code">1.742</string>
+    <string name="version">Версия: 1.742</string>
 
     <string name="app_name">Такси Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -51,11 +51,11 @@
     <string name="verify_phone">Проверка телефона</string>
     <string name="format_phone">Формат ввода телефонного номера: +380936665544</string>
     <string name="sent_button">Отправить</string>
-    <string name="verify_internet">Проверьте интернет-подключение или позвоните оператору.</string>
+    <string name="verify_internet">Проверьте интернет-подключение, позвоните оператору или перегрузите приложение.</string>
     <string name="save_button">Сохранить</string>
     <string name="you_this">"Вы сейчас здесь: "</string>
     <string name="make_rout_message">Сформируйте маршрут</string>
-    <string name="error_message">Произошла ошибка. Наберите оператора.</string>
+    <string name="error_message">Произошла ошибка. Наберите оператора или перезагрузите приложение.</string>
     <string name="to_point">"Место назначения: "</string>
     <string name="cost_of_order">" Стоимость поездки: "</string>
     <string name="firebase_false_message">грн. Извините, без проверки Google-аккаунта заказ невозможен.</string>
@@ -342,6 +342,11 @@
     <string name="to_nal_payment_count">Оплата выбранным методом в данный момент невозможна. Расчитать поездку с оплатой наличными?</string>
     <string name="tarif">Тариф:</string>
     <string name="tar">Тариф</string>
-    <string name="double_order_error">Дублирование заказа. Вы не можете создавать подобный заказ, пока не нашлась машина на предыдущий заказ</string>
+    <string name="double_order_error">Дублирование заказа. Вы не можете создавать подобный заказ, пока не нашлась машина на предыдущий заказ.</string>
+    <string name="user_cards">Ваши карты для оплаты поездок:</string>
+    <string name="error_payment_card">Ошибка обработки платежа. Выберитие другую карту или закажите поездку за наличные.</string>
+    <string name="nal_payment_btn">За наличные</string>
+    <string name="new_card_btn">Новая карта</string>
+    <string name="chois_card_btn">Выбраной картой</string>
 
 </resources>

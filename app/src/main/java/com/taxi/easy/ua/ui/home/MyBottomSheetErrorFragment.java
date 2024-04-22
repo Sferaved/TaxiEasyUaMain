@@ -10,6 +10,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -57,16 +58,34 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         });
 
         btn_ok = view.findViewById(R.id.btn_ok);
-        btn_ok.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                dismiss();
-            }
-        });
-        textViewInfo = view.findViewById(R.id.textViewInfo);
 
+        textViewInfo = view.findViewById(R.id.textViewInfo);
+        Log.d("TAG", "onCreateView:errorMessage " + errorMessage);
         if (errorMessage != null && !errorMessage.equals("null")) {
             textViewInfo.setText(errorMessage);
+            if (errorMessage.equals(getString(R.string.verify_internet))
+                || errorMessage.equals(getString(R.string.error_message))
+            ) {
+                btn_ok.setText(getString(R.string.try_again));
+                btn_ok.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        try {
+                            MyBottomSheetErrorFragment.this.finalize();
+                        } catch (Throwable e) {
+                            throw new RuntimeException(e);
+                        }
+                        startActivity(new Intent(requireContext(), MainActivity.class));
+                    }
+                });
+            } else {
+                btn_ok.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        dismiss();
+                    }
+                });
+            }
         } else {
             textViewInfo.setText(getString(R.string.error_message));
             btn_ok.setText(getString(R.string.try_again));

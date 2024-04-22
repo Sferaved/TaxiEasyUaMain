@@ -207,7 +207,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                         Log.d(TAG, "onResponse: cards" + cards);
                         if (cards != null && !cards.isEmpty()) {
                             SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-
+                            database.delete(MainActivity.TABLE_FONDY_CARDS, "1", null);
                             for (CardInfo cardInfo : cards) {
                                 String masked_card = cardInfo.getMasked_card(); // Маска карты
                                 String card_type = cardInfo.getCard_type(); // Тип карты

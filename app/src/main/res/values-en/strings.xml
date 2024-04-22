@@ -2,14 +2,13 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.741</string>
-    <string name="version">Version: 1.741</string>
+    <string name="version_code">1.742</string>
+    <string name="version">Version: 1.742</string>
 
     <string name="app_name">Taxi Light</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
     <string name="back4app_app_id">01YGF894m3NJRXT1BlH6qPo9pUfDlG9sqi9K9mIL</string>
     <string name="back4app_client_key">T5f5GuT1UCmaiJn8Dek3sVmayGuJa2jfelQR6V6f</string>
-
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -52,11 +51,11 @@
     <string name="verify_phone">Verify phone</string>
     <string name="format_phone">Phone number input format: +380936665544</string>
     <string name="sent_button">Send</string>
-    <string name="verify_internet">Check your internet connection or call your operator.</string>
+    <string name="verify_internet">Check your Internet connection, call the operator or restart the application.</string>
     <string name="save_button">Save</string>
     <string name="you_this">"You are here now: "</string>
     <string name="make_rout_message">Make a route</string>
-    <string name="error_message">An error occurred. Call operator</string>
+    <string name="error_message">An error has occurred. Dial the operator or restart the application.</string>
     <string name="to_point">"Destination: "</string>
     <string name="cost_of_order">" Cost of the trip: "</string>
     <string name="firebase_false_message">UAH. Sorry, the order cannot be placed without verifying your Google account.</string>
@@ -340,5 +339,10 @@
     <string name="to_nal_payment_count">Payment using the selected method is currently not possible. Calculate your trip by paying in cash?</string>
     <string name="tarif">Tariff:</string>
     <string name="tar">Tariff</string>
-    <string name="double_order_error">Duplicate order. You cannot create a similar order until a car has been found for the previous order</string>
+    <string name="double_order_error">Duplicate order. You cannot create a similar order until a car has been found for the previous order.</string>
+    <string name="user_cards">Your cards for paying for travel:</string>
+    <string name="error_payment_card">Error processing payment. Choose a card for a friend or order a trip in cash.</string>
+    <string name="nal_payment_btn">For cash</string>
+    <string name="new_card_btn">New card</string>
+    <string name="chois_card_btn">Selected card</string>
 </resources>

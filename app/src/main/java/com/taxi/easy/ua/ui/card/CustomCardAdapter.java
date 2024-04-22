@@ -8,6 +8,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,6 +36,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
+    private static final String TAG = "CustomCardAdapter";
     private ArrayList<Map<String, String>> cardMaps;
     private int selectedPosition = 0;
     public static String rectoken;
@@ -83,7 +85,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             holder.cardText.setText(masked_card);
 
             String bank_name = cardMap.get("bank_name");
-            Log.d("TAG", "getView:11111 bank_name" +  bank_name);
+            Log.d(TAG, "getView:11111 bank_name" +  bank_name);
 
             assert bank_name != null;
             if(!bank_name.equals("SOME BANK IN UA COUNTRY")) {
@@ -94,20 +96,22 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
 
 
             selectedPosition = getCheckRectoken(table);
-            Log.d("TAG", "getView: " + selectedPosition);
+            Log.d(TAG, "getView: " + selectedPosition);
             holder.checkBox.setChecked(position == selectedPosition);
             rectoken = cardMap.get("rectoken");
 
-            notifyDataSetChanged();
+//            notifyDataSetChanged();
 
             holder.checkBox.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     selectedPosition = position;
-                    notifyDataSetChanged();
+
 
                     rectoken = cardMap.get("rectoken");
+                    Log.d(TAG, "onClick:rectoken " + rectoken);
                     updateRectokenCheck(table,  rectoken);
+                    notifyDataSetChanged();
                 }
             });
             // Обработчик для кнопки удаления
@@ -138,37 +142,60 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
         return view;
     }
 
-    private int getCheckRectoken(String table) {
-        String[] columns = {"id", "rectoken"};
-        String selection = "rectoken_check = ?";
-        String[] selectionArgs = {"1"};
-        int result = 0;
+    @SuppressLint("Range")
+    private Pair<Integer, Integer> getMinMaxId(String table) {
         SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor = database.query(table, columns, selection, selectionArgs, null, null, null);
+        String[] columns = {"MIN(id) AS min_id", "MAX(id) AS max_id"};
+        Cursor cursor = database.query(table, columns, null, null, null, null, null);
+
+        int minId = -1;
+        int maxId = -1;
 
         if (cursor != null) {
             if (cursor.moveToFirst()) {
-                Log.d("TAG", "getCheckRectoken: cursor.getCount() " + cursor.getCount());
-                if (cursor.getCount() == 1) {
-                    int rectokenColumnIndex = cursor.getColumnIndex("rectoken");
-                    Log.d("TAG", "getCheckRectoken: " + cursor.getString(rectokenColumnIndex));
-                    updateRectokenCheck(table, cursor.getString(rectokenColumnIndex));
-                } else {
-                    do {
-                        @SuppressLint("Range") int id = cursor.getInt(cursor.getColumnIndex("id"));
-                        // В этом месте вы можете обрабатывать найденные id
-                        result = id - 1;
-                        Log.d("TAG", "Found id with rectoken_check = 1: " + id);
-                    } while (cursor.moveToNext());
-                }
+                minId = cursor.getInt(cursor.getColumnIndex("min_id"));
+                maxId = cursor.getInt(cursor.getColumnIndex("max_id"));
             }
             cursor.close();
         }
 
         database.close();
-        return result;
-
+        return new Pair<>(minId, maxId);
     }
+
+    private int getCheckRectoken(String table) {
+        Pair<Integer, Integer> minMaxId = getMinMaxId(table);
+        int minId = minMaxId.first;
+        int maxId = minMaxId.second;
+
+        // Проверяем случаи, когда таблица пуста или не содержит строк с rectoken_check = 1
+        if (minId == -1 || maxId == -1) {
+            return -1; // Возвращаем -1, чтобы указать на отсутствие строки
+        }
+
+        SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        String[] columns = {"id"};
+        String selection = "rectoken_check = ? AND id >= ? AND id <= ?";
+        String[] selectionArgs = {"1", String.valueOf(minId), String.valueOf(maxId)};
+        Cursor cursor = database.query(table, columns, selection, selectionArgs, null, null, null);
+
+        int position = -1; // Инициализируем позицию -1, чтобы обозначить, что строка не найдена
+
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                int idColumnIndex = cursor.getColumnIndex("id");
+                int id = cursor.getInt(idColumnIndex);
+                // Вычисляем позицию строки в списке
+                position = id - minId;
+            }
+            cursor.close();
+        }
+        Log.d(TAG, "getCheckRectokenPosition: position" + position);
+        database.close();
+        return position;
+    }
+
+
 
     private void updateRectokenCheck(String table, String rectoken) {
         SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -189,9 +216,9 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
         int rowsUpdated = database.update(table, targetValue, whereClause, whereArgs);
 
         if (rowsUpdated > 0) {
-            Log.d("TAG", "Updated rectoken_check for rectoken " + rectoken + " to 1");
+            Log.d(TAG, "Updated rectoken_check for rectoken " + rectoken + " to 1");
         } else {
-            Log.d("TAG", "No rows were updated. " + rectoken + " may not exist.");
+            Log.d(TAG, "No rows were updated. " + rectoken + " may not exist.");
         }
 
         database.close();
@@ -258,19 +285,16 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
                 " merchant text," +
                 " rectoken_check text);");
 
-        String query = "INSERT INTO temp_table (masked_card, card_type, bank_name, rectoken, rectoken_check) " +
-                "SELECT masked_card, card_type, bank_name, rectoken, rectoken_check FROM " + MainActivity.TABLE_FONDY_CARDS;
-
-
         // Копирование данных из временной таблицы в новую
-        database.execSQL(query);
+        database.execSQL("INSERT INTO " + MainActivity.TABLE_FONDY_CARDS + " (masked_card, card_type, bank_name, rectoken, merchant, rectoken_check) " +
+                "SELECT masked_card, card_type, bank_name, rectoken, merchant, rectoken_check FROM temp_table");
 
         // Удаление временной таблицы
         database.execSQL("DROP TABLE IF EXISTS temp_table");
         database.close();
 
         ArrayList<Map<String, String>> cardMaps = getCardMapsFromDatabase();
-        Log.d("TAG", "onResume: cardMaps" + cardMaps);
+        Log.d(TAG, "onResume: cardMaps" + cardMaps);
         if (cardMaps.isEmpty()) {
             // Если массив пустой, отобразите текст "no_routs" вместо списка
             CardFragment.textCard.setVisibility(View.VISIBLE);
@@ -278,6 +302,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             CardFragment.textCard.setText(R.string.no_cards);
         }
     }
+
 
     // Проверка наличия таблицы в базе данных
     private boolean isTableExists(SQLiteDatabase db, String tableName) {
@@ -294,7 +319,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
         SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         // Выполните запрос к таблице TABLE_FONDY_CARDS и получите данные
         Cursor cursor = database.query(MainActivity.TABLE_FONDY_CARDS, null, null, null, null, null, null);
-        Log.d("TAG", "getCardMapsFromDatabase: card count: " + cursor.getCount());
+        Log.d(TAG, "getCardMapsFromDatabase: card count: " + cursor.getCount());
 
         if (cursor != null) {
             if (cursor.moveToFirst()) {

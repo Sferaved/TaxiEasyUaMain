@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.741</string>
-    <string name="version">Версія: 1.741</string>
+    <string name="version_code">1.742</string>
+    <string name="version">Версія: 1.742</string>
 
     <string name="app_name">Таксі Лайт</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -51,11 +51,11 @@
     <string name="verify_phone">Перевірка телефону</string>
     <string name="format_phone">Формат вводу номера телефону: +380936665544</string>
     <string name="sent_button">Відправити</string>
-    <string name="verify_internet">Перевірте інтернет-підключення або зателефонуйте оператору.</string>
+    <string name="verify_internet">Перевірте інтернет-з\'єднання, зателефонуйте оператору або перевантажте програму.</string>
     <string name="save_button">Зберегти</string>
     <string name="you_this">"Ви зараз тут: "</string>
     <string name="make_rout_message">Сформуйте маршрут</string>
-    <string name="error_message">Відбулася помилка. Зателефонуйте оператору</string>
+    <string name="error_message">Сталася помилка. Наберіть оператора або перезавантажте програму.</string>
     <string name="to_point">"Місце призначення: "</string>
     <string name="cost_of_order">" Вартість поїздки: "</string>
     <string name="firebase_false_message">грн. Вибачте, без перевірки Google-акаунту замовлення не можливе.</string>
@@ -342,5 +342,10 @@
     <string name="to_nal_payment_count">Оплата вибраним методом на даний момент неможлива. Розрахувати поїздку з оплатою готівкою?</string>
     <string name="tarif">Тариф:</string>
     <string name="tar">Тариф</string>
-    <string name="double_order_error">Дублювання замовлення. Ви не можете створювати подібне замовлення, поки не знайшлася машина на попереднє замовлення</string>
+    <string name="double_order_error">Дублювання замовлення. Ви не можете створювати подібне замовлення, поки не знайшлася машина на попереднє замовлення.</string>
+    <string name="user_cards">Ваші картки для оплати подорожей:</string>
+    <string name="error_payment_card">Помилка обробки платежу. Виберіть другу картку або замовте подорож за готівку.</string>
+    <string name="nal_payment_btn">За готівку</string>
+    <string name="new_card_btn">Нова карта</string>
+    <string name="chois_card_btn">Вибраною карткою</string>
 </resources>

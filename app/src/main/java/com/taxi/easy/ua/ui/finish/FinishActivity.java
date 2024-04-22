@@ -17,7 +17,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -46,6 +45,7 @@ import com.taxi.easy.ua.ui.fondy.token_pay.StatusRequestToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.SuccessResponseDataToken;
 import com.taxi.easy.ua.ui.home.MyBottomSheetBlackListFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.ui.home.MyBottomSheetErrorPaymentFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.mono.MonoApi;
@@ -92,7 +92,7 @@ public class FinishActivity extends AppCompatActivity {
     public static Runnable runnableBonusBtn;
     public static Handler handler, handlerBonusBtn,  handlerStatus;
     public static Runnable myTaskStatus;
-    ProgressBar progressBar;
+    public static ProgressBar progressBar;
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -148,8 +148,17 @@ public class FinishActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     MainActivity.order_id = null;
-                    String cancelText = getApplicationContext().getString(R.string.call_btn_cancel);
-                    text_status.setText(cancelText);
+                    String newStatus = text_status.getText().toString();
+                    if(!newStatus.contains(getString(R.string.time_out_text))
+                            || !newStatus.contains(getString(R.string.error_payment_card))
+                            || !newStatus.contains(getString(R.string.double_order_error))
+                            || !newStatus.contains(getString(R.string.call_btn_cancel)) ) {
+                        String cancelText = getApplicationContext().getString(R.string.call_btn_cancel);
+                        text_status.setText(cancelText);
+
+                    } else {
+                        text_status.setText(newStatus);
+                    }
                     btn_cancel_order.setText(getString(R.string.help_button));
                     btn_cancel_order.setOnClickListener(new View.OnClickListener() {
                         @Override
@@ -184,11 +193,18 @@ public class FinishActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     MainActivity.order_id = null;
-                    if(!text_status.getText().equals(getString(R.string.time_out_text))) {
+                    String newStatus = text_status.getText().toString();
+                    if(!newStatus.contains(getString(R.string.time_out_text))
+                            || !newStatus.contains(getString(R.string.error_payment_card))
+                            || !newStatus.contains(getString(R.string.double_order_error))
+                            || !newStatus.contains(getString(R.string.call_btn_cancel)) ) {
                         String cancelText = getApplicationContext().getString(R.string.call_btn_cancel);
                         text_status.setText(cancelText);
-                    }
 
+                    } else {
+                        text_status.setText(newStatus);
+                    }
+                    btn_reset_status.setVisibility(View.GONE);
                     btn_cancel_order.setText(getString(R.string.help_button));
                     btn_cancel_order.setOnClickListener(new View.OnClickListener() {
                         @Override
@@ -334,7 +350,7 @@ public class FinishActivity extends AppCompatActivity {
                 .baseUrl("https://pay.fondy.eu/api/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
-
+        MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
         PaymentApiToken paymentApi = retrofit.create(PaymentApiToken.class);
         List<String>  arrayList = logCursor(MainActivity.CITY_INFO);
         String MERCHANT_ID = arrayList.get(6);
@@ -387,27 +403,39 @@ public class FinishActivity extends AppCompatActivity {
                                 Log.d(TAG, "onResponse: errorResponseMessage " + errorResponseMessage);
                                 Log.d(TAG, "onResponse: errorResponseCode" + errorResponseCode);
 
-                                Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
-                                getUrlToPaymentFondy(messageFondy, amount);
+//                                Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
+                                MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
+
+                                MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
+                                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+
                             }
                         } else {
-                            Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
+//                            Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
-                            getUrlToPaymentFondy(messageFondy, amount);
+
+                            MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
+                            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+
+//                            getUrlToPaymentFondy(messageFondy, amount);
                         }
                     } catch (JsonSyntaxException e) {
                         // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
                         Log.e(TAG, "Error parsing JSON response: " + e.getMessage());
-                        Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
+//                        Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
-                        getUrlToPaymentFondy(messageFondy, amount);
+                        MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
+                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+//                        getUrlToPaymentFondy(messageFondy, amount);
                     }
                 } else {
                     // Обработка ошибки
                     Log.d(TAG, "onFailure: " + response.code());
-                    Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
-                    
-                    getUrlToPaymentFondy(messageFondy, amount);
+//                    Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
+                    MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
+                    MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
+                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+//                    getUrlToPaymentFondy(messageFondy, amount);
                 }
 
             }
@@ -415,9 +443,12 @@ public class FinishActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<ApiResponseToken<SuccessResponseDataToken>> call, Throwable t) {
                 Log.d(TAG, "onFailure1111: " + t.toString());
-                Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
+//                Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
+
                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
-                getUrlToPaymentFondy(messageFondy, amount);
+                MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
+                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+//                getUrlToPaymentFondy(messageFondy, amount);
             }
         });
     }
@@ -872,7 +903,7 @@ public class FinishActivity extends AppCompatActivity {
 
         call.enqueue(new Callback<Status>() {
             @Override
-            public void onResponse(Call<Status> call, Response<Status> response) {
+            public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
                 if (response.isSuccessful()) {
                     Status status = response.body();
                     if (status != null) {
@@ -960,7 +991,7 @@ public class FinishActivity extends AppCompatActivity {
             }
         });
     }
-    private void getRevers(String orderId, String comment, String amount) {
+    void getRevers(String orderId, String comment, String amount) {
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://pay.fondy.eu/api/")
@@ -1021,7 +1052,7 @@ public class FinishActivity extends AppCompatActivity {
         });
 
     }
-    private void getReversMono(
+    void getReversMono(
             String invoiceId,
             String extRef,
             int amount
@@ -1134,7 +1165,16 @@ public class FinishActivity extends AppCompatActivity {
                             message = getString(R.string.ex_st_0);
                             break;
                         case "Canceled":
-                            message = getString(R.string.ex_st_canceled);
+                            String newStatus = text_status.getText().toString();
+                            if(!newStatus.contains(getString(R.string.time_out_text))
+                                    || !newStatus.contains(getString(R.string.error_payment_card))
+                                    || !newStatus.contains(getString(R.string.double_order_error))
+                                    || !newStatus.contains(getString(R.string.call_btn_cancel)) ) {
+                                message = getString(R.string.ex_st_canceled);
+                            } else {
+                                message = newStatus;
+                            }
+
                             break;
                         case "CarFound":
                             // Формируем сообщение с учетом возможных пустых значений переменных

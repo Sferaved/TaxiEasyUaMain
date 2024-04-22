@@ -1415,11 +1415,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
             // Проверка новой версии в маркете
             new Thread(this::versionFromMarket).start();
-            Thread fondyCardThread = new Thread(() -> {
-                getCardToken("fondy", TABLE_FONDY_CARDS, userEmail);
 
-            });
-            fondyCardThread.start();
         }
 
 
