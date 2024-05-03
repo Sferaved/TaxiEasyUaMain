@@ -80,6 +80,7 @@ import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.ApiService;
 import com.taxi.easy.ua.ui.finish.City;
+import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
 import com.taxi.easy.ua.ui.home.HomeFragment;
@@ -87,10 +88,11 @@ import com.taxi.easy.ua.ui.home.MyBottomSheetCityFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
-import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.VerifyUserTask;
 import com.taxi.easy.ua.utils.activ_push.MyService;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.ip.IPUtil;
 import com.taxi.easy.ua.utils.messages.UsersMessages;
@@ -108,10 +110,10 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -168,8 +170,19 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
     public static String countryState;
     private static String verifyInternet;
     public static final long MAX_TASK_EXECUTION_TIME_SECONDS = 3;
-    private static String versionServer;
+    public static String versionServer;
 
+    DatabaseHelper databaseHelper;
+    String baseUrl = "https://m.easy-order-taxi.site";
+    private List<RouteResponse> routeList;
+    String[] array;
+    public static boolean gps_upd;
+    VisicomFragment visicomFragment;
+    public static SharedPreferences sharedPreferences;
+    public static SharedPreferences sharedPreferencesCount;
+    public static final String PERMISSIONS_PREF_NAME = "Permissions";
+    public static final String PERMISSION_REQUEST_COUNT_KEY = "PermissionRequestCount";
+    public static boolean location_update;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -203,11 +216,32 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         verifyInternet = getString(R.string.verify_internet);
 
 // Initialize VisicomFragment and set AutoClickListener
-        VisicomFragment visicomFragment = new VisicomFragment();
+        visicomFragment = new VisicomFragment();
         visicomFragment.setAutoClickListener(this); // "this" refers to the MainActivity
+
+        sharedPreferences = getSharedPreferences(MainActivity.PERMISSIONS_PREF_NAME, Context.MODE_PRIVATE);
+        sharedPreferencesCount = getSharedPreferences(MainActivity.PERMISSION_REQUEST_COUNT_KEY, Context.MODE_PRIVATE);
+// Обработка отсутствия необходимых разрешений
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                // Обработка отсутствия необходимых разрешений
+                MainActivity.location_update = true;
+            }
+        } else MainActivity.location_update = ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+
+
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
+        // Передаем результаты обратно вашему фрагменту для обработки
+        if (visicomFragment != null) {
+            visicomFragment.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
 
 
     @SuppressLint("NewApi")
@@ -234,16 +268,20 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         WorkManager.getInstance(this).cancelAllWork();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    @Override
 
+    @Override
     protected void onResume() {
         super.onResume();
         insertOrUpdatePushDate();
         Log.d(TAG, "onResume: isServiceRunning())  " );
         isServiceRunning();
         startService(new Intent(this, MyService.class));
-
+        if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            gps_upd = getIntent().getBooleanExtra("gps_upd", true);
+        } else {
+            gps_upd = false;
+        };
     }
 
     void checkNotificationPermissionAndRequestIfNeeded() {
@@ -1243,19 +1281,10 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         Log.d("TAG", "onOptionsItemSelected gps_enabled: " + gps_enabled);
         Log.d("TAG", "onOptionsItemSelected network_enabled: " + network_enabled);
         if(!gps_enabled || !network_enabled) {
-//            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-            MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
+            MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
             bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
         } else {
             Toast.makeText(this, getString(R.string.gps_ok), Toast.LENGTH_SHORT).show();
-//            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-//                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//                checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//                checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//            } else {
-//                onAutoClick();
-//            }
         }
     }
     public void phoneNumberChange() {
@@ -1398,8 +1427,6 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 FirebaseApp.initializeApp(MainActivity.this);
             } catch (Exception e) {
                 Log.e(TAG, "Exception during authentication", e);
-                e.printStackTrace();
-//                Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
 
             }
@@ -1407,15 +1434,17 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             startFireBase();
 
         } else {
+            new Thread(() -> fetchRoutes(userEmail)).start();
             new Thread(() -> updatePushDate(getApplicationContext())).start();
 
-            new VerifyUserTask().execute();
+            String application =  getString(R.string.application);
+            new VerifyUserTask(userEmail, application, getApplicationContext()).execute();
+
             UserPermissions.getPermissions(userEmail, getApplicationContext());
             new UsersMessages(userEmail, getApplicationContext());
 
             // Проверка новой версии в маркете
             new Thread(this::versionFromMarket).start();
-
         }
 
 
@@ -1479,6 +1508,8 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 settingsNewUser(user.getEmail());
                 Toast.makeText(this, R.string.city_search, Toast.LENGTH_SHORT).show();
                 startGetPublicIPAddressTask(fm, getApplicationContext());
+
+                new Thread(() -> fetchRoutes(user.getEmail())).start();
             } else {
 
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.firebase_error));
@@ -1499,6 +1530,147 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
         }
     }
+    private void fetchRoutes(String value) {
+
+        String url = baseUrl + "/android/UIDStatusShowEmail/" + value;
+        Call<List<RouteResponse>> call = ApiClient.getApiService().getRoutes(url);
+        routeList = new ArrayList<>();
+        Log.d("TAG", "fetchRoutes: " + url);
+        call.enqueue(new Callback<List<RouteResponse>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<RouteResponse>> call, @NonNull Response<List<RouteResponse>> response) {
+                if (response.isSuccessful()) {
+                    List<RouteResponse> routes = response.body();
+                    Log.d("TAG", "onResponse: " + routes);
+                    if (routes != null && !routes.isEmpty()) {
+                        boolean hasRouteWithAsterisk = false;
+                        for (RouteResponse route : routes) {
+                            if ("*".equals(route.getRouteFrom())) {
+                                // Найден объект с routefrom = "*"
+                                hasRouteWithAsterisk = true;
+                                break;  // Выход из цикла, так как условие уже выполнено
+                            }
+                        }
+                        if (!hasRouteWithAsterisk) {
+                            routeList.addAll(routes);
+                            processRouteList();
+                        }
+
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<RouteResponse>> call, @NonNull Throwable t) {
+
+            }
+        });
+    }
+
+    private void processRouteList() {
+        // В этом методе вы можете использовать routeList для выполнения дополнительных действий с данными.
+
+        // Создайте массив строк
+
+        array = new String[routeList.size()];
+        databaseHelper = new DatabaseHelper(getApplicationContext());
+        databaseHelper.clearTable();
+
+        String closeReasonText = getString(R.string.close_resone_def);
+
+        for (int i = 0; i < routeList.size(); i++) {
+            RouteResponse route = routeList.get(i);
+            String routeFrom = route.getRouteFrom();
+            String routefromnumber = route.getRouteFromNumber();
+            String routeTo = route.getRouteTo();
+            String routeTonumber = route.getRouteToNumber();
+            String webCost = route.getWebCost();
+            String createdAt = route.getCreatedAt();
+            String closeReason = route.getCloseReason();
+            String auto = route.getAuto();
+
+            switch (closeReason){
+                case "-1":
+                    closeReasonText = getString(R.string.close_resone_in_work);
+                    break;
+                case "0":
+                    closeReasonText = getString(R.string.close_resone_0);
+                    break;
+                case "1":
+                    closeReasonText = getString(R.string.close_resone_1);
+                    break;
+                case "2":
+                    closeReasonText = getString(R.string.close_resone_2);
+                    break;
+                case "3":
+                    closeReasonText = getString(R.string.close_resone_3);
+                    break;
+                case "4":
+                    closeReasonText = getString(R.string.close_resone_4);
+                    break;
+                case "5":
+                    closeReasonText = getString(R.string.close_resone_5);
+                    break;
+                case "6":
+                    closeReasonText = getString(R.string.close_resone_6);
+                    break;
+                case "7":
+                    closeReasonText = getString(R.string.close_resone_7);
+                    break;
+                case "8":
+                    closeReasonText = getString(R.string.close_resone_8);
+                    break;
+                case "9":
+                    closeReasonText = getString(R.string.close_resone_9);
+                    break;
+
+            }
+
+            if(routeFrom.equals("Місце відправлення")) {
+                routeFrom = getString(R.string.start_point_text);
+            }
+
+
+            if(routeTo.equals("Точка на карте")) {
+                routeTo = getString(R.string.end_point_marker);
+            }
+            if(routeTo.contains("по городу")) {
+                routeTo = getString(R.string.on_city);
+            }
+            if(routeTo.contains("по місту")) {
+                routeTo = getString(R.string.on_city);
+            }
+            String routeInfo = "";
+
+            if(auto == null) {
+                auto = "??";
+            }
+
+            if(routeFrom.equals(routeTo)) {
+                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                        + getString(R.string.close_resone_to)
+                        + getString(R.string.on_city)
+                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
+                        + getString(R.string.auto_info) + " " + auto + " "
+                        + getString(R.string.close_resone_time)
+                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
+            } else {
+                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                        + getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
+                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
+                        + getString(R.string.auto_info) + " " + auto + " "
+                        + getString(R.string.close_resone_time)
+                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
+            }
+
+//                array[i] = routeInfo;
+            databaseHelper.addRouteInfo(routeInfo);
+
+        }
+        array = databaseHelper.readRouteInfo();
+        Log.d("TAG", "processRouteList: array " + Arrays.toString(array));
+    }
+
     private void settingsNewUser (String email) {
         // Assuming this code is inside a method or a runnable block
 
@@ -1834,49 +2006,49 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
 
 
-    @SuppressLint("StaticFieldLeak")
-    public class VerifyUserTask extends AsyncTask<Void, Void, Map<String, String>> {
-        private Exception exception;
-        @Override
-        protected Map<String, String> doInBackground(Void... voids) {
-            String userEmail = logCursor(TABLE_USER_INFO).get(3);
-
-            String url = "https://m.easy-order-taxi.site/android/verifyBlackListUser/" + userEmail + "/" + getString(R.string.application);
-            try {
-                return CostJSONParser.sendURL(url);
-            } catch (Exception e) {
-                exception = e;
-//                Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
-                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-                return null;
-            }
-
-        }
-
-        @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
-        @Override
-        protected void onPostExecute(Map<String, String> sendUrlMap) {
-            String message = sendUrlMap.get("message");
-            ContentValues cv = new ContentValues();
-            SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            if (message != null) {
-
-                if (message.equals("В черном списке")) {
-
-                    cv.put("verifyOrder", "0");
-                    database.update(TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-                } else {
-                    versionServer = message;
-                    //                        version(message);
-
-                    cv.put("verifyOrder", "1");
-                    database.update(TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-
-                }
-            }
-            database.close();
-        }
-    }
+//    @SuppressLint("StaticFieldLeak")
+//    public class VerifyUserTask extends AsyncTask<Void, Void, Map<String, String>> {
+//        private Exception exception;
+//        @Override
+//        protected Map<String, String> doInBackground(Void... voids) {
+//            String userEmail = logCursor(TABLE_USER_INFO).get(3);
+//
+//            String url = "https://m.easy-order-taxi.site/android/verifyBlackListUser/" + userEmail + "/" + getString(R.string.application);
+//            try {
+//                return CostJSONParser.sendURL(url);
+//            } catch (Exception e) {
+//                exception = e;
+////                Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
+//                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+//                return null;
+//            }
+//
+//        }
+//
+//        @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+//        @Override
+//        protected void onPostExecute(Map<String, String> sendUrlMap) {
+//            String message = sendUrlMap.get("message");
+//            ContentValues cv = new ContentValues();
+//            SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//            if (message != null) {
+//
+//                if (message.equals("В черном списке")) {
+//
+//                    cv.put("verifyOrder", "0");
+//                    database.update(TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+//                } else {
+//                    versionServer = message;
+//                    //                        version(message);
+//
+//                    cv.put("verifyOrder", "1");
+//                    database.update(TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+//
+//                }
+//            }
+//            database.close();
+//        }
+//    }
 
     private static final String PREFS_NAME_VERSION = "MyPrefsFileNew";
     private static final String LAST_NOTIFICATION_TIME_KEY = "lastNotificationTimeNew";

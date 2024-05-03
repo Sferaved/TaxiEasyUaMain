@@ -209,10 +209,32 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                             );
                         }
                     }
+                    String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
+
+                    String pay_method_message = getString(R.string.pay_method_message_main);
+                    switch (pay_method) {
+                        case "bonus_payment":
+                            pay_method_message += " " + getString(R.string.pay_method_message_bonus);
+                            break;
+                        case "card_payment":
+                        case "fondy_payment":
+                        case "mono_payment":
+                            pay_method_message += " " + getString(R.string.pay_method_message_card);
+                            break;
+                        default:
+                            pay_method_message += " " + getString(R.string.pay_method_message_nal);
+                    }
+                    String to_name_local = to_name;
+                    if(to_name.contains("по місту")
+                            ||to_name.contains("по городу")
+                            || to_name.contains("around the city")
+                    ) {
+                        to_name_local = getString(R.string.on_city_tv);
+                    }
                     String messageResult = mContext.getString(R.string.thanks_message) +
                             sendUrlMap.get("routefrom") + " " + mContext.getString(R.string.to_message) +
-                            to_name + "." +
-                            mContext.getString(R.string.call_of_order) + orderWeb + mContext.getString(R.string.UAH);
+                            to_name_local + "." +
+                            mContext.getString(R.string.call_of_order) + orderWeb + mContext.getString(R.string.UAH) + " " + pay_method_message;;
 
 
                     Intent intent = new Intent(mContext, FinishActivity.class);
@@ -284,10 +306,32 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                             );
                         }
                     }
+                    String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
+
+                    String pay_method_message = getString(R.string.pay_method_message_main);
+                    switch (pay_method) {
+                        case "bonus_payment":
+                            pay_method_message += " " + getString(R.string.pay_method_message_bonus);
+                            break;
+                        case "card_payment":
+                        case "fondy_payment":
+                        case "mono_payment":
+                            pay_method_message += " " + getString(R.string.pay_method_message_card);
+                            break;
+                        default:
+                            pay_method_message += " " + getString(R.string.pay_method_message_nal);
+                    }
+                    String to_name_local = to_name;
+                    if(to_name.contains("по місту")
+                            ||to_name.contains("по городу")
+                            || to_name.contains("around the city")
+                    ) {
+                        to_name_local = getString(R.string.on_city_tv);
+                    }
                     String messageResult = mContext.getString(R.string.thanks_message) +
                             sendUrlMap.get("routefrom") + " " + mContext.getString(R.string.to_message) +
-                            to_name + "." +
-                            mContext.getString(R.string.call_of_order) + orderWeb + mContext.getString(R.string.UAH);
+                            to_name_local + "." +
+                            mContext.getString(R.string.call_of_order) + orderWeb + mContext.getString(R.string.UAH) + " " + pay_method_message;
 
                     String messageFondy = mContext.getString(R.string.fondy_message) + " " +
                             sendUrlMap.get("routefrom") + " " + mContext.getString(R.string.to_message) +
@@ -323,7 +367,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
+     
     @SuppressLint("Range")
     public String getTaxiUrlSearchMarkersVisicom(String urlAPI, Context context) {
         Log.d(TAG, "getTaxiUrlSearchMarkers: " + urlAPI);
@@ -557,7 +601,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
 
         return hasConnect;
     }
-    @RequiresApi(api = Build.VERSION_CODES.O)
+     
     private String getTaxiUrlSearch(String urlAPI) {
 
         List<String> stringListRout = logCursor(MainActivity.ROUT_HOME);

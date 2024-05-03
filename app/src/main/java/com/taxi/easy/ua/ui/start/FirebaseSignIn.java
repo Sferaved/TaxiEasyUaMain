@@ -288,7 +288,7 @@ public class FirebaseSignIn extends AppCompatActivity {
 
         // Дождитесь завершения выполнения задачи с тайм-аутом
         try {
-            addUserFuture.get(10, TimeUnit.SECONDS);
+            addUserFuture.get(30, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             // Обработка ошибок
             e.printStackTrace();

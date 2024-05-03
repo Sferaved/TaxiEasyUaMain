@@ -1,10 +1,10 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.742</string>
-    <string name="version">Версія: 1.742</string>
+    <string name="version_code">1.744</string>
+    <string name="version">Версія: 1.744</string>
 
-    <string name="app_name">Таксі Лайт</string>
+    <string name="app_name">Таксі Доставка</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
     <string name="back4app_app_id">01YGF894m3NJRXT1BlH6qPo9pUfDlG9sqi9K9mIL</string>
     <string name="back4app_client_key">T5f5GuT1UCmaiJn8Dek3sVmayGuJa2jfelQR6V6f</string>
@@ -51,11 +51,11 @@
     <string name="verify_phone">Перевірка телефону</string>
     <string name="format_phone">Формат вводу номера телефону: +380936665544</string>
     <string name="sent_button">Відправити</string>
-    <string name="verify_internet">Перевірте інтернет-з\'єднання, зателефонуйте оператору або перевантажте програму.</string>
+    <string name="verify_internet">Перевірте інтернет-з\'єднання, зателефонуйте оператору або перезавантажте програму.</string>
     <string name="save_button">Зберегти</string>
     <string name="you_this">"Ви зараз тут: "</string>
     <string name="make_rout_message">Сформуйте маршрут</string>
-    <string name="error_message">Сталася помилка. Наберіть оператора або перезавантажте програму.</string>
+    <string name="error_message">Сталася помилка. Наберите оператора через "ДОПОМОГА" або натисніть тут для перезавантаження сторінки</string>
     <string name="to_point">"Місце призначення: "</string>
     <string name="cost_of_order">" Вартість поїздки: "</string>
     <string name="firebase_false_message">грн. Вибачте, без перевірки Google-акаунту замовлення не можливе.</string>
@@ -67,8 +67,8 @@
     <string name="help">Підтримка</string>
     <string name="show_to_point">Вкажіть місце призначення</string>
     <string name="change">по GPS</string>
-    <string name="on_city">" по місту."</string>
-    <string name="on_city_tv">" по місту"</string>
+    <string name="on_city">"по місту."</string>
+    <string name="on_city_tv">"по місту"</string>
     <string name="help_button">Підтримка</string>
     <string name="try_again">Перезавантажити</string>
     <string name="ok_button">Ок</string>
@@ -348,4 +348,14 @@
     <string name="nal_payment_btn">За готівку</string>
     <string name="new_card_btn">Нова карта</string>
     <string name="chois_card_btn">Вибраною карткою</string>
+    <string name="cancel_0">Запит на скасування замовлення надіслано. Замовлення не вдалося скасувати.</string>
+    <string name="cancel_1">Запит на скасування замовлення надіслано. Замовлення скасоване.</string>
+    <string name="cancel_2">Запит на скасування замовлення надіслано. Вимагає підтвердження клієнтом скасування диспетчерської.</string>
+    <string name="cancel_3">Запит на скасування замовлення надіслано. Статус поїздки дізнайтесь у диспетчера.</string>
+    <string name="test_city">Тест</string>
+    <string name="pay_method_message_main">Оплата за поїздку</string>
+    <string name="pay_method_message_bonus">бонусами. Приємної подорожі.</string>
+    <string name="pay_method_message_card">банківською карткою. Приємної подорожі.</string>
+    <string name="pay_method_message_nal">готівкою водію. Приємної подорожі.</string>
+    <string name="location_on">Увімкніть ТОЧНЕ визначення місцезнаходження в Дозвілах</string>
 </resources>

@@ -66,7 +66,7 @@ public class UIDFragment extends Fragment {
         binding = FragmentUidBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
 
         listView = binding.listView;
         progressBar = binding.progressBar;
@@ -141,6 +141,15 @@ public class UIDFragment extends Fragment {
 
 
     private void fetchRoutes(String value) {
+
+        upd_but.setText(getString(R.string.cancel_gps));
+        upd_but.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                navController.navigate(R.id.nav_visicom);
+            }
+        });
+
         String url = baseUrl + "/android/UIDStatusShowEmail/" + value;
         Call<List<RouteResponse>> call = ApiClient.getApiService().getRoutes(url);
         Log.d("TAG", "fetchRoutes: " + url);
@@ -175,8 +184,10 @@ public class UIDFragment extends Fragment {
                 } else {
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                    progressBar.setVisibility(View.INVISIBLE);
+
                 }
+                upd_but.setText(getString(R.string.order));
+                progressBar.setVisibility(View.GONE);
             }
 
             @Override
@@ -184,7 +195,7 @@ public class UIDFragment extends Fragment {
                 // Обработка ошибок сети или других ошибок
                 String errorMessage = t.getMessage();
                 t.printStackTrace();
-                // Дополнительная обработка ошибки
+                upd_but.setText(getString(R.string.order));
             }
         });
     }

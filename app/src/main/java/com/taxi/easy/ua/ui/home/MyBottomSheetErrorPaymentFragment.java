@@ -9,7 +9,6 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -21,7 +20,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.FragmentManager;
 
@@ -99,7 +97,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     }
 
     @SuppressLint("MissingInflatedId")
-    @RequiresApi(api = Build.VERSION_CODES.O)
+     
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -186,13 +184,35 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
                 }
             }
+            String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(4);
+
+            String pay_method_message = getString(R.string.pay_method_message_main);
+            switch (pay_method) {
+                case "bonus_payment":
+                    pay_method_message += " " + getString(R.string.pay_method_message_bonus);
+                    break;
+                case "card_payment":
+                case "fondy_payment":
+                case "mono_payment":
+                    pay_method_message += " " + getString(R.string.pay_method_message_card);
+                    break;
+                default:
+                    pay_method_message += " " + getString(R.string.pay_method_message_nal);
+            }
+            String to_name_local = to_name;
+            if(to_name.contains("по місту")
+                    ||to_name.contains("по городу")
+                    || to_name.contains("around the city")
+            ) {
+                to_name_local = getString(R.string.on_city_tv);
+            }
             String messageResult = context.getString(R.string.thanks_message) +
                     sendUrlMap.get("routefrom") + " " + context.getString(R.string.to_message) +
-                    to_name + "." +
-                    context.getString(R.string.call_of_order) + orderWeb + context.getString(R.string.UAH);
+                    to_name_local + "." +
+                    context.getString(R.string.call_of_order) + orderWeb + context.getString(R.string.UAH) + " " + pay_method_message;
             String messageFondy = context.getString(R.string.fondy_message) + " " +
                     sendUrlMap.get("routefrom") + " " + context.getString(R.string.to_message) +
-                    to_name + ".";
+                    to_name_local + ".";
 
             Intent intent = new Intent(context, FinishActivity.class);
             intent.putExtra("messageResult_key", messageResult);
@@ -214,7 +234,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
+     
     @SuppressLint("Range")
     public String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
         Log.d(TAG, "getTaxiUrlSearchMarkers: " + urlAPI);

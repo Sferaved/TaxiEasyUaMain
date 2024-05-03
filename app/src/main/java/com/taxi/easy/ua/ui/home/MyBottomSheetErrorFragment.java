@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -18,7 +17,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.AppCompatButton;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
@@ -38,7 +36,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         this.errorMessage = errorMessage;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
+     
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -48,7 +46,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         btn_help.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                List<String> stringList = logCursor(MainActivity.CITY_INFO, getContext());
+                List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
                 Intent intent = new Intent(Intent.ACTION_DIAL);
                 String phone = stringList.get(3);
 
@@ -66,15 +64,10 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
             if (errorMessage.equals(getString(R.string.verify_internet))
                 || errorMessage.equals(getString(R.string.error_message))
             ) {
-                btn_ok.setText(getString(R.string.try_again));
-                btn_ok.setOnClickListener(new View.OnClickListener() {
+                btn_ok.setVisibility(View.GONE);
+                textViewInfo.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        try {
-                            MyBottomSheetErrorFragment.this.finalize();
-                        } catch (Throwable e) {
-                            throw new RuntimeException(e);
-                        }
                         startActivity(new Intent(requireContext(), MainActivity.class));
                     }
                 });
@@ -123,11 +116,6 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         assert c != null;
         c.close();
         return list;
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
     }
 }
 

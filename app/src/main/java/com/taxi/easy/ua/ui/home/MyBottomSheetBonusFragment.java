@@ -23,7 +23,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.AppCompatButton;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
@@ -73,6 +72,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     private static SQLiteDatabase database;
     private static String[] userPayPermissions;
     private static String email;
+    String city;
     public MyBottomSheetBonusFragment() {
     }
 
@@ -87,7 +87,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     }
 
     @SuppressLint({"MissingInflatedId", "Range"})
-    @RequiresApi(api = Build.VERSION_CODES.O)
+     
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -124,37 +124,42 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         userPayPermissions = UserPermissions.getUserPayPermissions(requireActivity());
 
-        fistItem();
+
 
         String bonus = logCursor(MainActivity.TABLE_USER_INFO).get(5);
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
-        String city = stringList.get(1);
-        //
+        city = stringList.get(1);
+        Log.d(TAG, "onCreateView: " + city);
 
         switch (city) {
-
+            case "foreign countries":
             case "Dnipropetrovsk Oblast":
             case "Odessa":
             case "Zaporizhzhia":
             case "Cherkasy Oblast":
+                listView.setItemChecked(0, true);
+                paymentType(arrayCode [0], requireContext());
                 adapter.setItemEnabled(1, false);
                 adapter.setItemEnabled(2, false);
                 break;
             case "Kyiv City":
                 adapter.setItemEnabled(1, false);
+                fistItem();
                 break;
             case "OdessaTest":
                 if(Long.parseLong(bonus) <= cost * 100 ) {
                     adapter.setItemEnabled(1, false);
-                    break;
+
+                } else {
+                    if(userPayPermissions[0].equals("0")) {
+                        adapter.setItemEnabled(1, false);
+                    }
+                    if(userPayPermissions[1].equals("0")) {
+                        adapter.setItemEnabled(2, false);
+                    }
                 }
-                if(userPayPermissions[0].equals("0")) {
-                    adapter.setItemEnabled(1, false);
-                }
-                if(userPayPermissions[1].equals("0")) {
-                    adapter.setItemEnabled(2, false);
-                }
+                fistItem();
                 break;
 
         }
@@ -338,6 +343,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             case "card_payment":
             case "fondy_payment":
             case "mono_payment":
+
                 if(userPayPermissions[1].equals("0")) {
                     adapter.setItemEnabled(2, false);
                 } else  {
@@ -574,7 +580,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         database.close();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
+     
     private String getTaxiUrlSearch(String urlAPI, Context context) throws UnsupportedEncodingException {
 
         List<String> stringListRout = logCursor(MainActivity.ROUT_HOME);
@@ -660,7 +666,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     }
 
     @SuppressLint("Range")
-    @RequiresApi(api = Build.VERSION_CODES.O)
+     
     private String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
 
 //        List<String> stringListRout = logCursor(MainActivity.ROUT_MARKER);

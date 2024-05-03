@@ -2,10 +2,10 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.742</string>
-    <string name="version">Version: 1.742</string>
+    <string name="version_code">1.744</string>
+    <string name="version">Version: 1.744</string>
 
-    <string name="app_name">Taxi Light</string>
+    <string name="app_name">Taxi Delivery</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
     <string name="back4app_app_id">01YGF894m3NJRXT1BlH6qPo9pUfDlG9sqi9K9mIL</string>
     <string name="back4app_client_key">T5f5GuT1UCmaiJn8Dek3sVmayGuJa2jfelQR6V6f</string>
@@ -55,7 +55,7 @@
     <string name="save_button">Save</string>
     <string name="you_this">"You are here now: "</string>
     <string name="make_rout_message">Make a route</string>
-    <string name="error_message">An error has occurred. Dial the operator or restart the application.</string>
+    <string name="error_message">An error occurred. Dial the operator via "HELP" or click here to reload the page</string>
     <string name="to_point">"Destination: "</string>
     <string name="cost_of_order">" Cost of the trip: "</string>
     <string name="firebase_false_message">UAH. Sorry, the order cannot be placed without verifying your Google account.</string>
@@ -67,8 +67,8 @@
     <string name="help">Support</string>
     <string name="show_to_point">Show destination</string>
     <string name="change">by GPS</string>
-    <string name="on_city">" around the city."</string>
-    <string name="on_city_tv">" around the city"</string>
+    <string name="on_city">"around the city."</string>
+    <string name="on_city_tv">"around the city"</string>
     <string name="help_button">Support</string>
     <string name="try_again">Reboot</string>
     <string name="ok_button">Ok</string>
@@ -345,4 +345,14 @@
     <string name="nal_payment_btn">For cash</string>
     <string name="new_card_btn">New card</string>
     <string name="chois_card_btn">Selected card</string>
+    <string name="cancel_0">Order cancellation request sent. The order could not be canceled.</string>
+    <string name="cancel_1">Order cancellation request sent. Order cancelled.</string>
+    <string name="cancel_2">Order cancellation request sent. Requires client confirmation of control room cancellation.</string>
+    <string name="cancel_3">Order cancellation request sent. Find out the status of the trip from the dispatcher.</string>
+    <string name="test_city">Тest</string>
+    <string name="pay_method_message_main">Payment for trip</string>
+    <string name="pay_method_message_bonus">bonuses. Have a nice trip.</string>
+    <string name="pay_method_message_card">bank card. Have a nice trip.</string>
+    <string name="pay_method_message_nal">cash to the driver. Have a nice trip.</string>
+    <string name="location_on">Enable PRECISION location in Permissions</string>
 </resources>

@@ -23,7 +23,7 @@
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/gpsbut"
-            android:layout_width="80sp"
+            android:layout_width="wrap_content"
             android:layout_height="44sp"
 
             android:layout_marginTop="8dp"

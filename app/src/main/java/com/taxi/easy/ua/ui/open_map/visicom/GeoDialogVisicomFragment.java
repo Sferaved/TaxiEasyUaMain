@@ -40,7 +40,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -60,7 +59,6 @@ import com.taxi.easy.ua.ui.home.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGeoFragment;
 import com.taxi.easy.ua.ui.home.MyPhoneDialogFragment;
-import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
@@ -68,6 +66,7 @@ import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiCallback;
 import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiClient;
 import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiResponse;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
+import com.taxi.easy.ua.utils.VerifyUserTask;
 
 import org.json.JSONException;
 import org.osmdroid.config.Configuration;
@@ -78,6 +77,7 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -88,7 +88,7 @@ import retrofit2.Response;
 
 
 public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implements ApiCallback{
-    private static final String TAG = "TAG_GEO";
+    private static final String TAG = "GeoDialogVisicomFragment";
     public static AppCompatButton button, old_address, btn_minus, btn_plus, btnOrder, buttonBonus;
     public static TextView geoText;
     static String api;
@@ -122,7 +122,7 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
     private String apiKey; // Впишіть апі ключ
     private static List<String> addresses;
 
-
+    private AlertDialog alertDialog;
 
     public static ImageButton btn_clear_from, btn_clear_to;
     public static GeoDialogVisicomFragment newInstance() {
@@ -209,8 +209,13 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                                 double longitude = firstLocation.getLongitude();
                                 OpenStreetMapActivity.startLat = latitude;
                                 OpenStreetMapActivity.startLan = longitude;
-                                String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeo/" +
-                                        String.valueOf(OpenStreetMapActivity.startLat) + "/" + String.valueOf(OpenStreetMapActivity.startLan);
+
+                                Locale locale = Locale.getDefault();
+                                String language = locale.getLanguage(); // Получаем язык устройства
+
+                                String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  +
+                                        OpenStreetMapActivity.startLat + "/" + OpenStreetMapActivity.startLan + "/" + language;
+
                                 Map sendUrlFrom = null;
                                 try {
                                     sendUrlFrom = FromJSONParser.sendURL(urlFrom);
@@ -231,12 +236,8 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
 
                     };
                 };
-                if (ContextCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION)
-                        == PackageManager.PERMISSION_GRANTED) {
+
                     startLocationUpdates();
-                } else {
-                    requestLocationPermission();
-                }
 
             }
         });
@@ -278,7 +279,7 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                 addCost = MIN_COST_VALUE - firstCostForMin;
             }
             updateAddCost(String.valueOf(addCost));
-            Log.d("TAG", "startCost: addCost " + addCost);
+            Log.d(TAG, "startCost: addCost " + addCost);
             text_view_cost.setText(String.valueOf(firstCost));
         });
 
@@ -288,7 +289,7 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
             firstCost += 5;
             addCost += 5;
             updateAddCost(String.valueOf(addCost));
-            Log.d("TAG", "startCost: addCost " + addCost);
+            Log.d(TAG, "startCost: addCost " + addCost);
             text_view_cost.setText(String.valueOf(firstCost));
         });
         btnOrder.setOnClickListener(new View.OnClickListener() {
@@ -326,10 +327,10 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                             if (Long.parseLong(bonus_max_pay) <= Long.parseLong(text_view_cost.getText().toString()) * 100) {
                                 changePayMethodMax(text_view_cost.getText().toString(), pay_method);
                             } else {
-                                orderRout();
-
                                 try {
-                                    orderFinished();
+                                    if(orderRout()){
+                                        orderFinished();
+                                    }
                                 } catch (MalformedURLException e) {
                                     throw new RuntimeException(e);
                                 }
@@ -341,24 +342,23 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                             if (Long.parseLong(card_max_pay) <= Long.parseLong(text_view_cost.getText().toString())) {
                                 changePayMethodMax(text_view_cost.getText().toString(), pay_method);
                             } else {
-                                orderRout();
-
                                 try {
-                                    orderFinished();
-
+                                    if(orderRout()){
+                                        orderFinished();
+                                    }
                                 } catch (MalformedURLException e) {
                                     throw new RuntimeException(e);
                                 }
                             }
                             break;
                         default:
-                            orderRout();
                             try {
-                                orderFinished();
+                                if(orderRout()){
+                                    orderFinished();
+                                }
                             } catch (MalformedURLException e) {
                                 throw new RuntimeException(e);
                             }
-                            break;
 
                     }
                     OpenStreetMapActivity.ToAdressString = null;
@@ -366,21 +366,31 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
             }
         });
         btn_clear_from = view.findViewById(R.id.btn_clear_from);
-        btn_clear_from.setOnClickListener(new View.OnClickListener() {
+        btn_clear_from.setVisibility(View.INVISIBLE);
+        geoText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                geoText.setText("");
-                MyBottomSheetVisicomFragment bottomSheetDialogFragment = new MyBottomSheetVisicomFragment("map");
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+//                geoText.setText("");
+//                MyBottomSheetVisicomFragment bottomSheetDialogFragment = new MyBottomSheetVisicomFragment("map");
+//                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                Intent intent = new Intent(getContext(), ActivityVisicomOnePage.class);
+                intent.putExtra("start", "ok");
+                intent.putExtra("end", "no");
+                startActivity(intent);
              }
         });
         btn_clear_to = view.findViewById(R.id.btn_clear_to);
-        btn_clear_to.setOnClickListener(new View.OnClickListener() {
+        btn_clear_to.setVisibility(View.INVISIBLE);
+        textViewTo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 textViewTo.setText("");
-                MyBottomSheetVisicomFragment bottomSheetDialogFragment = new MyBottomSheetVisicomFragment("map");
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+//                MyBottomSheetVisicomFragment bottomSheetDialogFragment = new MyBottomSheetVisicomFragment("map");
+//                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                Intent intent = new Intent(getContext(), ActivityVisicomOnePage.class);
+                intent.putExtra("start", "no");
+                intent.putExtra("end", "ok");
+                startActivity(intent);
              }
         });
 
@@ -412,9 +422,8 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
     @SuppressLint("UseRequireInsteadOfGet")
     private void startLocationUpdates() {
         LocationRequest locationRequest = createLocationRequest();
-        if (ActivityCompat.checkSelfPermission(Objects.requireNonNull(getContext()), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(Objects.requireNonNull(getContext()), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
             return;
         }
         fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
@@ -430,8 +439,8 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
     private void updateMyPosition(Double startLat, Double startLan, String position) {
         SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         ContentValues cv = new ContentValues();
-        Log.d("TAG", "updateMyPosition: startLat" + startLat);
-        Log.d("TAG", "updateMyPosition: startLan" + startLan);
+        Log.d(TAG, "updateMyPosition: startLat" + startLat);
+        Log.d(TAG, "updateMyPosition: startLan" + startLan);
         cv.put("startLat", startLat); // Сохраняем как число, а не строку
         database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
                 new String[] { "1" });
@@ -444,8 +453,8 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
         database.close();
 
 
-        Log.d("TAG", "updateMyPosition: logCursor(MainActivity.TABLE_POSITION_INFO " + logCursor(MainActivity.TABLE_POSITION_INFO, requireActivity()));
-        Log.d("TAG", "updateMyPosition: getFromTablePositionInfo(requireActivity(), \"startLat\" ) " + getFromTablePositionInfo(requireActivity(), "startLat" ));
+        Log.d(TAG, "updateMyPosition: logCursor(MainActivity.TABLE_POSITION_INFO " + logCursor(MainActivity.TABLE_POSITION_INFO, requireActivity()));
+        Log.d(TAG, "updateMyPosition: getFromTablePositionInfo(requireActivity(), \"startLat\" ) " + getFromTablePositionInfo(requireActivity(), "startLat" ));
     }
 
     private void startCost() {
@@ -470,19 +479,19 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
 
             Log.d(TAG, "startCost: Geo" + settings);
             updateRoutGeo(settings);
-            urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", requireActivity());
+            urlCost = getTaxiUrlSearchMarkers("costSearchMarkersLocal", requireActivity());
         }
 
         Map<String, String> sendUrlMapCost = null;
         try {
-            sendUrlMapCost = CostJSONParser.sendURL(urlCost);
+            sendUrlMapCost = ToJSONParser.sendURL(urlCost);
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
 
         String message = sendUrlMapCost.get("message");
         String orderCost = sendUrlMapCost.get("order_cost");
-        Log.d("TAG", "startCost: orderCost " + orderCost);
+        Log.d(TAG, "startCost: orderCost " + orderCost);
 
         if (orderCost.equals("0")) {
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
@@ -490,7 +499,7 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
         }
         if (!orderCost.equals("0")) {
 
-            String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
+            String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(3);
             long discountInt = Integer.parseInt(discountText);
 
             firstCost = Long.parseLong(orderCost);
@@ -503,8 +512,8 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
         }
         if(!text_view_cost.getText().toString().equals("")) {
             firstCost = Long.parseLong(text_view_cost.getText().toString());
-            Log.d("TAG", "startCost: firstCost " + firstCost);
-            Log.d("TAG", "startCost: addCost " + addCost);
+            Log.d(TAG, "startCost: firstCost " + firstCost);
+            Log.d(TAG, "startCost: addCost " + addCost);
 
             }
     }
@@ -530,20 +539,20 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
 
         String urlCost = null;
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", requireActivity());
-        }
+
+        urlCost = getTaxiUrlSearchMarkers("costSearchMarkersLocal", requireActivity());
+
 
         Map<String, String> sendUrlMapCost = null;
         try {
-            sendUrlMapCost = CostJSONParser.sendURL(urlCost);
+            sendUrlMapCost = ToJSONParser.sendURL(urlCost);
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
 
         String message = sendUrlMapCost.get("message");
         String orderCost = sendUrlMapCost.get("order_cost");
-        Log.d("TAG", "startCost: orderCost " + orderCost);
+        Log.d(TAG, "startCost: orderCost " + orderCost);
 
         if (orderCost.equals("0")) {
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
@@ -564,8 +573,8 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
         }
         if(!text_view_cost.getText().toString().equals("")) {
             firstCost = Long.parseLong(text_view_cost.getText().toString());
-            Log.d("TAG", "startCost: firstCost " + firstCost);
-            Log.d("TAG", "startCost: addCost " + addCost);
+            Log.d(TAG, "startCost: firstCost " + firstCost);
+            Log.d(TAG, "startCost: addCost " + addCost);
 
             }
     }
@@ -623,7 +632,7 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                 }
 
             };
-            Log.d("TAG", "arrayAdressAdapter: adressArrLoc " + adressArrLoc.toString());
+            Log.d(TAG, "arrayAdressAdapter: adressArrLoc " + adressArrLoc.toString());
         } else {
             arrayRouts = null;
         }
@@ -661,7 +670,7 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
 
         return arrayRouts;
     }
-    @RequiresApi(api = Build.VERSION_CODES.O)
+
     @SuppressLint("Range")
     public String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
         Log.d(TAG, "getTaxiUrlSearchMarkers: " + urlAPI);
@@ -712,13 +721,16 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
 
-        if(urlAPI.equals("costSearchMarkers")) {
+        if(urlAPI.equals("costSearchMarkersLocal")) {
             Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
 
             if (c.getCount() == 1) {
                 phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
                 c.close();
             }
+
+
+
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
                     + displayName + "*" + userEmail  + "*" + payment_type;
         }
@@ -773,17 +785,25 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
         List<String> listCity = logCursor(MainActivity.CITY_INFO, requireActivity());
         String city = listCity.get(1);
         String api = listCity.get(2);
-
-        String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
-                + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
-        Log.d(TAG, "getTaxiUrlSearchMarkers: " + url);
+        Locale locale = Locale.getDefault();
+        String language = locale.getLanguage(); // Получаем язык устройства
+        String url;
+        if(urlAPI.equals("costSearchMarkersLocal")) {
+            url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
+                    + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application) + "/" + language;
+            Log.d(TAG, "getTaxiUrlSearchMarkers: " + url);
+        } else {
+            url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
+                    + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application);
+            Log.d(TAG, "getTaxiUrlSearchMarkers: " + url);
+        }
         database.close();
 
         return url;
     }
     private boolean connected() {
 
-        Boolean hasConnect = false;
+        boolean hasConnect = false;
 
         ConnectivityManager cm = (ConnectivityManager) requireActivity().getSystemService(
                 Context.CONNECTIVITY_SERVICE);
@@ -909,7 +929,7 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
             }
         });
         builder.setPositiveButton(R.string.order, new DialogInterface.OnClickListener() {
-            @RequiresApi(api = Build.VERSION_CODES.O)
+
             @Override
             public void onClick(DialogInterface dialog, int which) {
 
@@ -919,8 +939,8 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                 OpenStreetMapActivity.finishLat = to_lat;
                 OpenStreetMapActivity.finishLan = to_lng;
 
-                Log.d("TAG", "onClick: OpenStreetMapActivity.finishLat " + OpenStreetMapActivity.finishLat);
-                Log.d("TAG", "onClick: OpenStreetMapActivity.finishLan " + OpenStreetMapActivity.finishLan);
+                Log.d(TAG, "onClick: OpenStreetMapActivity.finishLat " + OpenStreetMapActivity.finishLat);
+                Log.d(TAG, "onClick: OpenStreetMapActivity.finishLan " + OpenStreetMapActivity.finishLan);
 
                 to = adressArr.get(listView.getCheckedItemPosition()).get("street").toString();
                 textViewTo.setText(to);
@@ -948,14 +968,14 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
 
                 try {
 
-                    urlAddress = getTaxiUrlSearchMarkers("costSearchMarkers", requireActivity());
+                    urlAddress = getTaxiUrlSearchMarkers("costSearchMarkersLocal", requireActivity());
 
-                    Map<String, String> sendUrlMapCost = CostJSONParser.sendURL(urlAddress);
+                    Map<String, String> sendUrlMapCost = ToJSONParser.sendURL(urlAddress);
 
                     String message = sendUrlMapCost.get("message");
                     String orderCost = sendUrlMapCost.get("order_cost");
                     geo_marker = "marker";
-                    Log.d("TAG", "onClick urlAddress: " + urlAddress);
+                    Log.d(TAG, "onClick urlAddress: " + urlAddress);
 
                     if (orderCost.equals("0")) {
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
@@ -986,7 +1006,7 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                                 };
                                 String urlCost = "https://m.easy-order-taxi.site/" + api + "/android/autocompleteSearchComboHid/" + to;
 
-                                Log.d("TAG", "onClick urlCost: " + urlCost);
+                                Log.d(TAG, "onClick urlCost: " + urlCost);
 
                                 try {
                                     sendUrlMapCost = ResultSONParser.sendURL(urlCost);
@@ -995,7 +1015,7 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                                 }
 
                                 orderCost = (String) sendUrlMapCost.get("message");
-                                Log.d("TAG", "onClick Hid : " + orderCost);
+                                Log.d(TAG, "onClick Hid : " + orderCost);
 
                                 if (orderCost.equals("1")) {
                                     to_number.setVisibility(View.VISIBLE);
@@ -1079,16 +1099,20 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
     }
 
     @SuppressLint("ResourceAsColor")
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    private void orderRout() {
+    private boolean orderRout() {
         if(!verifyOrder(requireContext())) {
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.black_list_message));
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-            return;
+            progressBar.setVisibility(View.INVISIBLE);
+            return false;
+        } else {
+            urlOrder = getTaxiUrlSearchMarkers( "orderSearchMarkersVisicom", requireActivity());
+            Log.d(TAG, "order: urlOrder "  + urlOrder);
+            progressBar.setVisibility(View.INVISIBLE);
+            return true;
         }
 
-        urlOrder = getTaxiUrlSearchMarkers( "orderSearchMarkersVisicom", requireActivity());
-        Log.d(TAG, "order: urlOrder "  + urlOrder);
+
 
     }
     public void orderFinished() throws MalformedURLException {
@@ -1102,10 +1126,11 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
         }
         if (verifyPhone(requireContext())) {
             Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
-            Log.d("TAG", "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
+            Log.d(TAG, "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
 
             String orderWeb = sendUrlMap.get("order_cost");
-            String message = requireActivity().getString(R.string.error_message);
+            String message = sendUrlMap.get("message");
+
             if (!orderWeb.equals("0")) {
                 String to_name;
                 if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
@@ -1137,13 +1162,35 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                         );
                     }
                 }
+                String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(4);
+
+                String pay_method_message = getString(R.string.pay_method_message_main);
+                switch (pay_method) {
+                    case "bonus_payment":
+                        pay_method_message += " " + getString(R.string.pay_method_message_bonus);
+                        break;
+                    case "card_payment":
+                    case "fondy_payment":
+                    case "mono_payment":
+                        pay_method_message += " " + getString(R.string.pay_method_message_card);
+                        break;
+                    default:
+                        pay_method_message += " " + getString(R.string.pay_method_message_nal);
+                }
+                String to_name_local = to_name;
+                if(to_name.contains("по місту")
+                        ||to_name.contains("по городу")
+                        || to_name.contains("around the city")
+                ) {
+                    to_name_local = getString(R.string.on_city_tv);
+                }
                 String messageResult = getString(R.string.thanks_message) +
                         sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
-                        to_name + "." +
-                        getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH);
+                        to_name_local + "." +
+                        getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH) + " " + pay_method_message;
                 String messageFondy = getString(R.string.fondy_message) + " " +
                         sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
-                        to_name + ".";
+                        to_name_local + ".";
 
                 Intent intent = new Intent(requireActivity(), FinishActivity.class);
                 intent.putExtra("messageResult_key", messageResult);
@@ -1154,8 +1201,25 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                 startActivity(intent);
             } else {
 
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                if (message.contains("Дублирование")) {
+                    message = getResources().getString(R.string.double_order_error);
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                } else {
+                    switch (pay_method) {
+                        case "bonus_payment":
+                        case "card_payment":
+                        case "fondy_payment":
+                        case "mono_payment":
+                            changePayMethodToNal();
+                            break;
+                        default:
+                            message = getResources().getString(R.string.error_message);
+                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    }
+
+                }
                 progressBar.setVisibility(View.INVISIBLE);
             }
         } else {
@@ -1165,7 +1229,50 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
         }
 
     }
+    private void changePayMethodToNal() {
+        // Инфлейтим макет для кастомного диалога
+        LayoutInflater inflater = LayoutInflater.from(requireActivity());
+        View dialogView = inflater.inflate(R.layout.custom_dialog_layout, null);
 
+        alertDialog = new AlertDialog.Builder(requireActivity()).create();
+        alertDialog.setView(dialogView);
+        alertDialog.setCancelable(false);
+        // Настраиваем элементы макета
+
+
+        TextView messageTextView = dialogView.findViewById(R.id.dialog_message);
+        String messagePaymentType = getString(R.string.to_nal_payment);
+        messageTextView.setText(messagePaymentType);
+
+        Button okButton = dialogView.findViewById(R.id.dialog_ok_button);
+        okButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                paymentType("nal_payment");
+
+                if(orderRout()){
+                    try {
+                        orderFinished();
+                    } catch (MalformedURLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                progressBar.setVisibility(View.GONE);
+                alertDialog.dismiss();
+            }
+        });
+
+        Button cancelButton = dialogView.findViewById(R.id.dialog_cancel_button);
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                progressBar.setVisibility(View.GONE);
+                alertDialog.dismiss();
+            }
+        });
+
+        alertDialog.show();
+    }
     private void updateRoutGeo(List<String> settings) {
         ContentValues cv = new ContentValues();
         SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -1218,7 +1325,7 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
         if (cursor.getCount() == 1) {
 
             if (logCursor(MainActivity.TABLE_USER_INFO, context).get(1).equals("0")) {
-                verify = false;Log.d("TAG", "verifyOrder:verify " +verify);
+                verify = false;Log.d(TAG, "verifyOrder:verify " +verify);
             }
             cursor.close();
         }
@@ -1246,8 +1353,8 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
         TelephonyManager tMgr = (TelephonyManager) requireActivity().getSystemService(Context.TELEPHONY_SERVICE);
 
         if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-            Log.d("TAG", "Manifest.permission.READ_PHONE_NUMBERS: " + ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.READ_PHONE_NUMBERS));
-            Log.d("TAG", "Manifest.permission.READ_PHONE_STATE: " + ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.READ_PHONE_STATE));
+            Log.d(TAG, "Manifest.permission.READ_PHONE_NUMBERS: " + ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.READ_PHONE_NUMBERS));
+            Log.d(TAG, "Manifest.permission.READ_PHONE_STATE: " + ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.READ_PHONE_STATE));
             return;
         }
         mPhoneNumber = tMgr.getLine1Number();
@@ -1255,10 +1362,10 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
         if(mPhoneNumber != null) {
             String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
             boolean val = Pattern.compile(PHONE_PATTERN).matcher(mPhoneNumber).matches();
-            Log.d("TAG", "onClick No validate: " + val);
+            Log.d(TAG, "onClick No validate: " + val);
             if (val == false) {
                 Toast.makeText(requireActivity(), getString(R.string.format_phone) , Toast.LENGTH_SHORT).show();
-                Log.d("TAG", "onClick:phoneNumber.getText().toString() " + mPhoneNumber);
+                Log.d(TAG, "onClick:phoneNumber.getText().toString() " + mPhoneNumber);
 //                requireActivity().finish();
 
             } else {
@@ -1277,7 +1384,7 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         int updCount = database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
                 new String[] { "1" });
-        Log.d("TAG", "updated rows count = " + updCount);
+        Log.d(TAG, "updated rows count = " + updCount);
     }
 
     private static void insertRecordsOrders( String from, String to,
@@ -1367,11 +1474,9 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                 }
 
                 try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    orderRout();
+                    if(orderRout()){
+                        orderFinished();
                     }
-                    orderFinished();
-
                 } catch (MalformedURLException e) {
                     throw new RuntimeException(e);
                 }
@@ -1429,6 +1534,11 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
     @Override
     public void onResume() {
         super.onResume();
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, requireActivity()).get(3);
+
+        String application =  getString(R.string.application);
+        new VerifyUserTask(userEmail, application, requireActivity()).execute();
+
         if(bottomSheetDialogFragment != null) {
             bottomSheetDialogFragment.dismiss();
         }

@@ -17,7 +17,6 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
@@ -30,7 +29,6 @@ import android.widget.Switch;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -67,6 +65,7 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -272,9 +271,8 @@ public class OpenStreetMapActivity extends AppCompatActivity {
     }
     private void startLocationUpdates() {
         LocationRequest locationRequest = createLocationRequest();
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
             return;
         }
         fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
@@ -378,7 +376,14 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
                             }
                         }
-                        String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeo/" + startLat + "/" + startLan;
+
+                        Locale locale = Locale.getDefault();
+                        String language = locale.getLanguage(); // Получаем язык устройства
+
+                        String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
+
+
+
                         Map sendUrlFrom = null;
                         try {
                             sendUrlFrom = FromJSONParser.sendURL(urlFrom);
@@ -410,12 +415,8 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                 };
 
 
-                if (ContextCompat.checkSelfPermission(OpenStreetMapActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
-                        == PackageManager.PERMISSION_GRANTED) {
+
                     startLocationUpdates();
-                } else {
-                    requestLocationPermission();
-                }
             }
         } else {
             Toast.makeText(this, R.string.check_position, Toast.LENGTH_SHORT).show();
@@ -447,7 +448,11 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                     } else {
                         FromAdressString = getString(R.string.startPoint);
                     }
-                    String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeo/" + startLat + "/" + startLan;
+                    Locale locale = Locale.getDefault();
+                    String language = locale.getLanguage(); // Получаем язык устройства
+
+                    String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
+
 
                     Map sendUrlFrom = null;
                     try {
@@ -479,13 +484,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                 }
             };
 
-
-            if (ContextCompat.checkSelfPermission(OpenStreetMapActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
-                    == PackageManager.PERMISSION_GRANTED) {
                 startLocationUpdates();
-            } else {
-                requestLocationPermission();
-            }
         }
 
         map.onResume();
@@ -554,7 +553,12 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                 double newLongitude = newPosition.getLongitude();
                 startLat = newLatitude;
                 startLan = newLongitude;
-                String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeo/" + startLat + "/" + startLan;
+
+                Locale locale = Locale.getDefault();
+                String language = locale.getLanguage(); // Получаем язык устройства
+
+                String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
+
                 Map sendUrlFrom = null;
                 try {
                     sendUrlFrom = FromJSONParser.sendURL(urlFrom);
@@ -621,7 +625,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
+
     public static void dialogMarkers(FragmentManager fragmentManager, Context context) throws MalformedURLException, JSONException, InterruptedException {
         if(endPoint != null) {
             GeoPoint startPoint = new GeoPoint(startLat, startLan);
@@ -637,7 +641,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
             updateRoutMarker(settings, context);
 
-            String urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", map.getContext());
+            String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersLocal", map.getContext());
 
             Map<String, String> sendUrlMapCost = ToJSONParser.sendURL(urlCost);
 
@@ -723,7 +727,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         database.close();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
+
     @SuppressLint("Range")
     public static String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
 
@@ -761,7 +765,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         String phoneNumber = "no phone";
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
-        if(urlAPI.equals("costSearchMarkers")) {
+        if(urlAPI.equals("costSearchMarkersLocal")) {
             Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
 
             if (c.getCount() == 1) {
@@ -822,8 +826,16 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         String city = listCity.get(1);
         String api = listCity.get(2);
 
-        String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
-                + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
+        Locale locale = Locale.getDefault();
+        String language = locale.getLanguage(); // Получаем язык устройства
+        String url;
+        if(urlAPI.equals("costSearchMarkersLocal")) {
+            url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
+                    + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application) + "/" + language;
+        } else {
+            url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
+                    + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application);
+        }
         database.close();
         Log.d(TAG, "getTaxiUrlSearchMarkers: " + url);
         return url;

@@ -13,7 +13,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -345,7 +344,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
     static class ViewHolder {
         ImageView cardImage;
         TextView cardText, bankText;
-        Button deleteButton;
+        ImageView deleteButton;
         CheckBox checkBox;
     }
 

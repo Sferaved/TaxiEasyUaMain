@@ -9,7 +9,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.SparseBooleanArray;
@@ -29,7 +28,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
@@ -63,7 +61,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
     long discountFist;
     final static long MIN_VALUE = -90;
     final static long MAX_VALUE = 200;
-    @RequiresApi(api = Build.VERSION_CODES.O)
+     
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -268,7 +266,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
         database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[] { "1" });
         database.close();
     }
-    @RequiresApi(api = Build.VERSION_CODES.O)
+     
     @Override
     public void onPause() {
         super.onPause();

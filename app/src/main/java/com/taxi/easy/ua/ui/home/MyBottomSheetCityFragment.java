@@ -103,7 +103,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 getString(R.string.Odessa),
                 getString(R.string.Zaporizhzhia),
                 getString(R.string.Cherkasy),
-                "Тест",
+                getString(R.string.test_city),
                 getString(R.string.foreign_countries),
         };
 
@@ -152,7 +152,6 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 phoneNumber = Kyiv_City_phone;
                 cityMenu = getString(R.string.foreign_countries);
                 new GetPublicIPAddressTask().execute();
-                break;
         }
         Log.d(TAG, "onCreateView: city" + city);
         updateMyPosition(city);
@@ -245,7 +244,6 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 break;
             default:
                 city = "foreign countries";
-                break;
         }
 
         switch (city){

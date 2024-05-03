@@ -8,13 +8,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
-
-import androidx.annotation.RequiresApi;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
@@ -28,7 +25,7 @@ public class MyService extends Service {
 
     private static final String TAG = "MyService";
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
+     
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "onStartCommand: ");

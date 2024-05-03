@@ -10,4 +10,10 @@ public interface ApiService {
             @Path("latitude") double latitude,
             @Path("longitude") double longitude
     );
+    @GET("reverseAddressLocal/{latitude}/{longitude}/{local}")
+    Call<ApiResponse> reverseAddressLocal(
+            @Path("latitude") double latitude,
+            @Path("longitude") double longitude,
+            @Path("local") String local
+    );
 }

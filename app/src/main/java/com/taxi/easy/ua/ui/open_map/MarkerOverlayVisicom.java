@@ -2,7 +2,6 @@ package com.taxi.easy.ua.ui.open_map;
 
 
 import android.content.Context;
-import android.os.Build;
 import android.util.Log;
 import android.view.MotionEvent;
 
@@ -47,9 +46,9 @@ public class MarkerOverlayVisicom extends Overlay {
                 OpenStreetMapVisicomActivity.startPoint = pointGeo;
                 try {
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
                         OpenStreetMapVisicomActivity.dialogMarkerStartPoint();
-                    }
+
                 } catch (MalformedURLException e) {
                     Log.d("TAG", "onCreate:" + new RuntimeException(e));
                 }
@@ -58,9 +57,9 @@ public class MarkerOverlayVisicom extends Overlay {
                 OpenStreetMapVisicomActivity.endPoint = pointGeo;
                 try {
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
                         OpenStreetMapVisicomActivity.dialogMarkersEndPoint();
-                    }
+
                 } catch (MalformedURLException | JSONException | InterruptedException e) {
                     Log.d("TAG", "onCreate:" + new RuntimeException(e));
                 }

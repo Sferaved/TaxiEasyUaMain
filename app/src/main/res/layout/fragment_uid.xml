@@ -17,9 +17,7 @@
         android:textAlignment="center"
         android:textColor="#D9D9D9"
         android:textSize="16sp"
-        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -52,22 +50,22 @@
         app:layout_constraintTop_toBottomOf="@+id/upd_but"
         tools:layout_editor_absoluteX="0dp" />
 
+
     <ListView
         android:id="@+id/listView"
         android:layout_width="match_parent"
         android:layout_height="400dp"
         android:layout_margin="8dp"
+        android:layout_marginTop="56dp"
         android:divider="@color/colorAccent"
         android:dividerHeight="1sp"
         android:fontFamily="@font/regular"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/progress_bar">
 
 
     </ListView>
-
 
     <ImageButton
         android:id="@+id/scrollButtonUp"

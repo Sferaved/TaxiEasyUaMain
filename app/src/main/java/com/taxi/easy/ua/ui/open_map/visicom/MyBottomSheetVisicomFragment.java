@@ -15,7 +15,6 @@ import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
-import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -34,7 +33,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -49,7 +47,6 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.cities.Kyiv.KyivRegion;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
-import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
@@ -58,6 +55,7 @@ import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiClient;
 import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiResponse;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.KeyboardUtils;
+import com.taxi.easy.ua.utils.LocaleHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -70,6 +68,7 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -89,7 +88,7 @@ public class MyBottomSheetVisicomFragment extends BottomSheetDialogFragment impl
     EditText fromEditAddress, toEditAddress;
     private ImageButton btn_clear_from, btn_clear_to;
 
-    private final String apiUrl = "https://api.visicom.ua/data-api/5.0/uk/geocode.json";
+    private final String apiUrl = "https://api.visicom.ua/data-api/5.0/";
     private String apiKey;
     private static List<double[]> coordinatesList;
     private static List<String[]> addresses;
@@ -118,7 +117,6 @@ public class MyBottomSheetVisicomFragment extends BottomSheetDialogFragment impl
     }
 
     @SuppressLint("MissingInflatedId")
-    @RequiresApi(api = Build.VERSION_CODES.O)
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -321,35 +319,7 @@ public class MyBottomSheetVisicomFragment extends BottomSheetDialogFragment impl
         btn_change.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                LocationManager lm = (LocationManager) requireActivity().getSystemService(Context.LOCATION_SERVICE);
-                boolean gps_enabled = false;
-                boolean network_enabled = false;
-
-                try {
-                    gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-                } catch(Exception ignored) {
-                }
-
-                try {
-                    network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-                } catch(Exception ignored) {
-                }
-
-                if(!gps_enabled || !network_enabled) {
-//                    checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-//                    checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                    MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                }  else  {
-                    // Разрешения уже предоставлены, выполнить ваш код
-                    if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                            && ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                        checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                        checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                    }  else {
-                        firstLocation();
-                    }
-                }
+                firstLocation();
             }
         });
         return view;
@@ -358,7 +328,7 @@ public class MyBottomSheetVisicomFragment extends BottomSheetDialogFragment impl
     private void firstLocation() {
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireActivity());
         locationCallback = new LocationCallback() {
-            @RequiresApi(api = Build.VERSION_CODES.O)
+             
             @Override
             public void onLocationResult(@NonNull LocationResult locationResult) {
                 // Обработка полученных местоположений
@@ -374,11 +344,11 @@ public class MyBottomSheetVisicomFragment extends BottomSheetDialogFragment impl
                     double latitude = firstLocation.getLatitude();
                     double longitude = firstLocation.getLongitude();
 
+                    Locale locale = Locale.getDefault();
+                    String language = locale.getLanguage(); // Получаем язык устройства
 
-//                    List<String> stringList = logCursor(MainActivity.CITY_INFO, getContext());
-//                    String api =  stringList.get(2);
+                    String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + latitude + "/" + longitude + "/" + language;
 
-                    String urlFrom = urlBase + "/android/fromSearchGeo/" + latitude + "/" + longitude;
                     Map sendUrlFrom = null;
                     try {
                         sendUrlFrom = FromJSONParser.sendURL(urlFrom);
@@ -450,12 +420,8 @@ public class MyBottomSheetVisicomFragment extends BottomSheetDialogFragment impl
                 }
             }
         };
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
+
             startLocationUpdates();
-        } else {
-            requestLocationPermission();
-        }
 
     }
 
@@ -477,9 +443,8 @@ public class MyBottomSheetVisicomFragment extends BottomSheetDialogFragment impl
     }
     private void startLocationUpdates() {
         LocationRequest locationRequest = createLocationRequest();
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
             checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
             return;
         }
         fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
@@ -502,10 +467,6 @@ public class MyBottomSheetVisicomFragment extends BottomSheetDialogFragment impl
             // Показываем объяснение пользователю, почему мы запрашиваем разрешение
             // Можно использовать диалоговое окно или другой пользовательский интерфейс
             checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-
-//            MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment();
-//            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
         } else {
             ActivityCompat.requestPermissions(requireActivity(),
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
@@ -551,7 +512,9 @@ public class MyBottomSheetVisicomFragment extends BottomSheetDialogFragment impl
 
     private void performAddressSearch(String inputText, String point) {
         try {
-            String url = apiUrl;
+
+            String url = apiUrl  + LocaleHelper.getLocale() + "/geocode.json";
+
             if (point.equals("start")) {
                 verifyBuildingStart = false;
             } else {
@@ -1143,7 +1106,7 @@ public class MyBottomSheetVisicomFragment extends BottomSheetDialogFragment impl
         OpenStreetMapActivity.showRout(startPoint, OpenStreetMapActivity.endPoint);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
+     
     private void visicomCost() {
         String urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", requireActivity());
         Log.d(TAG, "visicomCost: " + urlCost);
@@ -1224,7 +1187,7 @@ public class MyBottomSheetVisicomFragment extends BottomSheetDialogFragment impl
         database.close();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
+     
     @SuppressLint("Range")
     public String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
         Log.d(TAG, "getTaxiUrlSearchMarkers: " + urlAPI);

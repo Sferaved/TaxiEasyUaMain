@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.SpannableString;
+import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,9 +32,11 @@ public class AboutFragment extends Fragment {
         View root = binding.getRoot();
 
         // Текст, который вы хотите отображать
-        String displayText = getString(R.string.my_site);
+        TextView textSite = binding.textView1;
+        // Текст, который вы хотите отображать
+        String displayText = getString(R.string.gdpr0);
 
-        final String url = "https://play.google.com/store/apps/dev?id=8830024160014473355";
+        final String url = "https://m.easy-order-taxi.site/taxi-gdbr";
 
         SpannableString spannableString = new SpannableString(displayText);
         ClickableSpan clickableSpan = new ClickableSpan() {
@@ -45,6 +48,8 @@ public class AboutFragment extends Fragment {
             }
         };
         spannableString.setSpan(clickableSpan, 0, displayText.length(), SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE);
+        textSite.setText(spannableString);
+        textSite.setMovementMethod(LinkMovementMethod.getInstance());
 
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @SuppressLint("IntentReset")

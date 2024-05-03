@@ -49,6 +49,7 @@ public class BonusFragment extends Fragment {
     private ProgressBar progressBar;
     private TextView text0;
     NavController navController;
+    @SuppressLint("SourceLockedOrientationActivity")
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);

@@ -18,7 +18,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -54,7 +53,7 @@ public static Map<String, String> sendURL(String urlString) throws MalformedURLE
     Future<String> asyncTaskFuture = Executors.newSingleThreadExecutor().submit(asyncTaskCallable);
 
     try {
-        String response = asyncTaskFuture.get(10, TimeUnit.SECONDS);
+        String response = asyncTaskFuture.get(30, TimeUnit.SECONDS);
         if (response != null) {
 
             JSONObject jsonarray = new JSONObject(response);
@@ -72,12 +71,6 @@ public static Map<String, String> sendURL(String urlString) throws MalformedURLE
             costMap.put("order_cost", "0");
             costMap.put("message", "Сталася помилка");
         }
-        return costMap;
-    } catch (TimeoutException e) {
-        e.printStackTrace();
-        asyncTaskFuture.cancel(true);
-        costMap.put("order_cost", "0");
-        costMap.put("message", "Сталася помилка");
         return costMap;
     } catch (Exception e) {
         e.printStackTrace();

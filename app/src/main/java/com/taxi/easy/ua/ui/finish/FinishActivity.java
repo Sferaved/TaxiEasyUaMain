@@ -43,7 +43,6 @@ import com.taxi.easy.ua.ui.fondy.token_pay.PaymentApiToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.RequestDataToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.StatusRequestToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.SuccessResponseDataToken;
-import com.taxi.easy.ua.ui.home.MyBottomSheetBlackListFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorPaymentFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
@@ -87,6 +86,8 @@ public class FinishActivity extends AppCompatActivity {
     public static String uid_Double;
     public static Button btn_reset_status;
     public static Button btn_cancel_order;
+    public static Button btn_again;
+    public static Button btn_cancel;
     private long delayMillis, delayMillisStatus;
     public static Runnable myRunnable;
     public static Runnable runnableBonusBtn;
@@ -98,7 +99,6 @@ public class FinishActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_finish);
-        new VerifyUserTask().execute();
 
         progressBar = findViewById(R.id.progress_bar);
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
@@ -140,6 +140,7 @@ public class FinishActivity extends AppCompatActivity {
         handler = new Handler();
 
         if (pay_method.equals("bonus_payment")) {
+            handlerBonusBtn = new Handler();
 
              String url = baseUrl + "/bonusBalance/recordsBloke/" + uid;
 
@@ -244,6 +245,8 @@ public class FinishActivity extends AppCompatActivity {
                 } else {
                     progressBar.setVisibility(View.INVISIBLE);
                     text_status.setText(R.string.verify_internet);
+                    btn_again.setVisibility(View.VISIBLE);
+                    btn_cancel.setVisibility(View.VISIBLE);
                 }
 
                 btn_reset_status.setVisibility(View.GONE);
@@ -252,27 +255,22 @@ public class FinishActivity extends AppCompatActivity {
             }
         });
 
-        Button btn_again = findViewById(R.id.btn_again);
+        btn_again = findViewById(R.id.btn_again);
         btn_again.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 MainActivity.order_id = null;
                 updateAddCost(String.valueOf(0));
-                if(!verifyOrder()) {
-                    MyBottomSheetBlackListFragment bottomSheetDialogFragment = new MyBottomSheetBlackListFragment("orderCost");
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                if(connected()){
+                    startActivity(new Intent(getApplicationContext(), MainActivity.class));
                 } else {
-                    if(connected()){
-                        startActivity(new Intent(getApplicationContext(), MainActivity.class));
-                    } else {
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-                    }
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
             }
         });
 
-        Button btn_cancel = findViewById(R.id.btn_cancel);
+        btn_cancel = findViewById(R.id.btn_cancel);
         btn_cancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -602,42 +600,6 @@ public class FinishActivity extends AppCompatActivity {
         });
     }
 
-//    private void cancelOrderDismiss(String value) {
-//        List<String> listCity = logCursor(MainActivity.CITY_INFO);
-//        String city = listCity.get(1);
-//        String api = listCity.get(2);
-//
-//
-//        String url = baseUrl + "/" + api + "/android/webordersCancel/" + value + "/" + city  + "/" + getString(R.string.application);
-//
-//        Call<Status> call = ApiClient.getApiService().cancelOrder(url);
-//        Log.d(TAG, "cancelOrderWithDifferentValue cancelOrderUrl: " + url);
-//
-//        call.enqueue(new Callback<Status>() {
-//            @Override
-//            public void onResponse(Call<Status> call, Response<Status> response) {
-//                Status status = response.body();
-//                if (status != null) {
-//
-//                    String result =  String.valueOf(status.getResponse());
-//                    Log.d(TAG, "onResponse: result" + result);
-//                    FinishActivity.text_status.setText(result + getString(R.string.pay_failure));
-//
-//                } else {
-//                    FinishActivity.text_status.setText(R.string.verify_internet);
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(Call<Status> call, Throwable t) {
-//                // Обработка ошибок сети или других ошибок
-//                String errorMessage = t.getMessage();
-//                t.printStackTrace();
-//                Log.d(TAG, "onFailure: " + errorMessage);
-//
-//            }
-//        });
-//    }
 
     private void getUrlToPaymentMono(String amount, String reference, String comment) {
 
@@ -909,7 +871,23 @@ public class FinishActivity extends AppCompatActivity {
                     if (status != null) {
                         String result =  String.valueOf(status.getResponse());
                         Log.d(TAG, "onResponse: result" + result);
-                        text_status.setText(result);
+                        String message_local = result;
+                        Log.d(TAG, "onResponse: " +message_local);
+                        switch (result) {
+                            case "Запит на скасування замовлення надіслано. Замовлення не вдалося скасувати.":
+                                message_local = getString(R.string.cancel_0);
+                                break;
+                            case "Запит на скасування замовлення надіслано. Замовлення скасоване.":
+                                message_local = getString(R.string.cancel_1);
+                                break;
+                            case "Запит на скасування замовлення надіслано. Вимагає підтвердження клієнтом скасування диспетчерської.":
+                                message_local = getString(R.string.cancel_2);
+                                break;
+                            case "Запит на скасування замовлення надіслано. Статус поїздки дізнайтесь у диспетчера.":
+                                message_local = getString(R.string.cancel_3);
+                                break;
+                        }
+                        text_status.setText(message_local);
                         String comment = getString(R.string.fondy_revers_message) + getString(R.string.fondy_message);;
 
                         switch (pay_method) {
@@ -919,12 +897,21 @@ public class FinishActivity extends AppCompatActivity {
                             case "mono_payment":
                                 getReversMono(MainActivity.invoiceId, comment, Integer.parseInt(amount));
                                 break;
+                            case "nal_payment":
+                                btn_again.setVisibility(View.VISIBLE);
+                                btn_cancel.setVisibility(View.VISIBLE);
+
+                                break;
+
                         }
+
                     }
                 } else {
                     // Обработка неуспешного ответа
                     if (pay_method.equals("nal_payment")) {
                         text_status.setText(R.string.verify_internet);
+                        btn_again.setVisibility(View.VISIBLE);
+                        btn_cancel.setVisibility(View.VISIBLE);
                     }
                 }
                 progressBar.setVisibility(View.INVISIBLE);
@@ -937,6 +924,8 @@ public class FinishActivity extends AppCompatActivity {
                 t.printStackTrace();
                 Log.d(TAG, "onFailure: " + errorMessage);
                 text_status.setText(R.string.verify_internet);
+                btn_again.setVisibility(View.VISIBLE);
+                btn_cancel.setVisibility(View.VISIBLE);
                 progressBar.setVisibility(View.INVISIBLE);
             }
         });
@@ -959,7 +948,23 @@ public class FinishActivity extends AppCompatActivity {
                     if (status != null) {
                         String result =  String.valueOf(status.getResponse());
                         Log.d(TAG, "onResponse: result" + result);
-                        text_status.setText(result);
+                        String message_local = result;
+                        Log.d(TAG, "onResponse: " +message_local);
+                        switch (result) {
+                            case "Запит на скасування замовлення надіслано. Замовлення не вдалося скасувати.":
+                                message_local = getString(R.string.cancel_0);
+                                break;
+                            case "Запит на скасування замовлення надіслано. Замовлення скасоване.":
+                                message_local = getString(R.string.cancel_1);
+                                break;
+                            case "Запит на скасування замовлення надіслано. Вимагає підтвердження клієнтом скасування диспетчерської.":
+                                message_local = getString(R.string.cancel_2);
+                                break;
+                            case "Запит на скасування замовлення надіслано. Статус поїздки дізнайтесь у диспетчера.":
+                                message_local = getString(R.string.cancel_3);
+                                break;
+                        }
+                        text_status.setText(message_local);
                         String comment = getString(R.string.fondy_revers_message) + getString(R.string.fondy_message);;
 
                         switch (pay_method) {
@@ -969,12 +974,19 @@ public class FinishActivity extends AppCompatActivity {
                             case "mono_payment":
                                 getReversMono(MainActivity.invoiceId, comment, Integer.parseInt(amount));
                                 break;
+                            case "nal_payment":
+                                btn_again.setVisibility(View.VISIBLE);
+                                btn_cancel.setVisibility(View.VISIBLE);
+                                break;
                         }
+
                     }
                 } else {
                     // Обработка неуспешного ответа
                     if (pay_method.equals("nal_payment")) {
                         text_status.setText(R.string.verify_internet);
+                        btn_again.setVisibility(View.VISIBLE);
+                        btn_cancel.setVisibility(View.VISIBLE);
                     }
                 }
                 progressBar.setVisibility(View.INVISIBLE);
@@ -987,6 +999,8 @@ public class FinishActivity extends AppCompatActivity {
                 t.printStackTrace();
                 Log.d(TAG, "onFailure: " + errorMessage);
                 text_status.setText(R.string.verify_internet);
+                btn_again.setVisibility(View.VISIBLE);
+                btn_cancel.setVisibility(View.VISIBLE);
                 progressBar.setVisibility(View.INVISIBLE);
             }
         });
@@ -1025,12 +1039,10 @@ public class FinishActivity extends AppCompatActivity {
                     Log.d(TAG, "JSON Response: " + new Gson().toJson(apiResponse));
                     if (apiResponse != null) {
                         SuccessResponseDataRevers responseData = apiResponse.getResponse();
+                       // Обработка успешного ответа
                         Log.d(TAG, "onResponse: " + responseData.toString());
-                        if (responseData != null) {
-                            // Обработка успешного ответа
-                            Log.d(TAG, "onResponse: " + responseData.toString());
-
-                        }
+                        btn_again.setVisibility(View.VISIBLE);
+                        btn_cancel.setVisibility(View.VISIBLE);
                     }
                 } else {
                     // Обработка ошибки запроса
@@ -1208,12 +1220,28 @@ public class FinishActivity extends AppCompatActivity {
                             message = getString(R.string.def_status);
                             break;
                     }
-
-                    text_status.setText(message);
+                    String message_local = message;
+                    Log.d(TAG, "onResponse: " +message_local);
+                    switch (message) {
+                        case "Запит на скасування замовлення надіслано. Замовлення не вдалося скасувати.":
+                            message_local = getString(R.string.cancel_0);
+                            break;
+                        case "Запит на скасування замовлення надіслано. Замовлення скасоване.":
+                            message_local = getString(R.string.cancel_1);
+                            break;
+                        case "Запит на скасування замовлення надіслано. Вимагає підтвердження клієнтом скасування диспетчерської.":
+                            message_local = getString(R.string.cancel_2);
+                            break;
+                        case "Запит на скасування замовлення надіслано. Статус поїздки дізнайтесь у диспетчера.":
+                            message_local = getString(R.string.cancel_3);
+                            break;
+                    }
+                    text_status.setText(message_local);
 
                 } else {
                     text_status.setText(getString(R.string.def_status));
                 }
+
             }
 
             @Override
