@@ -89,10 +89,13 @@ import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
+import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.VerifyUserTask;
 import com.taxi.easy.ua.utils.activ_push.MyService;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
+import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.ip.IPUtil;
 import com.taxi.easy.ua.utils.messages.UsersMessages;
@@ -118,6 +121,8 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -145,6 +150,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
     public static final String ROUT_MARKER = "routMarker";
 
     public static final String TABLE_POSITION_INFO = "myPosition";
+    public static final String TABLE_WFP_CARDS = "tableWfpCards";
     public static final String TABLE_FONDY_CARDS = "tableFondyCards";
     public static final String TABLE_MONO_CARDS = "tableMonoCards";
 
@@ -173,6 +179,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
     public static String versionServer;
 
     DatabaseHelper databaseHelper;
+    DatabaseHelperUid databaseHelperUid;
     String baseUrl = "https://m.easy-order-taxi.site";
     private List<RouteResponse> routeList;
     String[] array;
@@ -192,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         } catch (MalformedURLException | JSONException | InterruptedException ignored) {
 
         }
-        com.taxi.easy.ua.databinding.ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
+        ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         setSupportActionBar(binding.appBarMain.toolbar);
@@ -272,6 +279,12 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
     @Override
     protected void onResume() {
         super.onResume();
+        databaseHelper = new DatabaseHelper(getApplicationContext());
+        databaseHelper.clearTable();
+
+        databaseHelperUid = new DatabaseHelperUid(getApplicationContext());
+        databaseHelperUid.clearTableUid();
+
         insertOrUpdatePushDate();
         Log.d(TAG, "onResume: isServiceRunning())  " );
         isServiceRunning();
@@ -328,6 +341,8 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 database.close();
             }
         }
+        assert database != null;
+        database.close();
     }
     private static final String PREFS_NAME = "UserActivityPrefs";
     private static final String LAST_ACTIVITY_KEY = "lastActivityTimestamp";
@@ -540,6 +555,14 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         if (cursorDb != null && !cursorDb.isClosed())
             cursorDb.close();
 
+        database.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_WFP_CARDS + "(id integer primary key autoincrement," +
+                " masked_card text," +
+                " card_type text," +
+                " bank_name text," +
+                " rectoken text," +
+                " merchant text," +
+                " rectoken_check text);");
+
         database.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_FONDY_CARDS + "(id integer primary key autoincrement," +
                 " masked_card text," +
                 " card_type text," +
@@ -595,6 +618,8 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 database.close();
             }
         }
+        assert database != null;
+        database.close();
     }
     public void updatePushDate(Context context) {
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -624,6 +649,8 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 database.close();
             }
         }
+        assert database != null;
+        database.close();
     }
 
     private void insertFirstSettings(List<String> settings) {
@@ -803,7 +830,8 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
         if (item.getItemId() == R.id.action_exit) {
-          finishAffinity();
+            System.gc();
+            finishAffinity();
         }
 
 //        if (item.getItemId() == R.id.action_state_phone) {
@@ -874,7 +902,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             if (NetworkUtils.isNetworkAvailable(this)) {
                 List<String> listCity = logCursor(MainActivity.CITY_INFO);
                 String city = listCity.get(1);
-                MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city);
+                MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, getApplicationContext());
                 bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
             } else {
                 Toast.makeText(this, R.string.verify_internet, Toast.LENGTH_SHORT).show();
@@ -1445,11 +1473,100 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
             // Проверка новой версии в маркете
             new Thread(this::versionFromMarket).start();
+
+            Thread wfpCardThread = new Thread(() -> {
+                List<String> stringList = logCursor(MainActivity.CITY_INFO);
+                String city = stringList.get(1);
+                getCardTokenWfp(city,"wfp", userEmail);
+
+            });
+            wfpCardThread.start();
         }
 
 
     }
 
+    private void getCardTokenWfp(String city, String pay_system, String email) {
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(interceptor)
+                .build();
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://m.easy-order-taxi.site") // Замените на фактический URL вашего сервера
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+
+        // Создайте сервис
+        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
+        Log.d(TAG, "getCardTokenWfp: ");
+        // Выполните запрос
+        Call<CallbackResponseWfp> call = service.handleCallbackWfp(
+                getString(R.string.application),
+                city,
+                email,
+                pay_system
+        );
+        call.enqueue(new Callback<CallbackResponseWfp>() {
+            @Override
+            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
+                Log.d(TAG, "onResponse: " + response.body());
+                if (response.isSuccessful()) {
+                    CallbackResponseWfp callbackResponse = response.body();
+                    if (callbackResponse != null) {
+                        List<CardInfo> cards = callbackResponse.getCards();
+                        Log.d(TAG, "onResponse: cards" + cards);
+                        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
+                        if (cards != null && !cards.isEmpty()) {
+                            for (CardInfo cardInfo : cards) {
+                                String masked_card = cardInfo.getMasked_card(); // Маска карты
+                                String card_type = cardInfo.getCard_type(); // Тип карты
+                                String bank_name = cardInfo.getBank_name(); // Название банка
+                                String rectoken = cardInfo.getRectoken(); // Токен карты
+                                String merchant = cardInfo.getMerchant(); // Токен карты
+
+                                Log.d(TAG, "onResponse: card_token: " + rectoken);
+                                ContentValues cv = new ContentValues();
+                                cv.put("masked_card", masked_card);
+                                cv.put("card_type", card_type);
+                                cv.put("bank_name", bank_name);
+                                cv.put("rectoken", rectoken);
+                                cv.put("merchant", merchant);
+                                cv.put("rectoken_check", "0");
+                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
+                            }
+                            Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_WFP_CARDS + " ORDER BY id DESC LIMIT 1", null);
+                            if (cursor != null && cursor.moveToFirst()) {
+                                // Получаем значение ID последней записи
+                                @SuppressLint("Range") int lastId = cursor.getInt(cursor.getColumnIndex("id"));
+                                cursor.close();
+
+                                // Обновляем строку с найденным ID
+                                ContentValues cv = new ContentValues();
+                                cv.put("rectoken_check", "1");
+                                database.update(MainActivity.TABLE_WFP_CARDS, cv, "id = ?", new String[] { String.valueOf(lastId) });
+                            }
+
+                            database.close();
+                        }
+                        database.close();
+                    }
+
+                } else {
+                    // Обработка случаев, когда ответ не 200 OK
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
+                // Обработка ошибки запроса
+                Log.d(TAG, "onResponse: failure " + t.toString());
+            }
+        });
+    }
     private void startFireBase() {
         Toast.makeText(this, R.string.account_verify, Toast.LENGTH_SHORT).show();
         startSignInInBackground();
@@ -1573,17 +1690,23 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         // Создайте массив строк
 
         array = new String[routeList.size()];
-        databaseHelper = new DatabaseHelper(getApplicationContext());
-        databaseHelper.clearTable();
+
 
         String closeReasonText = getString(R.string.close_resone_def);
 
         for (int i = 0; i < routeList.size(); i++) {
             RouteResponse route = routeList.get(i);
+
             String routeFrom = route.getRouteFrom();
             String routefromnumber = route.getRouteFromNumber();
+            String startLat = route.getStartLat();
+            String startLan = route.getStartLan();
+
             String routeTo = route.getRouteTo();
             String routeTonumber = route.getRouteToNumber();
+            String to_lat = route.getTo_lat();
+            String to_lng = route.getTo_lng();
+
             String webCost = route.getWebCost();
             String createdAt = route.getCreatedAt();
             String closeReason = route.getCloseReason();
@@ -1666,18 +1789,30 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 //                array[i] = routeInfo;
             databaseHelper.addRouteInfo(routeInfo);
 
+            List<String> settings = new ArrayList<>();
+
+            settings.add(startLat);
+            settings.add(startLan);
+            settings.add(to_lat);
+            settings.add(to_lng);
+            settings.add(routeFrom + " " + routefromnumber);
+            settings.add(routeTo + " " + routeTonumber);
+            Log.d(TAG, settings.toString());
+            databaseHelperUid.addRouteInfoUid(settings);
+
+
         }
         array = databaseHelper.readRouteInfo();
-        Log.d("TAG", "processRouteList: array " + Arrays.toString(array));
+        Log.d("TAG", "processRouteList: array 1211" + Arrays.toString(array));
     }
 
-    private void settingsNewUser (String email) {
+    private void settingsNewUser (String emailUser) {
         // Assuming this code is inside a method or a runnable block
 
 // Task 1: Update user info in a separate thread
         Thread updateUserInfoThread = new Thread(() -> {
             ContentValues cv = new ContentValues();
-            updateRecordsUserInfo("email", email, getApplicationContext());
+            updateRecordsUserInfo("email", emailUser, getApplicationContext());
             cv.put("verifyOrder", "1");
 
             SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -1688,22 +1823,29 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
 // Task 2: Add user with no name in a separate thread
         Thread addUserNoNameThread = new Thread(() -> {
-            addUserNoName(email, getApplicationContext());
+            addUserNoName(emailUser, getApplicationContext());
         });
         addUserNoNameThread.start();
 
 // Task 3: Fetch user phone information from the server in a separate thread
         Thread userPhoneThread = new Thread(() -> {
-            userPhoneFromServer(email);
+            userPhoneFromServer(emailUser);
         });
         userPhoneThread.start();
 
 // Task 4: Get card token for "fondy" in a separate thread
-        Thread fondyCardThread = new Thread(() -> {
-            getCardToken("fondy", TABLE_FONDY_CARDS, email);
-
-        });
-        fondyCardThread.start();
+//        Thread fondyCardThread = new Thread(() -> {
+//            getCardToken("fondy", TABLE_FONDY_CARDS, emailUser);
+//
+//        });
+//        fondyCardThread.start();
+//        Thread wfpCardThread = new Thread(() -> {
+//            List<String> stringList = logCursor(MainActivity.CITY_INFO);
+//            String city = stringList.get(1);
+//            getCardTokenWfp("OdessaTest","wfp", emailUser);
+//
+//        });
+//        wfpCardThread.start();
 
 // Task 5: Get card token for "mono" in a separate thread
 //        Thread monoCardThread = new Thread(() -> {
@@ -1716,7 +1858,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             updateUserInfoThread.join();
             addUserNoNameThread.join();
             userPhoneThread.join();
-            fondyCardThread.join();
+//            fondyCardThread.join();
 //            monoCardThread.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -1894,6 +2036,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         Log.d(TAG, "getCardTokenFondy: ");
         List<String>  arrayList = logCursor(MainActivity.CITY_INFO);
         String MERCHANT_ID = arrayList.get(6);
+        Log.d(TAG, "getCardToken:MERCHANT_ID " + MERCHANT_ID);
         if(MERCHANT_ID != null) {
     // Выполните запрос
     Call<CallbackResponse> call = service.handleCallback(email, pay_system, MERCHANT_ID);
@@ -2284,7 +2427,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                         String result = status.getResponse();
                         Log.d("TAG", "onResponse:result " + result);
 
-                        MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(result);
+                        MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(result, context);
 
                         if (!fm.isStateSaved()) {
                             bottomSheetDialogFragment.show(fm, bottomSheetDialogFragment.getTag());

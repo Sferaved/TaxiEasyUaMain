@@ -34,17 +34,20 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.finish.FinishActivity;
-import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 
 public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
@@ -74,8 +77,8 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         phoneNumber = view.findViewById(R.id.phoneNumber);
         button = view.findViewById(R.id.ok_button);
         checkBox = view.findViewById(R.id.checkbox);
-        messageFondy = mContext.getString(R.string.fondy_message);
-        SQLiteDatabase database = mContext.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        messageFondy = requireActivity().getString(R.string.fondy_message);
+        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
         if (c.getCount() == 1) {
             String phone = logCursor(MainActivity.TABLE_USER_INFO).get(2);
@@ -169,198 +172,212 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
 
     private void orderVisicom()  {
         if(connected()) {
-            try {
                 String urlOrder = null;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    urlOrder = getTaxiUrlSearchMarkersVisicom("orderSearchMarkersVisicom", mContext);
-                }
-                Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
-                Log.d("TAG", "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
+                urlOrder = getTaxiUrlSearchMarkersVisicom("orderSearchMarkersVisicom", mContext);
 
-                String orderWeb = sendUrlMap.get("order_cost");
+                ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
-                if (!orderWeb.equals("0")) {
-                    String to_name;
-                    if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
-                        to_name = mContext.getString(R.string.on_city_tv);
-                        if (!sendUrlMap.get("lat").equals("0")) {
-                            insertRecordsOrders(
-                                    sendUrlMap.get("routefrom"), sendUrlMap.get("routefrom"),
-                                    sendUrlMap.get("routefromnumber"), sendUrlMap.get("routefromnumber"),
-                                    sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                    sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                    mContext
-                            );
-                        }
-                    } else {
-                        if(sendUrlMap.get("routeto").equals("Точка на карте")) {
-                            to_name = mContext.getString(R.string.end_point_marker);
+//            // Пример строки URL с параметрами
+                Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
+                parser.sendURL(urlOrder, new Callback<Map<String, String>>() {
+                    @Override
+                    public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
+                        Map<String, String> sendUrlMap = response.body();
+
+                        String orderWeb = sendUrlMap.get("order_cost");
+
+                        if (!orderWeb.equals("0")) {
+                            String to_name;
+                            if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
+                                to_name = mContext.getString(R.string.on_city_tv);
+                                if (!sendUrlMap.get("lat").equals("0")) {
+                                    insertRecordsOrders(
+                                            sendUrlMap.get("routefrom"), sendUrlMap.get("routefrom"),
+                                            sendUrlMap.get("routefromnumber"), sendUrlMap.get("routefromnumber"),
+                                            sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                            sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                            mContext
+                                    );
+                                }
+                            } else {
+                                if(sendUrlMap.get("routeto").equals("Точка на карте")) {
+                                    to_name = mContext.getString(R.string.end_point_marker);
+                                } else {
+                                    to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
+                                }
+
+                                if (!sendUrlMap.get("lat").equals("0")) {
+                                    insertRecordsOrders(
+                                            sendUrlMap.get("routefrom"), to_name,
+                                            sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
+                                            sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                            sendUrlMap.get("lat"), sendUrlMap.get("lng"),
+                                            mContext
+                                    );
+                                }
+                            }
+                            String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
+
+                            String pay_method_message = getString(R.string.pay_method_message_main);
+                            switch (pay_method) {
+                                case "bonus_payment":
+                                    pay_method_message += " " + getString(R.string.pay_method_message_bonus);
+                                    break;
+                                case "card_payment":
+                                case "fondy_payment":
+                                case "mono_payment":
+                                case "wfp_payment":
+                                    pay_method_message += " " + getString(R.string.pay_method_message_card);
+                                    break;
+                                default:
+                                    pay_method_message += " " + getString(R.string.pay_method_message_nal);
+                            }
+                            String to_name_local = to_name;
+                            if(to_name.contains("по місту")
+                                    ||to_name.contains("по городу")
+                                    || to_name.contains("around the city")
+                            ) {
+                                to_name_local = getString(R.string.on_city_tv);
+                            }
+                            String messageResult = mContext.getString(R.string.thanks_message) +
+                                    sendUrlMap.get("routefrom") + " " + mContext.getString(R.string.to_message) +
+                                    to_name_local + "." +
+                                    mContext.getString(R.string.call_of_order) + orderWeb + mContext.getString(R.string.UAH) + " " + pay_method_message;;
+
+
+                            Intent intent = new Intent(mContext, FinishActivity.class);
+                            intent.putExtra("messageResult_key", messageResult);
+                            intent.putExtra("messageCost_key", orderWeb);
+                            intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
+                            intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+                            mContext.startActivity(intent);
                         } else {
-                            to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
-                        }
-
-                        if (!sendUrlMap.get("lat").equals("0")) {
-                            insertRecordsOrders(
-                                    sendUrlMap.get("routefrom"), to_name,
-                                    sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
-                                    sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                    sendUrlMap.get("lat"), sendUrlMap.get("lng"),
-                                    mContext
-                            );
+                            List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
+                            String payment_type = stringListInfo.get(4);
+                            if(payment_type.equals("nal_payment")) {
+                                String message = mContext.getString(R.string.error_message);
+                                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                            } else {
+                                changePayMethodToNal();
+                            }
                         }
                     }
-                    String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
 
-                    String pay_method_message = getString(R.string.pay_method_message_main);
-                    switch (pay_method) {
-                        case "bonus_payment":
-                            pay_method_message += " " + getString(R.string.pay_method_message_bonus);
-                            break;
-                        case "card_payment":
-                        case "fondy_payment":
-                        case "mono_payment":
-                            pay_method_message += " " + getString(R.string.pay_method_message_card);
-                            break;
-                        default:
-                            pay_method_message += " " + getString(R.string.pay_method_message_nal);
+                    @Override
+                    public void onFailure(Call<Map<String, String>> call, Throwable t) {
+                        t.printStackTrace();
                     }
-                    String to_name_local = to_name;
-                    if(to_name.contains("по місту")
-                            ||to_name.contains("по городу")
-                            || to_name.contains("around the city")
-                    ) {
-                        to_name_local = getString(R.string.on_city_tv);
-                    }
-                    String messageResult = mContext.getString(R.string.thanks_message) +
-                            sendUrlMap.get("routefrom") + " " + mContext.getString(R.string.to_message) +
-                            to_name_local + "." +
-                            mContext.getString(R.string.call_of_order) + orderWeb + mContext.getString(R.string.UAH) + " " + pay_method_message;;
-
-
-                    Intent intent = new Intent(mContext, FinishActivity.class);
-                    intent.putExtra("messageResult_key", messageResult);
-                    intent.putExtra("messageCost_key", orderWeb);
-                    intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
-                    intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
-                    mContext.startActivity(intent);
-                } else {
-                    List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
-                    String payment_type = stringListInfo.get(4);
-                    if(payment_type.equals("nal_payment")) {
-                        String message = mContext.getString(R.string.error_message);
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                    } else {
-                        changePayMethodToNal();
-                    }
-                }
-
-
-            } catch (MalformedURLException ignored) {
-
-            }
+                });
         } else {
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(mContext.getString(R.string.verify_internet));
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
         }
     }
-    private void orderVisicomFondy()  {
+    private void orderVisicomFondy() {
         if(connected()) {
-            try {
-                String urlOrder = null;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    urlOrder = getTaxiUrlSearchMarkersVisicom("orderSearchMarkersVisicom", mContext);
-                }
-                Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
-                Log.d("TAG", "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
+            String urlOrder = null;
+            urlOrder = getTaxiUrlSearchMarkersVisicom("orderSearchMarkersVisicom", mContext);
 
-                String orderWeb = sendUrlMap.get("order_cost");
+            ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
-                if (!orderWeb.equals("0")) {
-                    String to_name;
-                    if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
-                        to_name = mContext.getString(R.string.on_city_tv);
-                        if (!sendUrlMap.get("lat").equals("0")) {
-                            insertRecordsOrders(
-                                    sendUrlMap.get("routefrom"), sendUrlMap.get("routefrom"),
-                                    sendUrlMap.get("routefromnumber"), sendUrlMap.get("routefromnumber"),
-                                    sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                    sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                    mContext
-                            );
-                        }
-                    } else {
-                        if(sendUrlMap.get("routeto").equals("Точка на карте")) {
-                            to_name = mContext.getString(R.string.end_point_marker);
+//            // Пример строки URL с параметрами
+            Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
+            parser.sendURL(urlOrder, new Callback<Map<String, String>>() {
+                @Override
+                public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
+                    Map<String, String> sendUrlMap = response.body();
+
+                    String orderWeb = sendUrlMap.get("order_cost");
+
+                    if (!orderWeb.equals("0")) {
+                        String to_name;
+                        if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
+                            to_name = mContext.getString(R.string.on_city_tv);
+                            if (!sendUrlMap.get("lat").equals("0")) {
+                                insertRecordsOrders(
+                                        sendUrlMap.get("routefrom"), sendUrlMap.get("routefrom"),
+                                        sendUrlMap.get("routefromnumber"), sendUrlMap.get("routefromnumber"),
+                                        sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                        sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                        mContext
+                                );
+                            }
                         } else {
-                            to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
+                            if(sendUrlMap.get("routeto").equals("Точка на карте")) {
+                                to_name = mContext.getString(R.string.end_point_marker);
+                            } else {
+                                to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
+                            }
+
+                            if (!sendUrlMap.get("lat").equals("0")) {
+                                insertRecordsOrders(
+                                        sendUrlMap.get("routefrom"), to_name,
+                                        sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
+                                        sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                        sendUrlMap.get("lat"), sendUrlMap.get("lng"),
+                                        mContext
+                                );
+                            }
                         }
+                        String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
 
-                        if (!sendUrlMap.get("lat").equals("0")) {
-                            insertRecordsOrders(
-                                    sendUrlMap.get("routefrom"), to_name,
-                                    sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
-                                    sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                    sendUrlMap.get("lat"), sendUrlMap.get("lng"),
-                                    mContext
-                            );
+                        String pay_method_message = getString(R.string.pay_method_message_main);
+                        switch (pay_method) {
+                            case "bonus_payment":
+                                pay_method_message += " " + getString(R.string.pay_method_message_bonus);
+                                break;
+                            case "card_payment":
+                            case "fondy_payment":
+                            case "mono_payment":
+                            case "wfp_payment":
+                                pay_method_message += " " + getString(R.string.pay_method_message_card);
+                                break;
+                            default:
+                                pay_method_message += " " + getString(R.string.pay_method_message_nal);
                         }
-                    }
-                    String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
+                        String to_name_local = to_name;
+                        if(to_name.contains("по місту")
+                                ||to_name.contains("по городу")
+                                || to_name.contains("around the city")
+                        ) {
+                            to_name_local = getString(R.string.on_city_tv);
+                        }
+                        String messageResult = mContext.getString(R.string.thanks_message) +
+                                sendUrlMap.get("routefrom") + " " + mContext.getString(R.string.to_message) +
+                                to_name_local + "." +
+                                mContext.getString(R.string.call_of_order) + orderWeb + mContext.getString(R.string.UAH) + " " + pay_method_message;
 
-                    String pay_method_message = getString(R.string.pay_method_message_main);
-                    switch (pay_method) {
-                        case "bonus_payment":
-                            pay_method_message += " " + getString(R.string.pay_method_message_bonus);
-                            break;
-                        case "card_payment":
-                        case "fondy_payment":
-                        case "mono_payment":
-                            pay_method_message += " " + getString(R.string.pay_method_message_card);
-                            break;
-                        default:
-                            pay_method_message += " " + getString(R.string.pay_method_message_nal);
-                    }
-                    String to_name_local = to_name;
-                    if(to_name.contains("по місту")
-                            ||to_name.contains("по городу")
-                            || to_name.contains("around the city")
-                    ) {
-                        to_name_local = getString(R.string.on_city_tv);
-                    }
-                    String messageResult = mContext.getString(R.string.thanks_message) +
-                            sendUrlMap.get("routefrom") + " " + mContext.getString(R.string.to_message) +
-                            to_name_local + "." +
-                            mContext.getString(R.string.call_of_order) + orderWeb + mContext.getString(R.string.UAH) + " " + pay_method_message;
+                        String messageFondy = mContext.getString(R.string.fondy_message) + " " +
+                                sendUrlMap.get("routefrom") + " " + mContext.getString(R.string.to_message) +
+                                to_name + ".";
 
-                    String messageFondy = mContext.getString(R.string.fondy_message) + " " +
-                            sendUrlMap.get("routefrom") + " " + mContext.getString(R.string.to_message) +
-                            to_name + ".";
-
-                    Intent intent = new Intent(mContext, FinishActivity.class);
-                    intent.putExtra("messageResult_key", messageResult);
-                    intent.putExtra("messageFondy_key", messageFondy);
-                    intent.putExtra("messageCost_key", orderWeb);
-                    intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
-                    intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
-                    mContext.startActivity(intent);
-                } else {
-                    List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
-                    String payment_type = stringListInfo.get(4);
-                    Log.d(TAG, "orderVisicomFondy: " + payment_type);
-                    if(payment_type.equals("nal_payment")) {
-                        String message = mContext.getString(R.string.error_message);
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        Intent intent = new Intent(mContext, FinishActivity.class);
+                        intent.putExtra("messageResult_key", messageResult);
+                        intent.putExtra("messageFondy_key", messageFondy);
+                        intent.putExtra("messageCost_key", orderWeb);
+                        intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
+                        intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+                        mContext.startActivity(intent);
                     } else {
-                        changePayMethodToNal();
+                        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
+                        String payment_type = stringListInfo.get(4);
+                        Log.d(TAG, "orderVisicomFondy: " + payment_type);
+                        if(payment_type.equals("nal_payment")) {
+                            String message = mContext.getString(R.string.error_message);
+                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        } else {
+                            changePayMethodToNal();
+                        }
                     }
                 }
 
-
-            } catch (MalformedURLException ignored) {
-
-            }
+                @Override
+                public void onFailure(Call<Map<String, String>> call, Throwable t) {
+                    t.printStackTrace();
+                }
+            });
         } else {
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(mContext.getString(R.string.verify_internet));
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
@@ -477,7 +494,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         }
         String city =  logCursor(MainActivity.CITY_INFO).get(1);
         String api =  logCursor(MainActivity.CITY_INFO).get(2);
-        String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
+        String url = "/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
 
         database.close();
@@ -486,78 +503,84 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
     }
     private void orderHome() {
         if (connected()) {
-            try {
-                String urlOrder = null;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    urlOrder = getTaxiUrlSearch("orderSearch");
-                }
-                Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
+            String urlOrder = null;
+            urlOrder = getTaxiUrlSearch("orderSearch");
 
-                String orderWeb = sendUrlMap.get("order_cost");
-                String messageResult;
-                if (!orderWeb.equals("0")) {
+            ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
-                    String from_name = (String) sendUrlMap.get("routefrom");
-                    String to_name = (String) sendUrlMap.get("routeto");
-                    if (from_name.equals(to_name)) {
-                        messageResult = mContext.getString(R.string.thanks_message) +
-                                from_name + " " + HomeFragment.from_number.getText() + " " + mContext.getString(R.string.on_city) +
-                                mContext.getString(R.string.cost_of_order) + orderWeb + mContext.getString(R.string.UAH);
+            Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
+            parser.sendURL(urlOrder, new Callback<Map<String, String>>() {
+                @Override
+                public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                    Map<String, String> sendUrlMap = response.body();
+                    String orderWeb = sendUrlMap.get("order_cost");
+                    String messageResult;
+                    assert orderWeb != null;
+                    if (!orderWeb.equals("0")) {
 
+                        String from_name = (String) sendUrlMap.get("routefrom");
+                        String to_name = (String) sendUrlMap.get("routeto");
+                        if (from_name.equals(to_name)) {
+                            messageResult = mContext.getString(R.string.thanks_message) +
+                                    from_name + " " + HomeFragment.from_number.getText() + " " + mContext.getString(R.string.on_city) +
+                                    mContext.getString(R.string.cost_of_order) + orderWeb + mContext.getString(R.string.UAH);
+
+
+                        } else {
+                            messageResult = mContext.getString(R.string.thanks_message) +
+                                    from_name + " " + HomeFragment.from_number.getText() + " " + mContext.getString(R.string.to_message) +
+                                    to_name + " " + HomeFragment.to_number.getText() + "." +
+                                    mContext.getString(R.string.cost_of_order) + orderWeb + mContext.getString(R.string.UAH);
+                        }
+
+                        if (!sendUrlMap.get("from_lat").equals("0") && !sendUrlMap.get("lat").equals("0")) {
+                            if (from_name.equals(to_name)) {
+                                insertRecordsOrders(
+                                        from_name, from_name,
+                                        HomeFragment.from_number.getText().toString(), HomeFragment.from_number.getText().toString(),
+                                        (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
+                                        (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
+                                        mContext
+                                );
+                            } else {
+                                insertRecordsOrders(
+                                        from_name, to_name,
+                                        HomeFragment.from_number.getText().toString(), HomeFragment.to_number.getText().toString(),
+                                        (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
+                                        (String) sendUrlMap.get("lat"), (String) sendUrlMap.get("lng"),
+                                        mContext
+                                );
+
+                            }
+                        }
+
+                        Intent intent = new Intent(mContext, FinishActivity.class);
+                        intent.putExtra("messageResult_key", messageResult);
+                        intent.putExtra("messageCost_key", orderWeb);
+                        intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
+                        intent.putExtra("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
+                        mContext.startActivity(intent);
+                        HomeFragment.progressBar.setVisibility(View.INVISIBLE);
 
                     } else {
-                        messageResult = mContext.getString(R.string.thanks_message) +
-                                from_name + " " + HomeFragment.from_number.getText() + " " + mContext.getString(R.string.to_message) +
-                                to_name + " " + HomeFragment.to_number.getText() + "." +
-                                mContext.getString(R.string.cost_of_order) + orderWeb + mContext.getString(R.string.UAH);
-                    }
-
-                    if (!sendUrlMap.get("from_lat").equals("0") && !sendUrlMap.get("lat").equals("0")) {
-                        if (from_name.equals(to_name)) {
-                            insertRecordsOrders(
-                                    from_name, from_name,
-                                    HomeFragment.from_number.getText().toString(), HomeFragment.from_number.getText().toString(),
-                                    (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
-                                    (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
-                                    mContext
-                            );
+                        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
+                        String payment_type = stringListInfo.get(4);
+                        if(payment_type.equals("nal_payment")) {
+                            String message = mContext.getString(R.string.error_message);
+                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                         } else {
-                            insertRecordsOrders(
-                                    from_name, to_name,
-                                    HomeFragment.from_number.getText().toString(), HomeFragment.to_number.getText().toString(),
-                                    (String) sendUrlMap.get("from_lat"), (String) sendUrlMap.get("from_lng"),
-                                    (String) sendUrlMap.get("lat"), (String) sendUrlMap.get("lng"),
-                                    mContext
-                            );
-
+                            changePayMethodToNal();
                         }
                     }
 
-                    Intent intent = new Intent(mContext, FinishActivity.class);
-                    intent.putExtra("messageResult_key", messageResult);
-                    intent.putExtra("messageCost_key", orderWeb);
-                    intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
-                    intent.putExtra("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
-                    mContext.startActivity(intent);
-                    HomeFragment.progressBar.setVisibility(View.INVISIBLE);
-
-                } else {
-                    List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
-                    String payment_type = stringListInfo.get(4);
-                    if(payment_type.equals("nal_payment")) {
-                        String message = mContext.getString(R.string.error_message);
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                    } else {
-                        changePayMethodToNal();
-                    }
                 }
 
-
-            } catch (MalformedURLException e) {
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(mContext.getString(R.string.verify_internet));
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-            }
+                @Override
+                public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                    t.printStackTrace();
+                }
+            });
         } else {
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(mContext.getString(R.string.verify_internet));
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
@@ -782,8 +805,8 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
     @SuppressLint("Range")
     public List<String> logCursor(String table) {
         List<String> list = new ArrayList<>();
-        SQLiteDatabase database = mContext.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor c = database.query(table, null, null, null, null, null, null);
+        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        @SuppressLint("Recycle") Cursor c = database.query(table, null, null, null, null, null, null);
         if (c != null) {
             if (c.moveToFirst()) {
                 String str;

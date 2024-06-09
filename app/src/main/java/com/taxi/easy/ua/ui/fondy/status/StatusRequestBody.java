@@ -20,10 +20,10 @@ public class StatusRequestBody {
     @SerializedName("signature")
     private String signature;
 
-    public StatusRequestBody(String order_id, String merchant_id, String merchantPassword) {
+    public StatusRequestBody(String order_id, String merchant_id, String signature) {
         this.order_id = order_id;
         this.merchant_id = merchant_id;
-        this.signature = generateSignature(merchantPassword, createParameterMap());
+        this.signature = signature;
     }
 
     public String getOrder_id() {
@@ -38,7 +38,7 @@ public class StatusRequestBody {
         return signature;
     }
 
-    private Map<String, String> createParameterMap() {
+    public Map<String, String> createParameterMap() {
         Map<String, String> params = new TreeMap<>();
         params.put("order_id", order_id);
         params.put("merchant_id", merchant_id);

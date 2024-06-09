@@ -54,19 +54,17 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.finish.FinishActivity;
-import com.taxi.easy.ua.ui.home.MyBottomSheetBlackListFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGeoFragment;
 import com.taxi.easy.ua.ui.home.MyPhoneDialogFragment;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
-import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiCallback;
 import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiClient;
 import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiResponse;
-import com.taxi.easy.ua.ui.start.ResultSONParser;
 import com.taxi.easy.ua.utils.VerifyUserTask;
+import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 
 import org.json.JSONException;
 import org.osmdroid.config.Configuration;
@@ -166,8 +164,24 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
             @Override
             public void onClick(View v) {
                 updateAddCost("0");
-                MyBottomSheetBonusFragment bottomSheetDialogFragment = new MyBottomSheetBonusFragment(Long.parseLong(text_view_cost.getText().toString()), geo_marker, api, text_view_cost);
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                // Получение текста из text_view_cost
+                String costText = text_view_cost.getText().toString();
+
+// Проверка, не является ли строка пустой или null
+                if (!costText.isEmpty()) {
+                    try {
+                        // Преобразование строки в long
+                        long cost = Long.parseLong(costText);
+
+                        // Создание и показ bottomSheetDialogFragment
+                        MyBottomSheetBonusFragment bottomSheetDialogFragment = new MyBottomSheetBonusFragment(cost, geo_marker, api, text_view_cost);
+                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    } catch (NumberFormatException e) {
+                        // Обработка исключения, если строка не может быть преобразована в long
+                        e.printStackTrace();
+                        Toast.makeText(getContext(), "Invalid number format", Toast.LENGTH_SHORT).show();
+                    }
+                }
             }
         });
 
@@ -482,40 +496,50 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
             urlCost = getTaxiUrlSearchMarkers("costSearchMarkersLocal", requireActivity());
         }
 
-        Map<String, String> sendUrlMapCost = null;
-        try {
-            sendUrlMapCost = ToJSONParser.sendURL(urlCost);
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
+        ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
-        String message = sendUrlMapCost.get("message");
-        String orderCost = sendUrlMapCost.get("order_cost");
-        Log.d(TAG, "startCost: orderCost " + orderCost);
+        Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlCost);
+        parser.sendURL(urlCost, new Callback<Map<String, String>>() {
+            @Override
+            public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                Map<String, String> sendUrlMapCost = response.body();
+                String message = sendUrlMapCost.get("message");
+                String orderCost = sendUrlMapCost.get("order_cost");
+                Log.d(TAG, "startCost: orderCost " + orderCost);
 
-        if (orderCost.equals("0")) {
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-        }
-        if (!orderCost.equals("0")) {
+                assert orderCost != null;
+                if (orderCost.equals("0")) {
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                }
+                if (!orderCost.equals("0")) {
 
-            String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(3);
-            long discountInt = Integer.parseInt(discountText);
+                    String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(3);
+                    long discountInt = Integer.parseInt(discountText);
 
-            firstCost = Long.parseLong(orderCost);
-            discount = firstCost * discountInt / 100;
-            firstCost = firstCost + discount;
-            updateAddCost(String.valueOf(discount));
-            text_view_cost.setText(String.valueOf(firstCost));
-            MIN_COST_VALUE = (long) (firstCost*0.6);
-            firstCostForMin = firstCost;
-        }
-        if(!text_view_cost.getText().toString().equals("")) {
-            firstCost = Long.parseLong(text_view_cost.getText().toString());
-            Log.d(TAG, "startCost: firstCost " + firstCost);
-            Log.d(TAG, "startCost: addCost " + addCost);
+                    firstCost = Long.parseLong(orderCost);
+                    discount = firstCost * discountInt / 100;
+                    firstCost = firstCost + discount;
+                    updateAddCost(String.valueOf(discount));
+                    text_view_cost.setText(String.valueOf(firstCost));
+                    MIN_COST_VALUE = (long) (firstCost*0.6);
+                    firstCostForMin = firstCost;
+                }
+                if(!text_view_cost.getText().toString().isEmpty()) {
+                    firstCost = Long.parseLong(text_view_cost.getText().toString());
+                    Log.d(TAG, "startCost: firstCost " + firstCost);
+                    Log.d(TAG, "startCost: addCost " + addCost);
+
+                }
 
             }
+
+            @Override
+            public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                t.printStackTrace();
+            }
+        });
+
     }
 
     @Override
@@ -537,46 +561,52 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
 
     private void markerCost() {
 
-        String urlCost = null;
+        String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersLocal", requireActivity());
 
+        ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
-        urlCost = getTaxiUrlSearchMarkers("costSearchMarkersLocal", requireActivity());
+        Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlCost);
+        parser.sendURL(urlCost, new Callback<Map<String, String>>() {
+            @Override
+            public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                Map<String, String> sendUrlMapCost = response.body();
+                String message = sendUrlMapCost.get("message");
+                String orderCost = sendUrlMapCost.get("order_cost");
+                Log.d(TAG, "startCost: orderCost " + orderCost);
 
+                assert orderCost != null;
+                if (orderCost.equals("0")) {
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                }
+                if (!orderCost.equals("0")) {
 
-        Map<String, String> sendUrlMapCost = null;
-        try {
-            sendUrlMapCost = ToJSONParser.sendURL(urlCost);
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
+                    String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireContext()).get(3);
+                    long discountInt = Integer.parseInt(discountText);
 
-        String message = sendUrlMapCost.get("message");
-        String orderCost = sendUrlMapCost.get("order_cost");
-        Log.d(TAG, "startCost: orderCost " + orderCost);
+                    firstCost = Long.parseLong(orderCost);
+                    discount = firstCost * discountInt / 100;
+                    firstCost = firstCost + discount;
+                    updateAddCost(String.valueOf(discount));
+                    text_view_cost.setText(String.valueOf(firstCost));
+                    MIN_COST_VALUE = (long) (firstCost*0.6);
+                    firstCostForMin = firstCost;
+                }
+                if(!text_view_cost.getText().toString().isEmpty()) {
+                    firstCost = Long.parseLong(text_view_cost.getText().toString());
+                    Log.d(TAG, "startCost: firstCost " + firstCost);
+                    Log.d(TAG, "startCost: addCost " + addCost);
 
-        if (orderCost.equals("0")) {
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-        }
-        if (!orderCost.equals("0")) {
-
-            String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
-            long discountInt = Integer.parseInt(discountText);
-
-            firstCost = Long.parseLong(orderCost);
-            discount = firstCost * discountInt / 100;
-            firstCost = firstCost + discount;
-            updateAddCost(String.valueOf(discount));
-            text_view_cost.setText(String.valueOf(firstCost));
-            MIN_COST_VALUE = (long) (firstCost*0.6);
-            firstCostForMin = firstCost;
-        }
-        if(!text_view_cost.getText().toString().equals("")) {
-            firstCost = Long.parseLong(text_view_cost.getText().toString());
-            Log.d(TAG, "startCost: firstCost " + firstCost);
-            Log.d(TAG, "startCost: addCost " + addCost);
+                }
 
             }
+
+            @Override
+            public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                t.printStackTrace();
+            }
+        });
+
     }
 
     private void updateAddCost(String addCost) {
@@ -789,11 +819,11 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
         String language = locale.getLanguage(); // Получаем язык устройства
         String url;
         if(urlAPI.equals("costSearchMarkersLocal")) {
-            url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
+            url = "/" + api + "/android/" + urlAPI + "/"
                     + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application) + "/" + language;
             Log.d(TAG, "getTaxiUrlSearchMarkers: " + url);
         } else {
-            url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
+            url = "/" + api + "/android/" + urlAPI + "/"
                     + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application);
             Log.d(TAG, "getTaxiUrlSearchMarkers: " + url);
         }
@@ -965,86 +995,122 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
 
 
                 geo_marker = "marker";
+                urlAddress = getTaxiUrlSearchMarkers("costSearchMarkersLocal", requireActivity());
 
-                try {
+                ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
-                    urlAddress = getTaxiUrlSearchMarkers("costSearchMarkersLocal", requireActivity());
+                Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlAddress);
+                parser.sendURL(urlAddress, new Callback<Map<String, String>>() {
+                    @Override
+                    public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                        Map<String, String> sendUrlMap = response.body();
+                        assert sendUrlMap != null;
+                        String orderWeb = sendUrlMap.get("order_cost");
+                        String message = sendUrlMap.get("message");
 
-                    Map<String, String> sendUrlMapCost = ToJSONParser.sendURL(urlAddress);
+                        assert orderWeb != null;
+                        if (!orderWeb.equals("0")) {
+                            String to_name;
+                            if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
+                                to_name = getString(R.string.on_city_tv);
+                                if (!sendUrlMap.get("lat").equals("0")) {
+                                    insertRecordsOrders(
+                                            sendUrlMap.get("routefrom"), sendUrlMap.get("routefrom"),
+                                            sendUrlMap.get("routefromnumber"), sendUrlMap.get("routefromnumber"),
+                                            sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                            sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                            requireActivity()
+                                    );
+                                }
+                            } else {
 
-                    String message = sendUrlMapCost.get("message");
-                    String orderCost = sendUrlMapCost.get("order_cost");
-                    geo_marker = "marker";
-                    Log.d(TAG, "onClick urlAddress: " + urlAddress);
+                                if(sendUrlMap.get("routeto").equals("Точка на карте")) {
+                                    to_name = requireActivity().getString(R.string.end_point_marker);
+                                } else {
+                                    to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
+                                }
 
-                    if (orderCost.equals("0")) {
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                    }
-                    if (!orderCost.equals("0")) {
-                        if (!verifyOrder(requireActivity())) {
-                            MyBottomSheetBlackListFragment bottomSheetDialogFragment = new MyBottomSheetBlackListFragment(orderCost);
-                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                                if (!Objects.equals(sendUrlMap.get("lat"), "0")) {
+                                    insertRecordsOrders(
+                                            sendUrlMap.get("routefrom"), to_name,
+                                            sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
+                                            sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                            sendUrlMap.get("lat"), sendUrlMap.get("lng"),
+                                            requireActivity()
+                                    );
+                                }
+                            }
+                            String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(4);
+
+                            String pay_method_message = getString(R.string.pay_method_message_main);
+                            switch (pay_method) {
+                                case "bonus_payment":
+                                    pay_method_message += " " + getString(R.string.pay_method_message_bonus);
+                                    break;
+                                case "card_payment":
+                                case "fondy_payment":
+                                case "mono_payment":
+                                case "wfp_payment":
+                                    pay_method_message += " " + getString(R.string.pay_method_message_card);
+                                    break;
+                                default:
+                                    pay_method_message += " " + getString(R.string.pay_method_message_nal);
+                            }
+                            String to_name_local = to_name;
+                            if(to_name.contains("по місту")
+                                    ||to_name.contains("по городу")
+                                    || to_name.contains("around the city")
+                            ) {
+                                to_name_local = getString(R.string.on_city_tv);
+                            }
+                            String messageResult = getString(R.string.thanks_message) +
+                                    sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
+                                    to_name_local + "." +
+                                    getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH) + " " + pay_method_message;
+                            String messageFondy = getString(R.string.fondy_message) + " " +
+                                    sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
+                                    to_name_local + ".";
+
+                            Intent intent = new Intent(requireActivity(), FinishActivity.class);
+                            intent.putExtra("messageResult_key", messageResult);
+                            intent.putExtra("messageFondy_key", messageFondy);
+                            intent.putExtra("messageCost_key", orderWeb);
+                            intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
+                            intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+                            startActivity(intent);
                         } else {
-                            String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireContext()).get(3);
-
-
-                            long discountInt = Integer.parseInt(discountText);
-                            firstCost = Long.parseLong(orderCost);
-                            discount= firstCost * discountInt / 100;
-                            updateAddCost(String.valueOf(discount));
-                            firstCost = firstCost + discount;
-                            text_view_cost.setText(String.valueOf(firstCost));
-                            MIN_COST_VALUE = (long) (firstCost*0.1);
-                            firstCostForMin = firstCost;
-
-
-
-                            if(connected()) {
-                                if (to.indexOf("/") != -1) {
-                                    to = to.substring(0,  to.indexOf("/"));
-                                };
-                                String urlCost = "https://m.easy-order-taxi.site/" + api + "/android/autocompleteSearchComboHid/" + to;
-
-                                Log.d(TAG, "onClick urlCost: " + urlCost);
-
-                                try {
-                                    sendUrlMapCost = ResultSONParser.sendURL(urlCost);
-                                } catch (MalformedURLException | InterruptedException | JSONException ignored) {
-
+                            assert message != null;
+                            if (message.contains("Дублирование")) {
+                                message = getResources().getString(R.string.double_order_error);
+                                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                            } else {
+                                switch (pay_method) {
+                                    case "bonus_payment":
+                                    case "card_payment":
+                                    case "fondy_payment":
+                                    case "mono_payment":
+                                        changePayMethodToNal();
+                                        break;
+                                    default:
+                                        message = getResources().getString(R.string.error_message);
+                                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                                 }
 
-                                orderCost = (String) sendUrlMapCost.get("message");
-                                Log.d(TAG, "onClick Hid : " + orderCost);
-
-                                if (orderCost.equals("1")) {
-                                    to_number.setVisibility(View.VISIBLE);
-                                    to_number.setText(" ");
-                                    to_number.requestFocus();
-                                    numberFlagTo = "1";
-                                }  else if (orderCost.equals("0")) {
-                                    to_number.setText("XXX");
-                                    to_number.setVisibility(View.INVISIBLE);
-                                    numberFlagTo = "0";
-                                }
                             }
+                            progressBar.setVisibility(View.INVISIBLE);
+                        }
 
-                            }
-
-
-                    }else {
-
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(sendUrlMapCost.get("message"));
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                        progressBar.setVisibility(View.INVISIBLE);
                     }
 
-                } catch (MalformedURLException e) {
+                    @Override
+                    public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                        t.printStackTrace();
+                    }
+                });
 
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_firebase_start));
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
-            }
         });
         builder.setNegativeButton(getString(R.string.cancel_button), null);
         builder.show();
@@ -1125,103 +1191,120 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
             progressBar.setVisibility(View.INVISIBLE);
         }
         if (verifyPhone(requireContext())) {
-            Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
-            Log.d(TAG, "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
 
-            String orderWeb = sendUrlMap.get("order_cost");
-            String message = sendUrlMap.get("message");
+            ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
-            if (!orderWeb.equals("0")) {
-                String to_name;
-                if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
-                    to_name = getString(R.string.on_city_tv);
-                    if (!sendUrlMap.get("lat").equals("0")) {
-                        insertRecordsOrders(
-                                sendUrlMap.get("routefrom"), sendUrlMap.get("routefrom"),
-                                sendUrlMap.get("routefromnumber"), sendUrlMap.get("routefromnumber"),
-                                sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                requireActivity()
-                        );
-                    }
-                } else {
+            Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
+            parser.sendURL(urlOrder, new Callback<Map<String, String>>() {
+                @Override
+                public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                    Map<String, String> sendUrlMap = response.body();
+                    Log.d(TAG, "Map sendUrlMap = ToJSONParser.sendURL(urlOrder); " + sendUrlMap);
 
-                    if(sendUrlMap.get("routeto").equals("Точка на карте")) {
-                        to_name = requireActivity().getString(R.string.end_point_marker);
+                    String orderWeb = sendUrlMap.get("order_cost");
+                    String message = sendUrlMap.get("message");
+
+                    assert orderWeb != null;
+                    if (!orderWeb.equals("0")) {
+                        String to_name;
+                        if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
+                            to_name = getString(R.string.on_city_tv);
+                            if (!sendUrlMap.get("lat").equals("0")) {
+                                insertRecordsOrders(
+                                        sendUrlMap.get("routefrom"), sendUrlMap.get("routefrom"),
+                                        sendUrlMap.get("routefromnumber"), sendUrlMap.get("routefromnumber"),
+                                        sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                        sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                        requireActivity()
+                                );
+                            }
+                        } else {
+
+                            if(sendUrlMap.get("routeto").equals("Точка на карте")) {
+                                to_name = requireActivity().getString(R.string.end_point_marker);
+                            } else {
+                                to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
+                            }
+
+                            if (!Objects.equals(sendUrlMap.get("lat"), "0")) {
+                                insertRecordsOrders(
+                                        sendUrlMap.get("routefrom"), to_name,
+                                        sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
+                                        sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                        sendUrlMap.get("lat"), sendUrlMap.get("lng"),
+                                        requireActivity()
+                                );
+                            }
+                        }
+                        String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(4);
+
+                        String pay_method_message = getString(R.string.pay_method_message_main);
+                        switch (pay_method) {
+                            case "bonus_payment":
+                                pay_method_message += " " + getString(R.string.pay_method_message_bonus);
+                                break;
+                            case "card_payment":
+                            case "fondy_payment":
+                            case "mono_payment":
+                            case "wfp_payment":
+                                pay_method_message += " " + getString(R.string.pay_method_message_card);
+                                break;
+                            default:
+                                pay_method_message += " " + getString(R.string.pay_method_message_nal);
+                        }
+                        String to_name_local = to_name;
+                        if(to_name.contains("по місту")
+                                ||to_name.contains("по городу")
+                                || to_name.contains("around the city")
+                        ) {
+                            to_name_local = getString(R.string.on_city_tv);
+                        }
+                        String messageResult = getString(R.string.thanks_message) +
+                                sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
+                                to_name_local + "." +
+                                getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH) + " " + pay_method_message;
+                        String messageFondy = getString(R.string.fondy_message) + " " +
+                                sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
+                                to_name_local + ".";
+
+                        Intent intent = new Intent(requireActivity(), FinishActivity.class);
+                        intent.putExtra("messageResult_key", messageResult);
+                        intent.putExtra("messageFondy_key", messageFondy);
+                        intent.putExtra("messageCost_key", orderWeb);
+                        intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
+                        intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+                        startActivity(intent);
                     } else {
-                        to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
-                    }
-
-                    if (!sendUrlMap.get("lat").equals("0")) {
-                        insertRecordsOrders(
-                                sendUrlMap.get("routefrom"), to_name,
-                                sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
-                                sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                sendUrlMap.get("lat"), sendUrlMap.get("lng"),
-                                requireActivity()
-                        );
-                    }
-                }
-                String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(4);
-
-                String pay_method_message = getString(R.string.pay_method_message_main);
-                switch (pay_method) {
-                    case "bonus_payment":
-                        pay_method_message += " " + getString(R.string.pay_method_message_bonus);
-                        break;
-                    case "card_payment":
-                    case "fondy_payment":
-                    case "mono_payment":
-                        pay_method_message += " " + getString(R.string.pay_method_message_card);
-                        break;
-                    default:
-                        pay_method_message += " " + getString(R.string.pay_method_message_nal);
-                }
-                String to_name_local = to_name;
-                if(to_name.contains("по місту")
-                        ||to_name.contains("по городу")
-                        || to_name.contains("around the city")
-                ) {
-                    to_name_local = getString(R.string.on_city_tv);
-                }
-                String messageResult = getString(R.string.thanks_message) +
-                        sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
-                        to_name_local + "." +
-                        getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH) + " " + pay_method_message;
-                String messageFondy = getString(R.string.fondy_message) + " " +
-                        sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
-                        to_name_local + ".";
-
-                Intent intent = new Intent(requireActivity(), FinishActivity.class);
-                intent.putExtra("messageResult_key", messageResult);
-                intent.putExtra("messageFondy_key", messageFondy);
-                intent.putExtra("messageCost_key", orderWeb);
-                intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
-                intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
-                startActivity(intent);
-            } else {
-
-                if (message.contains("Дублирование")) {
-                    message = getResources().getString(R.string.double_order_error);
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                } else {
-                    switch (pay_method) {
-                        case "bonus_payment":
-                        case "card_payment":
-                        case "fondy_payment":
-                        case "mono_payment":
-                            changePayMethodToNal();
-                            break;
-                        default:
-                            message = getResources().getString(R.string.error_message);
+                        assert message != null;
+                        if (message.contains("Дублирование")) {
+                            message = getResources().getString(R.string.double_order_error);
                             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
                             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                    }
+                        } else {
+                            switch (pay_method) {
+                                case "bonus_payment":
+                                case "card_payment":
+                                case "fondy_payment":
+                                case "mono_payment":
+                                    changePayMethodToNal();
+                                    break;
+                                default:
+                                    message = getResources().getString(R.string.error_message);
+                                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                            }
 
+                        }
+                        progressBar.setVisibility(View.INVISIBLE);
+                    }
                 }
-                progressBar.setVisibility(View.INVISIBLE);
-            }
+
+                @Override
+                public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                    t.printStackTrace();
+                }
+            });
+
         } else {
             String message = getString(R.string.phone_input_error);
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);

@@ -42,7 +42,7 @@ public class RequestDataToken {
         this.merchant_id = merchantId;
         this.preauth = "Y";
         this.sender_email = email;
-        this.signature = generateSignature(merchantPassword, createParameterMap());
+        this.signature = merchantPassword;
     }
 
     private Map<String, String> createParameterMap() {

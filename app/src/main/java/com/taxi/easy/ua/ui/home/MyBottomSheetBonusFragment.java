@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -34,11 +33,11 @@ import com.taxi.easy.ua.cities.api.CityResponseMerchantFondy;
 import com.taxi.easy.ua.cities.api.CityService;
 import com.taxi.easy.ua.ui.card.CardFragment;
 import com.taxi.easy.ua.ui.gallery.GalleryFragment;
-import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
 
 import java.io.UnsupportedEncodingException;
@@ -73,6 +72,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     private static String[] userPayPermissions;
     private static String email;
     String city;
+
     public MyBottomSheetBonusFragment() {
     }
 
@@ -92,12 +92,16 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.bonus_list_layout, container, false);
-
+        try {
+            database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        } catch (Exception e) {
+            Log.e(TAG, "Инициализация базы данных не удалась", e);
+            // Обработайте ошибку корректно, возможно, покажите сообщение пользователю
+        }
         email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
         UserPermissions.getPermissions(email, getActivity());
 
         progressBar = view.findViewById(R.id.progress);
-        database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         listView = view.findViewById(R.id.listViewBonus);
         array = new  String[]{
                 getString(R.string.nal_payment),
@@ -124,8 +128,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         userPayPermissions = UserPermissions.getUserPayPermissions(requireActivity());
 
-
-
         String bonus = logCursor(MainActivity.TABLE_USER_INFO).get(5);
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
@@ -139,14 +141,11 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             case "Zaporizhzhia":
             case "Cherkasy Oblast":
                 listView.setItemChecked(0, true);
-                paymentType(arrayCode [0], requireContext());
+//                paymentType(arrayCode [0], requireContext());
                 adapter.setItemEnabled(1, false);
                 adapter.setItemEnabled(2, false);
                 break;
             case "Kyiv City":
-                adapter.setItemEnabled(1, false);
-                fistItem();
-                break;
             case "OdessaTest":
                 if(Long.parseLong(bonus) <= cost * 100 ) {
                     adapter.setItemEnabled(1, false);
@@ -166,8 +165,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         if(userPayPermissions[1].equals("0")) {
             adapter.setItemEnabled(2, false);
-        } else {
-            merchantFondy(city, getContext());
         }
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -187,7 +184,11 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                             public void onPaySystemResult(String paymentCode) {
                                 Log.d(TAG, "onPaySystemResult: paymentCode" + paymentCode);
                                 // Здесь вы можете использовать полученное значение paymentCode
-                                paymentType(paymentCode, requireContext());
+                                try {
+                                    paymentType(paymentCode, requireActivity());
+                                } catch (MalformedURLException | UnsupportedEncodingException e) {
+                                    throw new RuntimeException(e);
+                                }
                             }
 
                             @Override
@@ -197,7 +198,11 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     }
 
                 } else {
-                    paymentType(arrayCode [pos], requireContext());
+                    try {
+                        paymentType(arrayCode [pos], requireActivity());
+                    } catch (MalformedURLException | UnsupportedEncodingException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
 
             }
@@ -224,10 +229,10 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                         ContentValues cv = new ContentValues();
                         cv.put("card_max_pay", cardMaxPay);
                         cv.put("bonus_max_pay", bonusMaxPay);
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                             database.update(MainActivity.CITY_INFO, cv, "id = ?",
+
+                        database.update(MainActivity.CITY_INFO, cv, "id = ?",
                                     new String[]{"1"});
-                             database.close();
+
                     }
                 } else {
                     Log.e("Request", "Failed. Error code: " + response.code());
@@ -259,19 +264,21 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                         ContentValues cv = new ContentValues();
                         cv.put("merchant_fondy", merchant_fondy);
                         cv.put("fondy_key_storage", fondy_key_storage);
-
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        database.update(MainActivity.CITY_INFO, cv, "id = ?",
+                        SQLiteDatabase db = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        db.update(MainActivity.CITY_INFO, cv, "id = ?",
                                 new String[]{"1"});
-                        database.close();
-
+                        db.close();
                         Log.d(TAG, "onResponse: merchant_fondy" + merchant_fondy);
                         Log.d(TAG, "onResponse: fondy_key_storage" + fondy_key_storage);
 
                         if(merchant_fondy == null) {
                             adapter.setItemEnabled(2, false);
                             listView.setItemChecked(0, true);
-                            paymentType(arrayCode [0], context);
+                            try {
+                                paymentType(arrayCode [0], context);
+                            } catch (MalformedURLException | UnsupportedEncodingException e) {
+                                throw new RuntimeException(e);
+                            }
                         } else {
 
                             adapter.setItemEnabled(2, true);
@@ -292,24 +299,24 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         });
     }
 
-    private void paymentType(String paymentCode, Context context) {
+    private void paymentType(String paymentCode, Context context) throws MalformedURLException, UnsupportedEncodingException {
         ContentValues cv = new ContentValues();
         Log.d(TAG, "paymentType: paymentCode 1111" + paymentCode);
 
         cv.put("payment_type", paymentCode);
         // обновляем по id
 //        if(isAdded()){
-            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+
             database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                     new String[] { "1" });
-            database.close();
+
 //        }
         reCount();
     }
 
     @SuppressLint("Range")
     private void fistItem() {
-        reCount();
+//        reCount();
         String payment_type = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
 
         Log.d(TAG, "fistItem: " + payment_type);
@@ -317,7 +324,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             case "nal_payment":
                 listView.setItemChecked(0, true);
                 pos = 0;
-                paymentType(arrayCode [pos], requireContext());
+//                paymentType(arrayCode [pos], requireContext());
                 if(userPayPermissions[1].equals("0")) {
                     adapter.setItemEnabled(2, false);
                 } else {
@@ -331,7 +338,11 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 } else {
                     listView.setItemChecked(1, true);
                     pos = 1;
-                    paymentType(arrayCode [pos], requireContext());
+                    try {
+                        paymentType(arrayCode [pos], requireActivity());
+                    } catch (MalformedURLException | UnsupportedEncodingException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
 
                 if(userPayPermissions[1].equals("0")) {
@@ -340,9 +351,19 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     adapter.setItemEnabled(2, true);
                 }
                 break;
-            case "card_payment":
+
             case "fondy_payment":
+                merchantFondy(city, requireActivity());
+                if(userPayPermissions[1].equals("0")) {
+                    adapter.setItemEnabled(2, false);
+                } else  {
+                    listView.setItemChecked(2, true);
+                    pos = 2;
+                }
+                break;
+            case "card_payment":
             case "mono_payment":
+            case "wfp_payment":
 
                 if(userPayPermissions[1].equals("0")) {
                     adapter.setItemEnabled(2, false);
@@ -374,6 +395,9 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     String paymentCodeNew = "fondy"; // Изначально устанавливаем значение
 
                     switch (paymentCode) {
+                        case "wfp":
+                            paymentCodeNew = "wfp_payment";
+                            break;
                         case "fondy":
                             paymentCodeNew = "fondy_payment";
                             break;
@@ -381,7 +405,11 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                             paymentCodeNew = "mono_payment";
                             break;
                     }
-                    reCount();
+                    try {
+                        reCount();
+                    } catch (UnsupportedEncodingException | MalformedURLException e) {
+                        throw new RuntimeException(e);
+                    }
                     // Вызываем обработчик, передавая полученное значение
                     callback.onPaySystemResult(paymentCodeNew);
                 } else {
@@ -404,79 +432,94 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         UserPermissions.getPermissions(email, getActivity());
     }
 
-    public void reCount() {
+    public void reCount() throws UnsupportedEncodingException, MalformedURLException {
         Log.d(TAG, "onDismiss: rout " + rout);
         if (rout != null && rout.equals("home")) {
-            String urlCost = null;
-            Map<String, String> sendUrlMapCost = null;
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    urlCost = getTaxiUrlSearch("costSearch", requireContext());
+            String urlCost = getTaxiUrlSearch("costSearch", requireActivity());
+            String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
+
+            CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
+            parser.sendURL(urlCost, new Callback<Map<String, String>>() {
+                @Override
+                public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                    Map<String, String> sendUrlMapCost = response.body();
+                    assert sendUrlMapCost != null;
+                    String orderCost = sendUrlMapCost.get("order_cost");
+
+                    assert orderCost != null;
+                    if (!orderCost.equals("0")) {
+                        long discountInt = Integer.parseInt(discountText);
+                        long discount;
+                        long firstCost = Long.parseLong(orderCost);
+                        discount = firstCost * discountInt / 100;
+
+
+                        firstCost = firstCost + discount;
+//                        updateAddCost(String.valueOf(discount));
+
+                        HomeFragment.costFirstForMin = firstCost;
+                        String costUpdate = String.valueOf(firstCost);
+                        textView.setText(costUpdate);
+                    }  else {
+                        progressBar.setVisibility(View.INVISIBLE);
+                        if (pos == 1 || pos == 2) {
+                            changePayMethodToNal();
+                        }
+                    }
                 }
-
-                sendUrlMapCost = CostJSONParser.sendURL(urlCost);
-            } catch (MalformedURLException | UnsupportedEncodingException ignored) {
-
-            }
-            assert sendUrlMapCost != null;
-            String orderCost = (String) sendUrlMapCost.get("order_cost");
-
-            assert orderCost != null;
-            if (!orderCost.equals("0")) {
-                String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
-                long discountInt = Integer.parseInt(discountText);
-                long discount;
-                long firstCost = Long.parseLong(orderCost);
-                discount = firstCost * discountInt / 100;
-
-
-                firstCost = firstCost + discount;
-                updateAddCost(String.valueOf(discount));
-
-                HomeFragment.costFirstForMin = firstCost;
-                String costUpdate = String.valueOf(firstCost);
-                textView.setText(costUpdate);
-            }  else {
-                progressBar.setVisibility(View.INVISIBLE);
-                if (pos == 1 || pos == 2) {
-                    changePayMethodToNal();
+                @Override
+                public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                    Log.e(TAG, " onFailure home", t);
                 }
-            }
+            });
+
 
         }
         if (rout != null && rout.equals("visicom")) {
-            String urlCost = null;
-            Map<String, String> sendUrlMapCost = null;
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    if (isAdded() && getActivity() != null) {
-                        urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", getActivity());
-                        sendUrlMapCost = CostJSONParser.sendURL(urlCost);
-                        assert sendUrlMapCost != null;
-                        String orderCost = (String) sendUrlMapCost.get("order_cost");
-                        Log.d(TAG, "onDismiss: orderCost " + orderCost);
-                        assert orderCost != null;
-                        if (!orderCost.equals("0")) {
-                            String costUpdate;
-                            String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
-                            long discountInt = Integer.parseInt(discountText);
-                            long discount;
-                            long firstCost = Long.parseLong(orderCost);
-                            discount = firstCost * discountInt / 100;
+                if (isAdded()) {
+                    requireActivity();
+                    String urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", getActivity());
+                    String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
+                    long discountInt = Integer.parseInt(discountText);
+                    CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
+                    parser.sendURL(urlCost, new Callback<Map<String, String>>() {
+                        @Override
+                        public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                            Map<String, String> sendUrlMapCost = response.body();
+                            assert sendUrlMapCost != null;
+                            String orderCost = sendUrlMapCost.get("order_cost");
+                            Log.d(TAG, "onDismiss: orderCost " + orderCost);
+                            assert orderCost != null;
+                            if (!orderCost.equals("0")) {
+                                String costUpdate;
 
-                            firstCost = firstCost + discount;
-                            updateAddCost(String.valueOf(discount));
+                                long discount;
+                                long firstCost = Long.parseLong(orderCost);
+                                discount = firstCost * discountInt / 100;
 
-                            VisicomFragment.firstCostForMin = firstCost;
-                            costUpdate = String.valueOf(firstCost);
-                            textView.setText(costUpdate);
-                        } else {
-                            progressBar.setVisibility(View.INVISIBLE);
-                            if (pos == 1 || pos == 2) {
-                                changePayMethodToNal();
+                                firstCost = firstCost + discount;
+//                                updateAddCost(String.valueOf(discount));
+
+                                VisicomFragment.firstCostForMin = firstCost;
+                                costUpdate = String.valueOf(firstCost);
+                                Log.d(TAG, "onResponse:costUpdate " + costUpdate);
+                                textView.setText(costUpdate);
+                            } else {
+                                progressBar.setVisibility(View.INVISIBLE);
+                                if (pos == 1 || pos == 2) {
+                                    changePayMethodToNal();
+                                }
                             }
                         }
-                    }
+
+                        @Override
+                        public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                            Log.e(TAG, " onFailure visicom", t);
+                        }
+                    });
+
+
                 }
 
 
@@ -486,43 +529,53 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         }
         if (rout != null && rout.equals("marker")) {
-            String urlCost = null;
-            Map<String, String> sendUrlMapCost = null;
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    if (isAdded() && getActivity() != null) {
-                        urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", getActivity());
-                        sendUrlMapCost = CostJSONParser.sendURL(urlCost);
-                        assert sendUrlMapCost != null;
-                        String orderCost = (String) sendUrlMapCost.get("order_cost");
-                        Log.d(TAG, "onDismiss: orderCost " + orderCost);
-                        assert orderCost != null;
-                        if (!orderCost.equals("0")) {
-                            String costUpdate;
-                            String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
-                            long discountInt = Long.parseLong(discountText);
-                            long discount;
-                            long firstCost = Long.parseLong(orderCost);
-                            discount = firstCost * discountInt / 100;
+                if (isAdded()) {
+                    requireActivity();
+                    String urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", requireActivity());
 
-                            firstCost = firstCost + discount;
-                            updateAddCost(String.valueOf(discount));
+                    String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
+                    long discountInt = Long.parseLong(discountText);
 
-                            GalleryFragment.costFirstForMin = firstCost;
-                            costUpdate = String.valueOf(firstCost);
-                            textView.setText(costUpdate);
-                        } else {
-                            progressBar.setVisibility(View.INVISIBLE);
-                            if (pos == 1 || pos == 2) {
-                                changePayMethodToNal();
+                    CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
+                    parser.sendURL(urlCost, new Callback<Map<String, String>>() {
+                        @Override
+                        public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                            Map<String, String> sendUrlMapCost = response.body();
+                            assert sendUrlMapCost != null;
+                            String orderCost = sendUrlMapCost.get("order_cost");
+                            Log.d(TAG, "onDismiss: orderCost " + orderCost);
+                            assert orderCost != null;
+                            if (!orderCost.equals("0")) {
+                                String costUpdate;
+
+                                long discount;
+                                long firstCost = Long.parseLong(orderCost);
+                                discount = firstCost * discountInt / 100;
+
+                                firstCost = firstCost + discount;
+//                                updateAddCost(String.valueOf(discount));
+
+                                GalleryFragment.costFirstForMin = firstCost;
+                                costUpdate = String.valueOf(firstCost);
+                                textView.setText(costUpdate);
+                            } else {
+                                progressBar.setVisibility(View.INVISIBLE);
+                                if (pos == 1 || pos == 2) {
+                                    changePayMethodToNal();
+                                }
                             }
                         }
-                    }
+
+                        @Override
+                        public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                            Log.e(TAG, " onFailure marker", t);
+                        }
+                    });
                 }
-
-
-            } catch (MalformedURLException ignored) {
-
+            } catch (MalformedURLException e) {
+                Log.e(TAG, "Ошибка при обработке платежа", e);
+                // Обработайте ошибку корректно
             }
 
         }
@@ -550,7 +603,11 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             @Override
             public void onClick(View v) {
                 listView.setItemChecked(0, true);
-                paymentType(arrayCode [0], requireContext());
+                try {
+                    paymentType(arrayCode [0], requireActivity());
+                } catch (MalformedURLException | UnsupportedEncodingException e) {
+                    throw new RuntimeException(e);
+                }
                 progressBar.setVisibility(View.GONE);
                 alertDialog.dismiss();
             }
@@ -574,10 +631,9 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         cv.put("addCost", addCost);
 
         // обновляем по id
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
-        database.close();
+
     }
 
      
@@ -656,7 +712,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         String city = listCity.get(1);
         String api = listCity.get(2);
 
-        String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
+        String url = "/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
 
 
@@ -669,13 +725,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
      
     private String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
 
-//        List<String> stringListRout = logCursor(MainActivity.ROUT_MARKER);
-//        Log.d(TAG, "getTaxiUrlSearch: stringListRout" + stringListRout);
-//
-//        double originLatitude = Double.parseDouble(stringListRout.get(1));
-//        double originLongitude = Double.parseDouble(stringListRout.get(2));
-//        double toLatitude = Double.parseDouble(stringListRout.get(3));
-//        double toLongitude = Double.parseDouble(stringListRout.get(4));
         double originLatitude = 0;
         double originLongitude = 0;
         double toLatitude = 0;
@@ -690,7 +739,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         String selection = "id = ?";
         String[] selectionArgs = { "1" }; // предполагается, что вы хотите получить данные для записи с id=1
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor cursor = database.query(
                 MainActivity.ROUT_MARKER, // имя таблицы
                 projection,   // столбцы, которые вы хотите получить
@@ -778,10 +826,9 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         String city = listCity.get(1);
         String api = listCity.get(2);
 
-        String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
+        String url = "/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
         Log.d(TAG, "getTaxiUrlSearchMarkers: " + url);
-        database.close();
         return url;
     }
 
@@ -822,7 +869,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     private List<String> logCursor(String table) {
         List<String> list = new ArrayList<>();
 
-        SQLiteDatabase  database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(table, null, null, null, null, null, null);
         if (c != null) {
             if (c.moveToFirst()) {
@@ -841,7 +887,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         assert c != null;
         c.close();
-        database.close();
         return list;
     }
    }

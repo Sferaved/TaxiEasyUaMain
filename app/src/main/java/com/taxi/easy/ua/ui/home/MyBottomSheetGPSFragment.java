@@ -22,7 +22,9 @@ import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 
 
 public class MyBottomSheetGPSFragment extends BottomSheetDialogFragment {
-
+    public MyBottomSheetGPSFragment() {
+        // Пустой конструктор обязателен для фрагментов
+    }
     AppCompatButton btn_ok, btn_no;
 
     String errorMessage;

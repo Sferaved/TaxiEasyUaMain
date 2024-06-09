@@ -21,6 +21,7 @@ import androidx.navigation.Navigation;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.connect.NetworkUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,8 +42,6 @@ public class MyBottomSheetErrorCardFragment extends BottomSheetDialogFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.error_list_layout, container, false);
         NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-
-
 
         btn_help = view.findViewById(R.id.btn_help);
         btn_help.setText(getString(R.string.order));

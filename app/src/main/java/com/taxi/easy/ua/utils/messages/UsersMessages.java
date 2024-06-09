@@ -6,9 +6,9 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
+import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
-import com.taxi.easy.ua.utils.notify.NotificationHelper;
 
 import java.util.List;
 

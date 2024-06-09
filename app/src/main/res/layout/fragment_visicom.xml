@@ -9,17 +9,21 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent">
 
         <ProgressBar
             android:id="@+id/progress_bar"
             android:layout_width="48sp"
             android:layout_height="48sp"
-
-            android:layout_marginTop="8dp"
             android:visibility="gone"
-            app:layout_constraintEnd_toStartOf="@+id/gpsbut"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:layout_marginTop="12dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.498"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_to" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/gpsbut"
@@ -44,8 +48,8 @@
             android:text="@string/btn_geo_text"
             android:textAlignment="center"
             android:textColor="#D9D9D9"
-            android:visibility="gone"
             android:textSize="16sp"
+            android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
@@ -59,9 +63,9 @@
             android:layout_marginTop="8dp"
             android:fontFamily="@font/regular"
             android:text="1"
-            android:visibility="gone"
             android:textColor="#D9D9D9"
             android:textSize="14sp"
+            android:visibility="gone"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textfrom" />
 
@@ -72,13 +76,13 @@
             android:layout_margin="8dp"
             android:background="@drawable/input"
             android:ems="10"
-            android:visibility="invisible"
-            android:minHeight="48sp"
             android:fontFamily="@font/light"
             android:hint="@string/Street_hint"
+            android:minHeight="48sp"
             android:textColor="@color/white"
             android:textColorHint="#ABD9D9D9"
             android:textSize="18sp"
+            android:visibility="invisible"
             app:layout_constraintStart_toEndOf="@+id/num1"
             app:layout_constraintTop_toBottomOf="@+id/textfrom"
             tools:ignore="MissingConstraints" />
@@ -103,11 +107,11 @@
             android:layout_width="200sp"
             android:layout_height="48sp"
 
-            android:visibility="invisible"
             android:layout_marginTop="8dp"
             android:background="@drawable/buttons"
             android:scaleType="centerInside"
             android:textColor="@color/white"
+            android:visibility="invisible"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.139"
             app:layout_constraintStart_toStartOf="parent"
@@ -171,9 +175,9 @@
             android:layout_marginTop="32dp"
             android:fontFamily="@font/light"
             android:text="@string/from_text"
-            android:visibility="gone"
             android:textColor="#9DA0A8"
             android:textSize="14sp"
+            android:visibility="gone"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -184,8 +188,8 @@
             android:layout_marginTop="8dp"
             android:background="@drawable/buttons"
             android:text="@string/change"
-            android:visibility="gone"
             android:textColor="#D9D9D9"
+            android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.139"
             app:layout_constraintStart_toStartOf="parent"
@@ -210,9 +214,9 @@
             android:layout_width="293sp"
             android:layout_height="wrap_content"
 
-            android:layout_marginTop="8dp"
-            android:background="@drawable/buttons"
+            android:layout_marginTop="12dp"
 
+            android:background="@drawable/buttons"
             android:fontFamily="@font/regular"
             android:text="@string/add_services"
             android:textAlignment="center"
@@ -220,7 +224,7 @@
             android:visibility="invisible"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/text_to" />
+            app:layout_constraintTop_toBottomOf="@+id/progress_bar" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnBonus"
@@ -287,6 +291,76 @@
             app:layout_constraintTop_toBottomOf="@+id/btnBonus"
             tools:ignore="MissingConstraints" />
 
+
+        <HorizontalScrollView
+            android:id="@+id/horizontalScrollView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="12dp"
+            android:scrollbars="none"
+            app:layout_constraintTop_toBottomOf="@+id/text_view_cost"
+            tools:layout_editor_absoluteX="0dp">
+
+            <LinearLayout
+                android:id="@+id/linear_layout_buttons"
+                android:layout_width="293dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <!-- Кнопки для горизонтальной карусели -->
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/button1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/buttons"
+                    android:fontFamily="@font/regular"
+                    android:insetLeft="0sp"
+                    android:insetTop="0sp"
+                    android:insetRight="0sp"
+                    android:insetBottom="0sp"
+                    android:text="60 грн Авто"
+                    android:textColor="@color/colorAccent"
+                    android:textSize="18sp" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/button2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/buttons"
+                    android:fontFamily="@font/regular"
+                    android:insetLeft="0sp"
+                    android:insetTop="0sp"
+                    android:insetRight="0sp"
+                    android:insetBottom="0sp"
+                    android:text="65 грн универсал"
+                    android:textColor="@color/white"
+
+                    android:textSize="18sp" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/button3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/buttons"
+                    android:fontFamily="@font/regular"
+                    android:insetLeft="0sp"
+                    android:insetTop="0sp"
+                    android:insetRight="0sp"
+
+                    android:insetBottom="0sp"
+                    android:text="70 грн микроавтобус"
+                    android:textColor="@color/white"
+                    android:textSize="18sp" />
+
+                <!-- Добавьте другие кнопки, если нужно -->
+
+            </LinearLayout>
+        </HorizontalScrollView>
+
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnOrder"
             android:layout_width="293sp"
@@ -307,7 +381,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/text_view_cost"
+            app:layout_constraintTop_toBottomOf="@+id/horizontalScrollView"
             app:layout_constraintVertical_bias="0.0" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -316,10 +390,10 @@
             android:layout_height="139sp"
             android:layout_gravity="bottom|end"
             android:layout_margin="4dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="16dp"
             android:contentDescription="@string/call_admin"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.976"
+            app:layout_constraintHorizontal_bias="0.966"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/btnOrder"
             app:srcCompat="@android:drawable/stat_sys_phone_call_forward" />
@@ -329,7 +403,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            app:layout_constraintGuide_end="488sp" />
+            app:layout_constraintGuide_percent="-0.18491484" />
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

@@ -36,7 +36,11 @@ import com.taxi.easy.ua.cities.api.CityService;
 import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
+import com.taxi.easy.ua.ui.payment_system.PayApi;
+import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
+import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.IPUtil;
@@ -45,6 +49,8 @@ import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import java.util.ArrayList;
 import java.util.List;
 
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -59,13 +65,15 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     String city;
     private String cityMenu;
     private String message;
-
+    String pay_method;
     public MyBottomSheetCityFragment() {
         // Пустой конструктор без аргументов
     }
 
-    public MyBottomSheetCityFragment(String city) {
+    public MyBottomSheetCityFragment(String city, Context context) {
+
         this.city = city;
+        this.context = context;
     }
     private final String[] cityCode = new String[]{
             "Kyiv City",
@@ -87,24 +95,30 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     public static final String Zaporizhzhia_phone = "tel:0687257070";
     public static final String Cherkasy_Oblast_phone = "tel:0962294243";
     String phoneNumber;
+    private final String baseUrl = "https://m.easy-order-taxi.site";
+    Context context;
+
+
 
     @SuppressLint("MissingInflatedId")
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     @Nullable
     @Override
+
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.cities_list_layout, container, false);
+
         listView = view.findViewById(R.id.listViewBonus);
         VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
 
         String[] cityList = new String[]{
-                getString(R.string.Kyiv_city),
-                getString(R.string.Dnipro_city),
-                getString(R.string.Odessa),
-                getString(R.string.Zaporizhzhia),
-                getString(R.string.Cherkasy),
-                getString(R.string.test_city),
-                getString(R.string.foreign_countries),
+                context.getString(R.string.Kyiv_city),
+                context.getString(R.string.Dnipro_city),
+                context.getString(R.string.Odessa),
+                context.getString(R.string.Zaporizhzhia),
+                context.getString(R.string.Cherkasy),
+                context.getString(R.string.test_city),
+                context.getString(R.string.foreign_countries),
         };
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(requireActivity(), R.layout.services_adapter_layout, cityList);
@@ -114,31 +128,31 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         switch (city){
             case "Kyiv City":positionFirst = 0;
                 phoneNumber = Kyiv_City_phone;
-                cityMenu = getString(R.string.city_kyiv);
+                cityMenu = context.getString(R.string.city_kyiv);
                 MainActivity.countryState = "UA";
                 break;
 
             case "Dnipropetrovsk Oblast":
                 positionFirst = 1;
                 phoneNumber = Dnipropetrovsk_Oblast_phone;
-                cityMenu = getString(R.string.city_dnipro);
+                cityMenu = context.getString(R.string.city_dnipro);
                 break;
             case "Odessa":
                 positionFirst = 2;
                 phoneNumber = Odessa_phone;
-                cityMenu = getString(R.string.city_odessa);
+                cityMenu = context.getString(R.string.city_odessa);
                 MainActivity.countryState = "UA";
                 break;
             case "Zaporizhzhia":
                 positionFirst = 3;
                 phoneNumber = Zaporizhzhia_phone;
-                cityMenu = getString(R.string.city_zaporizhzhia);
+                cityMenu = context.getString(R.string.city_zaporizhzhia);
                 MainActivity.countryState = "UA";
                 break;
             case "Cherkasy Oblast":
                 positionFirst = 4;
                 phoneNumber = Cherkasy_Oblast_phone;
-                cityMenu = getString(R.string.city_cherkasy);
+                cityMenu = context.getString(R.string.city_cherkasy);
                 MainActivity.countryState = "UA";
                 break;
             case "OdessaTest":
@@ -150,7 +164,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             default:
                 positionFirst = 6;
                 phoneNumber = Kyiv_City_phone;
-                cityMenu = getString(R.string.foreign_countries);
+                cityMenu = context.getString(R.string.foreign_countries);
                 new GetPublicIPAddressTask().execute();
         }
         Log.d(TAG, "onCreateView: city" + city);
@@ -165,31 +179,31 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 switch (cityCode[positionFirst]){
                     case "Kyiv City":positionFirst = 0;
                         phoneNumber = Kyiv_City_phone;
-                        cityMenu = getString(R.string.city_kyiv);
+                        cityMenu = context.getString(R.string.city_kyiv);
                         MainActivity.countryState = "UA";
                         break;
                     case "Dnipropetrovsk Oblast":
                         positionFirst = 1;
                         phoneNumber = Dnipropetrovsk_Oblast_phone;
-                        cityMenu = getString(R.string.city_dnipro);
+                        cityMenu = context.getString(R.string.city_dnipro);
                         MainActivity.countryState = "UA";
                         break;
                     case "Odessa":
                         positionFirst = 2;
                         phoneNumber = Odessa_phone;
-                        cityMenu = getString(R.string.city_odessa);
+                        cityMenu = context.getString(R.string.city_odessa);
                         MainActivity.countryState = "UA";
                         break;
                     case "Zaporizhzhia":
                         positionFirst = 3;
                         phoneNumber = Zaporizhzhia_phone;
-                        cityMenu = getString(R.string.city_zaporizhzhia);
+                        cityMenu = context.getString(R.string.city_zaporizhzhia);
                         MainActivity.countryState = "UA";
                         break;
                     case "Cherkasy Oblast":
                         positionFirst = 4;
                         phoneNumber = Cherkasy_Oblast_phone;
-                        cityMenu = getString(R.string.city_cherkasy);
+                        cityMenu = context.getString(R.string.city_cherkasy);
                         MainActivity.countryState = "UA";
                         break;
                     case "OdessaTest":
@@ -201,33 +215,183 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                     case "foreign countries":
                         positionFirst = 6;
                         phoneNumber = Kyiv_City_phone;
-                        cityMenu = getString(R.string.foreign_countries);
+                        cityMenu = context.getString(R.string.foreign_countries);
                         break;
                     default:
                         phoneNumber = Kyiv_City_phone;
                         positionFirst = 0;
-                        cityMenu = getString(R.string.city_kyiv);
+                        cityMenu = context.getString(R.string.city_kyiv);
                         MainActivity.countryState = "UA";
                         break;
                 }
+                String cityCodeNew;
                     if (positionFirst == 6) {
                         new GetPublicIPAddressTask().execute();
-                        cityMaxPay(cityCode[0], getContext());
-                        merchantFondy(cityCode[0], getContext());
+                        cityCodeNew = cityCode[0];
                     } else {
-                        cityMaxPay(cityCode[positionFirst], getContext());
-                        merchantFondy(cityCode[positionFirst], getContext());
+                        cityCodeNew = cityCode[positionFirst];
                     }
-                    resetRoutHome();
-                    resetRoutMarker();
-                    updateMyPosition(cityCode[positionFirst]);
+                Log.d(TAG, "onItemClick: pay_method" + pay_method);
 
+                pay_system(cityCodeNew);
+
+                resetRoutHome();
+                resetRoutMarker();
+                updateMyPosition(cityCode[positionFirst]);
+
+                cityMaxPay(cityCodeNew, getContext());
+                getCardTokenWfp(cityCode[positionFirst]);
                 dismiss();
             }
         });
 
         return view;
     }
+
+    private void getCardTokenWfp(String city) {
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(interceptor)
+                .build();
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://m.easy-order-taxi.site") // Замените на фактический URL вашего сервера
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+
+        // Создайте сервис
+        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
+        Log.d(TAG, "getCardTokenWfp: ");
+        String email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+        // Выполните запрос
+        Call<CallbackResponseWfp> call = service.handleCallbackWfp(
+                context.getString(R.string.application),
+                city,
+                email,
+                "wfp"
+        );
+        call.enqueue(new Callback<CallbackResponseWfp>() {
+            @Override
+            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
+                Log.d(TAG, "onResponse: " + response.body());
+                if (response.isSuccessful()) {
+                    CallbackResponseWfp callbackResponse = response.body();
+                    if (callbackResponse != null) {
+                        List<CardInfo> cards = callbackResponse.getCards();
+                        Log.d(TAG, "onResponse: cards" + cards);
+                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
+                        if (cards != null && !cards.isEmpty()) {
+                            for (CardInfo cardInfo : cards) {
+                                String masked_card = cardInfo.getMasked_card(); // Маска карты
+                                String card_type = cardInfo.getCard_type(); // Тип карты
+                                String bank_name = cardInfo.getBank_name(); // Название банка
+                                String rectoken = cardInfo.getRectoken(); // Токен карты
+                                String merchant = cardInfo.getMerchant(); // Токен карты
+
+                                Log.d(TAG, "onResponse: card_token: " + rectoken);
+                                ContentValues cv = new ContentValues();
+                                cv.put("masked_card", masked_card);
+                                cv.put("card_type", card_type);
+                                cv.put("bank_name", bank_name);
+                                cv.put("rectoken", rectoken);
+                                cv.put("merchant", merchant);
+                                cv.put("rectoken_check", "0");
+                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
+                            }
+                            Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_WFP_CARDS + " ORDER BY id DESC LIMIT 1", null);
+                            if (cursor != null && cursor.moveToFirst()) {
+                                // Получаем значение ID последней записи
+                                @SuppressLint("Range") int lastId = cursor.getInt(cursor.getColumnIndex("id"));
+                                cursor.close();
+
+                                // Обновляем строку с найденным ID
+                                ContentValues cv = new ContentValues();
+                                cv.put("rectoken_check", "1");
+                                database.update(MainActivity.TABLE_WFP_CARDS, cv, "id = ?", new String[] { String.valueOf(lastId) });
+                            }
+
+                            database.close();
+                        }
+                    }
+
+                } else {
+                    // Обработка случаев, когда ответ не 200 OK
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
+                // Обработка ошибки запроса
+                Log.d(TAG, "onResponse: failure " + t.toString());
+            }
+        });
+    }
+
+    private void pay_system(String cityCodeNew) {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        PayApi apiService = retrofit.create(PayApi.class);
+        Call<ResponsePaySystem> call = apiService.getPaySystem();
+        call.enqueue(new Callback<ResponsePaySystem>() {
+            @Override
+            public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
+                if (response.isSuccessful()) {
+                    // Обработка успешного ответа
+                    ResponsePaySystem responsePaySystem = response.body();
+                    assert responsePaySystem != null;
+                    String paymentCode = responsePaySystem.getPay_system();
+
+                    switch (paymentCode) {
+                        case "wfp":
+                            pay_method = "wfp_payment";
+//                            cityMaxPay(cityCodeNew, getContext());
+//                            getCardTokenWfp(city);
+                            break;
+                        case "fondy":
+                            pay_method = "fondy_payment";
+                            cityMaxPay(cityCodeNew, getContext());
+                            merchantFondy(cityCodeNew, getContext());
+                            break;
+                        case "mono":
+                            pay_method = "mono_payment";
+                            break;
+                    }
+                    if(isAdded()){
+                        ContentValues cv = new ContentValues();
+                        cv.put("payment_type", pay_method);
+                        // обновляем по id
+                        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                                new String[] { "1" });
+                        database.close();
+
+                    }
+
+
+                } else {
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
+                if (isAdded()) {
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                }
+            }
+        });
+    }
+
     private void updateMyPosition(String city) {
 
         double startLat;
@@ -248,37 +412,37 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
         switch (city){
             case "Kyiv City":positionFirst = 0;
-                position = getString(R.string.pos_k);
+                position = context.getString(R.string.pos_k);
                 startLat = 50.451107;
                 startLan = 30.524907;
                 break;
             case "Dnipropetrovsk Oblast":
                 // Днепр
-                position = getString(R.string.pos_d);
+                position = context.getString(R.string.pos_d);
                 startLat = 48.4647;
                 startLan = 35.0462;
                 break;
             case "Odessa":
                 phoneNumber = Odessa_phone;
-                position = getString(R.string.pos_o);
+                position = context.getString(R.string.pos_o);
                 startLat = 46.4694;
                 startLan = 30.7404;
                 break;
             case "Zaporizhzhia":
                 phoneNumber = Zaporizhzhia_phone;
-                position = getString(R.string.pos_z);
+                position = context.getString(R.string.pos_z);
                 startLat = 47.84015;
                 startLan = 35.13634;
                 break;
             case "Cherkasy Oblast":
                 phoneNumber = Cherkasy_Oblast_phone;
-                position = getString(R.string.pos_c);
+                position = context.getString(R.string.pos_c);
                 startLat = 49.44469;
                 startLan = 32.05728;
                 break;
             case "OdessaTest":
                 phoneNumber = Kyiv_City_phone;
-                position = getString(R.string.pos_o);
+                position = context.getString(R.string.pos_o);
                 startLat = 46.4694;
                 startLan = 30.7404;
                 break;
@@ -289,6 +453,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 startLan = 21.00424;
                 break;
         }
+        pay_system(city);
 
         SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
@@ -300,14 +465,24 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
         cv = new ContentValues();
         cv.put("startLat", startLat);
-        database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
-                new String[] { "1" });
         cv.put("startLan", startLan);
-        database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
-                new String[] { "1" });
         cv.put("position", position);
         database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
                 new String[] { "1" });
+
+        cv = new ContentValues();
+        cv.put("tarif", " ");
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                new String[] { "1" });
+
+        cv = new ContentValues();
+        cv.put("payment_type", "nal_payment");
+
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                new String[] { "1" });
+        database.close();
+//        }
+
 
         database.close();
 
@@ -320,7 +495,8 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         settings.add(Double.toString(startLat));
         settings.add(Double.toString(startLan));
         settings.add(position);
-        settings.add(getString(R.string.on_city_tv));
+        settings.add(position);
+//        settings.add(context.getString(R.string.on_city_tv));
         updateRoutMarker(settings);
 
     }
@@ -352,13 +528,13 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
         navController.navigate(R.id.nav_visicom);
         if (positionFirst != 6) {
-            message = getString(R.string.change_message) + getString(R.string.hi_mes) + " " + getString(R.string.order_in) + cityMenu + ".";
+            message = context.getString(R.string.change_message) + context.getString(R.string.hi_mes) + " " + context.getString(R.string.order_in) + cityMenu + ".";
         } else {
-            message = getString(R.string.change_message);
+            message = context.getString(R.string.change_message);
         }
         if (MainActivity.navVisicomMenuItem != null) {
             // Новый текст элемента меню
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            String newTitle =  context.getString(R.string.menu_city) + " " + cityMenu;
             // Изменяем текст элемента меню
             MainActivity.navVisicomMenuItem.setTitle(newTitle);
 
@@ -387,12 +563,14 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         ContentValues cv = new ContentValues();
                         cv.put("card_max_pay", cardMaxPay);
                         cv.put("bonus_max_pay", bonusMaxPay);
+                        if(isAdded()) {
+                            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                            database.update(MainActivity.CITY_INFO, cv, "id = ?",
+                                    new String[]{"1"});
 
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        database.update(MainActivity.CITY_INFO, cv, "id = ?",
-                                new String[]{"1"});
+                            database.close();
+                        }
 
-                        database.close();
 
 
                         // Добавьте здесь код для обработки полученных значений
@@ -489,10 +667,10 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         if (callbackResponse != null) {
                             List<CardInfo> cards = callbackResponse.getCards();
                             Log.d(TAG, "onResponse: cards" + cards);
+                            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                            // Очистка таблицы
+                            database.delete(MainActivity.TABLE_FONDY_CARDS, "1", null);
                             if (cards != null && !cards.isEmpty()) {
-                                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                                // Очистка таблицы
-                                database.delete(MainActivity.TABLE_FONDY_CARDS, "1", null);
                                 for (CardInfo cardInfo : cards) {
                                     ContentValues cv = new ContentValues();
                                     String masked_card = cardInfo.getMasked_card(); // Маска карты

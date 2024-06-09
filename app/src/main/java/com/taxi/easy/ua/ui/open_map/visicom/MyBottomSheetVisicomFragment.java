@@ -15,7 +15,6 @@ import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -47,7 +46,6 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.cities.Kyiv.KyivRegion;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
-import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiCallback;
@@ -56,6 +54,7 @@ import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiResponse;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.KeyboardUtils;
 import com.taxi.easy.ua.utils.LocaleHelper;
+import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -200,10 +199,12 @@ public class MyBottomSheetVisicomFragment extends BottomSheetDialogFragment impl
 //                            Log.d(TAG, "onClick: verifyBuildingStart" + verifyBuildingStart);
 //                            Log.d(TAG, "onClick: verifyBuildingFinish" + verifyBuildingFinish);
                 if (!verifyBuildingStart && !verifyBuildingFinish && verifyRoutStart && verifyRoutFinish) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    try {
                         visicomCost();
-                        dismiss();
+                    } catch (MalformedURLException e) {
+                        throw new RuntimeException(e);
                     }
+                    dismiss();
                 }
 
             }
@@ -1107,69 +1108,76 @@ public class MyBottomSheetVisicomFragment extends BottomSheetDialogFragment impl
     }
 
      
-    private void visicomCost() {
+    private void visicomCost() throws MalformedURLException {
         String urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", requireActivity());
         Log.d(TAG, "visicomCost: " + urlCost);
-        Map<String, String> sendUrlMapCost = null;
-        try {
-            sendUrlMapCost = CostJSONParser.sendURL(urlCost);
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
 
-        String message = sendUrlMapCost.get("message");
-        String orderCost = sendUrlMapCost.get("order_cost");
-        Log.d(TAG, "startCost: orderCost " + orderCost);
+        CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
+        parser.sendURL(urlCost, new Callback<Map<String, String>>() {
+            @Override
+            public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                Map<String, String> sendUrlMapCost = response.body();
+                assert sendUrlMapCost != null;
+                String message = sendUrlMapCost.get("Message");
+                String orderCost = sendUrlMapCost.get("order_cost");
+                Log.d(TAG, "startCost: orderCost " + orderCost);
 
-        assert orderCost != null;
-        if (orderCost.equals("0")) {
-            message = getString(R.string.error_message);
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-        } else {
-            String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireContext()).get(3);
-            long discountInt = Integer.parseInt(discountText);
-            long discount;
-            switch (fragmentInput) {
-                case "map":
-                    GeoDialogVisicomFragment.geoText.setText(fromEditAddress.getText().toString());
-                    GeoDialogVisicomFragment.firstCost = Long.parseLong(orderCost);
-                    discount = GeoDialogVisicomFragment.firstCost * discountInt / 100;
-                    GeoDialogVisicomFragment.firstCost = GeoDialogVisicomFragment.firstCost + discount;
-                    updateAddCost(String.valueOf(discount));
-                    GeoDialogVisicomFragment.text_view_cost.setText(String.valueOf(GeoDialogVisicomFragment.firstCost));
-                    GeoDialogVisicomFragment.MIN_COST_VALUE = (long) (GeoDialogVisicomFragment.firstCost * 0.6);
-                    GeoDialogVisicomFragment.firstCostForMin = GeoDialogVisicomFragment.firstCost;
-                    break;
-                case "home":
-                    VisicomFragment.geoText.setText(fromEditAddress.getText().toString());
-                    VisicomFragment.firstCost = Long.parseLong(orderCost);
-                    discount = VisicomFragment.firstCost * discountInt / 100;
-                    VisicomFragment.firstCost = VisicomFragment.firstCost + discount;
-                    updateAddCost(String.valueOf(discount));
-                    VisicomFragment.text_view_cost.setText(String.valueOf(VisicomFragment.firstCost));
-                    VisicomFragment.MIN_COST_VALUE = (long) (VisicomFragment.firstCost * 0.6);
-                    VisicomFragment.firstCostForMin = VisicomFragment.firstCost;
+                assert orderCost != null;
+                if (orderCost.equals("0")) {
+                    message = getString(R.string.error_message);
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                } else {
+                    String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireContext()).get(3);
+                    long discountInt = Integer.parseInt(discountText);
+                    long discount;
+                    switch (fragmentInput) {
+                        case "map":
+                            GeoDialogVisicomFragment.geoText.setText(fromEditAddress.getText().toString());
+                            GeoDialogVisicomFragment.firstCost = Long.parseLong(orderCost);
+                            discount = GeoDialogVisicomFragment.firstCost * discountInt / 100;
+                            GeoDialogVisicomFragment.firstCost = GeoDialogVisicomFragment.firstCost + discount;
+                            updateAddCost(String.valueOf(discount));
+                            GeoDialogVisicomFragment.text_view_cost.setText(String.valueOf(GeoDialogVisicomFragment.firstCost));
+                            GeoDialogVisicomFragment.MIN_COST_VALUE = (long) (GeoDialogVisicomFragment.firstCost * 0.6);
+                            GeoDialogVisicomFragment.firstCostForMin = GeoDialogVisicomFragment.firstCost;
+                            break;
+                        case "home":
+                            VisicomFragment.geoText.setText(fromEditAddress.getText().toString());
+                            VisicomFragment.firstCost = Long.parseLong(orderCost);
+                            discount = VisicomFragment.firstCost * discountInt / 100;
+                            VisicomFragment.firstCost = VisicomFragment.firstCost + discount;
+                            updateAddCost(String.valueOf(discount));
+                            VisicomFragment.text_view_cost.setText(String.valueOf(VisicomFragment.firstCost));
+                            VisicomFragment.MIN_COST_VALUE = (long) (VisicomFragment.firstCost * 0.6);
+                            VisicomFragment.firstCostForMin = VisicomFragment.firstCost;
 
 
-                    VisicomFragment.geoText.setVisibility(View.VISIBLE);
-                    VisicomFragment.btn_clear_from.setVisibility(View.VISIBLE);
-                    VisicomFragment.textwhere.setVisibility(View.VISIBLE);
-                    VisicomFragment.num2.setVisibility(View.VISIBLE);
-                    VisicomFragment.textViewTo.setVisibility(View.VISIBLE);
-                    VisicomFragment.btn_clear_to.setVisibility(View.VISIBLE);
-                    VisicomFragment.btnAdd.setVisibility(View.VISIBLE);
-                    VisicomFragment.buttonBonus.setVisibility(View.VISIBLE);
-                    VisicomFragment.btn_minus.setVisibility(View.VISIBLE);
-                    VisicomFragment.text_view_cost.setVisibility(View.VISIBLE);
-                    VisicomFragment.btn_plus.setVisibility(View.VISIBLE);
-                    VisicomFragment.btnOrder.setVisibility(View.VISIBLE);
+                            VisicomFragment.geoText.setVisibility(View.VISIBLE);
+                            VisicomFragment.btn_clear_from.setVisibility(View.VISIBLE);
+                            VisicomFragment.textwhere.setVisibility(View.VISIBLE);
+                            VisicomFragment.num2.setVisibility(View.VISIBLE);
+                            VisicomFragment.textViewTo.setVisibility(View.VISIBLE);
+                            VisicomFragment.btn_clear_to.setVisibility(View.VISIBLE);
+                            VisicomFragment.btnAdd.setVisibility(View.VISIBLE);
+                            VisicomFragment.buttonBonus.setVisibility(View.VISIBLE);
+                            VisicomFragment.btn_minus.setVisibility(View.VISIBLE);
+                            VisicomFragment.text_view_cost.setVisibility(View.VISIBLE);
+                            VisicomFragment.btn_plus.setVisibility(View.VISIBLE);
+                            VisicomFragment.btnOrder.setVisibility(View.VISIBLE);
 
-                    VisicomFragment.btn_clear_from_text.setVisibility(View.GONE);
-                    break;
+                            VisicomFragment.btn_clear_from_text.setVisibility(View.GONE);
+                            break;
+                    }
+
+                }
             }
+            @Override
+            public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                t.printStackTrace();
+            }
+        });
 
-        }
 
 
 
@@ -1303,7 +1311,7 @@ public class MyBottomSheetVisicomFragment extends BottomSheetDialogFragment impl
         List<String> listCity = logCursor(MainActivity.CITY_INFO, requireActivity());
         String city = listCity.get(1);
 
-        String url = urlBase + "/android/" + urlAPI + "/"
+        String url = "/" + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application);
 
         database.close();

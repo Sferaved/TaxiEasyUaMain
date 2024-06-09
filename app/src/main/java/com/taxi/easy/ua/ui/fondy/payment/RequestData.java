@@ -47,7 +47,7 @@ public class RequestData {
         this.sender_email = email;
         this.server_callback_url = "https://m.easy-order-taxi.site/server-callback";
 
-        this.signature = generateSignature(merchantPassword, createParameterMap());
+        this.signature = merchantPassword;
     }
 
     private Map<String, String> createParameterMap() {

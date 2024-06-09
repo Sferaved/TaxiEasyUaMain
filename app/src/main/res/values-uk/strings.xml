@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.744</string>
-    <string name="version">Версія: 1.744</string>
+    <string name="version_code">1.745</string>
+    <string name="version">Версія: 1.745</string>
 
     <string name="app_name">Таксі Доставка</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -55,7 +55,7 @@
     <string name="save_button">Зберегти</string>
     <string name="you_this">"Ви зараз тут: "</string>
     <string name="make_rout_message">Сформуйте маршрут</string>
-    <string name="error_message">Сталася помилка. Наберите оператора через "ДОПОМОГА" або натисніть тут для перезавантаження сторінки</string>
+    <string name="error_message">Сталася помилка. Наберіть оператора через "ДОПОМОГА" або натисніть тут для перезавантаження сторінки</string>
     <string name="to_point">"Місце призначення: "</string>
     <string name="cost_of_order">" Вартість поїздки: "</string>
     <string name="firebase_false_message">грн. Вибачте, без перевірки Google-акаунту замовлення не можливе.</string>
@@ -93,7 +93,7 @@
     <string name="please_phone_message">Додаток передає номер Вашого мобільного телефону для включення функції замовлення таксі. Натиснувши кнопку Зберегти Ви підтверджуєте згоду на передачу номера телефону диспетчеру для пошуку автомобіля та збереження його для наступних замовлень.</string><string name="check_message">Чекайте, йде підключення.</string>
     <string name="find_of_map">Спробуйте знайти на карті</string>
     <string name="end_point_marker">Місце призначення</string>
-    <string name="error_firebase_start">Помилка перевірки. Наберіть оператора.</string>
+    <string name="error_firebase_start">Помилка перевірки. Наберіть оператора через "ДОПОМОГУ"</string>
     <string name="address_error_message">Помилка введення адреси</string>
 
     <string name="BAGGAGE">Завантаження салону</string>
@@ -153,7 +153,7 @@
     <string name="gps_message">Для використання карти увімкніть GPS</string>
     <string name="city">Місто</string>
     <string name="change_message">"Зміна бази адрес. "</string>
-    <string name="server_error_connected">Сервер не прийняв запит, наберіть операторів</string>
+    <string name="server_error_connected">Сервер не прийняв запит. Наберіть оператора через "ДОПОМОГУ"</string>
     <string name="GDPR">GDPR</string>
     <string name="ok_GDPR">Погодитись</string>
     <string name="Dnipro_city">Дніпро</string>
@@ -357,5 +357,23 @@
     <string name="pay_method_message_bonus">бонусами. Приємної подорожі.</string>
     <string name="pay_method_message_card">банківською карткою. Приємної подорожі.</string>
     <string name="pay_method_message_nal">готівкою водію. Приємної подорожі.</string>
-    <string name="location_on">Увімкніть ТОЧНЕ визначення місцезнаходження в Дозвілах</string>
+    <string name="location_on">Увімкніть ТОЧНЕ визначення місцезнаходження в Дозволах</string>
+    <string name="start_t">Старт</string>
+    <string name="base_onl_t">Базовий онлайн</string>
+    <string name="base_t">Базовий</string>
+    <string name="univers_t">Універсал</string>
+    <string name="bisnes_t">Бізнес-клас</string>
+    <string name="prem_t">Преміум-клас</string>
+    <string name="econom_t">Економ-клас</string>
+    <string name="bus_t">Мікроавтобус</string>
+    <string name="pending">Платеж відправлено на перевірку. Спробуйте іншу карту або повторіть пізніше.</string>
+    <string name="pending_error">Не вдалося здійснити оплату. Повторіть спробу оплати пізніше або зв\'яжіться з торговцем в адресу котрого здійснюєте платіж.</string>
+    <string name="pending_error_0">Час на проведення платежу сплинув, повторіть оплату знов</string>
+    <string name="pending_error_1">Ваш платіж обробляється. Як тільки транзакція буде оброблена, Ви отримаєте повідомлення про стан платежу</string>
+    <string name="order_again">Замовити повторно</string>
+    <string name="order_continue">Продовжити перегляд</string>
+    <string name="anr_message">Вибачте, довелося трохи зачекати</string>
+    <string name="change_tarrif">Виберіть інший тариф</string>
+    <string name="checkout_status">Чекайте, йде перевірка статусу замовлення...</string>
+    <string name="check_order_mes">Чекайте на реєстрацію замовлення...</string>
 </resources>

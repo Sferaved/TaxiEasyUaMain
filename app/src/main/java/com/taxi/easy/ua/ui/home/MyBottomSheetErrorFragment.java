@@ -3,6 +3,7 @@ package com.taxi.easy.ua.ui.home;
 import static android.content.Context.MODE_PRIVATE;
 
 import android.annotation.SuppressLint;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -63,12 +64,36 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
             textViewInfo.setText(errorMessage);
             if (errorMessage.equals(getString(R.string.verify_internet))
                 || errorMessage.equals(getString(R.string.error_message))
+                || errorMessage.equals(getString(R.string.pending))
             ) {
                 btn_ok.setVisibility(View.GONE);
                 textViewInfo.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+                        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        ContentValues cv = new ContentValues();
+
+                        cv.put("email", "email");
+
+                        // обновляем по id
+                        database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
+                                new String[] { "1" });
+                        database.close();
+                        dismiss();
                         startActivity(new Intent(requireContext(), MainActivity.class));
+                    }
+                });
+            } else if(errorMessage.equals(getString(R.string.server_error_connected))) {
+                textViewInfo.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        dismiss();
+                    }
+                });
+                btn_ok.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        dismiss();
                     }
                 });
             } else {

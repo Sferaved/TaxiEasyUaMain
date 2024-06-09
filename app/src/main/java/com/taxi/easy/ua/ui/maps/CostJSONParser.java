@@ -64,7 +64,7 @@ public class CostJSONParser {
             if (response != null) {
                 if (response.equals("400")) {
                     costMap.put("order_cost", "0");
-                    costMap.put("message", "Сталася помилка");
+                    costMap.put("Message", "ErrorMessage");
 
                 } else {
                     JSONObject jsonarray = new JSONObject(response);
@@ -74,19 +74,19 @@ public class CostJSONParser {
                     }else {
                         Log.d(TAG, "sendURL: " + jsonarray.getString("Message"));
                         costMap.put("order_cost", "0");
-                        costMap.put("message", jsonarray.getString("Message"));
+                        costMap.put("Message", jsonarray.getString("Message"));
                     }
                 }
             } else {
                 costMap.put("order_cost", "0");
-                costMap.put("message", "Сталася помилка");
+                costMap.put("Message", "ErrorMessage");
             }
             return costMap;
         } catch (Exception e) {
             e.printStackTrace();
             asyncTaskFuture.cancel(true);
             costMap.put("order_cost", "0");
-            costMap.put("message", "Сталася помилка");
+            costMap.put("Message", "ErrorMessage");
             return costMap;
         }
 

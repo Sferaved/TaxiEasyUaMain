@@ -32,8 +32,8 @@ import androidx.annotation.Nullable;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
+import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 
 import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
@@ -48,9 +48,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 
 public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
-    private String tariff;
     ListView listView;
     public String[] arrayService;
     public static String[] arrayServiceCode;
@@ -62,7 +65,9 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
     final static long MIN_VALUE = -90;
     final static long MAX_VALUE = 200;
     TextView texViewCost;
-
+    private String TAG = "MyBottomSheetGeoFragment";
+    TimeZone timeZone;
+    SQLiteDatabase database;
     public MyBottomSheetGeoFragment(TextView texViewCost) {
         this.texViewCost = texViewCost;
     }
@@ -76,7 +81,9 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.settings_layout, container, false);
         listView = view.findViewById(R.id.list);
+        database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
+        texViewCost.setText("");
         arrayService = new String[]{
                 getString(R.string.BAGGAGE),
                 getString(R.string.ANIMAL),
@@ -122,14 +129,14 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         }
 
         String[] tariffArr = new String[]{
-                "Старт",
-                "Базовий онлайн",
-                "Базовый",
-                "Универсал",
-                "Бизнес-класс",
-                "Премиум-класс",
-                "Эконом-класс",
-                "Микроавтобус",
+                view.getContext().getResources().getString(R.string.start_t),
+                view.getContext().getResources().getString(R.string.base_onl_t),
+                view.getContext().getResources().getString(R.string.base_t),
+                view.getContext().getResources().getString(R.string.univers_t),
+                view.getContext().getResources().getString(R.string.bisnes_t),
+                view.getContext().getResources().getString(R.string.prem_t),
+                view.getContext().getResources().getString(R.string.econom_t),
+                view.getContext().getResources().getString(R.string.bus_t),
         };
         ArrayAdapter<String> adapterTariff = new ArrayAdapter<String>(view.getContext(), R.layout.my_simple_spinner_item, tariffArr);
         @SuppressLint({"MissingInflatedId", "LocalSuppress"})
@@ -139,28 +146,75 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         spinner.setBackgroundResource(R.drawable.spinner_border);
 
         SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursorDb = database.query(MainActivity.TABLE_SETTINGS_INFO, null, null, null, null, null, null);
+
         String tariffOld =  logCursor(MainActivity.TABLE_SETTINGS_INFO,getContext()).get(2);
-        if (cursorDb != null && !cursorDb.isClosed())
-            cursorDb.close();
-        for (int i = 0; i < tariffArr.length; i++) {
-            if(tariffArr[i].equals(tariffOld)) {
-                spinner.setSelection(i);
-            }
+
+        switch (tariffOld) {
+            case "Базовий онлайн":
+                spinner.setSelection(1);
+                break;
+            case  "Базовый":
+                spinner.setSelection(2);
+                break;
+            case "Универсал":
+                spinner.setSelection(3);
+                break;
+            case "Бизнес-класс":
+                spinner.setSelection(4);
+                break;
+            case "Премиум-класс":
+                spinner.setSelection(5);
+                break;
+            case "Эконом-класс":
+                spinner.setSelection(6);
+                break;
+            case "Микроавтобус":
+                spinner.setSelection(7);
+                break;
+            default:
+                spinner.setSelection(0);;
         }
+
+
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                tariff = tariffArr[position];
-                if(tariff.equals("Старт")) {
-                    tariff = " ";
+                String tariff_to_server;
+                Log.d(TAG, "onItemSelected: position" + position);
+                switch (position) {
+                    case 0:
+                        tariff_to_server = " ";
+                        break;
+                    case 1:
+                        tariff_to_server = "Базовий онлайн";
+                        break;
+                    case 2:
+                        tariff_to_server = "Базовый";
+                        break;
+                    case 3:
+                        tariff_to_server = "Универсал";
+                        break;
+                    case 4:
+                        tariff_to_server = "Бизнес-класс";
+                        break;
+                    case 5:
+                        tariff_to_server = "Премиум-класс";
+                        break;
+                    case 6:
+                        tariff_to_server = "Эконом-класс";
+                        break;
+                    case 7:
+                        tariff_to_server = "Микроавтобус";
+                        break;
+                    default:
+                        tariff_to_server = " ";
                 }
                 ContentValues cv = new ContentValues();
-                cv.put("tarif", tariff);
+                cv.put("tarif", tariff_to_server);
 
                 // обновляем по id
-                SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                 database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                         new String[] { "1" });
                 database.close();
@@ -176,6 +230,8 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         calendar = Calendar.getInstance();
         // Добавим 10 минут к текущему времени
         calendar.add(Calendar.MINUTE, 10);
+        timeZone = TimeZone.getDefault();
+//        updateSelectedTime();
         tvSelectedTime.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -243,7 +299,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         tvSelectedDate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final Calendar calendar = Calendar.getInstance();
+
 
                 // Создание диалогового окна DatePicker
                 DatePickerDialog datePickerDialog = new DatePickerDialog(getContext(),
@@ -276,11 +332,11 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         cv.put("date", formattedDate);
 
         // Обновляем по id
-        SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[] { "1" });
         database.close();
     }
-     
+
     @Override
     public void onPause() {
         super.onPause();
@@ -338,7 +394,8 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, getContext());
         String time = stringList.get(1);
         String date = stringList.get(3);
-
+        Log.d(TAG, "onPause:time  " + time);
+        Log.d(TAG, "onPause:date  " + date);
         if(!time.equals("no_time")) {
             if(date.equals("no_date")) {
                 LocalDate currentDate = LocalDate.now();
@@ -367,7 +424,8 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             LocalDateTime dateTimeFromString = LocalDateTime.parse(date + " " + time, formatter);
 
             LocalDateTime currentDateTimeInKyiv = LocalDateTime.now(ZoneId.of("Europe/Kiev"));
-
+            Log.d(TAG, "onPause:dateTimeFromString  " + dateTimeFromString);
+            Log.d(TAG, "onPause:currentDateTimeInKyiv  " + currentDateTimeInKyiv);
             // Сравнение дат и времени
             if (dateTimeFromString.isBefore(currentDateTimeInKyiv)) {
                 Toast.makeText(getContext(), getContext().getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
@@ -412,36 +470,65 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
 
     }
     private void changeCost() throws MalformedURLException {
-        String newCost = "0";
 
         String  url = getTaxiUrlSearchMarkers("costSearchMarkers", requireActivity());
+        String message = getString(R.string.change_tarrif);
+        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireContext()).get(3);
+        ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
-        Map<String, String> sendUrl = ToJSONParser.sendURL(url);
+        Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ url);
+        parser.sendURL(url, new Callback<Map<String, String>>() {
+            @Override
+            public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                Map<String, String> sendUrl = response.body();
 
-        String mes = sendUrl.get("message");
-        String orderC = sendUrl.get("order_cost");
+                assert sendUrl != null;
+                String orderC = sendUrl.get("order_cost");
+                Log.d(TAG, "changeCost: sendUrl " + sendUrl);
+                Log.d(TAG, "changeCost: orderC " + orderC);
 
-        assert orderC != null;
-        if (orderC.equals("0")) {
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(mes);
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-        }
-        if (!orderC.equals("0")) {
 
-            Long  firstCost = Long.parseLong(orderC);
+                assert orderC != null;
+                if (!orderC.equals("0")) {
 
-            String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
-            long discountInt = Integer.parseInt(discountText);
-            long discount = firstCost * discountInt / 100;
+                    long firstCost = Long.parseLong(orderC);
 
-            updateAddCost(String.valueOf(discount));
 
-            newCost = String.valueOf(firstCost + discount);
-            if (texViewCost != null) {
-                texViewCost.setText(newCost);
+                    long discountInt = Integer.parseInt(discountText);
+                    long discount = firstCost * discountInt / 100;
+
+                    updateAddCost(String.valueOf(discount));
+
+                    String newCost = String.valueOf(firstCost + discount);
+                    if (texViewCost != null) {
+                        texViewCost.setText(newCost);
+                    }
+
+                } else  {
+                    Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
+                    ContentValues cv = new ContentValues();
+                    cv.put("tarif", " ");
+
+                    // обновляем по id
+                    SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                            new String[] { "1" });
+                    database.close();
+                    try {
+                        changeCost();
+                    } catch (MalformedURLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+
             }
 
-        }
+            @Override
+            public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                t.printStackTrace();
+            }
+        });
+
     }
 
     private void updateRoutMarker(List<String> settings) {
@@ -465,83 +552,13 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         cv.put("addCost", addCost);
 
         // обновляем по id
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
         database.close();
     }
-     
-    private static String getTaxiUrlSearchGeo(double originLatitude, double originLongitude,
-                                              String to, String to_number,
-                                              String urlAPI, Context context) {
-
-        // Origin of route
-        String str_origin = originLatitude + "/" + originLongitude;
-
-        // Destination of route
-        String str_dest = to + "/" + to_number;
-
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-
-        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
-        String tarif =  stringListInfo.get(2);
-        String payment_type =  stringListInfo.get(4);
-
-        // Building the parameters to the web service
-
-        String parameters = null;
-        String phoneNumber = "no phone";
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-        String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
-
-        if(urlAPI.equals("costSearchGeo")) {
-            Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-
-            if (c.getCount() == 1) {
-                phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
-                c.close();
-            }
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + displayName + "*" + userEmail  + "*" + payment_type;
-        }
-
-        // Building the url to the web service
-        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
-        List<String> servicesChecked = new ArrayList<>();
-        String result;
-        boolean servicesVer = false;
-        for (int i = 1; i < services.size()-1 ; i++) {
-            if(services.get(i).equals("1")) {
-                servicesVer = true;
-                break;
-            }
-        }
-        if(servicesVer) {
-            for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
-                if(services.get(i+1).equals("1")) {
-                    servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
-                }
-            }
-            for (int i = 0; i < servicesChecked.size(); i++) {
-                if(servicesChecked.get(i).equals("CHECK_OUT")) {
-                    servicesChecked.set(i, "CHECK");
-                }
-            }
-            result = String.join("*", servicesChecked);
-            Log.d("TAG", "getTaxiUrlSearchGeo result:" + result + "/");
-        } else {
-            result = "no_extra_charge_codes";
-        }
-
-        String url = "https://m.easy-order-taxi.site/" + OpenStreetMapActivity.api + "/android/" + urlAPI + "/" + parameters + "/" + result;
-        Log.d("TAG", "getTaxiUrlSearch services: " + url);
-
-        return url;
 
 
-    }
-
-     
     @SuppressLint("Range")
     public String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
         Log.d("TAG", "getTaxiUrlSearchMarkers: " + urlAPI);
@@ -654,7 +671,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         String city = listCity.get(1);
         String api = listCity.get(2);
 
-        String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
+        String url = "/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
 
         database.close();
@@ -662,14 +679,8 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         return url;
     }
     private void showTimePickerDialog() {
-        TimeZone timeZone = TimeZone.getDefault();
-
-        // Create a Calendar instance with the device's time zone
-        Calendar calendar = Calendar.getInstance(timeZone);
-
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
         int minute = calendar.get(Calendar.MINUTE);
-
         TimePickerDialog timePickerDialog = new TimePickerDialog(getContext(),
                 new TimePickerDialog.OnTimeSetListener() {
                     @Override
@@ -679,7 +690,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
                         String formattedTime = sdf.format(calendar.getTime());
                         tvSelectedTime.setText(formattedTime);
-                        updateSelectedTime();
+
 
                             // Установленное время больше или равно текущему времени
                             tvSelectedTime.setText(formattedTime);
@@ -689,7 +700,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                             cv.put("time", formattedTime);
 
                             // Обновляем по id
-                            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                             database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[] { "1" });
                             database.close();
 
@@ -702,13 +713,14 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
     private void updateSelectedTime() {
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
         String formattedTime = sdf.format(calendar.getTime());
+        Log.d(TAG, "updateSelectedTime:formattedTime " + formattedTime);
         tvSelectedTime.setText(formattedTime);
     }
     @SuppressLint("Range")
     public static List<String> logCursor(String table, Context context) {
         List<String> list = new ArrayList<>();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor c = database.query(table, null, null, null, null, null, null);
+        @SuppressLint("Recycle") Cursor c = database.query(table, null, null, null, null, null, null);
         if (c != null) {
             if (c.moveToFirst()) {
                 String str;

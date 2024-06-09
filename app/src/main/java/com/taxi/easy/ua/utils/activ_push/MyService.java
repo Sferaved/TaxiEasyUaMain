@@ -14,8 +14,8 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.taxi.easy.ua.MainActivity;
-import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
+import com.taxi.easy.ua.R;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

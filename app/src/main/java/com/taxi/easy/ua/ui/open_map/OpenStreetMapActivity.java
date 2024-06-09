@@ -46,8 +46,8 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
-import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.visicom.GeoDialogVisicomFragment;
+import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 
 import org.json.JSONException;
 import org.osmdroid.api.IMapController;
@@ -68,6 +68,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 
 public class OpenStreetMapActivity extends AppCompatActivity {
@@ -643,72 +647,88 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
             String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersLocal", map.getContext());
 
-            Map<String, String> sendUrlMapCost = ToJSONParser.sendURL(urlCost);
 
-            String message = map.getContext().getString(R.string.error_message);
-            String orderCost = sendUrlMapCost.get("order_cost");
+            ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
-            if (orderCost != null) {
-                    if (orderCost.equals("0")) {
-                        Toast.makeText(map.getContext(), message, Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlCost);
+            parser.sendURL(urlCost, new Callback<Map<String, String>>() {
+                @Override
+                public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                    Map<String, String> sendUrlMapCost = response.body();
+                    String message = map.getContext().getString(R.string.error_message);
+                    assert sendUrlMapCost != null;
+                    String orderCost = sendUrlMapCost.get("order_cost");
 
-                    } else {
-                        Log.d(TAG, "11111 dialogMarkers: sendUrlMapCost.get(\"routeto\")" + sendUrlMapCost.get("routeto"));
-                        if(Objects.requireNonNull(sendUrlMapCost.get("routeto")).equals("Точка на карте")) {
-                            ToAdressString = context.getString(R.string.end_point_marker);
+                    if (orderCost != null) {
+                        if (orderCost.equals("0")) {
+                            Toast.makeText(map.getContext(), message, Toast.LENGTH_SHORT).show();
+
                         } else {
-                            ToAdressString = sendUrlMapCost.get("routeto") + " " + sendUrlMapCost.get("to_number");
-                        }
+                            Log.d(TAG, "11111 dialogMarkers: sendUrlMapCost.get(\"routeto\")" + sendUrlMapCost.get("routeto"));
+                            if(Objects.requireNonNull(sendUrlMapCost.get("routeto")).equals("Точка на карте")) {
+                                ToAdressString = context.getString(R.string.end_point_marker);
+                            } else {
+                                ToAdressString = sendUrlMapCost.get("routeto") + " " + sendUrlMapCost.get("to_number");
+                            }
 
-                        Log.d(TAG, "dialogMarkers: ToAdressString " + ToAdressString);
-                        Log.d(TAG, "dialogMarkers: endPoint " + endPoint.toString());
-                        finishLat = endPoint.getLatitude();
-                        finishLan = endPoint.getLongitude();
-                        if(marker != null) {
-                            map.getOverlays().remove(marker);
+                            Log.d(TAG, "dialogMarkers: ToAdressString " + ToAdressString);
+                            Log.d(TAG, "dialogMarkers: endPoint " + endPoint.toString());
+                            finishLat = endPoint.getLatitude();
+                            finishLan = endPoint.getLongitude();
+                            if(marker != null) {
+                                map.getOverlays().remove(marker);
+                                map.invalidate();
+                                marker = null;
+                            }
+
+
+                            marker = new Marker(map);
+                            marker.setPosition(new GeoPoint(endPoint.getLatitude(), endPoint.getLongitude()));
+                            marker.setTextLabelBackgroundColor(
+                                    Color.TRANSPARENT
+                            );
+                            marker.setTextLabelForegroundColor(
+                                    Color.RED
+                            );
+                            marker.setTextLabelFontSize(40);
+                            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+                            String unuString = new String(Character.toChars(0x1F449));
+
+                            marker.setTitle("2."+ unuString + ToAdressString);
+
+                            @SuppressLint("UseCompatLoadingForDrawables") Drawable originalDrawable = context.getResources().getDrawable(R.drawable.marker_green);
+                            int width = 48;
+                            int height = 48;
+                            Bitmap bitmap = Bitmap.createScaledBitmap(((BitmapDrawable) originalDrawable).getBitmap(), width, height, false);
+
+                            // Создайте новый Drawable из уменьшенного изображения
+                            Drawable scaledDrawable = new BitmapDrawable(context.getResources(), bitmap);
+                            marker.setIcon(scaledDrawable);
+
+                            marker.showInfoWindow();
+
+                            map.getOverlays().add(marker);
+
+                            GeoPoint initialGeoPoint = new GeoPoint(endPoint.getLatitude()-0.01, endPoint.getLongitude());
+                            map.getController().setCenter(initialGeoPoint);
+                            double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, context).get(4));
+                            mapController.setZoom(newZoomLevel);
+
                             map.invalidate();
-                            marker = null;
+
+                            GeoDialogVisicomFragment bottomSheet = new GeoDialogVisicomFragment();
+                            bottomSheet.show(fragmentManager, bottomSheet.getTag());
                         }
-
-
-                        marker = new Marker(map);
-                        marker.setPosition(new GeoPoint(endPoint.getLatitude(), endPoint.getLongitude()));
-                        marker.setTextLabelBackgroundColor(
-                                Color.TRANSPARENT
-                        );
-                        marker.setTextLabelForegroundColor(
-                                Color.RED
-                        );
-                        marker.setTextLabelFontSize(40);
-                        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-                        String unuString = new String(Character.toChars(0x1F449));
-
-                        marker.setTitle("2."+ unuString + ToAdressString);
-
-                        @SuppressLint("UseCompatLoadingForDrawables") Drawable originalDrawable = context.getResources().getDrawable(R.drawable.marker_green);
-                        int width = 48;
-                        int height = 48;
-                        Bitmap bitmap = Bitmap.createScaledBitmap(((BitmapDrawable) originalDrawable).getBitmap(), width, height, false);
-
-                        // Создайте новый Drawable из уменьшенного изображения
-                        Drawable scaledDrawable = new BitmapDrawable(context.getResources(), bitmap);
-                        marker.setIcon(scaledDrawable);
-
-                        marker.showInfoWindow();
-
-                        map.getOverlays().add(marker);
-
-                        GeoPoint initialGeoPoint = new GeoPoint(endPoint.getLatitude()-0.01, endPoint.getLongitude());
-                        map.getController().setCenter(initialGeoPoint);
-                        double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, context).get(4));
-                        mapController.setZoom(newZoomLevel);
-
-                        map.invalidate();
-
-                        GeoDialogVisicomFragment bottomSheet = new GeoDialogVisicomFragment();
-                        bottomSheet.show(fragmentManager, bottomSheet.getTag());
                     }
+
                 }
+
+                @Override
+                public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                    t.printStackTrace();
+                }
+            });
+
         }
     }
 
@@ -830,10 +850,10 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         String language = locale.getLanguage(); // Получаем язык устройства
         String url;
         if(urlAPI.equals("costSearchMarkersLocal")) {
-            url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
+            url = "/" + api + "/android/" + urlAPI + "/"
                     + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application) + "/" + language;
         } else {
-            url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
+            url = "/" + api + "/android/" + urlAPI + "/"
                     + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application);
         }
         database.close();
@@ -890,7 +910,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Map<String, String> sendUrlMap) {
-            String message = sendUrlMap.get("message");
+            String message = sendUrlMap.get("Message");
             ContentValues cv = new ContentValues();
 
             if (message != null) {

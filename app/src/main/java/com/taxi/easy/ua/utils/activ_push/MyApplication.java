@@ -3,8 +3,15 @@ package com.taxi.easy.ua.utils.activ_push;
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.widget.Toast;
+
+import com.github.anrwatchdog.ANRError;
+import com.github.anrwatchdog.ANRWatchDog;
+import com.taxi.easy.ua.R;
 
 public class MyApplication extends Application {
 
@@ -13,7 +20,21 @@ public class MyApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        new ANRWatchDog().setANRListener(new ANRWatchDog.ANRListener() {
+            @Override
+            public void onAppNotResponding(ANRError error) {
+                // Используем Handler, чтобы показать Toast на главном потоке
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), R.string.anr_message, Toast.LENGTH_LONG).show();
+                    }
+                });
 
+                // Логирование ошибки
+                error.printStackTrace();
+            }
+        }).start();
         // Регистрация слушателя жизненного цикла активности
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
             @Override

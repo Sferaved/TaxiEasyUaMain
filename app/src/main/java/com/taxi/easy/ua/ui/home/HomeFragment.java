@@ -67,12 +67,12 @@ import com.taxi.easy.ua.ui.finish.FinishActivity;
 import com.taxi.easy.ua.ui.home.room.AppDatabase;
 import com.taxi.easy.ua.ui.home.room.RouteCost;
 import com.taxi.easy.ua.ui.home.room.RouteCostDao;
-import com.taxi.easy.ua.ui.maps.CostJSONParser;
-import com.taxi.easy.ua.ui.maps.ToJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
 import com.taxi.easy.ua.utils.VerifyUserTask;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
+import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 
 import org.json.JSONException;
 
@@ -84,6 +84,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class HomeFragment extends Fragment {
 
@@ -290,7 +294,7 @@ public class HomeFragment extends Fragment {
             @SuppressLint("UseRequireInsteadOfGet")
             @Override
             public void onClick(View v) {
-                progressBar.setVisibility(View.VISIBLE);
+                btnVisible(View.VISIBLE);
                 if(connected()) {
                     List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
                     List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
@@ -500,89 +504,118 @@ public class HomeFragment extends Fragment {
         if (!verifyPhone(requireActivity())) {
             bottomSheetDialogFragment = new MyPhoneDialogFragment(getActivity(),"home", text_view_cost.getText().toString(), true);
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-            progressBar.setVisibility(View.INVISIBLE);
+            btnVisible(View.INVISIBLE);
         }
         if (verifyPhone(requireContext())) {
+            Toast.makeText(requireActivity(), R.string.check_order_mes, Toast.LENGTH_SHORT).show();
+            ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
-            try {
+//            // Пример строки URL с параметрами
+            Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
+            parser.sendURL(urlOrder, new Callback<Map<String, String>>() {
+                @Override
+                public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                    Map<String, String> sendUrlMap = response.body();
 
-                Map<String, String> sendUrlMap = ToJSONParser.sendURL(urlOrder);
+                    assert sendUrlMap != null;
+                    String orderWeb = sendUrlMap.get("order_cost");
+                    String message = sendUrlMap.get("message");
 
-                String orderWeb = sendUrlMap.get("order_cost");
-                String message = sendUrlMap.get("message");
+                    assert orderWeb != null;
+                    if (!orderWeb.equals("0")) {
 
-                if (!orderWeb.equals("0")) {
+                        String from_name = sendUrlMap.get("routefrom");
+                        String to_name = sendUrlMap.get("routeto");
 
-                    String from_name = sendUrlMap.get("routefrom");
-                    String to_name = sendUrlMap.get("routeto");
-
-                    if (from_name.equals(to_name)) {
-                        messageResult = getString(R.string.thanks_message) +
-                                from_name + " " + from_number.getText() + getString(R.string.on_city) +
-                                getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
-                    } else {
-                        messageResult = getString(R.string.thanks_message) +
-                                from_name + " " + from_number.getText() + " " + getString(R.string.to_message) +
-                                to_name + " " + to_number.getText() + "." +
-                                getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
-                    }
-                    Log.d(TAG, "order: sendUrlMap.get(\"from_lat\")" + sendUrlMap.get("from_lat"));
-                    Log.d(TAG, "order: sendUrlMap.get(\"lat\")" + sendUrlMap.get("lat"));
-                    if (!sendUrlMap.get("from_lat").equals("0") && !sendUrlMap.get("lat").equals("0")) {
+                        assert from_name != null;
                         if (from_name.equals(to_name)) {
-                            insertRecordsOrders(
-                                    from_name, from_name,
-                                    from_number.getText().toString(), from_number.getText().toString(),
-                                    sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                    sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                    requireContext()
-                            );
+                            messageResult = getString(R.string.thanks_message) +
+                                    from_name + " " + from_number.getText() + getString(R.string.on_city) +
+                                    getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
                         } else {
-                            insertRecordsOrders(
-                                    from_name, to_name,
-                                    from_number.getText().toString(), to_number.getText().toString(),
-                                    sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                    sendUrlMap.get("lat"), sendUrlMap.get("lng"),
-                                    requireContext()
-                            );
+                            messageResult = getString(R.string.thanks_message) +
+                                    from_name + " " + from_number.getText() + " " + getString(R.string.to_message) +
+                                    to_name + " " + to_number.getText() + "." +
+                                    getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
                         }
-                    }
-                    insertRouteCostToDatabase();
-                    Intent intent = new Intent(requireActivity(), FinishActivity.class);
-                    intent.putExtra("messageResult_key", messageResult);
-                    intent.putExtra("messageCost_key", orderWeb);
-                    intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
-                    intent.putExtra("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
-                    startActivity(intent);
-                    progressBar.setVisibility(View.INVISIBLE);
-
-                } else {
-                    if (message.contains("Дублирование")) {
-                        message = getResources().getString(R.string.double_order_error);
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                    } else {
+                        Log.d(TAG, "order: sendUrlMap.get(\"from_lat\")" + sendUrlMap.get("from_lat"));
+                        Log.d(TAG, "order: sendUrlMap.get(\"lat\")" + sendUrlMap.get("lat"));
+                        if (!Objects.equals(sendUrlMap.get("from_lat"), "0") && !Objects.equals(sendUrlMap.get("lat"), "0")) {
+                            if (from_name.equals(to_name)) {
+                                insertRecordsOrders(
+                                        from_name, from_name,
+                                        from_number.getText().toString(), from_number.getText().toString(),
+                                        sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                        sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                        requireContext()
+                                );
+                            } else {
+                                insertRecordsOrders(
+                                        from_name, to_name,
+                                        from_number.getText().toString(), to_number.getText().toString(),
+                                        sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                        sendUrlMap.get("lat"), sendUrlMap.get("lng"),
+                                        requireContext()
+                                );
+                            }
+                        }
+//                    insertRouteCostToDatabase();
+                        String pay_method_message = getString(R.string.pay_method_message_main);
                         switch (pay_method) {
                             case "bonus_payment":
+                                pay_method_message += " " + getString(R.string.pay_method_message_bonus);
+                                break;
                             case "card_payment":
                             case "fondy_payment":
                             case "mono_payment":
-                                changePayMethodToNal();
+                            case "wfp_payment":
+                                pay_method_message += " " + getString(R.string.pay_method_message_card);
                                 break;
                             default:
-                                message = getResources().getString(R.string.error_message);
-                                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                                pay_method_message += " " + getString(R.string.pay_method_message_nal);
                         }
+                        messageResult += ". " + pay_method_message;
+                        Intent intent = new Intent(requireActivity(), FinishActivity.class);
+                        intent.putExtra("messageResult_key", messageResult);
+                        intent.putExtra("messageCost_key", orderWeb);
+                        intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
+                        intent.putExtra("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
+                        startActivity(intent);
+                        progressBar.setVisibility(View.INVISIBLE);
+
+                    } else {
+                        btnVisible(View.INVISIBLE);
+                        assert message != null;
+                        if (message.equals("ErrorMessage")) {
+                            message = getString(R.string.server_error_connected);
+                        } else if (message.contains("Дублирование")) {
+                            message = getResources().getString(R.string.double_order_error);
+                        } else {
+                            switch (pay_method) {
+                                case "bonus_payment":
+                                case "card_payment":
+                                case "fondy_payment":
+                                case "mono_payment":
+                                    changePayMethodToNal();
+                                    break;
+                                default:
+                                    message = getResources().getString(R.string.error_message);
+
+                            }
+                        }
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                     }
                 }
 
-
-            } catch (MalformedURLException e) {
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-            }
+                @Override
+                public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                    btnVisible(View.VISIBLE);
+                    t.printStackTrace();
+                }
+            });
         }  else {
+            btnVisible(View.VISIBLE);
             String message = getString(R.string.phone_input_error);
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
@@ -773,7 +806,21 @@ public class HomeFragment extends Fragment {
             }
         }
     }
+    private void btnVisible (int visible) {
+        text_view_cost.setVisibility(visible);
+        btn_minus.setVisibility(visible);
+        btn_plus.setVisibility(visible);
+        buttonAddServices.setVisibility(visible);
+        buttonBonus.setVisibility(visible);
+        btn_clear.setVisibility(visible);
+        btn_order.setVisibility(visible);
 
+        if (visible == View.INVISIBLE) {
+            progressBar.setVisibility(View.VISIBLE);
+        } else {
+            progressBar.setVisibility(View.INVISIBLE);
+        }
+    }
 
     // Метод для сохранения количества запросов разрешений в SharedPreferences
     private void savePermissionRequestCount(int count) {
@@ -1123,9 +1170,21 @@ public class HomeFragment extends Fragment {
             updateRoutHome(settings);
             urlCost = getTaxiUrlSearch("costSearch", requireActivity());
 
-            Map<String, String> sendUrlMapCost = CostJSONParser.sendURL(urlCost);
+            CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
+            parser.sendURL(urlCost, new Callback<Map<String, String>>() {
+                @Override
+                public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                    Map<String, String> sendUrlMapCost = response.body();
+                    assert sendUrlMapCost != null;
+                    handleCostResponse(sendUrlMapCost);
+                }
 
-            handleCostResponse(sendUrlMapCost);
+                @Override
+                public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                    t.printStackTrace();
+                }
+            });
+
         } catch (MalformedURLException | UnsupportedEncodingException e) {
             resetRoutHome();
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
@@ -1134,7 +1193,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void handleCostResponse(Map<String, String> response) {
-        String message = response.get("message");
+        String message = response.get("Message");
         String orderCostStr = response.get("order_cost");
 
         List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireContext());
@@ -1173,7 +1232,25 @@ public class HomeFragment extends Fragment {
 
         } else {
             resetRoutHome();
-            message = getString(R.string.error_message);
+
+            assert message != null;
+            if (message.equals("ErrorMessage")) {
+                message = getString(R.string.server_error_connected);
+            } else if (message.contains("Дублирование")) {
+                message = getResources().getString(R.string.double_order_error);
+            } else {
+                switch (pay_method) {
+                    case "bonus_payment":
+                    case "card_payment":
+                    case "fondy_payment":
+                    case "mono_payment":
+                        changePayMethodToNal();
+                        break;
+                    default:
+                        message = getResources().getString(R.string.error_message);
+
+                }
+            }
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
 
@@ -1246,7 +1323,7 @@ public class HomeFragment extends Fragment {
     }
 
 
-    @SuppressLint("SetTextI18n")
+    @SuppressLint({"SetTextI18n", "StaticFieldLeak"})
     private void costRoutHome(final List<String> stringListRoutHome) {
         progressBar.setVisibility(View.VISIBLE);
 
@@ -1355,61 +1432,76 @@ public class HomeFragment extends Fragment {
         try {
 
             urlCost = getTaxiUrlSearch("costSearch", requireActivity());
-            Map<String, String> sendUrlMapCost = CostJSONParser.sendURL(urlCost);
-            String orderCostStr = (String) sendUrlMapCost.get("order_cost");
 
-            List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireContext());
-            long addCost = Long.parseLong(stringListInfo.get(5));
+            CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
+            parser.sendURL(urlCost, new Callback<Map<String, String>>() {
+                @Override
+                public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                    Map<String, String> sendUrlMapCost = response.body();
+                    assert sendUrlMapCost != null;
+                    String orderCostStr = sendUrlMapCost.get("order_cost");
 
-            assert orderCostStr != null;
-            long orderCostLong = Long.parseLong(orderCostStr);
-            String orderCost = String.valueOf(orderCostLong + addCost);
-            message = (String) sendUrlMapCost.get("message");
+                    List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireContext());
+                    long addCost = Long.parseLong(stringListInfo.get(5));
 
-            if (orderCost.equals("0")) {
-                if (message.contains("Дублирование")) {
-                    resetRoutHome();
-                    message = getResources().getString(R.string.double_order_error);
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                } else {
-                    switch (pay_method) {
-                        case "bonus_payment":
-                        case "card_payment":
-                        case "fondy_payment":
-                        case "mono_payment":
-                            changePayMethodToNal();
-                            break;
-                        default:
+                    assert orderCostStr != null;
+                    long orderCostLong = Long.parseLong(orderCostStr);
+                    String orderCost = String.valueOf(orderCostLong + addCost);
+                    String message = sendUrlMapCost.get("Message");
+
+                    if (orderCost.equals("0")) {
+                        assert message != null;
+                        if (message.contains("Дублирование")) {
                             resetRoutHome();
-                            message = getResources().getString(R.string.error_message);
+                            message = getResources().getString(R.string.double_order_error);
                             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
                             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        } else {
+                            switch (pay_method) {
+                                case "bonus_payment":
+                                case "card_payment":
+                                case "fondy_payment":
+                                case "mono_payment":
+                                    changePayMethodToNal();
+                                    break;
+                                default:
+                                    resetRoutHome();
+                                    message = getResources().getString(R.string.error_message);
+                                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                            }
+
+                        }
+                    } else  {
+                        text_view_cost.setVisibility(View.VISIBLE);
+                        btn_minus.setVisibility(View.VISIBLE);
+                        btn_plus.setVisibility(View.VISIBLE);
+                        buttonAddServices.setVisibility(View.VISIBLE);
+                        buttonBonus.setVisibility(View.VISIBLE);
+                        btn_order.setVisibility(View.VISIBLE);
+                        btn_clear.setVisibility(View.VISIBLE);
+
+                        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
+                        long discountInt = Integer.parseInt(discountText);
+                        Log.d(TAG, "costRoutHome:discountInt " + discountInt);
+
+                        cost = Long.parseLong(orderCost);
+                        discount = cost * discountInt / 100;
+                        cost = cost + discount;
+                        updateAddCost(String.valueOf(discount));
+                        text_view_cost.setText(Long.toString(cost));
+
+                        costFirstForMin = cost;
+                        MIN_COST_VALUE = (long) (cost * 0.6);
                     }
-
                 }
-            } else  {
-                text_view_cost.setVisibility(View.VISIBLE);
-                btn_minus.setVisibility(View.VISIBLE);
-                btn_plus.setVisibility(View.VISIBLE);
-                buttonAddServices.setVisibility(View.VISIBLE);
-                buttonBonus.setVisibility(View.VISIBLE);
-                btn_order.setVisibility(View.VISIBLE);
-                btn_clear.setVisibility(View.VISIBLE);
 
-                String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
-                long discountInt = Integer.parseInt(discountText);
-                Log.d(TAG, "costRoutHome:discountInt " + discountInt);
+                @Override
+                public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                    t.printStackTrace();
+                }
+            });
 
-                cost = Long.parseLong(orderCost);
-                discount = cost * discountInt / 100;
-                cost = cost + discount;
-                updateAddCost(String.valueOf(discount));
-                text_view_cost.setText(Long.toString(cost));
-
-                costFirstForMin = cost;
-                MIN_COST_VALUE = (long) (cost * 0.6);
-            }
         } catch (MalformedURLException | UnsupportedEncodingException e) {
             resetRoutHome();
             message = getString(R.string.error_message);
@@ -1678,7 +1770,7 @@ public class HomeFragment extends Fragment {
         }
 
 
-        String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
+        String url = "/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
 
         Log.d(TAG, "getTaxiUrlSearch: " + url);

@@ -47,7 +47,7 @@ public class VerifyUserTask extends AsyncTask<Void, Void, Map<String, String>> {
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     @Override
     protected void onPostExecute(Map<String, String> sendUrlMap) {
-        String message = sendUrlMap.get("message");
+        String message = sendUrlMap.get("Message");
         ContentValues cv = new ContentValues();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         if (message != null) {

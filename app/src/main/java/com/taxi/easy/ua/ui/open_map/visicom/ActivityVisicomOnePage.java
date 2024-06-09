@@ -1187,7 +1187,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
             }
             String modifiedText = "";
             Log.d(TAG, "performAddressSearch:modifiedText " + modifiedText);
-            if (!inputText.substring(3).contains("\f")) {
+            if (!inputText.endsWith("\f")) {
                 modifiedText = inputText.replaceAll("[\f\t]", " ");
                 url = url
                         + "?"
@@ -1901,37 +1901,43 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
                             settings.add(Double.toString(coordinates[1]));
                             settings.add(Double.toString(coordinates[0]));
-                            Log.d(TAG, "processAddressData:settings ddd " + settings.toString());
-                            if (toEditAddress.getText().toString().equals(getString(R.string.on_city_tv))) {
+                            Log.d(TAG, "processAddressData:settings ddd " + settings);
+
+                            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                            SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                            @SuppressLint("Recycle") Cursor cursor = database.rawQuery(query, null);
+
+                            cursor.moveToFirst();
+
+                            // Получите значения полей из первой записи
+
+                            @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                            @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+                            String finish = cursor.getString(cursor.getColumnIndex("finish"));
+
+                            cursor.close();
+                            database.close();
+                            Log.d(TAG, "processAddressData:settings finish " + finish);
+
+
+                            if(finish.equals(getString(R.string.on_city_tv))) {
                                 settings.add(Double.toString(coordinates[1]));
                                 settings.add(Double.toString(coordinates[0]));
                                 settings.add(addressesList.get(position));
-                                settings.add(getString(R.string.on_city_tv));
+                                settings.add(addressesList.get(position));
                             } else {
-                                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                                SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                                Cursor cursor = database.rawQuery(query, null);
 
-                                cursor.moveToFirst();
-
-                                // Получите значения полей из первой записи
-
-
-                                @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                                @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                                cursor.close();
-                                database.close();
 
                                 settings.add(String.valueOf(toLatitude));
                                 settings.add(String.valueOf(toLongitude));
                                 settings.add(addressesList.get(position));
-                                settings.add(toEditAddress.getText().toString());
+                                settings.add(finish);
                             }
                             Log.d(TAG, "processAddressData:settings " + settings);
                             updateRoutMarker(settings);
                             updateMyPosition(coordinates[1], coordinates[0], startPoint, getApplicationContext());
                             VisicomFragment.geoText.setText(startPoint);
-                            Log.d(TAG, "processAddressData: startPoint " + startPoint);
+                            Log.d(TAG, "processAddressData: startPoint 1" + startPoint);
                             if(startPoint.contains("\t")) {
                                 new Handler().postDelayed(new Runnable() {
                                     @Override
@@ -2217,35 +2223,38 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
                         settings.add(Double.toString(coordinates[1]));
                         settings.add(Double.toString(coordinates[0]));
-                        if (toEditAddress.getText().toString().equals(getString(R.string.on_city_tv))) {
+
+                        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        @SuppressLint("Recycle") Cursor cursor = database.rawQuery(query, null);
+
+                        cursor.moveToFirst();
+
+                        // Получите значения полей из первой записи
+
+                        @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                        @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+                        @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
+
+                        cursor.close();
+                        database.close();
+                        Log.d(TAG, "processAddressData:settings finish " + finish);
+
+                        if(finish.equals(getString(R.string.on_city_tv))) {
                             settings.add(Double.toString(coordinates[1]));
                             settings.add(Double.toString(coordinates[0]));
                             settings.add(addressesList.get(position));
-                            settings.add(getString(R.string.on_city_tv));
+                            settings.add(addressesList.get(position));
                         } else {
-                            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                            SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                            Cursor cursor = database.rawQuery(query, null);
-
-                            cursor.moveToFirst();
-
-                            // Получите значения полей из первой записи
-
-
-                            @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                            @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                            cursor.close();
-                            database.close();
-
                             settings.add(String.valueOf(toLatitude));
                             settings.add(String.valueOf(toLongitude));
                             settings.add(addressesList.get(position));
-                            settings.add(toEditAddress.getText().toString());
+                            settings.add(finish);
                         }
                         updateRoutMarker(settings);
                         updateMyPosition(coordinates[1], coordinates[0], startPoint, getApplicationContext());
                         VisicomFragment.geoText.setText(startPoint);
-                        Log.d(TAG, "processAddressData: startPoint " + startPoint);
+                        Log.d(TAG, "processAddressData: startPoint 2" + startPoint);
                         if(startPoint.contains("\t")) {
                               new Handler().postDelayed(new Runnable() {
                                 @Override
@@ -2615,35 +2624,39 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
                                 settings.add(Double.toString(coordinates[1]));
                                 settings.add(Double.toString(coordinates[0]));
-                                if (toEditAddress.getText().toString().equals(getString(R.string.on_city_tv))) {
+
+                                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                                SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                                @SuppressLint("Recycle") Cursor cursor = database.rawQuery(query, null);
+
+                                cursor.moveToFirst();
+
+                                // Получите значения полей из первой записи
+
+                                @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                                @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+                                @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
+
+                                cursor.close();
+                                database.close();
+                                Log.d(TAG, "processAddressData:settings finish " + finish);
+
+
+                                if(finish.equals(getString(R.string.on_city_tv))) {
                                     settings.add(Double.toString(coordinates[1]));
                                     settings.add(Double.toString(coordinates[0]));
                                     settings.add(addressesList.get(position));
-                                    settings.add(getString(R.string.on_city_tv));
+                                    settings.add(addressesList.get(position));
                                 } else {
-                                    String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                                    SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                                    Cursor cursor = database.rawQuery(query, null);
-
-                                    cursor.moveToFirst();
-
-                                    // Получите значения полей из первой записи
-
-
-                                    @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                                    @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                                    cursor.close();
-                                    database.close();
-
                                     settings.add(String.valueOf(toLatitude));
                                     settings.add(String.valueOf(toLongitude));
                                     settings.add(addressesList.get(position));
-                                    settings.add(toEditAddress.getText().toString());
+                                    settings.add(finish);
                                 }
                                 updateRoutMarker(settings);
                                 updateMyPosition(coordinates[1], coordinates[0], startPoint, getApplicationContext());
                                 VisicomFragment.geoText.setText(startPoint);
-                                Log.d(TAG, "processAddressData: startPoint " + startPoint);
+                                Log.d(TAG, "processAddressData: startPoint 3" + startPoint);
                                 if(startPoint.contains("\t")) {
                                     new Handler().postDelayed(new Runnable() {
                                         @Override
@@ -2665,21 +2678,24 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
                             VisicomFragment.textViewTo.setText(addressesList.get(position));
                             VisicomFragment.btn_clear_to.setVisibility(View.INVISIBLE);
-                            if (!toEditAddress.getText().toString().equals("")) {
-                                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                                SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                                Cursor cursor = database.rawQuery(query, null);
+                            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                            SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                            @SuppressLint("Recycle") Cursor cursor = database.rawQuery(query, null);
 
-                                cursor.moveToFirst();
+                            cursor.moveToFirst();
 
-                                // Получите значения полей из первой записи
+                            // Получите значения полей из первой записи
 
-                                @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                                @SuppressLint("Range") double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
+                            @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
+                            @SuppressLint("Range") double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
+                            @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
 
-                                cursor.close();
-                                database.close();
+                            cursor.close();
+                            database.close();
+                            Log.d(TAG, "processAddressData:settings finish " + finish);
 
+
+                            if(!finish.equals(getString(R.string.on_city_tv))) {
                                 settings.add(Double.toString(originLatitude));
                                 settings.add(Double.toString(originLongitude));
                                 settings.add(Double.toString(coordinates[1]));

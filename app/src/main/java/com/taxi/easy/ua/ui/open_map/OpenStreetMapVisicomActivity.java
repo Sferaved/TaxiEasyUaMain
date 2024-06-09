@@ -152,6 +152,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.open_street_map_layout);
 
+
         startPointNoText = getString(R.string.startPoint);
         endPointNoText = getString(R.string.end_point_marker);
 
@@ -247,7 +248,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
         }
 
-        map = findViewById(R.id.map);
+
         mapController = map.getController();
         map.setBuiltInZoomControls(true);
         map.setMultiTouchControls(true);
@@ -595,6 +596,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     }
     public void onResume() {
         super.onResume();
+        map = findViewById(R.id.map);
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, getApplicationContext()).get(3);
 
         String application =  getString(R.string.application);
@@ -1029,7 +1031,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Map<String, String> sendUrlMap) {
-            String message = sendUrlMap.get("message");
+            String message = sendUrlMap.get("Message");
             ContentValues cv = new ContentValues();
 
             if (message != null) {

@@ -8,12 +8,23 @@ public class RouteResponse {
 
     @SerializedName("routefromnumber")
     private String routeFromNumber;
+    @SerializedName("startLat")
+    private String startLat;
+
+    @SerializedName("startLan")
+    private String startLan;
 
     @SerializedName("routeto")
     private String routeTo;
 
     @SerializedName("routetonumber")
     private String routeToNumber;
+    @SerializedName("to_lat")
+    private String to_lat;
+
+    @SerializedName("to_lng")
+    private String to_lng;
+
 
     @SerializedName("web_cost")
     private String webCost;
@@ -25,6 +36,21 @@ public class RouteResponse {
 
     @SerializedName("created_at")
     private String createdAt;
+    public String getStartLat() {
+        return startLat;
+    }
+
+    public String getStartLan() {
+        return startLan;
+    }
+
+    public String getTo_lat() {
+        return to_lat;
+    }
+
+    public String getTo_lng() {
+        return to_lng;
+    }
 
     // Геттеры и сеттеры для полей (не обязательно, но может быть полезным)
 

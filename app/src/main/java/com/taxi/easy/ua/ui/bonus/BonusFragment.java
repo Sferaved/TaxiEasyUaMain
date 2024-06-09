@@ -113,16 +113,14 @@ public class BonusFragment extends Fragment {
     String baseUrl = "https://m.easy-order-taxi.site";
 
     private void fetchBonus(String value, Context context) {
-        String url = baseUrl + "/bonus/bonusUserShow/" + value;
+        String url = baseUrl + "/bonus/bonusUserShow/" + value + "/" + context.getString(R.string.application);
+//        String url = baseUrl + "/bonus/bonusUserShow/" + value;
         Call<BonusResponse> call = ApiClient.getApiService().getBonus(url);
         Log.d("TAG", "fetchBonus: " + url);
         call.enqueue(new Callback<BonusResponse>() {
             @Override
             public void onResponse(@NonNull Call<BonusResponse> call, @NonNull Response<BonusResponse> response) {
-                if (requireActivity() == null) {
-                    // Фрагмент больше не привязан к активности, выход из метода.
-                    return;
-                }
+                requireActivity();
                 BonusResponse bonusResponse = Objects.requireNonNull(response).body();
                 if (response.isSuccessful()) {
                     progressBar.setVisibility(View.INVISIBLE);

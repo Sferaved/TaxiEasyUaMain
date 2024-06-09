@@ -40,12 +40,14 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
     private int selectedPosition = 0;
     public static String rectoken;
     public static String table;
+    public static String pay_method;
 
     private String baseUrl = "https://m.easy-order-taxi.site";
-    public CustomCardAdapter(Context context, ArrayList<Map<String, String>> cardMaps, String table) {
+    public CustomCardAdapter(Context context, ArrayList<Map<String, String>> cardMaps, String table, String pay_method) {
         super(context, R.layout.cards_adapter_layout, cardMaps);
         this.cardMaps = cardMaps;
         this.table = table;
+        this.pay_method = pay_method;
     }
 
     @Override
@@ -120,13 +122,22 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
                     // Получите позицию, которую нужно удалить
                     int position = cardMaps.indexOf(cardMap);
 
+                    String rectoken = cardMap.get("rectoken");
                     // Удалите элемент из базы данных
+                    SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    switch (pay_method) {
+                        case "wfp_payment":
+                            database.delete(MainActivity.TABLE_WFP_CARDS, "rectoken = ?", new String[]{rectoken});
+                            deleteCardToken(rectoken);
+                            break;
+                        case "fondy_payment":
+                            database.delete(MainActivity.TABLE_FONDY_CARDS, "rectoken = ?", new String[]{rectoken});
+                            deleteCardToken(rectoken);
+                            break;
 
-                        String rectoken = cardMap.get("rectoken");
-                        SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        database.delete(MainActivity.TABLE_FONDY_CARDS, "rectoken = ?", new String[]{rectoken});
-                        database.close();
-                        deleteCardTokenFondy(rectoken);
+                    }
+                    database.close();
+
 
 
                     // Удалите элемент из cardMaps
@@ -224,7 +235,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
     }
 
 
-    public void deleteCardTokenFondy(String rectoken) {
+    public void deleteCardToken(String rectoken) {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
@@ -238,7 +249,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                 if (response.isSuccessful()) {
                     // Обработка успешного ответа
-                    reIndexCardsFondy();
+                    reIndexCards();
                     Toast.makeText(getContext(), getContext().getString(R.string.un_link_token), Toast.LENGTH_LONG).show();
 
                 } else {
@@ -252,7 +263,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             }
         });
     }
-    private void reIndexCardsFondy() {
+    private void reIndexCards() {
         SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
         // Проверяем, существует ли таблица temp_table, и если она существует, удаляем её
@@ -270,13 +281,13 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
                 " rectoken_check text);");
 
         // Копирование данных из старой таблицы во временную
-        database.execSQL("INSERT INTO temp_table SELECT * FROM " + MainActivity.TABLE_FONDY_CARDS);
+        database.execSQL("INSERT INTO temp_table SELECT * FROM " + table);
 
         // Удаление старой таблицы
-        database.execSQL("DROP TABLE IF EXISTS " + MainActivity.TABLE_FONDY_CARDS);
+        database.execSQL("DROP TABLE IF EXISTS " + table);
 
         // Создание новой таблицы
-        database.execSQL("CREATE TABLE " + MainActivity.TABLE_FONDY_CARDS + "(id integer primary key autoincrement," +
+        database.execSQL("CREATE TABLE " + table + "(id integer primary key autoincrement," +
                 " masked_card text," +
                 " card_type text," +
                 " bank_name text," +
@@ -285,7 +296,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
                 " rectoken_check text);");
 
         // Копирование данных из временной таблицы в новую
-        database.execSQL("INSERT INTO " + MainActivity.TABLE_FONDY_CARDS + " (masked_card, card_type, bank_name, rectoken, merchant, rectoken_check) " +
+        database.execSQL("INSERT INTO " + table + " (masked_card, card_type, bank_name, rectoken, merchant, rectoken_check) " +
                 "SELECT masked_card, card_type, bank_name, rectoken, merchant, rectoken_check FROM temp_table");
 
         // Удаление временной таблицы
