@@ -386,35 +386,34 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
                         String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
 
-
-
-                        Map sendUrlFrom = null;
                         try {
-                            sendUrlFrom = FromJSONParser.sendURL(urlFrom);
+//                            sendUrlFrom = FromJSONParser.sendURL(urlFrom);
+                            FromJSONParser parser = new FromJSONParser(urlFrom);
+                            Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
+                            assert sendUrlFrom != null;
+                            FromAdressString = (String) sendUrlFrom.get("route_address_from");
+                            if(FromAdressString != null) {
+                                if (FromAdressString.equals("Точка на карте")) {
+                                    FromAdressString = getString(R.string.startPoint);
+                                }
+                            }
+                            updateMyPosition(startLat, startLan, FromAdressString, getApplicationContext());
+                            bottomSheetDialogFragment = GeoDialogVisicomFragment.newInstance();
+                            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
 
+                            map.getOverlays().add(markerOverlay);
+//                        setMarker(startLat, startLan, FromAdressString, getApplicationContext());
+                            GeoPoint initialGeoPoint = new GeoPoint(startLat-0.0009, startLan);
+                            map.getController().setCenter(initialGeoPoint);
+
+                            setMarker(startLat, startLan, FromAdressString, getApplicationContext());
+                            map.invalidate();
                         } catch (MalformedURLException | InterruptedException |
                                  JSONException e) {
                             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
                             bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                         }
-                        assert sendUrlFrom != null;
-                        FromAdressString = (String) sendUrlFrom.get("route_address_from");
-                        if(FromAdressString != null) {
-                            if (FromAdressString.equals("Точка на карте")) {
-                                FromAdressString = getString(R.string.startPoint);
-                            }
-                        }
-                        updateMyPosition(startLat, startLan, FromAdressString, getApplicationContext());
-                        bottomSheetDialogFragment = GeoDialogVisicomFragment.newInstance();
-                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
 
-                        map.getOverlays().add(markerOverlay);
-//                        setMarker(startLat, startLan, FromAdressString, getApplicationContext());
-                        GeoPoint initialGeoPoint = new GeoPoint(startLat-0.0009, startLan);
-                        map.getController().setCenter(initialGeoPoint);
-
-                        setMarker(startLat, startLan, FromAdressString, getApplicationContext());
-                        map.invalidate();
                     }
                 };
 
@@ -457,34 +456,33 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
                     String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
 
-
-                    Map sendUrlFrom = null;
                     try {
-                        sendUrlFrom = FromJSONParser.sendURL(urlFrom);
+                        FromJSONParser parser = new FromJSONParser(urlFrom);
+                        Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
+                        assert sendUrlFrom != null;
+                        FromAdressString = sendUrlFrom.get("route_address_from");
+                        if(FromAdressString != null) {
+                            if (FromAdressString.equals("Точка на карте")) {
+                                FromAdressString = getString(R.string.startPoint);
+                            }
+                        }
+                        updateMyPosition(startLat, startLan, FromAdressString, getApplicationContext());
+                        bottomSheetDialogFragment = GeoDialogVisicomFragment.newInstance();
+                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
 
+                        map.getOverlays().add(markerOverlay);
+                        setMarker(startLat, startLan, FromAdressString, getApplicationContext());
+                        GeoPoint initialGeoPoint = new GeoPoint(startLat-0.0009, startLan);
+                        map.getController().setCenter(initialGeoPoint);
+
+                        setMarker(startLat, startLan, FromAdressString, getApplicationContext());
+                        map.invalidate();
                     } catch (MalformedURLException | InterruptedException |
                              JSONException e) {
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
                         bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                     }
-                    assert sendUrlFrom != null;
-                    FromAdressString = (String) sendUrlFrom.get("route_address_from");
-                    if(FromAdressString != null) {
-                        if (FromAdressString.equals("Точка на карте")) {
-                            FromAdressString = getString(R.string.startPoint);
-                        }
-                    }
-                    updateMyPosition(startLat, startLan, FromAdressString, getApplicationContext());
-                    bottomSheetDialogFragment = GeoDialogVisicomFragment.newInstance();
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
 
-                    map.getOverlays().add(markerOverlay);
-                    setMarker(startLat, startLan, FromAdressString, getApplicationContext());
-                    GeoPoint initialGeoPoint = new GeoPoint(startLat-0.0009, startLan);
-                    map.getController().setCenter(initialGeoPoint);
-
-                    setMarker(startLat, startLan, FromAdressString, getApplicationContext());
-                    map.invalidate();
                 }
             };
 
@@ -563,25 +561,25 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
                 String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
 
-                Map sendUrlFrom = null;
                 try {
-                    sendUrlFrom = FromJSONParser.sendURL(urlFrom);
+                    FromJSONParser parser = new FromJSONParser(urlFrom);
+                    Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
+                    assert sendUrlFrom != null;
+                    FromAdressString = (String) sendUrlFrom.get("route_address_from");
 
+                    updateMyPosition(startLat, startLan, FromAdressString, context);
+
+                    if (!bottomSheetDialogFragment.isAdded()) {
+                        // Если нет, используем getSupportFragmentManager()
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    } else {
+                        // Если присоединен, используем getChildFragmentManager()
+                        bottomSheetDialogFragment.show(bottomSheetDialogFragment.getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    }
                 } catch (MalformedURLException | InterruptedException |
                          JSONException ignored) {
                 }
-                assert sendUrlFrom != null;
-                FromAdressString = (String) sendUrlFrom.get("route_address_from");
 
-                updateMyPosition(startLat, startLan, FromAdressString, context);
-
-                if (!bottomSheetDialogFragment.isAdded()) {
-                    // Если нет, используем getSupportFragmentManager()
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                } else {
-                    // Если присоединен, используем getChildFragmentManager()
-                    bottomSheetDialogFragment.show(bottomSheetDialogFragment.getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                }
 
             }
         });

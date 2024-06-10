@@ -349,71 +349,71 @@ public class MyBottomSheetVisicomOnePageFragment extends BottomSheetDialogFragme
                         String language = locale.getLanguage(); // Получаем язык устройства
 
                         String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + latitude + "/" + longitude + "/" + language;
-
-                        Map sendUrlFrom = null;
                         try {
-                            sendUrlFrom = FromJSONParser.sendURL(urlFrom);
+                            FromJSONParser parser = new FromJSONParser(urlFrom);
+                            Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
+                            assert sendUrlFrom != null;
+                            String FromAdressString = (String) sendUrlFrom.get("route_address_from");
+                            if (FromAdressString != null) {
+                                if (FromAdressString.equals("Точка на карте")) {
+                                    FromAdressString = getString(R.string.startPoint);
+                                }
+                            }
+                            updateMyPosition(latitude, longitude, FromAdressString, requireActivity());
+                            fromEditAddress.setText(FromAdressString);
+                            assert FromAdressString != null;
+                            fromEditAddress.setSelection(FromAdressString.length());
+                            btn_clear_from.setVisibility(View.VISIBLE);
+                            switch (fragmentInput) {
+                                case "map":
+                                    GeoDialogVisicomFragment.geoText.setText(FromAdressString);
+                                    break;
+                                case "home":
+                                    VisicomFragment.geoText.setText(FromAdressString);
+                                    break;
+                            }
+
+                            List<String> settings = new ArrayList<>();
+                            String ToAdressString = toEditAddress.getText().toString();
+                            if(ToAdressString.equals(getString(R.string.on_city_tv)) ||
+                                    ToAdressString.equals("") ) {
+                                settings.add(Double.toString(latitude));
+                                settings.add(Double.toString(longitude));
+                                settings.add(Double.toString(latitude));
+                                settings.add(Double.toString(longitude));
+                                settings.add(FromAdressString);
+                                settings.add(getString(R.string.on_city_tv));
+                            } else {
+
+                                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                                SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                                Cursor cursor = database.rawQuery(query, null);
+
+                                cursor.moveToFirst();
+
+                                // Получите значения полей из первой записи
+
+
+                                @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                                @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+                                cursor.close();
+                                database.close();
+
+                                settings.add(Double.toString(latitude));
+                                settings.add(Double.toString(longitude));
+                                settings.add(Double.toString(toLatitude));
+                                settings.add(Double.toString(toLongitude));
+                                settings.add(FromAdressString);
+                                settings.add(ToAdressString);
+                            }
+                            updateRoutMarker(settings);
 
                         } catch (MalformedURLException | InterruptedException |
                                  JSONException e) {
                             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
                             bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
                         }
-                        assert sendUrlFrom != null;
-                        String FromAdressString = (String) sendUrlFrom.get("route_address_from");
-                        if (FromAdressString != null) {
-                            if (FromAdressString.equals("Точка на карте")) {
-                                FromAdressString = getString(R.string.startPoint);
-                            }
-                        }
-                        updateMyPosition(latitude, longitude, FromAdressString, requireActivity());
-                        fromEditAddress.setText(FromAdressString);
-                        assert FromAdressString != null;
-                        fromEditAddress.setSelection(FromAdressString.length());
-                        btn_clear_from.setVisibility(View.VISIBLE);
-                        switch (fragmentInput) {
-                            case "map":
-                                GeoDialogVisicomFragment.geoText.setText(FromAdressString);
-                                break;
-                            case "home":
-                                VisicomFragment.geoText.setText(FromAdressString);
-                                break;
-                        }
 
-                        List<String> settings = new ArrayList<>();
-                        String ToAdressString = toEditAddress.getText().toString();
-                        if(ToAdressString.equals(getString(R.string.on_city_tv)) ||
-                                ToAdressString.equals("") ) {
-                            settings.add(Double.toString(latitude));
-                            settings.add(Double.toString(longitude));
-                            settings.add(Double.toString(latitude));
-                            settings.add(Double.toString(longitude));
-                            settings.add(FromAdressString);
-                            settings.add(getString(R.string.on_city_tv));
-                        } else {
-
-                            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                            Cursor cursor = database.rawQuery(query, null);
-
-                            cursor.moveToFirst();
-
-                            // Получите значения полей из первой записи
-
-
-                            @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                            @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                            cursor.close();
-                            database.close();
-
-                            settings.add(Double.toString(latitude));
-                            settings.add(Double.toString(longitude));
-                            settings.add(Double.toString(toLatitude));
-                            settings.add(Double.toString(toLongitude));
-                            settings.add(FromAdressString);
-                            settings.add(ToAdressString);
-                        }
-                        updateRoutMarker(settings);
 
                     }
 

@@ -3,6 +3,7 @@ package com.taxi.easy.ua.ui.card;
 import static android.content.Context.MODE_PRIVATE;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
@@ -83,22 +84,24 @@ public class CardFragment extends Fragment {
     String pay_method;
     NavController navController;
     private boolean show_cards;
+    Activity context;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+        context = requireActivity();
+        navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
         if (!NetworkUtils.isNetworkAvailable(requireContext())) {
             navController.navigate(R.id.nav_visicom);
         }
         binding = FragmentCardBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         btnCardLink  = binding.btnCardLink;
 
         return root;
     }
     private void pay_system() {
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         @SuppressLint("Recycle")
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
@@ -159,14 +162,14 @@ public class CardFragment extends Fragment {
                         listView.setVisibility(View.VISIBLE);
                         progressBar.setVisibility(View.VISIBLE);
                         networkChangeReceiver = new NetworkChangeReceiver();
-                        email = logCursor(MainActivity.TABLE_USER_INFO, requireActivity()).get(3);
+                        email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
                         btnCardLink.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
                             progressBar.setVisibility(View.VISIBLE);
 
                                 Log.d(TAG, "onClick: " + pay_method);
-                                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                                NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
                                 if (!NetworkUtils.isNetworkAvailable(requireContext())) {
                                     navController.navigate(R.id.nav_visicom);
                                 } else {
@@ -215,7 +218,7 @@ public class CardFragment extends Fragment {
                         }
                         Log.d(TAG, "onResponse:cardMaps " + cardMaps);
                         if (!cardMaps.isEmpty()) {
-                            CustomCardAdapter listAdapter = new CustomCardAdapter(requireActivity(), cardMaps, table, pay_method);
+                            CustomCardAdapter listAdapter = new CustomCardAdapter(context, cardMaps, table, pay_method);
                             listView.setAdapter(listAdapter);
                             progressBar.setVisibility(View.GONE);
                         } else {
@@ -236,7 +239,7 @@ public class CardFragment extends Fragment {
                     }
                 } else {
                     if (isAdded()) { //
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(requireActivity().getString(R.string.verify_internet));
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
                         bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                     }
 
@@ -246,7 +249,7 @@ public class CardFragment extends Fragment {
             @Override
             public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
                 if (isAdded()) { //
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(requireActivity().getString(R.string.verify_internet));
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
             }
@@ -271,7 +274,7 @@ public class CardFragment extends Fragment {
     @SuppressLint("Range")
     private ArrayList<Map<String, String>> getCardMapsFromDatabase(String table) {
         ArrayList<Map<String, String>> cardMaps = new ArrayList<>();
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         // Выполните запрос к таблице TABLE_FONDY_CARDS и получите данные
         Cursor cursor = database.query(table, null, null, null, null, null, null);
         Log.d(TAG, "getCardMapsFromDatabase: card count: " + cursor.getCount());
@@ -441,10 +444,10 @@ public class CardFragment extends Fragment {
                 .build();
 
         InvoiceService service = retrofit.create(InvoiceService.class);
-        List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
         String city = stringList.get(1);
 
-        stringList = logCursor(MainActivity.TABLE_USER_INFO, requireActivity());
+        stringList = logCursor(MainActivity.TABLE_USER_INFO, context);
         String userEmail = stringList.get(3);
         String phone_number = stringList.get(2);
 
@@ -496,7 +499,7 @@ public class CardFragment extends Fragment {
                 .build();
 
         PaymentApi paymentApi = retrofit.create(PaymentApi.class);
-        List<String>  arrayList = logCursor(MainActivity.CITY_INFO, requireActivity());
+        List<String>  arrayList = logCursor(MainActivity.CITY_INFO, context);
         String MERCHANT_ID = arrayList.get(6);
 
         Map<String, String> params = new TreeMap<>();

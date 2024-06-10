@@ -3,6 +3,7 @@ package com.taxi.easy.ua.ui.home;
 import static android.content.Context.MODE_PRIVATE;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.ContentValues;
@@ -33,6 +34,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
+import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 
 import java.net.MalformedURLException;
@@ -68,6 +70,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
     private String TAG = "MyBottomSheetGeoFragment";
     TimeZone timeZone;
     SQLiteDatabase database;
+    Activity context;
     public MyBottomSheetGeoFragment(TextView texViewCost) {
         this.texViewCost = texViewCost;
     }
@@ -81,9 +84,10 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.settings_layout, container, false);
         listView = view.findViewById(R.id.list);
-        database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        
+        context = requireActivity();
+        database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
-        texViewCost.setText("");
         arrayService = new String[]{
                 getString(R.string.BAGGAGE),
                 getString(R.string.ANIMAL),
@@ -117,11 +121,11 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                 "SMOKE",
         };
 
-        CustomListAdapter adapterSet = new CustomListAdapter(view.getContext(), arrayService, arrayService.length);
+        CustomListAdapter adapterSet = new CustomListAdapter(context, arrayService, arrayService.length);
         listView.setAdapter(adapterSet);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
 
-        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, getContext());
+        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
         for (int i = 0; i < arrayServiceCode.length; i++) {
             if(services.get(i+1).equals("1")) {
                 listView.setItemChecked(i,true);
@@ -129,25 +133,25 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         }
 
         String[] tariffArr = new String[]{
-                view.getContext().getResources().getString(R.string.start_t),
-                view.getContext().getResources().getString(R.string.base_onl_t),
-                view.getContext().getResources().getString(R.string.base_t),
-                view.getContext().getResources().getString(R.string.univers_t),
-                view.getContext().getResources().getString(R.string.bisnes_t),
-                view.getContext().getResources().getString(R.string.prem_t),
-                view.getContext().getResources().getString(R.string.econom_t),
-                view.getContext().getResources().getString(R.string.bus_t),
+                context.getResources().getString(R.string.start_t),
+                context.getResources().getString(R.string.base_onl_t),
+                context.getResources().getString(R.string.base_t),
+                context.getResources().getString(R.string.univers_t),
+                context.getResources().getString(R.string.bisnes_t),
+                context.getResources().getString(R.string.prem_t),
+                context.getResources().getString(R.string.econom_t),
+                context.getResources().getString(R.string.bus_t),
         };
-        ArrayAdapter<String> adapterTariff = new ArrayAdapter<String>(view.getContext(), R.layout.my_simple_spinner_item, tariffArr);
+        ArrayAdapter<String> adapterTariff = new ArrayAdapter<String>(context, R.layout.my_simple_spinner_item, tariffArr);
         @SuppressLint({"MissingInflatedId", "LocalSuppress"})
         Spinner spinner = view.findViewById(R.id.list_tariff);
         spinner.setAdapter(adapterTariff);
         spinner.setPrompt("Title");
         spinner.setBackgroundResource(R.drawable.spinner_border);
 
-        SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
-        String tariffOld =  logCursor(MainActivity.TABLE_SETTINGS_INFO,getContext()).get(2);
+        String tariffOld =  logCursor(MainActivity.TABLE_SETTINGS_INFO,context).get(2);
 
         switch (tariffOld) {
             case "Базовий онлайн":
@@ -214,7 +218,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                 cv.put("tarif", tariff_to_server);
 
                 // обновляем по id
-                SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                 database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                         new String[] { "1" });
                 database.close();
@@ -243,8 +247,8 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         discount = view.findViewById(R.id.discinp);
 
 
-        discount.setText(logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3));
-        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
+        discount.setText(logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3));
+        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
         try {
             discountFist = Long.parseLong(discountText);
         } catch (NumberFormatException e) {
@@ -292,7 +296,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         cv.put("date", currentDate.format(formatter));
 
         // обновляем по id
-        database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
                 new String[] { "1" });
 
@@ -302,7 +306,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
 
 
                 // Создание диалогового окна DatePicker
-                DatePickerDialog datePickerDialog = new DatePickerDialog(getContext(),
+                DatePickerDialog datePickerDialog = new DatePickerDialog(context,
                         (DatePicker datePicker, int year, int monthOfYear, int dayOfMonth) -> {
                             // Обработчик выбора даты
                             calendar.set(year, monthOfYear, dayOfMonth);
@@ -332,7 +336,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         cv.put("date", formattedDate);
 
         // Обновляем по id
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[] { "1" });
         database.close();
     }
@@ -340,12 +344,12 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
     @Override
     public void onPause() {
         super.onPause();
-        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, getContext());
+        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
 
         for (int i = 0; i < services.size()-1; i++) {
             ContentValues cv = new ContentValues();
             cv.put(arrayServiceCode[i], "0");
-            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?",
                     new String[] { "1" });
             database.close();
@@ -356,7 +360,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             if(booleanArray.get(booleanArray.keyAt(i))) {
                 ContentValues cv = new ContentValues();
                 cv.put(arrayServiceCode[booleanArray.keyAt(i)], "1");
-                SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                 database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?",
                         new String[] { "1" });
                 database.close();
@@ -371,7 +375,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             cv.put("comment", commentText);
 
             // обновляем по id
-            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
                     new String[]{"1"});
             database.close();
@@ -385,13 +389,13 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             cv.put("discount", discountText);
 
             // обновляем по id
-            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                     new String[]{"1"});
             database.close();
         }
         //Проверка даты времени
-        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, getContext());
+        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
         String time = stringList.get(1);
         String date = stringList.get(3);
         Log.d(TAG, "onPause:time  " + time);
@@ -411,7 +415,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                 cv.put("date", date);
 
                 // обновляем по id
-                SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                 database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
                         new String[] { "1" });
                 database.close();
@@ -428,7 +432,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             Log.d(TAG, "onPause:currentDateTimeInKyiv  " + currentDateTimeInKyiv);
             // Сравнение дат и времени
             if (dateTimeFromString.isBefore(currentDateTimeInKyiv)) {
-                Toast.makeText(getContext(), getContext().getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, context.getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
                 ContentValues cv = new ContentValues();
 
                 LocalDate currentDate = LocalDate.now();
@@ -444,7 +448,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                 cv.put("date", date);
 
                 // обновляем по id
-                SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                 database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
                         new String[] { "1" });
                 database.close();
@@ -457,7 +461,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             cv.put("date", "no_date");
 
             // обновляем по id
-            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
                     new String[] { "1" });
             database.close();
@@ -471,8 +475,8 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
     }
     private void changeCost() throws MalformedURLException {
 
-        String  url = getTaxiUrlSearchMarkers("costSearchMarkers", requireActivity());
-        String message = getString(R.string.change_tarrif);
+        String  url = getTaxiUrlSearchMarkers("costSearchMarkers", context);
+        String message = context.getString(R.string.change_tarrif);
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireContext()).get(3);
         ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
@@ -502,15 +506,16 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                     String newCost = String.valueOf(firstCost + discount);
                     if (texViewCost != null) {
                         texViewCost.setText(newCost);
+                        VisicomFragment.btnVisible(View.VISIBLE);
                     }
 
                 } else  {
-                    Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
                     ContentValues cv = new ContentValues();
                     cv.put("tarif", " ");
 
                     // обновляем по id
-                    SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                     database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                             new String[] { "1" });
                     database.close();
@@ -540,7 +545,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         cv.put("to_lng", Double.parseDouble(settings.get(3)));
 
         // обновляем по id
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
                 new String[] { "1" });
         database.close();
@@ -667,7 +672,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             result = "no_extra_charge_codes";
         }
 
-        List<String> listCity = logCursor(MainActivity.CITY_INFO, requireActivity());
+        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         String city = listCity.get(1);
         String api = listCity.get(2);
 
@@ -681,7 +686,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
     private void showTimePickerDialog() {
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
         int minute = calendar.get(Calendar.MINUTE);
-        TimePickerDialog timePickerDialog = new TimePickerDialog(getContext(),
+        TimePickerDialog timePickerDialog = new TimePickerDialog(context,
                 new TimePickerDialog.OnTimeSetListener() {
                     @Override
                     public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
@@ -700,7 +705,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                             cv.put("time", formattedTime);
 
                             // Обновляем по id
-                            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                             database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[] { "1" });
                             database.close();
 

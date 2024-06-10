@@ -1,9 +1,9 @@
 package com.taxi.easy.ua.ui.bonus;
 
 import static android.content.Context.MODE_PRIVATE;
-import static com.taxi.easy.ua.R.string.verify_internet;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
@@ -49,16 +49,19 @@ public class BonusFragment extends Fragment {
     private ProgressBar progressBar;
     private TextView text0;
     NavController navController;
+    Activity context;
     @SuppressLint("SourceLockedOrientationActivity")
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+        context = requireActivity();
+        
+        navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
+        if (!NetworkUtils.isNetworkAvailable(context)) {
             navController.navigate(R.id.nav_visicom);
         }
         binding = FragmentBonusBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         text0 =  binding.text0;
         networkChangeReceiver = new NetworkChangeReceiver();
         progressBar = binding.progressBar;
@@ -70,7 +73,7 @@ public class BonusFragment extends Fragment {
         super.onResume();
 
         textView = binding.textBonus;
-        String bonus = logCursor(MainActivity.TABLE_USER_INFO, requireActivity()).get(5);
+        String bonus = logCursor(MainActivity.TABLE_USER_INFO, context).get(5);
         if(bonus == null) {
             bonus = getString(R.string.upd_bonus_info);
         } else {
@@ -80,19 +83,19 @@ public class BonusFragment extends Fragment {
         btnBonus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
                 if (!NetworkUtils.isNetworkAvailable(requireContext())) {
                     navController.navigate(R.id.nav_visicom);
                 } else {
                     @SuppressLint("UseRequireInsteadOfGet")
-                    String email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(requireActivity())).get(3);
+                    String email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(context)).get(3);
                     progressBar.setVisibility(View.VISIBLE);
                     textView.setVisibility(View.GONE);
                     binding.text0.setVisibility(View.GONE);
                     binding.text7.setVisibility(View.GONE);
                     btnBonus.setVisibility(View.GONE);
 
-                    fetchBonus(email, requireActivity());
+                    fetchBonus(email, context);
                 }
             }
         });
@@ -102,25 +105,27 @@ public class BonusFragment extends Fragment {
         btnOrder.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту
+                navController.popBackStack();
                 navController.navigate(R.id.nav_visicom);
             }
         });
-
-
-
     }
 
     String baseUrl = "https://m.easy-order-taxi.site";
 
     private void fetchBonus(String value, Context context) {
+        btnOrder.setVisibility(View.INVISIBLE);
         String url = baseUrl + "/bonus/bonusUserShow/" + value + "/" + context.getString(R.string.application);
 //        String url = baseUrl + "/bonus/bonusUserShow/" + value;
         Call<BonusResponse> call = ApiClient.getApiService().getBonus(url);
         Log.d("TAG", "fetchBonus: " + url);
+        String bonusText = context.getString(R.string.my_bonus);
         call.enqueue(new Callback<BonusResponse>() {
+            @SuppressLint("SetTextI18n")
             @Override
             public void onResponse(@NonNull Call<BonusResponse> call, @NonNull Response<BonusResponse> response) {
-                requireActivity();
+
                 BonusResponse bonusResponse = Objects.requireNonNull(response).body();
                 if (response.isSuccessful()) {
                     progressBar.setVisibility(View.INVISIBLE);
@@ -133,7 +138,7 @@ public class BonusFragment extends Fragment {
                             new String[] { "1" });
                     database.close();
 
-                    textView.setText(getString(R.string.my_bonus) + bonus);
+                    textView.setText(bonusText + bonus);
                     textView.setVisibility(View.VISIBLE);
                     text0.setVisibility(View.GONE);
                     text0.setText(R.string.bonus_upd_mes);
@@ -144,13 +149,13 @@ public class BonusFragment extends Fragment {
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
+                btnOrder.setVisibility(View.VISIBLE);
             }
 
             @Override
-            public void onFailure(Call<BonusResponse> call, Throwable t) {
+            public void onFailure(@NonNull Call<BonusResponse> call, @NonNull Throwable t) {
                 // Обработка ошибок сети или других ошибок
-                String errorMessage = t.getMessage();
-                t.printStackTrace();
+                btnOrder.setVisibility(View.VISIBLE);
                 // Дополнительная обработка ошибки
             }
         });
@@ -161,7 +166,7 @@ public class BonusFragment extends Fragment {
     public List<String> logCursor(String table, Context context) {
         List<String> list = new ArrayList<>();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor c = database.query(table, null, null, null, null, null, null);
+        @SuppressLint("Recycle") Cursor c = database.query(table, null, null, null, null, null, null);
         if (c != null) {
             if (c.moveToFirst()) {
                 String str;

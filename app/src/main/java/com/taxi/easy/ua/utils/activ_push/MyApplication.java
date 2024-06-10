@@ -11,6 +11,7 @@ import android.widget.Toast;
 
 import com.github.anrwatchdog.ANRError;
 import com.github.anrwatchdog.ANRWatchDog;
+import com.google.firebase.FirebaseApp;
 import com.taxi.easy.ua.R;
 
 public class MyApplication extends Application {
@@ -20,6 +21,7 @@ public class MyApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        FirebaseApp.initializeApp(this);
         new ANRWatchDog().setANRListener(new ANRWatchDog.ANRListener() {
             @Override
             public void onAppNotResponding(ANRError error) {

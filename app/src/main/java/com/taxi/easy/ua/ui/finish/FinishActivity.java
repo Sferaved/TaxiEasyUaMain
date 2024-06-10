@@ -1642,6 +1642,7 @@ public class FinishActivity extends AppCompatActivity {
                     String orderCarInfo = orderResponse.getOrderCarInfo();
                     String driverPhone = orderResponse.getDriverPhone();
                     String requiredTime = orderResponse.getRequiredTime();
+                    int closeReason = orderResponse.getCloseReason();
                     if (requiredTime != null && !requiredTime.isEmpty()) {
                         requiredTime = formatDate (orderResponse.getRequiredTime());
                     }
@@ -1661,6 +1662,10 @@ public class FinishActivity extends AppCompatActivity {
                         case "Canceled":
                             delayMillisStatus = 30 * 1000;
                             String newStatus = text_status.getText().toString();
+                            if(closeReason == -1) {
+                                delayMillisStatus = 5 * 1000;
+                                message = getString(R.string.ex_st_0);
+                            } else {
                             if(!newStatus.contains(getString(R.string.time_out_text))
                                     || !newStatus.contains(getString(R.string.error_payment_card))
                                     || !newStatus.contains(getString(R.string.double_order_error))
@@ -1669,6 +1674,8 @@ public class FinishActivity extends AppCompatActivity {
                             } else {
                                 message = newStatus;
                             }
+                        }
+
 
                             break;
                         case "CarFound":

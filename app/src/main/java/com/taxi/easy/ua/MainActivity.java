@@ -193,14 +193,15 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        
         try {
             initDB();
         } catch (MalformedURLException | JSONException | InterruptedException ignored) {
 
         }
-        ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+
 
         setSupportActionBar(binding.appBarMain.toolbar);
 

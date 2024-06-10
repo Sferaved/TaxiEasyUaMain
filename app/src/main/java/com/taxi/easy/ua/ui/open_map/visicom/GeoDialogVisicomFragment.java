@@ -230,9 +230,15 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                                 String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  +
                                         OpenStreetMapActivity.startLat + "/" + OpenStreetMapActivity.startLan + "/" + language;
 
-                                Map sendUrlFrom = null;
                                 try {
-                                    sendUrlFrom = FromJSONParser.sendURL(urlFrom);
+
+                                    FromJSONParser parser = new FromJSONParser(urlFrom);
+                                    Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
+                                    OpenStreetMapActivity.FromAdressString = (String) sendUrlFrom.get("route_address_from");
+
+                                    updateMyPosition(OpenStreetMapActivity.startLat, OpenStreetMapActivity.startLan, OpenStreetMapActivity.FromAdressString);
+                                    requireActivity().finish();
+                                    startActivity(new Intent(requireActivity(), OpenStreetMapActivity.class));
 
                                 } catch (MalformedURLException | InterruptedException |
                                          JSONException e) {
@@ -240,11 +246,7 @@ public class GeoDialogVisicomFragment extends BottomSheetDialogFragment implemen
                                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
 
                                 }
-                                OpenStreetMapActivity.FromAdressString = (String) sendUrlFrom.get("route_address_from");
 
-                                updateMyPosition(OpenStreetMapActivity.startLat, OpenStreetMapActivity.startLan, OpenStreetMapActivity.FromAdressString);
-                                    requireActivity().finish();
-                                 startActivity(new Intent(requireActivity(), OpenStreetMapActivity.class));
                             }
                         }
 

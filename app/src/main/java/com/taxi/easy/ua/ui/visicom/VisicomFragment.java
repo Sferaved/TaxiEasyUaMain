@@ -5,6 +5,7 @@ import static android.content.Context.MODE_PRIVATE;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.NotificationManager;
 import android.content.ContentValues;
@@ -105,6 +106,7 @@ public class VisicomFragment extends Fragment{
     FloatingActionButton fab_call;
 
     public static AppCompatButton btn_minus, btn_plus, btnOrder, buttonBonus, gpsbut;
+    @SuppressLint("StaticFieldLeak")
     public static TextView geoText;
     static String api;
 
@@ -141,12 +143,16 @@ public class VisicomFragment extends Fragment{
     private NetworkChangeReceiver networkChangeReceiver;
     private final int LOCATION_PERMISSION_REQUEST_CODE = 123;
     static LinearLayout linearLayout;
-
+    Activity context;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
 
         binding = FragmentVisicomBinding.inflate(inflater, container, false);
+        
         View root = binding.getRoot();
+        
+        context = requireActivity();
+        
         progressBar = binding.progressBar;
         progressBar.setVisibility(View.VISIBLE);
 
@@ -160,11 +166,11 @@ public class VisicomFragment extends Fragment{
         return root;
     }
 
-     private void btnVisible (int visible) {
+     public static void btnVisible(int visible) {
 //         textfrom.setVisibility(visible);
 //         num1.setVisibility(visible);
 
-         btn_clear_from_text.setVisibility(visible);
+         btn_clear_from_text.setVisibility(View.INVISIBLE);
 
 //         geoText.setVisibility(visible);
          if (visible == View.INVISIBLE) {
@@ -199,12 +205,12 @@ public class VisicomFragment extends Fragment{
 
             progressBar.setVisibility(View.INVISIBLE);
 
-            textfrom.setVisibility(View.INVISIBLE);
-            num1.setVisibility(View.INVISIBLE);
+//            textfrom.setVisibility(View.INVISIBLE);
+//            num1.setVisibility(View.INVISIBLE);
             btn_clear_from_text.setText(getString(R.string.try_again));
             btn_clear_from_text.setVisibility(View.VISIBLE);
             btn_clear_from_text.setOnClickListener(v -> {
-                startActivity(new Intent(requireActivity(), MainActivity.class));
+                startActivity(new Intent(context, MainActivity.class));
             });
             geoText.setVisibility(View.INVISIBLE);
             progressBar.setVisibility(View.INVISIBLE);
@@ -212,8 +218,8 @@ public class VisicomFragment extends Fragment{
             btn_clear_from.setVisibility(View.INVISIBLE);
             btn_clear_to.setVisibility(View.INVISIBLE);
 
-            textfrom.setVisibility(View.INVISIBLE);
-            num1.setVisibility(View.INVISIBLE);
+//            textfrom.setVisibility(View.INVISIBLE);
+//            num1.setVisibility(View.INVISIBLE);
             textwhere.setVisibility(View.INVISIBLE);
             num2.setVisibility(View.INVISIBLE);
             textViewTo.setVisibility(View.INVISIBLE);
@@ -230,8 +236,8 @@ public class VisicomFragment extends Fragment{
     public void checkPermission(String permission, int requestCode) {
         // Checking if permission is not granted
         Log.d(TAG, "checkPermission: " + permission);
-        if (ContextCompat.checkSelfPermission(requireActivity(), permission) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(requireActivity(), new String[]{permission}, LOCATION_PERMISSION_REQUEST_CODE);
+        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(context, new String[]{permission}, LOCATION_PERMISSION_REQUEST_CODE);
         }
     }
     @Override
@@ -277,6 +283,9 @@ public class VisicomFragment extends Fragment{
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+
+        RetrofitClient.getInstance().cancelAllRequests();
+
         binding = null;
     }
     @SuppressLint("Range")
@@ -310,7 +319,7 @@ public class VisicomFragment extends Fragment{
         cv.put("addCost", addCost);
 
         // обновляем по id
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
         database.close();
@@ -322,7 +331,7 @@ public class VisicomFragment extends Fragment{
 
         Log.d(TAG, "newRout: ");
         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor cursor = database.rawQuery(query, null);
 
         cursor.moveToFirst();
@@ -346,7 +355,7 @@ public class VisicomFragment extends Fragment{
             geoText.setText(start);
         }
         if(originLatitude == toLatitude) {
-            textViewTo.setText(requireActivity().getString(R.string.on_city_tv));
+            textViewTo.setText(context.getString(R.string.on_city_tv));
         } else {
             textViewTo.setText(finish);
         }
@@ -473,7 +482,7 @@ public class VisicomFragment extends Fragment{
             result = "no_extra_charge_codes";
         }
 
-        List<String> listCity = logCursor(MainActivity.CITY_INFO, requireActivity());
+        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         String city = listCity.get(1);
         String api = listCity.get(2);
 
@@ -549,14 +558,14 @@ public class VisicomFragment extends Fragment{
             result = "no_extra_charge_codes";
         }
 
-        List<String> listCity = logCursor(MainActivity.CITY_INFO, requireActivity());
+        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         String city = listCity.get(1);
         String api = listCity.get(2);
 
         String user = displayName + "*" + userEmail  + "*" + payment_type;
         database.close();
 
-//        TariffInfo tariffInfo = new TariffInfo(requireActivity());
+//        TariffInfo tariffInfo = new TariffInfo(context);
 //        tariffInfo.fetchOrderCostDetails(originLatitude , originLongitude, toLatitude, toLongitude, user, result, city, context.getString(R.string.application));
 
     }
@@ -565,7 +574,7 @@ public class VisicomFragment extends Fragment{
 
         boolean hasConnect = false;
 
-        ConnectivityManager cm = (ConnectivityManager) requireActivity().getSystemService(
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(
                 Context.CONNECTIVITY_SERVICE);
         NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         if (wifiNetwork != null && wifiNetwork.isConnected()) {
@@ -695,7 +704,7 @@ public class VisicomFragment extends Fragment{
             progressBar.setVisibility(View.INVISIBLE);
             return false;
         } else {
-            urlOrder = getTaxiUrlSearchMarkers( "orderSearchMarkersVisicom", requireActivity());
+            urlOrder = getTaxiUrlSearchMarkers( "orderSearchMarkersVisicom", context);
             Log.d(TAG, "order:  urlOrder "  + urlOrder);
             return true;
         }
@@ -707,7 +716,7 @@ public class VisicomFragment extends Fragment{
             if (!verifyPhone(requireContext())) {
                 getPhoneNumber();
             }
-            if (!verifyPhone(requireActivity())) {
+            if (!verifyPhone(context)) {
                 bottomSheetDialogFragment = new MyPhoneDialogFragment(getActivity(),"visicom", text_view_cost.getText().toString(), true);
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 progressBar.setVisibility(View.INVISIBLE);
@@ -741,13 +750,13 @@ public class VisicomFragment extends Fragment{
                                         sendUrlMap.get("routefromnumber"), sendUrlMap.get("routefromnumber"),
                                         sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
                                         sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                        requireActivity()
+                                        context
                                 );
                             }
                         } else {
 
                             if(Objects.equals(sendUrlMap.get("routeto"), "Точка на карте")) {
-                                to_name = requireActivity().getString(R.string.end_point_marker);
+                                to_name = context.getString(R.string.end_point_marker);
                             } else {
                                 to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
                             }
@@ -758,7 +767,7 @@ public class VisicomFragment extends Fragment{
                                         sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
                                         sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
                                         sendUrlMap.get("lat"), sendUrlMap.get("lng"),
-                                        requireActivity()
+                                        context
                                 );
                             }
                         }
@@ -794,7 +803,7 @@ public class VisicomFragment extends Fragment{
                                 to_name_local + ".";
                         Log.d(TAG, "orderFinished: messageResult " + messageResult);
                         Log.d(TAG, "orderFinished: to_name " + to_name);
-                        Intent intent = new Intent(requireActivity(), FinishActivity.class);
+                        Intent intent = new Intent(context, FinishActivity.class);
                         intent.putExtra("messageResult_key", messageResult);
                         intent.putExtra("messageFondy_key", messageFondy);
                         intent.putExtra("messageCost_key", orderWeb);
@@ -875,11 +884,11 @@ public class VisicomFragment extends Fragment{
     }
     private void getPhoneNumber () {
         String mPhoneNumber;
-        TelephonyManager tMgr = (TelephonyManager) requireActivity().getSystemService(Context.TELEPHONY_SERVICE);
+        TelephonyManager tMgr = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
 
-        if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-            Log.d("TAG", "Manifest.permission.READ_PHONE_NUMBERS: " + ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.READ_PHONE_NUMBERS));
-            Log.d("TAG", "Manifest.permission.READ_PHONE_STATE: " + ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.READ_PHONE_STATE));
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            Log.d("TAG", "Manifest.permission.READ_PHONE_NUMBERS: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS));
+            Log.d("TAG", "Manifest.permission.READ_PHONE_STATE: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE));
             return;
         }
         mPhoneNumber = tMgr.getLine1Number();
@@ -889,9 +898,9 @@ public class VisicomFragment extends Fragment{
             boolean val = Pattern.compile(PHONE_PATTERN).matcher(mPhoneNumber).matches();
             Log.d("TAG", "onClick No validate: " + val);
             if (!val) {
-                Toast.makeText(requireActivity(), getString(R.string.format_phone) , Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, getString(R.string.format_phone) , Toast.LENGTH_SHORT).show();
                 Log.d("TAG", "onClick:phoneNumber.getText().toString() " + mPhoneNumber);
-//                requireActivity().finish();
+//                context.finish();
 
             } else {
                 updateRecordsUser(mPhoneNumber, requireContext());
@@ -977,15 +986,15 @@ public class VisicomFragment extends Fragment{
     }
 
     private void changePayMethodMax(String textCost, String paymentType) {
-        List<String> stringListCity = logCursor(MainActivity.CITY_INFO, requireActivity());
+        List<String> stringListCity = logCursor(MainActivity.CITY_INFO, context);
 
         String card_max_pay =  stringListCity.get(4);
         String bonus_max_pay =  stringListCity.get(5);
         // Инфлейтим макет для кастомного диалога
-        LayoutInflater inflater = LayoutInflater.from(requireActivity());
+        LayoutInflater inflater = LayoutInflater.from(context);
         View dialogView = inflater.inflate(R.layout.custom_dialog_layout, null);
 
-        alertDialog = new AlertDialog.Builder(requireActivity()).create();
+        alertDialog = new AlertDialog.Builder(context).create();
         alertDialog.setView(dialogView);
         alertDialog.setCancelable(false);
         // Настраиваем элементы макета
@@ -999,7 +1008,7 @@ public class VisicomFragment extends Fragment{
             @Override
             public void onClick(View v) {
                 progressBar.setVisibility(View.VISIBLE);
-                Toast.makeText(requireActivity(), R.string.check_order_mes, Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, R.string.check_order_mes, Toast.LENGTH_SHORT).show();
                 switch (paymentType) {
                     case "bonus_payment":
                         if (Long.parseLong(bonus_max_pay) <= Long.parseLong(textCost) * 100) {
@@ -1040,10 +1049,10 @@ public class VisicomFragment extends Fragment{
     }
     private void changePayMethodToNal() {
         // Инфлейтим макет для кастомного диалога
-        LayoutInflater inflater = LayoutInflater.from(requireActivity());
+        LayoutInflater inflater = LayoutInflater.from(context);
         View dialogView = inflater.inflate(R.layout.custom_dialog_layout, null);
 
-        alertDialog = new AlertDialog.Builder(requireActivity()).create();
+        alertDialog = new AlertDialog.Builder(context).create();
         alertDialog.setView(dialogView);
         alertDialog.setCancelable(false);
         // Настраиваем элементы макета
@@ -1058,7 +1067,7 @@ public class VisicomFragment extends Fragment{
             @Override
             public void onClick(View v) {
                 progressBar.setVisibility(View.VISIBLE);
-                Toast.makeText(requireActivity(), R.string.check_order_mes, Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, R.string.check_order_mes, Toast.LENGTH_SHORT).show();
                 paymentType("nal_payment");
 
                 try {
@@ -1089,7 +1098,7 @@ public class VisicomFragment extends Fragment{
         ContentValues cv = new ContentValues();
         cv.put("payment_type", paymentCode);
         // обновляем по id
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
         database.close();
@@ -1102,13 +1111,13 @@ public class VisicomFragment extends Fragment{
         super.onResume();
         progressBar.setVisibility(View.VISIBLE);
 
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, requireActivity()).get(3);
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
 
         String application =  getString(R.string.application);
-        new VerifyUserTask(userEmail, application, requireActivity()).execute();
+        new VerifyUserTask(userEmail, application, context).execute();
 
 
-        List<String> listCity = logCursor(MainActivity.CITY_INFO, requireActivity());
+        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         String city = listCity.get(1);
         switch (city){
             case "Kyiv City":
@@ -1148,10 +1157,10 @@ public class VisicomFragment extends Fragment{
         String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
         // Изменяем текст элемента меню
         MainActivity.navVisicomMenuItem.setTitle(newTitle);
-        AppCompatActivity activity = (AppCompatActivity) requireActivity();
+        AppCompatActivity activity = (AppCompatActivity) context;
         activity.getSupportActionBar().setTitle(newTitle);
 
-        List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
         api =  stringList.get(2);
 
 
@@ -1160,7 +1169,7 @@ public class VisicomFragment extends Fragment{
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(Intent.ACTION_DIAL);
-                List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+                List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
                 String phone = stringList.get(3);
                 intent.setData(Uri.parse(phone));
                 startActivity(intent);
@@ -1249,6 +1258,7 @@ public class VisicomFragment extends Fragment{
         btnAdd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                btnVisible(View.INVISIBLE);
                 MyBottomSheetGeoFragment bottomSheetDialogFragment = new MyBottomSheetGeoFragment(text_view_cost);
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             }
@@ -1256,7 +1266,7 @@ public class VisicomFragment extends Fragment{
 
         btn_minus.setOnClickListener(v -> {
 
-            List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
+            List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
 
             String costString = text_view_cost.getText().toString();
             if (!costString.isEmpty()) {
@@ -1277,7 +1287,7 @@ public class VisicomFragment extends Fragment{
         });
 
         btn_plus.setOnClickListener(v -> {
-            List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
+            List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
 
             String costString = text_view_cost.getText().toString();
             if (!costString.isEmpty()) {
@@ -1298,10 +1308,10 @@ public class VisicomFragment extends Fragment{
             @Override
             public void onClick(View v) {
                 btnVisible(View.INVISIBLE);
-                Toast.makeText(requireActivity(), R.string.check_order_mes, Toast.LENGTH_SHORT).show();
-                List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+                Toast.makeText(context, R.string.check_order_mes, Toast.LENGTH_SHORT).show();
+                List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
 
-                pay_method =  logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(4);
+                pay_method =  logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
 
                 switch (stringList.get(1)) {
                     case "Kyiv City":
@@ -1312,7 +1322,7 @@ public class VisicomFragment extends Fragment{
                         break;
                     case "OdessaTest":
                         if(pay_method.equals("bonus_payment")) {
-                            String bonus = logCursor(MainActivity.TABLE_USER_INFO, requireActivity()).get(5);
+                            String bonus = logCursor(MainActivity.TABLE_USER_INFO, context).get(5);
                             if(Long.parseLong(bonus) < cost * 100 ) {
                                 paymentType("nal_payment");
                             }
@@ -1324,7 +1334,7 @@ public class VisicomFragment extends Fragment{
 
 
 
-                List<String> stringListCity = logCursor(MainActivity.CITY_INFO, requireActivity());
+                List<String> stringListCity = logCursor(MainActivity.CITY_INFO, context);
                 String card_max_pay = stringListCity.get(4);
                 Log.d(TAG, "onClick:card_max_pay " + card_max_pay);
 
@@ -1397,7 +1407,7 @@ public class VisicomFragment extends Fragment{
         num2 = binding.num2;
 
         gpsbut = binding.gpsbut;
-        LocationManager locationManager = (LocationManager) requireActivity().getSystemService(Context.LOCATION_SERVICE);
+        LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         gpsbut.setOnClickListener(v -> {
 
             if (locationManager != null) {
@@ -1407,14 +1417,14 @@ public class VisicomFragment extends Fragment{
                         bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                     } else {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                                 // Обработка отсутствия необходимых разрешений
                                 checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
                             }
                         } else {
                             // Для версий Android ниже 10
-                            if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                                    || ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                                    || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                                 // Обработка отсутствия необходимых разрешений
                                 checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
                                 checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
@@ -1424,22 +1434,22 @@ public class VisicomFragment extends Fragment{
 
                     // Обработка отсутствия необходимых разрешений
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                             // Обработка отсутствия необходимых разрешений
                             MainActivity.location_update = true;
                         }
-                    } else MainActivity.location_update = ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                            || ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                    } else MainActivity.location_update = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                            || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
 
                     // GPS включен, выполните ваш код здесь
-                    if (!NetworkUtils.isNetworkAvailable(requireActivity())) {
-                        Toast.makeText(requireActivity(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
+                    if (!NetworkUtils.isNetworkAvailable(context)) {
+                        Toast.makeText(context, getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
                     } else if (isAdded() && isVisible() && MainActivity.location_update)  {
                         List<String> settings = new ArrayList<>();
 
                         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
 
-                        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                         Cursor cursor = database.rawQuery(query, null);
 
                         cursor.moveToFirst();
@@ -1481,8 +1491,8 @@ public class VisicomFragment extends Fragment{
 
         });
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                    || ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_yellow));
                 gpsbut.setTextColor(Color.BLACK);
             } else {
@@ -1497,15 +1507,15 @@ public class VisicomFragment extends Fragment{
         if (MainActivity.countryState == null) {
 
             btn_clear_from_text.setVisibility(View.INVISIBLE);
-            textfrom.setVisibility(View.INVISIBLE);
-            num1.setVisibility(View.INVISIBLE);
+//            textfrom.setVisibility(View.INVISIBLE);
+//            num1.setVisibility(View.INVISIBLE);
 
             btn_clear_from.setVisibility(View.INVISIBLE);
             btn_clear_to.setVisibility(View.INVISIBLE);
             FragmentManager fragmentManager = getChildFragmentManager();
 
             try {
-                new GetPublicIPAddressTask(fragmentManager, city, requireActivity()).execute().get(MainActivity.MAX_TASK_EXECUTION_TIME_SECONDS, TimeUnit.SECONDS);
+                new GetPublicIPAddressTask(fragmentManager, city, context).execute().get(MainActivity.MAX_TASK_EXECUTION_TIME_SECONDS, TimeUnit.SECONDS);
             } catch (ExecutionException | InterruptedException | TimeoutException e) {
                 MainActivity.countryState = "UA";
 
@@ -1513,11 +1523,11 @@ public class VisicomFragment extends Fragment{
             }
         }
 
-        textfrom.setVisibility(View.INVISIBLE);
-        num1.setVisibility(View.INVISIBLE);
+//        textfrom.setVisibility(View.INVISIBLE);
+//        num1.setVisibility(View.INVISIBLE);
 
         if (NetworkUtils.isNetworkAvailable(requireContext())) {
-            if(geoText.getText().toString().equals("")) {
+            if(geoText.getText().toString().isEmpty()) {
                 btn_clear_from_text.setVisibility(View.VISIBLE);
                 String unuString = new String(Character.toChars(0x1F449));
                 unuString += " " + getString(R.string.search_text);
@@ -1525,12 +1535,12 @@ public class VisicomFragment extends Fragment{
                 binding.textfrom.setVisibility(View.INVISIBLE);
                 binding.textwhere.setVisibility(View.INVISIBLE);
                 btn_clear_from.setVisibility(View.INVISIBLE);
-                textfrom.setVisibility(View.INVISIBLE);
-                num1.setVisibility(View.INVISIBLE);
-                progressBar.setVisibility(View.INVISIBLE);
+//                textfrom.setVisibility(View.INVISIBLE);
+//                num1.setVisibility(View.INVISIBLE);
+//                progressBar.setVisibility(View.INVISIBLE);
 
-                textfrom.setVisibility(View.INVISIBLE);
-                num1.setVisibility(View.INVISIBLE);
+//                textfrom.setVisibility(View.INVISIBLE);
+//                num1.setVisibility(View.INVISIBLE);
 
 
 
@@ -1539,8 +1549,8 @@ public class VisicomFragment extends Fragment{
             }
 
             if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                        || ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                        || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
                     if (!newRout()) {
                         Log.d(TAG, "onResume: 1");
@@ -1559,17 +1569,18 @@ public class VisicomFragment extends Fragment{
 
                     } else {
                         Log.d(TAG, "onResume: 2");
-                        progressBar.setVisibility(View.INVISIBLE);
-                        binding.textwhere.setVisibility(View.INVISIBLE);
-                        btn_clear_from.setVisibility(View.INVISIBLE);
-                        textfrom.setVisibility(View.INVISIBLE);
-                        num1.setVisibility(View.INVISIBLE);
-                        progressBar.setVisibility(View.INVISIBLE);
-
-                        btn_clear_from_text.setVisibility(View.VISIBLE);
-
-                        btn_clear_from.setVisibility(View.GONE);
-                        btn_clear_to.setVisibility(View.GONE);
+                        btnVisible(View.VISIBLE);
+//                        progressBar.setVisibility(View.INVISIBLE);
+//                        binding.textwhere.setVisibility(View.INVISIBLE);
+//                        btn_clear_from.setVisibility(View.INVISIBLE);
+//                        textfrom.setVisibility(View.INVISIBLE);
+//                        num1.setVisibility(View.INVISIBLE);
+//                        progressBar.setVisibility(View.INVISIBLE);
+//
+//                        btn_clear_from_text.setVisibility(View.VISIBLE);
+//
+//                        btn_clear_from.setVisibility(View.GONE);
+//                        btn_clear_to.setVisibility(View.GONE);
 
                     }
                 } else {
@@ -1577,7 +1588,7 @@ public class VisicomFragment extends Fragment{
                         Log.d(TAG, "onResume: 3");
                         firstLocation();
                     } else {
-                        if (ContextCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION)
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
                                 != PackageManager.PERMISSION_GRANTED) {
                             gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_yellow));
                             gpsbut.setTextColor(Color.BLACK);
@@ -1600,17 +1611,18 @@ public class VisicomFragment extends Fragment{
 
                         } else {
                             Log.d(TAG, "onResume: 5");
-                            progressBar.setVisibility(View.INVISIBLE);
-                            binding.textwhere.setVisibility(View.INVISIBLE);
-                            btn_clear_from.setVisibility(View.INVISIBLE);
-                            textfrom.setVisibility(View.INVISIBLE);
-                            num1.setVisibility(View.INVISIBLE);
-                            progressBar.setVisibility(View.INVISIBLE);
-
-                            btn_clear_from_text.setVisibility(View.VISIBLE);
-
-                            btn_clear_from.setVisibility(View.GONE);
-                            btn_clear_to.setVisibility(View.GONE);
+                            btnVisible(View.VISIBLE);
+//                            progressBar.setVisibility(View.INVISIBLE);
+//                            binding.textwhere.setVisibility(View.INVISIBLE);
+//                            btn_clear_from.setVisibility(View.INVISIBLE);
+//                            textfrom.setVisibility(View.INVISIBLE);
+//                            num1.setVisibility(View.INVISIBLE);
+//                            progressBar.setVisibility(View.INVISIBLE);
+//
+//                            btn_clear_from_text.setVisibility(View.VISIBLE);
+//
+//                            btn_clear_from.setVisibility(View.GONE);
+//                            btn_clear_to.setVisibility(View.GONE);
 
                         }
                     }
@@ -1634,17 +1646,18 @@ public class VisicomFragment extends Fragment{
 
                 } else {
                     Log.d(TAG, "onResume: 7");
-                    progressBar.setVisibility(View.INVISIBLE);
-                    binding.textwhere.setVisibility(View.INVISIBLE);
-                    btn_clear_from.setVisibility(View.INVISIBLE);
-                    textfrom.setVisibility(View.INVISIBLE);
-                    num1.setVisibility(View.INVISIBLE);
-                    progressBar.setVisibility(View.INVISIBLE);
-
-                    btn_clear_from_text.setVisibility(View.VISIBLE);
-
-                    btn_clear_from.setVisibility(View.GONE);
-                    btn_clear_to.setVisibility(View.GONE);
+                    btnVisible(View.VISIBLE);
+//                    progressBar.setVisibility(View.INVISIBLE);
+//                    binding.textwhere.setVisibility(View.INVISIBLE);
+//                    btn_clear_from.setVisibility(View.INVISIBLE);
+//                    textfrom.setVisibility(View.INVISIBLE);
+//                    num1.setVisibility(View.INVISIBLE);
+//                    progressBar.setVisibility(View.INVISIBLE);
+//
+//                    btn_clear_from_text.setVisibility(View.VISIBLE);
+//
+//                    btn_clear_from.setVisibility(View.GONE);
+//                    btn_clear_to.setVisibility(View.GONE);
 
                 }
             }
@@ -1654,15 +1667,15 @@ public class VisicomFragment extends Fragment{
 
             binding.textwhere.setVisibility(View.INVISIBLE);
             btn_clear_from.setVisibility(View.INVISIBLE);
-            textfrom.setVisibility(View.INVISIBLE);
-            num1.setVisibility(View.INVISIBLE);
+//            textfrom.setVisibility(View.INVISIBLE);
+//            num1.setVisibility(View.INVISIBLE);
             progressBar.setVisibility(View.INVISIBLE);
 
 
             btn_clear_from_text.setText(getString(R.string.try_again));
             btn_clear_from_text.setVisibility(View.VISIBLE);
             btn_clear_from_text.setOnClickListener(v -> {
-                startActivity(new Intent(requireActivity(), MainActivity.class));
+                startActivity(new Intent(context, MainActivity.class));
             });
 
             btn_clear_from.setVisibility(View.GONE);
@@ -1678,7 +1691,7 @@ public class VisicomFragment extends Fragment{
         progressBar.setVisibility(View.VISIBLE);
         Toast.makeText(requireContext(), getString(R.string.search), Toast.LENGTH_SHORT).show();
 
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context);
 
         gpsbut.setText(R.string.cancel_gps);
         gpsbut.setOnClickListener(new View.OnClickListener() {
@@ -1693,14 +1706,14 @@ public class VisicomFragment extends Fragment{
                 gpsbut.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        LocationManager locationManager = (LocationManager) requireActivity().getSystemService(Context.LOCATION_SERVICE);
+                        LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
                         if (locationManager != null) {
                             if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                                 // GPS включен, выполните ваш код здесь
-                                if (!NetworkUtils.isNetworkAvailable(requireActivity())) {
-                                    Toast.makeText(requireActivity(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
-                                } else if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                                        || ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                if (!NetworkUtils.isNetworkAvailable(context)) {
+                                    Toast.makeText(context, getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
+                                } else if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                                        || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                                     checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
                                     checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
                                 } else if (isAdded() && isVisible())  {
@@ -1708,7 +1721,7 @@ public class VisicomFragment extends Fragment{
 
                                     String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
 
-                                    SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                                    SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                                     Cursor cursor = database.rawQuery(query, null);
 
                                     cursor.moveToFirst();
@@ -1767,171 +1780,181 @@ public class VisicomFragment extends Fragment{
                     double longitude = firstLocation.getLongitude();
 
 
-                    List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+                    List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
                     String api =  stringList.get(2);
 
                     Locale locale = Locale.getDefault();
                     String language = locale.getLanguage(); // Получаем язык устройства
 
                     String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/" + latitude + "/" + longitude + "/" + language;
-                    Map sendUrlFrom = null;
+
+//                    try {
+//                        sendUrlFrom = FromJSONParser.sendURL(urlFrom);
+//
+//                    } catch (MalformedURLException | InterruptedException |
+//                             JSONException e) {
+//                            progressBar.setVisibility(View.INVISIBLE);
+//                    }
+
                     try {
-                        sendUrlFrom = FromJSONParser.sendURL(urlFrom);
+                        FromJSONParser parser = new FromJSONParser(urlFrom);
+                        Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
 
-                    } catch (MalformedURLException | InterruptedException |
-                             JSONException e) {
-                            progressBar.setVisibility(View.INVISIBLE);
-                    }
-                    assert sendUrlFrom != null;
-                    String FromAdressString = (String) sendUrlFrom.get("route_address_from");
+                        String FromAdressString = sendUrlFrom.get("route_address_from");
 
-                    if (FromAdressString != null && FromAdressString.contains("Точка на карте")) {
-                        List<String> stringListCity = logCursor(MainActivity.CITY_INFO, requireActivity());
-                        String city = getString(R.string.foreign_countries);
-                        switch (stringListCity.get(1)) {
-                            case "Kyiv City":
-                                city = getString(R.string.Kyiv_city);
-                                break;
-                            case "Dnipropetrovsk Oblast":
-                                break;
-                            case "Odessa":
-                            case "OdessaTest":
-                                city = getString(R.string.Odessa);
-                                break;
-                            case "Zaporizhzhia":
-                                city = getString(R.string.Zaporizhzhia);
-                                break;
-                            case "Cherkasy Oblast":
-                                city = getString(R.string.Cherkasy);
-                                break;
-                            default:
-                                city = getString(R.string.foreign_countries);
-                                break;
+                        if (FromAdressString != null && FromAdressString.contains("Точка на карте")) {
+                            List<String> stringListCity = logCursor(MainActivity.CITY_INFO, context);
+                            String city = getString(R.string.foreign_countries);
+                            switch (stringListCity.get(1)) {
+                                case "Kyiv City":
+                                    city = getString(R.string.Kyiv_city);
+                                    break;
+                                case "Dnipropetrovsk Oblast":
+                                    break;
+                                case "Odessa":
+                                case "OdessaTest":
+                                    city = getString(R.string.Odessa);
+                                    break;
+                                case "Zaporizhzhia":
+                                    city = getString(R.string.Zaporizhzhia);
+                                    break;
+                                case "Cherkasy Oblast":
+                                    city = getString(R.string.Cherkasy);
+                                    break;
+                                default:
+                                    city = getString(R.string.foreign_countries);
+                                    break;
+                            }
+                            FromAdressString = getString(R.string.startPoint) + ", " + getString(R.string.city_loc) + " " + city;
                         }
-                        FromAdressString = getString(R.string.startPoint) + ", " + getString(R.string.city_loc) + " " + city;
-                    }
 
-                    updateMyPosition(latitude, longitude, FromAdressString, requireActivity());
+                        updateMyPosition(latitude, longitude, FromAdressString, context);
 
-                    btn_clear_from.setVisibility(View.INVISIBLE);
-                    geoText.setText(FromAdressString);
-                    progressBar.setVisibility(View.GONE);
+                        btn_clear_from.setVisibility(View.INVISIBLE);
+                        geoText.setText(FromAdressString);
+                        progressBar.setVisibility(View.GONE);
 
 
-                    List<String> settings = new ArrayList<>();
+                        List<String> settings = new ArrayList<>();
 
 
-                    String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                    SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                    Cursor cursor = database.rawQuery(query, null);
+                        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        @SuppressLint("Recycle") Cursor cursor = database.rawQuery(query, null);
 
-                    cursor.moveToFirst();
+                        cursor.moveToFirst();
 
-                    // Получите значения полей из первой записи
-                    @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                    @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                    @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                    @SuppressLint("Range") String ToAdressString = cursor.getString(cursor.getColumnIndex("finish"));
-
-
-                    Log.d(TAG, "onLocationResult:FromAdressString " + FromAdressString);
-                    Log.d(TAG, "onLocationResult:ToAdressString " + ToAdressString);
-                    Log.d(TAG, "onLocationResult:FromAdressString.equals(ToAdressString) " + FromAdressString.equals(ToAdressString));
-
-                    if(originLatitude == toLatitude) {
-                        textViewTo.setText(requireActivity().getString(R.string.on_city_tv));
-                    } else {
-                        textViewTo.setText(ToAdressString);
-                    }
+                        // Получите значения полей из первой записи
+                        @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
+                        @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                        @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+                        @SuppressLint("Range") String ToAdressString = cursor.getString(cursor.getColumnIndex("finish"));
 
 
-                    Log.d(TAG, "onLocationResult:ToAdressString " + ToAdressString);
-                    if(ToAdressString.equals(getString(R.string.on_city_tv)) ||
-                            ToAdressString.equals("") ) {
-                        settings.add(Double.toString(latitude));
-                        settings.add(Double.toString(longitude));
-                        settings.add(Double.toString(latitude));
-                        settings.add(Double.toString(longitude));
-                        settings.add(FromAdressString);
-                        settings.add(FromAdressString);
-                    } else {
+                        Log.d(TAG, "onLocationResult:FromAdressString " + FromAdressString);
+                        Log.d(TAG, "onLocationResult:ToAdressString " + ToAdressString);
+                        Log.d(TAG, "onLocationResult:FromAdressString.equals(ToAdressString) " + FromAdressString.equals(ToAdressString));
+
+                        if(originLatitude == toLatitude) {
+                            textViewTo.setText(context.getString(R.string.on_city_tv));
+                        } else {
+                            textViewTo.setText(ToAdressString);
+                        }
 
 
-                        if(isAdded()) {
-
+                        Log.d(TAG, "onLocationResult:ToAdressString " + ToAdressString);
+                        if(ToAdressString.equals(getString(R.string.on_city_tv)) ||
+                                ToAdressString.equals("") ) {
                             settings.add(Double.toString(latitude));
                             settings.add(Double.toString(longitude));
-                            settings.add(Double.toString(toLatitude));
-                            settings.add(Double.toString(toLongitude));
+                            settings.add(Double.toString(latitude));
+                            settings.add(Double.toString(longitude));
                             settings.add(FromAdressString);
-                            settings.add(ToAdressString);
+                            settings.add(FromAdressString);
+                            updateRoutMarker(settings);
+                        } else {
+
+
+                            if(isAdded()) {
+
+                                settings.add(Double.toString(latitude));
+                                settings.add(Double.toString(longitude));
+                                settings.add(Double.toString(toLatitude));
+                                settings.add(Double.toString(toLongitude));
+                                settings.add(FromAdressString);
+                                settings.add(ToAdressString);
+                                updateRoutMarker(settings);
+                            }
+
                         }
+                        gpsbut.setText(R.string.change);
+                        gpsbut.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+                                if (locationManager != null) {
+                                    if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                                        // GPS включен, выполните ваш код здесь
+                                        if (!NetworkUtils.isNetworkAvailable(context)) {
+                                            Toast.makeText(context, getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
+                                        } else if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                                                || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                                            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                                        } else if (isAdded() && isVisible())  {
+                                            List<String> settings = new ArrayList<>();
 
-                    }
-                    gpsbut.setText(R.string.change);
-                    gpsbut.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            LocationManager locationManager = (LocationManager) requireActivity().getSystemService(Context.LOCATION_SERVICE);
-                            if (locationManager != null) {
-                                if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                                    // GPS включен, выполните ваш код здесь
-                                    if (!NetworkUtils.isNetworkAvailable(requireActivity())) {
-                                        Toast.makeText(requireActivity(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
-                                    } else if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                                            || ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                                        checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                                        checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                                    } else if (isAdded() && isVisible())  {
-                                        List<String> settings = new ArrayList<>();
+                                            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
 
-                                        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                                            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                                            Cursor cursor = database.rawQuery(query, null);
 
-                                        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                                        Cursor cursor = database.rawQuery(query, null);
+                                            cursor.moveToFirst();
 
-                                        cursor.moveToFirst();
+                                            // Получите значения полей из первой записи
 
-                                        // Получите значения полей из первой записи
+                                            @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                                            @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+                                            @SuppressLint("Range") String ToAdressString = cursor.getString(cursor.getColumnIndex("finish"));
+                                            Log.d(TAG, "autoClickButton:ToAdressString " + ToAdressString);
+                                            cursor.close();
+                                            database.close();
 
-                                        @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                                        @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                                        @SuppressLint("Range") String ToAdressString = cursor.getString(cursor.getColumnIndex("finish"));
-                                        Log.d(TAG, "autoClickButton:ToAdressString " + ToAdressString);
-                                        cursor.close();
-                                        database.close();
+                                            settings.add(Double.toString(0));
+                                            settings.add(Double.toString(0));
+                                            settings.add(Double.toString(toLatitude));
+                                            settings.add(Double.toString(toLongitude));
+                                            settings.add(getString(R.string.search));
+                                            settings.add(ToAdressString);
 
-                                        settings.add(Double.toString(0));
-                                        settings.add(Double.toString(0));
-                                        settings.add(Double.toString(toLatitude));
-                                        settings.add(Double.toString(toLongitude));
-                                        settings.add(getString(R.string.search));
-                                        settings.add(ToAdressString);
+                                            updateRoutMarker(settings);
+                                            Toast.makeText(requireContext(), getString(R.string.search), Toast.LENGTH_SHORT).show();
+                                            firstLocation();
+                                        }
 
-                                        updateRoutMarker(settings);
-                                        Toast.makeText(requireContext(), getString(R.string.search), Toast.LENGTH_SHORT).show();
-                                        firstLocation();
+                                    } else {
+                                        // GPS выключен, выполните необходимые действия
+                                        // Например, показать диалоговое окно с предупреждением о включении GPS
+
+                                        MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
+                                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                                     }
-
                                 } else {
-                                    // GPS выключен, выполните необходимые действия
-                                    // Например, показать диалоговое окно с предупреждением о включении GPS
-
                                     MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
                                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                                 }
-                            } else {
-                                MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
-                                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                             }
+                        });
+//
+                        try {
+                            visicomCost();
+                        } catch (MalformedURLException e) {
+                            throw new RuntimeException(e);
                         }
-                    });
-                    updateRoutMarker(settings);
-                    try {
-                        visicomCost();
-                    } catch (MalformedURLException e) {
+                    } catch (MalformedURLException | JSONException | InterruptedException e) {
                         throw new RuntimeException(e);
                     }
+
                 }
             }
 
@@ -1943,8 +1966,8 @@ public class VisicomFragment extends Fragment{
     }
     private void startLocationUpdates() {
         LocationRequest locationRequest = createLocationRequest();
-        if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                || ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
             checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
             return;
@@ -1959,13 +1982,13 @@ public class VisicomFragment extends Fragment{
         return locationRequest;
     }
     private void requestLocationPermission() {
-        if (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(),
+        if (ActivityCompat.shouldShowRequestPermissionRationale(context,
                 Manifest.permission.ACCESS_FINE_LOCATION)) {
             // Показываем объяснение пользователю, почему мы запрашиваем разрешение
             // Можно использовать диалоговое окно или другой пользовательский интерфейс
             checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
         } else {
-            ActivityCompat.requestPermissions(requireActivity(),
+            ActivityCompat.requestPermissions(context,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     REQUEST_LOCATION_PERMISSION);
         }
@@ -1982,7 +2005,7 @@ public class VisicomFragment extends Fragment{
         cv.put("finish", settings.get(5));
         if(isAdded()) {
             // обновляем по id
-            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
                     new String[]{"1"});
             database.close();
@@ -2012,10 +2035,10 @@ public class VisicomFragment extends Fragment{
 
     private void visicomCost() throws MalformedURLException {
 
-//        costSearchMarkersLocalTariffs(requireActivity());
+//        costSearchMarkersLocalTariffs(context);
 
         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor cursor = database.rawQuery(query, null);
 
         cursor.moveToFirst();
@@ -2029,7 +2052,7 @@ public class VisicomFragment extends Fragment{
 
         geoText.setText(start);
         if(originLatitude == toLatitude) {
-            textViewTo.setText(requireActivity().getString(R.string.on_city_tv));
+            textViewTo.setText(context.getString(R.string.on_city_tv));
         } else {
             textViewTo.setText(finish);
         }
@@ -2038,7 +2061,7 @@ public class VisicomFragment extends Fragment{
 
         String urlCost = null;
 
-        urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", requireActivity());
+        urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", context);
 
         Log.d(TAG, "visicomCost: " + urlCost);
 
@@ -2056,7 +2079,7 @@ public class VisicomFragment extends Fragment{
                 assert orderCost != null;
                 if (orderCost.equals("0")) {
                     progressBar.setVisibility(View.INVISIBLE);
-                    String message = getString(R.string.error_message);
+                    String message = context.getString(R.string.error_message);
                     assert orderMessage != null;
                     if (orderMessage.equals("ErrorMessage")) {
                         message = getString(R.string.server_error_connected);
@@ -2065,15 +2088,15 @@ public class VisicomFragment extends Fragment{
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
 
                     // Проверяем, что активность не в состоянии сохранения
-                    if (!requireActivity().isFinishing() && !requireActivity().isDestroyed()) {
+                    if (!context.isFinishing() && !context.isDestroyed()) {
                         // Проверяем, что фрагмент готов к выполнению транзакции
                         if (!getChildFragmentManager().isStateSaved()) {
                             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                         }
                     }
 
-                    textfrom.setVisibility(View.INVISIBLE);
-                    num1.setVisibility(View.INVISIBLE);
+//                    textfrom.setVisibility(View.INVISIBLE);
+//                    num1.setVisibility(View.INVISIBLE);
                     btn_clear_from.setVisibility(View.INVISIBLE);
                     btn_clear_to.setVisibility(View.INVISIBLE);
                 } else {
@@ -2137,17 +2160,17 @@ public class VisicomFragment extends Fragment{
     void checkNotificationPermissionAndRequestIfNeeded() {
         if (isAdded()) {
             // Получаем доступ к настройкам приложения
-            SharedPreferences sharedPreferences = requireActivity().getPreferences(Context.MODE_PRIVATE);
+            SharedPreferences sharedPreferences = context.getPreferences(Context.MODE_PRIVATE);
 
             // Проверяем, было ли уже запрошено разрешение
             boolean isNotificationPermissionRequested = sharedPreferences.getBoolean("notification_permission_requested", false);
             // Если разрешение еще не запрашивалось
             if (!isNotificationPermissionRequested) {
                 // Показываем системный экран для запроса разрешения
-                NotificationManager notificationManager = (NotificationManager) requireActivity().getSystemService(Context.NOTIFICATION_SERVICE);
+                NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
                 if (!notificationManager.areNotificationsEnabled()) {
                     Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-                    intent.putExtra(Settings.EXTRA_APP_PACKAGE, requireActivity().getPackageName());
+                    intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.getPackageName());
                     startActivity(intent);
                 }
 
@@ -2212,11 +2235,7 @@ public class VisicomFragment extends Fragment{
                 if (response.isSuccessful()) {
                     CountryResponse countryResponse = response.body();
                     Log.d(TAG, "onResponse:countryResponse.getCountry(); " + countryResponse.getCountry());
-                    if (countryResponse != null) {
-                        MainActivity.countryState = countryResponse.getCountry();
-                    } else {
-                        MainActivity.countryState = "UA";
-                    }
+                    MainActivity.countryState = countryResponse.getCountry();
                 } else {
                     MainActivity.countryState = "UA";
                 }
@@ -2247,7 +2266,7 @@ public class VisicomFragment extends Fragment{
 
             String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
             if(isAdded()) {
-                SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                 Cursor cursor = database.rawQuery(query, null);
 
                 cursor.moveToFirst();

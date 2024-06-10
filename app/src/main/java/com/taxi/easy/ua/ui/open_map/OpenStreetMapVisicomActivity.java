@@ -751,32 +751,32 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
                     String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
 
-                    Map sendUrlFrom = null;
                     try {
-                        sendUrlFrom = FromJSONParser.sendURL(urlFrom);
+                        FromJSONParser parser = new FromJSONParser(urlFrom);
+                        Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
+                        assert sendUrlFrom != null;
+                        FromAdressString = (String) sendUrlFrom.get("route_address_from");
+                        if (FromAdressString != null) {
+                            if (FromAdressString.equals("Точка на карте")) {
+                                FromAdressString = getString(R.string.startPoint);
+                            }
+                        }
+                        updateMyPosition(startLat, startLan, FromAdressString, getApplicationContext());
 
+
+                        map.getOverlays().add(markerOverlay);
+
+                        startPoint = new GeoPoint(startLat, startLan);
+                        map.getController().setCenter(startPoint);
+
+                        setMarker(startLat, startLan, FromAdressString, getApplicationContext());
+                        map.invalidate();
                     } catch (MalformedURLException | InterruptedException |
                              JSONException e) {
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
                         bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                     }
-                    assert sendUrlFrom != null;
-                    FromAdressString = (String) sendUrlFrom.get("route_address_from");
-                    if (FromAdressString != null) {
-                        if (FromAdressString.equals("Точка на карте")) {
-                            FromAdressString = getString(R.string.startPoint);
-                        }
-                    }
-                    updateMyPosition(startLat, startLan, FromAdressString, getApplicationContext());
 
-
-                    map.getOverlays().add(markerOverlay);
-
-                    startPoint = new GeoPoint(startLat, startLan);
-                    map.getController().setCenter(startPoint);
-
-                    setMarker(startLat, startLan, FromAdressString, getApplicationContext());
-                    map.invalidate();
                 }
             };
 

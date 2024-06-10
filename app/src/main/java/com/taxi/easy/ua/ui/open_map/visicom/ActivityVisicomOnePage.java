@@ -836,36 +836,29 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
                     String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + latitude + "/" + longitude + "/" + language;
 
-                    Map sendUrlFrom = null;
                     try {
-                        sendUrlFrom = FromJSONParser.sendURL(urlFrom);
-                        Log.d(TAG, "onLocationResult sendUrlFrom: " + sendUrlFrom);
-
-                    } catch (MalformedURLException | InterruptedException |
-                             JSONException ignored) {
-
-                    }
-                    assert sendUrlFrom != null;
-                    String FromAdressString = (String) sendUrlFrom.get("route_address_from");
-                    if (FromAdressString != null) {
-                        if (FromAdressString.contains("Точка на карте")) {
-                            FromAdressString = getString(R.string.startPoint);
+                        FromJSONParser parser = new FromJSONParser(urlFrom);
+                        Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
+                        assert sendUrlFrom != null;
+                        String FromAdressString = (String) sendUrlFrom.get("route_address_from");
+                        if (FromAdressString != null) {
+                            if (FromAdressString.contains("Точка на карте")) {
+                                FromAdressString = getString(R.string.startPoint);
+                            }
                         }
-                    }
-                    updateMyPosition(latitude, longitude, FromAdressString, getApplicationContext());
-                    fromEditAddress.setText(FromAdressString);
-                    progressBar.setVisibility(View.INVISIBLE);
+                        updateMyPosition(latitude, longitude, FromAdressString, getApplicationContext());
+                        fromEditAddress.setText(FromAdressString);
+                        progressBar.setVisibility(View.INVISIBLE);
+                        assert FromAdressString != null;
+                        fromEditAddress.setSelection(FromAdressString.length());
 
-                    assert FromAdressString != null;
-                    fromEditAddress.setSelection(FromAdressString.length());
-
-                    btn_clear_from.setVisibility(View.VISIBLE);
+                        btn_clear_from.setVisibility(View.VISIBLE);
                         VisicomFragment.geoText.setText(FromAdressString);
 
                         List<String> settings = new ArrayList<>();
                         String ToAdressString = toEditAddress.getText().toString();
                         if(ToAdressString.equals(getString(R.string.on_city_tv)) ||
-                                ToAdressString.equals("") ) {
+                                ToAdressString.isEmpty()) {
                             settings.add(Double.toString(latitude));
                             settings.add(Double.toString(longitude));
                             settings.add(Double.toString(latitude));
@@ -903,6 +896,17 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                                 btn_ok.performClick();
                             }
                         }, timeout);
+
+
+                    } catch (MalformedURLException | InterruptedException |
+                             JSONException ignored) {
+
+                    }
+
+
+
+
+
 
                     }
             }

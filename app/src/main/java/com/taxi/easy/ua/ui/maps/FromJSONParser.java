@@ -27,7 +27,7 @@ public class FromJSONParser {
         sendURL(urlString);
     }
 
-public static Map<String, String> sendURL(String urlString) throws MalformedURLException, InterruptedException, JSONException {
+public Map<String, String> sendURL(String urlString) throws MalformedURLException, InterruptedException, JSONException {
     URL url = new URL(urlString);
     Log.d("TAG", "sendURL: 55555555555 " + urlString);
     Map<String, String> costMap = new HashMap<>();

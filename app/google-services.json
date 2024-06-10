@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "356539267738-k8j4dnhtctg8ukbja5fbjmp3injtllht.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.taxi.easy.ua",
+            "certificate_hash": "0a8e2446cf4bf72175a36961d565d18a22949d43"
+          }
+        },
+        {
           "client_id": "356539267738-vj15rl7jdprbvrsl5me6obam6350dbs7.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
