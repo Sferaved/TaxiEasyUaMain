@@ -174,6 +174,9 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
     public static Menu navMenu;
     public static MenuItem navVisicomMenuItem;
     public static String countryState;
+    public static String apiKeyMapBox;
+    public static String apiKey;
+
     private static String verifyInternet;
     public static final long MAX_TASK_EXECUTION_TIME_SECONDS = 3;
     public static String versionServer;
@@ -196,11 +199,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         
-        try {
-            initDB();
-        } catch (MalformedURLException | JSONException | InterruptedException ignored) {
 
-        }
 
 
         setSupportActionBar(binding.appBarMain.toolbar);
@@ -238,7 +237,11 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         } else MainActivity.location_update = ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                 || ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
 
+        try {
+            initDB();
+        } catch (MalformedURLException | JSONException | InterruptedException ignored) {
 
+        }
     }
 
     @Override

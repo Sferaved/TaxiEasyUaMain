@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.746</string>
-    <string name="version">Версия: 1.746</string>
+    <string name="version_code">1.748</string>
+    <string name="version">Версия: 1.748</string>
 
     <string name="app_name">Такси Доставка</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -347,7 +347,7 @@
     <string name="error_payment_card">Ошибка обработки платежа. Выберитие другую карту или закажите поездку за наличные.</string>
     <string name="nal_payment_btn">За наличные</string>
     <string name="new_card_btn">Новая карта</string>
-    <string name="chois_card_btn">Выбраной картой</string>
+    <string name="chois_card_btn">Выбранной картой</string>
     <string name="cancel_0">Запрос на отмену заказа отправлен. Не удалось отменить заказ.</string>
     <string name="cancel_1">Запрос на отмену заказа отправлен. Заказ отменен.</string>
     <string name="cancel_2">Запрос на отмену заказа отправлен. Требует подтверждения клиентом отмены диспетчерской.</string>

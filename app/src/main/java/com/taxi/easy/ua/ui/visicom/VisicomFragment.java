@@ -67,12 +67,19 @@ import com.taxi.easy.ua.ui.home.MyPhoneDialogFragment;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.open_map.visicom.ActivityVisicomOnePage;
+import com.taxi.easy.ua.ui.open_map.visicom.key_mapbox.ApiCallbackMapbox;
+import com.taxi.easy.ua.ui.open_map.visicom.key_mapbox.ApiClientMapbox;
+import com.taxi.easy.ua.ui.open_map.visicom.key_mapbox.ApiResponseMapbox;
+import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiCallback;
+import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiClient;
+import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiResponse;
 import com.taxi.easy.ua.utils.VerifyUserTask;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.IPUtil;
+import com.taxi.easy.ua.utils.ip.OnIPAddressReceivedListener;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.tariff.DatabaseHelperTariffs;
 import com.taxi.easy.ua.utils.tariff.Tariff;
@@ -96,7 +103,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class VisicomFragment extends Fragment{
+public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbackMapbox{
 
     public static ProgressBar progressBar;
     private FragmentVisicomBinding binding;
@@ -144,6 +151,7 @@ public class VisicomFragment extends Fragment{
     private final int LOCATION_PERMISSION_REQUEST_CODE = 123;
     static LinearLayout linearLayout;
     Activity context;
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
 
@@ -1152,7 +1160,13 @@ public class VisicomFragment extends Fragment{
                 paymentType("nal_payment");
                 break;
         }
-
+        if (MainActivity.countryState != null) {
+            if (!MainActivity.countryState.equals("UA")) {
+                mapboxKey(this);
+            } else {
+                visicomKey(this);
+            }
+        }
 
         String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
         // Изменяем текст элемента меню
@@ -1686,8 +1700,87 @@ public class VisicomFragment extends Fragment{
 
     }
 
+    private void mapboxKey(final ApiCallbackMapbox callback) {
+        ApiClientMapbox.getMapboxKeyInfo(new Callback<ApiResponseMapbox>() {
+            @Override
+            public void onResponse(@NonNull Call<ApiResponseMapbox> call, @NonNull Response<ApiResponseMapbox> response) {
+                if (response.isSuccessful()) {
+                    ApiResponseMapbox apiResponse = response.body();
+                    if (apiResponse != null) {
+                        String keyMaxbox = apiResponse.getKeyMapbox();
+                        Log.d("ApiResponseMapbox", "keyMapbox: " + keyMaxbox);
 
-     private void firstLocation() {
+                        // Теперь у вас есть ключ Visicom для дальнейшего использования
+                        callback.onMapboxKeyReceived(keyMaxbox);
+                    }
+                } else {
+                    // Обработка ошибки
+                    Log.e("ApiResponseMapbox", "Error: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ApiResponseMapbox> call, @NonNull Throwable t) {
+                // Обработка ошибки
+                Log.e("ApiResponseMapbox", "Failed to make API call", t);
+            }
+        }, getString(R.string.application)
+        );
+    }
+    @Override
+    public void onMapboxKeyReceived(String key) {
+        Log.d(TAG, "onMapboxKeyReceived: " + key);
+        MainActivity.apiKeyMapBox = key;
+    }
+
+
+    private void visicomKey(final ApiCallback callback) {
+        ApiClient.getVisicomKeyInfo(new Callback<ApiResponse>() {
+                                        @Override
+                                        public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
+                                            if (response.isSuccessful()) {
+                                                ApiResponse apiResponse = response.body();
+                                                if (apiResponse != null) {
+                                                    String keyVisicom = apiResponse.getKeyVisicom();
+                                                    Log.d("ApiResponse", "keyVisicom: " + keyVisicom);
+
+                                                    // Теперь у вас есть ключ Visicom для дальнейшего использования
+                                                    callback.onVisicomKeyReceived(keyVisicom);
+                                                }
+                                            } else {
+                                                // Обработка ошибки
+                                                Log.e("ApiResponseMapbox", "Error: " + response.code());
+                                                callback.onApiError(response.code());
+                                            }
+                                        }
+
+                                        @Override
+                                        public void onFailure(Call<ApiResponse> call, Throwable t) {
+                                            // Обработка ошибки
+                                            Log.e("ApiResponseMapbox", "Failed to make API call", t);
+                                            callback.onApiFailure(t);
+                                        }
+                                    },
+                getString(R.string.application)
+        );
+    }
+    @Override
+    public void onVisicomKeyReceived(String key) {
+        Log.d(TAG, "onVisicomKeyReceived: " + key);
+        MainActivity.apiKey = key;
+    }
+    @Override
+    public void onApiError(int errorCode) {
+
+    }
+
+    @Override
+    public void onApiFailure(Throwable t) {
+
+    }
+
+
+    private void firstLocation() {
         progressBar.setVisibility(View.VISIBLE);
         Toast.makeText(requireContext(), getString(R.string.search), Toast.LENGTH_SHORT).show();
 

@@ -95,7 +95,7 @@ import retrofit2.Response;
 
 
 public class ActivityVisicomOnePage extends AppCompatActivity
-        implements ApiCallback, ApiCallbackMapbox, OnIPAddressReceivedListener {
+        implements OnIPAddressReceivedListener {
 
     private static final String TAG = "TAG_VIS_ADDR";
 
@@ -1058,13 +1058,13 @@ public class ActivityVisicomOnePage extends AppCompatActivity
         }
 
 
-        if (MainActivity.countryState != null) {
-            if (!MainActivity.countryState.equals("UA")) {
-                mapboxKey(this);
-            } else {
-                visicomKey(this);
-            }
-        }
+//        if (MainActivity.countryState != null) {
+//            if (!MainActivity.countryState.equals("UA")) {
+//                mapboxKey(this);
+//            } else {
+//                visicomKey(this);
+//            }
+//        }
 
         fromEditAddress.addTextChangedListener(new TextWatcher() {
             @Override
@@ -1191,7 +1191,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
             }
             String modifiedText = "";
             Log.d(TAG, "performAddressSearch:modifiedText " + modifiedText);
-            if (!inputText.endsWith("\f")) {
+            if (!inputText.substring(3).contains("\f")) {
                 modifiedText = inputText.replaceAll("[\f\t]", " ");
                 url = url
                         + "?"
@@ -1214,7 +1214,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                         + ",poi_underground_railway_station"
                         + ",adr_street"
                         + "&l=20"
-                        + "&text=" + modifiedText + "&key=" + apiKey;
+                        + "&text=" + modifiedText + "&key=" + MainActivity.apiKey;
 
             } else {
                 Log.d(TAG, "performAddressSearch:positionChecked  " + positionChecked);
@@ -1225,7 +1225,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                 }
                 modifiedText = inputText.replaceAll("[\f\t]", " ");
                 url = url + "?categories=adr_address&text=" + modifiedText
-                        + "&l=20" + "&key=" + apiKey;
+                        + "&l=20" + "&key=" + MainActivity.apiKey;
 
             }
 
@@ -2326,86 +2326,86 @@ public class ActivityVisicomOnePage extends AppCompatActivity
             addressListView.setVisibility(View.INVISIBLE);
         });
     }
-    private void mapboxKey(final ApiCallbackMapbox callback) {
-        ApiClientMapbox.getMapboxKeyInfo(new Callback<ApiResponseMapbox>() {
-            @Override
-            public void onResponse(@NonNull Call<ApiResponseMapbox> call, @NonNull Response<ApiResponseMapbox> response) {
-                if (response.isSuccessful()) {
-                    ApiResponseMapbox apiResponse = response.body();
-                    if (apiResponse != null) {
-                        String keyMaxbox = apiResponse.getKeyMapbox();
-                        Log.d("ApiResponseMapbox", "keyMapbox: " + keyMaxbox);
-
-                        // Теперь у вас есть ключ Visicom для дальнейшего использования
-                        callback.onMapboxKeyReceived(keyMaxbox);
-                    }
-                } else {
-                    // Обработка ошибки
-                    Log.e("ApiResponseMapbox", "Error: " + response.code());
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<ApiResponseMapbox> call, @NonNull Throwable t) {
-                // Обработка ошибки
-                Log.e("ApiResponseMapbox", "Failed to make API call", t);
-            }
-        },
-        getString(R.string.application)
-        );
-    }
-    @Override
-    public void onMapboxKeyReceived(String key) {
-        Log.d(TAG, "onMapboxKeyReceived: " + key);
-        apiKeyMapBox = key;
-    }
-
-
-    private void visicomKey(final ApiCallback callback) {
-        ApiClient.getVisicomKeyInfo(new Callback<ApiResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
-                if (response.isSuccessful()) {
-                    ApiResponse apiResponse = response.body();
-                    if (apiResponse != null) {
-                        String keyVisicom = apiResponse.getKeyVisicom();
-                        Log.d("ApiResponse", "keyVisicom: " + keyVisicom);
-
-                        // Теперь у вас есть ключ Visicom для дальнейшего использования
-                        callback.onVisicomKeyReceived(keyVisicom);
-                    }
-                } else {
-                    // Обработка ошибки
-                    Log.e("ApiResponseMapbox", "Error: " + response.code());
-                    callback.onApiError(response.code());
-                }
-            }
-
-            @Override
-            public void onFailure(Call<ApiResponse> call, Throwable t) {
-                // Обработка ошибки
-                Log.e("ApiResponseMapbox", "Failed to make API call", t);
-                callback.onApiFailure(t);
-            }
-        },
-            getString(R.string.application)
-        );
-    }
-    @Override
-    public void onVisicomKeyReceived(String key) {
-        Log.d(TAG, "onVisicomKeyReceived: " + key);
-        apiKey = key;
-    }
-
-    @Override
-    public void onApiError(int errorCode) {
-
-    }
-
-    @Override
-    public void onApiFailure(Throwable t) {
-
-    }
+//    private void mapboxKey(final ApiCallbackMapbox callback) {
+//        ApiClientMapbox.getMapboxKeyInfo(new Callback<ApiResponseMapbox>() {
+//            @Override
+//            public void onResponse(@NonNull Call<ApiResponseMapbox> call, @NonNull Response<ApiResponseMapbox> response) {
+//                if (response.isSuccessful()) {
+//                    ApiResponseMapbox apiResponse = response.body();
+//                    if (apiResponse != null) {
+//                        String keyMaxbox = apiResponse.getKeyMapbox();
+//                        Log.d("ApiResponseMapbox", "keyMapbox: " + keyMaxbox);
+//
+//                        // Теперь у вас есть ключ Visicom для дальнейшего использования
+//                        callback.onMapboxKeyReceived(keyMaxbox);
+//                    }
+//                } else {
+//                    // Обработка ошибки
+//                    Log.e("ApiResponseMapbox", "Error: " + response.code());
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(@NonNull Call<ApiResponseMapbox> call, @NonNull Throwable t) {
+//                // Обработка ошибки
+//                Log.e("ApiResponseMapbox", "Failed to make API call", t);
+//            }
+//        },
+//        getString(R.string.application)
+//        );
+//    }
+//    @Override
+//    public void onMapboxKeyReceived(String key) {
+//        Log.d(TAG, "onMapboxKeyReceived: " + key);
+//        apiKeyMapBox = key;
+//    }
+//
+//
+//    private void visicomKey(final ApiCallback callback) {
+//        ApiClient.getVisicomKeyInfo(new Callback<ApiResponse>() {
+//            @Override
+//            public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
+//                if (response.isSuccessful()) {
+//                    ApiResponse apiResponse = response.body();
+//                    if (apiResponse != null) {
+//                        String keyVisicom = apiResponse.getKeyVisicom();
+//                        Log.d("ApiResponse", "keyVisicom: " + keyVisicom);
+//
+//                        // Теперь у вас есть ключ Visicom для дальнейшего использования
+//                        callback.onVisicomKeyReceived(keyVisicom);
+//                    }
+//                } else {
+//                    // Обработка ошибки
+//                    Log.e("ApiResponseMapbox", "Error: " + response.code());
+//                    callback.onApiError(response.code());
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(Call<ApiResponse> call, Throwable t) {
+//                // Обработка ошибки
+//                Log.e("ApiResponseMapbox", "Failed to make API call", t);
+//                callback.onApiFailure(t);
+//            }
+//        },
+//            getString(R.string.application)
+//        );
+//    }
+//    @Override
+//    public void onVisicomKeyReceived(String key) {
+//        Log.d(TAG, "onVisicomKeyReceived: " + key);
+//        apiKey = key;
+//    }
+//
+//    @Override
+//    public void onApiError(int errorCode) {
+//
+//    }
+//
+//    @Override
+//    public void onApiFailure(Throwable t) {
+//
+//    }
 
 
     private void addAddressOne (
@@ -2489,7 +2489,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
         // Создаем Retrofit-клиент
         MapboxService mapboxService = MapboxApiClient.create();
 
-        Call<MapboxResponse> call = mapboxService.getLocation(address, apiKeyMapBox);
+        Call<MapboxResponse> call = mapboxService.getLocation(address, MainActivity.apiKeyMapBox);
         call.enqueue(new Callback<MapboxResponse>() {
             @Override
             public void onResponse(Call<MapboxResponse> call, Response<MapboxResponse> response) {

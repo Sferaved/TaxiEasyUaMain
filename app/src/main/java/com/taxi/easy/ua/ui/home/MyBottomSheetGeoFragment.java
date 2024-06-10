@@ -477,7 +477,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
 
         String  url = getTaxiUrlSearchMarkers("costSearchMarkers", context);
         String message = context.getString(R.string.change_tarrif);
-        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireContext()).get(3);
+        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
         ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
         Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ url);
