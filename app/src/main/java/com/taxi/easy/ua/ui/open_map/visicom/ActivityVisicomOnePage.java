@@ -223,12 +223,12 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                 if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
 
                     VisicomFragment.btn_clear_from.setVisibility(View.INVISIBLE);
-                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
-                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
+//                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
+//                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
                     VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
 
-                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
-                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
+//                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
+//                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
                     VisicomFragment.btn_clear_from_text.setText(getString(R.string.try_again));
                     VisicomFragment.btn_clear_from_text.setVisibility(View.VISIBLE);
                     VisicomFragment.btn_clear_from_text.setOnClickListener(new View.OnClickListener() {
@@ -243,8 +243,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                     btn_clear_from.setVisibility(View.INVISIBLE);
                     btn_clear_to.setVisibility(View.INVISIBLE);
 
-                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
-                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
+//                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
+//                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
                     VisicomFragment.textwhere.setVisibility(View.INVISIBLE);
                     VisicomFragment.num2.setVisibility(View.INVISIBLE);
                     VisicomFragment.textViewTo.setVisibility(View.INVISIBLE);
@@ -467,12 +467,12 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                 if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
 
                     VisicomFragment.btn_clear_from.setVisibility(View.INVISIBLE);
-                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
-                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
+//                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
+//                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
                     VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
 
-                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
-                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
+//                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
+//                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
                     VisicomFragment.btn_clear_from_text.setText(getString(R.string.try_again));
                     VisicomFragment.btn_clear_from_text.setVisibility(View.VISIBLE);
                     VisicomFragment.btn_clear_from_text.setOnClickListener(new View.OnClickListener() {
@@ -487,8 +487,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                     btn_clear_from.setVisibility(View.INVISIBLE);
                     btn_clear_to.setVisibility(View.INVISIBLE);
 
-                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
-                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
+//                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
+//                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
                     VisicomFragment.textwhere.setVisibility(View.INVISIBLE);
                     VisicomFragment.num2.setVisibility(View.INVISIBLE);
                     VisicomFragment.textViewTo.setVisibility(View.INVISIBLE);
