@@ -64,7 +64,6 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
             textViewInfo.setText(errorMessage);
             if (errorMessage.equals(getString(R.string.verify_internet))
                 || errorMessage.equals(getString(R.string.error_message))
-                || errorMessage.equals(getString(R.string.pending))
             ) {
                 btn_ok.setVisibility(View.GONE);
                 textViewInfo.setOnClickListener(new View.OnClickListener() {

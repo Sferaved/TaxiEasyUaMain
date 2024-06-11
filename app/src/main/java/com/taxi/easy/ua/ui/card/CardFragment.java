@@ -88,13 +88,13 @@ public class CardFragment extends Fragment {
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+        binding = FragmentCardBinding.inflate(inflater, container, false);
+        View root = binding.getRoot();
         context = requireActivity();
         navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
         if (!NetworkUtils.isNetworkAvailable(requireContext())) {
             navController.navigate(R.id.nav_visicom);
         }
-        binding = FragmentCardBinding.inflate(inflater, container, false);
-        View root = binding.getRoot();
         context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         btnCardLink  = binding.btnCardLink;
 
