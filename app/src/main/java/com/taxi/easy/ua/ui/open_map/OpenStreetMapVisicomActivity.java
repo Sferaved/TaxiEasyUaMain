@@ -249,7 +249,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         }
 
 
-        mapController = map.getController();
+
         map.setBuiltInZoomControls(true);
         map.setMultiTouchControls(true);
 
@@ -462,6 +462,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         Locale locale = Locale.getDefault();
         String language = locale.getLanguage(); // Получаем язык устройства
         Call<ApiResponse> call = apiService.reverseAddressLocal(latitude, longitude, language);
+        m = new Marker(map);
         call.enqueue(new Callback<ApiResponse>() {
             @Override
             public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
@@ -477,65 +478,65 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                                     FromAdressString = startPointNoText;
                                 }
 
-                                if (map != null && map.getRepository() != null) {
-                                    m = new Marker(map);
-                                    m.setPosition(startPoint);
-                                    m.setTextLabelBackgroundColor(
-                                            Color.TRANSPARENT
-                                    );
-                                    m.setTextLabelForegroundColor(
-                                            Color.RED
-                                    );
-                                    m.setTextLabelFontSize(40);
-                                    m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-                                    String unuString = new String(Character.toChars(0x1F449));
+                                m.setPosition(startPoint);
+                                m.setTextLabelBackgroundColor(
+                                        Color.TRANSPARENT
+                                );
+                                m.setTextLabelForegroundColor(
+                                        Color.RED
+                                );
+                                m.setTextLabelFontSize(40);
+                                m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+                                String unuString = new String(Character.toChars(0x1F449));
 
-                                    m.setTitle("1." + unuString + FromAdressString);
-                                    m.setIcon(scaledDrawable);
-                                    m.showInfoWindow();
+                                m.setTitle("1." + unuString + FromAdressString);
+                                m.setIcon(scaledDrawable);
+                                m.showInfoWindow();
 
-                                    map.getOverlays().add(m);
+                                map.getOverlays().add(m);
 
-                                    map.getController().setCenter(startPoint);
-                                    double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, fab.getContext()).get(4));
-                                    mapController.setZoom(newZoomLevel);
+                                map.getController().setCenter(startPoint);
+                                double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, fab.getContext()).get(4));
+                                mapController.setZoom(newZoomLevel);
 
-                                    map.invalidate();
-                                    List<String> settings = new ArrayList<>();
+                                map.invalidate();
+                                List<String> settings = new ArrayList<>();
 
-                                    if (VisicomFragment.textViewTo.getText().toString().equals(map.getContext().getString(R.string.on_city_tv))) {
+                                if (VisicomFragment.textViewTo.getText().toString().equals(map.getContext().getString(R.string.on_city_tv))) {
 
-                                        settings.add(String.valueOf(startLat));
-                                        settings.add(String.valueOf(startLan));
-                                        settings.add(String.valueOf(startLat));
-                                        settings.add(String.valueOf(startLan));
-                                        settings.add(FromAdressString);
-                                        settings.add(map.getContext().getString(R.string.on_city_tv));
-                                    } else {
-                                        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                                        SQLiteDatabase database = map.getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                                        Cursor cursor = database.rawQuery(query, null);
+                                    settings.add(String.valueOf(startLat));
+                                    settings.add(String.valueOf(startLan));
+                                    settings.add(String.valueOf(startLat));
+                                    settings.add(String.valueOf(startLan));
+                                    settings.add(FromAdressString);
+                                    settings.add(map.getContext().getString(R.string.on_city_tv));
+                                } else {
+                                    String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                                    SQLiteDatabase database = map.getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                                    Cursor cursor = database.rawQuery(query, null);
 
-                                        cursor.moveToFirst();
-                                        // Получите значения полей из первой записи
+                                    cursor.moveToFirst();
+                                    // Получите значения полей из первой записи
 
-                                        @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                                        @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                                        cursor.close();
-                                        database.close();
+                                    @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                                    @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+                                    cursor.close();
+                                    database.close();
 
 
-                                        settings.add(String.valueOf(startLat));
-                                        settings.add(String.valueOf(startLan));
-                                        settings.add(String.valueOf(toLatitude));
-                                        settings.add(String.valueOf(toLongitude));
+                                    settings.add(String.valueOf(startLat));
+                                    settings.add(String.valueOf(startLan));
+                                    settings.add(String.valueOf(toLatitude));
+                                    settings.add(String.valueOf(toLongitude));
 
-                                        settings.add(FromAdressString);
-                                        settings.add(VisicomFragment.textViewTo.getText().toString());
-                                    }
-                                    updateRoutMarker(settings, map.getContext());
-                                    updateMyPosition(startLat, startLan, FromAdressString, map.getContext());
+                                    settings.add(FromAdressString);
+                                    settings.add(VisicomFragment.textViewTo.getText().toString());
                                 }
+                                updateRoutMarker(settings, map.getContext());
+                                updateMyPosition(startLat, startLan, FromAdressString, map.getContext());
+
+
+
 
                             }
                             if (finishMarker.equals("ok")) {
@@ -597,6 +598,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         map = findViewById(R.id.map);
+        mapController = map.getController();
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, getApplicationContext()).get(3);
 
         String application =  getString(R.string.application);

@@ -197,6 +197,9 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         super.onCreate(savedInstanceState);
         ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        
+
+
 
         setSupportActionBar(binding.appBarMain.toolbar);
 
@@ -902,7 +905,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             if (NetworkUtils.isNetworkAvailable(this)) {
                 List<String> listCity = logCursor(MainActivity.CITY_INFO);
                 String city = listCity.get(1);
-                MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, getApplicationContext());
+                MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, MainActivity.this);
                 bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
             } else {
                 Toast.makeText(this, R.string.verify_internet, Toast.LENGTH_SHORT).show();
@@ -1486,7 +1489,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
     }
 
-    private void getCardTokenWfp(String city, String pay_system, String email) {
+    private  void getCardTokenWfp(String city, String pay_system, String email) {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
@@ -1629,8 +1632,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 new Thread(() -> fetchRoutes(user.getEmail())).start();
             } else {
                 Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
-//                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.firebase_error));
-//                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+
                 cv.put("verifyOrder", "0");
                 SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                 database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
@@ -1639,8 +1641,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             }
         } catch (Exception e) {
             Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
-//            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.firebase_error));
-//            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+
             cv.put("verifyOrder", "0");
             SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});

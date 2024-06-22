@@ -3,6 +3,7 @@ package com.taxi.easy.ua.ui.home;
 import static android.content.Context.MODE_PRIVATE;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
@@ -72,6 +73,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     private static String[] userPayPermissions;
     private static String email;
     String city;
+    Activity context;
 
     public MyBottomSheetBonusFragment() {
     }
@@ -92,14 +94,15 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.bonus_list_layout, container, false);
+        context = requireActivity();
         try {
-            database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         } catch (Exception e) {
             Log.e(TAG, "Инициализация базы данных не удалась", e);
             // Обработайте ошибку корректно, возможно, покажите сообщение пользователю
         }
         email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
-        UserPermissions.getPermissions(email, getActivity());
+        UserPermissions.getPermissions(email, context);
 
         progressBar = view.findViewById(R.id.progress);
         listView = view.findViewById(R.id.listViewBonus);
@@ -114,7 +117,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 "card_payment",
         };
 
-        adapter = new CustomArrayAdapter(requireActivity(), R.layout.services_adapter_layout, Arrays.asList(array));
+        adapter = new CustomArrayAdapter(context, R.layout.services_adapter_layout, Arrays.asList(array));
         listView.setAdapter(adapter);
         listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         btn_ok = view.findViewById(R.id.btn_ok);
@@ -126,7 +129,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         });
 
 
-        userPayPermissions = UserPermissions.getUserPayPermissions(requireActivity());
+        userPayPermissions = UserPermissions.getUserPayPermissions(context);
 
         String bonus = logCursor(MainActivity.TABLE_USER_INFO).get(5);
 
@@ -172,7 +175,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 progressBar.setVisibility(View.VISIBLE);
                 btn_ok.setVisibility(View.GONE);
-                setCancelable(false);
+                textView.setText("");
                 pos = position;
                 Log.d(TAG, "onItemClick: pos " + pos);
                 if (pos == 2) {
@@ -185,7 +188,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                                 Log.d(TAG, "onPaySystemResult: paymentCode" + paymentCode);
                                 // Здесь вы можете использовать полученное значение paymentCode
                                 try {
-                                    paymentType(paymentCode, requireActivity());
+                                    paymentType(paymentCode, context);
                                 } catch (MalformedURLException | UnsupportedEncodingException e) {
                                     throw new RuntimeException(e);
                                 }
@@ -199,7 +202,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
                 } else {
                     try {
-                        paymentType(arrayCode [pos], requireActivity());
+                        paymentType(arrayCode [pos], context);
                     } catch (MalformedURLException | UnsupportedEncodingException e) {
                         throw new RuntimeException(e);
                     }
@@ -305,12 +308,12 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         cv.put("payment_type", paymentCode);
         // обновляем по id
-//        if(isAdded()){
 
-            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                    new String[] { "1" });
+        SQLiteDatabase db = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        db.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                new String[] { "1" });
+        db.close();
 
-//        }
         reCount();
     }
 
@@ -339,7 +342,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     listView.setItemChecked(1, true);
                     pos = 1;
                     try {
-                        paymentType(arrayCode [pos], requireActivity());
+                        paymentType(arrayCode [pos], context);
                     } catch (MalformedURLException | UnsupportedEncodingException e) {
                         throw new RuntimeException(e);
                     }
@@ -353,7 +356,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 break;
 
             case "fondy_payment":
-                merchantFondy(city, requireActivity());
+                merchantFondy(city, context);
                 if(userPayPermissions[1].equals("0")) {
                     adapter.setItemEnabled(2, false);
                 } else  {
@@ -429,13 +432,14 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {
         super.onDismiss(dialog);
-        UserPermissions.getPermissions(email, getActivity());
+        UserPermissions.getPermissions(email, context);
+        VisicomFragment.btnVisible(View.VISIBLE);
     }
 
     public void reCount() throws UnsupportedEncodingException, MalformedURLException {
         Log.d(TAG, "onDismiss: rout " + rout);
         if (rout != null && rout.equals("home")) {
-            String urlCost = getTaxiUrlSearch("costSearch", requireActivity());
+            String urlCost = getTaxiUrlSearch("costSearch", context);
             String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
 
             CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
@@ -478,8 +482,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         if (rout != null && rout.equals("visicom")) {
             try {
                 if (isAdded()) {
-                    requireActivity();
-                    String urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", getActivity());
+                    String urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", context);
                     String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
                     long discountInt = Integer.parseInt(discountText);
                     CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
@@ -531,8 +534,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         if (rout != null && rout.equals("marker")) {
             try {
                 if (isAdded()) {
-                    requireActivity();
-                    String urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", requireActivity());
+                    String urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", context);
 
                     String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
                     long discountInt = Long.parseLong(discountText);
@@ -585,17 +587,17 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     private AlertDialog alertDialog;
     private void changePayMethodToNal() {
         // Инфлейтим макет для кастомного диалога
-        LayoutInflater inflater = LayoutInflater.from(requireActivity());
+        LayoutInflater inflater = LayoutInflater.from(context);
         View dialogView = inflater.inflate(R.layout.custom_dialog_layout, null);
 
-        alertDialog = new AlertDialog.Builder(requireActivity()).create();
+        alertDialog = new AlertDialog.Builder(context).create();
         alertDialog.setView(dialogView);
         alertDialog.setCancelable(false);
         // Настраиваем элементы макета
 
 
         TextView messageTextView = dialogView.findViewById(R.id.dialog_message);
-        String messagePaymentType = getString(R.string.to_nal_payment_count);
+        String messagePaymentType = context.getString(R.string.to_nal_payment_count);
         messageTextView.setText(messagePaymentType);
 
         Button okButton = dialogView.findViewById(R.id.dialog_ok_button);
@@ -604,7 +606,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             public void onClick(View v) {
                 listView.setItemChecked(0, true);
                 try {
-                    paymentType(arrayCode [0], requireActivity());
+                    paymentType(arrayCode [0], context);
                 } catch (MalformedURLException | UnsupportedEncodingException e) {
                     throw new RuntimeException(e);
                 }

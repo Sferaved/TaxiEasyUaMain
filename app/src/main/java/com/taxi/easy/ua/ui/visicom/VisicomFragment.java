@@ -64,7 +64,6 @@ import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGeoFragment;
 import com.taxi.easy.ua.ui.home.MyPhoneDialogFragment;
-import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.open_map.visicom.ActivityVisicomOnePage;
 import com.taxi.easy.ua.ui.open_map.visicom.key_mapbox.ApiCallbackMapbox;
@@ -76,16 +75,14 @@ import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiResponse;
 import com.taxi.easy.ua.utils.VerifyUserTask;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
+import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.IPUtil;
-import com.taxi.easy.ua.utils.ip.OnIPAddressReceivedListener;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.tariff.DatabaseHelperTariffs;
 import com.taxi.easy.ua.utils.tariff.Tariff;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
-
-import org.json.JSONException;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -175,12 +172,8 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
     }
 
      public static void btnVisible(int visible) {
-//         textfrom.setVisibility(visible);
-//         num1.setVisibility(visible);
 
          btn_clear_from_text.setVisibility(View.INVISIBLE);
-
-//         geoText.setVisibility(visible);
          if (visible == View.INVISIBLE) {
              progressBar.setVisibility(View.VISIBLE);
          } else {
@@ -190,10 +183,6 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
          btn_clear_from.setVisibility(View.INVISIBLE);
          btn_clear_to.setVisibility(View.INVISIBLE);
 
-
-//         textwhere.setVisibility(visible);
-//         num2.setVisibility(visible);
-//         textViewTo.setVisibility(visible);
          gpsbut.setVisibility(visible);
          btnAdd.setVisibility(visible);
 
@@ -213,8 +202,6 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
 
             progressBar.setVisibility(View.INVISIBLE);
 
-//            textfrom.setVisibility(View.INVISIBLE);
-//            num1.setVisibility(View.INVISIBLE);
             btn_clear_from_text.setText(getString(R.string.try_again));
             btn_clear_from_text.setVisibility(View.VISIBLE);
             btn_clear_from_text.setOnClickListener(v -> {
@@ -226,8 +213,6 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
             btn_clear_from.setVisibility(View.INVISIBLE);
             btn_clear_to.setVisibility(View.INVISIBLE);
 
-//            textfrom.setVisibility(View.INVISIBLE);
-//            num1.setVisibility(View.INVISIBLE);
             textwhere.setVisibility(View.INVISIBLE);
             num2.setVisibility(View.INVISIBLE);
             textViewTo.setVisibility(View.INVISIBLE);
@@ -391,7 +376,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
         double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
         String start = cursor.getString(cursor.getColumnIndex("start"));
         String finish = cursor.getString(cursor.getColumnIndex("finish"));
-        if(finish.equals(getString(R.string.on_city_tv))) {
+        if(finish.equals(context.getString(R.string.on_city_tv))) {
             finish = start;
         }
         if(originLatitude == toLatitude) {
@@ -728,7 +713,6 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                 bottomSheetDialogFragment = new MyPhoneDialogFragment(getActivity(),"visicom", text_view_cost.getText().toString(), true);
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                 progressBar.setVisibility(View.INVISIBLE);
-                btnVisible(View.VISIBLE);
             }
         } else {
             MainActivity.verifyPhone = true;
@@ -851,7 +835,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                 }
             });
         } else {
-            btnVisible(View.VISIBLE);
+
             String message = getString(R.string.phone_input_error);
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
@@ -1241,6 +1225,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
         buttonBonus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                btnVisible(View.INVISIBLE);
                 String costText = text_view_cost.getText().toString().trim();
                 if (!costText.isEmpty() && costText.matches("\\d+")) {
                     updateAddCost("0");
@@ -1421,6 +1406,8 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
         num2 = binding.num2;
 
         gpsbut = binding.gpsbut;
+
+
         LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         gpsbut.setOnClickListener(v -> {
 
@@ -1583,7 +1570,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
 
                     } else {
                         Log.d(TAG, "onResume: 2");
-                        btnVisible(View.VISIBLE);
+                        btnVisible(View.INVISIBLE);
 //                        progressBar.setVisibility(View.INVISIBLE);
 //                        binding.textwhere.setVisibility(View.INVISIBLE);
 //                        btn_clear_from.setVisibility(View.INVISIBLE);
@@ -1645,7 +1632,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
             } else {
                 if (!newRout()) {
                     Log.d(TAG, "onResume: 6");
-                    progressBar.setVisibility(View.VISIBLE);
+
                     new Handler().postDelayed(new Runnable() {
                         @Override
                         public void run() {
@@ -1880,174 +1867,171 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                     String language = locale.getLanguage(); // Получаем язык устройства
 
                     String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/" + latitude + "/" + longitude + "/" + language;
+                    String mes_city = context.getString(R.string.on_city_tv);
+                    FromJSONParserRetrofit.sendURL(urlFrom, result -> {
+                        // Обработка результата в основном потоке
+                        if (result != null) {
+                            Log.d(TAG, "Результат: " + result.toString());
+                            String FromAdressString = result.get("route_address_from");
 
-//                    try {
-//                        sendUrlFrom = FromJSONParser.sendURL(urlFrom);
-//
-//                    } catch (MalformedURLException | InterruptedException |
-//                             JSONException e) {
-//                            progressBar.setVisibility(View.INVISIBLE);
-//                    }
-
-                    try {
-                        FromJSONParser parser = new FromJSONParser(urlFrom);
-                        Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
-
-                        String FromAdressString = sendUrlFrom.get("route_address_from");
-
-                        if (FromAdressString != null && FromAdressString.contains("Точка на карте")) {
-                            List<String> stringListCity = logCursor(MainActivity.CITY_INFO, context);
-                            String city = getString(R.string.foreign_countries);
-                            switch (stringListCity.get(1)) {
-                                case "Kyiv City":
-                                    city = getString(R.string.Kyiv_city);
-                                    break;
-                                case "Dnipropetrovsk Oblast":
-                                    break;
-                                case "Odessa":
-                                case "OdessaTest":
-                                    city = getString(R.string.Odessa);
-                                    break;
-                                case "Zaporizhzhia":
-                                    city = getString(R.string.Zaporizhzhia);
-                                    break;
-                                case "Cherkasy Oblast":
-                                    city = getString(R.string.Cherkasy);
-                                    break;
-                                default:
-                                    city = getString(R.string.foreign_countries);
-                                    break;
+                            if (FromAdressString != null && FromAdressString.contains("Точка на карте")) {
+                                List<String> stringListCity = logCursor(MainActivity.CITY_INFO, context);
+                                String city = getString(R.string.foreign_countries);
+                                switch (stringListCity.get(1)) {
+                                    case "Kyiv City":
+                                        city = getString(R.string.Kyiv_city);
+                                        break;
+                                    case "Dnipropetrovsk Oblast":
+                                        break;
+                                    case "Odessa":
+                                    case "OdessaTest":
+                                        city = getString(R.string.Odessa);
+                                        break;
+                                    case "Zaporizhzhia":
+                                        city = getString(R.string.Zaporizhzhia);
+                                        break;
+                                    case "Cherkasy Oblast":
+                                        city = getString(R.string.Cherkasy);
+                                        break;
+                                    default:
+                                        city = getString(R.string.foreign_countries);
+                                        break;
+                                }
+                                FromAdressString = getString(R.string.startPoint) + ", " + getString(R.string.city_loc) + " " + city;
                             }
-                            FromAdressString = getString(R.string.startPoint) + ", " + getString(R.string.city_loc) + " " + city;
-                        }
 
-                        updateMyPosition(latitude, longitude, FromAdressString, context);
+                            updateMyPosition(latitude, longitude, FromAdressString, context);
 
-                        btn_clear_from.setVisibility(View.INVISIBLE);
-                        geoText.setText(FromAdressString);
-                        progressBar.setVisibility(View.GONE);
+                            btn_clear_from.setVisibility(View.INVISIBLE);
+                            geoText.setText(FromAdressString);
+                            progressBar.setVisibility(View.GONE);
+                            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                            @SuppressLint("Recycle") Cursor cursor = database.rawQuery(query, null);
 
+                            cursor.moveToFirst();
 
-                        List<String> settings = new ArrayList<>();
-
-
-                        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        @SuppressLint("Recycle") Cursor cursor = database.rawQuery(query, null);
-
-                        cursor.moveToFirst();
-
-                        // Получите значения полей из первой записи
-                        @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                        @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                        @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                        @SuppressLint("Range") String ToAdressString = cursor.getString(cursor.getColumnIndex("finish"));
+                            // Получите значения полей из первой записи
+                            @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
+                            @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                            @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+                            @SuppressLint("Range") String ToAdressString = cursor.getString(cursor.getColumnIndex("finish"));
 
 
-                        Log.d(TAG, "onLocationResult:FromAdressString " + FromAdressString);
-                        Log.d(TAG, "onLocationResult:ToAdressString " + ToAdressString);
-                        Log.d(TAG, "onLocationResult:FromAdressString.equals(ToAdressString) " + FromAdressString.equals(ToAdressString));
-
-                        if(originLatitude == toLatitude) {
-                            textViewTo.setText(context.getString(R.string.on_city_tv));
-                        } else {
-                            textViewTo.setText(ToAdressString);
-                        }
+                            Log.d(TAG, "onLocationResult:FromAdressString " + FromAdressString);
+                            Log.d(TAG, "onLocationResult:ToAdressString " + ToAdressString);
 
 
-                        Log.d(TAG, "onLocationResult:ToAdressString " + ToAdressString);
-                        if(ToAdressString.equals(getString(R.string.on_city_tv)) ||
-                                ToAdressString.equals("") ) {
-                            settings.add(Double.toString(latitude));
-                            settings.add(Double.toString(longitude));
-                            settings.add(Double.toString(latitude));
-                            settings.add(Double.toString(longitude));
-                            settings.add(FromAdressString);
-                            settings.add(FromAdressString);
-                            updateRoutMarker(settings);
-                        } else {
+                            List<String> settings = new ArrayList<>();
+                            if (FromAdressString != null && ToAdressString != null) {
+                                boolean addressesEqual = FromAdressString.equals(ToAdressString);
+                                Log.d(TAG, "onLocationResult: FromAdressString.equals(ToAdressString): " + addressesEqual);
+                            } else {
+                                Log.w(TAG, "onLocationResult: One or both address strings are null");
+                            }
+                            // Пример кода для установки текста в TextView
 
+                            if (originLatitude == toLatitude) {
+                                textViewTo.setText(mes_city.isEmpty() ? "" : mes_city);
+                            } else {
+                                textViewTo.setText(ToAdressString);
+                                Log.d(TAG, "onLocationResult:ToAdressString " + ToAdressString);
+                            }
 
-                            if(isAdded()) {
+                            assert ToAdressString != null;
 
+                            if(ToAdressString.equals(mes_city) ||
+                                    ToAdressString.isEmpty()) {
                                 settings.add(Double.toString(latitude));
                                 settings.add(Double.toString(longitude));
-                                settings.add(Double.toString(toLatitude));
-                                settings.add(Double.toString(toLongitude));
+                                settings.add(Double.toString(latitude));
+                                settings.add(Double.toString(longitude));
                                 settings.add(FromAdressString);
-                                settings.add(ToAdressString);
+                                settings.add(FromAdressString);
                                 updateRoutMarker(settings);
+                            } else {
+
+
+                                if(isAdded()) {
+
+                                    settings.add(Double.toString(latitude));
+                                    settings.add(Double.toString(longitude));
+                                    settings.add(Double.toString(toLatitude));
+                                    settings.add(Double.toString(toLongitude));
+                                    settings.add(FromAdressString);
+                                    settings.add(ToAdressString);
+                                    updateRoutMarker(settings);
+                                }
+
                             }
+                            gpsbut.setText(R.string.change);
+                            gpsbut.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+                                    if (locationManager != null) {
+                                        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                                            // GPS включен, выполните ваш код здесь
+                                            if (!NetworkUtils.isNetworkAvailable(context)) {
+                                                Toast.makeText(context, getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
+                                            } else if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                                                    || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                                checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                                                checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                                            } else if (isAdded() && isVisible())  {
+                                                List<String> settings = new ArrayList<>();
 
-                        }
-                        gpsbut.setText(R.string.change);
-                        gpsbut.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-                                if (locationManager != null) {
-                                    if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                                        // GPS включен, выполните ваш код здесь
-                                        if (!NetworkUtils.isNetworkAvailable(context)) {
-                                            Toast.makeText(context, getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
-                                        } else if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                                                || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                                            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                                            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                                        } else if (isAdded() && isVisible())  {
-                                            List<String> settings = new ArrayList<>();
+                                                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
 
-                                            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                                                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                                                Cursor cursor = database.rawQuery(query, null);
 
-                                            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                                            Cursor cursor = database.rawQuery(query, null);
+                                                cursor.moveToFirst();
 
-                                            cursor.moveToFirst();
+                                                // Получите значения полей из первой записи
 
-                                            // Получите значения полей из первой записи
+                                                @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                                                @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+                                                @SuppressLint("Range") String ToAdressString = cursor.getString(cursor.getColumnIndex("finish"));
+                                                Log.d(TAG, "autoClickButton:ToAdressString " + ToAdressString);
+                                                cursor.close();
+                                                database.close();
 
-                                            @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                                            @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                                            @SuppressLint("Range") String ToAdressString = cursor.getString(cursor.getColumnIndex("finish"));
-                                            Log.d(TAG, "autoClickButton:ToAdressString " + ToAdressString);
-                                            cursor.close();
-                                            database.close();
+                                                settings.add(Double.toString(0));
+                                                settings.add(Double.toString(0));
+                                                settings.add(Double.toString(toLatitude));
+                                                settings.add(Double.toString(toLongitude));
+                                                settings.add(getString(R.string.search));
+                                                settings.add(ToAdressString);
 
-                                            settings.add(Double.toString(0));
-                                            settings.add(Double.toString(0));
-                                            settings.add(Double.toString(toLatitude));
-                                            settings.add(Double.toString(toLongitude));
-                                            settings.add(getString(R.string.search));
-                                            settings.add(ToAdressString);
+                                                updateRoutMarker(settings);
+                                                Toast.makeText(requireContext(), getString(R.string.search), Toast.LENGTH_SHORT).show();
+                                                firstLocation();
+                                            }
 
-                                            updateRoutMarker(settings);
-                                            Toast.makeText(requireContext(), getString(R.string.search), Toast.LENGTH_SHORT).show();
-                                            firstLocation();
+                                        } else {
+                                            // GPS выключен, выполните необходимые действия
+                                            // Например, показать диалоговое окно с предупреждением о включении GPS
+
+                                            MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
+                                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                                         }
-
                                     } else {
-                                        // GPS выключен, выполните необходимые действия
-                                        // Например, показать диалоговое окно с предупреждением о включении GPS
-
                                         MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
                                         bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                                     }
-                                } else {
-                                    MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
-                                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                                 }
-                            }
-                        });
+                            });
 //
-                        try {
-                            visicomCost();
-                        } catch (MalformedURLException e) {
-                            throw new RuntimeException(e);
+                            try {
+                                visicomCost();
+                            } catch (MalformedURLException e) {
+                                throw new RuntimeException(e);
+                            }
+                        } else {
+                            Log.d(TAG, "Ошибка при выполнении запроса");
                         }
-                    } catch (MalformedURLException | JSONException | InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-
+                    });
                 }
             }
 
@@ -2129,7 +2113,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
     private void visicomCost() throws MalformedURLException {
 
 //        costSearchMarkersLocalTariffs(context);
-
+        FragmentManager fragmentManager = getParentFragmentManager();
         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor cursor = database.rawQuery(query, null);
@@ -2149,7 +2133,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
         } else {
             textViewTo.setText(finish);
         }
-
+        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
 
 
         String urlCost = null;
@@ -2179,22 +2163,14 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                     }
 
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     // Проверяем, что активность не в состоянии сохранения
-                    if (!context.isFinishing() && !context.isDestroyed()) {
-                        // Проверяем, что фрагмент готов к выполнению транзакции
-                        if (!getChildFragmentManager().isStateSaved()) {
-                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                        }
-                    }
 
-//                    textfrom.setVisibility(View.INVISIBLE);
-//                    num1.setVisibility(View.INVISIBLE);
                     btn_clear_from.setVisibility(View.INVISIBLE);
                     btn_clear_to.setVisibility(View.INVISIBLE);
                 } else {
                     Log.d(TAG, "visicomCost: ++++");
-                    String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireContext()).get(3);
+
                     Log.d(TAG, "visicomCost: " + discountText);
                     if (discountText.matches("[+-]?\\d+") || discountText.equals("0")) {
                         long discountInt = Integer.parseInt(discountText);

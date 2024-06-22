@@ -19,6 +19,7 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.R;
 

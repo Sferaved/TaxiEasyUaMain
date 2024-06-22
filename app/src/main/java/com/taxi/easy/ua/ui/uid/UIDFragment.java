@@ -195,7 +195,7 @@ public class UIDFragment extends Fragment {
             updateRoutMarker(settings);
 
             navController.navigate(R.id.nav_visicom);
-
+            MainActivity.gps_upd = false;
             return true;
         } else if (item.getItemId() == R.id.action_exit) {
 // Обработка действия "Delete"

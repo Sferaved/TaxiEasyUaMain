@@ -32,9 +32,6 @@ import androidx.annotation.Nullable;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.home.room.AppDatabase;
-import com.taxi.easy.ua.ui.home.room.RouteCost;
-import com.taxi.easy.ua.ui.home.room.RouteCostDao;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 
 import java.io.UnsupportedEncodingException;

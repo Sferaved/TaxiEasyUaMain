@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.749</string>
-    <string name="version">Версия: 1.749</string>
+    <string name="version_code">1.750</string>
+    <string name="version">Версия: 1.750</string>
 
     <string name="app_name">Такси Доставка</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -366,7 +366,7 @@
     <string name="prem_t">Премиум-класс</string>
     <string name="econom_t">Эконом-класс</string>
     <string name="bus_t">Микроавтобус</string>
-    <string name="pending">Платеж отправлен на проверку. Попрбуйте другую карту ил повторите позднее.</string>
+    <string name="pending">Платеж отправлен на проверку. Попробуйте другую карту или повторите позднее.</string>
     <string name="pending_error">Не удалось произвести оплату. Повторите попытку оплаты позже или свяжитесь с продавцом по адресу, в котором вы производите платеж.</string>
     <string name="pending_error_0">Время на проведение платежа истекло, повторите оплату снова</string>
     <string name="pending_error_1">Ваш платеж обрабатывается. Как только транзакция будет обработана, вы получите уведомление о состоянии платежа</string>
@@ -376,5 +376,7 @@
     <string name="change_tarrif">Выберите другой тариф</string>
     <string name="checkout_status">Ожидайте, идет проверка статуса заказа ...</string>
     <string name="check_order_mes">Ожидайте регистрации заказа...</string>
-
+    <string name="sent_cancel_message">Запрос на отмену заказа отправлен</string>
+    <string name="aplay_card_message">Ваша карта принята и отправлена на проверку. Вскоре она станет доступной для оплаты поездок.</string>
+    <string name="status_checkout_message">Запрошено обновление статуса. Ожидайте или уточните у оператора</string>
 </resources>

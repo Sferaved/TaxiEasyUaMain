@@ -7,14 +7,14 @@ plugins {
 
 android {
     namespace 'com.taxi.easy.ua'
-    compileSdk 34
+    compileSdk 33
 
     defaultConfig {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 33
-        versionCode 1749
-        versionName '1.749'
+        versionCode 1750
+        versionName '1.750'
         multiDexEnabled true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
@@ -70,6 +70,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-crashlytics:19.0.1'
 
+
     implementation 'org.osmdroid:osmdroid-android:6.1.16'
 
     implementation 'com.github.MKergall:osmbonuspack:6.9.0'
@@ -101,4 +102,7 @@ dependencies {
     implementation 'com.google.android.play:core:1.10.3'
 
     implementation 'com.github.anrwatchdog:anrwatchdog:1.4.0'
+
+    implementation "androidx.startup:startup-runtime:1.1.1"
+
 }

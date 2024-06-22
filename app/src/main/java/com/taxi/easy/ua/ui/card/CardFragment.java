@@ -4,6 +4,7 @@ import static android.content.Context.MODE_PRIVATE;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
@@ -13,6 +14,9 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -43,10 +47,12 @@ import com.taxi.easy.ua.ui.mono.cancel.RequestCancelMono;
 import com.taxi.easy.ua.ui.mono.cancel.ResponseCancelMono;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
-import com.taxi.easy.ua.ui.wfp.invoice.InvoiceResponse;
-import com.taxi.easy.ua.ui.wfp.invoice.InvoiceService;
+import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
+import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
+import com.taxi.easy.ua.ui.wfp.verify.VerifyService;
 import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.web.MyWebViewClient;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -64,6 +70,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.converter.scalars.ScalarsConverterFactory;
 
 public class CardFragment extends Fragment {
 
@@ -85,11 +92,12 @@ public class CardFragment extends Fragment {
     NavController navController;
     private boolean show_cards;
     Activity context;
-
+    WebView webView;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentCardBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
+        webView = binding.webView;
         context = requireActivity();
         navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
         if (!NetworkUtils.isNetworkAvailable(requireContext())) {
@@ -116,9 +124,14 @@ public class CardFragment extends Fragment {
                 .client(client)
                 .build();
 
+        String city = logCursor(MainActivity.CITY_INFO, context).get(1);
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+        Log.d(TAG, "newUser: " + userEmail);
+
         PayApi apiService = retrofit.create(PayApi.class);
         Call<ResponsePaySystem> call = apiService.getPaySystem();
         call.enqueue(new Callback<ResponsePaySystem>() {
+            @SuppressLint("Recycle")
             @Override
             public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
                 if (response.isSuccessful()) {
@@ -130,30 +143,19 @@ public class CardFragment extends Fragment {
                     switch (paymentCode) {
                         case "wfp":
                             pay_method = "wfp_payment";
+                            getCardTokenWfp(city);
                             cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_WFP_CARDS + " ORDER BY id DESC LIMIT 1", null);
-                            if (cursor != null) {
-                                show_cards = true;
-                            } else {
-                                show_cards = false;
-                            }
+                            show_cards = cursor != null;
                             break;
                         case "fondy":
                             pay_method = "fondy_payment";
                             cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_FONDY_CARDS + " ORDER BY id DESC LIMIT 1", null);
-                            if (cursor != null) {
-                                show_cards = true;
-                            } else {
-                                show_cards = false;
-                            }
+                            show_cards = cursor != null;
                             break;
                         case "mono":
                             pay_method = "mono_payment";
                             cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_MONO_CARDS + " ORDER BY id DESC LIMIT 1", null);
-                            if (cursor != null) {
-                                show_cards = true;
-                            } else {
-                                show_cards = false;
-                            }
+                            show_cards = cursor != null;
                             break;
                     }
                     Log.d(TAG, "onResponse:show_cards " + show_cards);
@@ -255,9 +257,97 @@ public class CardFragment extends Fragment {
             }
         });
     }
+
+    private  void getCardTokenWfp(String city) {
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(interceptor)
+                .build();
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://m.easy-order-taxi.site") // Замените на фактический URL вашего сервера
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+
+        // Создайте сервис
+        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
+        Log.d(TAG, "getCardTokenWfp: ");
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+
+        // Выполните запрос
+        Call<CallbackResponseWfp> call = service.handleCallbackWfp(
+                context.getString(R.string.application),
+                city,
+                userEmail,
+                "wfp"
+        );
+        call.enqueue(new Callback<CallbackResponseWfp>() {
+            @Override
+            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
+                Log.d(TAG, "onResponse: " + response.body());
+                if (response.isSuccessful()) {
+                    CallbackResponseWfp callbackResponse = response.body();
+                    if (callbackResponse != null) {
+                        List<CardInfo> cards = callbackResponse.getCards();
+                        Log.d(TAG, "onResponse: cards" + cards);
+                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
+                        if (cards != null && !cards.isEmpty()) {
+                            for (CardInfo cardInfo : cards) {
+                                String masked_card = cardInfo.getMasked_card(); // Маска карты
+                                String card_type = cardInfo.getCard_type(); // Тип карты
+                                String bank_name = cardInfo.getBank_name(); // Название банка
+                                String rectoken = cardInfo.getRectoken(); // Токен карты
+                                String merchant = cardInfo.getMerchant(); // Токен карты
+
+                                Log.d(TAG, "onResponse: card_token: " + rectoken);
+                                ContentValues cv = new ContentValues();
+                                cv.put("masked_card", masked_card);
+                                cv.put("card_type", card_type);
+                                cv.put("bank_name", bank_name);
+                                cv.put("rectoken", rectoken);
+                                cv.put("merchant", merchant);
+                                cv.put("rectoken_check", "0");
+                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
+                            }
+                            Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_WFP_CARDS + " ORDER BY id DESC LIMIT 1", null);
+                            if (cursor != null && cursor.moveToFirst()) {
+                                // Получаем значение ID последней записи
+                                @SuppressLint("Range") int lastId = cursor.getInt(cursor.getColumnIndex("id"));
+                                cursor.close();
+
+                                // Обновляем строку с найденным ID
+                                ContentValues cv = new ContentValues();
+                                cv.put("rectoken_check", "1");
+                                database.update(MainActivity.TABLE_WFP_CARDS, cv, "id = ?", new String[] { String.valueOf(lastId) });
+                            }
+
+                            database.close();
+                        }
+                        database.close();
+                    }
+
+                } else {
+                    // Обработка случаев, когда ответ не 200 OK
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
+                // Обработка ошибки запроса
+                Log.d(TAG, "onResponse: failure " + t.toString());
+            }
+        });
+        progressBar.setVisibility(View.INVISIBLE);
+    }
+
     @Override
     public void onResume() {
         super.onResume();
+        progressBar = binding.progressBar;
+        progressBar.setVisibility(View.VISIBLE);
         pay_system();
         textCard = binding.textCard;
         listView = binding.listView;
@@ -266,7 +356,7 @@ public class CardFragment extends Fragment {
             listView.setVisibility(View.GONE);
         }
 
-        progressBar = binding.progressBar;
+
 
 
     }
@@ -436,14 +526,21 @@ public class CardFragment extends Fragment {
 
 
 
+    @SuppressLint("SetJavaScriptEnabled")
     private void getUrlToPaymentWfp(String order_id, String orderDescription) throws UnsupportedEncodingException {
+// Настраиваем Retrofit
+        HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
+        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+        OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+        httpClient.addInterceptor(logging);
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://m.easy-order-taxi.site/")
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(ScalarsConverterFactory.create())
+                .client(httpClient.build())
                 .build();
 
-        InvoiceService service = retrofit.create(InvoiceService.class);
+        VerifyService service = retrofit.create(VerifyService.class);
         List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
         String city = stringList.get(1);
 
@@ -451,46 +548,56 @@ public class CardFragment extends Fragment {
         String userEmail = stringList.get(3);
         String phone_number = stringList.get(2);
 
-        Call<InvoiceResponse> call = service.createInvoice(
+           Call<String> call = service.verify(
                 getString(R.string.application),
                 city,
                 order_id,
-                1,
-                LocaleHelper.getLocale(),
-                orderDescription,
                 userEmail,
-                phone_number
+                phone_number,
+                LocaleHelper.getLocale()
         );
 
-        call.enqueue(new Callback<InvoiceResponse>() {
+        WebSettings webSettings = webView.getSettings();
+        webSettings.setJavaScriptEnabled(true); // Включаем поддержку JavaScript
+        webView.setWebViewClient(new WebViewClient() {
             @Override
-            public void onResponse(@NonNull Call<InvoiceResponse> call, @NonNull Response<InvoiceResponse> response) {
-                if (response.isSuccessful()) {
-                    InvoiceResponse invoiceResponse = response.body();
-
-                    if (invoiceResponse != null) {
-                        String checkoutUrl = invoiceResponse.getInvoiceUrl();
-                        Log.d(TAG, "onResponse: Invoice URL: " + checkoutUrl);
-                        if (isAdded()) {
-                            MyBottomSheetCardVerification bottomSheetDialogFragment = new MyBottomSheetCardVerification(checkoutUrl, amount);
-                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                        }
-
-                    } else {
-                        Log.d(TAG,"Response body is null");
-                    }
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                // Скрыть прогресс бар или что-то подобное
+            }
+        });
+        call.enqueue(new Callback<String>() {
+            @Override
+            public void onResponse(@NonNull Call<String> call, @NonNull Response<String> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    // Отобразить HTML в WebView
+                    displayHtmlContent(response.body());
                 } else {
-                    Log.d(TAG, "Request failed: " + response.code());
+                    Log.e(TAG, "Response was not successful or body was null");
                 }
             }
 
             @Override
-            public void onFailure(@NonNull Call<InvoiceResponse> call, @NonNull Throwable t) {
-                Log.d(TAG, "Request failed: " + t.getMessage());
+            public void onFailure(@NonNull Call<String> call, @NonNull Throwable t) {
+                Log.e(TAG, "IOException"  + t);
             }
         });
+
         progressBar.setVisibility(View.INVISIBLE);
     }
+
+    private void displayHtmlContent(String htmlContent) {
+        String baseUrl = "https://secure.wayforpay.com/"; // Замените на ваш базовый URL
+        btnCardLink.setVisibility(View.GONE);
+        webView.setVisibility(View.VISIBLE);
+
+        // Присваиваем WebViewClient для отслеживания URL
+        webView.setWebViewClient(new MyWebViewClient(context, navController));
+
+        // Загружаем HTML-контент в WebView
+        webView.loadDataWithBaseURL(baseUrl, htmlContent, "text/html", "UTF-8", null);
+    }
+
     private void getUrlToPaymentFondy(String order_id, String orderDescription) throws UnsupportedEncodingException {
 
         Retrofit retrofit = new Retrofit.Builder()
@@ -609,7 +716,8 @@ public class CardFragment extends Fragment {
                     }
 
 
-                });            }
+                });
+            }
 
 
             @Override
@@ -645,6 +753,7 @@ public class CardFragment extends Fragment {
         database.close();
         return list;
     }
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();

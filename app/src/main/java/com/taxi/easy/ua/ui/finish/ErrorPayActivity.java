@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
@@ -98,7 +99,7 @@ public class ErrorPayActivity extends AppCompatActivity {
 
         call.enqueue(new Callback<ApiResponseRev<SuccessResponseDataRevers>>() {
             @Override
-            public void onResponse(Call<ApiResponseRev<SuccessResponseDataRevers>> call, Response<ApiResponseRev<SuccessResponseDataRevers>> response) {
+            public void onResponse(@NonNull Call<ApiResponseRev<SuccessResponseDataRevers>> call, @NonNull Response<ApiResponseRev<SuccessResponseDataRevers>> response) {
 
                 if (response.isSuccessful()) {
                     // Обработка успешного ответа

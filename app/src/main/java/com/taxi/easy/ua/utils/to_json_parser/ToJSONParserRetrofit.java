@@ -2,6 +2,8 @@ package com.taxi.easy.ua.utils.to_json_parser;
 
 import static com.taxi.easy.ua.ui.finish.FinishActivity.baseUrl;
 
+import androidx.annotation.NonNull;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.util.HashMap;
@@ -43,7 +45,7 @@ public class ToJSONParserRetrofit {
 
         call.enqueue(new Callback<JsonResponse>() {
             @Override
-            public void onResponse(Call<JsonResponse> call, Response<JsonResponse> response) {
+            public void onResponse(@NonNull Call<JsonResponse> call, @NonNull Response<JsonResponse> response) {
                 Map<String, String> costMap = new HashMap<>();
                 if (response.isSuccessful() && response.body() != null) {
                     JsonResponse jsonarray = response.body();
@@ -81,7 +83,7 @@ public class ToJSONParserRetrofit {
             }
 
             @Override
-            public void onFailure(Call<JsonResponse> call, Throwable t) {
+            public void onFailure(@NonNull Call<JsonResponse> call, @NonNull Throwable t) {
                 Map<String, String> costMap = new HashMap<>();
                 costMap.put("order_cost", "0");
                 costMap.put("message", "Сталася помилка");

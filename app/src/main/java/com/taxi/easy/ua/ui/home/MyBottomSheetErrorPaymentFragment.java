@@ -127,7 +127,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         btn_ok.setOnClickListener(v -> {
             cancelOrderDouble();
 
-            paymentType("nal_payment");
+            paymentType();
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
@@ -184,6 +184,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     }
 
     private void getUrlToPaymentWfp() {
+        FragmentManager fragmentManager = getParentFragmentManager();
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
@@ -219,16 +220,13 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             @Override
             public void onResponse(@NonNull Call<InvoiceResponse> call, @NonNull Response<InvoiceResponse> response) {
                 Log.d(TAG, "onResponse: 1111" + response.code());
-                FinishActivity.btn_again.setVisibility(View.VISIBLE);
-                FinishActivity.btn_cancel.setVisibility(View.VISIBLE);
-                FinishActivity.progressBar.setVisibility(View.INVISIBLE);
                 if (response.isSuccessful()) {
                     InvoiceResponse invoiceResponse = response.body();
 
                     if (invoiceResponse != null) {
                         String checkoutUrl = invoiceResponse.getInvoiceUrl();
                         Log.d(TAG, "onResponse: Invoice URL: " + checkoutUrl);
-                        if(checkoutUrl != null && isAdded()) {
+                        if(checkoutUrl != null) {
                             MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
                                     checkoutUrl,
                                     amount,
@@ -236,7 +234,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                                     FinishActivity.uid_Double,
                                     context
                             );
-                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                         } else {
                             Log.d(TAG,"Response body is null");
@@ -265,6 +263,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             String amount,
             String rectoken
     ) {
+        FragmentManager fragmentManager = getParentFragmentManager();
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
@@ -306,7 +305,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
 
                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getActivity());
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
                 } else {
                     // Ошибка запроса
@@ -314,7 +313,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
 
                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getActivity());
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 }
             }
 
@@ -325,7 +324,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
 
                 MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getActivity());
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
 
@@ -343,6 +342,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
                 Map<String, String> sendUrlMap = response.body();
 
+                assert sendUrlMap != null;
                 String orderWeb = sendUrlMap.get("order_cost");
                 String message = sendUrlMap.get("message");
 
@@ -362,6 +362,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
 
                     String pay_method_message = context.getString(R.string.pay_method_message_main);
+                    pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
                     switch (pay_method) {
                         case "bonus_payment":
                             pay_method_message += " " + context.getString(R.string.pay_method_message_bonus);
@@ -893,10 +894,14 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
         return result;
     }
-
-    private void paymentType(String paymentCode) {
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        this.context = context; // Инициализация контекста
+    }
+    private void paymentType() {
         ContentValues cv = new ContentValues();
-        cv.put("payment_type", paymentCode);
+        cv.put("payment_type", "nal_payment");
         // обновляем по id
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
@@ -906,7 +911,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     @SuppressLint("Range")
     private ArrayList<Map<String, String>> getCardMapsFromDatabase(String table) {
         ArrayList<Map<String, String>> cardMaps = new ArrayList<>();
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         // Выполните запрос к таблице TABLE_FONDY_CARDS и получите данные
         Cursor cursor = database.query(table, null, null, null, null, null, null);
         Log.d(TAG, "getCardMapsFromDatabase: card count: " + cursor.getCount());

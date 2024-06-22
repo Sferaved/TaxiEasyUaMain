@@ -387,7 +387,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                         String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
 
                         try {
-//                            sendUrlFrom = FromJSONParser.sendURL(urlFrom);
+//                            sendUrlFrom = FromJSONParserRetrofit.sendURL(urlFrom);
                             FromJSONParser parser = new FromJSONParser(urlFrom);
                             Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
                             assert sendUrlFrom != null;

@@ -57,12 +57,6 @@ import com.taxi.easy.ua.ui.open_map.mapbox.Geometry;
 import com.taxi.easy.ua.ui.open_map.mapbox.MapboxApiClient;
 import com.taxi.easy.ua.ui.open_map.mapbox.MapboxResponse;
 import com.taxi.easy.ua.ui.open_map.mapbox.MapboxService;
-import com.taxi.easy.ua.ui.open_map.visicom.key_mapbox.ApiCallbackMapbox;
-import com.taxi.easy.ua.ui.open_map.visicom.key_mapbox.ApiClientMapbox;
-import com.taxi.easy.ua.ui.open_map.visicom.key_mapbox.ApiResponseMapbox;
-import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiCallback;
-import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiClient;
-import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiResponse;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.KeyboardUtils;
 import com.taxi.easy.ua.utils.LocaleHelper;
@@ -223,12 +217,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                 if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
 
                     VisicomFragment.btn_clear_from.setVisibility(View.INVISIBLE);
-//                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
-//                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
-                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
 
-//                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
-//                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
+                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
                     VisicomFragment.btn_clear_from_text.setText(getString(R.string.try_again));
                     VisicomFragment.btn_clear_from_text.setVisibility(View.VISIBLE);
                     VisicomFragment.btn_clear_from_text.setOnClickListener(new View.OnClickListener() {
@@ -243,8 +233,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                     btn_clear_from.setVisibility(View.INVISIBLE);
                     btn_clear_to.setVisibility(View.INVISIBLE);
 
-//                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
-//                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
                     VisicomFragment.textwhere.setVisibility(View.INVISIBLE);
                     VisicomFragment.num2.setVisibility(View.INVISIBLE);
                     VisicomFragment.textViewTo.setVisibility(View.INVISIBLE);
@@ -437,9 +425,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                     }, timeout);
                 }
             });
-
-            findViewById(R.id.textfrom).setVisibility(View.GONE);
-            findViewById(R.id.num1).setVisibility(View.GONE);
         }
         btnOnMap = findViewById(R.id.btn_on_map);
         btnOnMap.setOnClickListener(new View.OnClickListener() {
@@ -467,12 +452,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                 if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
 
                     VisicomFragment.btn_clear_from.setVisibility(View.INVISIBLE);
-//                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
-//                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
-                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
 
-//                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
-//                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
+                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
                     VisicomFragment.btn_clear_from_text.setText(getString(R.string.try_again));
                     VisicomFragment.btn_clear_from_text.setVisibility(View.VISIBLE);
                     VisicomFragment.btn_clear_from_text.setOnClickListener(new View.OnClickListener() {
@@ -487,8 +468,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                     btn_clear_from.setVisibility(View.INVISIBLE);
                     btn_clear_to.setVisibility(View.INVISIBLE);
 
-//                    VisicomFragment.textfrom.setVisibility(View.INVISIBLE);
-//                    VisicomFragment.num1.setVisibility(View.INVISIBLE);
                     VisicomFragment.textwhere.setVisibility(View.INVISIBLE);
                     VisicomFragment.num2.setVisibility(View.INVISIBLE);
                     VisicomFragment.textViewTo.setVisibility(View.INVISIBLE);

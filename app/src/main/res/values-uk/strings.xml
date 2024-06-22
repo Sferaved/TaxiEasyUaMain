@@ -1,18 +1,17 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.749</string>
-    <string name="version">Версія: 1.749</string>
+    <string name="version_code">1.750</string>
+    <string name="version">Версія: 1.750</string>
 
     <string name="app_name">Таксі Доставка</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
     <string name="back4app_app_id">01YGF894m3NJRXT1BlH6qPo9pUfDlG9sqi9K9mIL</string>
     <string name="back4app_client_key">T5f5GuT1UCmaiJn8Dek3sVmayGuJa2jfelQR6V6f</string>
 
-
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Таксі Україна замовлення онлайн Лайт</string>
+    <string name="nav_header_title">Попутчик таксі Україна дешево</string>
     <string name="nav_header_subtitle">Швидкі поїздки по містам України</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Налаштування</string>
@@ -376,4 +375,7 @@
     <string name="change_tarrif">Виберіть інший тариф</string>
     <string name="checkout_status">Чекайте, йде перевірка статусу замовлення...</string>
     <string name="check_order_mes">Чекайте на реєстрацію замовлення...</string>
+    <string name="sent_cancel_message">Запит на скасування замовлення надіслано</string>
+    <string name="aplay_card_message">Вашу картку прийнято та відправлено на перевірку. Скоро вона стане доступною для оплати подорожей.</string>
+    <string name="status_checkout_message">Запитано оновлення статусу. Чекайте або уточніть оператора</string>
 </resources>

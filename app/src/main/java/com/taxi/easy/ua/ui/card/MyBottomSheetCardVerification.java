@@ -90,6 +90,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
     private final String baseUrl = "https://m.easy-order-taxi.site";
     Activity context;
     private NavController navController;
+    String city;
 
     public MyBottomSheetCardVerification(String checkoutUrl, String amount) {
         this.checkoutUrl = checkoutUrl;
@@ -107,7 +108,8 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
         email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
         context = requireActivity();
         database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-
+        List<String> stringList = logCursor(MainActivity.CITY_INFO);
+        city = stringList.get(1);
         // Настройка WebView
         webView.getSettings().setJavaScriptEnabled(true);
         // Добавляем прослушиватель событий клавиатуры
@@ -374,8 +376,8 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                 if (isAdded()) { //
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
                     bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    dismiss();
                 }
-                dismiss();
                 Log.d(TAG, "Request failed: " + t.getMessage());
             }
         });
@@ -788,51 +790,14 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
     public void onDismiss(@NonNull DialogInterface dialog) {
         super.onDismiss(dialog);
         CardFragment.progressBar.setVisibility(View.GONE);
-//        if(MainActivity.order_id !=null) {
-        // Открываем или создаем базу данных
-//        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-//
-//// Выполняем запрос к базе данных для получения значения payment_type
-//        Cursor cursor = database.query(MainActivity.TABLE_SETTINGS_INFO,
-//                new String[]{"payment_type"}, // выбираем только столбец payment_type
-//                "id = ?", // условие выборки
-//                new String[]{"1"}, // параметры условия выборки (в данном случае id = 1)
-//                null, // groupBy
-//                null, // having
-//                null); // orderBy
-//
-//// Проверяем, есть ли у нас результаты
-//        String paymentType = null;
-//        if (cursor != null && cursor.moveToFirst()) {
-//            // Получаем индекс столбца payment_type
-//            int paymentTypeIndex = cursor.getColumnIndex("payment_type");
-//            // Получаем значение payment_type из текущей строки
-//            pay_method = cursor.getString(paymentTypeIndex);
-//            // Закрываем курсор, так как он больше не нужен
-//            cursor.close();
-//        }
-//
-//// Закрываем базу данных
-//        database.close();
-//
-//// Теперь переменная paymentType содержит значение payment_type
-//        if (pay_method != null) {
-//            // Используйте значение paymentType по вашему усмотрению
-//            Log.d("PaymentType", pay_method);
-//        } else {
-//            // Если значение paymentType равно null, значит, данные не были найдены
-//            Log.d("PaymentType", "Value not found");
-//        }
-
-//            switch (pay_method) {
-//                case "fondy_payment":
-//                    getReversFondy(MainActivity.order_id, context.getString(R.string.return_pay), amount);
-//                    break;
-//                case "wfp_payment":
-////                    getStatusWfp();
-//                    break;
-//            }
-//        }
+        switch (pay_method) {
+            case "fondy_payment":
+                getReversFondy(MainActivity.order_id, context.getString(R.string.return_pay), amount);
+                break;
+            case "wfp_payment":
+                getReversWfp(city);;
+                break;
+        }
     }
 
     private void pay_system() {
@@ -851,7 +816,6 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                     ResponsePaySystem responsePaySystem = response.body();
                     assert responsePaySystem != null;
                     String paymentCode = responsePaySystem.getPay_system();
-                    String paymentCodeNew = "fondy";
 
                     switch (paymentCode) {
                         case "wfp":
@@ -993,12 +957,30 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
         if (database != null && database.isOpen()) {
             database.close();
         }
+        CardFragment.progressBar.setVisibility(View.GONE);
+        switch (pay_method) {
+            case "fondy_payment":
+                getReversFondy(MainActivity.order_id, context.getString(R.string.return_pay), amount);
+                break;
+            case "wfp_payment":
+                getReversWfp(city);
+                break;
+        }
     }
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         if (database != null && database.isOpen()) {
             database.close();
+        }
+        CardFragment.progressBar.setVisibility(View.GONE);
+        switch (pay_method) {
+            case "fondy_payment":
+                getReversFondy(MainActivity.order_id, context.getString(R.string.return_pay), amount);
+                break;
+            case "wfp_payment":
+                getReversWfp(city);
+                break;
         }
     }
 }
