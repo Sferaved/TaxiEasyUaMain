@@ -5,6 +5,7 @@ import androidx.annotation.NonNull;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -27,6 +28,10 @@ public class CostJSONParserRetrofit {
         // Создание клиента OkHttpClient с подключенным логгером
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
         httpClient.addInterceptor(loggingInterceptor);
+        httpClient.connectTimeout(60, TimeUnit.SECONDS); // Тайм-аут для соединения
+        httpClient.readTimeout(60, TimeUnit.SECONDS);    // Тайм-аут для чтения
+        httpClient.writeTimeout(60, TimeUnit.SECONDS);   // Тайм-аут для записи
+        // httpClient.addInterceptor(loggingInterceptor);
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://m.easy-order-taxi.site")
@@ -61,7 +66,7 @@ public class CostJSONParserRetrofit {
             }
 
             @Override
-            public void onFailure(Call<Map<String, String>> call, Throwable t) {
+            public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
                 Map<String, String> costMap = new HashMap<>();
                 costMap.put("order_cost", "0");
                 costMap.put("Message", "ErrorMessage");

@@ -17,6 +17,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 
@@ -63,6 +64,7 @@ public class MyBottomSheetGPSFragment extends BottomSheetDialogFragment {
                         intent.setData(uri);
                         startActivity(intent);
                     } catch (ActivityNotFoundException e) {
+                        FirebaseCrashlytics.getInstance().recordException(e);
                         // Provide a fallback option, such as showing a message to the user
 
                     }

@@ -9,7 +9,6 @@ import android.util.Log;
 
 public class BootReceiver extends BroadcastReceiver {
 
-    @Override
     public void onReceive(Context context, Intent intent) {
         Log.d("BootReceiver", "onReceive called");
         Log.d("BootReceiver", "Action: " + intent.getAction());
@@ -27,7 +26,6 @@ public class BootReceiver extends BroadcastReceiver {
             Log.e("BootReceiver", "Error starting service", e);
         }
     }
-
 
     private boolean isServiceRunning(Context context) {
         ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);

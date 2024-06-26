@@ -18,6 +18,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.taxi.easy.ua.MainActivity;
@@ -149,6 +150,7 @@ public class MyBottomSheetTokenFragment extends BottomSheetDialogFragment {
                         }
                     } catch (JsonSyntaxException e) {
                         // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
+                        FirebaseCrashlytics.getInstance().recordException(e);
                         Log.e("TAG1", "Error parsing JSON response: " + e.getMessage());
                         cancelOrderDismiss(FinishActivity.uid);
                         cancelOrderDismiss(FinishActivity.uid_Double);
@@ -162,8 +164,9 @@ public class MyBottomSheetTokenFragment extends BottomSheetDialogFragment {
             }
 
             @Override
-            public void onFailure(Call<ApiResponseToken<SuccessResponseDataToken>> call, Throwable t) {
+            public void onFailure(@NonNull Call<ApiResponseToken<SuccessResponseDataToken>> call, @NonNull Throwable t) {
                 Log.d("TAG1", "onFailure1111: " + t.toString());
+
                 cancelOrderDismiss(FinishActivity.uid);
                 cancelOrderDismiss(FinishActivity.uid_Double);
             }
@@ -199,7 +202,7 @@ public class MyBottomSheetTokenFragment extends BottomSheetDialogFragment {
             public void onFailure(Call<Status> call, Throwable t) {
                 // Обработка ошибок сети или других ошибок
                 String errorMessage = t.getMessage();
-                t.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Log.d("TAG", "onFailure: " + errorMessage);
 
             }

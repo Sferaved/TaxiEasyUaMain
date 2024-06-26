@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.utils.ip;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -33,7 +35,7 @@ public class IPUtil {
             return jsonResponse.substring(startIndex, endIndex);
 
         } catch (IOException e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
 
         return null;

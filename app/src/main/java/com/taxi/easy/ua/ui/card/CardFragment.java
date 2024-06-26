@@ -24,9 +24,11 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.taxi.easy.ua.MainActivity;
@@ -93,10 +95,12 @@ public class CardFragment extends Fragment {
     private boolean show_cards;
     Activity context;
     WebView webView;
+    FragmentManager fragmentManager;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentCardBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
+        fragmentManager = getParentFragmentManager();
         webView = binding.webView;
         context = requireActivity();
         navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
@@ -176,6 +180,7 @@ public class CardFragment extends Fragment {
                                     navController.navigate(R.id.nav_visicom);
                                 } else {
                                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getActivity());
+
                                     messageFondy = getString(R.string.fondy_message);
 
                                     switch (pay_method) {
@@ -183,6 +188,7 @@ public class CardFragment extends Fragment {
                                             try {
                                                 getUrlToPaymentWfp(MainActivity.order_id, messageFondy);
                                             } catch (UnsupportedEncodingException e) {
+                                                FirebaseCrashlytics.getInstance().recordException(e);
                                                 throw new RuntimeException(e);
                                             }
                                             break;
@@ -190,6 +196,7 @@ public class CardFragment extends Fragment {
                                             try {
                                                 getUrlToPaymentFondy(MainActivity.order_id, messageFondy);
                                             } catch (UnsupportedEncodingException e) {
+                                                FirebaseCrashlytics.getInstance().recordException(e);
                                                 throw new RuntimeException(e);
                                             }
                                             break;
@@ -222,6 +229,7 @@ public class CardFragment extends Fragment {
                         if (!cardMaps.isEmpty()) {
                             CustomCardAdapter listAdapter = new CustomCardAdapter(context, cardMaps, table, pay_method);
                             listView.setAdapter(listAdapter);
+                            textCard.setVisibility(View.GONE);
                             progressBar.setVisibility(View.GONE);
                         } else {
                             textCard.setVisibility(View.VISIBLE);
@@ -236,13 +244,13 @@ public class CardFragment extends Fragment {
                         textCard.setVisibility(View.GONE);
 //            btnCardLink.setVisibility(View.GONE);
                         MyBottomSheetErrorCardFragment bottomSheetDialogFragment = new MyBottomSheetErrorCardFragment(getString(R.string.city_no_cards));
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                     }
                 } else {
                     if (isAdded()) { //
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
 
                 }
@@ -252,7 +260,7 @@ public class CardFragment extends Fragment {
             public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
                 if (isAdded()) { //
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 }
             }
         });
@@ -449,7 +457,7 @@ public class CardFragment extends Fragment {
                         String errorBody = response.errorBody().string();
                         Log.d("TAG2", "onResponse: Тело ошибки: " + errorBody);
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        FirebaseCrashlytics.getInstance().recordException(e);
                     }
                 }
             }
@@ -678,7 +686,7 @@ public class CardFragment extends Fragment {
                                         // Обработка успешного ответа
 
                                         MyBottomSheetCardVerification bottomSheetDialogFragment = new MyBottomSheetCardVerification(checkoutUrl, amount);
-                                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
 
                                     } else if ("failure".equals(responseStatus)) {
@@ -688,7 +696,7 @@ public class CardFragment extends Fragment {
                                         Log.d("TAG1", "onResponse: errorResponseMessage " + errorResponseMessage);
                                         Log.d("TAG1", "onResponse: errorResponseCode" + errorResponseCode);
                                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.pay_failure));
-                                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                                         // Отобразить сообщение об ошибке пользователю
                                     } else {
                                         // Обработка других возможных статусов ответа
@@ -698,7 +706,7 @@ public class CardFragment extends Fragment {
                                 }
                             } catch (JsonSyntaxException e) {
                                 // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
-
+                                FirebaseCrashlytics.getInstance().recordException(e);
                             }
                         } else {
                             // Обработка ошибки

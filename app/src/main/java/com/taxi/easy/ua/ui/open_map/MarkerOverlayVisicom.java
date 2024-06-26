@@ -5,6 +5,8 @@ import android.content.Context;
 import android.util.Log;
 import android.view.MotionEvent;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
+
 import org.json.JSONException;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
@@ -51,6 +53,7 @@ public class MarkerOverlayVisicom extends Overlay {
 
                 } catch (MalformedURLException e) {
                     Log.d("TAG", "onCreate:" + new RuntimeException(e));
+                    FirebaseCrashlytics.getInstance().recordException(e);
                 }
                 break;
             case "finishMarker":

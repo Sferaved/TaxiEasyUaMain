@@ -20,6 +20,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
@@ -50,18 +51,19 @@ public class BonusFragment extends Fragment {
     private TextView text0;
     NavController navController;
     Activity context;
+    FragmentManager fragmentManager;
     @SuppressLint("SourceLockedOrientationActivity")
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+        binding = FragmentBonusBinding.inflate(inflater, container, false);
+        View root = binding.getRoot();
         context = requireActivity();
-        
+        context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        fragmentManager = getParentFragmentManager();
         navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
         if (!NetworkUtils.isNetworkAvailable(context)) {
             navController.navigate(R.id.nav_visicom);
         }
-        binding = FragmentBonusBinding.inflate(inflater, container, false);
-        View root = binding.getRoot();
-        context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         text0 =  binding.text0;
         networkChangeReceiver = new NetworkChangeReceiver();
         progressBar = binding.progressBar;
@@ -147,7 +149,7 @@ public class BonusFragment extends Fragment {
                     Log.d("TAG", "onResponse: " + bonus);
                 } else {
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 }
                 btnOrder.setVisibility(View.VISIBLE);
             }

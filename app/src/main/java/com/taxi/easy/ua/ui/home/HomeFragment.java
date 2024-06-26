@@ -20,7 +20,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.graphics.BlendMode;
-import android.graphics.Color;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -50,11 +49,13 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.room.Room;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.cities.Cherkasy.Cherkasy;
@@ -152,10 +153,11 @@ public class HomeFragment extends Fragment {
     String city;
     LocationManager locationManager;
     Activity context;
+    FragmentManager fragmentManager;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         context = requireActivity();
-
+        fragmentManager = getParentFragmentManager();
         navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
 
 
@@ -214,7 +216,7 @@ public class HomeFragment extends Fragment {
             public void onClick(View v) {
                 if(loadPermissionRequestCount() >= 3 && !MainActivity.location_update) {
                     MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment(getString(R.string.location_on));
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 } else {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -339,6 +341,7 @@ public class HomeFragment extends Fragment {
                                             orderFinished();
                                         };
                                     } catch (UnsupportedEncodingException e) {
+                                        FirebaseCrashlytics.getInstance().recordException(e);
                                         throw new RuntimeException(e);
                                     }
 
@@ -356,6 +359,7 @@ public class HomeFragment extends Fragment {
                                             orderFinished();
                                         };
                                     } catch (UnsupportedEncodingException e) {
+                                        FirebaseCrashlytics.getInstance().recordException(e);
                                         throw new RuntimeException(e);
                                     }
                                 }
@@ -366,25 +370,27 @@ public class HomeFragment extends Fragment {
                                         orderFinished();
                                     };
                                 } catch (UnsupportedEncodingException e) {
+                                    FirebaseCrashlytics.getInstance().recordException(e);
                                     throw new RuntimeException(e);
                                 }
                         }
 
                 } else {
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 }
             }
         });
 
         gpsbut = binding.gpsbut;
+        gpsbut.setVisibility(View.INVISIBLE);
         locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         gpsbut.setOnClickListener(v -> {
             if (locationManager != null) {
                 if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                     if(loadPermissionRequestCount() >= 3 && !MainActivity.location_update) {
                         MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment(getString(R.string.location_on));
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     } else {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                             if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -422,16 +428,17 @@ public class HomeFragment extends Fragment {
                     // GPS выключен, выполните необходимые действия
 
                     MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 }
             } else {
 
                 MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
 
         on_map = binding.btnMap;
+        on_map.setVisibility(View.INVISIBLE);
         on_map.setOnClickListener(v -> {
             LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
             boolean gps_enabled = false;
@@ -439,17 +446,19 @@ public class HomeFragment extends Fragment {
 
             try {
                 gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-            } catch(Exception ignored) {
+            } catch(Exception e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
             }
 
             try {
                 network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-            } catch(Exception ignored) {
+            } catch(Exception e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
             }
 
             if(!gps_enabled || !network_enabled) {
                 MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }  else  {
                 // Разрешения уже предоставлены, выполнить ваш код
                 if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
@@ -480,7 +489,7 @@ public class HomeFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
         buttonBonus.setOnClickListener(new View.OnClickListener() {
@@ -495,7 +504,7 @@ public class HomeFragment extends Fragment {
                         api,
                         text_view_cost
                 );
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
 //        getLocalIpAddress();
@@ -508,8 +517,8 @@ public class HomeFragment extends Fragment {
             getPhoneNumber();
         }
         if (!verifyPhone(context)) {
-            bottomSheetDialogFragment = new MyPhoneDialogFragment(getActivity(),"home", text_view_cost.getText().toString(), true);
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+            bottomSheetDialogFragment = new MyPhoneDialogFragment(context,"home");
+            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             btnVisible(View.INVISIBLE);
         }
         if (verifyPhone(requireContext())) {
@@ -610,21 +619,21 @@ public class HomeFragment extends Fragment {
                             }
                         }
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
                     btnVisible(View.VISIBLE);
-                    t.printStackTrace();
+                    FirebaseCrashlytics.getInstance().recordException(t);
                 }
             });
         }  else {
             btnVisible(View.VISIBLE);
             String message = getString(R.string.phone_input_error);
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         }
     }
 
@@ -654,6 +663,7 @@ public class HomeFragment extends Fragment {
                         orderFinished();
                     }
                 } catch (UnsupportedEncodingException e) {
+                    FirebaseCrashlytics.getInstance().recordException(e);
                     throw new RuntimeException(e);
                 }
                 progressBar.setVisibility(View.GONE);
@@ -677,7 +687,7 @@ public class HomeFragment extends Fragment {
     private boolean orderRout() throws UnsupportedEncodingException {
         if(!verifyOrder(requireContext())) {
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.black_list_message));
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             progressBar.setVisibility(View.INVISIBLE);
             return false;
         } else {
@@ -851,22 +861,22 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                    || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_yellow));
-                gpsbut.setTextColor(Color.BLACK);
-                btnGeo.setVisibility(View.VISIBLE);
-            } else {
-                gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_green));
-                gpsbut.setTextColor(Color.WHITE);
-                btnGeo.setVisibility(View.INVISIBLE);
-            }
-        } else {
-            gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_red));
-            gpsbut.setTextColor(Color.WHITE);
-            btnGeo.setVisibility(View.VISIBLE);
-        }
+//        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+//            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+//                    || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//                gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_yellow));
+//                gpsbut.setTextColor(Color.BLACK);
+//                btnGeo.setVisibility(View.VISIBLE);
+//            } else {
+//                gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_green));
+//                gpsbut.setTextColor(Color.WHITE);
+//                btnGeo.setVisibility(View.INVISIBLE);
+//            }
+//        } else {
+//            gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_red));
+//            gpsbut.setTextColor(Color.WHITE);
+//            btnGeo.setVisibility(View.VISIBLE);
+//        }
 
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
 
@@ -914,30 +924,7 @@ public class HomeFragment extends Fragment {
             costRoutHome(stringListRoutHome);
         } else {
             resetRoutHome();
-//            text_view_cost.setVisibility(View.INVISIBLE);
-//            btn_minus.setVisibility(View.INVISIBLE);
-//            btn_plus.setVisibility(View.INVISIBLE);
-//            buttonAddServices.setVisibility(View.INVISIBLE);
-//            buttonBonus.setVisibility(View.INVISIBLE);
-//            textViewFrom.setText("");
-//            from_number.setText("");
-//            from_number.setVisibility(View.INVISIBLE);
-//            textViewTo.setText("");
-//            textViewTo.setVisibility(View.INVISIBLE);
-//            btn_clear.setVisibility(View.INVISIBLE);
-//            binding.textTo.setVisibility(View.INVISIBLE);
-//            binding.num2.setVisibility(View.INVISIBLE);
-//
-//            btn_order.setVisibility(View.INVISIBLE);
-
-//            from = null;
-//            to = null;
             updateAddCost("0");
-//            text_view_cost.setText("");
-//            textViewFrom.setText("");
-//            from_number.setText("");
-//            textViewTo.setText("");
-//            to_number.setText("");
         }
 
 
@@ -984,21 +971,22 @@ public class HomeFragment extends Fragment {
                     try {
                         sendUrlMapCost = ResultSONParser.sendURL(url);
                     } catch (MalformedURLException | InterruptedException | JSONException e) {
+                        FirebaseCrashlytics.getInstance().recordException(e);
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_firebase_start));
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
                     assert sendUrlMapCost != null;
                     String orderCost = (String) sendUrlMapCost.get("message");
                     switch (Objects.requireNonNull(orderCost)) {
                         case "200": {
                             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_firebase_start));
-                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                             break;
                         }
                         case "400": {
                             textViewFrom.setTextColor(RED);
                             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(address_error_message));
-                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                             break;
                         }
                         case "1":
@@ -1023,7 +1011,7 @@ public class HomeFragment extends Fragment {
                 } else {
                     progressBar.setVisibility(View.INVISIBLE);
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 }
 
             }
@@ -1075,6 +1063,7 @@ public class HomeFragment extends Fragment {
                         try {
                             sendUrlMapCost = ResultSONParser.sendURL(url);
                         } catch (MalformedURLException | InterruptedException | JSONException e) {
+                            FirebaseCrashlytics.getInstance().recordException(e);
                             Toast.makeText(context, R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
                         }
 
@@ -1083,12 +1072,12 @@ public class HomeFragment extends Fragment {
                         switch (Objects.requireNonNull(orderCost)) {
                             case "200":
                                 bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_firebase_start));
-                                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                                 break;
                             case "400":
                                 textViewTo.setTextColor(RED);
                                 bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.address_error_message));
-                                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                                 break;
                             case "1":
                                 to_number.setVisibility(View.VISIBLE);
@@ -1120,7 +1109,7 @@ public class HomeFragment extends Fragment {
                 }
                     else {
                         bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
             };
 
@@ -1187,14 +1176,15 @@ public class HomeFragment extends Fragment {
 
                 @Override
                 public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
-                    t.printStackTrace();
+                    FirebaseCrashlytics.getInstance().recordException(t);
                 }
             });
 
         } catch (MalformedURLException | UnsupportedEncodingException e) {
             resetRoutHome();
+            FirebaseCrashlytics.getInstance().recordException(e);
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         }
     }
 
@@ -1258,7 +1248,7 @@ public class HomeFragment extends Fragment {
                 }
             }
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
 
 
@@ -1464,7 +1454,7 @@ public class HomeFragment extends Fragment {
                             resetRoutHome();
                             message = getResources().getString(R.string.double_order_error);
                             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                         } else {
                             switch (pay_method) {
                                 case "bonus_payment":
@@ -1477,7 +1467,7 @@ public class HomeFragment extends Fragment {
                                     resetRoutHome();
                                     message = getResources().getString(R.string.error_message);
                                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                             }
 
                         }
@@ -1507,15 +1497,16 @@ public class HomeFragment extends Fragment {
 
                 @Override
                 public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
-                    t.printStackTrace();
+                    FirebaseCrashlytics.getInstance().recordException(t);
                 }
             });
 
         } catch (MalformedURLException | UnsupportedEncodingException e) {
             resetRoutHome();
+            FirebaseCrashlytics.getInstance().recordException(e);
             message = getString(R.string.error_message);
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         }
     }
 
@@ -1831,6 +1822,7 @@ public class HomeFragment extends Fragment {
                         orderFinished();
                     };
                 } catch (UnsupportedEncodingException e) {
+                    FirebaseCrashlytics.getInstance().recordException(e);
                     throw new RuntimeException(e);
                 }
 

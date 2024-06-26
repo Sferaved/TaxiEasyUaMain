@@ -31,6 +31,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
@@ -253,7 +254,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             discountFist = Long.parseLong(discountText);
         } catch (NumberFormatException e) {
             // Handle the case where the expression cannot be evaluated
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
 
 
@@ -469,6 +470,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         try {
             changeCost();
         } catch (MalformedURLException e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
             throw new RuntimeException(e);
         }
 
@@ -522,6 +524,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                     try {
                         changeCost();
                     } catch (MalformedURLException e) {
+                        FirebaseCrashlytics.getInstance().recordException(e);
                         throw new RuntimeException(e);
                     }
                 }
@@ -530,7 +533,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
-                t.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
 

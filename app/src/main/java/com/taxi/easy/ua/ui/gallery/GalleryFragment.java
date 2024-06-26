@@ -28,9 +28,11 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentGalleryBinding;
@@ -83,7 +85,7 @@ public class GalleryFragment extends Fragment {
     private long discount;
     private ImageButton scrollButtonDown, scrollButtonUp;
     private AlertDialog alertDialog;
-
+    FragmentManager fragmentManager;
     public static String[] arrayServiceCode() {
         return new String[]{
                 "BAGGAGE",
@@ -171,7 +173,7 @@ public class GalleryFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 MyBottomSheetGalleryFragment bottomSheetDialogFragment = new MyBottomSheetGalleryFragment();
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
 
@@ -230,6 +232,7 @@ public class GalleryFragment extends Fragment {
                     try {
                         dialogFromToOneRout(routChoice(selectedItem));
                     } catch (MalformedURLException | InterruptedException | JSONException e) {
+                        FirebaseCrashlytics.getInstance().recordException(e);
                         Log.d(TAG, "onItemClick: " + e.toString());
                     }
 
@@ -307,7 +310,7 @@ public class GalleryFragment extends Fragment {
                 String api =  stringList.get(2);
                 updateAddCost("0");
                 MyBottomSheetBonusFragment bottomSheetDialogFragment = new MyBottomSheetBonusFragment(Long.parseLong(text_view_cost.getText().toString()), "marker", api, text_view_cost) ;
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
         del_but.setVisibility(View.INVISIBLE);
@@ -345,7 +348,7 @@ public class GalleryFragment extends Fragment {
         } else {
             if (!verifyOrder(requireContext())) {
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.black_list_message));
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 progressbar.setVisibility(View.INVISIBLE);
                 return false;
             } else {
@@ -445,7 +448,7 @@ public class GalleryFragment extends Fragment {
                     if (message.contains("Дублирование")) {
                         message = getResources().getString(R.string.double_order_error);
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     } else {
                         switch (pay_method) {
                             case "bonus_payment":
@@ -458,7 +461,7 @@ public class GalleryFragment extends Fragment {
                                 btnVisible(View.VISIBLE);
                                 message = getResources().getString(R.string.error_message);
                                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                         }
                     }
                     btnVisible(View.VISIBLE);
@@ -469,7 +472,7 @@ public class GalleryFragment extends Fragment {
             @Override
             public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
                 btnVisible(View.VISIBLE);
-                t.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
 
@@ -612,7 +615,7 @@ public class GalleryFragment extends Fragment {
                     } else {
                         message = getString(R.string.error_message);
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                         text_view_cost.setVisibility(View.INVISIBLE);
                         btnRouts.setVisibility(View.INVISIBLE);
@@ -625,7 +628,7 @@ public class GalleryFragment extends Fragment {
 
                 @Override
                 public void onFailure(Call<Map<String, String>> call, Throwable t) {
-                    t.printStackTrace();
+                    FirebaseCrashlytics.getInstance().recordException(t);
                 }
             });
 

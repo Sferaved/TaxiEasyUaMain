@@ -21,6 +21,7 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.FileProvider;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.utils.download.FileDownloader;
 
@@ -205,7 +206,7 @@ public class NotificationHelper {
                                 public void onDownloadFailed(Exception e) {
                                     // Обработка ошибки загрузки файла
                                     Log.d("TAG", "onDownloadFailed: " +  e.toString());
-                                    e.printStackTrace();
+                                    FirebaseCrashlytics.getInstance().recordException(e);
                                 }
                             });
                         }

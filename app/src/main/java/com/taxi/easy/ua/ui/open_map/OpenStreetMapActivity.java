@@ -40,13 +40,13 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
-import com.taxi.easy.ua.ui.open_map.visicom.GeoDialogVisicomFragment;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 
 import org.json.JSONException;
@@ -100,7 +100,6 @@ public class OpenStreetMapActivity extends AppCompatActivity {
     @SuppressLint("StaticFieldLeak")
     public static ProgressBar progressBar;
     @SuppressLint("StaticFieldLeak")
-    public static GeoDialogVisicomFragment bottomSheetDialogFragment;
     private String city;
 
 
@@ -214,11 +213,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             gpsSwitch.setChecked(switchState());
         });
 
-        fab_open_marker.setOnClickListener(v -> {
-            progressBar.setVisibility(View.INVISIBLE);
-            GeoDialogVisicomFragment bottomSheet = new GeoDialogVisicomFragment();
-            bottomSheet.show(fragmentManager, bottomSheet.getTag());
-        });
+
     }
 
     private void switchToRegion() {
@@ -316,11 +311,15 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
         try {
             gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        } catch(Exception ignored) {}
+        } catch(Exception e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
 
         try {
             network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-        } catch(Exception ignored) {}
+        } catch(Exception e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
 
        return gps_enabled && network_enabled;
     }
@@ -349,9 +348,6 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                 GeoPoint initialGeoPoint = new GeoPoint(startLat-0.0009, startLan);
                 map.getController().setCenter(initialGeoPoint);
                 setMarker(startLat, startLan, FromAdressString, getApplicationContext());
-
-                bottomSheetDialogFragment = GeoDialogVisicomFragment.newInstance();
-                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 map.invalidate();
             } else {
                 Toast.makeText(this, R.string.check_position, Toast.LENGTH_SHORT).show();
@@ -398,8 +394,6 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                                 }
                             }
                             updateMyPosition(startLat, startLan, FromAdressString, getApplicationContext());
-                            bottomSheetDialogFragment = GeoDialogVisicomFragment.newInstance();
-                            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
 
                             map.getOverlays().add(markerOverlay);
 //                        setMarker(startLat, startLan, FromAdressString, getApplicationContext());
@@ -467,8 +461,6 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                             }
                         }
                         updateMyPosition(startLat, startLan, FromAdressString, getApplicationContext());
-                        bottomSheetDialogFragment = GeoDialogVisicomFragment.newInstance();
-                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
 
                         map.getOverlays().add(markerOverlay);
                         setMarker(startLat, startLan, FromAdressString, getApplicationContext());
@@ -523,7 +515,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         m.setIcon(scaledDrawable);
 
         // Set the marker as draggable
-        final GeoDialogVisicomFragment bottomSheetDialogFragment = GeoDialogVisicomFragment.newInstance();
+
         m.setOnMarkerClickListener(new Marker.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker, MapView mapView) {
@@ -568,14 +560,6 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                     FromAdressString = (String) sendUrlFrom.get("route_address_from");
 
                     updateMyPosition(startLat, startLan, FromAdressString, context);
-
-                    if (!bottomSheetDialogFragment.isAdded()) {
-                        // Если нет, используем getSupportFragmentManager()
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                    } else {
-                        // Если присоединен, используем getChildFragmentManager()
-                        bottomSheetDialogFragment.show(bottomSheetDialogFragment.getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                    }
                 } catch (MalformedURLException | InterruptedException |
                          JSONException ignored) {
                 }
@@ -714,8 +698,6 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
                             map.invalidate();
 
-                            GeoDialogVisicomFragment bottomSheet = new GeoDialogVisicomFragment();
-                            bottomSheet.show(fragmentManager, bottomSheet.getTag());
                         }
                     }
 
@@ -723,7 +705,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
                 @Override
                 public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
-                    t.printStackTrace();
+                    FirebaseCrashlytics.getInstance().recordException(t);
                 }
             });
 

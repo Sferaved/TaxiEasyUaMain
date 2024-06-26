@@ -8,6 +8,7 @@ import android.view.View;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.R;
 
 import java.text.ParseException;
@@ -67,7 +68,7 @@ public class MonoBankActivity extends AppCompatActivity {
             endTimeInMillis = endDate.getTime();
 
         } catch (ParseException e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
         Call<List<Transaction>> call = monoBankApiService.getTransactions(apiToken, account, String.valueOf(startTimeInMillis), String.valueOf(endTimeInMillis));
         call.enqueue(new Callback<List<Transaction>>() {

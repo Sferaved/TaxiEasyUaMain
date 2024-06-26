@@ -18,6 +18,7 @@ import androidx.work.WorkManager;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
@@ -106,7 +107,7 @@ public class MyPeriodicWorker extends Worker {
         // PendingIntent для открытия MainActivity
         PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, openMainActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        // Используйте ваш класс NotificationHelper для отправки уведомления
+        // Используйте ваш класс NotificationHelperFGS для отправки уведомления
         NotificationHelper.showNotificationMessageOpen(context, title, message, pendingIntent);
         insertOrUpdatePushDate(context);
     }
@@ -143,7 +144,7 @@ public class MyPeriodicWorker extends Worker {
 
 
             } catch (Exception e) {
-                e.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(e);
             } finally {
                 database.close();
             }
@@ -168,7 +169,7 @@ public class MyPeriodicWorker extends Worker {
                 assert date != null;
                 lastActivityTimestamp = date.getTime();
             } catch (ParseException e) {
-                e.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(e);
             }
             cursor.close();
         }

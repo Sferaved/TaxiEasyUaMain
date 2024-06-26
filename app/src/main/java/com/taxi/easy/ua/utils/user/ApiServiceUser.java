@@ -8,4 +8,3 @@ public interface ApiServiceUser {
     @GET("android/addUserNoName/{email}")
     Call<UserResponse> addUserNoName(@Path("email") String email);
 }
-

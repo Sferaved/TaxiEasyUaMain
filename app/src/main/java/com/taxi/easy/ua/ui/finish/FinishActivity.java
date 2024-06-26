@@ -23,6 +23,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentManager;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.taxi.easy.ua.MainActivity;
@@ -36,11 +37,6 @@ import com.taxi.easy.ua.ui.fondy.payment.RequestData;
 import com.taxi.easy.ua.ui.fondy.payment.StatusRequestPay;
 import com.taxi.easy.ua.ui.fondy.payment.SuccessResponseDataPay;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
-import com.taxi.easy.ua.ui.fondy.revers.ApiResponseRev;
-import com.taxi.easy.ua.ui.fondy.revers.ReversApi;
-import com.taxi.easy.ua.ui.fondy.revers.ReversRequestData;
-import com.taxi.easy.ua.ui.fondy.revers.ReversRequestSent;
-import com.taxi.easy.ua.ui.fondy.revers.SuccessResponseDataRevers;
 import com.taxi.easy.ua.ui.fondy.token_pay.ApiResponseToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.PaymentApiToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.RequestDataToken;
@@ -51,8 +47,6 @@ import com.taxi.easy.ua.ui.home.MyBottomSheetErrorPaymentFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.mono.MonoApi;
-import com.taxi.easy.ua.ui.mono.cancel.RequestCancelMono;
-import com.taxi.easy.ua.ui.mono.cancel.ResponseCancelMono;
 import com.taxi.easy.ua.ui.mono.payment.RequestPayMono;
 import com.taxi.easy.ua.ui.mono.payment.ResponsePayMono;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
@@ -123,13 +117,13 @@ public class FinishActivity extends AppCompatActivity {
     public static  String phoneNumber;
     private boolean cancel_btn_click = false;
     long delayMillisStatus;
-
+    FragmentManager fragmentManager;
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_finish);
-
+        fragmentManager = getSupportFragmentManager();
         progressBar = findViewById(R.id.progress_bar);
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
         Log.d(TAG, "onCreate: " + pay_method);
@@ -160,7 +154,7 @@ public class FinishActivity extends AppCompatActivity {
                 statusOrderWithDifferentValue(uid);
             } else {
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
 
@@ -171,14 +165,20 @@ public class FinishActivity extends AppCompatActivity {
             amount = receivedMap.get("order_cost");
         }
 
-        handler = new Handler();
 
         if (pay_method.equals("bonus_payment")) {
             handlerBonusBtn = new Handler();
 
-             String url = baseUrl + "/bonusBalance/recordsBloke/" + uid + "/" + getString(R.string.application);;
+            String url = baseUrl + "/bonusBalance/recordsBloke/" + uid + "/" + getString(R.string.application);;
 
-             fetchBonus(url);
+            fetchBonus(url);
+        }
+
+        handler = new Handler();
+
+        if (pay_method.equals("bonus_payment") || pay_method.equals("wfp_payment") || pay_method.equals("fondy_payment") || pay_method.equals("mono_payment") ) {
+            handlerBonusBtn = new Handler();
+
             runnableBonusBtn = () -> {
                 MainActivity.order_id = null;
                 String newStatus = text_status.getText().toString();
@@ -192,15 +192,15 @@ public class FinishActivity extends AppCompatActivity {
                 } else {
                     text_status.setText(newStatus);
                 }
-                btn_cancel_order.setText(getString(R.string.help_button));
-                btn_again.setVisibility(View.VISIBLE);
-                btn_cancel.setVisibility(View.VISIBLE);
-                btn_reset_status.setVisibility(View.GONE);
-                btn_cancel_order.setVisibility(View.VISIBLE);
-                progressBar.setVisibility(View.GONE);
-
                 btn_cancel_order.setOnClickListener(v -> {
                     cancel_btn_click = true;
+
+                    btn_reset_status.setVisibility(View.GONE);
+                    btn_again.setVisibility(View.VISIBLE);
+                    btn_cancel.setVisibility(View.VISIBLE);
+                    btn_reset_status.setVisibility(View.GONE);
+                    btn_cancel_order.setVisibility(View.GONE);
+                    progressBar.setVisibility(View.GONE);
 
                     Intent intent = new Intent(Intent.ACTION_DIAL);
 
@@ -209,6 +209,13 @@ public class FinishActivity extends AppCompatActivity {
                     intent.setData(Uri.parse(phone));
                     startActivity(intent);
                 });
+                btn_cancel_order.setText(getString(R.string.help_button));
+                btn_again.setVisibility(View.VISIBLE);
+                btn_cancel.setVisibility(View.VISIBLE);
+                btn_reset_status.setVisibility(View.GONE);
+                btn_cancel_order.setVisibility(View.GONE);
+                progressBar.setVisibility(View.GONE);
+
             };
             handlerBonusBtn.postDelayed(runnableBonusBtn, delayMillis);
          }
@@ -260,6 +267,13 @@ public class FinishActivity extends AppCompatActivity {
                 btn_cancel_order.setOnClickListener(v -> {
                     cancel_btn_click = true;
 
+                    btn_reset_status.setVisibility(View.GONE);
+                    btn_again.setVisibility(View.VISIBLE);
+                    btn_cancel.setVisibility(View.VISIBLE);
+                    btn_reset_status.setVisibility(View.GONE);
+                    btn_cancel_order.setVisibility(View.GONE);
+                    progressBar.setVisibility(View.GONE);
+
                     handlerBonusBtn.removeCallbacks(runnableBonusBtn);
 
                     Intent intent = new Intent(Intent.ACTION_DIAL);
@@ -309,7 +323,7 @@ public class FinishActivity extends AppCompatActivity {
                 startActivity(new Intent(getApplicationContext(), MainActivity.class));
             } else {
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
 
@@ -336,6 +350,7 @@ public class FinishActivity extends AppCompatActivity {
                 try {
                     payWfp();
                 } catch (UnsupportedEncodingException e) {
+                    FirebaseCrashlytics.getInstance().recordException(e);
                     throw new RuntimeException(e);
                 }
                 break;
@@ -343,6 +358,7 @@ public class FinishActivity extends AppCompatActivity {
                 try {
                     payFondy();
                 } catch (UnsupportedEncodingException e) {
+                    FirebaseCrashlytics.getInstance().recordException(e);
                     throw new RuntimeException(e);
                 }
                 break;
@@ -393,8 +409,6 @@ public class FinishActivity extends AppCompatActivity {
     }
 //"transactionStatus":"InProcessing"
     private void getUrlToPaymentWfp() {
-        FragmentManager fragmentManager = getSupportFragmentManager();
-
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
@@ -533,7 +547,7 @@ public class FinishActivity extends AppCompatActivity {
                             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                             callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                             MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getApplicationContext());
-                            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                         }
                     } else {
                         // Ошибка запроса
@@ -541,7 +555,7 @@ public class FinishActivity extends AppCompatActivity {
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                         callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getApplicationContext());
-                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
                 }
 
@@ -552,7 +566,7 @@ public class FinishActivity extends AppCompatActivity {
                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                     callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getApplicationContext());
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 }
             });
 
@@ -601,8 +615,9 @@ public class FinishActivity extends AppCompatActivity {
                             break;
                         default:
                             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getApplicationContext());
+                            callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                             MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishActivity.messageFondy, amount, getApplicationContext());
-                            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                     }
                 } else {
@@ -655,7 +670,7 @@ public class FinishActivity extends AppCompatActivity {
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                         callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getApplicationContext());
-                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
 
                     }
@@ -665,7 +680,7 @@ public class FinishActivity extends AppCompatActivity {
                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                     callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getApplicationContext());
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                 }
 
@@ -798,7 +813,7 @@ public class FinishActivity extends AppCompatActivity {
                                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                                         callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
-                                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                                     }
                                 } else {
@@ -806,18 +821,19 @@ public class FinishActivity extends AppCompatActivity {
                                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                                     callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
-                                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
 //                            getUrlToPaymentFondy(messageFondy, amount);
                                 }
                             } catch (JsonSyntaxException e) {
                                 // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
+                                FirebaseCrashlytics.getInstance().recordException(e);
                                 Log.e(TAG, "Error parsing JSON response: " + e.getMessage());
 //                        Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                                 callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                                 MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
-                                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 //                        getUrlToPaymentFondy(messageFondy, amount);
                             }
                         } else {
@@ -825,8 +841,9 @@ public class FinishActivity extends AppCompatActivity {
                             Log.d(TAG, "onFailure: " + response.code());
 //                    Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
+                            callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                             MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
-                            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 //                    getUrlToPaymentFondy(messageFondy, amount);
                         }
 
@@ -840,7 +857,7 @@ public class FinishActivity extends AppCompatActivity {
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                         callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
-                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 //                getUrlToPaymentFondy(messageFondy, amount);
                     }
                 });
@@ -1005,13 +1022,13 @@ public class FinishActivity extends AppCompatActivity {
                                                 uid_Double,
                                                 getApplicationContext()
                                         );
-                                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                                     } else {
                                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                                         callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
-                                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                                     }
                                 } else {
@@ -1020,18 +1037,18 @@ public class FinishActivity extends AppCompatActivity {
                                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                                     callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
-                                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                                 }
                             } catch (JsonSyntaxException e) {
                                 // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
                                 Log.e(TAG, "Error parsing JSON response: " + e.getMessage());
-
+                                FirebaseCrashlytics.getInstance().recordException(e);
 
                                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                                 callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                                 MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
-                                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                             }
                         } else {
@@ -1041,7 +1058,7 @@ public class FinishActivity extends AppCompatActivity {
                             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                             callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                             MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
-                            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                         }
 
@@ -1053,7 +1070,7 @@ public class FinishActivity extends AppCompatActivity {
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                         callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
-                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
                 });
             }
@@ -1117,7 +1134,7 @@ public class FinishActivity extends AppCompatActivity {
                                     uid_Double,
                                     getApplicationContext()
                             );
-                            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                         } else {
                             cancelOrderDouble();
@@ -1126,6 +1143,7 @@ public class FinishActivity extends AppCompatActivity {
                     } catch (JsonSyntaxException e) {
                         // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
                         Log.e(TAG, "Error parsing JSON response: " + e.getMessage());
+                        FirebaseCrashlytics.getInstance().recordException(e);
                         cancelOrderDouble();
                     }
                 } else {
@@ -1180,7 +1198,7 @@ public class FinishActivity extends AppCompatActivity {
 //            String message = getString(R.string.nal_pay_message);
 //
 //            MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
-//            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+//            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 //        }
 //    }
     private void fetchBonus(String url) {
@@ -1198,11 +1216,11 @@ public class FinishActivity extends AppCompatActivity {
                     String message = getString(R.string.block_mes) + " " + bonus + " " + getString(R.string.bon);
 
                     MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                 } else {
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 }
             }
 
@@ -1210,7 +1228,7 @@ public class FinishActivity extends AppCompatActivity {
             public void onFailure(Call<BonusResponse> call, Throwable t) {
                 // Обработка ошибок сети или других ошибок
                 String errorMessage = t.getMessage();
-                t.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(t);
                 // Дополнительная обработка ошибки
             }
         });
@@ -1244,7 +1262,7 @@ public class FinishActivity extends AppCompatActivity {
 
     }
 
-    public void callOrderIdMemory(String orderId, String uid, String paySystem) {
+    public static void callOrderIdMemory(String orderId, String uid, String paySystem) {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
@@ -1576,6 +1594,7 @@ public class FinishActivity extends AppCompatActivity {
         try {
             date = inputFormat.parse(requiredTime);
         } catch (ParseException e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
             Log.d(TAG, "onCreate:" + new RuntimeException(e));
         }
 
@@ -1595,6 +1614,7 @@ public class FinishActivity extends AppCompatActivity {
             try {
                 return CostJSONParser.sendURL(url);
             } catch (Exception e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
                 exception = e;
                 return null;
             }

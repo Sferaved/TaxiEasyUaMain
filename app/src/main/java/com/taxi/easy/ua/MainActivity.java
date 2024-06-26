@@ -26,7 +26,6 @@ import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -42,7 +41,6 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -66,11 +64,12 @@ import com.google.android.play.core.appupdate.AppUpdateManager;
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
 import com.google.android.play.core.install.model.AppUpdateType;
 import com.google.android.play.core.install.model.UpdateAvailability;
-import com.google.android.play.core.tasks.OnSuccessListener;
-import com.google.android.play.core.tasks.Task;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.cities.api.CityApiClient;
 import com.taxi.easy.ua.cities.api.CityResponse;
 import com.taxi.easy.ua.cities.api.CityResponseMerchantFondy;
@@ -78,8 +77,6 @@ import com.taxi.easy.ua.cities.api.CityService;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
 import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.finish.ApiClient;
-import com.taxi.easy.ua.ui.finish.ApiService;
-import com.taxi.easy.ua.ui.finish.City;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
@@ -91,13 +88,14 @@ import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.VerifyUserTask;
+
 import com.taxi.easy.ua.utils.activ_push.MyService;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.download.AppUpdater;
-import com.taxi.easy.ua.utils.ip.IPUtil;
 import com.taxi.easy.ua.utils.messages.UsersMessages;
+import com.taxi.easy.ua.utils.notif.NotificationUtils;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
 import com.taxi.easy.ua.utils.phone.ApiClientPhone;
@@ -117,7 +115,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import okhttp3.OkHttpClient;
@@ -197,8 +194,6 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         super.onCreate(savedInstanceState);
         ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        
-
 
 
         setSupportActionBar(binding.appBarMain.toolbar);
@@ -238,8 +233,8 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
         try {
             initDB();
-        } catch (MalformedURLException | JSONException | InterruptedException ignored) {
-
+        } catch (MalformedURLException | JSONException | InterruptedException e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
     }
 
@@ -339,7 +334,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
 
             } catch (Exception e) {
-                e.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(e);
             } finally {
                 database.close();
             }
@@ -616,7 +611,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                     Log.d("InsertOrUpdate", "Error inserting or updating");
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(e);
             } finally {
                 database.close();
             }
@@ -647,7 +642,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
 
             } catch (Exception e) {
-                e.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(e);
             } finally {
                 database.close();
             }
@@ -864,8 +859,8 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
             try {
                 startActivity(Intent.createChooser(emailIntent, getString(R.string.share)));
-            } catch (android.content.ActivityNotFoundException ignored) {
-
+            } catch (android.content.ActivityNotFoundException e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
         }
 
             if (item.getItemId() == R.id.phone_settings) {
@@ -989,7 +984,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                                 MainActivity.this, // Используем ссылку на активность
                                 MY_REQUEST_CODE); // Код запроса для обновления
                     } catch (IntentSender.SendIntentException e) {
-                        e.printStackTrace();
+                        FirebaseCrashlytics.getInstance().recordException(e);
                     }
                 } else {
                     String message = getString(R.string.update_ok);
@@ -1085,7 +1080,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 //            public void onDownloadFailed(Exception e) {
 //                // Обработка ошибки загрузки файла
 //                Log.d("TAG", "onDownloadFailed: " +  e.toString());
-//                e.printStackTrace();
+//                FirebaseCrashlytics.getInstance().recordException(e);
 //            }
 //        });
 //    }
@@ -1107,7 +1102,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivityForResult(intent, INSTALL_REQUEST_CODE);
             } catch (Exception e) {
-                e.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(e);
                 Log.e(TAG, "Installation failed: " + e.getMessage());
             }
 
@@ -1197,6 +1192,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 }
             } catch (SecurityException e) {
                 Log.d(TAG, "performPhoneStateOperation: IMEI недоступен");
+                FirebaseCrashlytics.getInstance().recordException(e);
                 Toast.makeText(this, "IMEI недоступен", Toast.LENGTH_SHORT).show();
 
             }
@@ -1207,8 +1203,9 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 toastMessage += " " + "Serial ID устройства " + deviceIdSerial;
                 Toast.makeText(this, "Serial ID устройства " + deviceIdSerial, Toast.LENGTH_SHORT).show();
             }  catch (SecurityException e) {
-               Log.d(TAG, "performPhoneStateOperation: IMEI недоступен");
-               Toast.makeText(this, "Serial ID устройства недоступен", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "performPhoneStateOperation: IMEI недоступен");
+                FirebaseCrashlytics.getInstance().recordException(e);
+                Toast.makeText(this, "Serial ID устройства недоступен", Toast.LENGTH_SHORT).show();
 
             }
 
@@ -1290,8 +1287,8 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
         try {
             startActivity(Intent.createChooser(emailIntent, subject));
-        } catch (android.content.ActivityNotFoundException ignored) {
-
+        } catch (android.content.ActivityNotFoundException e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
 
 
@@ -1458,6 +1455,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 FirebaseApp.initializeApp(MainActivity.this);
             } catch (Exception e) {
                 Log.e(TAG, "Exception during authentication", e);
+                FirebaseCrashlytics.getInstance().recordException(e);
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
 
             }
@@ -1477,13 +1475,16 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             // Проверка новой версии в маркете
             new Thread(this::versionFromMarket).start();
 
-            Thread wfpCardThread = new Thread(() -> {
-                List<String> stringList = logCursor(MainActivity.CITY_INFO);
-                String city = stringList.get(1);
-                getCardTokenWfp(city,"wfp", userEmail);
-
-            });
-            wfpCardThread.start();
+//            Thread wfpCardThread = new Thread(() -> {
+//                List<String> stringList = logCursor(MainActivity.CITY_INFO);
+//                String city = stringList.get(1);
+//                if(city != null) {
+//                    getCardTokenWfp(city,"wfp", userEmail);
+//                }
+//
+//
+//            });
+//            wfpCardThread.start();
         }
 
 
@@ -1593,7 +1594,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                     runOnUiThread(() -> signInLauncher.launch(signInIntent));
                 } catch (Exception e) {
                     Log.e(TAG, "Exception during sign-in launch", e);
-                    e.printStackTrace();
+                    FirebaseCrashlytics.getInstance().recordException(e);
 //                    Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
                     VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
                 }
@@ -1609,6 +1610,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 try {
                     onSignInResult(result, getSupportFragmentManager());
                 } catch (MalformedURLException | JSONException | InterruptedException e) {
+                    FirebaseCrashlytics.getInstance().recordException(e);
                     Log.d(TAG, "onCreate:" + new RuntimeException(e));
                 }
             }
@@ -1627,12 +1629,12 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 assert user != null;
                 settingsNewUser(user.getEmail());
                 Toast.makeText(this, R.string.city_search, Toast.LENGTH_SHORT).show();
-                startGetPublicIPAddressTask(fm, getApplicationContext());
+//                startGetPublicIPAddressTask(fm, getApplicationContext());
 
                 new Thread(() -> fetchRoutes(user.getEmail())).start();
             } else {
                 Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
-
+                VisicomFragment.progressBar.setVisibility(View.GONE);
                 cv.put("verifyOrder", "0");
                 SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                 database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
@@ -1640,8 +1642,9 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
             }
         } catch (Exception e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
             Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
-
+            VisicomFragment.progressBar.setVisibility(View.GONE);
             cv.put("verifyOrder", "0");
             SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
@@ -1863,26 +1866,9 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 //            fondyCardThread.join();
 //            monoCardThread.join();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
 
-    }
-    // Ограничение времени в секундах
-
-    private void startGetPublicIPAddressTask(FragmentManager fm, Context context) {
-        AsyncTask<Void, Void, String> getPublicIPAddressTask = new GetPublicIPAddressTask(fm, context);
-
-        try {
-
-            getPublicIPAddressTask.execute().get(MAX_TASK_EXECUTION_TIME_SECONDS, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            // Обработка исключения, возникающего при превышении времени выполнения задачи
-            e.printStackTrace();
-            // Дополнительные действия...
-            getCityByIP("31.202.139.47", fm, context);
-//            Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
-            VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-        }
     }
 
 
@@ -1902,7 +1888,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         // Асинхронный вызов
         call.enqueue(new Callback<UserResponse>() {
             @Override
-            public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
+            public void onResponse(@NonNull Call<UserResponse> call, @NonNull Response<UserResponse> response) {
                 if (response.isSuccessful()) {
                     UserResponse userResponse = response.body();
                     if (userResponse != null) {
@@ -2149,91 +2135,12 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         }
     }
 
-
-
-//    @SuppressLint("StaticFieldLeak")
-//    public class VerifyUserTask extends AsyncTask<Void, Void, Map<String, String>> {
-//        private Exception exception;
-//        @Override
-//        protected Map<String, String> doInBackground(Void... voids) {
-//            String userEmail = logCursor(TABLE_USER_INFO).get(3);
-//
-//            String url = "https://m.easy-order-taxi.site/android/verifyBlackListUser/" + userEmail + "/" + getString(R.string.application);
-//            try {
-//                return CostJSONParser.sendURL(url);
-//            } catch (Exception e) {
-//                exception = e;
-////                Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
-//                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-//                return null;
-//            }
-//
-//        }
-//
-//        @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
-//        @Override
-//        protected void onPostExecute(Map<String, String> sendUrlMap) {
-//            String message = sendUrlMap.get("message");
-//            ContentValues cv = new ContentValues();
-//            SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-//            if (message != null) {
-//
-//                if (message.equals("В черном списке")) {
-//
-//                    cv.put("verifyOrder", "0");
-//                    database.update(TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-//                } else {
-//                    versionServer = message;
-//                    //                        version(message);
-//
-//                    cv.put("verifyOrder", "1");
-//                    database.update(TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-//
-//                }
-//            }
-//            database.close();
-//        }
-//    }
-
     private static final String PREFS_NAME_VERSION = "MyPrefsFileNew";
     private static final String LAST_NOTIFICATION_TIME_KEY = "lastNotificationTimeNew";
 //    private static final long ONE_DAY_IN_MILLISECONDS = 0; // 24 часа в миллисекундах
     private static final long ONE_DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
 
-    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
-    private void version(String versionApi) throws MalformedURLException {
-
-
-        // Получаем SharedPreferences
-        SharedPreferences SharedPreferences = getSharedPreferences(PREFS_NAME_VERSION, Context.MODE_PRIVATE);
-
-        // Получаем время последней отправки уведомления
-        long lastNotificationTime = SharedPreferences.getLong(LAST_NOTIFICATION_TIME_KEY, 0);
-
-        // Получаем текущее время
-        long currentTime = System.currentTimeMillis();
-
-        // Проверяем, прошло ли уже 24 часа с момента последней отправки
-        if (currentTime - lastNotificationTime >= ONE_DAY_IN_MILLISECONDS) {
-            if (!versionApi.equals(getString(R.string.version_code))) {
-
-                String title = getString(R.string.new_version);
-                String messageNotif = getString(R.string.news_of_version);
-
-                String urlStr = "https://play.google.com/store/apps/details?id=com.taxi.easy.ua";
-                NotificationHelper.showNotification(this, title, messageNotif, urlStr);
-
-                // Обновляем время последней отправки уведомления
-                SharedPreferences.Editor editor = SharedPreferences.edit();
-                editor.putLong(LAST_NOTIFICATION_TIME_KEY, currentTime);
-                editor.apply();
-
-
-            }
-        }
-    }
-
-    private void versionFromMarket()  {
+     private void versionFromMarket()  {
         // Получаем SharedPreferences
         SharedPreferences SharedPreferences = getSharedPreferences(PREFS_NAME_VERSION, Context.MODE_PRIVATE);
         // Получаем время последней отправки уведомления
@@ -2370,89 +2277,5 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             }
         });
     }
-    private static class GetPublicIPAddressTask extends AsyncTask<Void, Void, String> {
-        FragmentManager fragmentManager;
-        Context context;
-        public GetPublicIPAddressTask(FragmentManager fragmentManager, Context context) {
-            this.fragmentManager = fragmentManager;
-            this.context = context;
-        }
-
-        @Override
-        protected String doInBackground(Void... voids) {
-            try {
-                return IPUtil.getPublicIPAddress();
-            } catch (Exception e) {
-                // Log the exception
-                Log.e(TAG, "Exception in doInBackground: " + e.getMessage());
-                // Return null or handle the exception as needed
-                getCityByIP("31.202.139.47",fragmentManager, context);
-//                Toast.makeText(context, context.getString(verify_internet), Toast.LENGTH_SHORT).show();
-                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPostExecute(String ipAddress) {
-            try {
-                if (ipAddress != null) {
-                    Log.d(TAG, "onCreate: Local IP Address: " + ipAddress);
-                    getCityByIP(ipAddress, fragmentManager, context);
-                } else {
-                    getCityByIP("31.202.139.47",fragmentManager, context);
-                }
-            } catch (Exception e) {
-                // Log the exception
-                Log.e(TAG, "Exception in onPostExecute: " + e.getMessage());
-                // Handle the exception as needed
-                getCityByIP("31.202.139.47",fragmentManager, context);
-//                Toast.makeText(context, context.getString(verify_internet), Toast.LENGTH_SHORT).show();
-                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-            }
-
-        }
-    }
-
-    private static void getCityByIP(String ip, FragmentManager fm, Context context) {
-
-        ApiService apiService = ApiClient.getApiService();
-
-        Call<City> call = apiService.cityByIp(ip);
-
-        call.enqueue(new Callback<City>() {
-            @Override
-            public void onResponse(@NonNull Call<City> call, @NonNull Response<City> response) {
-                if (response.isSuccessful()) {
-                    City status = response.body();
-                    if (status != null) {
-                        String result = status.getResponse();
-                        Log.d("TAG", "onResponse:result " + result);
-
-                        MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(result, context);
-
-                        if (!fm.isStateSaved()) {
-                            bottomSheetDialogFragment.show(fm, bottomSheetDialogFragment.getTag());
-                        } else {
-                            Log.w("TAG", "Fragment state is already saved. Cannot perform transaction.");
-                        }
-                    }
-                }
-
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<City> call, @NonNull Throwable t) {
-                // Обработка ошибок сети или других ошибок
-                String errorMessage = t.getMessage();
-                t.printStackTrace();
-                Log.d("TAG", "onFailure: " + errorMessage);
-//                Toast.makeText(context, context.getString(verify_internet), Toast.LENGTH_SHORT).show();
-                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-            }
-        });
-//        }
-    }
-
 
 }

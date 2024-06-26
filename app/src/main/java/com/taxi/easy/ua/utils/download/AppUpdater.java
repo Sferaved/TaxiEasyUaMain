@@ -10,7 +10,8 @@ import com.google.android.play.core.install.InstallStateUpdatedListener;
 import com.google.android.play.core.install.model.AppUpdateType;
 import com.google.android.play.core.install.model.InstallStatus;
 import com.google.android.play.core.install.model.UpdateAvailability;
-import com.google.android.play.core.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 
 public class AppUpdater {
 
@@ -49,7 +50,7 @@ public class AppUpdater {
         try {
             appUpdateManager.startUpdateFlowForResult(appUpdateInfo, updateType, activity, MY_REQUEST_CODE);
         } catch (Exception e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
     }
 

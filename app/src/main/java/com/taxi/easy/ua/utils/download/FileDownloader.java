@@ -4,6 +4,8 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -33,7 +35,7 @@ public class FileDownloader {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                e.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(e);
                 if (callback != null) {
                     callback.onDownloadFailed(e);
                 }

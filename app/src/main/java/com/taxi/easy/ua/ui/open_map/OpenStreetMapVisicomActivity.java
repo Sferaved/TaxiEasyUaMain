@@ -41,6 +41,7 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
@@ -151,7 +152,6 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.open_street_map_layout);
-
 
         startPointNoText = getString(R.string.startPoint);
         endPointNoText = getString(R.string.end_point_marker);
@@ -352,11 +352,15 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
         try {
             gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        } catch(Exception ignored) {}
+        } catch(Exception e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
 
         try {
             network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-        } catch(Exception ignored) {}
+        } catch(Exception e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
 
        return gps_enabled && network_enabled;
     }
@@ -671,7 +675,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                 // Можете добавить здесь логирование или другие действия по вашему усмотрению
                 String message = getString(R.string.error_message);
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
 
        } else {
@@ -776,7 +780,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                     } catch (MalformedURLException | InterruptedException |
                              JSONException e) {
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
 
                 }

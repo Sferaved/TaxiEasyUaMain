@@ -30,6 +30,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
@@ -119,6 +120,7 @@ public class FirebaseSignIn extends AppCompatActivity {
                         }
                     });
                 } catch (NullPointerException e) {
+                    FirebaseCrashlytics.getInstance().recordException(e);
                     finish();
                     startActivity(new Intent(FirebaseSignIn.this, StopActivity.class));
                 }
@@ -165,6 +167,7 @@ public class FirebaseSignIn extends AppCompatActivity {
                         onSignInResult(result);
                     } catch (MalformedURLException | JSONException | InterruptedException e) {
                         Log.d("TAG", "onCreate:" + new RuntimeException(e));
+                        FirebaseCrashlytics.getInstance().recordException(e);
                     }
                 }
             }
@@ -206,6 +209,7 @@ public class FirebaseSignIn extends AppCompatActivity {
                 database.close();
             }
         } catch (NullPointerException e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
             // Error handling
             Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
             btn_again.setVisibility(View.VISIBLE);
@@ -273,7 +277,7 @@ public class FirebaseSignIn extends AppCompatActivity {
 //                urlConnection.getResponseCode();
                 Log.d("TAG", "addUser: urlConnection.getResponseCode(); " + urlConnection.getResponseCode());
             } catch (IOException e) {
-                e.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(e);
             } finally {
                 if (urlConnection != null) {
                     urlConnection.disconnect();
@@ -288,10 +292,10 @@ public class FirebaseSignIn extends AppCompatActivity {
 
         // Дождитесь завершения выполнения задачи с тайм-аутом
         try {
-            addUserFuture.get(30, TimeUnit.SECONDS);
+            addUserFuture.get(60, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             // Обработка ошибок
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         } finally {
             // Завершите исполнителя
             executorService.shutdown();

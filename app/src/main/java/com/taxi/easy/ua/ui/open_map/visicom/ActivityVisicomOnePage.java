@@ -36,13 +36,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.navigation.NavController;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
@@ -62,7 +62,6 @@ import com.taxi.easy.ua.utils.KeyboardUtils;
 import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.connect.ConnectionSpeedTester;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
-import com.taxi.easy.ua.utils.ip.OnIPAddressReceivedListener;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -88,8 +87,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 
-public class ActivityVisicomOnePage extends AppCompatActivity
-        implements OnIPAddressReceivedListener {
+public class ActivityVisicomOnePage extends AppCompatActivity {
 
     private static final String TAG = "TAG_VIS_ADDR";
 
@@ -98,7 +96,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity
     ProgressBar progressBar;
     EditText fromEditAddress, toEditAddress;
     private ImageButton btn_clear_from, btn_clear_to, btn_ok, btn_no;
-    private String apiKey;
     private static List<double[]> coordinatesList;
     private static List<String[]> addresses;
     private final OkHttpClient client = new OkHttpClient();
@@ -123,12 +120,10 @@ public class ActivityVisicomOnePage extends AppCompatActivity
     private String start;
     private String end;
     ArrayAdapter<String> addressAdapter;
-    private static String apiKeyMapBox;
     private boolean extraExit;
     private long timeout = 50;
-    NavController navController;
     LocationManager locationManager;
-    private int LOCATION_PERMISSION_REQUEST_CODE = 123;
+    private final int LOCATION_PERMISSION_REQUEST_CODE = 123;
     private boolean location_update;
 
     @SuppressLint({"MissingInflatedId", "UseCompatLoadingForDrawables"})
@@ -139,8 +134,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
         start = getIntent().getStringExtra("start");
         end = getIntent().getStringExtra("end");
-
-        NetworkChangeReceiver networkChangeReceiver = new NetworkChangeReceiver();
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         switch (LocaleHelper.getLocale()) {
@@ -232,21 +225,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
                     btn_clear_from.setVisibility(View.INVISIBLE);
                     btn_clear_to.setVisibility(View.INVISIBLE);
-
-                    VisicomFragment.textwhere.setVisibility(View.INVISIBLE);
-                    VisicomFragment.num2.setVisibility(View.INVISIBLE);
-                    VisicomFragment.textViewTo.setVisibility(View.INVISIBLE);
-
-                    VisicomFragment.btnAdd.setVisibility(View.INVISIBLE);
-
-                    VisicomFragment.buttonBonus.setVisibility(View.INVISIBLE);
-                    VisicomFragment.btn_minus.setVisibility(View.INVISIBLE);
-                    VisicomFragment.text_view_cost.setVisibility(View.INVISIBLE);
-                    VisicomFragment.btn_plus.setVisibility(View.INVISIBLE);
-                    VisicomFragment.btnOrder.setVisibility(View.INVISIBLE);
-                    VisicomFragment.btn_clear_to.setVisibility(View.INVISIBLE);
-
-
                 }
                                 new Handler().postDelayed(new Runnable() {
                     @Override
@@ -384,8 +362,11 @@ public class ActivityVisicomOnePage extends AppCompatActivity
         }
         if(end.equals("ok")) {
             oldAddresses("finish");
+            findViewById(R.id.textfrom).setVisibility(View.GONE);
+            findViewById(R.id.num1).setVisibility(View.GONE);
             fromEditAddress.setVisibility(View.GONE);
             btn_clear_from.setVisibility(View.GONE);
+
             textGeoError.setVisibility(View.GONE);
             btn_change.setText(getString(R.string.on_city_tv));
             btn_change.setOnClickListener(new View.OnClickListener() {
@@ -1220,7 +1201,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                         Log.d(TAG, "onResponse: " + responseData);
                         processAddressData(responseData, point);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        FirebaseCrashlytics.getInstance().recordException(e);
                     }
                 }
 
@@ -1229,7 +1210,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
                 }
             });
         } catch (Exception e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
 
 
@@ -1815,7 +1796,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
 
 
         } catch (JSONException e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
         Log.d(TAG, "processAddressData: 44444444");
         if (addresses.size() != 0) {
@@ -2409,19 +2390,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity
         }
     }
 
-    @Override
-    public void onIPAddressReceived(String ipAddress) {
-        if (ipAddress != null) {
-            Log.d(TAG, "Global IP Address: " + ipAddress);
-            // Вызываем AsyncTask для определения страны по IP-адресу
-
-        } else {
-            Log.e(TAG, "Failed to retrieve global IP Address");
-        }
-    }
-
-
-
     public interface ConnectionSpeedTestCallback {
         void onConnectionTestResult(boolean isConnectionFast, long duration);
     }
@@ -2488,7 +2456,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity
             @Override
             public void onFailure(@NonNull Call<MapboxResponse> call, @NonNull Throwable t) {
                 // Обработка ошибки при выполнении запроса
-                t.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(t);
 //                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
 //                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
             }

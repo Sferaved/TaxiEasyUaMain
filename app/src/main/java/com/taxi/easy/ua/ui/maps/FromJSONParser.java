@@ -2,6 +2,8 @@ package com.taxi.easy.ua.ui.maps;
 
 import android.util.Log;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -41,7 +43,8 @@ public Map<String, String> sendURL(String urlString) throws MalformedURLExceptio
                 InputStream in = new BufferedInputStream(urlConnection.getInputStream());
                 return convertStreamToString(in);
             }
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
         } finally {
             if (urlConnection != null) {
                 urlConnection.disconnect();
@@ -53,7 +56,7 @@ public Map<String, String> sendURL(String urlString) throws MalformedURLExceptio
     Future<String> asyncTaskFuture = Executors.newSingleThreadExecutor().submit(asyncTaskCallable);
 
     try {
-        String response = asyncTaskFuture.get(30, TimeUnit.SECONDS);
+        String response = asyncTaskFuture.get(60, TimeUnit.SECONDS);
         if (response != null) {
 
             JSONObject jsonarray = new JSONObject(response);
@@ -73,7 +76,7 @@ public Map<String, String> sendURL(String urlString) throws MalformedURLExceptio
         }
         return costMap;
     } catch (Exception e) {
-        e.printStackTrace();
+        FirebaseCrashlytics.getInstance().recordException(e);
         asyncTaskFuture.cancel(true);
         costMap.put("order_cost", "0");
         costMap.put("message", "Сталася помилка");
@@ -91,12 +94,12 @@ public Map<String, String> sendURL(String urlString) throws MalformedURLExceptio
                 sb.append(line).append('\n');
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         } finally {
             try {
                 is.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(e);
             }
         }
 

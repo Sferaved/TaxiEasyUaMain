@@ -86,6 +86,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
     private Context context;
     private static final int TIMEOUT_SECONDS = 60;
     private CountDownTimer paymentTimer;
+    private FragmentManager fragmentManager;
 
     public MyBottomSheetCardPayment(
             String checkoutUrl,
@@ -112,7 +113,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
         webView = view.findViewById(R.id.webView);
         email = logCursor(MainActivity.TABLE_USER_INFO, requireActivity()).get(3);
-
+        fragmentManager = getParentFragmentManager();
         timeoutText = context.getString(R.string.time_out_text);
         messageWaitingCarSearch = context.getString(R.string.ex_st_1);
         messageSearchesForCar = context.getString(R.string.ex_st_0);
@@ -295,7 +296,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                 } else {
                     if (isAdded()) { //
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
 
                 }
@@ -305,7 +306,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
             public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
                 if (isAdded()) { //
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 }
             }
         });
@@ -313,7 +314,6 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
     private void getStatusWfp() {
         Log.d(TAG, "getStatusWfp: ");
-        FragmentManager fragmentManager = getParentFragmentManager();
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
         String city = stringList.get(1);
@@ -358,6 +358,8 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                                 break;
                             default:
                                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+                                FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
+
                                 MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishActivity.messageFondy, amount, context);
                                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                                 dismiss();
@@ -366,12 +368,14 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                     } else {
                         Log.d(TAG, "Response body is null");
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+                        FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
 
                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishActivity.messageFondy, amount, context);
                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
                 } else {
                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+                    FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
 
                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishActivity.messageFondy, amount, context);
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -383,6 +387,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+                FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
 
                 MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishActivity.messageFondy, amount, context);
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -393,7 +398,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
     }
 
     private void getCardTokenWfp(String city) {
-        FragmentManager fragmentManager = getParentFragmentManager();
+
         Log.d(TAG, "getCardTokenWfp: ");
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);

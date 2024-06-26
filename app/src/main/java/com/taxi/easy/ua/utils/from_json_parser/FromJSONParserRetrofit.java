@@ -79,8 +79,8 @@ public class FromJSONParserRetrofit {
 
             // Создание экземпляра OkHttpClient с таймаутом
             OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                    .readTimeout(30, TimeUnit.SECONDS)
-                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(60, TimeUnit.SECONDS)
+                    .connectTimeout(60, TimeUnit.SECONDS)
                     .build();
 
             // Создание экземпляра Retrofit

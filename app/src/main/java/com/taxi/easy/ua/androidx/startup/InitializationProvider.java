@@ -19,9 +19,8 @@ public class InitializationProvider extends ContentProvider {
     public boolean onCreate() {
         // Здесь выполняйте инициализацию вашего приложения
         // Например, инициализация баз данных, настройка подключений и т.д.
-//        DBHelper dbHelper = new DBHelper(getContext());
-//        dbHelper.getWritableDatabase(); // открываем базу данных для записи
-//        FirebaseApp.initializeApp(requireContext());
+
+
 
         return true;
     }

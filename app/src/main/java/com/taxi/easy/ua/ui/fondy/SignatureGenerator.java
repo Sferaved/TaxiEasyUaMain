@@ -2,6 +2,8 @@ package com.taxi.easy.ua.ui.fondy;
 
 import android.util.Log;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
@@ -35,7 +37,7 @@ public class SignatureGenerator {
             Log.d("TAG1", "generateSignature: hexString.toString()" + hexString.toString());
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
             return null; // Обработка ошибки
         }
     }

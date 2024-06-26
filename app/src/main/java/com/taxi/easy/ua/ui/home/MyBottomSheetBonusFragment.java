@@ -26,6 +26,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.cities.api.CityApiClient;
@@ -99,6 +100,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         } catch (Exception e) {
             Log.e(TAG, "Инициализация базы данных не удалась", e);
+            FirebaseCrashlytics.getInstance().recordException(e);
             // Обработайте ошибку корректно, возможно, покажите сообщение пользователю
         }
         email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
@@ -190,6 +192,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                                 try {
                                     paymentType(paymentCode, context);
                                 } catch (MalformedURLException | UnsupportedEncodingException e) {
+                                    FirebaseCrashlytics.getInstance().recordException(e);
                                     throw new RuntimeException(e);
                                 }
                             }
@@ -204,6 +207,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     try {
                         paymentType(arrayCode [pos], context);
                     } catch (MalformedURLException | UnsupportedEncodingException e) {
+                        FirebaseCrashlytics.getInstance().recordException(e);
                         throw new RuntimeException(e);
                     }
                 }
@@ -280,6 +284,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                             try {
                                 paymentType(arrayCode [0], context);
                             } catch (MalformedURLException | UnsupportedEncodingException e) {
+                                FirebaseCrashlytics.getInstance().recordException(e);
                                 throw new RuntimeException(e);
                             }
                         } else {
@@ -344,6 +349,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     try {
                         paymentType(arrayCode [pos], context);
                     } catch (MalformedURLException | UnsupportedEncodingException e) {
+                        FirebaseCrashlytics.getInstance().recordException(e);
                         throw new RuntimeException(e);
                     }
                 }
@@ -411,6 +417,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     try {
                         reCount();
                     } catch (UnsupportedEncodingException | MalformedURLException e) {
+                        FirebaseCrashlytics.getInstance().recordException(e);
                         throw new RuntimeException(e);
                     }
                     // Вызываем обработчик, передавая полученное значение
@@ -526,8 +533,8 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 }
 
 
-            } catch (MalformedURLException ignored) {
-
+            } catch (MalformedURLException e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
             }
 
         }
@@ -577,6 +584,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 }
             } catch (MalformedURLException e) {
                 Log.e(TAG, "Ошибка при обработке платежа", e);
+                FirebaseCrashlytics.getInstance().recordException(e);
                 // Обработайте ошибку корректно
             }
 
@@ -608,6 +616,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 try {
                     paymentType(arrayCode [0], context);
                 } catch (MalformedURLException | UnsupportedEncodingException e) {
+                    FirebaseCrashlytics.getInstance().recordException(e);
                     throw new RuntimeException(e);
                 }
                 progressBar.setVisibility(View.GONE);

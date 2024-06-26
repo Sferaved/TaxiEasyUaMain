@@ -7,6 +7,8 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
+
 import org.json.JSONException;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
@@ -44,6 +46,7 @@ public class MarkerOverlay extends Overlay {
             }
         } catch (MalformedURLException | JSONException | InterruptedException e) {
             Log.d("TAG", "onCreate:" + new RuntimeException(e));
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
 
         return true;

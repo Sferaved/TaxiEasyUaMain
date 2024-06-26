@@ -1,5 +1,9 @@
 package com.taxi.easy.ua;
 
+import androidx.annotation.NonNull;
+
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
+
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,8 +38,8 @@ public class ServerConnection {
             }
 
             @Override
-            public void onFailure(Call call, IOException e) {
-                e.printStackTrace(); // Вывести исключение для отладки
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                FirebaseCrashlytics.getInstance().recordException(e); // Вывести исключение для отладки
                 callback.onConnectionResult(false);
             }
         });

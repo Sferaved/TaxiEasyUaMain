@@ -1,6 +1,9 @@
 package com.taxi.easy.ua.utils.activ_push;
 
 import android.annotation.SuppressLint;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentValues;
@@ -8,11 +11,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import androidx.annotation.Nullable;
 import android.util.Log;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
@@ -25,8 +30,20 @@ import java.util.Date;
 public class MyService extends Service {
 
     private static final String TAG = "MyService";
+    private static final String CHANNEL_ID = "ForegroundServiceChannel";
 
-     
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        createNotificationChannel();
+        Notification notification = new Notification.Builder(this, CHANNEL_ID)
+                .setContentTitle("Service Running")
+                .setContentText("Your service is running in the foreground")
+                .build();
+
+        startForeground(1, notification);
+    }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "onStartCommand: ");
@@ -41,13 +58,27 @@ public class MyService extends Service {
         return null;
     }
 
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel serviceChannel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Foreground Service Channel",
+                    NotificationManager.IMPORTANCE_DEFAULT
+            );
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(serviceChannel);
+            }
+        }
+    }
+
     public void doWork() {
         // Выполнить необходимую работу здесь
         // Например, отправить уведомление или выполнить другое задание
         final Context context = getApplicationContext();
         final Handler handler = new Handler();
         final int delayMillis = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
-//        final int delayMillis = 60 * 1000; // 24 часа в миллисекундах
+        // final int delayMillis = 60 * 1000; // 24 часа в миллисекундах
 
         Runnable runnableCode = new Runnable() {
             @Override
@@ -70,7 +101,6 @@ public class MyService extends Service {
         handler.postDelayed(runnableCode, delayMillis);
     }
 
-
     private boolean checkUserActivity(Context context) {
         // Получение состояния приложения (в переднем плане или фоне)
         boolean isAppInForeground = ((MyApplication) context.getApplicationContext()).isAppInForeground();
@@ -88,7 +118,7 @@ public class MyService extends Service {
         }
 
         long timeToPush = 25L *  24 * 60 * 60 * 1000;
-//        long timeToPush = 2 * 60 * 1000;
+        // long timeToPush = 2 * 60 * 1000;
 
         boolean isActive = (currentTime - lastActivityTimestamp) <= (timeToPush);
         Log.d(TAG, "checkUserActivity: " + isActive);
@@ -100,6 +130,7 @@ public class MyService extends Service {
         @SuppressLint("SimpleDateFormat") SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         return formatter.format(formattedTime);
     }
+
     private void sendNotification(Context context) {
         long currentTime = System.currentTimeMillis();
 
@@ -116,7 +147,7 @@ public class MyService extends Service {
         // PendingIntent для открытия MainActivity
         PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, openMainActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        // Используйте ваш класс NotificationHelper для отправки уведомления
+        // Используйте ваш класс NotificationHelperFGS для отправки уведомления
         NotificationHelper.showNotificationMessageOpen(context, title, message, pendingIntent);
         insertOrUpdatePushDate(context);
     }
@@ -142,15 +173,13 @@ public class MyService extends Service {
                     Log.d(TAG, "Error updating");
                 }
 
-
             } catch (Exception e) {
-                e.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(e);
             } finally {
                 database.close();
             }
         }
     }
-
 
     @SuppressLint("Range")
     public long getLastActivityTimestamp(Context context) {
@@ -169,7 +198,7 @@ public class MyService extends Service {
                 assert date != null;
                 lastActivityTimestamp = date.getTime();
             } catch (ParseException e) {
-                e.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(e);
             }
             cursor.close();
         }

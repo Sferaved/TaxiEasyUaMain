@@ -3,6 +3,8 @@ package com.taxi.easy.ua.ui.maps;
 
 import android.util.Log;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -47,7 +49,8 @@ public class CostJSONParser {
                 } else {
                     return "400";
                 }
-            } catch (IOException ignored) {
+            } catch (IOException e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
             } finally {
                 if (urlConnection != null) {
                     urlConnection.disconnect();
@@ -59,7 +62,7 @@ public class CostJSONParser {
         Future<String> asyncTaskFuture = Executors.newSingleThreadExecutor().submit(asyncTaskCallable);
 
         try {
-            String response = asyncTaskFuture.get(30, TimeUnit.SECONDS);
+            String response = asyncTaskFuture.get(60, TimeUnit.SECONDS);
             Log.d(TAG, "sendURL: response " + response);
             if (response != null) {
                 if (response.equals("400")) {
@@ -83,7 +86,7 @@ public class CostJSONParser {
             }
             return costMap;
         } catch (Exception e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
             asyncTaskFuture.cancel(true);
             costMap.put("order_cost", "0");
             costMap.put("Message", "ErrorMessage");
@@ -102,12 +105,12 @@ public class CostJSONParser {
                 sb.append(line).append('\n');
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         } finally {
             try {
                 is.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(e);
             }
         }
 

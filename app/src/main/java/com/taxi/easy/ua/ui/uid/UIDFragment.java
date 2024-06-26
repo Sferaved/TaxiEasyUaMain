@@ -26,9 +26,11 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
@@ -71,6 +73,7 @@ public class UIDFragment extends Fragment {
     private ImageButton scrollButtonDown, scrollButtonUp;
     private TextView textUid;
     private String email;
+    private FragmentManager fragmentManager;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -79,6 +82,7 @@ public class UIDFragment extends Fragment {
         binding = FragmentUidBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
+        fragmentManager = getParentFragmentManager();
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
 
         listView = binding.listView;
@@ -268,7 +272,7 @@ public class UIDFragment extends Fragment {
                     }
                 } else {
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                 }
                 upd_but.setText(getString(R.string.order));
@@ -279,7 +283,7 @@ public class UIDFragment extends Fragment {
             public void onFailure(Call<List<RouteResponse>> call, Throwable t) {
                 // Обработка ошибок сети или других ошибок
                 String errorMessage = t.getMessage();
-                t.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(t);
                 upd_but.setText(getString(R.string.order));
                 progressBar.setVisibility(View.GONE);
             }

@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.taxi.easy.ua.MainActivity;
@@ -143,6 +144,7 @@ public class ErrorPayActivity extends AppCompatActivity {
                     } catch (JsonSyntaxException e) {
                         // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
                         Log.e("TAG1", "Error parsing JSON response: " + e.getMessage());
+                        FirebaseCrashlytics.getInstance().recordException(e);
                         startActivity(new Intent(getApplicationContext(), MainActivity.class));
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.return_pay_error));
                         bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
@@ -158,8 +160,8 @@ public class ErrorPayActivity extends AppCompatActivity {
                         startActivity(new Intent(getApplicationContext(), MainActivity.class));
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.return_pay_error));
                         bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-                    } catch (IOException ignored) {
-
+                    } catch (IOException e) {
+                        FirebaseCrashlytics.getInstance().recordException(e);
                     }
 
 
