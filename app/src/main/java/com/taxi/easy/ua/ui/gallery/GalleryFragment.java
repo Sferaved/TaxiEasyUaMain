@@ -455,6 +455,7 @@ public class GalleryFragment extends Fragment {
                             case "card_payment":
                             case "fondy_payment":
                             case "mono_payment":
+                            case "wfp_payment":
                                 changePayMethodToNal();
                                 break;
                             default:
