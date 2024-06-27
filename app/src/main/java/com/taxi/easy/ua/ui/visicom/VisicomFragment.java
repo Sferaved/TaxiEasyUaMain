@@ -824,6 +824,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                                 case "card_payment":
                                 case "fondy_payment":
                                 case "mono_payment":
+                                case "wfp_payment":
                                     changePayMethodToNal();
                                     break;
                                 default:
@@ -1367,6 +1368,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                     case "card_payment":
                     case "fondy_payment":
                     case "mono_payment":
+                    case "wfp_payment":
                         if (Long.parseLong(card_max_pay) <= Long.parseLong(text_view_cost.getText().toString())) {
                             changePayMethodMax(text_view_cost.getText().toString(), pay_method);
                         } else {
