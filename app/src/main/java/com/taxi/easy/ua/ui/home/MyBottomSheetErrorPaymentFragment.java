@@ -53,6 +53,7 @@ import com.taxi.easy.ua.ui.wfp.invoice.InvoiceService;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseResponse;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseService;
 import com.taxi.easy.ua.utils.LocaleHelper;
+import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 
 import java.io.UnsupportedEncodingException;
@@ -81,7 +82,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     public static ListView listView;
     String pay_method;
     String page ="orderSearchMarkersVisicom";
-    private String TAG = "MyBottomSheetErrorPaymentFragment";
+    private final String TAG = "MyBottomSheetErrorPaymentFragment";
     private static String messageFondy;
     String amount;
     List<String>  arrayList;
@@ -96,7 +97,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             Context context
     ) {
         this.pay_method = pay_method;
-        this.messageFondy = messageFondy;
+        MyBottomSheetErrorPaymentFragment.messageFondy = messageFondy;
         this.amount = amount;
         this.context = context;
     }
@@ -173,10 +174,10 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             public void onClick(View v) {
                 switch (pay_method) {
                     case "fondy_payment":
-                        getUrlToPaymentFondy(messageFondy, amount, getParentFragmentManager());;
+                        getUrlToPaymentFondy(messageFondy, amount, getParentFragmentManager());
                         break;
                     case "wfp_payment":
-                        getUrlToPaymentWfp();;
+                        getUrlToPaymentWfp();
                         break;
                 }
 
@@ -223,13 +224,13 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         call.enqueue(new Callback<InvoiceResponse>() {
             @Override
             public void onResponse(@NonNull Call<InvoiceResponse> call, @NonNull Response<InvoiceResponse> response) {
-                Log.d(TAG, "onResponse: 1111" + response.code());
+                Logger.d(getActivity(), TAG, "onResponse: 1111" + response.code());
                 if (response.isSuccessful()) {
                     InvoiceResponse invoiceResponse = response.body();
 
                     if (invoiceResponse != null) {
                         String checkoutUrl = invoiceResponse.getInvoiceUrl();
-                        Log.d(TAG, "onResponse: Invoice URL: " + checkoutUrl);
+                        Logger.d(getActivity(), TAG, "onResponse: Invoice URL: " + checkoutUrl);
                         if(checkoutUrl != null) {
                             MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
                                     checkoutUrl,
@@ -241,22 +242,22 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                         } else {
-                            Log.d(TAG,"Response body is null");
+                            Logger.d(getActivity(), TAG,"Response body is null");
                             cancelOrderDouble();
                         }
                     } else {
-                        Log.d(TAG,"Response body is null");
+                        Logger.d(getActivity(), TAG,"Response body is null");
                         cancelOrderDouble();
                     }
                 } else {
-                    Log.d(TAG, "Request failed: " + response.code());
+                    Logger.d(getActivity(), TAG, "Request failed: " + response.code());
                     cancelOrderDouble();
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<InvoiceResponse> call, @NonNull Throwable t) {
-                Log.d(TAG, "Request failed: " + t.getMessage());
+                Logger.d(getActivity(), TAG, "Request failed: " + t.getMessage());
                 cancelOrderDouble();
             }
         });
@@ -302,10 +303,10 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     PurchaseResponse purchaseResponse = response.body();
                     if (purchaseResponse != null) {
                         // Обработка ответа
-                        Log.d(TAG, "onResponse:purchaseResponse " + purchaseResponse);
+                        Logger.d(getActivity(), TAG, "onResponse:purchaseResponse " + purchaseResponse);
                     } else {
                         // Ошибка при парсинге ответа
-                        Log.d(TAG, "Ошибка при парсинге ответа");
+                        Logger.d(getActivity(), TAG, "Ошибка при парсинге ответа");
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
                         FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getActivity());
@@ -313,7 +314,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     }
                 } else {
                     // Ошибка запроса
-                    Log.d(TAG, "Ошибка запроса");
+                    Logger.d(getActivity(), TAG, "Ошибка запроса");
                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
                     FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getActivity());
@@ -324,7 +325,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             @Override
             public void onFailure(@NonNull Call<PurchaseResponse> call, @NonNull Throwable t) {
                 // Ошибка при выполнении запроса
-                Log.d(TAG, "Ошибка при выполнении запроса");
+                Logger.d(getActivity(), TAG, "Ошибка при выполнении запроса");
                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
                 FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
                 MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getActivity());
@@ -340,7 +341,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
 //            // Пример строки URL с параметрами
-        Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
+        Logger.d(getActivity(), TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
         parser.sendURL(urlOrder, new Callback<Map<String, String>>() {
             @Override
             public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
@@ -405,7 +406,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // Добавляем флаг FLAG_ACTIVITY_NEW_TASK
                     context.startActivity(intent);
                 } else {
-                    Log.d(TAG, "orderFinished:message " + message);
+                    Logger.d(getActivity(), TAG, "orderFinished:message " + message);
                     assert message != null;
                     if(message != null && message.equals("Дублирование заказа. Вы не можете создавать подобный заказ, пока не нашлась машина на предыдущий заказ.")) {
                         message = context.getString(R.string.double_order_error);
@@ -425,7 +426,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
      
     @SuppressLint("Range")
     public String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
-        Log.d(TAG, "getTaxiUrlSearchMarkers: " + urlAPI);
+        Logger.d(getActivity(), TAG, "getTaxiUrlSearchMarkers: " + urlAPI);
 
         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -441,7 +442,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
         String start = cursor.getString(cursor.getColumnIndex("start"));
         String finish = cursor.getString(cursor.getColumnIndex("finish"));
-        Log.d(TAG, "getTaxiUrlSearchMarkers: start " + start);
+        Logger.d(getActivity(), TAG, "getTaxiUrlSearchMarkers: start " + start);
         // Заменяем символ '/' в строках
         if(start != null) {
             start = start.replace("/", "|");
@@ -527,7 +528,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 }
             }
             result = String.join("*", servicesChecked);
-            Log.d(TAG, "getTaxiUrlSearchGeo result:" + result + "/");
+            Logger.d(getActivity(), TAG, "getTaxiUrlSearchGeo result:" + result + "/");
         } else {
             result = "no_extra_charge_codes";
         }
@@ -587,9 +588,9 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
 
 
-        Log.d(TAG, "paymentByTokenFondy: " + rectoken);
+        Logger.d(getActivity(), TAG, "paymentByTokenFondy: " + rectoken);
 
-        Log.d(TAG, "getStatusFondy: " + params);
+        Logger.d(getActivity(), TAG, "getStatusFondy: " + params);
         SignatureClient signatureClient = new SignatureClient();
 // Передаем экземпляр SignatureCallback в метод generateSignature
         signatureClient.generateSignature(queryString, new SignatureClient.SignatureCallback() {
@@ -597,7 +598,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             public void onSuccess(SignatureResponse response) {
                 // Обработка успешного ответа
                 String digest = response.getDigest();
-                Log.d(TAG, "Received signature digest: " + digest);
+                Logger.d(getActivity(), TAG, "Received signature digest: " + digest);
 
                 RequestDataToken paymentRequest = new RequestDataToken(
                         order_id,
@@ -611,7 +612,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
 
                 StatusRequestToken statusRequest = new StatusRequestToken(paymentRequest);
-                Log.d(TAG, "getUrlToPayment: " + statusRequest);
+                Logger.d(getActivity(), TAG, "getUrlToPayment: " + statusRequest);
 
                 Call<ApiResponseToken<SuccessResponseDataToken>> call = paymentApi.makePayment(statusRequest);
 
@@ -620,24 +621,24 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
                     @Override
                     public void onResponse(@NonNull Call<ApiResponseToken<SuccessResponseDataToken>> call, Response<ApiResponseToken<SuccessResponseDataToken>> response) {
-                        Log.d(TAG, "onResponse: 1111" + response.code());
+                        Logger.d(getActivity(), TAG, "onResponse: 1111" + response.code());
                         if (response.isSuccessful()) {
                             ApiResponseToken<SuccessResponseDataToken> apiResponse = response.body();
 
-                            Log.d(TAG, "onResponse: " +  new Gson().toJson(apiResponse));
+                            Logger.d(getActivity(), TAG, "onResponse: " +  new Gson().toJson(apiResponse));
                             try {
-                                SuccessResponseDataToken responseBody = response.body().getResponse();;
+                                SuccessResponseDataToken responseBody = response.body().getResponse();
 
                                 // Теперь у вас есть объект ResponseBodyRev для обработки
                                 if (responseBody != null) {
-                                    Log.d(TAG, "JSON Response: " + new Gson().toJson(apiResponse));
+                                    Logger.d(getActivity(), TAG, "JSON Response: " + new Gson().toJson(apiResponse));
                                     String orderStatus = responseBody.getOrderStatus();
                                     if (!"approved".equals(orderStatus)) {
                                         // Обработка ответа об ошибке
                                         String errorResponseMessage = responseBody.getErrorMessage();
                                         String errorResponseCode = responseBody.getErrorCode();
-                                        Log.d(TAG, "onResponse: errorResponseMessage " + errorResponseMessage);
-                                        Log.d(TAG, "onResponse: errorResponseCode" + errorResponseCode);
+                                        Logger.d(getActivity(), TAG, "onResponse: errorResponseMessage " + errorResponseMessage);
+                                        Logger.d(getActivity(), TAG, "onResponse: errorResponseCode" + errorResponseCode);
 
 //                                Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                                         FinishActivity.btn_again.setVisibility(View.VISIBLE);
@@ -667,7 +668,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                             }
                         } else {
                             // Обработка ошибки
-                            Log.d(TAG, "onFailure: " + response.code());
+                            Logger.d(getActivity(), TAG, "onFailure: " + response.code());
                             FinishActivity.btn_again.setVisibility(View.VISIBLE);
                             FinishActivity.btn_cancel.setVisibility(View.VISIBLE);
                             FinishActivity.progressBar.setVisibility(View.INVISIBLE);
@@ -678,7 +679,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
                     @Override
                     public void onFailure(@NonNull Call<ApiResponseToken<SuccessResponseDataToken>> call, @NonNull Throwable t) {
-                        Log.d(TAG, "onFailure1111: " + t.toString());
+                        Logger.d(getActivity(), TAG, "onFailure1111: " + t);
 
                         FinishActivity.btn_again.setVisibility(View.VISIBLE);
                         FinishActivity.btn_cancel.setVisibility(View.VISIBLE);
@@ -692,7 +693,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             @Override
             public void onError(String error) {
                 // Обработка ошибки
-                Log.d(TAG, "Received signature error: " + error);
+                Logger.d(getActivity(), TAG, "Received signature error: " + error);
 
                 FinishActivity.btn_again.setVisibility(View.VISIBLE);
                 FinishActivity.btn_cancel.setVisibility(View.VISIBLE);
@@ -731,7 +732,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
 
         StatusRequestPay statusRequest = new StatusRequestPay(paymentRequest);
-        Log.d(TAG, "getUrlToPayment: " + statusRequest.toString());
+        Logger.d(getActivity(), TAG, "getUrlToPayment: " + statusRequest);
 
         Call<ApiResponsePay<SuccessResponseDataPay>> call = paymentApi.makePayment(statusRequest);
 
@@ -739,13 +740,13 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
             @Override
             public void onResponse(@NonNull Call<ApiResponsePay<SuccessResponseDataPay>> call, Response<ApiResponsePay<SuccessResponseDataPay>> response) {
-                Log.d(TAG, "onResponse: 1111" + response.code());
+                Logger.d(getActivity(), TAG, "onResponse: 1111" + response.code());
                 if (response.isSuccessful()) {
                     ApiResponsePay<SuccessResponseDataPay> apiResponse = response.body();
 
-                    Log.d(TAG, "onResponse: " +  new Gson().toJson(apiResponse));
+                    Logger.d(getActivity(), TAG, "onResponse: " +  new Gson().toJson(apiResponse));
                     try {
-                        SuccessResponseDataPay responseBody = response.body().getResponse();;
+                        SuccessResponseDataPay responseBody = response.body().getResponse();
 
                         // Теперь у вас есть объект ResponseBodyRev для обработки
                         if (responseBody != null) {
@@ -767,8 +768,8 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                                 // Обработка ответа об ошибке
                                 String errorResponseMessage = responseBody.getErrorMessage();
                                 String errorResponseCode = responseBody.getErrorCode();
-                                Log.d(TAG, "onResponse: errorResponseMessage " + errorResponseMessage);
-                                Log.d(TAG, "onResponse: errorResponseCode" + errorResponseCode);
+                                Logger.d(getActivity(), TAG, "onResponse: errorResponseMessage " + errorResponseMessage);
+                                Logger.d(getActivity(), TAG, "onResponse: errorResponseCode" + errorResponseCode);
                                 cancelOrderDouble();
                                 // Отобразить сообщение об ошибке пользователю
                             } else {
@@ -787,7 +788,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     }
                 } else {
                     // Обработка ошибки
-                    Log.d(TAG, "onFailure: " + response.code());
+                    Logger.d(getActivity(), TAG, "onFailure: " + response.code());
                     cancelOrderDouble();
                 }
 
@@ -795,7 +796,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
             @Override
             public void onFailure(@NonNull Call<ApiResponsePay<SuccessResponseDataPay>> call, Throwable t) {
-                Log.d(TAG, "onFailure1111: " + t.toString());
+                Logger.d(getActivity(), TAG, "onFailure1111: " + t);
 
                 cancelOrderDouble();
             }
@@ -812,7 +813,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         String url = FinishActivity.baseUrl + "/" + api + "/android/webordersCancelDouble/" + FinishActivity.uid+ "/" + FinishActivity.uid_Double + "/" + pay_method + "/" + city  + "/" + context.getString(R.string.application);
 
         Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
-        Log.d(TAG, "cancelOrderDouble: " + url);
+        Logger.d(getActivity(), TAG, "cancelOrderDouble: " + url);
 
         call.enqueue(new Callback<Status>() {
             @Override
@@ -821,9 +822,9 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     Status status = response.body();
                     if (status != null) {
                         String result =  String.valueOf(status.getResponse());
-                        Log.d(TAG, "onResponse: result" + result);
+                        Logger.d(getActivity(), TAG, "onResponse: result" + result);
                         String newStatus = FinishActivity.text_status.getText().toString();
-                        Log.d(TAG, "onResponse:newStatus " + newStatus);
+                        Logger.d(getActivity(), TAG, "onResponse:newStatus " + newStatus);
 
                         FinishActivity.text_status.setText(newStatus);
 
@@ -844,7 +845,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 // Обработка ошибок сети или других ошибок
                 String errorMessage = t.getMessage();
                 FirebaseCrashlytics.getInstance().recordException(t);
-                Log.d(TAG, "onFailure: " + errorMessage);
+                Logger.d(getActivity(), TAG, "onFailure: " + errorMessage);
                 FinishActivity.text_status.setText(R.string.verify_internet);
                 FinishActivity.progressBar.setVisibility(View.INVISIBLE);
             }
@@ -889,7 +890,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             if (cursor.moveToFirst()) {
                 do {
                     result = cursor.getString(cursor.getColumnIndex("rectoken"));
-                    Log.d(TAG, "Found rectoken with rectoken_check = 1 " + ": " + result);
+                    Logger.d(getActivity(), TAG, "Found rectoken with rectoken_check = 1 " + ": " + result);
                     return result;
                 } while (cursor.moveToNext());
             }
@@ -922,7 +923,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         // Выполните запрос к таблице TABLE_FONDY_CARDS и получите данные
         Cursor cursor = database.query(table, null, null, null, null, null, null);
-        Log.d(TAG, "getCardMapsFromDatabase: card count: " + cursor.getCount());
+        Logger.d(getActivity(), TAG, "getCardMapsFromDatabase: card count: " + cursor.getCount());
 
         if (cursor.moveToFirst()) {
             do {

@@ -30,6 +30,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.cities.api.CityApiClient;
 import com.taxi.easy.ua.cities.api.CityResponse;
 import com.taxi.easy.ua.cities.api.CityResponseMerchantFondy;
@@ -47,6 +48,7 @@ import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.ip.ip_util_retrofit.IpResponse;
 import com.taxi.easy.ua.utils.ip.ip_util_retrofit.IpifyService;
+import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -170,10 +172,10 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 positionFirst = 6;
                 phoneNumber = Kyiv_City_phone;
                 cityMenu = context.getString(R.string.foreign_countries);
-                getPublicIPAddress();
+//                getPublicIPAddress();
 //                new GetPublicIPAddressTask().execute();
         }
-        Log.d(TAG, "onCreateView: city" + city);
+        Logger.d(context, TAG, "onCreateView: city" + city);
         updateMyPosition(city);
         listView.setItemChecked(positionFirst, true);
 
@@ -237,7 +239,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                     } else {
                         cityCodeNew = cityCode[positionFirst];
                     }
-                Log.d(TAG, "onItemClick: pay_method" + pay_method);
+                Logger.d(context, TAG, "onItemClick: pay_method" + pay_method);
 
                 pay_system(cityCodeNew);
 
@@ -246,6 +248,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 updateMyPosition(cityCode[positionFirst]);
 
                 cityMaxPay(cityCodeNew, getContext());
+                Logger.d(context, TAG, "1");
                 getCardTokenWfp(cityCode[positionFirst]);
                 dismiss();
             }
@@ -270,7 +273,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
         // Создайте сервис
         CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
-        Log.d(TAG, "getCardTokenWfp: ");
+        Logger.d(context, TAG, "getCardTokenWfp: ");
         String email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         // Выполните запрос
         Call<CallbackResponseWfp> call = service.handleCallbackWfp(
@@ -282,12 +285,12 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         call.enqueue(new Callback<CallbackResponseWfp>() {
             @Override
             public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
-                Log.d(TAG, "onResponse: " + response.body());
+                Logger.d(context, TAG, "onResponse: " + response.body());
                 if (response.isSuccessful()) {
                     CallbackResponseWfp callbackResponse = response.body();
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
-                        Log.d(TAG, "onResponse: cards" + cards);
+                        Logger.d(context, TAG, "onResponse: cards" + cards);
                         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                         database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
                         if (cards != null && !cards.isEmpty()) {
@@ -298,7 +301,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                                 String rectoken = cardInfo.getRectoken(); // Токен карты
                                 String merchant = cardInfo.getMerchant(); // Токен карты
 
-                                Log.d(TAG, "onResponse: card_token: " + rectoken);
+                                Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
                                 ContentValues cv = new ContentValues();
                                 cv.put("masked_card", masked_card);
                                 cv.put("card_type", card_type);
@@ -332,7 +335,12 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
-                Log.d(TAG, "onResponse: failure " + t.toString());
+                Context context = getActivity() != null ? getActivity().getApplicationContext() : MyApplication.getContext();
+                if (context != null) {
+                    Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
+                } else {
+                    Log.e(TAG, "Context is null, cannot write log.");
+                }
             }
         });
     }
@@ -358,12 +366,14 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                     switch (paymentCode) {
                         case "wfp":
                             pay_method = "wfp_payment";
-//                            cityMaxPay(cityCodeNew, getContext());
-//                            getCardTokenWfp(city);
+                            cityMaxPay(cityCodeNew, getContext());
+                            Logger.d(context, TAG, "2");
+                            getCardTokenWfp(city);
                             break;
                         case "fondy":
                             pay_method = "fondy_payment";
                             cityMaxPay(cityCodeNew, getContext());
+                            Logger.d(context, TAG, "3");
                             merchantFondy(cityCodeNew, getContext());
                             break;
                         case "mono":
@@ -391,6 +401,12 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
+                Context context = getActivity() != null ? getActivity().getApplicationContext() : MyApplication.getContext();
+                if (context != null) {
+                    Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
+                } else {
+                    Log.e(TAG, "Context is null, cannot write log.");
+                }
                 if (isAdded()) {
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -404,7 +420,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         double startLat;
         double startLan;
         String position;
-        Log.d(TAG, "updateMyPosition:city "+ city);
+        Logger.d(context, TAG, "updateMyPosition:city "+ city);
         switch (city){
             case "Dnipropetrovsk Oblast":
             case "Odessa":
@@ -509,7 +525,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     }
 
     private void updateRoutMarker(List<String> settings) {
-        Log.d(TAG, "updateRoutMarker: " + settings.toString());
+        Logger.d(context, TAG, "updateRoutMarker: " + settings.toString());
         ContentValues cv = new ContentValues();
 
         cv.put("startLat", Double.parseDouble(settings.get(0)));
@@ -545,7 +561,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             // Изменяем текст элемента меню
             MainActivity.navVisicomMenuItem.setTitle(newTitle);
 
-            Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
 
             VisicomFragment.textfrom.setVisibility(View.VISIBLE);
             VisicomFragment.num1.setVisibility(View.VISIBLE);
@@ -583,13 +599,27 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         // Добавьте здесь код для обработки полученных значений
                     }
                 } else {
-                    Log.e("Request", "Failed. Error code: " + response.code());
+                    Context context = getActivity() != null ? getActivity().getApplicationContext() : MyApplication.getContext();
+                    if (context != null) {
+                        try {
+                            Logger.d(getActivity(), TAG, "Failed. Error code: " + response.code());
+                        } catch (NullPointerException e) {
+                            Log.e(TAG, "Failed. Error code: " + response.code());
+                        }
+                    } else {
+                        Log.e(TAG, "Failed. Error code: " + response.code());
+                    }
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<CityResponse> call, @NonNull Throwable t) {
-                Log.e("Request", "Failed. Error message: " + t.getMessage());
+                Context context = getActivity() != null ? getActivity().getApplicationContext() : MyApplication.getContext();
+                if (context != null) {
+                    Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
+                } else {
+                    Log.e(TAG, "Context is null, cannot write log.");
+                }
             }
         });
     }
@@ -605,7 +635,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             public void onResponse(@NonNull Call<CityResponseMerchantFondy> call, @NonNull Response<CityResponseMerchantFondy> response) {
                 if (response.isSuccessful()) {
                     CityResponseMerchantFondy cityResponse = response.body();
-                    Log.d(TAG, "onResponse: cityResponse" + cityResponse);
+                    Logger.d(context, TAG, "onResponse: cityResponse" + cityResponse);
                     if (cityResponse != null) {
                         String merchant_fondy = cityResponse.getMerchantFondy();
                         String fondy_key_storage = cityResponse.getFondyKeyStorage();
@@ -623,8 +653,8 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
 
 
-                        Log.d(TAG, "onResponse: merchant_fondy" + merchant_fondy);
-                        Log.d(TAG, "onResponse: fondy_key_storage" + fondy_key_storage);
+                        Logger.d(context, TAG, "onResponse: merchant_fondy" + merchant_fondy);
+                        Logger.d(context, TAG, "onResponse: fondy_key_storage" + fondy_key_storage);
 
                         if(merchant_fondy != null) {
                             getCardToken(context, merchant_fondy);
@@ -634,13 +664,24 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         // Добавьте здесь код для обработки полученных значений
                     }
                 } else {
-                    Log.e("Request", "Failed. Error code: " + response.code());
+
+                    Context context = getActivity() != null ? getActivity().getApplicationContext() : MyApplication.getContext();
+                    if (context != null) {
+                        Logger.d(getActivity(), TAG, "Failed. Error code: " + response.code());
+                    } else {
+                        Log.e(TAG, "Failed. Error code: " + response.code());
+                    }
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<CityResponseMerchantFondy> call, @NonNull Throwable t) {
-                Log.e("Request", "Failed. Error message: " + t.getMessage());
+                Context context = getActivity() != null ? getActivity().getApplicationContext() : MyApplication.getContext();
+                if (context != null) {
+                    Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
+                } else {
+                    Log.e(TAG, "Context is null, cannot write log.");
+                }
             }
         });
     }
@@ -651,11 +692,11 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 .build();
         String baseUrl = retrofit.baseUrl().toString();
 
-        Log.d(TAG, "Base URL: " + baseUrl);
+        Logger.d(context, TAG, "Base URL: " + baseUrl);
         // Создайте сервис
         CallbackService service = retrofit.create(CallbackService.class);
 
-        Log.d(TAG, "getCardTokenFondy: ");
+        Logger.d(context, TAG, "getCardTokenFondy: ");
 
         List<String> arrayList = logCursor(MainActivity.TABLE_USER_INFO, context);
         String email = arrayList.get(3);
@@ -663,17 +704,17 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             // Выполните запрос
             Call<CallbackResponse> call = service.handleCallback(email, "fondy", merchant_fondy);
             String requestUrl = call.request().toString();
-            Log.d(TAG, "Request URL: " + requestUrl);
+            Logger.d(context, TAG, "Request URL: " + requestUrl);
 
             call.enqueue(new Callback<CallbackResponse>() {
                 @Override
                 public void onResponse(@NonNull Call<CallbackResponse> call, @NonNull Response<CallbackResponse> response) {
-                    Log.d(TAG, "onResponse: " + response.body());
+                    Logger.d(context, TAG, "onResponse: " + response.body());
                     if (response.isSuccessful()) {
                         CallbackResponse callbackResponse = response.body();
                         if (callbackResponse != null) {
                             List<CardInfo> cards = callbackResponse.getCards();
-                            Log.d(TAG, "onResponse: cards" + cards);
+                            Logger.d(context, TAG, "onResponse: cards" + cards);
                             SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                             // Очистка таблицы
                             database.delete(MainActivity.TABLE_FONDY_CARDS, "1", null);
@@ -686,7 +727,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                                     String rectoken = cardInfo.getRectoken(); // Токен карты
                                     String merchantId = cardInfo.getMerchant(); // Токен карты
 
-                                    Log.d(TAG, "onResponse: card_token: " + rectoken);
+                                    Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
 
                                     cv.put("masked_card", masked_card);
                                     cv.put("card_type", card_type);
@@ -721,7 +762,12 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 @Override
                 public void onFailure(@NonNull Call<CallbackResponse> call, @NonNull Throwable t) {
                     // Обработка ошибки запроса
-                    Log.d(TAG, "onResponse: failure " + t.toString());
+                    Context context = getActivity() != null ? getActivity().getApplicationContext() : MyApplication.getContext();
+                    if (context != null) {
+                        Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
+                    } else {
+                        Log.e(TAG, "Context is null, cannot write log.");
+                    }
 //                Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
                     VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
                 }
@@ -797,6 +843,9 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     }
 
     public void getPublicIPAddress() {
+
+        getCountryByIP("ipAddress");
+
         IpifyService apiService = com.taxi.easy.ua.utils.ip.ip_util_retrofit.RetrofitClient.getClient(BASE_URL).create(IpifyService.class);
         Call<IpResponse> call = apiService.getPublicIPAddress();
 
@@ -805,10 +854,10 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             public void onResponse(@NonNull Call<IpResponse> call, @NonNull Response<IpResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     String ipAddress = response.body().getIp();
-                    Log.d(TAG, "onResponse: Local IP Address: " + ipAddress);
+                    Logger.d(context, TAG, "onResponse: Local IP Address: " + ipAddress);
                     getCountryByIP(ipAddress);
                 } else {
-                    Log.e(TAG, "Error in API response: " + response.errorBody());
+                    Logger.d(context, TAG, "Error in API response: " + response.errorBody());
                     MainActivity.countryState = "UA";
                 }
                 // Hide progress bar after response
@@ -819,7 +868,12 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<IpResponse> call, @NonNull Throwable t) {
-                Log.e(TAG, "Exception in getPublicIPAddress: " + t.getMessage());
+                Context context = getActivity() != null ? getActivity().getApplicationContext() : MyApplication.getContext();
+                if (context != null) {
+                    Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
+                } else {
+                    Log.e(TAG, "Context is null, cannot write log.");
+                }
                 FirebaseCrashlytics.getInstance().recordException(t);
                 MainActivity.countryState = "UA";
                 // Hide progress bar after failure
@@ -830,7 +884,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         });
     }
 
-    private static void getCountryByIP(String ipAddress) {
+    private void getCountryByIP(String ipAddress) {
         ApiServiceCountry apiService = RetrofitClient.getClient().create(ApiServiceCountry.class);
         Call<CountryResponse> call = apiService.getCountryByIP(ipAddress);
 
@@ -847,13 +901,19 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 } else {
                     MainActivity.countryState = "UA";
                 }
-                Log.d(TAG, "countryState  " + MainActivity.countryState);
             }
 
             @Override
             public void onFailure(@NonNull Call<CountryResponse> call, @NonNull Throwable t) {
-                Log.e(TAG, "Error: " + t.getMessage());
+                Context context = getActivity() != null ? getActivity().getApplicationContext() : MyApplication.getContext();
+                if (context != null) {
+                    Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
+                } else {
+                    Log.e(TAG, "Context is null, cannot write log.");
+                }
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
+
         });
     }
 }

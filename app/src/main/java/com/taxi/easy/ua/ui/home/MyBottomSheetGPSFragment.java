@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,9 +19,12 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.log.Logger;
 
 
 public class MyBottomSheetGPSFragment extends BottomSheetDialogFragment {
+    private static final String TAG = "MyBottomSheetGPSFragment";
+
     public MyBottomSheetGPSFragment() {
         // Пустой конструктор обязателен для фрагментов
     }
@@ -56,7 +58,7 @@ public class MyBottomSheetGPSFragment extends BottomSheetDialogFragment {
                 if(VisicomFragment.progressBar != null) {
                     VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
                 }
-                Log.d("TAG", "onClick: " + errorMessage);
+                Logger.d(getActivity(), TAG, "onClick: " + errorMessage);
                 if (errorMessage.equals(getString(R.string.location_on))) {
                     try {
                         Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);

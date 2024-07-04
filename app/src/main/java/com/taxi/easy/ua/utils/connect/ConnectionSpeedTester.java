@@ -29,7 +29,7 @@ public class ConnectionSpeedTester {
         call.enqueue(new Callback<Void>() {
             @Override
             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
-                Log.d("TAG_VIS_ADDR", "onResponse: "+ response.toString());
+                Log.d("TAG_VIS_ADDR", "onResponse: "+ response);
                 if (response.isSuccessful()) {
 
                     long endTime = System.currentTimeMillis();

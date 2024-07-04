@@ -11,9 +11,9 @@ import com.taxi.easy.ua.R;
 
 public class CustomListAdapter extends BaseAdapter {
 
-    private Context context;
-    private String[] dataList;
-    private int numItemsToShow; // Количество элементов, которые вы хотите показать
+    private final Context context;
+    private final String[] dataList;
+    private final int numItemsToShow; // Количество элементов, которые вы хотите показать
 
     public CustomListAdapter(Context context, String[] dataList, int numItemsToShow) {
         this.context = context;

@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.ui.card;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,13 +10,17 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
 import java.util.Map;
 
 public class CustomCardAdapterToken extends ArrayAdapter<Map<String, String>> {
-    private ArrayList<Map<String, String>> cardMaps;
+    private static final String TAG = "CustomCardAdapterToken";
+    private final ArrayList<Map<String, String>> cardMaps;
     private int selectedPosition = 0;
     public static String rectoken;
 
@@ -27,8 +30,9 @@ public class CustomCardAdapterToken extends ArrayAdapter<Map<String, String>> {
         this.cardMaps = cardMaps;
     }
 
+    @NonNull
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(int position, View convertView, @NonNull ViewGroup parent) {
         View view = convertView;
         ViewHolder holder;
 
@@ -62,7 +66,7 @@ public class CustomCardAdapterToken extends ArrayAdapter<Map<String, String>> {
             holder.cardText.setText(masked_card);
             String bank_name = cardMap.get("bank_name");
 
-            Log.d("TAG", "getView:bank_name " + bank_name);
+            Logger.d(getContext(), TAG, "getView:bank_name " + bank_name);
             if(!bank_name.equals("SOME BANK IN UA COUNTRY")) {
                 holder.bankText.setText(bank_name);
             } else {

@@ -10,7 +10,6 @@ import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,6 +31,7 @@ import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.BonusResponse;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +43,8 @@ import retrofit2.Response;
 
 public class BonusFragment extends Fragment {
 
-    private @NonNull FragmentBonusBinding binding;
+    private static final String TAG = "BonusFragment";
+    private FragmentBonusBinding binding;
     private AppCompatButton btnBonus, btnOrder;
     private TextView textView;
     private NetworkChangeReceiver networkChangeReceiver;
@@ -121,7 +122,7 @@ public class BonusFragment extends Fragment {
         String url = baseUrl + "/bonus/bonusUserShow/" + value + "/" + context.getString(R.string.application);
 //        String url = baseUrl + "/bonus/bonusUserShow/" + value;
         Call<BonusResponse> call = ApiClient.getApiService().getBonus(url);
-        Log.d("TAG", "fetchBonus: " + url);
+        Logger.d(context, TAG, "fetchBonus: " + url);
         String bonusText = context.getString(R.string.my_bonus);
         call.enqueue(new Callback<BonusResponse>() {
             @SuppressLint("SetTextI18n")
@@ -146,7 +147,7 @@ public class BonusFragment extends Fragment {
                     text0.setText(R.string.bonus_upd_mes);
 
 
-                    Log.d("TAG", "onResponse: " + bonus);
+                    Logger.d(context, TAG, "onResponse: " + bonus);
                 } else {
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());

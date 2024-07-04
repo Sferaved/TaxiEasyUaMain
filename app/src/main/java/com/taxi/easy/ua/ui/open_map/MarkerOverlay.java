@@ -3,11 +3,11 @@ package com.taxi.easy.ua.ui.open_map;
 
 import android.content.Context;
 import android.os.Build;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import com.taxi.easy.ua.utils.log.Logger;
 
 import org.json.JSONException;
 import org.osmdroid.util.GeoPoint;
@@ -18,6 +18,7 @@ import org.osmdroid.views.overlay.Overlay;
 import java.net.MalformedURLException;
 
 public class MarkerOverlay extends Overlay {
+    private static final String TAG = "MarkerOverlay";
     Marker marker;
     public MarkerOverlay(Context context) {
         super(context);
@@ -45,7 +46,7 @@ public class MarkerOverlay extends Overlay {
                 OpenStreetMapActivity.dialogMarkers(OpenStreetMapActivity.fragmentManager, OpenStreetMapActivity.map.getContext());
             }
         } catch (MalformedURLException | JSONException | InterruptedException e) {
-            Log.d("TAG", "onCreate:" + new RuntimeException(e));
+            Logger.d(mapView.getContext(), TAG, "onCreate:" + new RuntimeException(e));
             FirebaseCrashlytics.getInstance().recordException(e);
         }
 

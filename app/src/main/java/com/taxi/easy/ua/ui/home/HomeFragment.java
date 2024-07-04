@@ -29,7 +29,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
 import android.text.InputType;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -71,10 +70,11 @@ import com.taxi.easy.ua.ui.home.room.RouteCost;
 import com.taxi.easy.ua.ui.home.room.RouteCostDao;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
-import com.taxi.easy.ua.utils.VerifyUserTask;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
+import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
+import com.taxi.easy.ua.utils.user_verify.VerifyUserTask;
 
 import org.json.JSONException;
 
@@ -204,7 +204,7 @@ public class HomeFragment extends Fragment {
                 default:
                     arrayStreet = KyivCity.arrayStreet();
                     break;
-            };
+            }
             adapter = new ArrayAdapter<>(context,R.layout.drop_down_layout, arrayStreet);
         }
 
@@ -256,8 +256,8 @@ public class HomeFragment extends Fragment {
         btn_plus= binding.btnPlus;
 
         btn_minus.setOnClickListener(v -> {
-            Log.d(TAG, "onCreateView: cost " +cost);
-            Log.d(TAG, "onCreateView: MIN_COST_VALUE " +MIN_COST_VALUE);
+            Logger.d(getActivity(), TAG, "onCreateView: cost " +cost);
+            Logger.d(getActivity(), TAG, "onCreateView: MIN_COST_VALUE " +MIN_COST_VALUE);
 
                 List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
                 addCost = Long.parseLong(stringListInfo.get(5));
@@ -326,7 +326,7 @@ public class HomeFragment extends Fragment {
                     progressBar.setVisibility(View.VISIBLE);
 
 
-                        Log.d(TAG, "onClick: pay_method" + pay_method);
+                        Logger.d(getActivity(), TAG, "onClick: pay_method" + pay_method);
                         List<String> stringListCity = logCursor(MainActivity.CITY_INFO, context);
                         String card_max_pay = stringListCity.get(4);
 
@@ -339,7 +339,7 @@ public class HomeFragment extends Fragment {
                                     try {
                                         if (orderRout()) {
                                             orderFinished();
-                                        };
+                                        }
                                     } catch (UnsupportedEncodingException e) {
                                         FirebaseCrashlytics.getInstance().recordException(e);
                                         throw new RuntimeException(e);
@@ -351,13 +351,14 @@ public class HomeFragment extends Fragment {
                             case "card_payment":
                             case "fondy_payment":
                             case "mono_payment":
+                            case "wfp_payment":
                                 if (Long.parseLong(card_max_pay) <= Long.parseLong(text_view_cost.getText().toString())) {
                                     changePayMethodMax(text_view_cost.getText().toString(), pay_method);
                                 } else {
                                     try {
                                         if (orderRout()) {
                                             orderFinished();
-                                        };
+                                        }
                                     } catch (UnsupportedEncodingException e) {
                                         FirebaseCrashlytics.getInstance().recordException(e);
                                         throw new RuntimeException(e);
@@ -368,7 +369,7 @@ public class HomeFragment extends Fragment {
                                 try {
                                     if (orderRout()) {
                                         orderFinished();
-                                    };
+                                    }
                                 } catch (UnsupportedEncodingException e) {
                                     FirebaseCrashlytics.getInstance().recordException(e);
                                     throw new RuntimeException(e);
@@ -526,7 +527,7 @@ public class HomeFragment extends Fragment {
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
 //            // Пример строки URL с параметрами
-            Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
+            Logger.d(getActivity(), TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
             parser.sendURL(urlOrder, new Callback<Map<String, String>>() {
                 @Override
                 public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
@@ -553,8 +554,8 @@ public class HomeFragment extends Fragment {
                                     to_name + " " + to_number.getText() + "." +
                                     getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
                         }
-                        Log.d(TAG, "order: sendUrlMap.get(\"from_lat\")" + sendUrlMap.get("from_lat"));
-                        Log.d(TAG, "order: sendUrlMap.get(\"lat\")" + sendUrlMap.get("lat"));
+                        Logger.d(getActivity(), TAG, "order: sendUrlMap.get(\"from_lat\")" + sendUrlMap.get("from_lat"));
+                        Logger.d(getActivity(), TAG, "order: sendUrlMap.get(\"lat\")" + sendUrlMap.get("lat"));
                         if (!Objects.equals(sendUrlMap.get("from_lat"), "0") && !Objects.equals(sendUrlMap.get("lat"), "0")) {
                             if (from_name.equals(to_name)) {
                                 insertRecordsOrders(
@@ -769,7 +770,7 @@ public class HomeFragment extends Fragment {
                 settings.add(from_numberCost);
                 settings.add(toCost);
                 settings.add(to_numberCost);
-                Log.d(TAG, "order: settings" + settings);
+                Logger.d(getActivity(), TAG, "order: settings" + settings);
                 updateRoutHome(settings);
             }
 
@@ -780,7 +781,7 @@ public class HomeFragment extends Fragment {
     }
     private void updateAddCost(String addCost) {
         ContentValues cv = new ContentValues();
-        Log.d(TAG, "updateAddCost: addCost" + addCost);
+        Logger.d(getActivity(), TAG, "updateAddCost: addCost" + addCost);
         cv.put("addCost", addCost);
 
         // обновляем по id
@@ -792,7 +793,7 @@ public class HomeFragment extends Fragment {
 
     public void checkPermission(String permission, int requestCode) {
         // Checking if permission is not granted
-        Log.d(TAG, "checkPermission: " + permission);
+        Logger.d(getActivity(), TAG, "checkPermission: " + permission);
         if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_DENIED) {
             ActivityCompat.requestPermissions(context, new String[]{permission}, LOCATION_PERMISSION_REQUEST_CODE);
         }
@@ -800,7 +801,7 @@ public class HomeFragment extends Fragment {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Log.d(TAG, "onRequestPermissionsResult: " + requestCode);
+        Logger.d(getActivity(), TAG, "onRequestPermissionsResult: " + requestCode);
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
             if (permissions.length > 0) {
                 SharedPreferences.Editor editor = MainActivity.sharedPreferences.edit();
@@ -817,7 +818,7 @@ public class HomeFragment extends Fragment {
 
                 // Сохранение обновленного значения счетчика
                 savePermissionRequestCount(permissionRequestCount);
-                Log.d("loadPermission", "permissionRequestCount: " + permissionRequestCount);
+                Logger.d(getActivity(), TAG, "permissionRequestCount: " + permissionRequestCount);
                 // Далее вы можете загрузить сохраненные разрешения и их результаты в любом месте вашего приложения,
                 // используя тот же самый объект SharedPreferences
             }
@@ -882,7 +883,7 @@ public class HomeFragment extends Fragment {
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
 
         String application =  getString(R.string.application);
-        new VerifyUserTask(userEmail, application, context).execute();
+        new VerifyUserTask(context).execute();
 
         progressBar.setVisibility(View.INVISIBLE);
         pay_method =  logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
@@ -956,12 +957,12 @@ public class HomeFragment extends Fragment {
                 if (numberFlagTo.equals("0")) {
                     to_number.setText(" ");
                 }
-                Log.d(TAG, "onItemClick: to" + to);
+                Logger.d(getActivity(), TAG, "onItemClick: to" + to);
                 if(connected()) {
                     from = String.valueOf(adapter.getItem(position));
                     if (from.indexOf("/") != -1) {
                         from = from.substring(0,  from.indexOf("/"));
-                    };
+                    }
                     List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
                     String city = stringList.get(1);
                     String api =  stringList.get(2);
@@ -1005,7 +1006,7 @@ public class HomeFragment extends Fragment {
                             cost();
                             break;
                         default:
-                            Log.d(TAG, "onItemClick: " + new IllegalStateException("Unexpected value: " + Objects.requireNonNull(orderCost)));
+                            Logger.d(getActivity(), TAG, "onItemClick: " + new IllegalStateException("Unexpected value: " + Objects.requireNonNull(orderCost)));
                     }
                     progressBar.setVisibility(View.INVISIBLE);
 
@@ -1069,7 +1070,7 @@ public class HomeFragment extends Fragment {
                         }
 
                         String orderCost = (String) sendUrlMapCost.get("message");
-                        Log.d(TAG, "onItemClick: orderCost" + orderCost);
+                        Logger.d(getActivity(), TAG, "onItemClick: orderCost" + orderCost);
                         switch (Objects.requireNonNull(orderCost)) {
                             case "200":
                                 bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_firebase_start));
@@ -1095,7 +1096,7 @@ public class HomeFragment extends Fragment {
                                 cost();
                                 break;
                             default:
-                                Log.d(TAG, "onItemClick: " + new IllegalStateException("Unexpected value: " + Objects.requireNonNull(orderCost)));
+                                Logger.d(getActivity(), TAG, "onItemClick: " + new IllegalStateException("Unexpected value: " + Objects.requireNonNull(orderCost)));
                         }
                         if (textViewFrom.getText().toString().isEmpty()) {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -1112,7 +1113,7 @@ public class HomeFragment extends Fragment {
                         bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
-            };
+            }
 
         });
 
@@ -1147,7 +1148,7 @@ public class HomeFragment extends Fragment {
             }
         }
 
-        Log.d(TAG, "cost: numberFlagTo " + numberFlagTo);
+        Logger.d(getActivity(), TAG, "cost: numberFlagTo " + numberFlagTo);
 
         if (to == null) {
             toCost = from;
@@ -1211,11 +1212,11 @@ public class HomeFragment extends Fragment {
 
             String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
             long discountInt = Integer.parseInt(discountText);
-            Log.d(TAG, "discountInt: " + discountInt);
+            Logger.d(getActivity(), TAG, "discountInt: " + discountInt);
             cost = Long.parseLong(orderCost);
-            Log.d(TAG, "cost: " + cost);
+            Logger.d(getActivity(), TAG, "cost: " + cost);
             discount = cost * discountInt / 100;
-            Log.d(TAG, "discount: " + discount);
+            Logger.d(getActivity(), TAG, "discount: " + discount);
             cost += discount;
 
             updateAddCost(String.valueOf(discount));
@@ -1223,7 +1224,7 @@ public class HomeFragment extends Fragment {
 
             costFirstForMin = cost;
             MIN_COST_VALUE = (long) (cost * 0.6);
-            Log.d(TAG, "cost: MIN_COST_VALUE "  + MIN_COST_VALUE);
+            Logger.d(getActivity(), TAG, "cost: MIN_COST_VALUE "  + MIN_COST_VALUE);
 
             insertRouteCostToDatabase();
 
@@ -1272,7 +1273,7 @@ public class HomeFragment extends Fragment {
             @Override
             public void run() {
 //                List<String> servicesChecked = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
-//                Log.d(TAG, "insertRouteCostToDatabase: " + servicesChecked.toString());
+//                Logger.d(getActivity(), TAG, "insertRouteCostToDatabase: " + servicesChecked.toString());
                 RouteCost existingRouteCost = routeCostDao.getRouteCost(routeId);
                 if (existingRouteCost == null) {
                     // Записи с таким routeId ещё нет, выполните вставку
@@ -1360,11 +1361,11 @@ public class HomeFragment extends Fragment {
                     buttonAddServices.setVisibility(View.VISIBLE);
                     buttonBonus.setVisibility(View.VISIBLE);
                     btn_clear.setVisibility(View.VISIBLE);
-                    Log.d(TAG, "onPostExecute: from_number.getText().toString()" + from_number.getText().toString());
+                    Logger.d(getActivity(), TAG, "onPostExecute: from_number.getText().toString()" + from_number.getText().toString());
                     if (!from_number.getText().toString().equals(" ")) {
                         from_number.setVisibility(View.VISIBLE);
                     }
-                    Log.d(TAG, "onPostExecute: retrievedRouteCost.toNumber/" + retrievedRouteCost.toNumber +"/");
+                    Logger.d(getActivity(), TAG, "onPostExecute: retrievedRouteCost.toNumber/" + retrievedRouteCost.toNumber +"/");
 
                     if (!retrievedRouteCost.from.equals(retrievedRouteCost.to)) {
                         textViewTo.setVisibility(View.VISIBLE);
@@ -1380,9 +1381,9 @@ public class HomeFragment extends Fragment {
                     }
                     List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
                     long addCostforMin = Long.parseLong(stringListInfo.get(5));
-                    Log.d(TAG, "onPostExecute: addCostforMin" + addCostforMin);
+                    Logger.d(getActivity(), TAG, "onPostExecute: addCostforMin" + addCostforMin);
                     MIN_COST_VALUE = (long) ((Long.parseLong(retrievedRouteCost.text_view_cost) - addCostforMin) * 0.6);
-                    Log.d(TAG, "onPostExecute: MIN_COST_VALUE" + MIN_COST_VALUE);
+                    Logger.d(getActivity(), TAG, "onPostExecute: MIN_COST_VALUE" + MIN_COST_VALUE);
                     btn_order.setVisibility(View.VISIBLE);
                 }
                 updateAddCost("0");
@@ -1485,7 +1486,7 @@ public class HomeFragment extends Fragment {
 
 
                         long discountInt = Integer.parseInt(discountText);
-                        Log.d(TAG, "costRoutHome:discountInt " + discountInt);
+                        Logger.d(getActivity(), TAG, "costRoutHome:discountInt " + discountInt);
 
                         cost = Long.parseLong(orderCost);
                         discount = cost * discountInt / 100;
@@ -1523,7 +1524,7 @@ public class HomeFragment extends Fragment {
         if (cursor.getCount() == 1) {
 
             if (logCursor(MainActivity.TABLE_USER_INFO, context).get(1).equals("0")) {
-                verify = false;Log.d(TAG, "verifyOrder:verify " +verify);
+                verify = false;Logger.d(getActivity(), TAG, "verifyOrder:verify " +verify);
             }
             cursor.close();
         }
@@ -1555,7 +1556,7 @@ public class HomeFragment extends Fragment {
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         int updCount = database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
                 new String[] { "1" });
-        Log.d(TAG, "updated rows count = " + updCount);
+        Logger.d(getActivity(), TAG, "updated rows count = " + updCount);
         database.close();
 
     }
@@ -1585,7 +1586,7 @@ public class HomeFragment extends Fragment {
             }
         }
         database.close();
-        Log.d(TAG, "routMaps: " + routsArr);
+        Logger.d(context, TAG, "routMaps: " + routsArr);
         return routsArr;
     }
 
@@ -1660,10 +1661,10 @@ public class HomeFragment extends Fragment {
 
 
     private String getTaxiUrlSearch(String urlAPI, Context context) throws UnsupportedEncodingException {
-        Log.d(TAG, "startCost: discountText" + logCursor(MainActivity.TABLE_SETTINGS_INFO, context).toString());
+        Logger.d(getActivity(), TAG, "startCost: discountText" + logCursor(MainActivity.TABLE_SETTINGS_INFO, context));
 
         List<String> stringListRout = logCursor(MainActivity.ROUT_HOME, context);
-        Log.d(TAG, "getTaxiUrlSearch: stringListRout" + stringListRout);
+        Logger.d(getActivity(), TAG, "getTaxiUrlSearch: stringListRout" + stringListRout);
 
         String originalString = stringListRout.get(1);
         int indexOfSlash = originalString.indexOf("/");
@@ -1703,9 +1704,9 @@ public class HomeFragment extends Fragment {
         String payment_type =  stringListInfo.get(4);
         String addCost = stringListInfo.get(5);
 
-        Log.d(TAG, "startCost: discountText" + discount);
+        Logger.d(getActivity(), TAG, "startCost: discountText" + discount);
 
-        Log.d(TAG, "getTaxiUrlSearch: addCost11111" + addCost);
+        Logger.d(getActivity(), TAG, "getTaxiUrlSearch: addCost11111" + addCost);
         // Building the parameters to the web service
 
         String parameters = null;
@@ -1767,7 +1768,7 @@ public class HomeFragment extends Fragment {
                 }
             }
             result = String.join("*", servicesChecked);
-            Log.d(TAG, "getTaxiUrlSearchGeo result:" + result + "/");
+            Logger.d(getActivity(), TAG, "getTaxiUrlSearchGeo result:" + result + "/");
         } else {
             result = "no_extra_charge_codes";
         }
@@ -1776,7 +1777,7 @@ public class HomeFragment extends Fragment {
         String url = "/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
 
-        Log.d(TAG, "getTaxiUrlSearch: " + url);
+        Logger.d(getActivity(), TAG, "getTaxiUrlSearch: " + url);
 
         database.close();
 
@@ -1824,7 +1825,7 @@ public class HomeFragment extends Fragment {
                 try {
                     if (orderRout()) {
                         orderFinished();
-                    };
+                    }
                 } catch (UnsupportedEncodingException e) {
                     FirebaseCrashlytics.getInstance().recordException(e);
                     throw new RuntimeException(e);
@@ -1877,8 +1878,8 @@ public class HomeFragment extends Fragment {
         TelephonyManager tMgr = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
 
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "Manifest.permission.READ_PHONE_NUMBERS: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS));
-            Log.d(TAG, "Manifest.permission.READ_PHONE_STATE: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE));
+            Logger.d(getActivity(), TAG, "Manifest.permission.READ_PHONE_NUMBERS: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS));
+            Logger.d(getActivity(), TAG, "Manifest.permission.READ_PHONE_STATE: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE));
             return;
         }
         mPhoneNumber = tMgr.getLine1Number();
@@ -1886,10 +1887,10 @@ public class HomeFragment extends Fragment {
         if(mPhoneNumber != null) {
             String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
             boolean val = Pattern.compile(PHONE_PATTERN).matcher(mPhoneNumber).matches();
-            Log.d(TAG, "onClick No validate: " + val);
-            if (val == false) {
+            Logger.d(getActivity(), TAG, "onClick No validate: " + val);
+            if (!val) {
                 Toast.makeText(context, getString(R.string.format_phone) , Toast.LENGTH_SHORT).show();
-                Log.d(TAG, "onClick:phoneNumber.getText().toString() " + mPhoneNumber);
+                Logger.d(getActivity(), TAG, "onClick:phoneNumber.getText().toString() " + mPhoneNumber);
 //                context.finish();
 
             } else {

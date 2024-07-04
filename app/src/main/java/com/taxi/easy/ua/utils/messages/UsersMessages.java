@@ -19,8 +19,8 @@ import retrofit2.Response;
 public class UsersMessages {
 
     private static final String TAG = "TAG_Message";
-    private String email;
-    private Context context;
+    private final String email;
+    private final Context context;
 
     public UsersMessages(String email, Context context) {
         this.email = email;

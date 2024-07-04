@@ -10,7 +10,7 @@ public class ApiClientPhone {
 
     private static final String BASE_URL = "https://m.easy-order-taxi.site/";
 
-    private ApiServicePhone apiService;
+    private final ApiServicePhone apiService;
 
     public ApiClientPhone() {
         Retrofit retrofit = new Retrofit.Builder()

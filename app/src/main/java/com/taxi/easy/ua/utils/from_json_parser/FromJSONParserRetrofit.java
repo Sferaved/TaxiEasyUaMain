@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.annotations.SerializedName;
 
 import java.net.MalformedURLException;
@@ -120,6 +121,7 @@ public class FromJSONParserRetrofit {
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Ошибка при выполнении запроса", e);
+                FirebaseCrashlytics.getInstance().recordException(e);
                 costMap.put("order_cost", "0");
                 costMap.put("message", "Произошла ошибка при выполнении запроса");
             }

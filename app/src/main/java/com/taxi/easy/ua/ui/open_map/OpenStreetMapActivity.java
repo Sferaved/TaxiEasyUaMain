@@ -20,7 +20,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageButton;
@@ -47,7 +46,9 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.maps.CostJSONParser;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
+import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
+import com.taxi.easy.ua.utils.user_verify.VerifyUserTask;
 
 import org.json.JSONException;
 import org.osmdroid.api.IMapController;
@@ -75,7 +76,7 @@ import retrofit2.Response;
 
 
 public class OpenStreetMapActivity extends AppCompatActivity {
-    private static final String TAG = "TAG_OPENMAP";
+    private static final String TAG = "OpenStreetMapActivity";
     public static IMapController mapController;
     public String[] arrayStreet;
     public static FloatingActionButton  fab_call, fab_open_map, fab_open_marker;
@@ -135,7 +136,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.open_street_map_layout);
 
-        new  VerifyUserTask(getApplicationContext()).execute();
+        new VerifyUserTask(getApplicationContext()).execute();
 
         networkChangeReceiver = new NetworkChangeReceiver();
 
@@ -363,7 +364,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
                         // Обработка полученных местоположений
                         List<Location> locations = locationResult.getLocations();
-                        Log.d(TAG, "onLocationResult: locations 222222" + locations);
+                        Logger.d(getApplication(), TAG, "onLocationResult: locations 222222" + locations);
 
                         if (!locations.isEmpty()) {
                             Location firstLocation = locations.get(0);
@@ -387,7 +388,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                             FromJSONParser parser = new FromJSONParser(urlFrom);
                             Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
                             assert sendUrlFrom != null;
-                            FromAdressString = (String) sendUrlFrom.get("route_address_from");
+                            FromAdressString = sendUrlFrom.get("route_address_from");
                             if(FromAdressString != null) {
                                 if (FromAdressString.equals("Точка на карте")) {
                                     FromAdressString = getString(R.string.startPoint);
@@ -431,7 +432,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                     List<Location> locations = locationResult.getLocations();
 
 
-                    Log.d(TAG, "onLocationResult: locations 666666  " + locations);
+                    Logger.d(getApplication(), TAG, "onLocationResult: locations 666666  " + locations);
                     if (!locations.isEmpty()) {
                         Location firstLocation = locations.get(0);
                         if (startLat != firstLocation.getLatitude() && startLan != firstLocation.getLongitude()) {
@@ -557,7 +558,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                     FromJSONParser parser = new FromJSONParser(urlFrom);
                     Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
                     assert sendUrlFrom != null;
-                    FromAdressString = (String) sendUrlFrom.get("route_address_from");
+                    FromAdressString = sendUrlFrom.get("route_address_from");
 
                     updateMyPosition(startLat, startLan, FromAdressString, context);
                 } catch (MalformedURLException | InterruptedException |
@@ -617,7 +618,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             GeoPoint startPoint = new GeoPoint(startLat, startLan);
             showRout(startPoint, endPoint);
 
-            Log.d(TAG, "onResume: endPoint" +  endPoint.getLatitude());
+            Logger.d(context, TAG, "onResume: endPoint" +  endPoint.getLatitude());
 
             List<String> settings = new ArrayList<>();
             settings.add(String.valueOf(startLat));
@@ -632,7 +633,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
-            Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlCost);
+            Logger.d(context, TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlCost);
             parser.sendURL(urlCost, new Callback<Map<String, String>>() {
                 @Override
                 public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
@@ -646,15 +647,15 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                             Toast.makeText(map.getContext(), message, Toast.LENGTH_SHORT).show();
 
                         } else {
-                            Log.d(TAG, "11111 dialogMarkers: sendUrlMapCost.get(\"routeto\")" + sendUrlMapCost.get("routeto"));
+                            Logger.d(context, TAG, "11111 dialogMarkers: sendUrlMapCost.get(\"routeto\")" + sendUrlMapCost.get("routeto"));
                             if(Objects.requireNonNull(sendUrlMapCost.get("routeto")).equals("Точка на карте")) {
                                 ToAdressString = context.getString(R.string.end_point_marker);
                             } else {
                                 ToAdressString = sendUrlMapCost.get("routeto") + " " + sendUrlMapCost.get("to_number");
                             }
 
-                            Log.d(TAG, "dialogMarkers: ToAdressString " + ToAdressString);
-                            Log.d(TAG, "dialogMarkers: endPoint " + endPoint.toString());
+                            Logger.d(context, TAG, "dialogMarkers: ToAdressString " + ToAdressString);
+                            Logger.d(context, TAG, "dialogMarkers: endPoint " + endPoint.toString());
                             finishLat = endPoint.getLatitude();
                             finishLan = endPoint.getLongitude();
                             if(marker != null) {
@@ -818,7 +819,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                 }
             }
             result = String.join("*", servicesChecked);
-            Log.d(TAG, "getTaxiUrlSearchGeo result:" + result + "/");
+            Logger.d(context, TAG, "getTaxiUrlSearchGeo result:" + result + "/");
         } else {
             result = "no_extra_charge_codes";
         }
@@ -837,7 +838,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                     + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application);
         }
         database.close();
-        Log.d(TAG, "getTaxiUrlSearchMarkers: " + url);
+        Logger.d(context, TAG, "getTaxiUrlSearchMarkers: " + url);
         return url;
     }
 
@@ -864,43 +865,6 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         c.close();
         database.close();
         return list;
-    }
-
-    public static class VerifyUserTask extends AsyncTask<Void, Void, Map<String, String>> {
-        @SuppressLint("StaticFieldLeak")
-        private final Context context;
-        SQLiteDatabase database;
-
-        public VerifyUserTask(Context context) {
-            this.context = context;
-            this.database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        }
-        @Override
-        protected Map<String, String> doInBackground(Void... voids) {
-            String userEmail = logCursor(MainActivity.TABLE_USER_INFO, this.context).get(3);
-
-            String url = "https://m.easy-order-taxi.site/android/verifyBlackListUser/" + userEmail + "/" + "com.taxi.easy.ua";
-            try {
-                return CostJSONParser.sendURL(url);
-            } catch (Exception e) {
-                return null;
-            }
-
-        }
-
-        @Override
-        protected void onPostExecute(Map<String, String> sendUrlMap) {
-            String message = sendUrlMap.get("Message");
-            ContentValues cv = new ContentValues();
-
-            if (message != null) {
-                if (message.equals("В черном списке")) {
-                    cv.put("verifyOrder", "0");
-                    database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-                }
-            }
-            database.close();
-        }
     }
 
     @SuppressLint("Range")

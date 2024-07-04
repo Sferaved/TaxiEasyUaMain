@@ -11,6 +11,7 @@ import android.widget.Toast;
 import androidx.navigation.NavController;
 
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.log.Logger;
 
 public class MyWebViewClient extends WebViewClient {
     private final String TAG = "MyWebViewClient";
@@ -24,7 +25,7 @@ public class MyWebViewClient extends WebViewClient {
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
         String url = request.getUrl().toString();
-        Log.d(TAG, "Loading URL: " + url);
+        Logger.d(context, TAG, "Loading URL: " + url);
 
         // Добавьте свою логику обработки URL здесь
         if (url.contains("https://secure.wayforpay.com/closing")) {
@@ -44,7 +45,7 @@ public class MyWebViewClient extends WebViewClient {
     @Override
     public void onPageFinished(WebView view, String url) {
         super.onPageFinished(view, url);
-        Log.d(TAG, "Finished loading URL: " + url);
+        Logger.d(context, TAG, "Finished loading URL: " + url);
     }
 
     @Override

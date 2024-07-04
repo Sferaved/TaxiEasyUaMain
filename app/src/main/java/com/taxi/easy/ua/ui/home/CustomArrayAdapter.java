@@ -16,7 +16,7 @@ import java.util.List;
 
 public class CustomArrayAdapter extends ArrayAdapter<String> {
 
-    private boolean[] itemEnabled;
+    private final boolean[] itemEnabled;
 
     public CustomArrayAdapter(Context context, int resource, List<String> objects) {
         super(context, resource, objects);

@@ -20,7 +20,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class UserPermissions {
-    private static String TAG = "TAG_PERM";
+    private static final String TAG = "TAG_PERM";
 
     public UserPermissions() {
     }

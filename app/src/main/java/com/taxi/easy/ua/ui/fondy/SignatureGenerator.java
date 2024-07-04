@@ -34,7 +34,7 @@ public class SignatureGenerator {
             for (byte b : digest) {
                 hexString.append(String.format("%02x", b));
             }
-            Log.d("TAG1", "generateSignature: hexString.toString()" + hexString.toString());
+            Log.d("TAG1", "generateSignature: hexString.toString()" + hexString);
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
             FirebaseCrashlytics.getInstance().recordException(e);

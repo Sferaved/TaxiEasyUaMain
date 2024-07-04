@@ -18,7 +18,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class TariffInfo {
-    private Context context;
+    private final Context context;
 
     public TariffInfo(Context context) {
         this.context = context;

@@ -20,8 +20,6 @@ public class InitializationProvider extends ContentProvider {
         // Здесь выполняйте инициализацию вашего приложения
         // Например, инициализация баз данных, настройка подключений и т.д.
 
-
-
         return true;
     }
 

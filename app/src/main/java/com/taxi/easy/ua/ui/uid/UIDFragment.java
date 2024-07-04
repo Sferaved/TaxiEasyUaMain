@@ -184,7 +184,7 @@ public class UIDFragment extends Fragment {
 
             routeInfo = databaseHelperUid.getRouteInfoById(position+1);
             if (routeInfo != null) {
-                Log.d(TAG, "onContextItemSelected: " + routeInfo.toString());
+                Log.d(TAG, "onContextItemSelected: " + routeInfo);
             } else {
                 Log.d(TAG, "onContextItemSelected: RouteInfo not found for id: " + (position + 1));
             }
@@ -284,7 +284,7 @@ public class UIDFragment extends Fragment {
                 // Обработка ошибок сети или других ошибок
                 String errorMessage = t.getMessage();
                 FirebaseCrashlytics.getInstance().recordException(t);
-                upd_but.setText(getString(R.string.order));
+                upd_but.setText(requireActivity().getString(R.string.order));
                 progressBar.setVisibility(View.GONE);
             }
         });

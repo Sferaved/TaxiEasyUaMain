@@ -12,7 +12,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class RetrofitClientInstance {
 
     private static Retrofit retrofit;
-    private static String BASE_URL = "https://api.visicom.ua/data-api/5.0/";
+    private static final String BASE_URL = "https://api.visicom.ua/data-api/5.0/";
 
     public static Retrofit getRetrofitInstance() {
         Log.d("Retrofit", "Entering getRetrofitInstance()");
@@ -31,7 +31,7 @@ public class RetrofitClientInstance {
                     .client(client)
                     .build();
         }
-        Log.d("Retrofit", "Request URL: " + retrofit.baseUrl().toString());
+        Log.d("Retrofit", "Request URL: " + retrofit.baseUrl());
         Log.d("Locale", "Current Locale: " + LocaleHelper.getLocale());
 
         return retrofit;

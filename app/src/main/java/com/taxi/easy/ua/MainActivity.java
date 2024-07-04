@@ -7,9 +7,9 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.AlarmManager;
-import android.app.AlertDialog;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -17,7 +17,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -30,8 +29,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
-import android.telephony.TelephonyManager;
-import android.util.Log;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -87,22 +85,20 @@ import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
-import com.taxi.easy.ua.utils.VerifyUserTask;
 
 import com.taxi.easy.ua.utils.activ_push.MyService;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.download.AppUpdater;
+import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.messages.UsersMessages;
-import com.taxi.easy.ua.utils.notif.NotificationUtils;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
 import com.taxi.easy.ua.utils.phone.ApiClientPhone;
-import com.taxi.easy.ua.utils.phone_state.DeviceUtils;
-import com.taxi.easy.ua.utils.phone_state.MyBottomSheetPhoneStateFragment;
 import com.taxi.easy.ua.utils.user.ApiServiceUser;
 import com.taxi.easy.ua.utils.user.UserResponse;
+import com.taxi.easy.ua.utils.user_verify.VerifyUserTask;
 
 import org.json.JSONException;
 
@@ -189,13 +185,14 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
     public static final String PERMISSIONS_PREF_NAME = "Permissions";
     public static final String PERMISSION_REQUEST_COUNT_KEY = "PermissionRequestCount";
     public static boolean location_update;
-    @Override
+   @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-
-
+        Logger.writeLog(this, getString(R.string.application));
+        Logger.writeLog(this, getString(R.string.version));
+        Logger.writeLog(this, "MainActivity started");
         setSupportActionBar(binding.appBarMain.toolbar);
 
         DrawerLayout drawer = binding.drawerLayout;
@@ -238,6 +235,24 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         }
     }
 
+    private boolean isNotificationServiceEnabled() {
+        String pkgName = getPackageName();
+        final String flat = Settings.Secure.getString(getContentResolver(),
+                "enabled_notification_listeners");
+        if (flat != null && !flat.isEmpty()) {
+            final String[] names = flat.split(":");
+            for (String name : names) {
+                final ComponentName componentName = ComponentName.unflattenFromString(name);
+                if (componentName != null) {
+                    if (TextUtils.equals(pkgName, componentName.getPackageName())) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -255,15 +270,15 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         int serviceCount = 0;
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            Log.d(TAG, "isServiceRunning: " + service.service.getClassName());
+            Logger.d(this, TAG, "isServiceRunning: " + service.service.getClassName());
             serviceCount++;
             if (MyService.class.getName().equals(service.service.getClassName())) {
                 Intent intent = new Intent(this, MyService.class);
                 stopService(intent);
-                Log.d(TAG, "isServiceRunning: " + "stopService");
+                Logger.d(this, TAG, "isServiceRunning: " + "stopService");
             }
         }
-        Log.d(TAG, "Total running services: " + serviceCount);
+        Logger.d(this, TAG, "Total running services: " + serviceCount);
 
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(this, MyService.class);
@@ -277,6 +292,9 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
     @Override
     protected void onResume() {
         super.onResume();
+
+
+
         databaseHelper = new DatabaseHelper(getApplicationContext());
         databaseHelper.clearTable();
 
@@ -284,7 +302,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         databaseHelperUid.clearTableUid();
 
         insertOrUpdatePushDate();
-        Log.d(TAG, "onResume: isServiceRunning())  " );
+        Logger.d(this, TAG, "onResume: isServiceRunning())  " );
         isServiceRunning();
         startService(new Intent(this, MyService.class));
         if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
@@ -292,7 +310,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             gps_upd = getIntent().getBooleanExtra("gps_upd", true);
         } else {
             gps_upd = false;
-        };
+        }
     }
 
     void checkNotificationPermissionAndRequestIfNeeded() {
@@ -318,7 +336,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 // Получаем текущее время и дату
                 @SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 String currentDateandTime = sdf.format(new Date());
-                Log.d(TAG, "Current date and time: " + currentDateandTime);
+                Logger.d(this, TAG, "Current date and time: " + currentDateandTime);
 
                 // Создаем объект ContentValues для передачи данных в базу данных
                 ContentValues values = new ContentValues();
@@ -327,9 +345,9 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 // Пытаемся вставить новую запись. Если запись уже существует, выполняется обновление.
                 int rowsAffected = database.update(MainActivity.TABLE_LAST_PUSH, values, "ROWID=1", null);
                 if (rowsAffected > 0) {
-                    Log.d(TAG, "Update successful");
+                    Logger.d(this, TAG, "Update successful");
                 } else {
-                    Log.d(TAG, "Error updating");
+                    Logger.d(this, TAG, "Error updating");
                 }
 
 
@@ -351,8 +369,8 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
         long lastActivityTimestamp = prefs.getLong(LAST_ACTIVITY_KEY, 0);
         long currentTime = System.currentTimeMillis();
-        Log.d(TAG, "lastActivity: Main " + timeFormatter(lastActivityTimestamp));
-        Log.d(TAG, "currentTime:  Main " + timeFormatter(currentTime));
+        Logger.d(this, TAG, "lastActivity: Main " + timeFormatter(lastActivityTimestamp));
+        Logger.d(this, TAG, "currentTime:  Main " + timeFormatter(currentTime));
         SharedPreferences.Editor editor = prefs.edit();
         editor.putLong(LAST_ACTIVITY_KEY, currentTime);
         editor.apply();
@@ -381,7 +399,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
         database = openOrCreateDatabase(DB_NAME, MODE_PRIVATE, null);
 
-        Log.d("TAG", "initDB: " + database);
+        Logger.d(this, TAG, "initDB: " + database);
 
         database.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_USER_INFO + "(id integer primary key autoincrement," +
                 " verifyOrder text," +
@@ -521,7 +539,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 " to_number text);");
         cursorDb = database.query(ROUT_HOME, null, null, null, null, null, null);
         if (cursorDb.getCount() == 0) {
-            Log.d("TAG", "initDB: ROUT_HOME");
+            Logger.d(this, TAG, "initDB: ROUT_HOME");
             insertRoutHome();
         }
         if (cursorDb != null && !cursorDb.isClosed())
@@ -579,7 +597,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 " rectoken_check text);");
         database.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_LAST_PUSH + "(id integer primary key autoincrement," +
                 " push_date DATETIME);");
-        
+
 
         database.close();
 
@@ -596,7 +614,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 // Получаем текущее время и дату
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 String currentDateandTime = sdf.format(new Date());
-                Log.d("InsertOrUpdate", "Current date and time: " + currentDateandTime);
+                Logger.d(getApplicationContext(), TAG, "Current date and time: " + currentDateandTime);
 
                 // Создаем объект ContentValues для передачи данных в базу данных
                 ContentValues values = new ContentValues();
@@ -606,9 +624,9 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 long rowId = database.insertWithOnConflict(MainActivity.TABLE_LAST_PUSH, null, values, SQLiteDatabase.CONFLICT_REPLACE);
 
                 if (rowId != -1) {
-                    Log.d("InsertOrUpdate", "Insert or update successful");
+                    Logger.d(getApplicationContext(), TAG, "Insert or update successful");
                 } else {
-                    Log.d("InsertOrUpdate", "Error inserting or updating");
+                    Logger.d(getApplicationContext(), TAG, "Error inserting or updating");
                 }
             } catch (Exception e) {
                 FirebaseCrashlytics.getInstance().recordException(e);
@@ -626,7 +644,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 // Получаем текущее время и дату
                 @SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 String currentDateandTime = sdf.format(new Date());
-                Log.d(TAG, "Current date and time: " + currentDateandTime);
+                Logger.d(this, TAG, "Current date and time: " + currentDateandTime);
 
                 // Создаем объект ContentValues для передачи данных в базу данных
                 ContentValues values = new ContentValues();
@@ -635,9 +653,9 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 // Пытаемся вставить новую запись. Если запись уже существует, выполняется обновление.
                 int rowsAffected = database.update(MainActivity.TABLE_LAST_PUSH, values, "ROWID=1", null);
                 if (rowsAffected > 0) {
-                    Log.d(TAG, "Update successful");
+                    Logger.d(this, TAG, "Update successful");
                 } else {
-                    Log.d(TAG, "Error updating");
+                    Logger.d(this, TAG, "Error updating");
                 }
 
 
@@ -655,6 +673,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         String sql = "INSERT INTO " + TABLE_SETTINGS_INFO + " VALUES(?,?,?,?,?,?);";
         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         SQLiteStatement statement = database.compileStatement(sql);
+
         database.beginTransaction();
         try {
             statement.clearBindings();
@@ -671,6 +690,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         }
         database.close();
     }
+
     private void insertServices() {
         String sql = "INSERT INTO " + TABLE_SERVICE_INFO + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -828,6 +848,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
         if (item.getItemId() == R.id.action_exit) {
+            deleteOldLogFile();
             System.gc();
             finishAffinity();
         }
@@ -873,7 +894,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             }
         }
         if (item.getItemId() == R.id.update) {
-            Log.d(TAG, "onOptionsItemSelected: " +versionServer);
+            Logger.d(this, TAG, "onOptionsItemSelected: " + getString(R.string.version));
             if (NetworkUtils.isNetworkAvailable(this)) {
                 updateApp();
 
@@ -926,18 +947,15 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
         // Создание экземпляра AppUpdater
         appUpdater = new AppUpdater(this);
-        Log.d("UpdateApp", "Starting app update process");
+        Logger.d(this, TAG, "Starting app update process");
 
         // Установка слушателя для обновления состояния установки
-        appUpdater.setOnUpdateListener(new AppUpdater.OnUpdateListener() {
-            @Override
-            public void onUpdateCompleted() {
-                // Показать пользователю сообщение о завершении обновления
-                Toast.makeText(getApplicationContext(), "Обновление завершено. Приложение будет перезапущено.", Toast.LENGTH_SHORT).show();
+        appUpdater.setOnUpdateListener(() -> {
+            // Показать пользователю сообщение о завершении обновления
+            Toast.makeText(this, R.string.update_finish_mes, Toast.LENGTH_SHORT).show();
 
-                // Перезапуск приложения для применения обновлений
-                restartApplication();
-            }
+            // Перезапуск приложения для применения обновлений
+            restartApplication();
         });
 
         // Регистрация слушателя
@@ -947,53 +965,56 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         checkForUpdate();
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_INSTALL_PACKAGES) {
-            if (resultCode == RESULT_OK) {
-                // Пользователь разрешил установку пакетов, продолжаем установку
-                // Ваш код для установки пакета
-
-            } else {
-                // Пользователь отказал в установке пакетов или отменил действие
-                // Обработайте это событие соответствующим образом
-            }
-            Log.d(TAG, "onActivityResult:resultCode " + resultCode);
-        }
-    }
-
-    // Добавляем проверку наличия обновлений
-    private static final int MY_REQUEST_CODE = 1001;
+    private static final int MY_REQUEST_CODE = 1234; // Уникальный код запроса для обновления
 
     private void checkForUpdate() {
         AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(this);
         Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
-        appUpdateInfoTask.addOnSuccessListener(new OnSuccessListener<AppUpdateInfo>() {
-            @Override
-            public void onSuccess(AppUpdateInfo appUpdateInfo) {
-                if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
-                    // Доступны обновления
-                    Log.d("UpdateApp", "Available updates found");
 
-                    // Запускаем процесс обновления
-                    try {
-                        appUpdateManager.startUpdateFlowForResult(
-                                appUpdateInfo,
-                                AppUpdateType.IMMEDIATE, // или AppUpdateType.FLEXIBLE
-                                MainActivity.this, // Используем ссылку на активность
-                                MY_REQUEST_CODE); // Код запроса для обновления
-                    } catch (IntentSender.SendIntentException e) {
-                        FirebaseCrashlytics.getInstance().recordException(e);
-                    }
-                } else {
-                    String message = getString(R.string.update_ok);
-                    MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+        appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
+            Logger.d(getApplicationContext(), TAG, "Update availability: " + appUpdateInfo.updateAvailability());
+            Logger.d(getApplicationContext(), TAG, "Update priority: " + appUpdateInfo.updatePriority());
+            Logger.d(getApplicationContext(), TAG, "Client version staleness days: " + appUpdateInfo.clientVersionStalenessDays());
+
+            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
+                // Доступны обновления
+                Logger.d(this, TAG, "Available updates found");
+
+                // Запускаем процесс обновления
+                try {
+                    appUpdateManager.startUpdateFlowForResult(
+                            appUpdateInfo,
+                            AppUpdateType.IMMEDIATE, // или AppUpdateType.FLEXIBLE
+                            MainActivity.this, // Используем ссылку на активность
+                            MY_REQUEST_CODE); // Код запроса для обновления
+                } catch (IntentSender.SendIntentException e) {
+                    Logger.e(this, TAG, "Failed to start update flow: " + e.getMessage());
+                    FirebaseCrashlytics.getInstance().recordException(e);
                 }
+            } else {
+                Logger.d(this, TAG, "No updates available");
+                String message = getString(R.string.update_ok);
+                MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
+                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
             }
+        }).addOnFailureListener(e -> {
+            Logger.e(this, TAG, "Failed to check for updates: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
         });
     }
+
+    // Обработка результата обновления
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == MY_REQUEST_CODE) {
+            if (resultCode != RESULT_OK) {
+                Logger.e(this, TAG, "Update flow failed! Result code: " + resultCode);
+                // Обработка ошибки обновления
+            }
+        }
+    }
+
     private void checkForUpdateForPush(
             SharedPreferences SharedPreferences,
             long currentTime
@@ -1010,7 +1031,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             public void onSuccess(AppUpdateInfo appUpdateInfo) {
                 if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
                     // Доступны обновления
-                    Log.d("UpdateApp", "Available updates found");
+                    Logger.d(getApplicationContext(), TAG, "Available updates found");
                     String title = getString(R.string.new_version);
                     String messageNotif = getString(R.string.news_of_version);
 
@@ -1027,11 +1048,49 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
 
     private void restartApplication() {
-        Intent intent = new Intent(this, MainActivity.class);
+        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+
+
+//        updateRecordsUserInfo(new UpdateUserInfoListener() {
+//            @Override
+//            public void onUpdateComplete() {
+//                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+//                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+//                startActivity(intent);
+//                finish();
+//            }
+//
+//            @Override
+//            public void onUpdateFailed(String errorMessage) {
+//                Logger.e(getApplicationContext(), TAG, "Failed to update user info: " + errorMessage);
+//                // Handle failure scenario if needed
+//            }
+//        });
     }
+
+//    private void updateRecordsUserInfo(UpdateUserInfoListener listener) {
+//        // Implement your logic to update user info here, possibly asynchronously
+//        // For example:
+//        // SomeAsyncTask task = new SomeAsyncTask();
+//        // task.execute(key, value);
+//
+//        // Once the update operation is complete, invoke the listener method
+//        // For example, in AsyncTask's onPostExecute():
+//        // listener.onUpdateComplete();
+//
+//        // Simulating completion for illustration purposes:
+//        updateRecordsUser("email", "email");
+//        listener.onUpdateComplete();
+//    }
+//
+//    interface UpdateUserInfoListener {
+//        void onUpdateComplete();
+//        void onUpdateFailed(String errorMessage);
+//    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -1041,185 +1100,6 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             appUpdater.unregisterListener();
         }
     }
-    private static final int REQUEST_CODE_UNKNOWN_APP_SOURCES = 1234; // Произвольный код запроса разрешения
-    @SuppressLint("ObsoleteSdkInt")
-//    private void updateApp() throws InterruptedException {
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            if (!getPackageManager().canRequestPackageInstalls()) {
-//                // Пользователь еще не предоставил разрешение на установку пакетов из неизвестных источников.
-//                // Здесь можно открыть системное окно настроек для запроса этого разрешения.
-//                Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
-//                intent.setData(Uri.parse("package:" + getPackageName()));
-//                startActivityForResult(intent, REQUEST_CODE_UNKNOWN_APP_SOURCES);
-//            }
-//        }
-//
-//        String fileName = "app-debug.apk";
-//        File file = new File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName);
-//        String saveFilePath = file.getAbsolutePath();
-//        String updateUrl = "https://m.easy-order-taxi.site/last_versions/" + getString(R.string.application);
-//        AlertDialog alertDialog = progressBarUpload ();
-//        alertDialog.show();
-//        update_cancel = false;
-//        FileDownloader.downloadFile(updateUrl, saveFilePath, new FileDownloader.DownloadCallback() {
-//            @Override
-//            public void onDownloadComplete(String filePath) {
-//                File downloadedFile = new File(filePath);
-//                long fileSizeInBytes = downloadedFile.length();
-//                alertDialog.dismiss();
-//                if(!update_cancel) {
-//                    Log.d(TAG, "File size: " + fileSizeInBytes + " B");
-//                    // Загрузка завершена, вызываем установку файла
-//                    Log.d(TAG, "onDownloadComplete: " + filePath);
-//                    installFile(filePath);
-//                }
-//
-//            }
-//
-//            @Override
-//            public void onDownloadFailed(Exception e) {
-//                // Обработка ошибки загрузки файла
-//                Log.d("TAG", "onDownloadFailed: " +  e.toString());
-//                FirebaseCrashlytics.getInstance().recordException(e);
-//            }
-//        });
-//    }
-
-    private static final int INSTALL_REQUEST_CODE = 1;
-    private boolean update_cancel;
-    private void installFile(String filePath) {
-
-        File file = new File(filePath);
-        Log.d(TAG, "installFile: " + isApkFileValid(filePath));
-        if (file.exists() && file.isFile()) {
-
-            try {
-                // Код установки приложения
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                Uri uri = FileProvider.getUriForFile(this, getApplicationContext().getPackageName() + ".provider", file);
-                intent.setDataAndType(uri, "application/vnd.android.package-archive");
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivityForResult(intent, INSTALL_REQUEST_CODE);
-            } catch (Exception e) {
-                FirebaseCrashlytics.getInstance().recordException(e);
-                Log.e(TAG, "Installation failed: " + e.getMessage());
-            }
-
-
-        } else {
-            Log.e(TAG, "File does not exist or is not a regular file");
-            // Дополнительная обработка в случае отсутствия файла
-        }
-    }
-
-    @SuppressLint("UseCompatLoadingForDrawables")
-    public AlertDialog progressBarUpload () throws InterruptedException {
-        LayoutInflater inflater = LayoutInflater.from(this);
-        View dialogView = inflater.inflate(R.layout.dialog_layout, null);
-//
-// / Создание диалога с кастомным макетом
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-        alertDialogBuilder.setView(dialogView);
-        alertDialogBuilder.setPositiveButton(getString(cancel_button), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                update_cancel = true;
-            }
-        });
-
-        return alertDialogBuilder.create();
-
-    }
-
-
-    private boolean isApkFileValid(String filePath) {
-        PackageManager pm = getPackageManager();
-        PackageInfo packageInfo = pm.getPackageArchiveInfo(filePath, 0);
-        if (packageInfo != null) {
-            // Проверяем, что пакет содержит версию и название
-            Log.d(TAG, "isApkFileValid: " + packageInfo.packageName);
-            Log.d(TAG, "isApkFileValid: " + packageInfo.versionCode);
-            return packageInfo.packageName != null && packageInfo.versionCode != 0;
-        }
-        return false;
-    }
-
-
-    private static final int PERMISSION_REQUEST_READ_PHONE_STATE = 1;
-    private void checkPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)
-                == PackageManager.PERMISSION_GRANTED) {
-            performPhoneStateOperation();
-        } else {
-            MyBottomSheetPhoneStateFragment bottomSheetDialogFragment = new MyBottomSheetPhoneStateFragment();
-            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-        }
-    }
-    @SuppressLint({"HardwareIds", "ObsoleteSdkInt"})
-    private void performPhoneStateOperation() {
-        TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        if (telephonyManager != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                // Начиная с Android 10, IMEI может быть недоступен без разрешения READ_PHONE_STATE
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, "IMEI недоступен без разрешения", Toast.LENGTH_SHORT).show();
-                    // Здесь вы можете запросить разрешение у пользователя
-                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_PHONE_STATE}, PERMISSION_REQUEST_READ_PHONE_STATE);
-                    return;
-                }
-            }
-            String imei = null;
-            String toastMessage = "";
-            try {
-
-                Log.d(TAG, "performPhoneStateOperation: Build.VERSION.SDK_INT" + Build.VERSION.SDK_INT);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    // Для Android 8.0 (API уровня 26) и выше
-                    imei = telephonyManager.getImei(); // Получение IMEI первой SIM-карты
-                } else {
-                    // Для Android ниже 8.0 (API уровня меньше 26)
-                    imei = telephonyManager.getDeviceId(); // Получение IMEI устройства
-                }
-                if (imei != null) {
-                    // Делаем что-то с IMEI
-                    Log.d(TAG, "performPhoneStateOperation: IMEI: " + imei);
-                    toastMessage = "IMEI: " + imei;
-                } else {
-                    // IMEI недоступен
-                    Log.d(TAG, "performPhoneStateOperation: IMEI недоступен");
-                    Toast.makeText(this, "IMEI недоступен", Toast.LENGTH_SHORT).show();
-                }
-            } catch (SecurityException e) {
-                Log.d(TAG, "performPhoneStateOperation: IMEI недоступен");
-                FirebaseCrashlytics.getInstance().recordException(e);
-                Toast.makeText(this, "IMEI недоступен", Toast.LENGTH_SHORT).show();
-
-            }
-            String deviceId = DeviceUtils.getDeviceId(getApplicationContext());
-            toastMessage += " " + "Android ID устройства " + deviceId;
-            try {
-                String deviceIdSerial = DeviceUtils.getDeviceSerialNumber();
-                toastMessage += " " + "Serial ID устройства " + deviceIdSerial;
-                Toast.makeText(this, "Serial ID устройства " + deviceIdSerial, Toast.LENGTH_SHORT).show();
-            }  catch (SecurityException e) {
-                Log.d(TAG, "performPhoneStateOperation: IMEI недоступен");
-                FirebaseCrashlytics.getInstance().recordException(e);
-                Toast.makeText(this, "Serial ID устройства недоступен", Toast.LENGTH_SHORT).show();
-
-            }
-
-
-            Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show();
-
-
-
-        } else {
-            // Устройство не поддерживает функции телефона
-            Toast.makeText(this, "Функции телефона недоступны", Toast.LENGTH_SHORT).show();
-        }
-    }
-
 
 
     private String generateRandomString(int length) {
@@ -1266,25 +1146,32 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
         String subject = getString(R.string.SA_subject) + generateRandomString(10);
 
-        String body =getString(R.string.SA_message_start) + "\n"+ "\n"+ "\n"+ "\n"+ "\n"+ "\n"+ "\n"+ "\n"+ "\n"+ "\n"+ "\n"+ "\n"+ "\n"+ "\n"+ "\n"+ "\n"+ "\n"+ "\n" +
-                getString(R.string.SA_info_pas)+ "\n" +
+        String body = getString(R.string.SA_message_start) + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" +
+                getString(R.string.SA_info_pas) + "\n" +
                 getString(R.string.SA_info_city) + " " + city + "\n" +
                 getString(R.string.SA_pas_text) + " " + getString(R.string.version) + "\n" +
                 getString(R.string.SA_user_text) + " " + userList.get(4) + "\n" +
                 getString(R.string.SA_email) + " " + userList.get(3) + "\n" +
-                getString(R.string.SA_phone_text) + " " + userList.get(2) + "\n"+"\n";
+                getString(R.string.SA_phone_text) + " " + userList.get(2) + "\n" + "\n";
 
         String[] CC = {"cartaxi4@gmail.com"};
         String[] TO = {"taxi.easy.ua@gmail.com"};
-        Intent emailIntent = new Intent(Intent.ACTION_SEND);
 
-        emailIntent.setData(Uri.parse("mailto:"));
-        emailIntent.setType("text/plain");
+        File logFile = new File(getExternalFilesDir(null), "app_log.txt");
+
+        Intent emailIntent = new Intent(Intent.ACTION_SEND);
+        emailIntent.setType("message/rfc822");
         emailIntent.putExtra(Intent.EXTRA_EMAIL, TO);
         emailIntent.putExtra(Intent.EXTRA_CC, CC);
         emailIntent.putExtra(Intent.EXTRA_SUBJECT, subject);
         emailIntent.putExtra(Intent.EXTRA_TEXT, body);
-
+        if (logFile.exists()) {
+            Uri uri = FileProvider.getUriForFile(this, this.getPackageName() + ".fileprovider", logFile);
+            emailIntent.putExtra(Intent.EXTRA_STREAM, uri);
+            emailIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        } else {
+            Logger.e(this, "MainActivity", "Log file does not exist");
+        }
         try {
             startActivity(Intent.createChooser(emailIntent, subject));
         } catch (android.content.ActivityNotFoundException e) {
@@ -1293,6 +1180,14 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
 
     }
+
+    private void deleteOldLogFile() {
+        File logFile = new File(getExternalFilesDir(null), "app_log.txt");
+        if (logFile.exists()) {
+            logFile.delete();
+        }
+    }
+
     public void eventGps() {
         LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
         boolean gps_enabled = false;
@@ -1306,8 +1201,8 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
         } catch(Exception ex) {}
 
-        Log.d("TAG", "onOptionsItemSelected gps_enabled: " + gps_enabled);
-        Log.d("TAG", "onOptionsItemSelected network_enabled: " + network_enabled);
+        Logger.d(this, TAG, "onOptionsItemSelected gps_enabled: " + gps_enabled);
+        Logger.d(this, TAG, "onOptionsItemSelected network_enabled: " + network_enabled);
         if(!gps_enabled || !network_enabled) {
             MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
             bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
@@ -1342,13 +1237,13 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
 //                        if(connected()) {
-                            Log.d("TAG", "onClick befor validate: ");
+                            Logger.d(getApplicationContext(), TAG, "onClick befor validate: ");
                             String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
                             boolean val = Pattern.compile(PHONE_PATTERN).matcher(phoneNumber.getText().toString()).matches();
-                            Log.d("TAG", "onClick No validate: " + val);
+                            Logger.d(getApplicationContext(), TAG, "onClick No validate: " + val);
                             if (!val) {
                                 Toast.makeText(MainActivity.this, getString(format_phone) , Toast.LENGTH_SHORT).show();
-                                Log.d("TAG", "onClick:phoneNumber.getText().toString() " + phoneNumber.getText().toString());
+                                Logger.d(getApplicationContext(), TAG, "onClick:phoneNumber.getText().toString() " + phoneNumber.getText().toString());
 
                             } else {
                                updateRecordsUser("phone_number", phoneNumber.getText().toString());
@@ -1397,7 +1292,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 //        if (!hasConnect) {
 //            Toast.makeText(this, verify_internet, Toast.LENGTH_LONG).show();
 //        }
-        Log.d("TAG", "connected: " + hasConnect);
+        Logger.d(this, TAG, "connected: " + hasConnect);
         return hasConnect;
     }
 
@@ -1445,7 +1340,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
     public void newUser() {
         String userEmail = logCursor(TABLE_USER_INFO).get(3);
-        Log.d(TAG, "newUser: " + userEmail);
+        Logger.d(this, TAG, "newUser: " + userEmail);
 
         if(userEmail.equals("email")) {
 //            checkNotificationPermissionAndRequestIfNeeded();
@@ -1454,7 +1349,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             try {
                 FirebaseApp.initializeApp(MainActivity.this);
             } catch (Exception e) {
-                Log.e(TAG, "Exception during authentication", e);
+                Logger.e(this, TAG, "Exception during authentication " + e);
                 FirebaseCrashlytics.getInstance().recordException(e);
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
 
@@ -1467,7 +1362,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             new Thread(() -> updatePushDate(getApplicationContext())).start();
 
             String application =  getString(R.string.application);
-            new VerifyUserTask(userEmail, application, getApplicationContext()).execute();
+            new VerifyUserTask(this).execute();
 
             UserPermissions.getPermissions(userEmail, getApplicationContext());
             new UsersMessages(userEmail, getApplicationContext());
@@ -1505,7 +1400,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
         // Создайте сервис
         CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
-        Log.d(TAG, "getCardTokenWfp: ");
+        Logger.d(this, TAG, "getCardTokenWfp: ");
         // Выполните запрос
         Call<CallbackResponseWfp> call = service.handleCallbackWfp(
                 getString(R.string.application),
@@ -1516,12 +1411,12 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         call.enqueue(new Callback<CallbackResponseWfp>() {
             @Override
             public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
-                Log.d(TAG, "onResponse: " + response.body());
+                Logger.d(getApplicationContext(), TAG, "onResponse: " + response.body());
                 if (response.isSuccessful()) {
                     CallbackResponseWfp callbackResponse = response.body();
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
-                        Log.d(TAG, "onResponse: cards" + cards);
+                        Logger.d(getApplicationContext(), TAG, "onResponse: cards" + cards);
                         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                         database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
                         if (cards != null && !cards.isEmpty()) {
@@ -1532,7 +1427,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                                 String rectoken = cardInfo.getRectoken(); // Токен карты
                                 String merchant = cardInfo.getMerchant(); // Токен карты
 
-                                Log.d(TAG, "onResponse: card_token: " + rectoken);
+                                Logger.d(getApplicationContext(), TAG, "onResponse: card_token: " + rectoken);
                                 ContentValues cv = new ContentValues();
                                 cv.put("masked_card", masked_card);
                                 cv.put("card_type", card_type);
@@ -1567,7 +1462,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             @Override
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
-                Log.d(TAG, "onResponse: failure " + t.toString());
+                Logger.d(getApplicationContext(), TAG, "onResponse: failure " + t);
             }
         });
     }
@@ -1580,7 +1475,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             @Override
             public void run() {
                 try {
-                Log.d(TAG, "run: ");
+                Logger.d(getApplicationContext(), TAG, "run: ");
                 // Choose authentication providers
                 List<AuthUI.IdpConfig> providers = Collections.singletonList(
                         new AuthUI.IdpConfig.GoogleBuilder().build());
@@ -1593,7 +1488,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
                     runOnUiThread(() -> signInLauncher.launch(signInIntent));
                 } catch (Exception e) {
-                    Log.e(TAG, "Exception during sign-in launch", e);
+                    Logger.e(getApplicationContext(), TAG, "Exception during sign-in launch " + e);
                     FirebaseCrashlytics.getInstance().recordException(e);
 //                    Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
                     VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
@@ -1604,14 +1499,14 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
     }
 
     private final ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
-            
+
             new FirebaseAuthUIActivityResultContract(),
             result -> {
                 try {
                     onSignInResult(result, getSupportFragmentManager());
                 } catch (MalformedURLException | JSONException | InterruptedException e) {
                     FirebaseCrashlytics.getInstance().recordException(e);
-                    Log.d(TAG, "onCreate:" + new RuntimeException(e));
+                    Logger.d(this, TAG, "onCreate:" + new RuntimeException(e));
                 }
             }
     );
@@ -1619,9 +1514,9 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
     private void onSignInResult(FirebaseAuthUIAuthenticationResult result, FragmentManager fm) throws MalformedURLException, JSONException, InterruptedException {
         ContentValues cv = new ContentValues();
-        Log.d(TAG, "onSignInResult: ");
+        Logger.d(this, TAG, "onSignInResult: ");
         try {
-            Log.d(TAG, "onSignInResult: result.getResultCode() " + result.getResultCode());
+            Logger.d(this, TAG, "onSignInResult: result.getResultCode() " + result.getResultCode());
             if (result.getResultCode() == RESULT_OK) {
                 // Successfully signed in
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -1657,13 +1552,13 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         String url = baseUrl + "/android/UIDStatusShowEmail/" + value;
         Call<List<RouteResponse>> call = ApiClient.getApiService().getRoutes(url);
         routeList = new ArrayList<>();
-        Log.d("TAG", "fetchRoutes: " + url);
+        Logger.d(this, TAG, "fetchRoutes: " + url);
         call.enqueue(new Callback<List<RouteResponse>>() {
             @Override
             public void onResponse(@NonNull Call<List<RouteResponse>> call, @NonNull Response<List<RouteResponse>> response) {
                 if (response.isSuccessful()) {
                     List<RouteResponse> routes = response.body();
-                    Log.d("TAG", "onResponse: " + routes);
+                    Logger.d(getApplicationContext(), TAG, "onResponse: " + routes);
                     if (routes != null && !routes.isEmpty()) {
                         boolean hasRouteWithAsterisk = false;
                         for (RouteResponse route : routes) {
@@ -1802,13 +1697,13 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             settings.add(to_lng);
             settings.add(routeFrom + " " + routefromnumber);
             settings.add(routeTo + " " + routeTonumber);
-            Log.d(TAG, settings.toString());
+            Logger.d(this, TAG, settings.toString());
             databaseHelperUid.addRouteInfoUid(settings);
 
 
         }
         array = databaseHelper.readRouteInfo();
-        Log.d("TAG", "processRouteList: array 1211" + Arrays.toString(array));
+        Logger.d(this, TAG, "processRouteList: array 1211" + Arrays.toString(array));
     }
 
     private void settingsNewUser (String emailUser) {
@@ -2017,29 +1912,29 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 .build();
         String baseUrl = retrofit.baseUrl().toString();
 
-        Log.d(TAG, "Base URL: " + baseUrl);
+        Logger.d(this, TAG, "Base URL: " + baseUrl);
         // Создайте сервис
         CallbackService service = retrofit.create(CallbackService.class);
 
-        Log.d(TAG, "getCardTokenFondy: ");
+        Logger.d(this, TAG, "getCardTokenFondy: ");
         List<String>  arrayList = logCursor(MainActivity.CITY_INFO);
         String MERCHANT_ID = arrayList.get(6);
-        Log.d(TAG, "getCardToken:MERCHANT_ID " + MERCHANT_ID);
+        Logger.d(this, TAG, "getCardToken:MERCHANT_ID " + MERCHANT_ID);
         if(MERCHANT_ID != null) {
     // Выполните запрос
     Call<CallbackResponse> call = service.handleCallback(email, pay_system, MERCHANT_ID);
     String requestUrl = call.request().toString();
-    Log.d(TAG, "Request URL: " + requestUrl);
+    Logger.d(this, TAG, "Request URL: " + requestUrl);
 
     call.enqueue(new Callback<CallbackResponse>() {
         @Override
         public void onResponse(@NonNull Call<CallbackResponse> call, @NonNull Response<CallbackResponse> response) {
-            Log.d(TAG, "onResponse: " + response.body());
+            Logger.d(getApplicationContext(), TAG, "onResponse: " + response.body());
             if (response.isSuccessful()) {
                 CallbackResponse callbackResponse = response.body();
                 if (callbackResponse != null) {
                     List<CardInfo> cards = callbackResponse.getCards();
-                    Log.d(TAG, "onResponse: cards" + cards);
+                    Logger.d(getApplicationContext(), TAG, "onResponse: cards" + cards);
                     if (cards != null && !cards.isEmpty()) {
                         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                         // Очистка таблицы
@@ -2053,7 +1948,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                             String rectoken = cardInfo.getRectoken(); // Токен карты
                             String merchantId = cardInfo.getMerchant(); // Токен карты
 
-                            Log.d(TAG, "onResponse: card_token: " + rectoken);
+                            Logger.d(getApplicationContext(), TAG, "onResponse: card_token: " + rectoken);
 
                             cv.put("masked_card", masked_card);
                             cv.put("card_type", card_type);
@@ -2088,7 +1983,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         @Override
         public void onFailure(@NonNull Call<CallbackResponse> call, @NonNull Throwable t) {
             // Обработка ошибки запроса
-            Log.d(TAG, "onResponse: failure " + t.toString());
+            Logger.d(getApplicationContext(), TAG, "onResponse: failure " + t);
 //                Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
             VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
         }
@@ -2178,20 +2073,20 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
                         database.close();
 
-                        Log.d(TAG, "onResponse: cardMaxPay" + cardMaxPay);
-                        Log.d(TAG, "onResponse: bonus_max_pay" + bonusMaxPay);
-                        Log.d(TAG, "onResponse: " + logCursor(CITY_INFO).toString());
+                        Logger.d(getApplicationContext(), TAG, "onResponse: cardMaxPay" + cardMaxPay);
+                        Logger.d(getApplicationContext(), TAG, "onResponse: bonus_max_pay" + bonusMaxPay);
+                        Logger.d(getApplicationContext(), TAG, "onResponse: " + logCursor(CITY_INFO).toString());
 
                         // Добавьте здесь код для обработки полученных значений
                     }
                 } else {
-                    Log.e("Request", "Failed. Error code: " + response.code());
+                    Logger.d(getApplicationContext(), TAG, "Failed. Error code: " + response.code());
                 }
             }
 
             @Override
             public void onFailure(Call<CityResponse> call, Throwable t) {
-                Log.e("Request", "Failed. Error message: " + t.getMessage());
+                Logger.d(getApplicationContext(), TAG, "Failed. Error message: " + t.getMessage());
 //                Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
             }
@@ -2208,7 +2103,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             public void onResponse(Call<CityResponseMerchantFondy> call, Response<CityResponseMerchantFondy> response) {
                 if (response.isSuccessful()) {
                     CityResponseMerchantFondy cityResponse = response.body();
-                    Log.d(TAG, "onResponse: cityResponse" + cityResponse);
+                    Logger.d(getApplicationContext(), TAG, "onResponse: cityResponse" + cityResponse);
                     if (cityResponse != null) {
                         String merchant_fondy = cityResponse.getMerchantFondy();
                         String fondy_key_storage = cityResponse.getFondyKeyStorage();
@@ -2223,20 +2118,20 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
                         database.close();
 
-                        Log.d(TAG, "onResponse: merchant_fondy" + merchant_fondy);
-                        Log.d(TAG, "onResponse: fondy_key_storage" + fondy_key_storage);
+                        Logger.d(getApplicationContext(), TAG, "onResponse: merchant_fondy" + merchant_fondy);
+                        Logger.d(getApplicationContext(), TAG, "onResponse: fondy_key_storage" + fondy_key_storage);
 
-                        Log.d(TAG, "onResponse: " + logCursor(CITY_INFO).toString());
+                        Logger.d(getApplicationContext(), TAG, "onResponse: " + logCursor(CITY_INFO).toString());
 
                     }
                 } else {
-                    Log.e("Request", "Failed. Error code: " + response.code());
+                    Logger.d(getApplicationContext(), TAG, "Failed. Error code: " + response.code());
                 }
             }
 
             @Override
             public void onFailure(Call<CityResponseMerchantFondy> call, Throwable t) {
-                Log.e("Request", "Failed. Error message: " + t.getMessage());
+                Logger.d(getApplicationContext(), TAG, "Failed. Error message: " + t.getMessage());
 //                Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
             }
@@ -2250,7 +2145,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             @Override
             public void onSuccess(String phone) {
                 // Обработка успешного ответа
-                Log.d("UserPhone", "Phone: " + phone);
+                Logger.d(getApplicationContext(), TAG, "Phone: " + phone);
 
                 // Check if phone is not null
                 if (phone != null) {
@@ -2261,11 +2156,11 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                         updateRecordsUser("phone_number", phone);
                     } else {
                         // Handle case where phone doesn't match the pattern
-                        Log.e("UserPhone", "Phone does not match pattern");
+                        Logger.d(getApplicationContext(), TAG, "Phone does not match pattern");
                     }
                 } else {
                     // Handle case where phone is null
-                    Log.e("UserPhone", "Phone is null");
+                    Logger.d(getApplicationContext(), TAG, "Phone is null");
                 }
             }
 
@@ -2273,7 +2168,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             @Override
             public void onError(String error) {
                 // Обработка ошибки
-                Log.e("UserPhone", "Error: " + error);
+                Logger.d(getApplicationContext(), TAG, "Error: " + error);
             }
         });
     }

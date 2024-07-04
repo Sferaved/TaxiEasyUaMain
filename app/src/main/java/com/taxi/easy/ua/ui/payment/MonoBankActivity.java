@@ -103,7 +103,7 @@ public class MonoBankActivity extends AppCompatActivity {
                     }
 
                     // Теперь у вас есть список объектов Transaction для обработки
-                    Log.d("TAG", "Transaction: " + transactions.toString());
+                    Log.d("TAG", "Transaction: " + transactions);
                 } else {
                     // Обработка ошибки
                     Log.d("TAG", "response.errorBody(): " + response.errorBody());
@@ -113,7 +113,7 @@ public class MonoBankActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<List<Transaction>> call, Throwable t) {
                 // Обработка ошибки
-                Log.d("TAG", "response.body(): t " + t.toString());
+                Log.d("TAG", "response.body(): t " + t);
             }
         });
 
@@ -149,7 +149,7 @@ public class MonoBankActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<ClientInfo> call, Throwable t) {
                 // Обработка ошибки
-                Log.d("TAG", "response.body(): t " + t.toString());
+                Log.d("TAG", "response.body(): t " + t);
             }
         });
     }

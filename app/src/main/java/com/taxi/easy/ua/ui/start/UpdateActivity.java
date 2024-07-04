@@ -106,11 +106,7 @@ public class UpdateActivity extends Activity {
             return true;
         }
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        if (activeNetwork != null && activeNetwork.isConnected()) {
-            return true;
-        }
-
-        return false;
+        return activeNetwork != null && activeNetwork.isConnected();
     }
 
     @SuppressLint("Range")

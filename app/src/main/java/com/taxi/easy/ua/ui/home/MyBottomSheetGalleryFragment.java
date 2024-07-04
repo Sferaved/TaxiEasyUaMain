@@ -10,7 +10,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -34,6 +33,7 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.gallery.GalleryFragment;
+import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 
 import java.net.MalformedURLException;
@@ -66,7 +66,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
     final static long MIN_VALUE = -90;
     final static long MAX_VALUE = 200;
     TimeZone timeZone;
-    private String TAG = "MyBottomSheetGalleryFragment";
+    private final String TAG = "MyBottomSheetGalleryFragment";
     SQLiteDatabase database;
     @Nullable
     @Override
@@ -162,7 +162,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
                 spinner.setSelection(7);
                 break;
             default:
-                spinner.setSelection(0);;
+                spinner.setSelection(0);
         }
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -241,7 +241,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
                     discountFist = MIN_VALUE;
                 }
                 if(discountFist > 0) {
-                    discount.setText("+" + String.valueOf(discountFist));
+                    discount.setText("+" + discountFist);
                 } else {
                     discount.setText( String.valueOf(discountFist));
                 }
@@ -256,7 +256,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
                     discountFist = MAX_VALUE;
                 }
                 if(discountFist > 0) {
-                    discount.setText("+" + String.valueOf(discountFist));
+                    discount.setText("+" + discountFist);
                 } else {
                     discount.setText( String.valueOf(discountFist));
                 }
@@ -454,7 +454,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(3);
         ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
-        Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ url);
+        Logger.d(getActivity(), TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ url);
         parser.sendURL(url, new Callback<Map<String, String>>() {
             @Override
             public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
@@ -506,7 +506,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
     }
     private void updateAddCost(String addCost) {
         ContentValues cv = new ContentValues();
-        Log.d("TAG", "updateAddCost: addCost" + addCost);
+        Logger.d(getActivity(), TAG, "updateAddCost: addCost" + addCost);
         cv.put("addCost", addCost);
 
         // обновляем по id
@@ -576,7 +576,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
                 }
             }
             result = String.join("*", servicesChecked);
-            Log.d("TAG", "getTaxiUrlSearchGeo result:" + result + "/");
+            Logger.d(getActivity(), TAG, "getTaxiUrlSearchGeo result:" + result + "/");
         } else {
             result = "no_extra_charge_codes";
         }
@@ -586,7 +586,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
         String url = "/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
 
-        Log.d("TAG", "getTaxiUrlSearch: " + url);
+        Logger.d(getActivity(), TAG, "getTaxiUrlSearch: " + url);
         database.close();
 
 

@@ -10,7 +10,6 @@ import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -54,6 +53,7 @@ import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.ui.wfp.verify.VerifyService;
 import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.web.MyWebViewClient;
 
 import java.io.IOException;
@@ -76,18 +76,21 @@ import retrofit2.converter.scalars.ScalarsConverterFactory;
 
 public class CardFragment extends Fragment {
 
-    private @NonNull FragmentCardBinding binding;
+    private FragmentCardBinding binding;
     public static AppCompatButton btnCardLink;
 
     private NetworkChangeReceiver networkChangeReceiver;
-    private String baseUrl = "https://m.easy-order-taxi.site";
+    private final String baseUrl = "https://m.easy-order-taxi.site";
     private String messageFondy;
+    @SuppressLint("StaticFieldLeak")
     public static ProgressBar progressBar;
-    private String TAG = "TAG_CARD";
+    private final String TAG = "TAG_CARD";
     String email;
     String amount = "100";
+    @SuppressLint("StaticFieldLeak")
     public static TextView textCard;
 
+    @SuppressLint("StaticFieldLeak")
     public static ListView listView;
     public static String table;
     String pay_method;
@@ -130,7 +133,7 @@ public class CardFragment extends Fragment {
 
         String city = logCursor(MainActivity.CITY_INFO, context).get(1);
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-        Log.d(TAG, "newUser: " + userEmail);
+        Logger.d(context, TAG, "newUser: " + userEmail);
 
         PayApi apiService = retrofit.create(PayApi.class);
         Call<ResponsePaySystem> call = apiService.getPaySystem();
@@ -162,7 +165,7 @@ public class CardFragment extends Fragment {
                             show_cards = cursor != null;
                             break;
                     }
-                    Log.d(TAG, "onResponse:show_cards " + show_cards);
+                    Logger.d(context, TAG, "onResponse:show_cards " + show_cards);
                     if (show_cards) {
                         textCard.setVisibility(View.VISIBLE);
                         listView.setVisibility(View.VISIBLE);
@@ -174,7 +177,7 @@ public class CardFragment extends Fragment {
                             public void onClick(View v) {
                             progressBar.setVisibility(View.VISIBLE);
 
-                                Log.d(TAG, "onClick: " + pay_method);
+                                Logger.d(context, TAG, "onClick: " + pay_method);
                                 NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
                                 if (!NetworkUtils.isNetworkAvailable(requireContext())) {
                                     navController.navigate(R.id.nav_visicom);
@@ -209,7 +212,7 @@ public class CardFragment extends Fragment {
                                 }
                             }
                         });
-                        Log.d(TAG, "onResponse:pay_method "+pay_method);
+                        Logger.d(context, TAG, "onResponse:pay_method "+pay_method);
                         ArrayList<Map<String, String>> cardMaps = new ArrayList<>();
                         switch (pay_method) {
                             case "wfp_payment":
@@ -225,7 +228,7 @@ public class CardFragment extends Fragment {
                                 table = MainActivity.TABLE_MONO_CARDS;
                                 break;
                         }
-                        Log.d(TAG, "onResponse:cardMaps " + cardMaps);
+                        Logger.d(context, TAG, "onResponse:cardMaps " + cardMaps);
                         if (!cardMaps.isEmpty()) {
                             CustomCardAdapter listAdapter = new CustomCardAdapter(context, cardMaps, table, pay_method);
                             listView.setAdapter(listAdapter);
@@ -281,7 +284,7 @@ public class CardFragment extends Fragment {
 
         // Создайте сервис
         CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
-        Log.d(TAG, "getCardTokenWfp: ");
+        Logger.d(context, TAG, "getCardTokenWfp: ");
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
 
         // Выполните запрос
@@ -294,12 +297,12 @@ public class CardFragment extends Fragment {
         call.enqueue(new Callback<CallbackResponseWfp>() {
             @Override
             public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
-                Log.d(TAG, "onResponse: " + response.body());
+                Logger.d(context, TAG, "onResponse: " + response.body());
                 if (response.isSuccessful()) {
                     CallbackResponseWfp callbackResponse = response.body();
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
-                        Log.d(TAG, "onResponse: cards" + cards);
+                        Logger.d(context, TAG, "onResponse: cards" + cards);
                         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                         database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
                         if (cards != null && !cards.isEmpty()) {
@@ -310,7 +313,7 @@ public class CardFragment extends Fragment {
                                 String rectoken = cardInfo.getRectoken(); // Токен карты
                                 String merchant = cardInfo.getMerchant(); // Токен карты
 
-                                Log.d(TAG, "onResponse: card_token: " + rectoken);
+                                Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
                                 ContentValues cv = new ContentValues();
                                 cv.put("masked_card", masked_card);
                                 cv.put("card_type", card_type);
@@ -345,7 +348,7 @@ public class CardFragment extends Fragment {
             @Override
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
-                Log.d(TAG, "onResponse: failure " + t.toString());
+                Logger.d(context, TAG, "onResponse: failure " + t);
             }
         });
         progressBar.setVisibility(View.INVISIBLE);
@@ -375,7 +378,7 @@ public class CardFragment extends Fragment {
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         // Выполните запрос к таблице TABLE_FONDY_CARDS и получите данные
         Cursor cursor = database.query(table, null, null, null, null, null, null);
-        Log.d(TAG, "getCardMapsFromDatabase: card count: " + cursor.getCount());
+        Logger.d(context, TAG, "getCardMapsFromDatabase: card count: " + cursor.getCount());
 
         if (cursor.moveToFirst()) {
             do {
@@ -417,7 +420,7 @@ public class CardFragment extends Fragment {
                 extRef,
                 amount
         );
-        Log.d("TAG1", "getRevers: " + paymentRequest.toString());
+        Logger.d(context, TAG, "getRevers: " + paymentRequest);
 
         String token = getResources().getString(R.string.mono_key_storage); // Получение токена из ресурсов
         Call<ResponseCancelMono> call = monoApi.invoiceCancel(token, paymentRequest);
@@ -428,34 +431,34 @@ public class CardFragment extends Fragment {
 
                 if (response.isSuccessful()) {
                     ResponseCancelMono apiResponse = response.body();
-                    Log.d("TAG2", "JSON Response: " + new Gson().toJson(apiResponse));
+                    Logger.d(context, TAG, "JSON Response: " + new Gson().toJson(apiResponse));
                     if (apiResponse != null) {
                         String responseData = apiResponse.getStatus();
-                        Log.d("TAG2", "onResponse: " + responseData.toString());
+                        Logger.d(context, TAG, "onResponse: " + responseData);
                         // Обработка успешного ответа
 
                         switch (responseData) {
                             case "processing":
-                                Log.d("TAG2", "onResponse: " + "заява на скасування знаходиться в обробці");
+                                Logger.d(context, TAG, "onResponse: " + "заява на скасування знаходиться в обробці");
                                 break;
                             case "success":
-                                Log.d("TAG2", "onResponse: " + "заяву на скасування виконано успішно");
+                                Logger.d(context, TAG, "onResponse: " + "заяву на скасування виконано успішно");
                                 break;
                             case "failure":
-                                Log.d("TAG2", "onResponse: " + "неуспішне скасування");
-                                Log.d("TAG2", "onResponse: ErrCode: " + apiResponse.getErrCode());
-                                Log.d("TAG2", "onResponse: ErrText: " + apiResponse.getErrText());
+                                Logger.d(context, TAG, "onResponse: " + "неуспішне скасування");
+                                Logger.d(context, TAG, "onResponse: ErrCode: " + apiResponse.getErrCode());
+                                Logger.d(context, TAG, "onResponse: ErrText: " + apiResponse.getErrText());
                                 break;
                         }
 
                     }
                 } else {
                     // Обработка ошибки запроса
-                    Log.d("TAG2", "onResponse: Ошибка запроса, код " + response.code());
+                    Logger.d(context, TAG, "onResponse: Ошибка запроса, код " + response.code());
                     try {
                         assert response.errorBody() != null;
                         String errorBody = response.errorBody().string();
-                        Log.d("TAG2", "onResponse: Тело ошибки: " + errorBody);
+                        Logger.d(context, TAG, "onResponse: Тело ошибки: " + errorBody);
                     } catch (IOException e) {
                         FirebaseCrashlytics.getInstance().recordException(e);
                     }
@@ -465,7 +468,7 @@ public class CardFragment extends Fragment {
             @Override
             public void onFailure(@NonNull Call<ResponseCancelMono> call, Throwable t) {
                 // Обработка ошибки сети или другие ошибки
-                Log.d("TAG2", "onFailure: Ошибка сети: " + t.getMessage());
+                Logger.d(context, TAG, "onFailure: Ошибка сети: " + t.getMessage());
             }
         });
 
@@ -581,13 +584,13 @@ public class CardFragment extends Fragment {
                     // Отобразить HTML в WebView
                     displayHtmlContent(response.body());
                 } else {
-                    Log.e(TAG, "Response was not successful or body was null");
+                    Logger.d(context, TAG, "Response was not successful or body was null");
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<String> call, @NonNull Throwable t) {
-                Log.e(TAG, "IOException"  + t);
+                Logger.d(context, TAG, "IOException"  + t);
             }
         });
 
@@ -628,7 +631,7 @@ public class CardFragment extends Fragment {
         params.put("sender_email", email);
         params.put("server_callback_url", "https://m.easy-order-taxi.site/server-callback");
 
-        Log.d(TAG, "getStatusFondy: " + params);
+        Logger.d(context, TAG, "getStatusFondy: " + params);
         SignatureClient signatureClient = new SignatureClient();
 // Передаем экземпляр SignatureCallback в метод generateSignature
 
@@ -649,7 +652,7 @@ public class CardFragment extends Fragment {
             public void onSuccess(SignatureResponse response) {
                 // Обработка успешного ответа
                 String digest = response.getDigest();
-                Log.d(TAG, "Received signature digest: " + digest);
+                Logger.d(context, TAG, "Received signature digest: " + digest);
 
                 RequestData paymentRequest = new RequestData(
                         order_id,
@@ -662,7 +665,7 @@ public class CardFragment extends Fragment {
 
 
                 StatusRequestPay statusRequest = new StatusRequestPay(paymentRequest);
-                Log.d(TAG, "getUrlToPaymentFondy: " + statusRequest.toString());
+                Logger.d(context, TAG, "getUrlToPaymentFondy: " + statusRequest);
 
                 Call<ApiResponsePay<SuccessResponseDataPay>> call = paymentApi.makePayment(statusRequest);
 
@@ -670,13 +673,13 @@ public class CardFragment extends Fragment {
 
                     @Override
                     public void onResponse(@NonNull Call<ApiResponsePay<SuccessResponseDataPay>> call, Response<ApiResponsePay<SuccessResponseDataPay>> response) {
-                        Log.d(TAG, "onResponse: 1111" + response.code());
+                        Logger.d(context, TAG, "onResponse: 1111" + response.code());
                         if (response.isSuccessful()) {
                             ApiResponsePay<SuccessResponseDataPay> apiResponse = response.body();
 
-                            Log.d(TAG, "onResponse: " +  new Gson().toJson(apiResponse));
+                            Logger.d(context, TAG, "onResponse: " +  new Gson().toJson(apiResponse));
                             try {
-                                SuccessResponseDataPay responseBody = response.body().getResponse();;
+                                SuccessResponseDataPay responseBody = response.body().getResponse();
 
                                 // Теперь у вас есть объект ResponseBodyRev для обработки
                                 if (responseBody != null) {
@@ -693,8 +696,8 @@ public class CardFragment extends Fragment {
                                         // Обработка ответа об ошибке
                                         String errorResponseMessage = responseBody.getErrorMessage();
                                         String errorResponseCode = responseBody.getErrorCode();
-                                        Log.d("TAG1", "onResponse: errorResponseMessage " + errorResponseMessage);
-                                        Log.d("TAG1", "onResponse: errorResponseCode" + errorResponseCode);
+                                        Logger.d(context, TAG, "onResponse: errorResponseMessage " + errorResponseMessage);
+                                        Logger.d(context, TAG, "onResponse: errorResponseCode" + errorResponseCode);
                                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.pay_failure));
                                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                                         // Отобразить сообщение об ошибке пользователю
@@ -710,7 +713,7 @@ public class CardFragment extends Fragment {
                             }
                         } else {
                             // Обработка ошибки
-                            Log.d("TAG1", "onFailure: " + response.code());
+                            Logger.d(context, TAG, "onFailure: " + response.code());
                         }
                         progressBar.setVisibility(View.GONE);
 //                navController.navigate(R.id.nav_visicom);
@@ -720,7 +723,7 @@ public class CardFragment extends Fragment {
                     @Override
                     public void onFailure(@NonNull Call<ApiResponsePay<SuccessResponseDataPay>> call, @NonNull Throwable t) {
                         progressBar.setVisibility(View.GONE);
-                        Log.d("TAG1", "onFailure1111: " + t.toString());
+                        Logger.d(context, TAG, "onFailure1111: " + t);
                     }
 
 
@@ -732,7 +735,7 @@ public class CardFragment extends Fragment {
             public void onError(String error) {
                 // Обработка ошибки
 
-                Log.d(TAG, "Received signature error: " + error);
+                Logger.d(context, TAG, "Received signature error: " + error);
             }
         });
 

@@ -11,7 +11,6 @@ import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -41,9 +40,10 @@ import com.taxi.easy.ua.ui.home.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGalleryFragment;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
-import com.taxi.easy.ua.utils.VerifyUserTask;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
+import com.taxi.easy.ua.utils.user_verify.VerifyUserTask;
 
 import org.json.JSONException;
 
@@ -228,12 +228,12 @@ public class GalleryFragment extends Fragment {
                     btn_plus.setVisibility(View.VISIBLE);
                     btnAdd.setVisibility(View.VISIBLE);
                     selectedItem = position + 1;
-                    Log.d(TAG, "onItemClick: selectedItem " + selectedItem);
+                    Logger.d(getActivity(), TAG, "onItemClick: selectedItem " + selectedItem);
                     try {
                         dialogFromToOneRout(routChoice(selectedItem));
                     } catch (MalformedURLException | InterruptedException | JSONException e) {
                         FirebaseCrashlytics.getInstance().recordException(e);
-                        Log.d(TAG, "onItemClick: " + e.toString());
+                        Logger.d(getActivity(), TAG, "onItemClick: " + e);
                     }
 
 
@@ -285,6 +285,7 @@ public class GalleryFragment extends Fragment {
                     case "card_payment":
                     case "fondy_payment":
                     case "mono_payment":
+                    case "wfp_payment":
                         if (Long.parseLong(card_max_pay) <= Long.parseLong(text_view_cost.getText().toString())) {
                             changePayMethodMax(text_view_cost.getText().toString(), pay_method);
                         } else {
@@ -368,7 +369,7 @@ public class GalleryFragment extends Fragment {
         if (cursor.getCount() == 1) {
 
             if (logCursor(MainActivity.TABLE_USER_INFO, context).get(1).equals("0")) {
-                verify = false;Log.d(TAG, "verifyOrder:verify " +verify);
+                verify = false;Logger.d(getActivity(), TAG, "verifyOrder:verify " +verify);
             }
             cursor.close();
         }
@@ -382,7 +383,7 @@ public class GalleryFragment extends Fragment {
         ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
 //            // Пример строки URL с параметрами
-        Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
+        Logger.d(getActivity(), TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
         parser.sendURL(urlOrder, new Callback<Map<String, String>>() {
             @Override
             public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
@@ -532,7 +533,7 @@ public class GalleryFragment extends Fragment {
 
      private void updateRoutMarker(List<String> settings) {
 
-        Log.d(TAG, "updateRoutMarker: settings - " + settings);
+        Logger.d(getActivity(), TAG, "updateRoutMarker: settings - " + settings);
 
         ContentValues cv = new ContentValues();
 
@@ -556,24 +557,24 @@ public class GalleryFragment extends Fragment {
         if (!NetworkUtils.isNetworkAvailable(requireContext())) {
             navController.navigate(R.id.nav_visicom);
         } else  {
-            Log.d(TAG, "dialogFromToOneRout: " + rout.toString());
+            Logger.d(getActivity(), TAG, "dialogFromToOneRout: " + rout.toString());
             from_lat =  Double.valueOf(rout.get("from_lat"));
             from_lng = Double.valueOf(rout.get("from_lng"));
             to_lat = Double.valueOf(rout.get("to_lat"));
             to_lng = Double.valueOf(rout.get("to_lng"));
 
-            Log.d(TAG, "dialogFromToOneRout: from_lat - " + from_lat);
-            Log.d(TAG, "dialogFromToOneRout: from_lng - " + from_lng);
-            Log.d(TAG, "dialogFromToOneRout: to_lat - " + to_lat);
-            Log.d(TAG, "dialogFromToOneRout: to_lng - " + to_lng);
+            Logger.d(getActivity(), TAG, "dialogFromToOneRout: from_lat - " + from_lat);
+            Logger.d(getActivity(), TAG, "dialogFromToOneRout: from_lng - " + from_lng);
+            Logger.d(getActivity(), TAG, "dialogFromToOneRout: to_lat - " + to_lat);
+            Logger.d(getActivity(), TAG, "dialogFromToOneRout: to_lng - " + to_lng);
 
             FromAddressString = rout.get("from_street") + rout.get("from_number") ;
-            Log.d(TAG, "dialogFromToOneRout: FromAddressString" + FromAddressString);
+            Logger.d(getActivity(), TAG, "dialogFromToOneRout: FromAddressString" + FromAddressString);
             ToAddressString = rout.get("to_street") + rout.get("to_number");
             if(rout.get("from_street").equals(rout.get("to_street"))) {
-                ToAddressString =  getString(R.string.on_city_tv);;
+                ToAddressString =  getString(R.string.on_city_tv);
             }
-            Log.d(TAG, "dialogFromToOneRout: ToAddressString" + ToAddressString);
+            Logger.d(getActivity(), TAG, "dialogFromToOneRout: ToAddressString" + ToAddressString);
             List<String> settings = new ArrayList<>();
 
             settings.add(rout.get("from_lat"));
@@ -590,7 +591,7 @@ public class GalleryFragment extends Fragment {
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
 //            // Пример строки URL с параметрами
-            Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlCost);
+            Logger.d(getActivity(), TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlCost);
             parser.sendURL(urlCost, new Callback<Map<String, String>>() {
                 @Override
                 public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
@@ -599,7 +600,7 @@ public class GalleryFragment extends Fragment {
 
                     String message = requireActivity().getString(R.string.error_message);
                     String orderCost = sendUrlMapCost.get("order_cost");
-                    Log.d(TAG, "dialogFromToOneRout:orderCost " + orderCost);
+                    Logger.d(getActivity(), TAG, "dialogFromToOneRout:orderCost " + orderCost);
                     assert orderCost != null;
                     if (!orderCost.equals("0")) {
                         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(3);
@@ -650,13 +651,13 @@ public class GalleryFragment extends Fragment {
         rout.put("to_street", c.getString(c.getColumnIndexOrThrow ("to_street")));
         rout.put("to_number", c.getString(c.getColumnIndexOrThrow ("to_number")));
 
-        Log.d(TAG, "routMaps: " + rout);
+        Logger.d(getActivity(), TAG, "routMaps: " + rout);
         return rout;
     }
 
     @SuppressLint("Range")
     public String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
-        Log.d(TAG, "getTaxiUrlSearchMarkers: " + urlAPI);
+        Logger.d(getActivity(), TAG, "getTaxiUrlSearchMarkers: " + urlAPI);
 
         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -760,14 +761,14 @@ public class GalleryFragment extends Fragment {
                 }
             }
             result = String.join("*", servicesChecked);
-            Log.d(TAG, "getTaxiUrlSearchGeo result:" + result + "/");
+            Logger.d(getActivity(), TAG, "getTaxiUrlSearchGeo result:" + result + "/");
         } else {
             result = "no_extra_charge_codes";
         }
 
         String url = "/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
-        Log.d(TAG, "getTaxiUrlSearchMarkers: " + url);
+        Logger.d(getActivity(), TAG, "getTaxiUrlSearchMarkers: " + url);
 
         database.close();
 
@@ -805,6 +806,7 @@ public class GalleryFragment extends Fragment {
                     case "card_payment":
                     case "fondy_payment":
                     case "mono_payment":
+                    case "wfp_payment":
                         if (Long.parseLong(card_max_pay) <= Long.parseLong(textCost)) {
                             paymentType("nal_payment");
                         }
@@ -967,14 +969,14 @@ public class GalleryFragment extends Fragment {
                     if (!routMaps.get(i).get("from_street").toString().equals(routMaps.get(i).get("from_number").toString())) {
 
 
-                        Log.d(TAG, "arrayToRoutsAdapter:   routMaps.get(i).get(\"from_street\").toString()" +  routMaps.get(i).get("from_street").toString());
+                        Logger.d(getActivity(), TAG, "arrayToRoutsAdapter:   routMaps.get(i).get(\"from_street\").toString()" +  routMaps.get(i).get("from_street").toString());
 
                         arrayRouts[i] = from_mes + " " +
                                 routMaps.get(i).get("from_number").toString() + " -> " +
                                 to_mes + " " +
                                 routMaps.get(i).get("to_number").toString();
                     } else if(!routMaps.get(i).get("to_street").toString().equals(routMaps.get(i).get("to_number").toString())) {
-                        Log.d(TAG, "arrayToRoutsAdapter:   routMaps.get(i).get(\"from_street\").toString()" +  routMaps.get(i).get("from_street").toString());
+                        Logger.d(getActivity(), TAG, "arrayToRoutsAdapter:   routMaps.get(i).get(\"from_street\").toString()" +  routMaps.get(i).get("from_street").toString());
 
                         arrayRouts[i] = routMaps.get(i).get("from_street").toString() +
                                 getString(R.string.to_message) +
@@ -982,7 +984,7 @@ public class GalleryFragment extends Fragment {
                                 routMaps.get(i).get("to_number").toString();
                     } else {
 
-                        Log.d(TAG, "arrayToRoutsAdapter:   routMaps.get(i).get(\"from_street\").toString()" +  routMaps.get(i).get("from_street").toString());
+                        Logger.d(getActivity(), TAG, "arrayToRoutsAdapter:   routMaps.get(i).get(\"from_street\").toString()" +  routMaps.get(i).get("from_street").toString());
 
                         arrayRouts[i] = from_mes + " " +
                                 getString(R.string.to_message) +
@@ -992,7 +994,7 @@ public class GalleryFragment extends Fragment {
 
                 } else {
 
-                    Log.d(TAG, "arrayToRoutsAdapter:   routMaps.get(i).get(\"from_street\").toString()" +  routMaps.get(i).get("from_street").toString());
+                    Logger.d(getActivity(), TAG, "arrayToRoutsAdapter:   routMaps.get(i).get(\"from_street\").toString()" +  routMaps.get(i).get("from_street").toString());
 
                     arrayRouts[i] = from_mes + " " +
                             routMaps.get(i).get("from_number").toString() + " -> " +
@@ -1025,13 +1027,13 @@ public class GalleryFragment extends Fragment {
             }
         }
         database.close();
-        Log.d(TAG, "routMaps: 1111 " + routsArr);
+        Logger.d(getActivity(), TAG, "routMaps: 1111 " + routsArr);
         return routsArr;
     }
 
     private void updateAddCost(String addCost) {
         ContentValues cv = new ContentValues();
-        Log.d(TAG, "updateAddCost: addCost" + addCost);
+        Logger.d(getActivity(), TAG, "updateAddCost: addCost" + addCost);
         cv.put("addCost", addCost);
 
         // обновляем по id
@@ -1049,12 +1051,9 @@ public class GalleryFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, requireActivity()).get(3);
+        new VerifyUserTask(requireActivity()).execute();
 
-        String application =  getString(R.string.application);
-        new VerifyUserTask(userEmail, application, requireActivity()).execute();
-
-        Log.d(TAG, "onResume: selectedItem " + selectedItem);
+        Logger.d(getActivity(), TAG, "onResume: selectedItem " + selectedItem);
         listView.clearChoices();
         listView.requestLayout(); // Обновляем визуальное состояние списка
         if (listAdapter != null) {

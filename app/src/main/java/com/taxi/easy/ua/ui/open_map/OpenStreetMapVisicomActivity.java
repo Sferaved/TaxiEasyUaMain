@@ -20,7 +20,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -51,6 +50,8 @@ import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.open_map.api.ApiResponse;
 import com.taxi.easy.ua.ui.open_map.api.ApiService;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.user_verify.VerifyUserTask;
 
 import org.json.JSONException;
 import org.osmdroid.api.IMapController;
@@ -81,7 +82,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 
 public class OpenStreetMapVisicomActivity extends AppCompatActivity {
-    private static final String TAG = "TAG_OPENMAP";
+    private static final String TAG = "OpenStreetMapVisicomActivity";
     public static IMapController mapController;
     private static final String BASE_URL = "https://m.easy-order-taxi.site/";
     private static ApiService apiService;
@@ -147,7 +148,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
 
 
-    @SuppressLint({"MissingInflatedId", "InflateParams"})
+    @SuppressLint({"MissingInflatedId", "InflateParams", "UseCompatLoadingForDrawables"})
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -167,7 +168,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         // Создайте новый Drawable из уменьшенного изображения
         scaledDrawable = new BitmapDrawable(getResources(), bitmap);
 
-        new  VerifyUserTask(getApplicationContext()).execute();
+        new VerifyUserTask(getApplicationContext()).execute();
 
         networkChangeReceiver = new NetworkChangeReceiver();
 
@@ -278,7 +279,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                 if (event.getAction() == MotionEvent.ACTION_MOVE) {
                     // Обработка изменения масштаба
                     double newZoomLevel = map.getZoomLevelDouble();
-                    Log.d(TAG, "Zoom level: " + newZoomLevel);
+                    Logger.d(getApplicationContext(), TAG, "Zoom level: " + newZoomLevel);
                     // Добавьте свой код обработки здесь
                     SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                     ContentValues cv = new ContentValues();
@@ -366,7 +367,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     }
 
     public static void dialogMarkerStartPoint() throws MalformedURLException {
-        Log.d(TAG, "dialogMarkerStartPoint: " + startPoint.toString());
+        Logger.d(map.getContext(), TAG, "dialogMarkerStartPoint: " + startPoint.toString());
         if(startPoint != null) {
 
             startLat = startPoint.getLatitude();
@@ -383,13 +384,13 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
 
-            Log.d(TAG, "Request URL: " + retrofit.baseUrl().toString());
+            Logger.d(map.getContext(), TAG, "Request URL: " + retrofit.baseUrl());
 
             HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
                 @Override
                 public void log(String message) {
                     // Log the URL
-                    Log.d(TAG, message);
+                    Logger.d(map.getContext(), TAG, message);
                 }
             });
 
@@ -430,13 +431,13 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                         .addConverterFactory(GsonConverterFactory.create())
                         .build();
 
-                Log.d(TAG, "Request URL: " + retrofit.baseUrl().toString());
+                Logger.d(map.getContext(), TAG, "Request URL: " + retrofit.baseUrl());
 
                 HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
                     @Override
                     public void log(String message) {
                         // Log the URL
-                        Log.d(TAG, message);
+                        Logger.d(map.getContext(), TAG, message);
                     }
                 });
 
@@ -606,14 +607,14 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, getApplicationContext()).get(3);
 
         String application =  getString(R.string.application);
-        new com.taxi.easy.ua.utils.VerifyUserTask(userEmail, application, getApplicationContext()).execute();
+        new VerifyUserTask(getApplicationContext()).execute();
 
         switchToRegion();
 
         gpsSwitch.setChecked(switchState());
-        Log.d(TAG, "onResume: startMarker" + startMarker);
-        Log.d(TAG, "onResume: finishMarker" + finishMarker);
-        Log.d(TAG, "onResume: getFromTablePositionInfo(this, \"startLat\" )" + getFromTablePositionInfo(this, "startLat" ));
+        Logger.d(getApplicationContext(), TAG, "onResume: startMarker" + startMarker);
+        Logger.d(getApplicationContext(), TAG, "onResume: finishMarker" + finishMarker);
+        Logger.d(getApplicationContext(), TAG, "onResume: getFromTablePositionInfo(this, \"startLat\" )" + getFromTablePositionInfo(this, "startLat" ));
 
         if (startMarker.equals("ok")) {
             markerOverlay = new MarkerOverlayVisicom(OpenStreetMapVisicomActivity.this, "startMarker");
@@ -679,7 +680,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
             }
 
        } else {
-            Log.d(TAG, "onResume: " + ContextCompat.checkSelfPermission(OpenStreetMapVisicomActivity.this, Manifest.permission.ACCESS_FINE_LOCATION));
+            Logger.d(getApplicationContext(), TAG, "onResume: " + ContextCompat.checkSelfPermission(OpenStreetMapVisicomActivity.this, Manifest.permission.ACCESS_FINE_LOCATION));
             if(ContextCompat.checkSelfPermission(OpenStreetMapVisicomActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 startLat = startPoint.getLatitude();
                 startLan = startPoint.getLongitude();
@@ -739,7 +740,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
                     // Обработка полученных местоположений
                     List<Location> locations = locationResult.getLocations();
-                    Log.d(TAG, "onLocationResult: locations 222222" + locations);
+                    Logger.d(getApplicationContext(), TAG, "onLocationResult: locations 222222" + locations);
 
                     if (!locations.isEmpty()) {
                         Location firstLocation = locations.get(0);
@@ -761,7 +762,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                         FromJSONParser parser = new FromJSONParser(urlFrom);
                         Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
                         assert sendUrlFrom != null;
-                        FromAdressString = (String) sendUrlFrom.get("route_address_from");
+                        FromAdressString = sendUrlFrom.get("route_address_from");
                         if (FromAdressString != null) {
                             if (FromAdressString.equals("Точка на карте")) {
                                 FromAdressString = getString(R.string.startPoint);
@@ -973,7 +974,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                 }
             }
             result = String.join("*", servicesChecked);
-            Log.d(TAG, "getTaxiUrlSearchGeo result:" + result + "/");
+            Logger.d(map.getContext(), TAG, "getTaxiUrlSearchGeo result:" + result + "/");
         } else {
             result = "no_extra_charge_codes";
         }
@@ -984,7 +985,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
         database.close();
-        Log.d(TAG, "getTaxiUrlSearchMarkers: " + url);
+        Logger.d(map.getContext(), TAG, "getTaxiUrlSearchMarkers: " + url);
         return url;
     }
 
@@ -1011,43 +1012,6 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         c.close();
         database.close();
         return list;
-    }
-
-    public static class VerifyUserTask extends AsyncTask<Void, Void, Map<String, String>> {
-        @SuppressLint("StaticFieldLeak")
-        private final Context context;
-        SQLiteDatabase database;
-
-        public VerifyUserTask(Context context) {
-            this.context = context;
-            this.database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        }
-        @Override
-        protected Map<String, String> doInBackground(Void... voids) {
-            String userEmail = logCursor(MainActivity.TABLE_USER_INFO, this.context).get(3);
-
-            String url = "https://m.easy-order-taxi.site/android/verifyBlackListUser/" + userEmail + "/" + "com.taxi.easy.ua";
-            try {
-                return CostJSONParser.sendURL(url);
-            } catch (Exception e) {
-                return null;
-            }
-
-        }
-
-        @Override
-        protected void onPostExecute(Map<String, String> sendUrlMap) {
-            String message = sendUrlMap.get("Message");
-            ContentValues cv = new ContentValues();
-
-            if (message != null) {
-                if (message.equals("В черном списке")) {
-                    cv.put("verifyOrder", "0");
-                    database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-                }
-            }
-            database.close();
-        }
     }
 
     @SuppressLint("Range")

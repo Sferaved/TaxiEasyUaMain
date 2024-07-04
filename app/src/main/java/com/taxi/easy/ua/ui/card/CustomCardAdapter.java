@@ -7,7 +7,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,6 +22,7 @@ import androidx.annotation.NonNull;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.unlink.UnlinkApi;
+import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,22 +36,23 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
     private static final String TAG = "CustomCardAdapter";
-    private ArrayList<Map<String, String>> cardMaps;
+    private final ArrayList<Map<String, String>> cardMaps;
     private int selectedPosition = 0;
     public static String rectoken;
     public static String table;
     public static String pay_method;
 
-    private String baseUrl = "https://m.easy-order-taxi.site";
+    private final String baseUrl = "https://m.easy-order-taxi.site";
     public CustomCardAdapter(Context context, ArrayList<Map<String, String>> cardMaps, String table, String pay_method) {
         super(context, R.layout.cards_adapter_layout, cardMaps);
         this.cardMaps = cardMaps;
-        this.table = table;
-        this.pay_method = pay_method;
+        CustomCardAdapter.table = table;
+        CustomCardAdapter.pay_method = pay_method;
     }
 
+    @NonNull
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(int position, View convertView, @NonNull ViewGroup parent) {
         View view = convertView;
         ViewHolder holder;
 
@@ -86,7 +87,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             holder.cardText.setText(masked_card);
 
             String bank_name = cardMap.get("bank_name");
-            Log.d(TAG, "getView:11111 bank_name" +  bank_name);
+            Logger.d(getContext(), TAG, "getView:11111 bank_name" +  bank_name);
 
             assert bank_name != null;
             if(!bank_name.equals("SOME BANK IN UA COUNTRY")) {
@@ -97,7 +98,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
 
 
             selectedPosition = getCheckRectoken(table);
-            Log.d(TAG, "getView: " + selectedPosition);
+            Logger.d(getContext(), TAG, "getView: " + selectedPosition);
             holder.checkBox.setChecked(position == selectedPosition);
             rectoken = cardMap.get("rectoken");
 
@@ -110,7 +111,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
 
 
                     rectoken = cardMap.get("rectoken");
-                    Log.d(TAG, "onClick:rectoken " + rectoken);
+                    Logger.d(getContext(), TAG, "onClick:rectoken " + rectoken);
                     updateRectokenCheck(table,  rectoken);
                     notifyDataSetChanged();
                 }
@@ -200,7 +201,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             }
             cursor.close();
         }
-        Log.d(TAG, "getCheckRectokenPosition: position" + position);
+        Logger.d(getContext(), TAG, "getCheckRectokenPosition: position" + position);
         database.close();
         return position;
     }
@@ -226,9 +227,9 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
         int rowsUpdated = database.update(table, targetValue, whereClause, whereArgs);
 
         if (rowsUpdated > 0) {
-            Log.d(TAG, "Updated rectoken_check for rectoken " + rectoken + " to 1");
+            Logger.d(getContext(), TAG, "Updated rectoken_check for rectoken " + rectoken + " to 1");
         } else {
-            Log.d(TAG, "No rows were updated. " + rectoken + " may not exist.");
+            Logger.d(getContext(), TAG, "No rows were updated. " + rectoken + " may not exist.");
         }
 
         database.close();
@@ -304,7 +305,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
         database.close();
 
         ArrayList<Map<String, String>> cardMaps = getCardMapsFromDatabase();
-        Log.d(TAG, "onResume: cardMaps" + cardMaps);
+        Logger.d(getContext(), TAG, "onResume: cardMaps" + cardMaps);
         if (cardMaps.isEmpty()) {
             // Если массив пустой, отобразите текст "no_routs" вместо списка
             CardFragment.textCard.setVisibility(View.VISIBLE);
@@ -329,7 +330,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
         SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         // Выполните запрос к таблице TABLE_FONDY_CARDS и получите данные
         Cursor cursor = database.query(MainActivity.TABLE_FONDY_CARDS, null, null, null, null, null, null);
-        Log.d(TAG, "getCardMapsFromDatabase: card count: " + cursor.getCount());
+        Logger.d(getContext(), TAG, "getCardMapsFromDatabase: card count: " + cursor.getCount());
 
         if (cursor != null) {
             if (cursor.moveToFirst()) {

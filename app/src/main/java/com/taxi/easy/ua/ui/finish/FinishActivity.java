@@ -9,10 +9,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -58,6 +56,7 @@ import com.taxi.easy.ua.ui.wfp.purchase.PurchaseService;
 import com.taxi.easy.ua.ui.wfp.revers.ReversResponse;
 import com.taxi.easy.ua.ui.wfp.revers.ReversService;
 import com.taxi.easy.ua.utils.LocaleHelper;
+import com.taxi.easy.ua.utils.log.Logger;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -126,7 +125,7 @@ public class FinishActivity extends AppCompatActivity {
         fragmentManager = getSupportFragmentManager();
         progressBar = findViewById(R.id.progress_bar);
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
-        Log.d(TAG, "onCreate: " + pay_method);
+        Logger.d(getApplicationContext(), TAG, "onCreate: " + pay_method);
 
         messageFondy = getString(R.string.fondy_message);
         email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
@@ -138,7 +137,7 @@ public class FinishActivity extends AppCompatActivity {
         assert receivedMap != null;
         amount = receivedMap.get("order_cost") + "00";
 
-        Log.d(TAG, "onCreate: receivedMap" + receivedMap.toString());
+        Logger.d(getApplicationContext(), TAG, "onCreate: receivedMap" + receivedMap.toString());
         text_full_message = findViewById(R.id.text_full_message);
         text_full_message.setText(messageResult);
 
@@ -169,7 +168,7 @@ public class FinishActivity extends AppCompatActivity {
         if (pay_method.equals("bonus_payment")) {
             handlerBonusBtn = new Handler();
 
-            String url = baseUrl + "/bonusBalance/recordsBloke/" + uid + "/" + getString(R.string.application);;
+            String url = baseUrl + "/bonusBalance/recordsBloke/" + uid + "/" + getString(R.string.application);
 
             fetchBonus(url);
         }
@@ -186,7 +185,7 @@ public class FinishActivity extends AppCompatActivity {
                         || !newStatus.contains(getString(R.string.error_payment_card))
                         || !newStatus.contains(getString(R.string.double_order_error))
                         || !newStatus.contains(getString(R.string.call_btn_cancel)) ) {
-                    String cancelText = getApplicationContext().getString(R.string.status_checkout_message);;
+                    String cancelText = getApplicationContext().getString(R.string.status_checkout_message);
                     text_status.setText(cancelText);
 
                 } else {
@@ -251,7 +250,7 @@ public class FinishActivity extends AppCompatActivity {
                         || !newStatus.contains(getString(R.string.error_payment_card))
                         || !newStatus.contains(getString(R.string.double_order_error))
                         || !newStatus.contains(getString(R.string.call_btn_cancel)) ) {
-                    String cancelText = getApplicationContext().getString(R.string.status_checkout_message);;
+                    String cancelText = getApplicationContext().getString(R.string.status_checkout_message);
                     text_status.setText(cancelText);
 
                 } else {
@@ -398,7 +397,7 @@ public class FinishActivity extends AppCompatActivity {
     @SuppressLint("Range")
     private void payWfp() throws UnsupportedEncodingException {
         String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS);
-        Log.d(TAG, "payWfp: rectoken " + rectoken);
+        Logger.d(getApplicationContext(), TAG, "payWfp: rectoken " + rectoken);
         amount = receivedMap.get("order_cost");
         if (rectoken.isEmpty()) {
             getUrlToPaymentWfp();
@@ -443,14 +442,14 @@ public class FinishActivity extends AppCompatActivity {
         call.enqueue(new Callback<InvoiceResponse>() {
             @Override
             public void onResponse(@NonNull Call<InvoiceResponse> call, @NonNull Response<InvoiceResponse> response) {
-                Log.d(TAG, "onResponse: 1111" + response.code());
+                Logger.d(getApplicationContext(), TAG, "onResponse: 1111" + response.code());
 
                 if (response.isSuccessful()) {
                     InvoiceResponse invoiceResponse = response.body();
 
                     if (invoiceResponse != null) {
                         String checkoutUrl = invoiceResponse.getInvoiceUrl();
-                        Log.d(TAG, "onResponse: Invoice URL: " + checkoutUrl);
+                        Logger.d(getApplicationContext(), TAG, "onResponse: Invoice URL: " + checkoutUrl);
                         if(checkoutUrl != null) {
                             MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
                                     checkoutUrl,
@@ -462,21 +461,21 @@ public class FinishActivity extends AppCompatActivity {
                             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                         } else {
-                            Log.d(TAG,"Response body is null");
+                            Logger.d(getApplicationContext(), TAG,"Response body is null");
                             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                             callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                             MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getApplicationContext());
                             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                         }
                     } else {
-                        Log.d(TAG,"Response body is null");
+                        Logger.d(getApplicationContext(), TAG,"Response body is null");
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                         callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getApplicationContext());
                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
                 } else {
-                    Log.d(TAG, "Request failed: " + response.code());
+                    Logger.d(getApplicationContext(), TAG, "Request failed: " + response.code());
                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                     callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getApplicationContext());
@@ -486,7 +485,7 @@ public class FinishActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(@NonNull Call<InvoiceResponse> call, @NonNull Throwable t) {
-                Log.d(TAG, "Request failed: " + t.getMessage());
+                Logger.d(getApplicationContext(), TAG, "Request failed: " + t.getMessage());
                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                 callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                 MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getApplicationContext());
@@ -539,11 +538,11 @@ public class FinishActivity extends AppCompatActivity {
                         PurchaseResponse purchaseResponse = response.body();
                         if (purchaseResponse != null) {
                             // Обработка ответа
-                            Log.d(TAG, "onResponse:purchaseResponse " + purchaseResponse);
+                            Logger.d(getApplicationContext(), TAG, "onResponse:purchaseResponse " + purchaseResponse);
                             getStatusWfp();
                         } else {
                             // Ошибка при парсинге ответа
-                            Log.d(TAG, "Ошибка при парсинге ответа");
+                            Logger.d(getApplicationContext(), TAG, "Ошибка при парсинге ответа");
                             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                             callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                             MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getApplicationContext());
@@ -551,7 +550,7 @@ public class FinishActivity extends AppCompatActivity {
                         }
                     } else {
                         // Ошибка запроса
-                        Log.d(TAG, "Ошибка запроса");
+                        Logger.d(getApplicationContext(), TAG, "Ошибка запроса");
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                         callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getApplicationContext());
@@ -562,7 +561,7 @@ public class FinishActivity extends AppCompatActivity {
                 @Override
                 public void onFailure(@NonNull Call<PurchaseResponse> call, @NonNull Throwable t) {
                     // Ошибка при выполнении запроса
-                    Log.d(TAG, "Ошибка при выполнении запроса");
+                    Logger.d(getApplicationContext(), TAG, "Ошибка при выполнении запроса");
                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                     callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getApplicationContext());
@@ -573,7 +572,7 @@ public class FinishActivity extends AppCompatActivity {
     }
 
     private void getStatusWfp() {
-        Log.d(TAG, "getStatusWfp: ");
+        Logger.d(getApplicationContext(), TAG, "getStatusWfp: ");
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         String city = stringList.get(1);
 
@@ -607,7 +606,7 @@ public class FinishActivity extends AppCompatActivity {
                     StatusResponse statusResponse = response.body();
                     assert statusResponse != null;
                     String orderStatus = statusResponse.getTransactionStatus();
-                    Log.d(TAG, "Transaction Status: " + orderStatus);
+                    Logger.d(getApplicationContext(), TAG, "Transaction Status: " + orderStatus);
 
                     switch (orderStatus) {
                         case "Approved":
@@ -662,11 +661,11 @@ public class FinishActivity extends AppCompatActivity {
                     ReversResponse statusResponse = response.body();
                     assert statusResponse != null;
                     if (statusResponse.getReasonCode() == 1100) {
-                        Log.d(TAG, "Transaction Status: " + statusResponse.getTransactionStatus());
+                        Logger.d(getApplicationContext(), TAG, "Transaction Status: " + statusResponse.getTransactionStatus());
                         // Другие данные можно также получить из statusResponse
                     } else {
-                        Log.d(TAG, "Response body is null");
-                        Log.d(TAG,"Response body is null");
+                        Logger.d(getApplicationContext(), TAG, "Response body is null");
+                        Logger.d(getApplicationContext(), TAG,"Response body is null");
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                         callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getApplicationContext());
@@ -675,8 +674,8 @@ public class FinishActivity extends AppCompatActivity {
 
                     }
                 } else {
-                    Log.d(TAG, "Request failed: " + response.code());
-                    Log.d(TAG,"Response body is null");
+                    Logger.d(getApplicationContext(), TAG, "Request failed: " + response.code());
+                    Logger.d(getApplicationContext(), TAG,"Response body is null");
                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                     callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getApplicationContext());
@@ -689,7 +688,7 @@ public class FinishActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<ReversResponse> call, @NonNull Throwable t) {
 //                dismiss();
-                Log.d(TAG, "Request failed: " + t.getMessage());
+                Logger.d(getApplicationContext(), TAG, "Request failed: " + t.getMessage());
             }
         });
 
@@ -704,7 +703,7 @@ public class FinishActivity extends AppCompatActivity {
 
 
         String rectoken = getCheckRectoken(MainActivity.TABLE_FONDY_CARDS);
-        Log.d(TAG, "payFondy: rectoken " + rectoken);
+        Logger.d(getApplicationContext(), TAG, "payFondy: rectoken " + rectoken);
         if (rectoken.isEmpty()) {
             getUrlToPaymentFondy(messageFondy, amount);
         } else {
@@ -757,9 +756,9 @@ public class FinishActivity extends AppCompatActivity {
 
 
 
-        Log.d(TAG, "paymentByTokenFondy: " + rectoken);
+        Logger.d(getApplicationContext(), TAG, "paymentByTokenFondy: " + rectoken);
 
-        Log.d(TAG, "getStatusFondy: " + params);
+        Logger.d(getApplicationContext(), TAG, "getStatusFondy: " + params);
         SignatureClient signatureClient = new SignatureClient();
 // Передаем экземпляр SignatureCallback в метод generateSignature
         signatureClient.generateSignature(queryString, new SignatureClient.SignatureCallback() {
@@ -767,7 +766,7 @@ public class FinishActivity extends AppCompatActivity {
             public void onSuccess(SignatureResponse response) {
                 // Обработка успешного ответа
                 String digest = response.getDigest();
-                Log.d(TAG, "Received signature digest: " + digest);
+                Logger.d(getApplicationContext(), TAG, "Received signature digest: " + digest);
 
                 RequestDataToken paymentRequest = new RequestDataToken(
                         order_id,
@@ -781,7 +780,7 @@ public class FinishActivity extends AppCompatActivity {
 
 
                 StatusRequestToken statusRequest = new StatusRequestToken(paymentRequest);
-                Log.d(TAG, "getUrlToPayment: " + statusRequest);
+                Logger.d(getApplicationContext(), TAG, "getUrlToPayment: " + statusRequest);
 
                 Call<ApiResponseToken<SuccessResponseDataToken>> call = paymentApi.makePayment(statusRequest);
 
@@ -790,24 +789,24 @@ public class FinishActivity extends AppCompatActivity {
 
                     @Override
                     public void onResponse(@NonNull Call<ApiResponseToken<SuccessResponseDataToken>> call, Response<ApiResponseToken<SuccessResponseDataToken>> response) {
-                        Log.d(TAG, "onResponse: 1111" + response.code());
+                        Logger.d(getApplicationContext(), TAG, "onResponse: 1111" + response.code());
                         if (response.isSuccessful()) {
                             ApiResponseToken<SuccessResponseDataToken> apiResponse = response.body();
 
-                            Log.d(TAG, "onResponse: " +  new Gson().toJson(apiResponse));
+                            Logger.d(getApplicationContext(), TAG, "onResponse: " +  new Gson().toJson(apiResponse));
                             try {
-                                SuccessResponseDataToken responseBody = response.body().getResponse();;
+                                SuccessResponseDataToken responseBody = response.body().getResponse();
 
                                 // Теперь у вас есть объект ResponseBodyRev для обработки
                                 if (responseBody != null) {
-                                    Log.d(TAG, "JSON Response: " + new Gson().toJson(apiResponse));
+                                    Logger.d(getApplicationContext(), TAG, "JSON Response: " + new Gson().toJson(apiResponse));
                                     String orderStatus = responseBody.getOrderStatus();
                                     if (!"approved".equals(orderStatus)) {
                                         // Обработка ответа об ошибке
                                         String errorResponseMessage = responseBody.getErrorMessage();
                                         String errorResponseCode = responseBody.getErrorCode();
-                                        Log.d(TAG, "onResponse: errorResponseMessage " + errorResponseMessage);
-                                        Log.d(TAG, "onResponse: errorResponseCode" + errorResponseCode);
+                                        Logger.d(getApplicationContext(), TAG, "onResponse: errorResponseMessage " + errorResponseMessage);
+                                        Logger.d(getApplicationContext(), TAG, "onResponse: errorResponseCode" + errorResponseCode);
 
 //                                Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
@@ -828,7 +827,7 @@ public class FinishActivity extends AppCompatActivity {
                             } catch (JsonSyntaxException e) {
                                 // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
                                 FirebaseCrashlytics.getInstance().recordException(e);
-                                Log.e(TAG, "Error parsing JSON response: " + e.getMessage());
+                                Logger.d(getApplicationContext(), TAG, "Error parsing JSON response: " + e.getMessage());
 //                        Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                                 callOrderIdMemory(MainActivity.order_id, uid, pay_method);
@@ -838,7 +837,7 @@ public class FinishActivity extends AppCompatActivity {
                             }
                         } else {
                             // Обработка ошибки
-                            Log.d(TAG, "onFailure: " + response.code());
+                            Logger.d(getApplicationContext(), TAG, "onFailure: " + response.code());
 //                    Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                             callOrderIdMemory(MainActivity.order_id, uid, pay_method);
@@ -850,8 +849,8 @@ public class FinishActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void onFailure(Call<ApiResponseToken<SuccessResponseDataToken>> call, Throwable t) {
-                        Log.d(TAG, "onFailure1111: " + t.toString());
+                    public void onFailure(@NonNull Call<ApiResponseToken<SuccessResponseDataToken>> call, @NonNull Throwable t) {
+                        Logger.d(getApplicationContext(), TAG, "onFailure1111: " + t);
 //                Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
 
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
@@ -868,7 +867,7 @@ public class FinishActivity extends AppCompatActivity {
             public void onError(String error) {
                 // Обработка ошибки
 
-                Log.d(TAG, "Received signature error: " + error);
+                Logger.d(getApplicationContext(), TAG, "Received signature error: " + error);
             }
         });
 
@@ -892,7 +891,7 @@ public class FinishActivity extends AppCompatActivity {
             if (cursor.moveToFirst()) {
                 do {
                     result = cursor.getString(cursor.getColumnIndex("rectoken"));
-                    Log.d(TAG, "Found rectoken with rectoken_check = 1" + ": " + result);
+                    Logger.d(getApplicationContext(), TAG, "Found rectoken with rectoken_check = 1" + ": " + result);
                     return result;
                 } while (cursor.moveToNext());
             }
@@ -921,7 +920,7 @@ public class FinishActivity extends AppCompatActivity {
                     @SuppressLint("Range") String merchant = cursor.getString(cursor.getColumnIndex("merchant"));
                     @SuppressLint("Range") String rectoken = cursor.getString(cursor.getColumnIndex("rectoken"));
 
-                    Log.d(TAG, "rectoken_check: " + rectokenCheck + ", merchant: " + merchant + ", rectoken: " + rectoken);
+                    Logger.d(getApplicationContext(), TAG, "rectoken_check: " + rectokenCheck + ", merchant: " + merchant + ", rectoken: " + rectoken);
                 } while (cursor.moveToNext());
             }
             cursor.close();
@@ -957,7 +956,7 @@ public class FinishActivity extends AppCompatActivity {
         params.put("sender_email", email);
         params.put("server_callback_url", "https://m.easy-order-taxi.site/server-callback");
 
-        Log.d(TAG, "getStatusFondy: " + params);
+        Logger.d(getApplicationContext(), TAG, "getStatusFondy: " + params);
         SignatureClient signatureClient = new SignatureClient();
 // Передаем экземпляр SignatureCallback в метод generateSignature
 
@@ -978,7 +977,7 @@ public class FinishActivity extends AppCompatActivity {
             public void onSuccess(SignatureResponse response) {
                 // Обработка успешного ответа
                 String digest = response.getDigest();
-                Log.d(TAG, "Received signature digest: " + digest);
+                Logger.d(getApplicationContext(), TAG, "Received signature digest: " + digest);
 
                 RequestData paymentRequest = new RequestData(
                         order_id,
@@ -991,7 +990,7 @@ public class FinishActivity extends AppCompatActivity {
 
 
                 StatusRequestPay statusRequest = new StatusRequestPay(paymentRequest);
-                Log.d(TAG, "getUrlToPayment: " + statusRequest.toString());
+                Logger.d(getApplicationContext(), TAG, "getUrlToPayment: " + statusRequest);
 
                 Call<ApiResponsePay<SuccessResponseDataPay>> call = paymentApi.makePayment(statusRequest);
 
@@ -999,14 +998,14 @@ public class FinishActivity extends AppCompatActivity {
 
                     @Override
                     public void onResponse(@NonNull Call<ApiResponsePay<SuccessResponseDataPay>> call, Response<ApiResponsePay<SuccessResponseDataPay>> response) {
-                        Log.d(TAG, "onResponse: 1111" + response.code());
+                        Logger.d(getApplicationContext(), TAG, "onResponse: 1111" + response.code());
 
                         if (response.isSuccessful()) {
                             ApiResponsePay<SuccessResponseDataPay> apiResponse = response.body();
 
-                            Log.d(TAG, "onResponse: " +  new Gson().toJson(apiResponse));
+                            Logger.d(getApplicationContext(), TAG, "onResponse: " +  new Gson().toJson(apiResponse));
                             try {
-                                SuccessResponseDataPay responseBody = response.body().getResponse();;
+                                SuccessResponseDataPay responseBody = response.body().getResponse();
 
                                 // Теперь у вас есть объект ResponseBodyRev для обработки
                                 if (responseBody != null) {
@@ -1042,7 +1041,7 @@ public class FinishActivity extends AppCompatActivity {
                                 }
                             } catch (JsonSyntaxException e) {
                                 // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
-                                Log.e(TAG, "Error parsing JSON response: " + e.getMessage());
+                                Logger.d(getApplicationContext(), TAG, "Error parsing JSON response: " + e.getMessage());
                                 FirebaseCrashlytics.getInstance().recordException(e);
 
                                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
@@ -1053,7 +1052,7 @@ public class FinishActivity extends AppCompatActivity {
                             }
                         } else {
                             // Обработка ошибки
-                            Log.d(TAG, "onFailure: " + response.code());
+                            Logger.d(getApplicationContext(), TAG, "onFailure: " + response.code());
 
                             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                             callOrderIdMemory(MainActivity.order_id, uid, pay_method);
@@ -1066,7 +1065,7 @@ public class FinishActivity extends AppCompatActivity {
 
                     @Override
                     public void onFailure(@NonNull Call<ApiResponsePay<SuccessResponseDataPay>> call, Throwable t) {
-                        Log.d(TAG, "onFailure1111: " + t.toString());
+                        Logger.d(getApplicationContext(), TAG, "onFailure1111: " + t);
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
                         callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, getApplicationContext());
@@ -1077,7 +1076,7 @@ public class FinishActivity extends AppCompatActivity {
             @Override
             public void onError(String error) {
                 // Обработка ошибки
-                Log.d(TAG, "Received signature error: " + error);
+                Logger.d(getApplicationContext(), TAG, "Received signature error: " + error);
             }
         });
         btn_again.setVisibility(View.GONE);
@@ -1103,7 +1102,7 @@ public class FinishActivity extends AppCompatActivity {
                 comment
         );
 
-        Log.d(TAG, "getUrlToPayment: " + paymentRequest.toString());
+        Logger.d(getApplicationContext(), TAG, "getUrlToPayment: " + paymentRequest);
 
         String token = getResources().getString(R.string.mono_key_storage); // Получение токена из ресурсов
         Call<ResponsePayMono> call = monoApi.invoiceCreate(token, paymentRequest);
@@ -1112,15 +1111,15 @@ public class FinishActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(@NonNull Call<ResponsePayMono> call, Response<ResponsePayMono> response) {
-                Log.d(TAG, "onResponse: 1111" + response.code());
+                Logger.d(getApplicationContext(), TAG, "onResponse: 1111" + response.code());
                 if (response.isSuccessful()) {
                     ResponsePayMono apiResponse = response.body();
 
-                    Log.d(TAG, "onResponse: " +  new Gson().toJson(apiResponse));
+                    Logger.d(getApplicationContext(), TAG, "onResponse: " +  new Gson().toJson(apiResponse));
                     try {
                         assert response.body() != null;
-                        String pageUrl = response.body().getPageUrl();;
-                        MainActivity.invoiceId = response.body().getInvoiceId();;
+                        String pageUrl = response.body().getPageUrl();
+                        MainActivity.invoiceId = response.body().getInvoiceId();
 
                         // Теперь у вас есть объект ResponseBodyRev для обработки
                         if (pageUrl != null || !pageUrl.equals("null") ) {
@@ -1142,20 +1141,20 @@ public class FinishActivity extends AppCompatActivity {
 
                     } catch (JsonSyntaxException e) {
                         // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
-                        Log.e(TAG, "Error parsing JSON response: " + e.getMessage());
+                        Logger.d(getApplicationContext(), TAG, "Error parsing JSON response: " + e.getMessage());
                         FirebaseCrashlytics.getInstance().recordException(e);
                         cancelOrderDouble();
                     }
                 } else {
                     // Обработка ошибки
-                    Log.d(TAG, "onFailure: " + response.code());
+                    Logger.d(getApplicationContext(), TAG, "onFailure: " + response.code());
                     cancelOrderDouble();
                 }
             }
 
             @Override
             public void onFailure(Call<ResponsePayMono> call, Throwable t) {
-                Log.d(TAG, "onFailure1111: " + t.toString());
+                Logger.d(getApplicationContext(), TAG, "onFailure1111: " + t);
                 cancelOrderDouble();
             }
 
@@ -1164,7 +1163,7 @@ public class FinishActivity extends AppCompatActivity {
     }
     private void updateAddCost(String addCost) {
         ContentValues cv = new ContentValues();
-        Log.d(TAG, "updateAddCost: addCost" + addCost);
+        Logger.d(getApplicationContext(), TAG, "updateAddCost: addCost" + addCost);
         cv.put("addCost", addCost);
 
         // обновляем по id
@@ -1204,7 +1203,7 @@ public class FinishActivity extends AppCompatActivity {
     private void fetchBonus(String url) {
 
         Call<BonusResponse> call = ApiClient.getApiService().getBonus(url);
-        Log.d(TAG, "fetchBonus: " + url);
+        Logger.d(getApplicationContext(), TAG, "fetchBonus: " + url);
         call.enqueue(new Callback<BonusResponse>() {
             @Override
             public void onResponse(@NonNull Call<BonusResponse> call, @NonNull Response<BonusResponse> response) {
@@ -1248,7 +1247,7 @@ public class FinishActivity extends AppCompatActivity {
                 receivedMap.get("doubleOrder")
         );
         String url = call.request().url().toString();
-        Log.d(TAG, "URL запроса: " + url);
+        Logger.d(getApplicationContext(), TAG, "URL запроса: " + url);
         call.enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
@@ -1355,7 +1354,7 @@ public class FinishActivity extends AppCompatActivity {
         String url = baseUrl + "/" + api + "/android/webordersCancel/" + value + "/" + city  + "/" + getString(R.string.application);
 
         Call<Status> call = ApiClient.getApiService().cancelOrder(url);
-        Log.d(TAG, "cancelOrderWithDifferentValue cancelOrderUrl: " + url);
+        Logger.d(getApplicationContext(), TAG, "cancelOrderWithDifferentValue cancelOrderUrl: " + url);
         text_status.setText(R.string.sent_cancel_message);
         call.enqueue(new Callback<Status>() {
             @Override
@@ -1363,7 +1362,7 @@ public class FinishActivity extends AppCompatActivity {
                 if (response.isSuccessful()) {
                     Status status = response.body();
                     assert status != null;
-                    Log.d(TAG, "cancelOrder status: " + status.toString());
+                    Logger.d(getApplicationContext(), TAG, "cancelOrder status: " + status);
                 } else {
                     // Обработка неуспешного ответа
                         text_status.setText(R.string.verify_internet);
@@ -1374,7 +1373,7 @@ public class FinishActivity extends AppCompatActivity {
             public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
                 // Обработка ошибок сети или других ошибок
                 String errorMessage = t.getMessage();
-                Log.d(TAG, "onFailure: " + errorMessage);
+                Logger.d(getApplicationContext(), TAG, "onFailure: " + errorMessage);
                 text_status.setText(R.string.verify_internet);
             }
         });
@@ -1392,7 +1391,7 @@ public class FinishActivity extends AppCompatActivity {
         String url = baseUrl + "/" + api + "/android/webordersCancelDouble/" + uid+ "/" + uid_Double + "/" + pay_method + "/" + city  + "/" + getString(R.string.application);
 
         Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
-        Log.d(TAG, "cancelOrderDouble: " + url);
+        Logger.d(getApplicationContext(), TAG, "cancelOrderDouble: " + url);
         text_status.setText(R.string.sent_cancel_message);
         call.enqueue(new Callback<Status>() {
             @Override
@@ -1400,7 +1399,7 @@ public class FinishActivity extends AppCompatActivity {
                 if (response.isSuccessful()) {
                     Status status = response.body();
                     assert status != null;
-                    Log.d(TAG, "cancelOrderDouble status: " + status);
+                    Logger.d(getApplicationContext(), TAG, "cancelOrderDouble status: " + status);
                 } else {
                     // Обработка неуспешного ответа
                         text_status.setText(R.string.verify_internet);
@@ -1411,7 +1410,7 @@ public class FinishActivity extends AppCompatActivity {
             public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
                 // Обработка ошибок сети или других ошибок
                 String errorMessage = t.getMessage();
-                Log.d(TAG, "onFailure: " + errorMessage);
+                Logger.d(getApplicationContext(), TAG, "onFailure: " + errorMessage);
                 text_status.setText(R.string.verify_internet);
             }
         });
@@ -1431,7 +1430,7 @@ public class FinishActivity extends AppCompatActivity {
         String url = baseUrl + "/" + api + "/android/historyUIDStatus/" + value + "/" + city  + "/" + getString(R.string.application);
 
         Call<OrderResponse> call = ApiClient.getApiService().statusOrder(url);
-        Log.d(TAG, "/android/historyUIDStatus/: " + url);
+        Logger.d(getApplicationContext(), TAG, "/android/historyUIDStatus/: " + url);
 
         // Выполняем запрос асинхронно
         call.enqueue(new Callback<OrderResponse>() {
@@ -1531,7 +1530,7 @@ public class FinishActivity extends AppCompatActivity {
                                 }
 
                                 if (driverPhone != null && !driverPhone.isEmpty()) {
-                                    Log.d(TAG, "onResponse:driverPhone " + driverPhone);
+                                    Logger.d(getApplicationContext(), TAG, "onResponse:driverPhone " + driverPhone);
                                     btn_reset_status.setText(getString(R.string.phone_driver));
                                     btn_reset_status.setOnClickListener(new View.OnClickListener() {
                                         @Override
@@ -1595,48 +1594,12 @@ public class FinishActivity extends AppCompatActivity {
             date = inputFormat.parse(requiredTime);
         } catch (ParseException e) {
             FirebaseCrashlytics.getInstance().recordException(e);
-            Log.d(TAG, "onCreate:" + new RuntimeException(e));
+            Logger.d(getApplicationContext(), TAG, "onCreate:" + new RuntimeException(e));
         }
 
         // Форматируем дату и время в украинском формате
         return outputFormat.format(date);
 
     }
-
-    @SuppressLint("StaticFieldLeak")
-    public class VerifyUserTask extends AsyncTask<Void, Void, Map<String, String>> {
-        private Exception exception;
-        @Override
-        protected Map<String, String> doInBackground(Void... voids) {
-            String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
-
-            String url = "https://m.easy-order-taxi.site/android/verifyBlackListUser/" + userEmail + "/" + "com.taxi.easy.ua";
-            try {
-                return CostJSONParser.sendURL(url);
-            } catch (Exception e) {
-                FirebaseCrashlytics.getInstance().recordException(e);
-                exception = e;
-                return null;
-            }
-
-        }
-
-        @Override
-        protected void onPostExecute(Map<String, String> sendUrlMap) {
-            String message = sendUrlMap.get("message");
-            ContentValues cv = new ContentValues();
-            SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            if (message != null) {
-
-                if (message.equals("В черном списке")) {
-
-                    cv.put("verifyOrder", "0");
-                    database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-                }
-            }
-            database.close();
-        }
-    }
-
 
 }

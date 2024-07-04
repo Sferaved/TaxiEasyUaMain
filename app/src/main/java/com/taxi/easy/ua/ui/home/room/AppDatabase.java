@@ -5,7 +5,7 @@ import androidx.room.RoomDatabase;
 import androidx.room.TypeConverters;
 import androidx.room.migration.Migration;
 
-@Database(entities = {RouteCost.class}, version = 3)
+@Database(entities = {RouteCost.class}, version = 3, exportSchema = false)
 @TypeConverters(ListStringConverter.class)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract RouteCostDao routeCostDao();

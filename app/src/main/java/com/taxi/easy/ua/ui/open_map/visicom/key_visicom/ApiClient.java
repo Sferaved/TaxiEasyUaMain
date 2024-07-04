@@ -9,12 +9,12 @@ public class ApiClient {
 
     private static final String BASE_URL = "https://m.easy-order-taxi.site/";
 
-    private static Retrofit retrofit = new Retrofit.Builder()
+    private static final Retrofit retrofit = new Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build();
 
-    private static ApiService apiService = retrofit.create(ApiService.class);
+    private static final ApiService apiService = retrofit.create(ApiService.class);
 
     public static void getVisicomKeyInfo(Callback<ApiResponse> callback, String appName) {
         Call<ApiResponse> call = apiService.getVisicomKeyInfo(appName);

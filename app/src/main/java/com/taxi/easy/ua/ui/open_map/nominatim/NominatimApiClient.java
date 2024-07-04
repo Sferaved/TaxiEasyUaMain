@@ -9,7 +9,7 @@ public class NominatimApiClient {
 
     private static final String BASE_URL = "https://nominatim.openstreetmap.org";
 
-    private static Retrofit retrofit = provideRetrofit();
+    private static final Retrofit retrofit = provideRetrofit();
 
     private static Retrofit provideRetrofit() {
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();

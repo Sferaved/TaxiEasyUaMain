@@ -43,6 +43,7 @@ import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
+import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -83,7 +84,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
     private static String comment;
     private static String MERCHANT_ID;
     private static String merchantPassword;
-    private Context context;
+    private final Context context;
     private static final int TIMEOUT_SECONDS = 60;
     private CountDownTimer paymentTimer;
     private FragmentManager fragmentManager;
@@ -123,8 +124,8 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
         messageCarFoundRequiredTime = context.getString(R.string.ex_st_5);
         def_status = context.getString(R.string.def_status);
         application = context.getString(R.string.application);
-        comment = context.getString(R.string.fondy_revers_message) + context.getString(R.string.fondy_message);;
-        
+        comment = context.getString(R.string.fondy_revers_message) + context.getString(R.string.fondy_message);
+
         List<String> listCity = logCursor(MainActivity.CITY_INFO, requireActivity());
         city = listCity.get(1);
         api = listCity.get(2);
@@ -136,7 +137,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
         order_id = MainActivity.order_id;
         invoiceId = MainActivity.invoiceId;
 
-        Log.d(TAG, "onCreateView:timeoutText " + timeoutText);
+        Logger.d(getActivity(), TAG, "onCreateView:timeoutText " + timeoutText);
         // Настройка WebView
         webView.getSettings().setJavaScriptEnabled(true);
         view.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -202,7 +203,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                     ResponsePaySystem responsePaySystem = response.body();
                     assert responsePaySystem != null;
                     String paymentCode = responsePaySystem.getPay_system();
-                    Log.d("WebView", "Загружен URL: " + checkoutUrl);
+                    Logger.d(getActivity(), TAG, "Загружен URL: " + checkoutUrl);
                     switch (paymentCode) {
                         case "wfp":
                             pay_method = "wfp_payment";
@@ -210,7 +211,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                                 @Override
                                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
 
-                                    Log.d("WebView", "Загружен URL: " + url);
+                                    Logger.d(getActivity(), TAG, "Загружен URL: " + url);
                                     if(url.contains("https://secure.wayforpay.com/invoice")){
                                         return false;
                                     }
@@ -246,13 +247,13 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                                 public void onSuccess(SignatureResponse response) {
                                     // Обработка успешного ответа
                                     String digest = response.getDigest();
-                                    Log.d(TAG, "Received signature digest: " + digest);
+                                    Logger.d(getActivity(), TAG, "Received signature digest: " + digest);
                                     webView.setWebViewClient(new WebViewClient() {
                                         @Override
                                         public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                                            Log.d("WebView", "Загружен URL: " + url);
+                                            Logger.d(getActivity(), TAG, "Загружен URL: " + url);
                                             if(url.equals("https://m.easy-order-taxi.site/mono/redirectUrl")) {
-                                                Log.d(TAG, "shouldOverrideUrlLoading: " + pay_method);
+                                                Logger.d(getActivity(), TAG, "shouldOverrideUrlLoading: " + pay_method);
 //                                                getStatusFondy(digest);
                                                 return true;
                                             } else {
@@ -273,7 +274,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                                 public void onError(String error) {
                                     // Обработка ошибки
 
-                                    Log.d(TAG, "Received signature error: " + error);
+                                    Logger.d(getActivity(), TAG, "Received signature error: " + error);
                                 }
                             });
                             break;
@@ -313,7 +314,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
     }
 
     private void getStatusWfp() {
-        Log.d(TAG, "getStatusWfp: ");
+        Logger.d(getActivity(), TAG, "getStatusWfp: ");
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
         String city = stringList.get(1);
@@ -348,7 +349,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                     StatusResponse statusResponse = response.body();
                     if (statusResponse != null) {
                         String orderStatus = statusResponse.getTransactionStatus();
-                        Log.d(TAG, "Transaction Status: " + orderStatus);
+                        Logger.d(getActivity(), TAG, "Transaction Status: " + orderStatus);
                         hold = false;
                         switch (orderStatus) {
                             case "Approved":
@@ -366,7 +367,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                         }
                         // Другие данные можно также получить из statusResponse
                     } else {
-                        Log.d(TAG, "Response body is null");
+                        Logger.d(getActivity(), TAG, "Response body is null");
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
                         FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
 
@@ -379,7 +380,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishActivity.messageFondy, amount, context);
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                    Log.d(TAG, "Request failed:");
+                    Logger.d(getActivity(), TAG, "Request failed:");
 
                 }
             }
@@ -391,7 +392,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
                 MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishActivity.messageFondy, amount, context);
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                Log.d(TAG, "Request failed:"+ t.getMessage());
+                Logger.d(getActivity(), TAG, "Request failed:"+ t.getMessage());
             }
         });
 
@@ -399,7 +400,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
     private void getCardTokenWfp(String city) {
 
-        Log.d(TAG, "getCardTokenWfp: ");
+        Logger.d(getActivity(), TAG, "getCardTokenWfp: ");
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
@@ -414,7 +415,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
         // Создайте сервис
         CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
-        Log.d(TAG, "getCardTokenWfp: ");
+        Logger.d(getActivity(), TAG, "getCardTokenWfp: ");
         // Выполните запрос
         Call<CallbackResponseWfp> call = service.handleCallbackWfp(
                 context.getString(R.string.application),
@@ -425,12 +426,12 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
         call.enqueue(new Callback<CallbackResponseWfp>() {
             @Override
             public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
-                Log.d(TAG, "onResponse: " + response.body());
+                Logger.d(getActivity(), TAG, "onResponse: " + response.body());
                 if (response.isSuccessful()) {
                     CallbackResponseWfp callbackResponse = response.body();
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
-                        Log.d(TAG, "onResponse: cards" + cards);
+                        Logger.d(getActivity(), TAG, "onResponse: cards" + cards);
                         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                         database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
                         if (cards != null && !cards.isEmpty()) {
@@ -441,7 +442,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                                 String rectoken = cardInfo.getRectoken(); // Токен карты
                                 String merchant = cardInfo.getMerchant(); // Токен карты
 
-                                Log.d(TAG, "onResponse: card_token: " + rectoken);
+                                Logger.d(getActivity(), TAG, "onResponse: card_token: " + rectoken);
                                 ContentValues cv = new ContentValues();
                                 cv.put("masked_card", masked_card);
                                 cv.put("card_type", card_type);
@@ -476,7 +477,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
-                Log.d(TAG, "onResponse: failure " + t.toString());
+                Logger.d(getActivity(), TAG, "onResponse: failure " + t);
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
@@ -486,7 +487,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {
         super.onDismiss(dialog);
-        Log.d(TAG, "onDismiss: hold " + hold);
+        Logger.d(getActivity(), TAG, "onDismiss: hold " + hold);
     }
 
     @SuppressLint("Range")

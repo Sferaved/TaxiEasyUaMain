@@ -7,7 +7,6 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,12 +23,13 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.log.Logger;
 
 public class MyBottomSheetPhoneStateFragment extends BottomSheetDialogFragment {
 
     AppCompatButton btn_ok, btn_no;
     TextView text_message;
-    private String TAG = "MyBottomSheetPhoneStateFragment";
+    private final String TAG = "MyBottomSheetPhoneStateFragment";
 
     @SuppressLint("MissingInflatedId")
     @Nullable
@@ -85,11 +85,11 @@ public class MyBottomSheetPhoneStateFragment extends BottomSheetDialogFragment {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Log.d(TAG, "onRequestPermissionsResult: " + requestCode);
+        Logger.d(getActivity(), TAG, "onRequestPermissionsResult: " + requestCode);
         if (requestCode == PERMISSION_REQUEST_READ_PHONE_STATE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Разрешение получено, можно выполнять операции, требующие доступа к состоянию телефона
-                Log.d(TAG, "onRequestPermissionsResult: Разрешение получено");
+                Logger.d(getActivity(), TAG, "onRequestPermissionsResult: Разрешение получено");
                 performPhoneStateOperation();
             }
         }
@@ -109,11 +109,11 @@ public class MyBottomSheetPhoneStateFragment extends BottomSheetDialogFragment {
             String imei = telephonyManager.getImei();
             if (imei != null) {
                 // Делаем что-то с IMEI
-                Log.d(TAG, "performPhoneStateOperation: IMEI: " + imei);
+                Logger.d(getActivity(), TAG, "performPhoneStateOperation: IMEI: " + imei);
                 Toast.makeText(requireActivity(), "IMEI: " + imei, Toast.LENGTH_SHORT).show();
             } else {
                 // IMEI недоступен
-                Log.d(TAG, "performPhoneStateOperation: IMEI недоступен");
+                Logger.d(getActivity(), TAG, "performPhoneStateOperation: IMEI недоступен");
                 Toast.makeText(requireActivity(), "IMEI недоступен", Toast.LENGTH_SHORT).show();
             }
         } else {

@@ -4,7 +4,7 @@ import retrofit2.Retrofit;
 
 public class GeocodeApiClient {
 
-    private GeocodeApiService apiService;
+    private final GeocodeApiService apiService;
 
     public GeocodeApiClient() {
         Retrofit retrofit = RetrofitClientInstance.getRetrofitInstance();

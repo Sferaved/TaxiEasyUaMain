@@ -10,7 +10,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +29,7 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.finish.FinishActivity;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 
 import java.util.ArrayList;
@@ -48,7 +48,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
     AppCompatButton button;
     CheckBox checkBox;
     String page;
-    private String TAG = "MyPhoneDialogFragment";
+    private final String TAG = "MyPhoneDialogFragment";
     private Context mContext;
     public MyPhoneDialogFragment(Context context, String page) {
         this.mContext = context;
@@ -86,8 +86,8 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                 } else  {
                     MainActivity.verifyPhone = true;
                     updateRecordsUser(phoneNumber.getText().toString(), mContext);
-                    Log.d(TAG, "setOnClickListener " + phoneNumber.getText().toString());
-                    Log.d(TAG, "setOnClickListener " + page);
+                    Logger.d(getActivity(), TAG, "setOnClickListener " + phoneNumber.getText().toString());
+                    Logger.d(getActivity(), TAG, "setOnClickListener " + page);
                    switch (page) {
                         case "home" :
                             HomeFragment.btn_order.performClick();
@@ -165,7 +165,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         int updCount = database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
                 new String[] { "1" });
-        Log.d(TAG, "updated rows count = " + updCount);
+        Logger.d(getActivity(), TAG, "updated rows count = " + updCount);
 
 
     }

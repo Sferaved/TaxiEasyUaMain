@@ -6,7 +6,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
@@ -27,6 +26,7 @@ import com.taxi.easy.ua.ui.fondy.revers.ReversRequestSent;
 import com.taxi.easy.ua.ui.fondy.revers.SuccessResponseDataRevers;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
+import com.taxi.easy.ua.utils.log.Logger;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -74,7 +74,7 @@ public class ErrorPayActivity extends AppCompatActivity {
         });
     }
     private void getRevers(String orderId, String comment, String amount) {
-        Log.d(TAG, "getRevers: amount" + amount);
+        Logger.d(this, TAG, "getRevers: amount" + amount);
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://pay.fondy.eu/api/")
@@ -105,9 +105,9 @@ public class ErrorPayActivity extends AppCompatActivity {
                 if (response.isSuccessful()) {
                     // Обработка успешного ответа
                     ApiResponseRev<SuccessResponseDataRevers> apiResponse = response.body();
-                    Log.d("TAG1", "JSON Response: " + new Gson().toJson(apiResponse));
+                    Logger.d(getApplicationContext(), TAG, "JSON Response: " + new Gson().toJson(apiResponse));
                     try {
-                        SuccessResponseDataRevers responseBody = response.body().getResponse();;
+                        SuccessResponseDataRevers responseBody = response.body().getResponse();
 
                         // Теперь у вас есть объект ResponseBodyRev для обработки
                         if (responseBody != null) {
@@ -126,8 +126,8 @@ public class ErrorPayActivity extends AppCompatActivity {
                                 startActivity(new Intent(getApplicationContext(), MainActivity.class));
                                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.return_pay_error));
                                 bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-                                Log.d("TAG1", "onResponse: errorResponseMessage " + errorResponseMessage);
-                                Log.d("TAG1", "onResponse: errorResponseCode" + errorResponseCode);
+                                Logger.d(getApplicationContext(), TAG, "onResponse: errorResponseMessage " + errorResponseMessage);
+                                Logger.d(getApplicationContext(), TAG, "onResponse: errorResponseCode" + errorResponseCode);
                                 // Отобразить сообщение об ошибке пользователю
                             } else {
                                 // Обработка других возможных статусов ответа
@@ -143,7 +143,7 @@ public class ErrorPayActivity extends AppCompatActivity {
                         }
                     } catch (JsonSyntaxException e) {
                         // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
-                        Log.e("TAG1", "Error parsing JSON response: " + e.getMessage());
+                        Logger.d(getApplicationContext(), TAG, "Error parsing JSON response: " + e.getMessage());
                         FirebaseCrashlytics.getInstance().recordException(e);
                         startActivity(new Intent(getApplicationContext(), MainActivity.class));
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.return_pay_error));
@@ -152,7 +152,7 @@ public class ErrorPayActivity extends AppCompatActivity {
 
                 } else {
                     // Обработка ошибки запроса
-                    Log.d("TAG", "onResponse: Ошибка запроса, код " + response.code());
+                    Logger.d(getApplicationContext(), TAG, "onResponse: Ошибка запроса, код " + response.code());
                     assert response.errorBody() != null;
                     String errorBody = null;
                     try {
@@ -172,7 +172,7 @@ public class ErrorPayActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<ApiResponseRev<SuccessResponseDataRevers>> call, Throwable t) {
                 // Обработка ошибки сети или другие ошибки
-                Log.d("TAG", "onFailure: Ошибка сети: " + t.getMessage());
+                Logger.d(getApplicationContext(), TAG, "onFailure: Ошибка сети: " + t.getMessage());
                 startActivity(new Intent(getApplicationContext(), MainActivity.class));
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.return_pay_error));
                 bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());

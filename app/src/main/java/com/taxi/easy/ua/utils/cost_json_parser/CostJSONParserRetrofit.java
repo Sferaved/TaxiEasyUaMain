@@ -18,7 +18,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class CostJSONParserRetrofit {
 
     private static final String TAG = "CostJSONParser";
-    private APIService apiService;
+    private final APIService apiService;
 
     public CostJSONParserRetrofit() {
 //        Retrofit retrofit = RetrofitClient.getClient("https://m.easy-order-taxi.site");

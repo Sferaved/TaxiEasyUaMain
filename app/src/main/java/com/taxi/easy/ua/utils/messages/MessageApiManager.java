@@ -6,7 +6,7 @@ import retrofit2.Call;
 
 public class MessageApiManager {
 
-    private MessageApiService messageApiService;
+    private final MessageApiService messageApiService;
 
     public MessageApiManager() {
         messageApiService = ApiClientMessage.getClient().create(MessageApiService.class);

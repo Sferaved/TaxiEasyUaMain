@@ -14,7 +14,6 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.IBinder;
 import androidx.annotation.Nullable;
-import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
@@ -24,6 +23,7 @@ import androidx.core.content.FileProvider;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.utils.download.FileDownloader;
+import com.taxi.easy.ua.utils.log.Logger;
 
 import java.io.File;
 
@@ -123,7 +123,6 @@ public class NotificationHelper {
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent); // Добавление действия при нажатии на всё уведомление
-        ;
 
         // Отображение уведомления
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
@@ -181,11 +180,13 @@ public class NotificationHelper {
         notificationManager.notify(notificationId, builder.build());
     }
     public static class UpdateService extends Service {
+        private static final String TAG = "UpdateService";
+
         @Override
         public int onStartCommand(Intent intent, int flags, int startId) {
             if (intent != null) {
                 String updateUrl = intent.getStringExtra("update_url");
-                Log.d("TAG", "onStartCommand: " +updateUrl);
+                Logger.d(getApplicationContext(), TAG, "onStartCommand: " +updateUrl);
                 if (updateUrl != null) {
                     new Thread(new Runnable() {
                         @Override
@@ -205,7 +206,7 @@ public class NotificationHelper {
                                 @Override
                                 public void onDownloadFailed(Exception e) {
                                     // Обработка ошибки загрузки файла
-                                    Log.d("TAG", "onDownloadFailed: " +  e.toString());
+                                    Logger.d(getApplicationContext(), TAG, "onDownloadFailed: " +  e.toString());
                                     FirebaseCrashlytics.getInstance().recordException(e);
                                 }
                             });

@@ -34,8 +34,10 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 
 import java.net.MalformedURLException;
@@ -68,7 +70,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
     final static long MIN_VALUE = -90;
     final static long MAX_VALUE = 200;
     TextView texViewCost;
-    private String TAG = "MyBottomSheetGeoFragment";
+    private final String TAG = "MyBottomSheetGeoFragment";
     TimeZone timeZone;
     SQLiteDatabase database;
     Activity context;
@@ -177,7 +179,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                 spinner.setSelection(7);
                 break;
             default:
-                spinner.setSelection(0);;
+                spinner.setSelection(0);
         }
 
 
@@ -186,7 +188,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 String tariff_to_server;
-                Log.d(TAG, "onItemSelected: position" + position);
+                Logger.d(getActivity(), TAG, "onItemSelected: position" + position);
                 switch (position) {
                     case 0:
                         tariff_to_server = " ";
@@ -267,7 +269,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                     discountFist = MIN_VALUE;
                 }
                 if(discountFist > 0) {
-                    discount.setText("+" + String.valueOf(discountFist));
+                    discount.setText("+" + discountFist);
                 } else {
                     discount.setText( String.valueOf(discountFist));
                 }
@@ -282,7 +284,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                     discountFist = MAX_VALUE;
                 }
                 if(discountFist > 0) {
-                    discount.setText("+" + String.valueOf(discountFist));
+                    discount.setText("+" + discountFist);
                 } else {
                     discount.setText( String.valueOf(discountFist));
                 }
@@ -399,8 +401,8 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
         String time = stringList.get(1);
         String date = stringList.get(3);
-        Log.d(TAG, "onPause:time  " + time);
-        Log.d(TAG, "onPause:date  " + date);
+        Logger.d(getActivity(), TAG, "onPause:time  " + time);
+        Logger.d(getActivity(), TAG, "onPause:date  " + date);
         if(!time.equals("no_time")) {
             if(date.equals("no_date")) {
                 LocalDate currentDate = LocalDate.now();
@@ -429,8 +431,8 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             LocalDateTime dateTimeFromString = LocalDateTime.parse(date + " " + time, formatter);
 
             LocalDateTime currentDateTimeInKyiv = LocalDateTime.now(ZoneId.of("Europe/Kiev"));
-            Log.d(TAG, "onPause:dateTimeFromString  " + dateTimeFromString);
-            Log.d(TAG, "onPause:currentDateTimeInKyiv  " + currentDateTimeInKyiv);
+            Logger.d(getActivity(), TAG, "onPause:dateTimeFromString  " + dateTimeFromString);
+            Logger.d(getActivity(), TAG, "onPause:currentDateTimeInKyiv  " + currentDateTimeInKyiv);
             // Сравнение дат и времени
             if (dateTimeFromString.isBefore(currentDateTimeInKyiv)) {
                 Toast.makeText(context, context.getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
@@ -482,7 +484,17 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
         ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
-        Log.d(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ url);
+        Context context = getActivity() != null ? getActivity().getApplicationContext() : MyApplication.getContext();
+        if (context != null) {
+            try {
+                Logger.d(context, TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ url);
+            } catch (NullPointerException e) {
+                Log.e(TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ url);
+            }
+        } else {
+            Log.e(TAG, "Context is null. Cannot log messages.");
+        }
+
         parser.sendURL(url, new Callback<Map<String, String>>() {
             @Override
             public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
@@ -490,8 +502,19 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
 
                 assert sendUrl != null;
                 String orderC = sendUrl.get("order_cost");
-                Log.d(TAG, "changeCost: sendUrl " + sendUrl);
-                Log.d(TAG, "changeCost: orderC " + orderC);
+                Context context = getActivity() != null ? getActivity().getApplicationContext() : MyApplication.getContext();
+                if (context != null) {
+                    try {
+                        Logger.d(context, TAG, "changeCost: sendUrl " + sendUrl);
+                        Logger.d(context, TAG, "changeCost: orderC " + orderC);
+                    } catch (NullPointerException e) {
+                        Log.e(TAG, "Error logging message: " + e.getMessage());
+                    }
+                } else {
+                    Log.e(TAG, "Context is null. Cannot log messages.");
+                }
+
+
 
 
                 assert orderC != null;
@@ -556,10 +579,17 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
 
     private void updateAddCost(String addCost) {
         ContentValues cv = new ContentValues();
-        Log.d("TAG", "updateAddCost: addCost" + addCost);
+
+        Context context = getActivity() != null ? getActivity().getApplicationContext() : MyApplication.getContext();
+        if (context != null) {
+            Logger.d(context, TAG, "updateAddCost: addCost" + addCost);
+        } else {
+            Log.e(TAG, "Context is null, cannot write log.");
+        }
         cv.put("addCost", addCost);
 
         // обновляем по id
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
@@ -569,8 +599,16 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
 
     @SuppressLint("Range")
     public String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
-        Log.d("TAG", "getTaxiUrlSearchMarkers: " + urlAPI);
 
+        if (context != null) {
+            try {
+                Logger.d(getActivity(), TAG, "getTaxiUrlSearchMarkers: " + urlAPI);
+            } catch (NullPointerException e) {
+                Log.e(TAG, "getTaxiUrlSearchMarkers: " + e);
+            }
+        } else {
+            Log.e(TAG, "Context is null. Cannot log messages.");
+        }
         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor cursor = database.rawQuery(query, null);
@@ -670,7 +708,10 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                 }
             }
             result = String.join("*", servicesChecked);
-            Log.d("TAG", "getTaxiUrlSearchGeo result:" + result + "/");
+            if (context != null) {
+                Logger.d(context, TAG, "getTaxiUrlSearchGeo result:" + result + "/");
+            }
+
         } else {
             result = "no_extra_charge_codes";
         }
@@ -721,7 +762,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
     private void updateSelectedTime() {
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
         String formattedTime = sdf.format(calendar.getTime());
-        Log.d(TAG, "updateSelectedTime:formattedTime " + formattedTime);
+        Logger.d(getActivity(), TAG, "updateSelectedTime:formattedTime " + formattedTime);
         tvSelectedTime.setText(formattedTime);
     }
     @SuppressLint("Range")

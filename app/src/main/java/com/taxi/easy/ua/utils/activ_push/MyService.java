@@ -15,11 +15,11 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import androidx.annotation.Nullable;
-import android.util.Log;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
+import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.R;
 
@@ -32,6 +32,7 @@ public class MyService extends Service {
     private static final String TAG = "MyService";
     private static final String CHANNEL_ID = "ForegroundServiceChannel";
 
+    @SuppressLint("ForegroundServiceType")
     @Override
     public void onCreate() {
         super.onCreate();
@@ -46,7 +47,7 @@ public class MyService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "onStartCommand: ");
+        Logger.d(getApplicationContext(), TAG, "onStartCommand: ");
 
         doWork();
         return START_STICKY;
@@ -85,7 +86,7 @@ public class MyService extends Service {
             public void run() {
                 // Ваш код, который нужно выполнить через каждые 24 часа
                 boolean isUserActive = checkUserActivity(context);
-                Log.d(TAG, "onReceive: isUserActive " + isUserActive);
+                Logger.d(context, TAG, "onReceive: isUserActive " + isUserActive);
 
                 if (!isUserActive) {
                     // Если пользователь не активен, отправьте уведомление
@@ -104,13 +105,13 @@ public class MyService extends Service {
     private boolean checkUserActivity(Context context) {
         // Получение состояния приложения (в переднем плане или фоне)
         boolean isAppInForeground = ((MyApplication) context.getApplicationContext()).isAppInForeground();
-        Log.d(TAG, "checkUserActivity " + isAppInForeground);
+        Logger.d(context, TAG, "checkUserActivity " + isAppInForeground);
 
         long lastActivityTimestamp = getLastActivityTimestamp(context);
         long currentTime = System.currentTimeMillis();
 
-        Log.d(TAG, "lastActivity: " + timeFormatter(lastActivityTimestamp));
-        Log.d(TAG, "currentTime: " + timeFormatter(currentTime));
+        Logger.d(context, TAG, "lastActivity: " + timeFormatter(lastActivityTimestamp));
+        Logger.d(context, TAG, "currentTime: " + timeFormatter(currentTime));
 
         // Если приложение в переднем плане, считаем его активным
         if (isAppInForeground) {
@@ -121,7 +122,7 @@ public class MyService extends Service {
         // long timeToPush = 2 * 60 * 1000;
 
         boolean isActive = (currentTime - lastActivityTimestamp) <= (timeToPush);
-        Log.d(TAG, "checkUserActivity: " + isActive);
+        Logger.d(context, TAG, "checkUserActivity: " + isActive);
         return isActive;
     }
 
@@ -134,7 +135,7 @@ public class MyService extends Service {
     private void sendNotification(Context context) {
         long currentTime = System.currentTimeMillis();
 
-        Log.d(TAG, "lastActivity: " + timeFormatter(currentTime));
+        Logger.d(context, TAG, "lastActivity: " + timeFormatter(currentTime));
 
         // Ваш текст и заголовок уведомления
         String title = timeFormatter(currentTime)+ " " + context.getString(R.string.new_message) + " " + context.getString(R.string.app_name);
@@ -159,7 +160,7 @@ public class MyService extends Service {
                 // Получаем текущее время и дату
                 @SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 String currentDateandTime = sdf.format(new Date());
-                Log.d(TAG, "Current date and time: " + currentDateandTime);
+                Logger.d(context, TAG, "Current date and time: " + currentDateandTime);
 
                 // Создаем объект ContentValues для передачи данных в базу данных
                 ContentValues values = new ContentValues();
@@ -168,9 +169,9 @@ public class MyService extends Service {
                 // Пытаемся вставить новую запись. Если запись уже существует, выполняется обновление.
                 int rowsAffected = database.update(MainActivity.TABLE_LAST_PUSH, values, "ROWID=1", null);
                 if (rowsAffected > 0) {
-                    Log.d(TAG, "Update successful");
+                    Logger.d(context, TAG, "Update successful");
                 } else {
-                    Log.d(TAG, "Error updating");
+                    Logger.d(context, TAG, "Error updating");
                 }
 
             } catch (Exception e) {
@@ -202,7 +203,7 @@ public class MyService extends Service {
             }
             cursor.close();
         }
-        Log.d(TAG, "getLastActivityTimestamp: " + lastActivityTimestamp);
+        Logger.d(context, TAG, "getLastActivityTimestamp: " + lastActivityTimestamp);
         database.close();
         return lastActivityTimestamp;
     }

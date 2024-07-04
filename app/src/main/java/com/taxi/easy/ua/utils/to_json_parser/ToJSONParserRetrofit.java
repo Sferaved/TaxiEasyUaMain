@@ -19,7 +19,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class ToJSONParserRetrofit {
 
 
-    private APIService apiService;
+    private final APIService apiService;
 
     public ToJSONParserRetrofit() {
         Gson gson = new GsonBuilder()

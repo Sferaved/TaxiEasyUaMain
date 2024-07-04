@@ -10,7 +10,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,12 +22,14 @@ import androidx.appcompat.widget.AppCompatButton;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 
 
 public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
+    private static final String TAG = "MyBottomSheetErrorFragment";
     TextView textViewInfo;
     AppCompatButton btn_help, btn_ok;
     String errorMessage;
@@ -63,7 +64,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         btn_ok = view.findViewById(R.id.btn_ok);
 
         textViewInfo = view.findViewById(R.id.textViewInfo);
-        Log.d("TAG", "onCreateView:errorMessage " + errorMessage);
+        Logger.d(getActivity(), TAG, "onCreateView:errorMessage " + errorMessage);
         if (errorMessage != null && !errorMessage.equals("null")) {
             textViewInfo.setText(errorMessage);
             if (errorMessage.equals(getString(R.string.verify_internet))

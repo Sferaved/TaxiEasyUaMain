@@ -20,7 +20,6 @@ import android.os.Looper;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
@@ -62,6 +61,7 @@ import com.taxi.easy.ua.utils.KeyboardUtils;
 import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.connect.ConnectionSpeedTester;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.log.Logger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -121,7 +121,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
     private String end;
     ArrayAdapter<String> addressAdapter;
     private boolean extraExit;
-    private long timeout = 50;
+    private final long timeout = 50;
     LocationManager locationManager;
     private final int LOCATION_PERMISSION_REQUEST_CODE = 123;
     private boolean location_update;
@@ -327,7 +327,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                                 || ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
 
 
-                        Log.d(TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
+                        Logger.d(getApplicationContext(), TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
                         // GPS включен, выполните ваш код здесь
                         if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
                             Toast.makeText(getApplicationContext(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
@@ -571,7 +571,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
     }
     @SuppressLint("Range")
     public String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
-        Log.d(TAG, "getTaxiUrlSearchMarkers: " + urlAPI);
+        Logger.d(getApplicationContext(), TAG, "getTaxiUrlSearchMarkers: " + urlAPI);
 
         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -587,7 +587,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
         double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
         String start = cursor.getString(cursor.getColumnIndex("start"));
         String finish = cursor.getString(cursor.getColumnIndex("finish"));
-        Log.d(TAG, "getTaxiUrlSearchMarkers: start " + start);
+        Logger.d(getApplicationContext(), TAG, "getTaxiUrlSearchMarkers: start " + start);
         // Заменяем символ '/' в строках
         start = start.replace("/", "|");
         finish = finish.replace("/", "|");
@@ -670,7 +670,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 }
             }
             result = String.join("*", servicesChecked);
-            Log.d(TAG, "getTaxiUrlSearchGeo result:" + result + "/");
+            Logger.d(getApplicationContext(), TAG, "getTaxiUrlSearchGeo result:" + result + "/");
         } else {
             result = "no_extra_charge_codes";
         }
@@ -693,7 +693,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
         inputMethodManager.hideSoftInputFromWindow(Objects.requireNonNull(getCurrentFocus()).getWindowToken(), 0);
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getApplicationContext());
-        Log.d(TAG, "firstLocation: ");
+        Logger.d(getApplicationContext(), TAG, "firstLocation: ");
         btn_change.setText(R.string.cancel_gps);
 
         btn_change.setOnClickListener(new View.OnClickListener() {
@@ -703,7 +703,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 //                btn_clear_from.performClick();
                 if (fusedLocationProviderClient != null && locationCallback != null) {
                     fusedLocationProviderClient.removeLocationUpdates(locationCallback);
-                    Log.d(TAG, "Location updates cancelled");
+                    Logger.d(getApplicationContext(), TAG, "Location updates cancelled");
                     // Дополнительные действия, которые вы хотите выполнить при отмене геопоиска
                     // Например, изменение текста на кнопке или другие обновления интерфейса
                     btn_change.setText(R.string.change); // Предположим, что текст на кнопке изменяется на "Start GPS"
@@ -716,7 +716,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                         if (locationManager != null) {
                             if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                                Log.d(TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
+                                Logger.d(getApplicationContext(), TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
                                 if(loadPermissionRequestCount() >= 3  && !location_update) {
                                     MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment(getString(R.string.location_on));
                                     bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
@@ -780,7 +780,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                 // Обработка полученных местоположений
                 List<Location> locations = locationResult.getLocations();
-                Log.d(TAG, "onLocationResult: locations 222222" + locations);
+                Logger.d(getApplicationContext(), TAG, "onLocationResult: locations 222222" + locations);
 
                 if (!locations.isEmpty()) {
                     Location firstLocation = locations.get(0);
@@ -800,7 +800,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                         FromJSONParser parser = new FromJSONParser(urlFrom);
                         Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
                         assert sendUrlFrom != null;
-                        String FromAdressString = (String) sendUrlFrom.get("route_address_from");
+                        String FromAdressString = sendUrlFrom.get("route_address_from");
                         if (FromAdressString != null) {
                             if (FromAdressString.contains("Точка на карте")) {
                                 FromAdressString = getString(R.string.startPoint);
@@ -937,7 +937,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
     }
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Log.d(TAG, "onRequestPermissionsResult: " + requestCode);
+        Logger.d(getApplicationContext(), TAG, "onRequestPermissionsResult: " + requestCode);
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
             if (permissions.length > 0) {
                 SharedPreferences.Editor editor = MainActivity.sharedPreferences.edit();
@@ -954,7 +954,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                 // Сохранение обновленного значения счетчика
                 savePermissionRequestCount(permissionRequestCount);
-                Log.d("loadPermission", "permissionRequestCount: " + permissionRequestCount);
+                Logger.d(getApplicationContext(), TAG, "permissionRequestCount: " + permissionRequestCount);
                 // Далее вы можете загрузить сохраненные разрешения и их результаты в любом месте вашего приложения,
                 // используя тот же самый объект SharedPreferences
             }
@@ -1042,11 +1042,11 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
                 String inputString = charSequence.toString();
                 int charCount = inputString.length();
-                Log.d(TAG, "onTextChanged: " + inputString);
+                Logger.d(getApplicationContext(), TAG, "onTextChanged: " + inputString);
                 if (charCount > 2) {
-                    Log.d(TAG, "onTextChanged:startPoint " + startPoint);
-                    Log.d(TAG, "onTextChanged:fromEditAddress.getText().toString() " + fromEditAddress.getText().toString());
-                    Log.d(TAG, "onTextChanged:MainActivity.countryState " + MainActivity.countryState);
+                    Logger.d(getApplicationContext(), TAG, "onTextChanged:startPoint " + startPoint);
+                    Logger.d(getApplicationContext(), TAG, "onTextChanged:fromEditAddress.getText().toString() " + fromEditAddress.getText().toString());
+                    Logger.d(getApplicationContext(), TAG, "onTextChanged:MainActivity.countryState " + MainActivity.countryState);
                     if (startPoint == null) {
                         if(MainActivity.countryState.equals("UA")) {
                             performAddressSearch(inputString, "start");
@@ -1150,7 +1150,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 verifyBuildingFinish = false;
             }
             String modifiedText = "";
-            Log.d(TAG, "performAddressSearch:modifiedText " + modifiedText);
+            Logger.d(getApplicationContext(), TAG, "performAddressSearch:modifiedText " + modifiedText);
             if (!inputText.substring(3).contains("\f")) {
                 modifiedText = inputText.replaceAll("[\f\t]", " ");
                 url = url
@@ -1177,7 +1177,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                         + "&text=" + modifiedText + "&key=" + MainActivity.apiKey;
 
             } else {
-                Log.d(TAG, "performAddressSearch:positionChecked  " + positionChecked);
+                Logger.d(getApplicationContext(), TAG, "performAddressSearch:positionChecked  " + positionChecked);
                 String number = numbers(modifiedText);
 
                 if (positionChecked != 0) {
@@ -1192,13 +1192,13 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             Request request = new Request.Builder()
                     .url(url)
                     .build();
-            Log.d(TAG, "performAddressSearch: " + url);
+            Logger.d(getApplicationContext(), TAG, "performAddressSearch: " + url);
             client.newCall(request).enqueue(new okhttp3.Callback() {
                 @Override
                 public void onResponse(@NonNull okhttp3.Call call, @NonNull okhttp3.Response response) {
                     try {
                         String responseData = response.body().string();
-                        Log.d(TAG, "onResponse: " + responseData);
+                        Logger.d(getApplicationContext(), TAG, "onResponse: " + responseData);
                         processAddressData(responseData, point);
                     } catch (Exception e) {
                         FirebaseCrashlytics.getInstance().recordException(e);
@@ -1218,11 +1218,11 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
     }
 
     private String inputTextBuild() {
-        Log.d(TAG, "inputTextBuild: " + positionChecked);
+        Logger.d(getApplicationContext(), TAG, "inputTextBuild: " + positionChecked);
         String result = "";
         if(positionChecked != 0){
             String[] selectedAddress = addresses.get(positionChecked);
-            Log.d(TAG, "inputTextBuild: " + Arrays.toString(selectedAddress));
+            Logger.d(getApplicationContext(), TAG, "inputTextBuild: " + Arrays.toString(selectedAddress));
             // Получение элементов отдельно
             String name = selectedAddress[1];
             zone = selectedAddress[2];
@@ -1240,20 +1240,20 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
         extraExit = false;
         try {
             JSONObject jsonResponse = new JSONObject(responseData);
-            Log.d(TAG, "processAddressData:jsonResponse " + jsonResponse);
+            Logger.d(getApplicationContext(), TAG, "processAddressData:jsonResponse " + jsonResponse);
 
             if (jsonResponse.has("features")) {
                 addresses = new ArrayList<>();
                 coordinatesList = new ArrayList<>(); // Список для хранения координат
                 JSONArray features = jsonResponse.getJSONArray("features");
 
-                Log.d(TAG, "processAddressData: features" + features.length());
+                Logger.d(getApplicationContext(), TAG, "processAddressData: features" + features.length());
 
                 // В массиве есть элементы, обрабатываем результат
                 // Ваши дополнительные действия с features
                 for (int i = 0; i < features.length(); i++) {
                     JSONObject properties = features.getJSONObject(i).getJSONObject("properties");
-//                    Log.d(TAG, "processAddressData:properties " + i + " - " + properties);
+//                    Logger.d(getApplicationContext(), TAG, "processAddressData:properties " + i + " - " + properties);
                     JSONObject geoCentroid = features.getJSONObject(i).getJSONObject("geo_centroid");
 
                     if (properties.getString("country_code").equals("ua")) {
@@ -1368,13 +1368,13 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                                 city = citySearch.toLowerCase();
 
                                 if (settlement.contains(city)) {
-                                    Log.d(TAG, "processAddressData: properties ййй" + properties);
+                                    Logger.d(getApplicationContext(), TAG, "processAddressData: properties ййй" + properties);
                                     double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
                                     double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
                                     if (properties.has("zone")) {
                                         // Получение элементов отдельно
 
-                                        Log.d(TAG, "processAddressData: zone" + zone);
+                                        Logger.d(getApplicationContext(), TAG, "processAddressData: zone" + zone);
 
 
                                             address = String.format("%s %s %s %s %s %s\t",
@@ -1412,13 +1412,13 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                                     }
 
                                 } else if (citySearch.equals("FC")) {
-                                    Log.d(TAG, "processAddressData: properties ййй 222" + properties);
+                                    Logger.d(getApplicationContext(), TAG, "processAddressData: properties ййй 222" + properties);
                                     double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
                                     double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
                                     if (properties.has("zone")) {
                                         // Получение элементов отдельно
 
-                                        Log.d(TAG, "processAddressData: zone" + zone);
+                                        Logger.d(getApplicationContext(), TAG, "processAddressData: zone" + zone);
 
                                         address = String.format("%s %s %s %s %s %s\t",
                                                 properties.getString("street_type"),
@@ -1458,7 +1458,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                                 // Проверка по Киевской области
 
                                 if (citySearch.equals("Київ") || citySearch.equals("Киев")) {
-                                    Log.d(TAG, "processAddressData:citySearch " + citySearch);
+                                    Logger.d(getApplicationContext(), TAG, "processAddressData:citySearch " + citySearch);
                                     if (checkWordInArray(properties.getString("settlement"), kyivRegionArr)) {
                                         address = String.format("%s %s %s %s %s\t",
                                                 properties.getString("street_type"),
@@ -1467,7 +1467,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                                                 properties.getString("settlement_type"),
                                                 properties.getString("settlement"));
 
-                                        Log.d(TAG, "processAddressData: address" + address);
+                                        Logger.d(getApplicationContext(), TAG, "processAddressData: address" + address);
                                         double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
                                         double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
 
@@ -1491,14 +1491,14 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                                 city = citySearch.toLowerCase();
 
                                 if (settlement.contains(city)) {
-                                    Log.d(TAG, "poi_railway_station" + properties);
+                                    Logger.d(getApplicationContext(), TAG, "poi_railway_station" + properties);
                                     address = String.format("%s %s\t",
                                             properties.getString("vitrine"),
                                             properties.getString("address"));
 
                                     double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
                                     double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
-                                    Log.d(TAG, "processAddressData: latitude longitude" + latitude + " " + longitude);
+                                    Logger.d(getApplicationContext(), TAG, "processAddressData: latitude longitude" + latitude + " " + longitude);
 
                                     addAddressOne(
                                             address,
@@ -1508,14 +1508,14 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                                             longitude,
                                             latitude);
                                 } else if (citySearch.equals("FC")) {
-                                    Log.d(TAG, "poi_railway_station" + properties);
+                                    Logger.d(getApplicationContext(), TAG, "poi_railway_station" + properties);
                                     address = String.format("%s %s\t",
                                             properties.getString("vitrine"),
                                             properties.getString("address"));
 
                                     double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
                                     double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
-                                    Log.d(TAG, "processAddressData: latitude longitude" + latitude + " " + longitude);
+                                    Logger.d(getApplicationContext(), TAG, "processAddressData: latitude longitude" + latitude + " " + longitude);
 
                                     addAddressOne(
                                             address,
@@ -1617,13 +1617,13 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                     if (!point.equals("finish")) {
 //                        String startPoint = fromEditAddress.getText().toString().replaceAll("[\\d\\s]+$", "")+ ", " + getString(R.string.city_loc) + " " + city;
                         String startPoint = fromEditAddress.getText().toString().replaceAll("[\\d\\s]+$", "")+ ", " + getString(R.string.city_loc);
-                        Log.d(TAG, "processAddressData:startPoint " + startPoint);
+                        Logger.d(getApplicationContext(), TAG, "processAddressData:startPoint " + startPoint);
                         settings.add(startPoint);
                         settings.add(finish);
                         VisicomFragment.geoText.setText(startPoint);
                     } else  {
                         String toPoint = toEditAddress.getText().toString().replaceAll("[\\d\\s]+$", "") + ", " + getString(R.string.city_loc) + " " + city;
-                        Log.d(TAG, "processAddressData:startPoint " + toPoint);
+                        Logger.d(getApplicationContext(), TAG, "processAddressData:startPoint " + toPoint);
                         settings.add(start);
                         settings.add(toPoint);
                         VisicomFragment.geoText.setText(toPoint);
@@ -1709,7 +1709,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                                 if (properties.has("zone")) {
                                     // Получение элементов отдельно
 
-                                    Log.d(TAG, "processAddressData: zone" + zone);
+                                    Logger.d(getApplicationContext(), TAG, "processAddressData: zone" + zone);
                                     if (properties.getString("zone").equals(zone)) {
                                         address = String.format("%s %s %s %s %s %s\t",
 
@@ -1746,12 +1746,12 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                                 }
 
 
-                                Log.d(TAG, "processAddressData: latitude longitude" + latitude + " " + longitude);
+                                Logger.d(getApplicationContext(), TAG, "processAddressData: latitude longitude" + latitude + " " + longitude);
                             }
                             // Проверка по Киевской области
 
                             if (citySearch.equals("Київ") || citySearch.equals("Киев")) {
-                                Log.d(TAG, "processAddressData:citySearch " + citySearch);
+                                Logger.d(getApplicationContext(), TAG, "processAddressData:citySearch " + citySearch);
                                 if (checkWordInArray(properties.getString("settlement"), kyivRegionArr)) {
                                     address = String.format("%s %s %s %s %s\t",
                                             properties.getString("street_type"),
@@ -1798,7 +1798,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
         } catch (JSONException e) {
             FirebaseCrashlytics.getInstance().recordException(e);
         }
-        Log.d(TAG, "processAddressData: 44444444");
+        Logger.d(getApplicationContext(), TAG, "processAddressData: 44444444");
         if (addresses.size() != 0) {
             new Handler(Looper.getMainLooper()).post(() -> {
                 List<String> addressesList = new ArrayList<>();
@@ -1824,7 +1824,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 addressListView.setItemChecked(0, true);
 
                 addressListView.setOnItemClickListener((parent, viewC, position, id) -> {
-                    Log.d(TAG, "processAddressData:position3333 " + position);
+                    Logger.d(getApplicationContext(), TAG, "processAddressData:position3333 " + position);
                     positionChecked = position;
                     startMarker = "ok";
                     finishMarker = "no";
@@ -1856,7 +1856,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                         double[] coordinates = coordinatesList.get(position);
 
                         if (point.equals("start")) {
-                            Log.d(TAG, "processAddressData:coordinates " + coordinates.toString());
+                            Logger.d(getApplicationContext(), TAG, "processAddressData:coordinates " + coordinates.toString());
                             startPoint = addressesList.get(position);
                             fromEditAddress.setText(startPoint);
                             fromEditAddress.setSelection(startPoint.length());
@@ -1865,7 +1865,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                             settings.add(Double.toString(coordinates[1]));
                             settings.add(Double.toString(coordinates[0]));
-                            Log.d(TAG, "processAddressData:settings ddd " + settings);
+                            Logger.d(getApplicationContext(), TAG, "processAddressData:settings ddd " + settings);
 
                             String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
                             SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -1881,7 +1881,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                             cursor.close();
                             database.close();
-                            Log.d(TAG, "processAddressData:settings finish " + finish);
+                            Logger.d(getApplicationContext(), TAG, "processAddressData:settings finish " + finish);
 
 
                             if(finish.equals(getString(R.string.on_city_tv))) {
@@ -1897,11 +1897,11 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                                 settings.add(addressesList.get(position));
                                 settings.add(finish);
                             }
-                            Log.d(TAG, "processAddressData:settings " + settings);
+                            Logger.d(getApplicationContext(), TAG, "processAddressData:settings " + settings);
                             updateRoutMarker(settings);
                             updateMyPosition(coordinates[1], coordinates[0], startPoint, getApplicationContext());
                             VisicomFragment.geoText.setText(startPoint);
-                            Log.d(TAG, "processAddressData: startPoint 1" + startPoint);
+                            Logger.d(getApplicationContext(), TAG, "processAddressData: startPoint 1" + startPoint);
                             if(startPoint.contains("\t")) {
                                 new Handler().postDelayed(new Runnable() {
                                     @Override
@@ -1927,7 +1927,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                             VisicomFragment.textViewTo.setText(addressesList.get(position));
                             VisicomFragment.btn_clear_to.setVisibility(View.INVISIBLE);
-                            Log.d(TAG, "processAddressData: ");
+                            Logger.d(getApplicationContext(), TAG, "processAddressData: ");
 //                                            if (!toEditAddress.getText().toString().equals("")) {
                             String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
                             SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -1947,7 +1947,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                             settings.add(Double.toString(originLongitude));
                             settings.add(Double.toString(coordinates[1]));
                             settings.add(Double.toString(coordinates[0]));
-                            Log.d(TAG, "processAddressData:fromEditAddress.getText().toString() " + fromEditAddress.getText().toString());
+                            Logger.d(getApplicationContext(), TAG, "processAddressData:fromEditAddress.getText().toString() " + fromEditAddress.getText().toString());
 
                             settings.add(VisicomFragment.geoText.getText().toString());
                             settings.add(addressesList.get(position));
@@ -1955,7 +1955,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 //                                            }
 
 
-                            Log.d(TAG, "settings: " + settings);
+                            Logger.d(getApplicationContext(), TAG, "settings: " + settings);
                             toEditAddress.setSelection(addressesList.get(position).length());
                             if(addressesList.get(position).contains("\t")) {
                                 new Handler().postDelayed(new Runnable() {
@@ -1974,7 +1974,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                     }
 
                     addressListView.setVisibility(View.INVISIBLE);
-                    Log.d(TAG, "processAddressData:222222 " + addressesList.get(position));
+                    Logger.d(getApplicationContext(), TAG, "processAddressData:222222 " + addressesList.get(position));
 
 
                 });
@@ -1994,7 +1994,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 break;
             }
         }
-        Log.d(TAG, "checkWordInArray: result" + result);
+        Logger.d(getApplicationContext(), TAG, "checkWordInArray: result" + result);
         return result;
     }
 
@@ -2036,13 +2036,13 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             numbersAfterComma = matcher.group(1);
 
             // Вывод чисел
-            Log.d(TAG, "numbers: " + numbersAfterComma);
+            Logger.d(getApplicationContext(), TAG, "numbers: " + numbersAfterComma);
 
         }
         return numbersAfterComma;
     }
     private void updateRoutMarker(List<String> settings) {
-        Log.d(TAG, "updateRoutMarker: " + settings.toString());
+        Logger.d(getApplicationContext(), TAG, "updateRoutMarker: " + settings.toString());
         ContentValues cv = new ContentValues();
 
         cv.put("startLat", Double.parseDouble(settings.get(0)));
@@ -2108,7 +2108,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                         double fromLatitude = Double.parseDouble(c.getString(c.getColumnIndexOrThrow("from_lat")));
                         coordinatesList.add(new double[]{fromLongitude, fromLatitude});
                     }
-                    Log.d(TAG, "oldAddresses: toStreet " + toStreet);
+                    Logger.d(getApplicationContext(), TAG, "oldAddresses: toStreet " + toStreet);
                     // Проверяем, есть ли уже такая запись в множестве
                      if (!toStreet.equals("по місту") && !toStreet.equals("по городу")) {
 
@@ -2138,7 +2138,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             // Выбираем значение 'address' из массива и добавляем его в addressesList
             addressesList.add(addressArray[0]);
         }
-        Log.d(TAG, "onCreate: " + addressesList.toString());
+        Logger.d(getApplicationContext(), TAG, "onCreate: " + addressesList);
         addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
         addressListView.setVisibility(View.VISIBLE);
         addressListView.setAdapter(addressAdapter);
@@ -2202,7 +2202,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                         cursor.close();
                         database.close();
-                        Log.d(TAG, "processAddressData:settings finish " + finish);
+                        Logger.d(getApplicationContext(), TAG, "processAddressData:settings finish " + finish);
 
                         if(finish.equals(getString(R.string.on_city_tv))) {
                             settings.add(Double.toString(coordinates[1]));
@@ -2218,7 +2218,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                         updateRoutMarker(settings);
                         updateMyPosition(coordinates[1], coordinates[0], startPoint, getApplicationContext());
                         VisicomFragment.geoText.setText(startPoint);
-                        Log.d(TAG, "processAddressData: startPoint 2" + startPoint);
+                        Logger.d(getApplicationContext(), TAG, "processAddressData: startPoint 2" + startPoint);
                         if(startPoint.contains("\t")) {
                               new Handler().postDelayed(new Runnable() {
                                 @Override
@@ -2239,9 +2239,9 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                         List<String> settings = new ArrayList<>();
 
                         VisicomFragment.textViewTo.setText(addressesList.get(position));
-                        Log.d(TAG, "oldAddresses: " + addressesList.get(position));
+                        Logger.d(getApplicationContext(), TAG, "oldAddresses: " + addressesList.get(position));
                         VisicomFragment.btn_clear_to.setVisibility(View.INVISIBLE);
-                        Log.d(TAG, "oldAddresses:2222 "+ VisicomFragment.geoText.getText().toString());
+                        Logger.d(getApplicationContext(), TAG, "oldAddresses:2222 "+ VisicomFragment.geoText.getText().toString());
                         if (!VisicomFragment.geoText.getText().toString().equals("")) {
                             String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
                             SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -2268,7 +2268,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                         }
 
 
-                        Log.d(TAG, "settings: " + settings);
+                        Logger.d(getApplicationContext(), TAG, "settings: " + settings);
                         toEditAddress.setSelection(addressesList.get(position).length());
                         if(toEditAddress.getText().toString().contains("\t")) {
                             new Handler().postDelayed(new Runnable() {
@@ -2316,7 +2316,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 //    }
 //    @Override
 //    public void onMapboxKeyReceived(String key) {
-//        Log.d(TAG, "onMapboxKeyReceived: " + key);
+//        Logger.d(getApplicationContext(), TAG, "onMapboxKeyReceived: " + key);
 //        apiKeyMapBox = key;
 //    }
 //
@@ -2353,7 +2353,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 //    }
 //    @Override
 //    public void onVisicomKeyReceived(String key) {
-//        Log.d(TAG, "onVisicomKeyReceived: " + key);
+//        Logger.d(getApplicationContext(), TAG, "onVisicomKeyReceived: " + key);
 //        apiKey = key;
 //    }
 //
@@ -2410,8 +2410,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 long endTime = System.currentTimeMillis();
                 connectionTime[0] = endTime - startTime;
 
-                Log.d("SpeedTest", "Скорость подключения: " + speed + " байт/мс");
-                Log.d("SpeedTest", "Скорость подключения: " + connectionTime[0]);
+                Logger.d(getApplicationContext(), TAG, "Скорость подключения: " + speed + " байт/мс");
+                Logger.d(getApplicationContext(), TAG, "Скорость подключения: " + connectionTime[0]);
 
                 // Здесь вы можете обновить ваш интерфейс или выполнить другие действия
 
@@ -2422,7 +2422,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
             @Override
             public void onSpeedTestFailed(String errorMessage) {
-                Log.e("SpeedTest", errorMessage);
+                Logger.d(getApplicationContext(), TAG, errorMessage);
                 // Обработка ошибок, например, вывод сообщения пользователю
                 connectionTime[0] = -1;  // Помечаем время подключения как ошибочное
 
@@ -2447,7 +2447,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                 } else {
                     // Обработка ошибки
-                    Log.d(TAG, "Error: " + response.code() + " " + response.message());
+                    Logger.d(getApplicationContext(), TAG, "Error: " + response.code() + " " + response.message());
 //                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
 //                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 }
@@ -2486,7 +2486,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             }
 
         } else {
-            Log.d(TAG, "No results found.");
+            Logger.d(getApplicationContext(), TAG, "No results found.");
         }
         String newAddress = getString(R.string.address_on_map);
 
@@ -2590,7 +2590,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                                 cursor.close();
                                 database.close();
-                                Log.d(TAG, "processAddressData:settings finish " + finish);
+                                Logger.d(getApplicationContext(), TAG, "processAddressData:settings finish " + finish);
 
 
                                 if(finish.equals(getString(R.string.on_city_tv))) {
@@ -2607,7 +2607,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                                 updateRoutMarker(settings);
                                 updateMyPosition(coordinates[1], coordinates[0], startPoint, getApplicationContext());
                                 VisicomFragment.geoText.setText(startPoint);
-                                Log.d(TAG, "processAddressData: startPoint 3" + startPoint);
+                                Logger.d(getApplicationContext(), TAG, "processAddressData: startPoint 3" + startPoint);
                                 if(startPoint.contains("\t")) {
                                     new Handler().postDelayed(new Runnable() {
                                         @Override
@@ -2643,7 +2643,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                             cursor.close();
                             database.close();
-                            Log.d(TAG, "processAddressData:settings finish " + finish);
+                            Logger.d(getApplicationContext(), TAG, "processAddressData:settings finish " + finish);
 
 
                             if(!finish.equals(getString(R.string.on_city_tv))) {
@@ -2658,7 +2658,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                             }
 
 
-                            Log.d(TAG, "settings: " + settings);
+                            Logger.d(getApplicationContext(), TAG, "settings: " + settings);
                             toEditAddress.setSelection(addressesList.get(position).length());
                             if(addressesList.get(position).contains("\t")) {
                                 new Handler().postDelayed(new Runnable() {

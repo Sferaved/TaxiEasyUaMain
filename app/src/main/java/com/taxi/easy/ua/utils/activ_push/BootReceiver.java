@@ -5,16 +5,19 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.util.Log;
+
+import com.taxi.easy.ua.utils.log.Logger;
 
 public class BootReceiver extends BroadcastReceiver {
 
+    private static final String TAG = "BootReceiver";
+
     public void onReceive(Context context, Intent intent) {
-        Log.d("BootReceiver", "onReceive called");
-        Log.d("BootReceiver", "Action: " + intent.getAction());
+        Logger.d(context, TAG, "onReceive called");
+        Logger.d(context, TAG, "Action: " + intent.getAction());
         try {
             if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) {
-                Log.d("BootReceiver", "Boot completed action received");
+                Logger.d(context, TAG, "Boot completed action received");
                 Intent serviceIntent = new Intent(context, MyService.class);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     context.startForegroundService(serviceIntent);
@@ -23,7 +26,7 @@ public class BootReceiver extends BroadcastReceiver {
                 }
             }
         } catch (Exception e) {
-            Log.e("BootReceiver", "Error starting service", e);
+            Logger.d(context, TAG, "Error starting service" + e);
         }
     }
 

@@ -1,8 +1,12 @@
 package com.taxi.easy.ua.androidx.startup;
 
+
 import android.app.Activity;
 import android.app.Application;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -14,21 +18,48 @@ import com.github.anrwatchdog.ANRWatchDog;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.utils.notif.NotificationUtils;
+import com.taxi.easy.ua.utils.notify.MyNotificationListenerJobIntentService;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
 public class MyApplication extends Application {
 
     private boolean isAppInForeground = false;
     private final String TAG = "MyApplication";
-
+    private static final String LOG_FILE_NAME = "app_log.txt";
+    private static MyApplication instance;
     @Override
     public void onCreate() {
         super.onCreate();
-        NotificationUtils.disableNotificationChannel(this, "ForegroundServiceChannel");
+        instance = this;
+    // Удаление старого файла логов
+//        deleteOldLogFile();
+
+        // Установка глобального обработчика исключений
+        Thread.setDefaultUncaughtExceptionHandler(new MyUncaughtExceptionHandler(this));
+
+        Intent serviceIntent = new Intent(this, MyNotificationListenerJobIntentService.class);
+        MyNotificationListenerJobIntentService.enqueueWork(this, serviceIntent);
 
         initializeFirebaseAndCrashlytics();
         setupANRWatchDog();
         registerActivityLifecycleCallbacks();
+    }
+    public static Context getContext() {
+        return instance.getApplicationContext();
+    }
+    private void deleteOldLogFile() {
+        File logFile = new File(getExternalFilesDir(null), "app_log.txt");
+        if (logFile.exists()) {
+            logFile.delete();
+        }
     }
 
     private void initializeFirebaseAndCrashlytics() {
@@ -119,4 +150,45 @@ public class MyApplication extends Application {
             // Note: Restarting the application from here is not recommended in production
         }
     }
+
+    private class MyUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
+        public MyUncaughtExceptionHandler(MyApplication myApplication) {
+        }
+
+        @Override
+        public void uncaughtException(Thread t, Throwable e) {
+            writeLog(Log.getStackTraceString(e));
+            System.exit(1); // Перезапуск приложения или завершение работы
+        }
+    }
+
+    public void writeLog(String log) {
+        if (isExternalStorageWritable()) {
+            File logFile = new File(getExternalFilesDir(null), LOG_FILE_NAME);
+            try {
+                FileOutputStream fos = new FileOutputStream(logFile, true);
+                OutputStreamWriter osw = new OutputStreamWriter(fos);
+
+                // Установка украинского времени
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                sdf.setTimeZone(TimeZone.getTimeZone("Europe/Kiev"));
+
+                osw.write(sdf.format(new Date()) + " - " + log);
+                osw.write("\n");
+                osw.close();
+                fos.close();
+                Log.d(TAG, "Log written to " + logFile.getAbsolutePath());
+            } catch (IOException e) {
+                Log.e("MyAppLogger", "Failed to write log", e);
+            }
+        } else {
+            Log.e("MyAppLogger", "External storage is not writable");
+        }
+    }
+
+    private boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        return Environment.MEDIA_MOUNTED.equals(state);
+    }
+
 }
