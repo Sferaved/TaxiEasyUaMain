@@ -24,7 +24,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -80,8 +79,6 @@ import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
-import com.taxi.easy.ua.utils.ip.ip_util_retrofit.IpResponse;
-import com.taxi.easy.ua.utils.ip.ip_util_retrofit.IpifyService;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.tariff.DatabaseHelperTariffs;
 import com.taxi.easy.ua.utils.tariff.Tariff;
@@ -2174,14 +2171,6 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                         btn_clear_from_text.setVisibility(View.GONE);
 
                     }
-
-                    new Handler().postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            checkNotificationPermissionAndRequestIfNeeded();
-                        }
-                    }, 4000);
-
                 }
             }
             @Override
@@ -2192,86 +2181,16 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
 
 
    }
-    void checkNotificationPermissionAndRequestIfNeeded() {
-        if (isAdded()) {
-            // Получаем доступ к настройкам приложения
-            SharedPreferences sharedPreferences = context.getPreferences(Context.MODE_PRIVATE);
 
-            // Проверяем, было ли уже запрошено разрешение
-            boolean isNotificationPermissionRequested = sharedPreferences.getBoolean("notification_permission_requested", false);
-            // Если разрешение еще не запрашивалось
-            if (!isNotificationPermissionRequested) {
-                // Показываем системный экран для запроса разрешения
-//                NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-//                if (!notificationManager.areNotificationsEnabled()) {
-//                    Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-//                    intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.getPackageName());
-//                    startActivity(intent);
-//                }
-                openNotificationSettings(context);
-                // Сохраняем информацию о том, что разрешение было запрошено
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putBoolean("notification_permission_requested", true);
-                editor.apply();
-            }
-        }
-    }
-    public void openNotificationSettings(Context context) {
-        Intent intent = new Intent();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-            intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.getPackageName());
-        } else {
-            intent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
-            intent.putExtra("app_package", context.getPackageName());
-            intent.putExtra("app_uid", context.getApplicationInfo().uid);
-        }
-        context.startActivity(intent);
-    }
     public void getPublicIPAddress() {
-        getCountryByIP("ipAddress", context);
-        getCityByIP("ipAddress");
-
-//        IpifyService apiService = com.taxi.easy.ua.utils.ip.ip_util_retrofit.RetrofitClient.getClient(BASE_URL).create(IpifyService.class);
-//        Call<IpResponse> call = apiService.getPublicIPAddress();
-//
-//        call.enqueue(new Callback<IpResponse>() {
-//            @Override
-//            public void onResponse(Call<IpResponse> call, Response<IpResponse> response) {
-//                if (response.isSuccessful() && response.body() != null) {
-//                    String ipAddress = response.body().getIp();
-//                    Logger.d(context, TAG, "onResponse: Local IP Address: " + ipAddress);
-//                    getCountryByIP(ipAddress);
-//                    getCityByIP(ipAddress);
-//                } else {
-//                    Logger.d(context, TAG, "Error in API response: " + response.errorBody());
-//                    getCityByIP("31.202.139.47");
-//                    MainActivity.countryState = "UA";
-//                }
-//                // Hide progress bar after response
-//                if (VisicomFragment.progressBar != null) {
-//                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(Call<IpResponse> call, Throwable t) {
-//                Logger.d(context, TAG, "Exception in getPublicIPAddress: " + t.getMessage());
-//                FirebaseCrashlytics.getInstance().recordException(t);
-//                MainActivity.countryState = "UA";
-//                getCityByIP("31.202.139.47");
-//                // Hide progress bar after failure
-//                if (VisicomFragment.progressBar != null) {
-//                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-//                }
-//            }
-//        });
+        getCountryByIP(context);
+        getCityByIP();
     }
 
 
-    private static void getCountryByIP(String ipAddress, Context context) {
+    private static void getCountryByIP(Context context) {
         ApiServiceCountry apiService = RetrofitClient.getClient().create(ApiServiceCountry.class);
-        Call<CountryResponse> call = apiService.getCountryByIP(ipAddress);
+        Call<CountryResponse> call = apiService.getCountryByIP("ipAddress");
         call.enqueue(new Callback<CountryResponse>() {
             @Override
             public void onResponse(@NonNull Call<CountryResponse> call, @NonNull Response<CountryResponse> response) {
@@ -2292,52 +2211,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
             }
         });
     }
-
-    public interface AutoClickListener {
-        void onAutoClick();
-    }
-
-    private AutoClickListener autoClickListener;
-
-    public void setAutoClickListener(AutoClickListener listener) {
-        this.autoClickListener = listener;
-    }
-
-    public void autoClickButton() {
-        // Check if the fragment is attached and the view is visible
-        if (isAdded() && isVisible()) {
-            List<String> settings = new ArrayList<>();
-
-            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-            if(isAdded()) {
-                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                Cursor cursor = database.rawQuery(query, null);
-
-                cursor.moveToFirst();
-
-                // Получите значения полей из первой записи
-
-
-                @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                @SuppressLint("Range") String ToAdressString = cursor.getString(cursor.getColumnIndex("finish"));
-                Logger.d(context, TAG, "autoClickButton:ToAdressString " + ToAdressString);
-                cursor.close();
-                database.close();
-
-                settings.add(Double.toString(0));
-                settings.add(Double.toString(0));
-                settings.add(Double.toString(toLatitude));
-                settings.add(Double.toString(toLongitude));
-                settings.add(getString(R.string.search));
-                settings.add(ToAdressString);
-            }
-            updateRoutMarker(settings);
-            geoText.setText(R.string.search);
-            firstLocation();
-        }
-    }
-    private void getCityByIP(String ip) {
+    private void getCityByIP() {
         SharedPreferences sharedPreferences = context.getPreferences(Context.MODE_PRIVATE);
 
         // Проверяем, было ли уже запрошено разрешение
@@ -2346,7 +2220,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
         if (!isNotificationPermissionRequested) {
             ApiService apiService = com.taxi.easy.ua.ui.finish.ApiClient.getApiService();
 
-            Call<City> call = apiService.cityByIp(ip);
+            Call<City> call = apiService.cityByIp("ipAddress");
 
             call.enqueue(new Callback<City>() {
                 @Override

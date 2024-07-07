@@ -30,11 +30,6 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
         tools:ignore="ProtectedPermissions" />
-    <!-- Определение SplashScreen API -->
-    <meta-data
-        android:name="com.google.android.gms.safetynet.SafetyNetSplashConfig"
-        android:resource="@xml/splash_screen" />
-
 
     <application
         android:name=".androidx.startup.MyApplication"
@@ -49,21 +44,9 @@
         android:theme="@style/Theme.TaxiEasyUa"
         tools:targetApi="tiramisu">
 
-        <service android:name=".utils.notify.NotificationHelper$UpdateService" />
-
-        <service
-            android:name=".utils.activ_push.MyService"
-            android:exported="false" />
-        <receiver android:name=".utils.activ_push.BootReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
-            </intent-filter>
-        </receiver>
-
-
-
+        <meta-data
+            android:name="com.google.android.gms.safetynet.SafetyNetSplashConfig"
+            android:resource="@xml/splash_screen" />
         <meta-data
             android:name="com.google.android.gms.wallet.api.enabled"
             android:value="true" />
@@ -76,14 +59,16 @@
         <meta-data
             android:name="com.parse.CLIENT_KEY"
             android:value="@string/back4app_client_key" />
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="@string/google_maps_key_storage" />
 
         <meta-data
             android:name="androidx.room.RoomDatabase.VERSION"
             android:value="3" />
-        <meta-data
-            android:name="com.google.android.gms.wallet.api.enabled"
-            android:value="true" />
-        <!-- Определение SplashScreen API -->
+
+
+        <service android:name=".utils.notify.NotificationHelper$UpdateService" />
 
         <activity
             android:name=".MainActivity"
@@ -101,22 +86,14 @@
         <activity
             android:name=".ui.finish.FinishActivity"
             android:exported="false" />
-        <activity
-            android:name=".ui.start.FirebaseSignIn"
-            android:screenOrientation="portrait"
-            android:exported="true"
-            android:theme="@style/Theme.TaxiEasyUa.NoActionBar" />
+
         <activity
             android:name=".ui.open_map.OpenStreetMapActivity"
             android:screenOrientation="portrait"
             android:exported="true"
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar" />
-        <activity android:name=".ui.start.StopActivity"
-            android:screenOrientation="portrait"/>
-        <activity android:name=".ui.start.UpdateActivity"
-            android:screenOrientation="portrait"/>
 
-        <receiver android:name=".NetworkChangeReceiver" />
+
 
         <activity android:name=".ui.open_map.OpenStreetMapVisicomActivity"
             android:exported="true"
@@ -131,12 +108,14 @@
             tools:ignore="Instantiatable" />
 
         <receiver android:name=".NetworkChangeReceiver" />
+
         <provider
             android:name=".androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.InitializationProvider"
             android:exported="false"
             android:enabled="true">
         </provider>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -146,17 +125,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-
-        <service android:name=".utils.notify.MyNotificationListenerService"
-            android:exported="true"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
-        </service>
-        <service
-            android:name=".utils.notify.MyNotificationListenerJobIntentService"
-            android:permission="android.permission.BIND_JOB_SERVICE" />
 
     </application>
 

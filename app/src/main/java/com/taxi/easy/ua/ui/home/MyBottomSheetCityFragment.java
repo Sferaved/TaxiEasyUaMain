@@ -6,10 +6,13 @@ import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,6 +25,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -566,6 +570,8 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             VisicomFragment.textfrom.setVisibility(View.VISIBLE);
             VisicomFragment.num1.setVisibility(View.VISIBLE);
         }
+
+        checkNotificationPermissionAndRequestIfNeeded();
     }
 
     private void cityMaxPay(String city, Context context) {
@@ -915,6 +921,38 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             }
 
         });
+    }
+
+    void checkNotificationPermissionAndRequestIfNeeded() {
+        if (isAdded()) {
+            // Получаем доступ к настройкам приложения
+            SharedPreferences sharedPreferences = requireActivity().getPreferences(Context.MODE_PRIVATE);
+
+            // Проверяем, было ли уже запрошено разрешение
+            boolean isNotificationPermissionRequested = sharedPreferences.getBoolean("notification_permission_requested", false);
+
+            // Проверяем версию Android
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // API 33 и выше
+                NotificationManagerCompat notificationManager = NotificationManagerCompat.from(requireContext());
+                boolean areNotificationsEnabled = notificationManager.areNotificationsEnabled();
+
+                // Если уведомления не разрешены и разрешение еще не запрашивалось
+                if (!areNotificationsEnabled && !isNotificationPermissionRequested) {
+                    openNotificationSettings(requireContext());
+                    // Сохраняем информацию о том, что разрешение было запрошено
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putBoolean("notification_permission_requested", true);
+                    editor.apply();
+                }
+            }
+        }
+    }
+
+    public void openNotificationSettings(Context context) {
+        Intent intent = new Intent();
+        intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+        intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.getPackageName());
+        context.startActivity(intent);
     }
 }
 

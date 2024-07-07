@@ -4,7 +4,6 @@ package com.taxi.easy.ua.androidx.startup;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -18,7 +17,6 @@ import com.github.anrwatchdog.ANRWatchDog;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.utils.notify.MyNotificationListenerJobIntentService;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -39,14 +37,9 @@ public class MyApplication extends Application {
     public void onCreate() {
         super.onCreate();
         instance = this;
-    // Удаление старого файла логов
-//        deleteOldLogFile();
 
         // Установка глобального обработчика исключений
         Thread.setDefaultUncaughtExceptionHandler(new MyUncaughtExceptionHandler(this));
-
-        Intent serviceIntent = new Intent(this, MyNotificationListenerJobIntentService.class);
-        MyNotificationListenerJobIntentService.enqueueWork(this, serviceIntent);
 
         initializeFirebaseAndCrashlytics();
         setupANRWatchDog();
@@ -55,12 +48,7 @@ public class MyApplication extends Application {
     public static Context getContext() {
         return instance.getApplicationContext();
     }
-    private void deleteOldLogFile() {
-        File logFile = new File(getExternalFilesDir(null), "app_log.txt");
-        if (logFile.exists()) {
-            logFile.delete();
-        }
-    }
+
 
     private void initializeFirebaseAndCrashlytics() {
         // Initialize Firebase

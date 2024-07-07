@@ -5,10 +5,7 @@ import static com.taxi.easy.ua.R.string.format_phone;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.ActivityManager;
-import android.app.AlarmManager;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
@@ -27,7 +24,6 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -45,12 +41,10 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
-import androidx.work.WorkManager;
 
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract;
@@ -64,7 +58,6 @@ import com.google.android.play.core.install.model.AppUpdateType;
 import com.google.android.play.core.install.model.UpdateAvailability;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -86,7 +79,6 @@ import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 
-import com.taxi.easy.ua.utils.activ_push.MyService;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
@@ -121,7 +113,7 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class MainActivity extends AppCompatActivity implements VisicomFragment.AutoClickListener{
+public class MainActivity extends AppCompatActivity {
     private static final String TAG = "TAG_MAIN";
     public static String order_id;
     public static String invoiceId;
@@ -213,10 +205,6 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         networkChangeReceiver = new NetworkChangeReceiver();
         verifyInternet = getString(R.string.verify_internet);
 
-// Initialize VisicomFragment and set AutoClickListener
-        visicomFragment = new VisicomFragment();
-        visicomFragment.setAutoClickListener(this); // "this" refers to the MainActivity
-
         sharedPreferences = getSharedPreferences(MainActivity.PERMISSIONS_PREF_NAME, Context.MODE_PRIVATE);
         sharedPreferencesCount = getSharedPreferences(MainActivity.PERMISSION_REQUEST_COUNT_KEY, Context.MODE_PRIVATE);
 // Обработка отсутствия необходимых разрешений
@@ -264,31 +252,6 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
     }
 
 
-    @SuppressLint("NewApi")
-    private void isServiceRunning() {
-
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        int serviceCount = 0;
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            Logger.d(this, TAG, "isServiceRunning: " + service.service.getClassName());
-            serviceCount++;
-            if (MyService.class.getName().equals(service.service.getClassName())) {
-                Intent intent = new Intent(this, MyService.class);
-                stopService(intent);
-                Logger.d(this, TAG, "isServiceRunning: " + "stopService");
-            }
-        }
-        Logger.d(this, TAG, "Total running services: " + serviceCount);
-
-        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        Intent intent = new Intent(this, MyService.class);
-        PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_MUTABLE);
-        alarmManager.cancel(pendingIntent);
-
-        WorkManager.getInstance(this).cancelAllWork();
-    }
-
-
     @Override
     protected void onResume() {
         super.onResume();
@@ -301,10 +264,6 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         databaseHelperUid = new DatabaseHelperUid(getApplicationContext());
         databaseHelperUid.clearTableUid();
 
-        insertOrUpdatePushDate();
-        Logger.d(this, TAG, "onResume: isServiceRunning())  " );
-        isServiceRunning();
-        startService(new Intent(this, MyService.class));
         if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             gps_upd = getIntent().getBooleanExtra("gps_upd", true);
@@ -942,7 +901,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
 
     private AppUpdater appUpdater;
-    private static final int REQUEST_INSTALL_PACKAGES = 123;
+
     private void updateApp() {
 
         // Создание экземпляра AppUpdater
@@ -1003,6 +962,27 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         });
     }
 
+    private void verifyUpdate() {
+        AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(this);
+        Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
+
+        appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
+            Logger.d(getApplicationContext(), TAG, "Update availability: " + appUpdateInfo.updateAvailability());
+            Logger.d(getApplicationContext(), TAG, "Update priority: " + appUpdateInfo.updatePriority());
+            Logger.d(getApplicationContext(), TAG, "Client version staleness days: " + appUpdateInfo.clientVersionStalenessDays());
+
+            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
+                // Доступны обновления
+                Logger.d(this, TAG, "Available updates found");
+
+                NotificationHelper.showNotificationUpdate(this);
+            }
+        }).addOnFailureListener(e -> {
+            Logger.e(this, TAG, "Failed to check for updates: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
+        });
+    }
+
     // Обработка результата обновления
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -1053,43 +1033,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         startActivity(intent);
         finish();
 
-
-//        updateRecordsUserInfo(new UpdateUserInfoListener() {
-//            @Override
-//            public void onUpdateComplete() {
-//                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-//                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-//                startActivity(intent);
-//                finish();
-//            }
-//
-//            @Override
-//            public void onUpdateFailed(String errorMessage) {
-//                Logger.e(getApplicationContext(), TAG, "Failed to update user info: " + errorMessage);
-//                // Handle failure scenario if needed
-//            }
-//        });
     }
-
-//    private void updateRecordsUserInfo(UpdateUserInfoListener listener) {
-//        // Implement your logic to update user info here, possibly asynchronously
-//        // For example:
-//        // SomeAsyncTask task = new SomeAsyncTask();
-//        // task.execute(key, value);
-//
-//        // Once the update operation is complete, invoke the listener method
-//        // For example, in AsyncTask's onPostExecute():
-//        // listener.onUpdateComplete();
-//
-//        // Simulating completion for illustration purposes:
-//        updateRecordsUser("email", "email");
-//        listener.onUpdateComplete();
-//    }
-//
-//    interface UpdateUserInfoListener {
-//        void onUpdateComplete();
-//        void onUpdateFailed(String errorMessage);
-//    }
 
     @Override
     protected void onDestroy() {
@@ -1343,21 +1287,15 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         Logger.d(this, TAG, "newUser: " + userEmail);
 
         if(userEmail.equals("email")) {
-//            checkNotificationPermissionAndRequestIfNeeded();
             new Thread(() -> insertPushDate(getApplicationContext())).start();
 
-            try {
-                FirebaseApp.initializeApp(MainActivity.this);
-            } catch (Exception e) {
-                Logger.e(this, TAG, "Exception during authentication " + e);
-                FirebaseCrashlytics.getInstance().recordException(e);
-                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-
-            }
             Toast.makeText(this, R.string.checking, Toast.LENGTH_SHORT).show();
             startFireBase();
 
         } else {
+            // Проерка обновления
+            new Thread(this::verifyUpdate).start();
+
             new Thread(() -> fetchRoutes(userEmail)).start();
             new Thread(() -> updatePushDate(getApplicationContext())).start();
 
@@ -1370,16 +1308,16 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
             // Проверка новой версии в маркете
             new Thread(this::versionFromMarket).start();
 
-//            Thread wfpCardThread = new Thread(() -> {
-//                List<String> stringList = logCursor(MainActivity.CITY_INFO);
-//                String city = stringList.get(1);
-//                if(city != null) {
-//                    getCardTokenWfp(city,"wfp", userEmail);
-//                }
-//
-//
-//            });
-//            wfpCardThread.start();
+            Thread wfpCardThread = new Thread(() -> {
+                List<String> stringList = logCursor(MainActivity.CITY_INFO);
+                String city = stringList.get(1);
+                if(city != null) {
+                    getCardTokenWfp(city,"wfp", userEmail);
+                }
+
+
+            });
+            wfpCardThread.start();
         }
 
 
@@ -1490,7 +1428,6 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 } catch (Exception e) {
                     Logger.e(getApplicationContext(), TAG, "Exception during sign-in launch " + e);
                     FirebaseCrashlytics.getInstance().recordException(e);
-//                    Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
                     VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
                 }
             }
@@ -1524,7 +1461,6 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
                 assert user != null;
                 settingsNewUser(user.getEmail());
                 Toast.makeText(this, R.string.city_search, Toast.LENGTH_SHORT).show();
-//                startGetPublicIPAddressTask(fm, getApplicationContext());
 
                 new Thread(() -> fetchRoutes(user.getEmail())).start();
             } else {
@@ -1778,7 +1714,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
         ApiServiceUser apiService = retrofit.create(ApiServiceUser.class);
 
         // Вызов метода addUserNoName
-        Call<UserResponse> call = apiService.addUserNoName(email);
+        Call<UserResponse> call = apiService.addUserNoName(email, context.getString(R.string.application));
 
         // Асинхронный вызов
         call.enqueue(new Callback<UserResponse>() {
@@ -1797,9 +1733,8 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
             @Override
             public void onFailure(@NonNull Call<UserResponse> call, @NonNull Throwable t) {
-//                Toast.makeText(context, context.getString(verify_internet), Toast.LENGTH_SHORT).show();
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
     }
@@ -1992,43 +1927,7 @@ public class MainActivity extends AppCompatActivity implements VisicomFragment.A
 
 
     }
-    public void checkPermission(String permission, int requestCode) {
-        // Checking if permission is not granted
-        if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(this, new String[]{permission}, requestCode);
-        }
-    }
 
-    @Override
-    public void onAutoClick() {
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        VisicomFragment visicomFragment = (VisicomFragment) fragmentManager.findFragmentByTag("VisicomFragment");
-
-        if (visicomFragment != null) {
-            // Если фрагмент существует, просто перейдите к нему
-            navController.navigate(R.id.nav_visicom);
-            visicomFragment.autoClickButton();
-        } else {
-            // Фрагмент не существует, создаем и добавляем его
-            FragmentTransaction transaction = fragmentManager.beginTransaction();
-            VisicomFragment newFragment = new VisicomFragment();
-            transaction.replace(R.id.nav_host_fragment_content_main, newFragment, "VisicomFragment");
-            transaction.commit();
-
-            // Ждем, чтобы убедиться, что фрагмент добавлен перед вызовом autoClickButton
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    VisicomFragment addedFragment = (VisicomFragment) getSupportFragmentManager().findFragmentByTag("VisicomFragment");
-                    if (addedFragment != null) {
-                        navController.navigate(R.id.nav_visicom);
-                        addedFragment.autoClickButton();
-                    }
-                }
-            }, 100);
-        }
-    }
 
     private static final String PREFS_NAME_VERSION = "MyPrefsFileNew";
     private static final String LAST_NOTIFICATION_TIME_KEY = "lastNotificationTimeNew";
