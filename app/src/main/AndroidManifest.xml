@@ -42,6 +42,7 @@
         android:supportsRtl="true"
         android:enableOnBackInvokedCallback="true"
         android:theme="@style/Theme.TaxiEasyUa"
+        android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="tiramisu">
 
         <meta-data
@@ -125,7 +126,14 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-
+        <service
+            android:name=".utils.fcm.MyFirebaseMessagingService"
+            android:exported="false"
+            android:permission="TODO">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

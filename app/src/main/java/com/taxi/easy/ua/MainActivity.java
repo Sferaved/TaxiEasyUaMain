@@ -83,6 +83,9 @@ import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.download.AppUpdater;
+import com.taxi.easy.ua.utils.fcm.MyFirebaseMessagingService;
+import com.taxi.easy.ua.utils.fcm.token_send.ApiServiceToken;
+import com.taxi.easy.ua.utils.fcm.token_send.RetrofitClientToken;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.messages.UsersMessages;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
@@ -215,6 +218,8 @@ public class MainActivity extends AppCompatActivity {
             }
         } else MainActivity.location_update = ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                 || ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+       // Проверка обновления
+       new Thread(this::verifyUpdate).start();
 
         try {
             initDB();
@@ -319,21 +324,7 @@ public class MainActivity extends AppCompatActivity {
         assert database != null;
         database.close();
     }
-    private static final String PREFS_NAME = "UserActivityPrefs";
-    private static final String LAST_ACTIVITY_KEY = "lastActivityTimestamp";
-    private void updateLastActivityTimestamp() {
 
-        // Обновление времени последней активности в SharedPreferences
-        SharedPreferences prefs = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-
-        long lastActivityTimestamp = prefs.getLong(LAST_ACTIVITY_KEY, 0);
-        long currentTime = System.currentTimeMillis();
-        Logger.d(this, TAG, "lastActivity: Main " + timeFormatter(lastActivityTimestamp));
-        Logger.d(this, TAG, "currentTime:  Main " + timeFormatter(currentTime));
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putLong(LAST_ACTIVITY_KEY, currentTime);
-        editor.apply();
-    }
 
     @Override
     protected void onRestart() {
@@ -1293,8 +1284,7 @@ public class MainActivity extends AppCompatActivity {
             startFireBase();
 
         } else {
-            // Проерка обновления
-            new Thread(this::verifyUpdate).start();
+
 
             new Thread(() -> fetchRoutes(userEmail)).start();
             new Thread(() -> updatePushDate(getApplicationContext())).start();
@@ -1303,7 +1293,7 @@ public class MainActivity extends AppCompatActivity {
             new VerifyUserTask(this).execute();
 
             UserPermissions.getPermissions(userEmail, getApplicationContext());
-            new UsersMessages(userEmail, getApplicationContext());
+//            new UsersMessages(userEmail, getApplicationContext());
 
             // Проверка новой версии в маркете
             new Thread(this::versionFromMarket).start();
@@ -1314,10 +1304,13 @@ public class MainActivity extends AppCompatActivity {
                 if(city != null) {
                     getCardTokenWfp(city,"wfp", userEmail);
                 }
-
-
             });
             wfpCardThread.start();
+
+            Thread sendTokenThread = new Thread(() -> {
+                sendToken(userEmail);
+            });
+            sendTokenThread.start();
         }
 
 
@@ -1463,6 +1456,8 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, R.string.city_search, Toast.LENGTH_SHORT).show();
 
                 new Thread(() -> fetchRoutes(user.getEmail())).start();
+
+
             } else {
                 Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
                 VisicomFragment.progressBar.setVisibility(View.GONE);
@@ -1654,8 +1649,17 @@ public class MainActivity extends AppCompatActivity {
             SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
             database.close();
+            Logger.d(this, TAG, "settingsNewUser" + emailUser);
+
+//            Intent intent = new Intent(this, MyFirebaseMessagingService.class);
+//            startService(intent);
         });
         updateUserInfoThread.start();
+
+        Thread sendTokenThread = new Thread(() -> {
+            sendToken(emailUser);
+        });
+        sendTokenThread.start();
 
 // Task 2: Add user with no name in a separate thread
         Thread addUserNoNameThread = new Thread(() -> {
@@ -2071,5 +2075,39 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+    private void sendToken (String email) {
+        // Создаем экземпляр Retrofit
 
+        Logger.d(getApplicationContext(),TAG, "sendToken email " + email);
+
+        SharedPreferences sharedPreferences = getSharedPreferences("UserTokenPrefs", Context.MODE_PRIVATE);
+        String token = sharedPreferences.getString("token","");
+
+        Logger.d(getApplicationContext(),TAG, "sendToken token" + token );
+
+        if(!token.isEmpty()) {
+            ApiServiceToken apiService = RetrofitClientToken.getClient().create(ApiServiceToken.class);
+
+            String app = getApplicationContext().getString(R.string.application);
+
+            Call<Void> call = apiService.sendToken(email, app, token);
+
+            // Выполняем асинхронный запрос
+            call.enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                    if (response.isSuccessful()) {
+                        Logger.d(getApplicationContext(),TAG, "Токен " + token + "успешно отправлен на сервер");
+                    } else {
+                        Logger.e(getApplicationContext(),TAG, "Ошибка отправки токена на сервер: " + response.code());
+                    }
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                    Logger.e(getApplicationContext(),TAG, "Ошибка отправки токена на сервер: " + t);
+                }
+            });
+        }
+    }
 }

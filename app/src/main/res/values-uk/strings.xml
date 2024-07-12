@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.755</string>
-    <string name="version">Версія: 1.755</string>
+    <string name="version_code">1.756</string>
+    <string name="version">Версія: 1.756</string>
 
     <string name="app_name">Таксі Доставка</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -68,7 +68,7 @@
     <string name="change">по GPS</string>
     <string name="on_city">"по місту."</string>
     <string name="on_city_tv">"по місту"</string>
-    <string name="help_button">Підтримка</string>
+    <string name="help_button">Підтримка</string>ё
     <string name="try_again">Перезавантажити</string>
     <string name="ok_button">Ок</string>
     <string name="to_message">" -> "</string>

@@ -261,10 +261,8 @@ public class CardFragment extends Fragment {
 
             @Override
             public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
-                if (isAdded()) { //
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                }
+                Logger.d(context, TAG, "onFailure :pay_system " + t);
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
     }
