@@ -88,27 +88,9 @@ public class GalleryFragment extends Fragment {
     private AlertDialog alertDialog;
     FragmentManager fragmentManager;
 
-    private final int desiredHeight = 600;
-
-    public static String[] arrayServiceCode() {
-        return new String[]{
-                "BAGGAGE",
-                "ANIMAL",
-                "CONDIT",
-                "MEET",
-                "COURIER",
-                "CHECK_OUT",
-                "BABY_SEAT",
-                "DRIVER",
-                "NO_SMOKE",
-                "ENGLISH",
-                "CABLE",
-                "FUEL",
-                "WIRES",
-                "SMOKE",
-        };
-    }
+    private int desiredHeight;
     NavController navController;
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
@@ -214,12 +196,18 @@ public class GalleryFragment extends Fragment {
 
             registerForContextMenu(listView);
 
-            ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
-            layoutParams.height = desiredHeight;
-            listView.setLayoutParams(layoutParams);
+
             listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                 @Override
                 public void onGlobalLayout() {
+                    root.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                    // Теперь мы можем получить высоту фрагмента
+                    desiredHeight = root.getHeight() - 100;
+                    ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
+                    layoutParams.height = desiredHeight;
+                    listView.setLayoutParams(layoutParams);
+
                     int totalItemHeight = 0;
                     for (int i = 0; i < listView.getChildCount(); i++) {
                         totalItemHeight += listView.getChildAt(i).getHeight();
@@ -242,13 +230,21 @@ public class GalleryFragment extends Fragment {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     progressbar.setVisibility(View.VISIBLE);
-//                    int desiredHeight = 500; // Ваше желаемое значение высоты в пикселях
-//                    ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
-//                    layoutParams.height = desiredHeight;
-//                    listView.setLayoutParams(layoutParams);
-//                    scrollButtonDown.setVisibility(View.VISIBLE);
-//                    scrollButtonUp.setVisibility(View.VISIBLE);
+                    desiredHeight = 500; // Ваше желаемое значение высоты в пикселях
+                    ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
+                    layoutParams.height = desiredHeight;
+                    int totalItemHeight = 0;
+                    for (int i = 0; i < listView.getChildCount(); i++) {
+                        totalItemHeight += listView.getChildAt(i).getHeight();
+                    }
 
+                    if (totalItemHeight > desiredHeight) {
+                        scrollButtonUp.setVisibility(View.VISIBLE);
+                        scrollButtonDown.setVisibility(View.VISIBLE);
+                    } else {
+                        scrollButtonUp.setVisibility(View.GONE);
+                        scrollButtonDown.setVisibility(View.GONE);
+                    }
                     del_but.setVisibility(View.VISIBLE);
                     btnRouts.setVisibility(View.VISIBLE);
                     text_view_cost.setVisibility(View.VISIBLE);

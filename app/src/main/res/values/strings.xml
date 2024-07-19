@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.758</string>
-    <string name="version">Версия: 1.758</string>
+    <string name="version_code">1.759</string>
+    <string name="version">Версия: 1.759</string>
 
     <string name="app_name">Такси Доставка</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
