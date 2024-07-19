@@ -75,11 +75,12 @@
 
         android:layout_marginTop="8dp"
         android:background="@drawable/round_button_background"
-        android:src="@drawable/up"
+        android:src="@drawable/up_arrow"
         app:layout_constraintEnd_toStartOf="@+id/scrollButtonDown"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/listView" />
+        app:layout_constraintTop_toBottomOf="@+id/listView"
+        tools:ignore="ContentDescription" />
 
     <ImageButton
         android:id="@+id/scrollButtonDown"
@@ -89,9 +90,10 @@
 
         android:layout_marginTop="20dp"
         android:background="@drawable/round_button_background"
-        android:src="@drawable/down"
+        android:src="@drawable/down_arrow"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toEndOf="@+id/scrollButtonUp"
-        app:layout_constraintTop_toBottomOf="@+id/listView" />
+        app:layout_constraintTop_toBottomOf="@+id/listView"
+        tools:ignore="ContentDescription" />
 </androidx.constraintlayout.widget.ConstraintLayout>

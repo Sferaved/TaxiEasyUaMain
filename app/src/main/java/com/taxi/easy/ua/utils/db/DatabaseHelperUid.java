@@ -7,15 +7,13 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
-import com.taxi.easy.ua.utils.log.Logger;
-
 import java.util.List;
 
 public class DatabaseHelperUid extends SQLiteOpenHelper {
     // Имя вашей базы данных
     private static final String DATABASE_NAME = "Database_21052024_UID";
     // Версия вашей базы данных
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 4;
     // Имя таблицы для хранения данных routeInfo
     private static final String TABLE_ROUT_INFO_UID = "RoutInfoTableUid";
     private static final String TABLE_CANCEL_INFO_UID = "RoutInfoTableUid";
@@ -65,7 +63,6 @@ public class DatabaseHelperUid extends SQLiteOpenHelper {
         // Удаляем старую таблицу
         SQLiteDatabase db = this.getWritableDatabase();
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_ROUT_INFO_UID);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_CANCEL_INFO_UID);
 
 // Создаем новую таблицу с теми же параметрами
         String createTableQuery = "CREATE TABLE IF NOT EXISTS " + TABLE_ROUT_INFO_UID + "(id integer primary key autoincrement," +

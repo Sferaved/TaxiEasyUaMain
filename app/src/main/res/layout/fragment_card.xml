@@ -13,19 +13,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="8sp"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="8dp"
         android:layout_marginEnd="8sp"
         android:fontFamily="@font/regular"
-        android:minHeight="30sp"
 
+        android:minHeight="30sp"
         android:textAlignment="center"
         android:textColor="#D9D9D9"
-        android:textSize="18sp"
         android:visibility="gone"
+        android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/progress_bar"
+        app:layout_constraintTop_toBottomOf="@+id/btn_card_link"
         tools:ignore="RtlCompat" />
 
     <ListView
@@ -33,14 +33,14 @@
         android:layout_width="match_parent"
         android:layout_height="400sp"
         android:layout_margin="4dp"
+        android:layout_marginTop="8dp"
         android:divider="@color/colorAccent"
         android:dividerHeight="1sp"
         android:fontFamily="@font/regular"
         android:visibility="visible"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_card_link" />
+        app:layout_constraintTop_toBottomOf="@+id/text_card" />
 
     <WebView
         android:id="@+id/webView"
@@ -64,11 +64,26 @@
         tools:ignore="MissingConstraints" />
 
     <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_order"
+        android:layout_width="293sp"
+        android:layout_height="45sp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/buttons"
+        android:fontFamily="@font/regular"
+        android:text="@string/order"
+        android:textAlignment="center"
+        android:textColor="@color/colorAccent"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_card_link"
         android:layout_width="293sp"
         android:layout_height="45sp"
 
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="8dp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
         android:text="@string/link_card"
@@ -77,6 +92,6 @@
         android:textSize="15sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/btn_order" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

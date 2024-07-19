@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.to_cancel;
+package com.taxi.easy.ua.ui.card;
 
 import static android.content.Context.MODE_PRIVATE;
 

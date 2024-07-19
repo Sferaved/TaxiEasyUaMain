@@ -217,8 +217,8 @@
         android:fontFamily="@font/regular"
         android:text="@string/order"
         android:textAlignment="center"
-        android:textColor="#D9D9D9"
         android:textSize="15sp"
+        android:textColor="@color/colorAccent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

@@ -16,6 +16,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
@@ -74,6 +75,7 @@ public class UIDFragment extends Fragment {
     private TextView textUid;
     private String email;
     private FragmentManager fragmentManager;
+    private final int desiredHeight = 1200;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -152,14 +154,35 @@ public class UIDFragment extends Fragment {
 
             scrollButtonUp = binding.scrollButtonUp;
             scrollButtonDown = binding.scrollButtonDown;
-            int desiredHeight = 1200; // Ваше желаемое значение высоты в пикселях
+
             ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
             layoutParams.height = desiredHeight;
             listView.setLayoutParams(layoutParams);
             registerForContextMenu(listView);
+            listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @Override
+                public void onGlobalLayout() {
+                    int totalItemHeight = 0;
+                    for (int i = 0; i < listView.getChildCount(); i++) {
+                        totalItemHeight += listView.getChildAt(i).getHeight();
+                    }
+
+                    if (totalItemHeight > desiredHeight) {
+                        scrollButtonUp.setVisibility(View.VISIBLE);
+                        scrollButtonDown.setVisibility(View.VISIBLE);
+                    } else {
+                        scrollButtonUp.setVisibility(View.GONE);
+                        scrollButtonDown.setVisibility(View.GONE);
+                    }
+
+                    // Убираем слушатель, чтобы он не срабатывал многократно
+//                    listView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                }
+            });
         }
         return root;
     }
+
 
     @Override
     public void onCreateContextMenu(@NonNull ContextMenu menu, @NonNull View v, ContextMenu.ContextMenuInfo menuInfo) {

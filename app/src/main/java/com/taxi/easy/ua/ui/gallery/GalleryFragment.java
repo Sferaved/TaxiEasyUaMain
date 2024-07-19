@@ -15,6 +15,7 @@ import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -60,7 +61,7 @@ import retrofit2.Response;
 
 public class GalleryFragment extends Fragment {
 
-    private static final String TAG = "TAG_GEL";
+    private static final String TAG = "GalleryFragment";
     @SuppressLint("StaticFieldLeak")
     public static ProgressBar progressbar;
     private FragmentGalleryBinding binding;
@@ -86,6 +87,9 @@ public class GalleryFragment extends Fragment {
     private ImageButton scrollButtonDown, scrollButtonUp;
     private AlertDialog alertDialog;
     FragmentManager fragmentManager;
+
+    private final int desiredHeight = 600;
+
     public static String[] arrayServiceCode() {
         return new String[]{
                 "BAGGAGE",
@@ -209,16 +213,41 @@ public class GalleryFragment extends Fragment {
             listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 
             registerForContextMenu(listView);
+
+            ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
+            layoutParams.height = desiredHeight;
+            listView.setLayoutParams(layoutParams);
+            listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @Override
+                public void onGlobalLayout() {
+                    int totalItemHeight = 0;
+                    for (int i = 0; i < listView.getChildCount(); i++) {
+                        totalItemHeight += listView.getChildAt(i).getHeight();
+                    }
+
+                    if (totalItemHeight > desiredHeight) {
+                        scrollButtonUp.setVisibility(View.VISIBLE);
+                        scrollButtonDown.setVisibility(View.VISIBLE);
+                    } else {
+                        scrollButtonUp.setVisibility(View.GONE);
+                        scrollButtonDown.setVisibility(View.GONE);
+                    }
+
+                    // Убираем слушатель, чтобы он не срабатывал многократно
+//                    listView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                }
+            });
+
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     progressbar.setVisibility(View.VISIBLE);
-                    int desiredHeight = 500; // Ваше желаемое значение высоты в пикселях
-                    ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
-                    layoutParams.height = desiredHeight;
-                    listView.setLayoutParams(layoutParams);
-                    scrollButtonDown.setVisibility(View.VISIBLE);
-                    scrollButtonUp.setVisibility(View.VISIBLE);
+//                    int desiredHeight = 500; // Ваше желаемое значение высоты в пикселях
+//                    ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
+//                    layoutParams.height = desiredHeight;
+//                    listView.setLayoutParams(layoutParams);
+//                    scrollButtonDown.setVisibility(View.VISIBLE);
+//                    scrollButtonUp.setVisibility(View.VISIBLE);
 
                     del_but.setVisibility(View.VISIBLE);
                     btnRouts.setVisibility(View.VISIBLE);

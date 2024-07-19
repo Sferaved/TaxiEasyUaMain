@@ -10,7 +10,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     // Имя вашей базы данных
     private static final String DATABASE_NAME = "Database_25022024";
     // Версия вашей базы данных
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 5;
     // Имя таблицы для хранения данных routeInfo
     private static final String TABLE_ROUT_INFO = "RoutInfoTable";
     private static final String TABLE_ROUT_CANCEL = "RoutCancelTable";
@@ -44,19 +44,27 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_ROUT_INFO);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_ROUT_CANCEL);
         onCreate(db);
     }
 
     // Метод для очистки таблицы
     public void clearTable() {
         SQLiteDatabase db = this.getWritableDatabase();
-        db.execSQL("DELETE FROM " + TABLE_ROUT_INFO);
-        db.close();
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_ROUT_INFO);
+        String createTableQuery = "CREATE TABLE IF NOT EXISTS " + TABLE_ROUT_INFO +
+                "(" + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+                COLUMN_ROUTE_INFO + " TEXT)";
+        db.execSQL(createTableQuery);
     }
     public void clearTableCancel() {
         SQLiteDatabase db = this.getWritableDatabase();
-        db.execSQL("DELETE FROM " + TABLE_ROUT_CANCEL);
-        db.close();
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_ROUT_CANCEL);
+        String createTableQuery = "CREATE TABLE IF NOT EXISTS " + TABLE_ROUT_CANCEL +
+                "(" + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+                COLUMN_UID + " TEXT," +
+                COLUMN_ROUTE_INFO + " TEXT)";
+        db.execSQL(createTableQuery);
     }
 
     // Метод для добавления данных в таблицу
