@@ -118,10 +118,13 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.cities_list_layout, container, false);
+
         fragmentManager = getParentFragmentManager();
         listView = view.findViewById(R.id.listViewBonus);
         VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-
+        if(context == null) {
+            context = requireActivity();
+        }
         String[] cityList = new String[]{
                 context.getString(R.string.Kyiv_city),
                 context.getString(R.string.Dnipro_city),
@@ -135,7 +138,9 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(requireActivity(), R.layout.services_adapter_layout, cityList);
         listView.setAdapter(adapter);
         listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-
+        if(city == null) {
+            city = "Kyiv City";
+        }
         switch (city){
             case "Kyiv City":positionFirst = 0;
                 phoneNumber = Kyiv_City_phone;

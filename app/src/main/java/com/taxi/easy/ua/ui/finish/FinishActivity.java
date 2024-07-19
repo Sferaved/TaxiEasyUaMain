@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -105,7 +106,7 @@ public class FinishActivity extends AppCompatActivity {
     public static Button btn_cancel;
     public static Runnable myRunnable;
     public static Runnable runnableBonusBtn;
-    public static Handler handler, handlerBonusBtn,  handlerStatus,  handlerStatusWfp;
+    public static Handler handler, handlerBonusBtn,  handlerStatus;
     public static Runnable myTaskStatus;
 
     @SuppressLint("StaticFieldLeak")
@@ -117,6 +118,8 @@ public class FinishActivity extends AppCompatActivity {
     private boolean cancel_btn_click = false;
     long delayMillisStatus;
     FragmentManager fragmentManager;
+    private static boolean no_pay;
+
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,6 +135,8 @@ public class FinishActivity extends AppCompatActivity {
         phoneNumber = logCursor(MainActivity.TABLE_USER_INFO).get(2);
 
         messageResult = getIntent().getStringExtra("messageResult_key");
+        String no_pay_key = getIntent().getStringExtra("card_payment_key");
+        no_pay = no_pay_key != null && no_pay_key.equals("no");
 
         receivedMap = (HashMap<String, String>) getIntent().getSerializableExtra("sendUrlMap");
         assert receivedMap != null;
@@ -165,12 +170,9 @@ public class FinishActivity extends AppCompatActivity {
         }
 
 
-        if (pay_method.equals("bonus_payment")) {
+        if (pay_method.equals("bonus_payment") && !no_pay) {
             handlerBonusBtn = new Handler();
-
-            String url = baseUrl + "/bonusBalance/recordsBloke/" + uid + "/" + getString(R.string.application);
-
-            fetchBonus(url);
+            fetchBonus();
         }
 
         handler = new Handler();
@@ -226,7 +228,6 @@ public class FinishActivity extends AppCompatActivity {
             public void run() {
                 // Ваша логика
                 statusOrderWithDifferentValue(uid);
-
                 // Запланировать повторное выполнение
                 handlerStatus.postDelayed(this, delayMillisStatus);
             }
@@ -235,10 +236,7 @@ public class FinishActivity extends AppCompatActivity {
         // Запускаем цикл
         startCycle();
 
-
-
         // Запланируйте выполнение задачи
-
 
         if (pay_method.equals("fondy_payment") || pay_method.equals("mono_payment")|| pay_method.equals("wfp_payment")) {
             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(FinishActivity.this);
@@ -284,9 +282,7 @@ public class FinishActivity extends AppCompatActivity {
             };
             handler.postDelayed(myRunnable, delayMillis);
         }
-
-
-        btn_cancel_order.setOnClickListener(v -> {
+            btn_cancel_order.setOnClickListener(v -> {
             cancel_btn_click = true;
 
             progressBar.setVisibility(View.VISIBLE);
@@ -314,8 +310,8 @@ public class FinishActivity extends AppCompatActivity {
 
         });
 
-        btn_again = findViewById(R.id.btn_again);
-        btn_again.setOnClickListener(v -> {
+            btn_again = findViewById(R.id.btn_again);
+            btn_again.setOnClickListener(v -> {
             MainActivity.order_id = null;
             updateAddCost(String.valueOf(0));
             if(connected()){
@@ -326,14 +322,14 @@ public class FinishActivity extends AppCompatActivity {
             }
         });
 
-        btn_cancel = findViewById(R.id.btn_cancel);
-        btn_cancel.setOnClickListener(v -> {
+            btn_cancel = findViewById(R.id.btn_cancel);
+            btn_cancel.setOnClickListener(v -> {
+                MainActivity.order_id = null;
+                finishAffinity();
+            });
 
-            MainActivity.order_id = null;
-            finishAffinity();
-        });
-        FloatingActionButton fab_cal = findViewById(R.id.fab_call);
-        fab_cal.setOnClickListener(v -> {
+            FloatingActionButton fab_cal = findViewById(R.id.fab_call);
+            fab_cal.setOnClickListener(v -> {
 
             Intent intent = new Intent(Intent.ACTION_DIAL);
 
@@ -343,33 +339,40 @@ public class FinishActivity extends AppCompatActivity {
             startActivity(intent);
         });
 //        infoPaymentType();
+        if(!no_pay) {
+            switch (pay_method) {
+                case "wfp_payment":
+                    try {
+                        payWfp();
+                    } catch (UnsupportedEncodingException e) {
+                        FirebaseCrashlytics.getInstance().recordException(e);
+                        throw new RuntimeException(e);
+                    }
+                    break;
+                case "fondy_payment":
+                    try {
+                        payFondy();
+                    } catch (UnsupportedEncodingException e) {
+                        FirebaseCrashlytics.getInstance().recordException(e);
+                        throw new RuntimeException(e);
+                    }
+                    break;
+                case "mono_payment":
+                    String reference = MainActivity.order_id;
+                    String comment = getString(R.string.fondy_message);
 
-        switch (pay_method) {
-            case "wfp_payment":
-                try {
-                    payWfp();
-                } catch (UnsupportedEncodingException e) {
-                    FirebaseCrashlytics.getInstance().recordException(e);
-                    throw new RuntimeException(e);
-                }
-                break;
-            case "fondy_payment":
-                try {
-                    payFondy();
-                } catch (UnsupportedEncodingException e) {
-                    FirebaseCrashlytics.getInstance().recordException(e);
-                    throw new RuntimeException(e);
-                }
-                break;
-            case "mono_payment":
-                String reference = MainActivity.order_id;
-                String comment = getString(R.string.fondy_message);
+                    getUrlToPaymentMono(amount, reference, comment);
+                    break;
 
-                getUrlToPaymentMono(amount, reference, comment);
-                break;
-
+            }
         }
-
+        ImageButton btn_no = findViewById(R.id.btn_no);
+        btn_no.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(getApplicationContext(), MainActivity.class));
+            }
+        });
     }
 
     private void startCycle() {
@@ -1200,8 +1203,8 @@ public class FinishActivity extends AppCompatActivity {
 //            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 //        }
 //    }
-    private void fetchBonus(String url) {
-
+    private void fetchBonus() {
+        String url = baseUrl + "/bonusBalance/recordsBloke/" + uid + "/" + getString(R.string.application);
         Call<BonusResponse> call = ApiClient.getApiService().getBonus(url);
         Logger.d(getApplicationContext(), TAG, "fetchBonus: " + url);
         call.enqueue(new Callback<BonusResponse>() {
@@ -1224,11 +1227,9 @@ public class FinishActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<BonusResponse> call, Throwable t) {
+            public void onFailure(@NonNull Call<BonusResponse> call, @NonNull Throwable t) {
                 // Обработка ошибок сети или других ошибок
-                String errorMessage = t.getMessage();
                 FirebaseCrashlytics.getInstance().recordException(t);
-                // Дополнительная обработка ошибки
             }
         });
     }
@@ -1250,56 +1251,41 @@ public class FinishActivity extends AppCompatActivity {
         Logger.d(getApplicationContext(), TAG, "URL запроса: " + url);
         call.enqueue(new Callback<Void>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
+            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
+            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
                 // Обработайте ошибку при выполнении запроса
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
 
     }
 
     public static void callOrderIdMemory(String orderId, String uid, String paySystem) {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
+        if(!no_pay) {
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl(baseUrl)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
 
-        ApiService apiService = retrofit.create(ApiService.class);
-        Call<Void> call = apiService.orderIdMemory(orderId, uid, paySystem);
+            ApiService apiService = retrofit.create(ApiService.class);
+            Call<Void> call = apiService.orderIdMemory(orderId, uid, paySystem);
 
-        call.enqueue(new Callback<Void>() {
-            @Override
-            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
-                if (response.isSuccessful()) {
-                    // Обработка успешного ответа
-                } else {
-                    // Обработка неуспешного ответа
+            call.enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                 }
-            }
 
-            @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                // Обработка ошибки
-            }
-        });
-    }
-    private boolean verifyOrder() {
-        SQLiteDatabase database = this.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-
-        boolean verify = true;
-        if (cursor.getCount() == 1) {
-
-            if (logCursor(MainActivity.TABLE_USER_INFO).get(1).equals("0")) {
-                verify = false;
-            }
-            cursor.close();
+                @Override
+                public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                    // Обработка ошибки
+                    FirebaseCrashlytics.getInstance().recordException(t);
+                }
+            });
         }
-        database.close();
-        return verify;
+
     }
     private boolean connected() {
 
@@ -1459,7 +1445,7 @@ public class FinishActivity extends AppCompatActivity {
                         case "WaitingCarSearch":
                             delayMillisStatus = 5 * 1000;
                             if(!cancel_btn_click) {
-                                message = getString(R.string.ex_st_1);
+                                message = getString(R.string.ex_st_0);
                                 btn_again.setVisibility(View.GONE);
                                 btn_cancel.setVisibility(View.GONE);
                                 btn_reset_status.setVisibility(View.VISIBLE);

@@ -89,7 +89,7 @@ import retrofit2.Response;
 
 public class ActivityVisicomOnePage extends AppCompatActivity {
 
-    private static final String TAG = "TAG_VIS_ADDR";
+    private static final String TAG = "ActivityVisicomOnePage";
 
     AppCompatButton btn_change, btnOnMap;
 
@@ -495,15 +495,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                             verifyBuildingStart = false;
                         }
                         if (!verifyBuildingStart) {
-                            textGeoError.setVisibility(View.VISIBLE);
-                            textGeoError.setText(R.string.house_vis_mes);
-
-                            fromEditAddress.requestFocus();
-                            fromEditAddress.setSelection(fromEditAddress.getText().toString().length());
-                            KeyboardUtils.showKeyboard(getApplicationContext(), fromEditAddress);
-                        } else if (!verifyRoutStart) {
-                            textGeoError.setVisibility(View.VISIBLE);
-                            textGeoError.setText(R.string.rout_fin);
 
                             fromEditAddress.requestFocus();
                             fromEditAddress.setSelection(fromEditAddress.getText().toString().length());
@@ -533,8 +524,12 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                         }
                         if (!verifyBuildingFinish) {
                             text_toError.setVisibility(View.VISIBLE);
-                            text_toError.setText(R.string.house_vis_mes);
+                            if (addresses.size() == 1 ) {
+                                text_toError.setText(R.string.no_house_vis_mes);
 
+                            } else {
+                                text_toError.setText(R.string.house_vis_mes);
+                            }
                             toEditAddress.requestFocus();
                             toEditAddress.setSelection(toEditAddress.getText().toString().length());
                             KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
@@ -568,123 +563,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
         });
 
 
-    }
-    @SuppressLint("Range")
-    public String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
-        Logger.d(getApplicationContext(), TAG, "getTaxiUrlSearchMarkers: " + urlAPI);
-
-        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor = database.rawQuery(query, null);
-
-        cursor.moveToFirst();
-
-        // Получите значения полей из первой записи
-
-        double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-        double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
-        double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-        double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-        String start = cursor.getString(cursor.getColumnIndex("start"));
-        String finish = cursor.getString(cursor.getColumnIndex("finish"));
-        Logger.d(getApplicationContext(), TAG, "getTaxiUrlSearchMarkers: start " + start);
-        // Заменяем символ '/' в строках
-        start = start.replace("/", "|");
-        finish = finish.replace("/", "|");
-
-        // Origin of route
-        String str_origin = originLatitude + "/" + originLongitude;
-
-        // Destination of route
-        String str_dest = toLatitude + "/" + toLongitude;
-
-        cursor.close();
-
-
-        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO);
-        String time = stringList.get(1);
-        String comment = stringList.get(2);
-        String date = stringList.get(3);
-
-        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
-        String tarif =  stringListInfo.get(2);
-        String payment_type = stringListInfo.get(4);
-        String addCost = stringListInfo.get(5);
-        // Building the parameters to the web service
-
-        String parameters = null;
-        String phoneNumber = "no phone";
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
-        String displayName = logCursor(MainActivity.TABLE_USER_INFO).get(4);
-
-        if(urlAPI.equals("costSearchMarkers")) {
-            Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-
-            if (c.getCount() == 1) {
-                phoneNumber = logCursor(MainActivity.TABLE_USER_INFO).get(2);
-                c.close();
-            }
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + displayName + "*" + userEmail  + "*" + payment_type;
-        }
-        if(urlAPI.equals("orderSearchMarkersVisicom")) {
-            phoneNumber = logCursor(MainActivity.TABLE_USER_INFO).get(2);
-
-
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + displayName + "*" + userEmail  + "*" + payment_type + "/" + addCost + "/"
-                    + time + "/" + comment + "/" + date+ "/" + start + "/" + finish;
-
-            ContentValues cv = new ContentValues();
-
-            cv.put("time", "no_time");
-            cv.put("comment", "no_comment");
-            cv.put("date", "no_date");
-
-            // обновляем по id
-            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
-                    new String[] { "1" });
-
-        }
-
-        // Building the url to the web service
-        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO);
-        List<String> servicesChecked = new ArrayList<>();
-        String result;
-        boolean servicesVer = false;
-        for (int i = 1; i < services.size()-1 ; i++) {
-            if(services.get(i).equals("1")) {
-                servicesVer = true;
-                break;
-            }
-        }
-        if(servicesVer) {
-            for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
-                if(services.get(i+1).equals("1")) {
-                    servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
-                }
-            }
-            for (int i = 0; i < servicesChecked.size(); i++) {
-                if(servicesChecked.get(i).equals("CHECK_OUT")) {
-                    servicesChecked.set(i, "CHECK");
-                }
-            }
-            result = String.join("*", servicesChecked);
-            Logger.d(getApplicationContext(), TAG, "getTaxiUrlSearchGeo result:" + result + "/");
-        } else {
-            result = "no_extra_charge_codes";
-        }
-
-        List<String> listCity = logCursor(MainActivity.CITY_INFO);
-        String city = listCity.get(1);
-        String api = listCity.get(2);
-
-        String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
-                + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
-
-        database.close();
-
-        return url;
     }
     private void firstLocation() {
         // Получить менеджер ввода
@@ -1017,14 +895,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
         }
 
-
-//        if (MainActivity.countryState != null) {
-//            if (!MainActivity.countryState.equals("UA")) {
-//                mapboxKey(this);
-//            } else {
-//                visicomKey(this);
-//            }
-//        }
 
         fromEditAddress.addTextChangedListener(new TextWatcher() {
             @Override
@@ -1569,6 +1439,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                 if(jsonResponse.length() == 0) {
 
+
                     List<String> stringList = logCursor(MainActivity.CITY_INFO);
                     String city = getString(R.string.foreign_countries);
                     switch (stringList.get(1)) {
@@ -1799,7 +1670,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             FirebaseCrashlytics.getInstance().recordException(e);
         }
         Logger.d(getApplicationContext(), TAG, "processAddressData: 44444444");
-        if (addresses.size() != 0) {
+        if (!addresses.isEmpty()) {
+
             new Handler(Looper.getMainLooper()).post(() -> {
                 List<String> addressesList = new ArrayList<>();
                 List<String> nameList = new ArrayList<>();
@@ -1815,8 +1687,17 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 }
 
                 addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
+                if(addressesList.size() == 1) {
+                    Logger.d(getApplicationContext(), TAG, "processAddressData: addressesList " + addressesList.size());
+                    if (start.equals("ok")) {
+                        textGeoError.setVisibility(View.VISIBLE);
+                        textGeoError.setText(R.string.no_house_vis_mes);
+                    } else {
+                        text_toError.setVisibility(View.VISIBLE);
+                        text_toError.setText(R.string.no_house_vis_mes);
+                    }
 
-
+                }
                 addressListView.setVisibility(View.VISIBLE);
 
                 addressListView.setAdapter(addressAdapter);
@@ -1982,6 +1863,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
             });
         }
+
     }
 
     private boolean checkWordInArray(String wordToCheck, String[] searchArr) {

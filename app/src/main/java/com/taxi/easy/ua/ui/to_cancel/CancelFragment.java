@@ -1,15 +1,14 @@
-package com.taxi.easy.ua.ui.uid;
+package com.taxi.easy.ua.ui.to_cancel;
 
 import static android.content.Context.MODE_PRIVATE;
 
 import android.annotation.SuppressLint;
-import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
@@ -34,18 +33,26 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.databinding.FragmentCancelBinding;
 import com.taxi.easy.ua.databinding.FragmentUidBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
+import com.taxi.easy.ua.ui.finish.FinishActivity;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
+import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.db.RouteInfo;
+import com.taxi.easy.ua.utils.db.RouteInfoCancel;
+import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.to_json_parser.JsonResponse;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import retrofit2.Call;
@@ -53,35 +60,41 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 
-public class UIDFragment extends Fragment {
+public class CancelFragment extends Fragment {
 
-    private static final String TAG = "UIDFragment";
-    private @NonNull FragmentUidBinding binding;
+    private static final String TAG = "CancelFragment";
+    private @NonNull FragmentCancelBinding binding = null;
     private ListView listView;
     private String[] array;
-    private RouteInfo routeInfo;
-    private static TextView textView;
+    private String[] arrayUid;
+    private RouteInfoCancel routeInfo;
     private NetworkChangeReceiver networkChangeReceiver;
     ProgressBar progressBar;
     NavController navController;
     DatabaseHelper databaseHelper;
     DatabaseHelperUid databaseHelperUid;
     String baseUrl = "https://m.easy-order-taxi.site";
-    private List<RouteResponse> routeList;
+    private List<RouteResponseCancel> routeList;
 
     AppCompatButton upd_but;
     private ImageButton scrollButtonDown, scrollButtonUp;
     private TextView textUid;
     private String email;
     private FragmentManager fragmentManager;
+    Context context;
+    public CancelFragment() {
+    }
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
 
-        binding = FragmentUidBinding.inflate(inflater, container, false);
+        binding = FragmentCancelBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-
+        context = requireActivity();
+        
+        Logger.d(context, TAG, "onContextItemSelected: ");
+    
         fragmentManager = getParentFragmentManager();
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
 
@@ -90,9 +103,10 @@ public class UIDFragment extends Fragment {
         networkChangeReceiver = new NetworkChangeReceiver();
 
         email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(requireActivity())).get(3);
-        routeList = new ArrayList<>();
+
         databaseHelper = new DatabaseHelper(getContext());
-        array = databaseHelper.readRouteInfo();
+        array = databaseHelper.readRouteCancel();
+
 
         databaseHelperUid = new DatabaseHelperUid(getContext());
 
@@ -101,12 +115,11 @@ public class UIDFragment extends Fragment {
         upd_but.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+                if (!NetworkUtils.isNetworkAvailable(context)) {
                     navController.navigate(R.id.nav_visicom);
                 } else {
                     progressBar.setVisibility(View.VISIBLE);
-                    fetchRoutes(email);
-
+                    fetchRoutesCancel(email);
                 }
 
             }
@@ -134,30 +147,8 @@ public class UIDFragment extends Fragment {
                 listView.smoothScrollByOffset(offset);
             }
         });
+        fetchRoutesCancel(email);
 
-        if (array == null || array.length == 0) {
-            // Вызов метода fetchRoutes(email) только если массив пуст
-            progressBar.setVisibility(View.VISIBLE);
-//            fetchRoutes(email);
-            progressBar.setVisibility(View.GONE);
-            scrollButtonDown.setVisibility(View.INVISIBLE);
-            scrollButtonUp.setVisibility(View.INVISIBLE);
-        } else {
-            progressBar.setVisibility(View.GONE);
-            upd_but.setVisibility(View.VISIBLE);
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(requireActivity(), R.layout.drop_down_layout, array);
-            listView.setAdapter(adapter);
-            scrollButtonDown.setVisibility(View.VISIBLE);
-            scrollButtonUp.setVisibility(View.VISIBLE);
-
-            scrollButtonUp = binding.scrollButtonUp;
-            scrollButtonDown = binding.scrollButtonDown;
-            int desiredHeight = 1200; // Ваше желаемое значение высоты в пикселях
-            ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
-            layoutParams.height = desiredHeight;
-            listView.setLayoutParams(layoutParams);
-            registerForContextMenu(listView);
-        }
         return root;
     }
 
@@ -179,24 +170,19 @@ public class UIDFragment extends Fragment {
 
             // Обработка действия "Edit"
 //            Toast.makeText(requireActivity(), "Edit: " + array[position], Toast.LENGTH_SHORT).show();
-//            Log.d(TAG, "onContextItemSelected: " + position);
-            Log.d(TAG, "onContextItemSelected: " + array[position]);
+//            Logger.d(context, TAG, "onContextItemSelected: " + position);
+            Logger.d(context, TAG, "onContextItemSelected: " + array[position]);
 
-            routeInfo = databaseHelperUid.getRouteInfoById(position+1);
+            routeInfo = databaseHelperUid.getCancelInfoById(position+1);
             if (routeInfo != null) {
-                Log.d(TAG, "onContextItemSelected: " + routeInfo);
+                Logger.d(context, TAG, "onContextItemSelected: " + routeInfo);
             } else {
-                Log.d(TAG, "onContextItemSelected: RouteInfo not found for id: " + (position + 1));
+                Logger.d(context, TAG, "onContextItemSelected: RouteInfo not found for id: " + (position + 1));
             }
-            List<String> settings = new ArrayList<>();
-            settings.add(routeInfo.getStartLat());
-            settings.add(routeInfo.getStartLan());
-            settings.add(routeInfo.getToLat());
-            settings.add(routeInfo.getToLng());
-            settings.add(routeInfo.getStart());
-            settings.add(routeInfo.getFinish());
 
-            updateRoutMarker(settings);
+            Map<String, String> costMap = getStringStringMap();
+
+            startFinishPage(costMap);
 
             navController.navigate(R.id.nav_visicom);
             MainActivity.gps_upd = false;
@@ -210,26 +196,94 @@ public class UIDFragment extends Fragment {
         }
 
     }
-    private void updateRoutMarker(List<String> settings) {
-        Log.d(TAG, "updateRoutMarker: " + settings.toString());
-        ContentValues cv = new ContentValues();
 
-        cv.put("startLat", Double.parseDouble(settings.get(0)));
-        cv.put("startLan", Double.parseDouble(settings.get(1)));
-        cv.put("to_lat", Double.parseDouble(settings.get(2)));
-        cv.put("to_lng", Double.parseDouble(settings.get(3)));
-        cv.put("start", settings.get(4));
-        cv.put("finish", settings.get(5));
-        if(isAdded()) {
-            // обновляем по id
-            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
-                    new String[]{"1"});
-            database.close();
+    private @NonNull Map<String, String> getStringStringMap() {
+        Map<String, String> costMap = new HashMap<>();
+
+        costMap.put("dispatching_order_uid", routeInfo.getDispatchingOrderUid());
+        costMap.put("order_cost", routeInfo.getOrderCost());
+        costMap.put("routefrom", routeInfo.getRouteFrom());
+        costMap.put("routefromnumber", routeInfo.getRouteFromNumber());
+        costMap.put("routeto", routeInfo.getRouteTo());
+        costMap.put("to_number", routeInfo.getToNumber());
+
+        if (routeInfo.getDispatchingOrderUidDouble() != null) {
+            costMap.put("dispatching_order_uid_Double", routeInfo.getDispatchingOrderUidDouble());
+        } else {
+            costMap.put("dispatching_order_uid_Double", " ");
         }
+        costMap.put("pay_method", routeInfo.getToPay_method());
+        costMap.put("orderWeb", routeInfo.getOrderCost());
+        return costMap;
     }
 
-    private void fetchRoutes(String value) {
+    private void startFinishPage(Map<String, String> sendUrlMap)
+     {
+        String to_name;
+        if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
+            to_name = getString(R.string.on_city_tv);
+            Logger.d(context, TAG, "startFinishPage: to_name 1 " + to_name);
+
+        } else {
+
+            if(Objects.equals(sendUrlMap.get("routeto"), "Точка на карте")) {
+                to_name = context.getString(R.string.end_point_marker);
+            } else {
+                to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
+            }
+            Logger.d(context, TAG, "startFinishPage: to_name 2 " + to_name);
+        }
+        Logger.d(context, TAG, "startFinishPage: to_name 3" + to_name);
+        String to_name_local = to_name;
+        if(to_name.contains("по місту")
+                ||to_name.contains("по городу")
+                || to_name.contains("around the city")
+        ) {
+            to_name_local = getString(R.string.on_city_tv);
+        }
+        Logger.d(context, TAG, "startFinishPage: to_name 4" + to_name_local);
+        String pay_method_message = getString(R.string.pay_method_message_main);
+        switch (Objects.requireNonNull(sendUrlMap.get("pay_method"))) {
+            case "bonus_payment":
+                pay_method_message += " " + getString(R.string.pay_method_message_bonus);
+                break;
+            case "card_payment":
+            case "fondy_payment":
+            case "mono_payment":
+            case "wfp_payment":
+                pay_method_message += " " + getString(R.string.pay_method_message_card);
+                break;
+            default:
+                pay_method_message += " " + getString(R.string.pay_method_message_nal);
+        }
+        String messageResult = getString(R.string.thanks_message) +
+                sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
+                to_name_local + "." +
+                getString(R.string.call_of_order) + Objects.requireNonNull(sendUrlMap.get("orderWeb")) + getString(R.string.UAH) + " " + pay_method_message;
+        String messageFondy = getString(R.string.fondy_message) + " " +
+                sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
+                to_name_local + ".";
+        Logger.d(context, TAG, "startFinishPage: messageResult " + messageResult);
+        Logger.d(context, TAG, "startFinishPage: to_name " + to_name);
+        Intent intent = new Intent(context, FinishActivity.class);
+        intent.putExtra("messageResult_key", messageResult);
+        intent.putExtra("messageFondy_key", messageFondy);
+        intent.putExtra("messageCost_key", Objects.requireNonNull(sendUrlMap.get("orderWeb")));
+        intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
+        intent.putExtra("card_payment_key", "no");
+        intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+        startActivity(intent);
+    }
+
+  
+    private void fetchRoutesCancel(String value) {
+        listView.setVisibility(View.GONE);
+        scrollButtonDown.setVisibility(View.GONE);
+        scrollButtonUp.setVisibility(View.GONE);
+
+        databaseHelper.clearTableCancel();
+        databaseHelperUid.clearTableCancel();
+        routeList = new ArrayList<>();
 
         upd_but.setText(getString(R.string.cancel_gps));
         upd_but.setOnClickListener(new View.OnClickListener() {
@@ -239,19 +293,19 @@ public class UIDFragment extends Fragment {
             }
         });
 
-        String url = baseUrl + "/android/UIDStatusShowEmail/" + value;
-        Call<List<RouteResponse>> call = ApiClient.getApiService().getRoutes(url);
-        Log.d("TAG", "fetchRoutes: " + url);
-        call.enqueue(new Callback<List<RouteResponse>>() {
+        String url = baseUrl + "/android/UIDStatusShowEmailCancel/" + value;
+        Call<List<RouteResponseCancel>> call = ApiClient.getApiService().getRoutesCancel(url);
+        Logger.d(context, TAG, "fetchRoutesCancel: " + url);
+        call.enqueue(new Callback<List<RouteResponseCancel>>() {
             @Override
-            public void onResponse(@NonNull Call<List<RouteResponse>> call, @NonNull Response<List<RouteResponse>> response) {
+            public void onResponse(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Response<List<RouteResponseCancel>> response) {
                 progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful()) {
-                    List<RouteResponse> routes = response.body();
-                    Log.d("TAG", "onResponse: " + routes);
+                    List<RouteResponseCancel> routes = response.body();
+                    Logger.d(context, TAG, "onResponse: " + routes);
                     if (routes != null && !routes.isEmpty()) {
                         boolean hasRouteWithAsterisk = false;
-                        for (RouteResponse route : routes) {
+                        for (RouteResponseCancel route : routes) {
                             if ("*".equals(route.getRouteFrom())) {
                                 // Найден объект с routefrom = "*"
                                 hasRouteWithAsterisk = true;
@@ -260,7 +314,7 @@ public class UIDFragment extends Fragment {
                         }
                         if (!hasRouteWithAsterisk) {
                             routeList.addAll(routes);
-                            processRouteList();
+                            processCancelList();
                         }  else {
                             textUid.setVisibility(View.VISIBLE);
                             textUid.setText(R.string.no_routs);
@@ -277,7 +331,7 @@ public class UIDFragment extends Fragment {
                 }
             }
 
-            public void onFailure(@NonNull Call<List<RouteResponse>> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Throwable t) {
                 // Обработка ошибок сети или других ошибок
                 FirebaseCrashlytics.getInstance().recordException(t);
             }
@@ -290,18 +344,19 @@ public class UIDFragment extends Fragment {
         }
     }
 
-    private void processRouteList() {
+    private void processCancelList() {
         // В этом методе вы можете использовать routeList для выполнения дополнительных действий с данными.
 
         // Создайте массив строк
         array = new String[routeList.size()];
 
-        databaseHelper.clearTable();
+
 
         String closeReasonText = getString(R.string.close_resone_def);
 
         for (int i = 0; i < routeList.size(); i++) {
-            RouteResponse route = routeList.get(i);
+            RouteResponseCancel route = routeList.get(i);
+            String uid = route.getUid();
             String routeFrom = route.getRouteFrom();
             String routefromnumber = route.getRouteFromNumber();
             String routeTo = route.getRouteTo();
@@ -310,6 +365,8 @@ public class UIDFragment extends Fragment {
             String createdAt = route.getCreatedAt();
             String closeReason = route.getCloseReason();
             String auto = route.getAuto();
+            String dispatchingOrderUidDouble = route.getDispatchingOrderUidDouble();
+            String pay_method = route.getPay_method();
 
             switch (closeReason){
                 case "-1":
@@ -386,14 +443,27 @@ public class UIDFragment extends Fragment {
             }
 
 //                array[i] = routeInfo;
-                databaseHelper.addRouteInfo(routeInfo);
+            databaseHelper.addRouteCancel(uid, routeInfo);
+            List<String> settings = new ArrayList<>();
 
+             settings.add(uid);
+             settings.add(webCost);
+             settings.add(routeFrom);
+             settings.add(routefromnumber);
+             settings.add(routeTo);
+             settings.add(routeTonumber);
+             settings.add(dispatchingOrderUidDouble);
+             settings.add(pay_method);
+
+            Logger.d(context, TAG, settings.toString());
+            databaseHelperUid.addCancelInfoUid(settings);
         }
-        array = databaseHelper.readRouteInfo();
-        Log.d("TAG", "processRouteList: array " + Arrays.toString(array));
+        array = databaseHelper.readRouteCancel();
+        Logger.d(context, TAG, "processRouteList: array " + Arrays.toString(array));
         if(array != null) {
             ArrayAdapter<String> adapter = new ArrayAdapter<>(requireActivity(), R.layout.drop_down_layout, array);
             listView.setAdapter(adapter);
+            listView.setVisibility(View.VISIBLE);
             scrollButtonDown.setVisibility(View.VISIBLE);
             scrollButtonUp.setVisibility(View.VISIBLE);
             progressBar.setVisibility(View.GONE);
@@ -406,6 +476,10 @@ public class UIDFragment extends Fragment {
             layoutParams.height = desiredHeight;
             listView.setLayoutParams(layoutParams);
             registerForContextMenu(listView);
+        } else {
+            listView.setVisibility(View.GONE);
+            scrollButtonDown.setVisibility(View.GONE);
+            scrollButtonUp.setVisibility(View.GONE);
         }
     }
 

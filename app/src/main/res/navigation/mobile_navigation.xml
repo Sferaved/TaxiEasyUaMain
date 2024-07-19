@@ -15,11 +15,15 @@
         android:label="@string/menu_home"
         tools:layout="@layout/fragment_home" />
     <fragment
+        android:id="@+id/nav_cancel"
+        android:name="com.taxi.easy.ua.ui.to_cancel.CancelFragment"
+        android:label="@string/order_to_cancel"
+        tools:layout="@layout/fragment_cancel" />
+    <fragment
         android:id="@+id/nav_gallery"
         android:name="com.taxi.easy.ua.ui.gallery.GalleryFragment"
         android:label="@string/menu_gallery"
         tools:layout="@layout/fragment_gallery" />
-
     <fragment
         android:id="@+id/nav_uid"
         android:name="com.taxi.easy.ua.ui.uid.UIDFragment"
@@ -30,7 +34,6 @@
         android:name="com.taxi.easy.ua.ui.bonus.BonusFragment"
         android:label="@string/my_bonus_menu"
         tools:layout="@layout/fragment_bonus" />
-
     <fragment
         android:id="@+id/nav_card"
         android:name="com.taxi.easy.ua.ui.card.CardFragment"

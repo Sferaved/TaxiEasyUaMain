@@ -103,12 +103,12 @@ public class HomeFragment extends Fragment {
     Button gpsbut;
     public static AppCompatButton btn_order;
     public static AppCompatButton buttonAddServices;
-    public AppCompatButton buttonBonus;
-    public AppCompatButton btn_minus;
-    public AppCompatButton btn_plus;
+    public static AppCompatButton buttonBonus;
+    public static AppCompatButton btn_minus;
+    public static AppCompatButton btn_plus;
     public static AppCompatButton btnGeo;
     public AppCompatButton on_map;
-    public AppCompatButton btn_clear;
+    public static AppCompatButton btn_clear;
 
     public static long addCost, cost, costFirst;
     private static String[] arrayStreet;
@@ -514,15 +514,14 @@ public class HomeFragment extends Fragment {
 
     private void orderFinished() {
 
-        if (!verifyPhone(requireContext())) {
-            getPhoneNumber();
-        }
-        if (!verifyPhone(context)) {
-            bottomSheetDialogFragment = new MyPhoneDialogFragment(context,"home");
+        if (!MainActivity.verifyPhone){
+            String message = getString(R.string.phone_input_error);
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+
+            MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment(context, "home");
             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-            btnVisible(View.INVISIBLE);
-        }
-        if (verifyPhone(requireContext())) {
+            progressBar.setVisibility(View.INVISIBLE);
+        } else {
             Toast.makeText(context, R.string.check_order_mes, Toast.LENGTH_SHORT).show();
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
@@ -631,11 +630,6 @@ public class HomeFragment extends Fragment {
                     FirebaseCrashlytics.getInstance().recordException(t);
                 }
             });
-        }  else {
-            btnVisible(View.VISIBLE);
-            String message = getString(R.string.phone_input_error);
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         }
     }
 
@@ -824,7 +818,7 @@ public class HomeFragment extends Fragment {
             }
         }
     }
-    private void btnVisible (int visible) {
+    static void btnVisible(int visible) {
         text_view_cost.setVisibility(visible);
         btn_minus.setVisibility(visible);
         btn_plus.setVisibility(visible);

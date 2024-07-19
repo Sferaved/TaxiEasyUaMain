@@ -18,10 +18,13 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
@@ -97,6 +100,22 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                 btn_ok.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+                        dismiss();
+                    }
+                });
+            } else if (errorMessage.equals(getString(R.string.order_to_cancel_true))){
+                textViewInfo.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        dismiss();
+                    }
+                });
+                btn_ok.setText(getString(R.string.order_to_cancel_review));
+                btn_ok.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                        navController.navigate(R.id.nav_cancel);
                         dismiss();
                     }
                 });

@@ -1,6 +1,5 @@
 package com.taxi.easy.ua.utils.notify;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -19,8 +18,6 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
-import androidx.fragment.app.FragmentActivity;
-import androidx.fragment.app.FragmentManager;
 
 import com.google.android.gms.tasks.Task;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
@@ -70,7 +67,7 @@ public class NotificationHelper {
 
         // Отображение уведомления
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-        int notificationId = generateUniqueNotificationId(); // Generate a unique ID for each notification
+        int notificationId = 654321; // ID for each notification
 
         if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
 
@@ -149,11 +146,10 @@ public class NotificationHelper {
         return (int) System.currentTimeMillis();
     }
 
-    @SuppressLint("ObsoleteSdkInt")
     public static void showNotificationUpdate(Context context) {
         String title = context.getString(R.string.new_version);
-        String message =  context.getString(R.string.news_of_version);
-        // Создание канала уведомлений для Android 8.0 (API level 26) и выше
+        String message = context.getString(R.string.news_of_version);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
             channel.setDescription(CHANNEL_DESCRIPTION);
@@ -164,12 +160,9 @@ public class NotificationHelper {
             notificationManager.createNotificationChannel(channel);
         }
 
-        // Интент для вызова службы для загрузки и установки обновления
         Intent updateIntent = new Intent(context, UpdateService.class);
-
         PendingIntent updatePendingIntent = PendingIntent.getService(context, 0, updateIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        // Построение уведомления без кнопки действия
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(title)
@@ -177,18 +170,16 @@ public class NotificationHelper {
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true);
 
-        // Устанавливаем кнопку действия в уведомлении
         builder.addAction(android.R.drawable.ic_menu_view, context.getString(R.string.update_url), updatePendingIntent);
 
-        // Отображение уведомления
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-        int notificationId = generateUniqueNotificationId(); // Генерируем уникальный ID для каждого уведомления
+        int notificationId = 1234569874;
         if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-
             return;
         }
         notificationManager.notify(notificationId, builder.build());
     }
+
     public static class UpdateService extends Service {
         @Override
         public int onStartCommand(Intent intent, int flags, int startId) {
@@ -205,7 +196,7 @@ public class NotificationHelper {
         }
     }
 
-    private static final int MY_REQUEST_CODE = 1234; // Уникальный код запроса для обновления
+    private static final int MY_REQUEST_CODE = 1234;
 
     private static void checkForUpdate(Context context) {
         AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(context);
@@ -217,30 +208,24 @@ public class NotificationHelper {
             Logger.d(context, TAG, "Client version staleness days: " + appUpdateInfo.clientVersionStalenessDays());
 
             if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
-                // Доступны обновления
                 Logger.d(context, TAG, "Available updates found");
 
-                // Запускаем процесс обновления
                 try {
                     appUpdateManager.startUpdateFlowForResult(
                             appUpdateInfo,
-                            AppUpdateType.IMMEDIATE, // или AppUpdateType.FLEXIBLE
-                            (Activity) context, // Используем ссылку на активность
-                            MY_REQUEST_CODE); // Код запроса для обновления
+                            AppUpdateType.IMMEDIATE,
+                            (Activity) context,
+                            MY_REQUEST_CODE);
                 } catch (IntentSender.SendIntentException e) {
                     Logger.e(context, TAG, "Failed to start update flow: " + e.getMessage());
                     FirebaseCrashlytics.getInstance().recordException(e);
                 }
-            } else {
-                Logger.d(context, TAG, "No updates available");
-                String message = context.getString(R.string.update_ok);
-                MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
-                FragmentManager fragmentManager = ((FragmentActivity) context).getSupportFragmentManager();
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         }).addOnFailureListener(e -> {
             Logger.e(context, TAG, "Failed to check for updates: " + e.getMessage());
             FirebaseCrashlytics.getInstance().recordException(e);
         });
     }
+
+
 }

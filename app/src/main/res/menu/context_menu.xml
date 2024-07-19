@@ -2,7 +2,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/action_order"
-        android:title="@string/order_again"/>
+        android:title="@string/order_status"/>
     <item
         android:id="@+id/action_exit"
         android:title="@string/order_continue"/>

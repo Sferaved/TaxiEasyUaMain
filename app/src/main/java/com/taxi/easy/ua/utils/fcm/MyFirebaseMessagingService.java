@@ -5,7 +5,6 @@ import android.content.SharedPreferences;
 
 import androidx.annotation.NonNull;
 
-import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.taxi.easy.ua.MainActivity;

@@ -11,6 +11,7 @@ import android.database.sqlite.SQLiteDatabase;
 import androidx.annotation.NonNull;
 
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.log.Logger;
 
@@ -37,7 +38,7 @@ public class VerifyUserTask {
     public void execute() {
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, this.context).get(3);
 
-        String url = "https://m.easy-order-taxi.site/android/verifyBlackListUser/" + userEmail + "/" + "com.taxi.easy.ua";
+        String url = "https://m.easy-order-taxi.site/android/verifyBlackListUser/" + userEmail + "/" + context.getString(R.string.application);
         CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
 
         try {

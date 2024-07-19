@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.756</string>
-    <string name="version">Версия: 1.756</string>
+    <string name="version_code">1.757</string>
+    <string name="version">Версия: 1.757</string>
 
     <string name="app_name">Такси Доставка</string>
     <string name="back4app_server_url">https://parseapi.back4app.com/</string>
@@ -380,4 +380,10 @@
     <string name="aplay_card_message">Ваша карта принята и отправлена на проверку. Вскоре она станет доступной для оплаты поездок.</string>
     <string name="status_checkout_message">Запрошено обновление статуса. Ожидайте или уточните у оператора</string>
     <string name="update_finish_mes">Обновление завершено. Приложение будет перезапущено.</string>
+    <string name="udate_cancel">Обновить список</string>
+    <string name="order_to_cancel">Заказы в работе</string>
+    <string name="order_status">Перейти к заказу</string>
+    <string name="order_to_cancel_review">Перейти к просмотру</string>
+    <string name="order_to_cancel_true">У Вас есть запланированные поездки</string>
+    <string name="no_house_vis_mes">Запрошенный адрес не найден. Попробуйте дргуой или нажмите зеленую кнопку со стрелкой "назад"</string>
 </resources>

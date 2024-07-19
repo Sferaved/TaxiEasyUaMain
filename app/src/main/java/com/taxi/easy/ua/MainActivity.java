@@ -5,6 +5,7 @@ import static com.taxi.easy.ua.R.string.format_phone;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.ContentValues;
@@ -49,6 +50,7 @@ import androidx.navigation.ui.NavigationUI;
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract;
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
@@ -56,7 +58,6 @@ import com.google.android.play.core.appupdate.AppUpdateManager;
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
 import com.google.android.play.core.install.model.AppUpdateType;
 import com.google.android.play.core.install.model.UpdateAvailability;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -69,25 +70,26 @@ import com.taxi.easy.ua.databinding.ActivityMainBinding;
 import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
+import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetCityFragment;
+import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 
+import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.download.AppUpdater;
-import com.taxi.easy.ua.utils.fcm.MyFirebaseMessagingService;
 import com.taxi.easy.ua.utils.fcm.token_send.ApiServiceToken;
 import com.taxi.easy.ua.utils.fcm.token_send.RetrofitClientToken;
 import com.taxi.easy.ua.utils.log.Logger;
-import com.taxi.easy.ua.utils.messages.UsersMessages;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
 import com.taxi.easy.ua.utils.phone.ApiClientPhone;
@@ -166,7 +168,6 @@ public class MainActivity extends AppCompatActivity {
 
     private static String verifyInternet;
     public static final long MAX_TASK_EXECUTION_TIME_SECONDS = 3;
-    public static String versionServer;
 
     DatabaseHelper databaseHelper;
     DatabaseHelperUid databaseHelperUid;
@@ -180,6 +181,13 @@ public class MainActivity extends AppCompatActivity {
     public static final String PERMISSIONS_PREF_NAME = "Permissions";
     public static final String PERMISSION_REQUEST_COUNT_KEY = "PermissionRequestCount";
     public static boolean location_update;
+
+    private static final String PREFS_NAME_VERSION = "MyPrefsFileNew";
+    private static final String LAST_NOTIFICATION_TIME_KEY = "lastNotificationTimeNew";
+    //    private static final long ONE_DAY_IN_MILLISECONDS = 0; // 24 часа в миллисекундах
+    private static final long ONE_DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
+//    private static final long ONE_DAY_IN_MILLISECONDS = 60 * 1000; // 1 минута в миллисекундах
+    private List<RouteResponseCancel> routeListCancel;
    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -195,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
             // Passing each menu ID as a set of Ids because each
             // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-              R.id.nav_visicom, R.id.nav_home, R.id.nav_gallery, R.id.nav_about, R.id.nav_uid, R.id.nav_bonus, R.id.nav_card, R.id.nav_author)
+              R.id.nav_visicom, R.id.nav_home, R.id.nav_cancel, R.id.nav_gallery, R.id.nav_about, R.id.nav_uid, R.id.nav_bonus, R.id.nav_card, R.id.nav_author)
              .setOpenableLayout(drawer)
              .build();
         navMenu = navigationView.getMenu();
@@ -219,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
         } else MainActivity.location_update = ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                 || ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
        // Проверка обновления
-       new Thread(this::verifyUpdate).start();
+
 
         try {
             initDB();
@@ -555,6 +563,7 @@ public class MainActivity extends AppCompatActivity {
             // Действия при наличии интернета
             newUser();
         }
+
     }
 
     public void insertPushDate(Context context) {
@@ -912,67 +921,49 @@ public class MainActivity extends AppCompatActivity {
         appUpdater.registerListener();
 
         // Проверка наличия обновлений
-        checkForUpdate();
+        checkForUpdate(MainActivity.this);
     }
 
     private static final int MY_REQUEST_CODE = 1234; // Уникальный код запроса для обновления
 
-    private void checkForUpdate() {
-        AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(this);
+     private void checkForUpdate(Context context) {
+        AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(context);
         Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
 
         appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
-            Logger.d(getApplicationContext(), TAG, "Update availability: " + appUpdateInfo.updateAvailability());
-            Logger.d(getApplicationContext(), TAG, "Update priority: " + appUpdateInfo.updatePriority());
-            Logger.d(getApplicationContext(), TAG, "Client version staleness days: " + appUpdateInfo.clientVersionStalenessDays());
+            Logger.d(context, TAG, "Update availability: " + appUpdateInfo.updateAvailability());
+            Logger.d(context, TAG, "Update priority: " + appUpdateInfo.updatePriority());
+            Logger.d(context, TAG, "Client version staleness days: " + appUpdateInfo.clientVersionStalenessDays());
 
             if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
                 // Доступны обновления
-                Logger.d(this, TAG, "Available updates found");
+                Logger.d(context, TAG, "Available updates found");
 
                 // Запускаем процесс обновления
                 try {
                     appUpdateManager.startUpdateFlowForResult(
                             appUpdateInfo,
                             AppUpdateType.IMMEDIATE, // или AppUpdateType.FLEXIBLE
-                            MainActivity.this, // Используем ссылку на активность
+                            (Activity) context, // Используем ссылку на активность
                             MY_REQUEST_CODE); // Код запроса для обновления
                 } catch (IntentSender.SendIntentException e) {
-                    Logger.e(this, TAG, "Failed to start update flow: " + e.getMessage());
+                    Logger.e(context, TAG, "Failed to start update flow: " + e.getMessage());
                     FirebaseCrashlytics.getInstance().recordException(e);
                 }
-            } else {
+            }  else {
                 Logger.d(this, TAG, "No updates available");
                 String message = getString(R.string.update_ok);
                 MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
                 bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
             }
         }).addOnFailureListener(e -> {
-            Logger.e(this, TAG, "Failed to check for updates: " + e.getMessage());
+            Logger.e(context, TAG, "Failed to check for updates: " + e.getMessage());
             FirebaseCrashlytics.getInstance().recordException(e);
         });
     }
 
-    private void verifyUpdate() {
-        AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(this);
-        Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
 
-        appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
-            Logger.d(getApplicationContext(), TAG, "Update availability: " + appUpdateInfo.updateAvailability());
-            Logger.d(getApplicationContext(), TAG, "Update priority: " + appUpdateInfo.updatePriority());
-            Logger.d(getApplicationContext(), TAG, "Client version staleness days: " + appUpdateInfo.clientVersionStalenessDays());
 
-            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
-                // Доступны обновления
-                Logger.d(this, TAG, "Available updates found");
-
-                NotificationHelper.showNotificationUpdate(this);
-            }
-        }).addOnFailureListener(e -> {
-            Logger.e(this, TAG, "Failed to check for updates: " + e.getMessage());
-            FirebaseCrashlytics.getInstance().recordException(e);
-        });
-    }
 
     // Обработка результата обновления
     @Override
@@ -986,44 +977,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void checkForUpdateForPush(
-            SharedPreferences SharedPreferences,
-            long currentTime
-    ) {
-        // Обновляем время последней отправки уведомления
-        SharedPreferences.Editor editor = SharedPreferences.edit();
-        editor.putLong(LAST_NOTIFICATION_TIME_KEY, currentTime);
-        editor.apply();
-
-        AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(this);
-        Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
-        appUpdateInfoTask.addOnSuccessListener(new OnSuccessListener<AppUpdateInfo>() {
-            @Override
-            public void onSuccess(AppUpdateInfo appUpdateInfo) {
-                if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
-                    // Доступны обновления
-                    Logger.d(getApplicationContext(), TAG, "Available updates found");
-                    String title = getString(R.string.new_version);
-                    String messageNotif = getString(R.string.news_of_version);
-
-                    String urlStr = "https://play.google.com/store/apps/details?id=com.taxi.easy.ua";
-                    NotificationHelper.showNotification(MainActivity.this, title, messageNotif, urlStr);
-                }
-            }
-        });
-    }
-
-
-
-
-
 
     private void restartApplication() {
         Intent intent = new Intent(getApplicationContext(), MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
-        finish();
-
     }
 
     @Override
@@ -1285,18 +1243,12 @@ public class MainActivity extends AppCompatActivity {
 
         } else {
 
-
-            new Thread(() -> fetchRoutes(userEmail)).start();
-            new Thread(() -> updatePushDate(getApplicationContext())).start();
-
-            String application =  getString(R.string.application);
-            new VerifyUserTask(this).execute();
-
-            UserPermissions.getPermissions(userEmail, getApplicationContext());
-//            new UsersMessages(userEmail, getApplicationContext());
-
-            // Проверка новой версии в маркете
             new Thread(this::versionFromMarket).start();
+            new Thread(() -> fetchRoutes(userEmail)).start();
+            new Thread(() -> fetchRoutesCancel(userEmail)).start();
+            new Thread(() -> updatePushDate(getApplicationContext())).start();
+            new VerifyUserTask(this).execute();
+            UserPermissions.getPermissions(userEmail, getApplicationContext());
 
             Thread wfpCardThread = new Thread(() -> {
                 List<String> stringList = logCursor(MainActivity.CITY_INFO);
@@ -1617,7 +1569,6 @@ public class MainActivity extends AppCompatActivity {
                         + createdAt + getString(R.string.close_resone_text) + closeReasonText;
             }
 
-//                array[i] = routeInfo;
             databaseHelper.addRouteInfo(routeInfo);
 
             List<String> settings = new ArrayList<>();
@@ -1933,24 +1884,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private static final String PREFS_NAME_VERSION = "MyPrefsFileNew";
-    private static final String LAST_NOTIFICATION_TIME_KEY = "lastNotificationTimeNew";
-//    private static final long ONE_DAY_IN_MILLISECONDS = 0; // 24 часа в миллисекундах
-    private static final long ONE_DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
-
-     private void versionFromMarket()  {
-        // Получаем SharedPreferences
-        SharedPreferences SharedPreferences = getSharedPreferences(PREFS_NAME_VERSION, Context.MODE_PRIVATE);
-        // Получаем время последней отправки уведомления
-        long lastNotificationTime = SharedPreferences.getLong(LAST_NOTIFICATION_TIME_KEY, 0);
-        // Получаем текущее время
-        long currentTime = System.currentTimeMillis();
-        // Проверяем, прошло ли уже 24 часа с момента последней отправки
-        if (currentTime - lastNotificationTime >= ONE_DAY_IN_MILLISECONDS) {
-            checkForUpdateForPush(SharedPreferences, currentTime);
-        }
-    }
-
     private void cityMaxPay(String city) {
         CityService cityService = CityApiClient.getClient().create(CityService.class);
 
@@ -2090,7 +2023,7 @@ public class MainActivity extends AppCompatActivity {
 
             String app = getApplicationContext().getString(R.string.application);
 
-            Call<Void> call = apiService.sendToken(email, app, token);
+            Call<Void> call = apiService.sendToken(email, app, token, LocaleHelper.getLocale());
 
             // Выполняем асинхронный запрос
             call.enqueue(new Callback<Void>() {
@@ -2108,6 +2041,213 @@ public class MainActivity extends AppCompatActivity {
                     Logger.e(getApplicationContext(),TAG, "Ошибка отправки токена на сервер: " + t);
                 }
             });
+        }
+    }
+
+
+    private void versionFromMarket()  {
+        // Получаем SharedPreferences
+        SharedPreferences SharedPreferences = getSharedPreferences(PREFS_NAME_VERSION, Context.MODE_PRIVATE);
+        // Получаем время последней отправки уведомления
+        long lastNotificationTime = SharedPreferences.getLong(LAST_NOTIFICATION_TIME_KEY, 0);
+        // Получаем текущее время
+        long currentTime = System.currentTimeMillis();
+        // Проверяем, прошло ли уже 24 часа с момента последней отправки
+        if (currentTime - lastNotificationTime >= ONE_DAY_IN_MILLISECONDS) {
+            checkForUpdateForPush(SharedPreferences, currentTime);
+        }
+    }
+    private void checkForUpdateForPush(
+            SharedPreferences SharedPreferences,
+            long currentTime
+    ) {
+        // Обновляем время последней отправки уведомления
+        SharedPreferences.Editor editor = SharedPreferences.edit();
+        editor.putLong(LAST_NOTIFICATION_TIME_KEY, currentTime);
+        editor.apply();
+
+        AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(this);
+        Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
+        appUpdateInfoTask.addOnSuccessListener(new OnSuccessListener<AppUpdateInfo>() {
+            @Override
+            public void onSuccess(AppUpdateInfo appUpdateInfo) {
+                if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
+                    // Доступны обновления
+                    Logger.d(getApplicationContext(), TAG, "Available updates found");
+                    String title = getString(R.string.new_version);
+                    String messageNotif = getString(R.string.news_of_version);
+
+                    String urlStr = "https://play.google.com/store/apps/details?id=com.taxi.easy.ua";
+                    NotificationHelper.showNotification(MainActivity.this, title, messageNotif, urlStr);
+                }
+            }
+        });
+    }
+
+    private void fetchRoutesCancel(String value) {
+        Logger.d(this, TAG, "fetchRoutesCancel: ");
+
+        routeListCancel = new ArrayList<>();
+
+        String url = baseUrl + "/android/UIDStatusShowEmailCancel/" + value;
+        Call<List<RouteResponseCancel>> call = ApiClient.getApiService().getRoutesCancel(url);
+        Logger.d(this, TAG, "fetchRoutesCancel: " + url);
+        call.enqueue(new Callback<List<RouteResponseCancel>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Response<List<RouteResponseCancel>> response) {
+                if (response.isSuccessful()) {
+                    List<RouteResponseCancel> routes = response.body();
+                    assert routes != null;
+                    Logger.d(MainActivity.this, TAG, "onResponse: " + routes.toString());
+                    if (!routes.isEmpty()) {
+                        boolean hasRouteWithAsterisk = false;
+                        for (RouteResponseCancel route : routes) {
+                            if ("*".equals(route.getRouteFrom())) {
+                                // Найден объект с routefrom = "*"
+                                hasRouteWithAsterisk = true;
+                                break;  // Выход из цикла, так как условие уже выполнено
+                            }
+                        }
+                        if (!hasRouteWithAsterisk) {
+                            if (routeListCancel == null) {
+                                routeListCancel = new ArrayList<>();
+                            }
+                            routeListCancel.addAll(routes);
+                            processCancelList();
+                        }
+
+                    }
+                }
+            }
+
+            public void onFailure(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Throwable t) {
+                // Обработка ошибок сети или других ошибок
+                FirebaseCrashlytics.getInstance().recordException(t);
+            }
+        });
+    }
+
+    private void processCancelList() {
+        if (routeListCancel == null || routeListCancel.isEmpty()) {
+            Logger.d(this, TAG, "routeListCancel is null or empty");
+            return;
+        }
+
+        // Создайте массив строк
+        array = new String[routeListCancel.size()];
+        databaseHelper.clearTableCancel();
+        databaseHelperUid.clearTableCancel();
+
+        String closeReasonText = getString(R.string.close_resone_def);
+
+        for (int i = 0; i < routeListCancel.size(); i++) {
+            RouteResponseCancel route = routeListCancel.get(i);
+            String uid = route.getUid();
+            String routeFrom = route.getRouteFrom();
+            String routefromnumber = route.getRouteFromNumber();
+            String routeTo = route.getRouteTo();
+            String routeTonumber = route.getRouteToNumber();
+            String webCost = route.getWebCost();
+            String createdAt = route.getCreatedAt();
+            String closeReason = route.getCloseReason();
+            String auto = route.getAuto();
+            String dispatchingOrderUidDouble = route.getDispatchingOrderUidDouble();
+            String pay_method = route.getPay_method();
+
+            switch (closeReason) {
+                case "-1":
+                    closeReasonText = getString(R.string.close_resone_in_work);
+                    break;
+                case "0":
+                    closeReasonText = getString(R.string.close_resone_0);
+                    break;
+                case "1":
+                    closeReasonText = getString(R.string.close_resone_1);
+                    break;
+                case "2":
+                    closeReasonText = getString(R.string.close_resone_2);
+                    break;
+                case "3":
+                    closeReasonText = getString(R.string.close_resone_3);
+                    break;
+                case "4":
+                    closeReasonText = getString(R.string.close_resone_4);
+                    break;
+                case "5":
+                    closeReasonText = getString(R.string.close_resone_5);
+                    break;
+                case "6":
+                    closeReasonText = getString(R.string.close_resone_6);
+                    break;
+                case "7":
+                    closeReasonText = getString(R.string.close_resone_7);
+                    break;
+                case "8":
+                    closeReasonText = getString(R.string.close_resone_8);
+                    break;
+                case "9":
+                    closeReasonText = getString(R.string.close_resone_9);
+                    break;
+            }
+
+            if (routeFrom.equals("Місце відправлення")) {
+                routeFrom = getString(R.string.start_point_text);
+            }
+
+            if (routeTo.equals("Точка на карте")) {
+                routeTo = getString(R.string.end_point_marker);
+            }
+            if (routeTo.contains("по городу")) {
+                routeTo = getString(R.string.on_city);
+            }
+            if (routeTo.contains("по місту")) {
+                routeTo = getString(R.string.on_city);
+            }
+            String routeInfo = "";
+
+            if (auto == null) {
+                auto = "??";
+            }
+
+            if (routeFrom.equals(routeTo)) {
+                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                        + getString(R.string.close_resone_to)
+                        + getString(R.string.on_city)
+                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
+                        + getString(R.string.auto_info) + " " + auto + " "
+                        + getString(R.string.close_resone_time)
+                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
+            } else {
+                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                        + getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
+                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
+                        + getString(R.string.auto_info) + " " + auto + " "
+                        + getString(R.string.close_resone_time)
+                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
+            }
+
+            databaseHelper.addRouteCancel(uid, routeInfo);
+            List<String> settings = new ArrayList<>();
+
+            settings.add(uid);
+            settings.add(webCost);
+            settings.add(routeFrom);
+            settings.add(routefromnumber);
+            settings.add(routeTo);
+            settings.add(routeTonumber);
+            settings.add(dispatchingOrderUidDouble);
+            settings.add(pay_method);
+
+            Logger.d(this, TAG, settings.toString());
+            databaseHelperUid.addCancelInfoUid(settings);
+        }
+
+        array = databaseHelper.readRouteCancel();
+        Logger.d(this, TAG, "processRouteList: array " + Arrays.toString(array));
+        if (array != null) {
+            String message = getString(R.string.order_to_cancel_true);
+            MyBottomSheetErrorFragment myBottomSheetMessageFragment = new MyBottomSheetErrorFragment(message);
+            myBottomSheetMessageFragment.show(getSupportFragmentManager(), myBottomSheetMessageFragment.getTag());
         }
     }
 }

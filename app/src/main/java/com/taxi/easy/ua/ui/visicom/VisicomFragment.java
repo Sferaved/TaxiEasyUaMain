@@ -24,7 +24,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -80,6 +79,7 @@ import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.tariff.DatabaseHelperTariffs;
 import com.taxi.easy.ua.utils.tariff.Tariff;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
@@ -92,7 +92,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -105,7 +104,6 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
     public static ProgressBar progressBar;
     private FragmentVisicomBinding binding;
     private static final String TAG = "TAG_VISICOM";
-    private MyPhoneDialogFragment bottomSheetDialogFragment;
     private static final int REQUEST_LOCATION_PERMISSION = 1;
     FloatingActionButton fab_call;
 
@@ -710,20 +708,14 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
 
     }
     public void orderFinished() throws MalformedURLException {
-
-        if(!phoneFull()) {
-            if (!verifyPhone(context)) {
-                getPhoneNumber();
-            }
-            if (!verifyPhone(context)) {
-                bottomSheetDialogFragment = new MyPhoneDialogFragment(context,"visicom");
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                progressBar.setVisibility(View.INVISIBLE);
-            }
+        if (!MainActivity.verifyPhone){
+            String message = getString(R.string.phone_input_error);
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+            
+            MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment(context, "visicom");
+            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+            progressBar.setVisibility(View.INVISIBLE);
         } else {
-            MainActivity.verifyPhone = true;
-        }
-        if (verifyPhone(requireContext())) {
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
             Logger.d(context, TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
@@ -826,7 +818,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                                     break;
                                 default:
                                     progressBar.setVisibility(View.INVISIBLE);
-                                    message = getResources().getString(R.string.error_message);
+                                    message = context.getString(R.string.error_message);
                             }
 
                         }
@@ -841,11 +833,6 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                     FirebaseCrashlytics.getInstance().recordException(t);
                 }
             });
-        } else {
-
-            String message = getString(R.string.phone_input_error);
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         }
 
     }
@@ -864,71 +851,6 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
         }
         database.close();
         return verify;
-    }
-
-    private boolean verifyPhone(Context context) {
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-        boolean verify = true;
-        if (cursor.getCount() == 1) {
-
-            if (logCursor(MainActivity.TABLE_USER_INFO, context).get(2).equals("+380") ||
-                !MainActivity.verifyPhone) {
-                verify = false;
-            }
-            cursor.close();
-        }
-        Logger.d(context, TAG, "verifyPhone: " + verify);
-        return verify;
-    }
-    private void getPhoneNumber () {
-        String mPhoneNumber;
-        TelephonyManager tMgr = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-            Log.d("TAG", "Manifest.permission.READ_PHONE_NUMBERS: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS));
-            Log.d("TAG", "Manifest.permission.READ_PHONE_STATE: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE));
-            return;
-        }
-        mPhoneNumber = tMgr.getLine1Number();
-//        mPhoneNumber = null;
-        if(mPhoneNumber != null) {
-            String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
-            boolean val = Pattern.compile(PHONE_PATTERN).matcher(mPhoneNumber).matches();
-            Log.d("TAG", "onClick No validate: " + val);
-            if (!val) {
-                Toast.makeText(context, getString(R.string.format_phone) , Toast.LENGTH_SHORT).show();
-                Log.d("TAG", "onClick:phoneNumber.getText().toString() " + mPhoneNumber);
-//                context.finish();
-
-            } else {
-                updateRecordsUser(mPhoneNumber, requireContext());
-            }
-        }
-
-    }
-    private boolean phoneFull () {
-        List<String> stringList =  logCursor(MainActivity.TABLE_USER_INFO, requireContext());
-        String mPhoneNumber = "+380";
-        if(stringList.size() != 0) {
-            mPhoneNumber = stringList.get(2);
-        }
-
-        String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
-
-        return Pattern.compile(PHONE_PATTERN).matcher(mPhoneNumber).matches();
-
-    }
-    private void updateRecordsUser(String result, Context context) {
-        ContentValues cv = new ContentValues();
-
-        cv.put("phone_number", result);
-
-        // обновляем по id
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        int updCount = database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
-                new String[] { "1" });
-        Log.d("TAG", "updated rows count = " + updCount);
     }
 
     private static void insertRecordsOrders( String from, String to,
