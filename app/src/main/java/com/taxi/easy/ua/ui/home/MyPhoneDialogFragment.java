@@ -13,7 +13,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,7 +26,6 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.app.ActivityCompat;
-import androidx.fragment.app.FragmentManager;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
@@ -45,7 +43,6 @@ import java.util.regex.Pattern;
 
 
 public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
-    private FragmentManager fragmentManager;
 
     public MyPhoneDialogFragment() {
     }
@@ -54,6 +51,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
     AppCompatButton button;
     CheckBox checkBox;
     String page;
+    final String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
     private final String TAG = "MyPhoneDialogFragment";
     private Context mContext;
     public MyPhoneDialogFragment(Context context, String page) {
@@ -65,41 +63,38 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.phone_verify_layout, container, false);
-        fragmentManager = getParentFragmentManager();
         phoneNumber = view.findViewById(R.id.phoneNumber);
         button = view.findViewById(R.id.ok_button);
         checkBox = view.findViewById(R.id.checkbox);
 
+        MainActivity.verifyPhone = false;
         phoneFull(mContext);
 
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
-                boolean val = Pattern.compile(PHONE_PATTERN).matcher(phoneNumber.getText().toString()).matches();
-
-                if (!val) {
-                    String message = mContext.getString(R.string.format_phone);
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                } else  {
-                    MainActivity.verifyPhone = true;
-                    updateRecordsUser(phoneNumber.getText().toString(), mContext);
-                    Logger.d(getActivity(), TAG, "setOnClickListener " + phoneNumber.getText().toString());
-                    Logger.d(getActivity(), TAG, "setOnClickListener " + page);
-                    switch (page) {
-                        case "home" :
-                            HomeFragment.btn_order.performClick();
-                            dismiss();
-                            break;
-                        case "visicom" :
-                            VisicomFragment.btnOrder.performClick();
-                            dismiss();
-                            break;
-                    }
-              }
+        button.setOnClickListener(v -> {
+            if (Pattern.compile(PHONE_PATTERN).matcher(phoneNumber.getText().toString()).matches()) {
+                MainActivity.verifyPhone = true;
+                updateRecordsUser(phoneNumber.getText().toString(), mContext);
+                Logger.d(getActivity(), TAG, "setOnClickListener " + phoneNumber.getText().toString());
+                Logger.d(getActivity(), TAG, "setOnClickListener " + page);
+                switch (page) {
+                    case "home":
+                        HomeFragment.btnVisible(View.INVISIBLE);
+                        HomeFragment.btn_order.performClick();
+                        dismiss();
+                        break;
+                    case "visicom":
+                        VisicomFragment.btnVisible(View.INVISIBLE);
+                        VisicomFragment.btnOrder.performClick();
+                        dismiss();
+                        break;
+                }
+            } else {
+                MainActivity.verifyPhone = false;
+                Toast.makeText(mContext, getString(R.string.format_phone) , Toast.LENGTH_SHORT).show();
             }
         });
+
+
         return view;
     }
 
@@ -134,7 +129,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         if (imm != null && requireActivity().getCurrentFocus() != null) {
             imm.hideSoftInputFromWindow(Objects.requireNonNull(requireActivity().getCurrentFocus()).getWindowToken(), 0);
         }
-        if(!checkBox.isChecked()) {
+        if (!MainActivity.verifyPhone) {
             switch (page) {
                 case "visicom":
                     VisicomFragment.btnVisible(View.VISIBLE);
@@ -143,8 +138,6 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                     HomeFragment.btnVisible(View.VISIBLE);
                     break;
             }
-            phoneNumber.setVisibility(View.VISIBLE);
-            button.setVisibility(View.VISIBLE);
         }
     }
 
@@ -179,48 +172,29 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         Logger.d(context, TAG, "updated rows count = " + updCount);
         phoneNumber.setText(result);
     }
+    @SuppressLint("HardwareIds")
     private void getPhoneNumber (Context context) {
-        String mPhoneNumber;
+        String phone;
         TelephonyManager tMgr = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
 
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-            Log.d("TAG", "Manifest.permission.READ_PHONE_NUMBERS: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS));
-            Log.d("TAG", "Manifest.permission.READ_PHONE_STATE: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE));
+            Logger.d(context, TAG, "Manifest.permission.READ_PHONE_NUMBERS: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS));
+            Logger.d(context, TAG, "Manifest.permission.READ_PHONE_STATE: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE));
             return;
         }
-        mPhoneNumber = tMgr.getLine1Number();
+        phone = tMgr.getLine1Number();
 
-        if(mPhoneNumber != null) {
-            String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
-            boolean val = Pattern.compile(PHONE_PATTERN).matcher(mPhoneNumber).matches();
-            Log.d("TAG", "onClick No validate: " + val);
-            if (!val) {
-                Toast.makeText(context, getString(R.string.format_phone) , Toast.LENGTH_SHORT).show();
-                Logger.d(context, TAG, "onClick:phoneNumber.getText().toString() " + mPhoneNumber);
-            } else {
-                updateRecordsUser(mPhoneNumber, requireContext());
-            }
+        if(phone != null) {
+            phoneNumber.setText(phone);
         }
 
     }
     private void phoneFull (Context context) {
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-        String phone;
-        String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
-        if (c.getCount() == 1) {
-            phone = logCursor(MainActivity.TABLE_USER_INFO).get(2);
-            if (phone != null && !phone.equals("+380")) {
-                if(Pattern.compile(PHONE_PATTERN).matcher(phone).matches()) {
-                    phoneNumber.setText(phone);
-                }
-            }
-            c.close();
-            database.close();
-        } else {
+        String phone = logCursor(MainActivity.TABLE_USER_INFO).get(2);
+        phoneNumber.setText(phone);
+        if (phone.equals("+380") || phone.isEmpty()) {
             getPhoneNumber(context);
         }
-
     }
 }
 

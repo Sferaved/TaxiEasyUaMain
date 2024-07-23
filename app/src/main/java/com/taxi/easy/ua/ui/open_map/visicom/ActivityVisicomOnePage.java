@@ -20,9 +20,9 @@ import android.os.Looper;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -45,11 +45,13 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.cities.Kyiv.KyivRegion;
 import com.taxi.easy.ua.cities.Kyiv.KyivRegionRu;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
+import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapVisicomActivity;
 import com.taxi.easy.ua.ui.open_map.mapbox.Feature;
 import com.taxi.easy.ua.ui.open_map.mapbox.Geometry;
@@ -98,7 +100,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
     private ImageButton btn_clear_from, btn_clear_to, btn_ok, btn_no;
     private static List<double[]> coordinatesList;
     private static List<String[]> addresses;
-    private final OkHttpClient client = new OkHttpClient();
+    private OkHttpClient client;
     private String startPoint, finishPoint;
     ListView addressListView;
 
@@ -127,7 +129,9 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
     private boolean location_update;
     private ImageButton scrollButtonDown, scrollButtonUp;
     private final int desiredHeight = 600;
-
+    private final int max_length_string_size = 4;
+    List<String> addressesList;
+    
     @SuppressLint({"MissingInflatedId", "UseCompatLoadingForDrawables"})
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -136,7 +140,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
         start = getIntent().getStringExtra("start");
         end = getIntent().getStringExtra("end");
-
+        client = new OkHttpClient();
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         switch (LocaleHelper.getLocale()) {
             case "ru":
@@ -245,9 +249,12 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
 
         toEditAddress = findViewById(R.id.text_to);
-//        toEditAddress.setText(VisicomFragment.textViewTo.getText().toString());
         inputType = toEditAddress.getInputType() | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS;
         toEditAddress.setInputType(inputType);
+
+        addressesList = new ArrayList<>();
+        addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
+        addressListView.setAdapter(addressAdapter);
 
         btn_clear_from = findViewById(R.id.btn_clear_from);
         btn_clear_from.setOnClickListener(new View.OnClickListener() {
@@ -256,9 +263,11 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 addresses = new ArrayList<>();
                 coordinatesList = new ArrayList<>();
 
-                List<String> addressesList = new ArrayList<>();
+                addressesList = new ArrayList<>();
                 addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
+                
                 addressListView.setAdapter(addressAdapter);
+
 
                 fromEditAddress.setText("");
                 btn_clear_from.setVisibility(View.INVISIBLE);
@@ -274,9 +283,10 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             public void onClick(View v) {
                 addresses = new ArrayList<>();
                 coordinatesList = new ArrayList<>();
-                List<String> addressesList = new ArrayList<>();
+                addressesList = new ArrayList<>();
                 addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
 
+                
                 addressListView.setAdapter(addressAdapter);
 
                 toEditAddress.setText("");
@@ -292,7 +302,11 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
         verifyRoutFinish = true;
         btn_change = findViewById(R.id.change);
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        scrollButtonUp = findViewById(R.id.scrollButtonUp);
+        scrollButtonDown = findViewById(R.id.scrollButtonDown);
 
+        scrollButtonUp.setVisibility(View.GONE);
+        scrollButtonDown.setVisibility(View.GONE);
 
         btn_change.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -526,12 +540,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                         }
                         if (!verifyBuildingFinish) {
                             text_toError.setVisibility(View.VISIBLE);
-                            if (addresses.size() == 1 ) {
-                                text_toError.setText(R.string.no_house_vis_mes);
+                            text_toError.setText(R.string.house_vis_mes);
 
-                            } else {
-                                text_toError.setText(R.string.house_vis_mes);
-                            }
                             toEditAddress.requestFocus();
                             toEditAddress.setSelection(toEditAddress.getText().toString().length());
                             KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
@@ -545,6 +555,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                         }
 
                         if (verifyRoutFinish && verifyBuildingFinish) {
+                            scrollButtonUp.setVisibility(View.GONE);
+                            scrollButtonDown.setVisibility(View.GONE);
                             new Handler().postDelayed(new Runnable() {
                                 @Override
                                 public void run() {
@@ -563,54 +575,54 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
             }
         });
-        scrollButtonUp = findViewById(R.id.scrollButtonUp);
-        scrollButtonDown = findViewById(R.id.scrollButtonDown);
-        scrollButtonDown.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Определяем следующую позицию для прокрутки
-                int nextVisiblePosition = addressListView.getLastVisiblePosition() + 1;
 
-                // Проверяем, чтобы не прокручивать за пределы списка
-//                if (nextVisiblePosition < addressesList.length) {
-                    // Плавно прокручиваем к следующей позиции
-                    addressListView.smoothScrollToPosition(nextVisiblePosition);
-//                }
-            }
+        scrollButtonDown.setOnClickListener(v -> {
+            int nextVisiblePosition = addressListView.getLastVisiblePosition() + 1;
+            addressListView.smoothScrollToPosition(nextVisiblePosition);
         });
 
-        scrollButtonUp.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                int offset = -1; // или другое значение, чтобы указать направление прокрутки
-                addressListView.smoothScrollByOffset(offset);
-            }
+        scrollButtonUp.setOnClickListener(v -> {
+            int offset = -1; // или другое значение, чтобы указать направление прокрутки
+            addressListView.smoothScrollByOffset(offset);
         });
+
         ViewGroup.LayoutParams layoutParams = addressListView.getLayoutParams();
         layoutParams.height = desiredHeight;
         addressListView.setLayoutParams(layoutParams);
-        addressListView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                int totalItemHeight = 0;
-                for (int i = 0; i < addressListView.getChildCount(); i++) {
-                    totalItemHeight += addressListView.getChildAt(i).getHeight();
-                }
-
-                if (totalItemHeight > desiredHeight) {
-                    scrollButtonUp.setVisibility(View.VISIBLE);
-                    scrollButtonDown.setVisibility(View.VISIBLE);
-                } else {
-                    scrollButtonUp.setVisibility(View.GONE);
-                    scrollButtonDown.setVisibility(View.GONE);
-                }
-
-                // Убираем слушатель, чтобы он не срабатывал многократно
-//                    listView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-            }
-        });
+//        scrollSetVisibility ();
+//        addressListView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+//            int totalItemHeight = 0;
+//            for (int i = 0; i < addressListView.getChildCount(); i++) {
+//                totalItemHeight += addressListView.getChildAt(i).getHeight();
+//            }
+//
+//            if (totalItemHeight > desiredHeight) {
+//                scrollButtonUp.setVisibility(View.VISIBLE);
+//                scrollButtonDown.setVisibility(View.VISIBLE);
+//            } else {
+//                scrollButtonUp.setVisibility(View.GONE);
+//                scrollButtonDown.setVisibility(View.GONE);
+//            }
+//
+//            // Убираем слушатель, чтобы он не срабатывал многократно
+////                    listView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+//        });
 
     }
+
+    private void scrollSetVisibility() {
+        if (addressesList != null) {
+            Log.d(TAG, "scrollSetVisibility:addressListView.getChildCount() " + addressListView.getChildCount());
+            if (addressesList.size() > 4) {
+                scrollButtonUp.setVisibility(View.VISIBLE);
+                scrollButtonDown.setVisibility(View.VISIBLE);
+            } else {
+                scrollButtonUp.setVisibility(View.GONE);
+                scrollButtonDown.setVisibility(View.GONE);
+            }
+        }
+    }
+
     private void firstLocation() {
         // Получить менеджер ввода
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -953,10 +965,12 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 if (before > 0 && charCount > 2) {
                     positionChecked = 0;
                 }
+
             }
 
             @Override
             public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
+
                 String inputString = charSequence.toString();
                 int charCount = inputString.length();
                 Logger.d(getApplicationContext(), TAG, "onTextChanged: " + inputString);
@@ -964,6 +978,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                     Logger.d(getApplicationContext(), TAG, "onTextChanged:startPoint " + startPoint);
                     Logger.d(getApplicationContext(), TAG, "onTextChanged:fromEditAddress.getText().toString() " + fromEditAddress.getText().toString());
                     Logger.d(getApplicationContext(), TAG, "onTextChanged:MainActivity.countryState " + MainActivity.countryState);
+
                     if (startPoint == null) {
                         if(MainActivity.countryState.equals("UA")) {
                             performAddressSearch(inputString, "start");
@@ -995,9 +1010,11 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 if (before > 0 && charCount > 2) {
                     positionChecked = 0;
                 }
+
             }
             @Override
             public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
+
                 // Вызывается при изменении текста
                 String inputString = charSequence.toString();
                 int charCount = inputString.length();
@@ -1026,10 +1043,11 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable editable) {
                 // Вызывается после изменения текста
+
             }
         });
 
-        if (fromEditAddress.getText().toString().equals("")) {
+        if (fromEditAddress.getText().toString().isEmpty()) {
 
             btn_clear_from.setVisibility(View.INVISIBLE);
             fromEditAddress.requestFocus();
@@ -1114,6 +1132,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 @Override
                 public void onResponse(@NonNull okhttp3.Call call, @NonNull okhttp3.Response response) {
                     try {
+                        assert response.body() != null;
                         String responseData = response.body().string();
                         Logger.d(getApplicationContext(), TAG, "onResponse: " + responseData);
                         processAddressData(responseData, point);
@@ -1133,6 +1152,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
 
     }
+
 
     private String inputTextBuild() {
         Logger.d(getApplicationContext(), TAG, "inputTextBuild: " + positionChecked);
@@ -1485,71 +1505,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 coordinatesList = new ArrayList<>();
 
                 if(jsonResponse.length() == 0) {
-
-
-                    List<String> stringList = logCursor(MainActivity.CITY_INFO);
-                    String city = getString(R.string.foreign_countries);
-                    switch (stringList.get(1)) {
-                        case "Kyiv City":
-                            city = getString(R.string.Kyiv_city);
-                            break;
-                        case "Dnipropetrovsk Oblast":
-                            break;
-                        case "Odessa":
-                        case "OdessaTest":
-                            city = getString(R.string.Odessa);
-                            break;
-                        case "Zaporizhzhia":
-                            city = getString(R.string.Zaporizhzhia);
-                            break;
-                        case "Cherkasy Oblast":
-                            city = getString(R.string.Cherkasy);
-                            break;
-                        default:
-                            city = getString(R.string.foreign_countries);
-                            break;
-                    }
-                    String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                    SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                    Cursor cursor = database.rawQuery(query, null);
-
-                    cursor.moveToFirst();
-
-                    // Получите значения полей из первой записи
-
-
-                    @SuppressLint("Range") double startLat = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                    @SuppressLint("Range") double startLan = cursor.getDouble(cursor.getColumnIndex("startLan"));
-                    @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                    @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                    @SuppressLint("Range") String start = cursor.getString(cursor.getColumnIndex("start"));
-                    @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
-                    cursor.close();
-                    database.close();
-                    List<String> settings = new ArrayList<>();
-                    settings.add(String.valueOf(startLat));
-                    settings.add(String.valueOf(startLat));
-                    settings.add(String.valueOf(toLatitude));
-                    settings.add(String.valueOf(toLongitude));
-
-                    if (!point.equals("finish")) {
-//                        String startPoint = fromEditAddress.getText().toString().replaceAll("[\\d\\s]+$", "")+ ", " + getString(R.string.city_loc) + " " + city;
-                        String startPoint = fromEditAddress.getText().toString().replaceAll("[\\d\\s]+$", "")+ ", " + getString(R.string.city_loc);
-                        Logger.d(getApplicationContext(), TAG, "processAddressData:startPoint " + startPoint);
-                        settings.add(startPoint);
-                        settings.add(finish);
-                        VisicomFragment.geoText.setText(startPoint);
-                    } else  {
-                        String toPoint = toEditAddress.getText().toString().replaceAll("[\\d\\s]+$", "") + ", " + getString(R.string.city_loc) + " " + city;
-                        Logger.d(getApplicationContext(), TAG, "processAddressData:startPoint " + toPoint);
-                        settings.add(start);
-                        settings.add(toPoint);
-                        VisicomFragment.geoText.setText(toPoint);
-                    }
-
-                    updateRoutMarker(settings);
                     extraExit = true;
-
                 } else {
                     JSONObject properties = jsonResponse.getJSONObject("properties");
                     JSONObject geoCentroid = jsonResponse.getJSONObject("geo_centroid");
@@ -1720,7 +1676,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
         if (!addresses.isEmpty()) {
 
             new Handler(Looper.getMainLooper()).post(() -> {
-                List<String> addressesList = new ArrayList<>();
+                addressesList = new ArrayList<>();
                 List<String> nameList = new ArrayList<>();
                 List<String> zoneList = new ArrayList<>();
                 List<String> settlementList = new ArrayList<>();
@@ -1734,20 +1690,41 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 }
 
                 addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
+
+
                 if(addressesList.size() == 1) {
-                    Logger.d(getApplicationContext(), TAG, "processAddressData: addressesList " + addressesList.size());
                     if (start.equals("ok")) {
-                        textGeoError.setVisibility(View.VISIBLE);
-                        textGeoError.setText(R.string.no_house_vis_mes);
+                        String textEdit = fromEditAddress.getText().toString();
+                        Logger.d(this, TAG, "textEdit" + textEdit);
+                        if(textEdit.length() >= max_length_string_size) {
+                            if (textEdit.contains("\f")) {
+                                textGeoError.setVisibility(View.VISIBLE);
+                                textGeoError.setText(R.string.no_house_vis_mes);
+                            } else {
+                                textGeoError.setVisibility(View.VISIBLE);
+                                textGeoError.setText(R.string.no_adrees_mes);
+                            }
+
+                       }
                     } else {
-                        text_toError.setVisibility(View.VISIBLE);
-                        text_toError.setText(R.string.no_house_vis_mes);
+                        String textEdit = toEditAddress.getText().toString();
+                        if (textEdit.length() >= max_length_string_size) {
+                            if (textEdit.contains("\f")) {
+                                text_toError.setVisibility(View.VISIBLE);
+                                text_toError.setText(R.string.no_house_vis_mes);
+                            } else {
+                                text_toError.setVisibility(View.VISIBLE);
+                                text_toError.setText(R.string.no_adrees_mes);
+                            }
+                        }
                     }
 
                 }
                 addressListView.setVisibility(View.VISIBLE);
-
+                
                 addressListView.setAdapter(addressAdapter);
+
+
                 addressListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
                 addressListView.setItemChecked(0, true);
 
@@ -1903,11 +1880,9 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                     addressListView.setVisibility(View.INVISIBLE);
                     Logger.d(getApplicationContext(), TAG, "processAddressData:222222 " + addressesList.get(position));
-
-
                 });
-//                    btn_ok.setVisibility(View.VISIBLE);
 
+                scrollSetVisibility();
             });
         }
 
@@ -2062,15 +2037,19 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 "",
                 "",
         });
-        List<String> addressesList = new ArrayList<>();
+         addressesList = new ArrayList<>();
         for (String[] addressArray : addresses) {
             // Выбираем значение 'address' из массива и добавляем его в addressesList
             addressesList.add(addressArray[0]);
         }
         Logger.d(getApplicationContext(), TAG, "onCreate: " + addressesList);
         addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
-        addressListView.setVisibility(View.VISIBLE);
+        
         addressListView.setAdapter(addressAdapter);
+
+        addressListView.setVisibility(View.VISIBLE);
+
+
         addressListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         addressListView.setItemChecked(0, true);
         addressListView.setOnItemClickListener((parent, viewC, position, id) -> {
@@ -2213,6 +2192,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             }
 
             addressListView.setVisibility(View.INVISIBLE);
+            scrollSetVisibility();
         });
     }
 //    private void mapboxKey(final ApiCallbackMapbox callback) {
@@ -2432,7 +2412,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
         if (addresses.size() != 0) {
             new Handler(Looper.getMainLooper()).post(() -> {
-                List<String> addressesList = new ArrayList<>();
+                 addressesList = new ArrayList<>();
                 List<String> nameList = new ArrayList<>();
                 List<String> zoneList = new ArrayList<>();
                 List<String> settlementList = new ArrayList<>();
@@ -2447,10 +2427,10 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                 addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
 
-
+                
+                addressListView.setAdapter(addressAdapter);
                 addressListView.setVisibility(View.VISIBLE);
 
-                addressListView.setAdapter(addressAdapter);
                 addressListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
                 addressListView.setItemChecked(0, true);
 

@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -27,16 +28,17 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentCancelBinding;
+import com.taxi.easy.ua.databinding.FragmentUidBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.FinishActivity;
+import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
@@ -63,11 +65,10 @@ public class CancelFragment extends Fragment {
     private @NonNull FragmentCancelBinding binding = null;
     private ListView listView;
     private String[] array;
-    private String[] arrayUid;
     private RouteInfoCancel routeInfo;
     private NetworkChangeReceiver networkChangeReceiver;
     ProgressBar progressBar;
-    NavController navController;
+
     DatabaseHelper databaseHelper;
     DatabaseHelperUid databaseHelperUid;
     String baseUrl = "https://m.easy-order-taxi.site";
@@ -86,14 +87,12 @@ public class CancelFragment extends Fragment {
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-
         binding = FragmentCancelBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
         context = requireActivity();
-        
+
         Logger.d(context, TAG, "onContextItemSelected: ");
-    
+
         fragmentManager = getParentFragmentManager();
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
 
@@ -104,18 +103,27 @@ public class CancelFragment extends Fragment {
         email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(requireActivity())).get(3);
 
         databaseHelper = new DatabaseHelper(getContext());
-        array = databaseHelper.readRouteCancel();
-
-
         databaseHelperUid = new DatabaseHelperUid(getContext());
-
+        array = databaseHelper.readRouteCancel();
+        FloatingActionButton fab_call = binding.fabCall;
+        fab_call.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_DIAL);
+                List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+                String phone = stringList.get(3);
+                intent.setData(Uri.parse(phone));
+                startActivity(intent);
+            }
+        });
         textUid  = binding.textUid;
         upd_but = binding.updBut;
         upd_but.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (!NetworkUtils.isNetworkAvailable(context)) {
-                    navController.navigate(R.id.nav_visicom);
+                    MainActivity.navController.popBackStack();
+                    MainActivity.navController.navigate(R.id.nav_visicom);
                 } else {
                     progressBar.setVisibility(View.VISIBLE);
                     fetchRoutesCancel(email);
@@ -184,8 +192,8 @@ public class CancelFragment extends Fragment {
             Map<String, String> costMap = getStringStringMap();
             Logger.d(context, TAG, "onContextItemSelected costMap: " + costMap);
             startFinishPage(costMap);
-
-            navController.navigate(R.id.nav_visicom);
+            MainActivity.navController.popBackStack();
+            MainActivity.navController.navigate(R.id.nav_visicom);
             MainActivity.gps_upd = false;
             return true;
         } else if (item.getItemId() == R.id.action_exit) {
@@ -222,7 +230,7 @@ public class CancelFragment extends Fragment {
      {
         String to_name;
         if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
-            to_name = getString(R.string.on_city_tv);
+            to_name = context.getString(R.string.on_city_tv);
             Logger.d(context, TAG, "startFinishPage: to_name 1 " + to_name);
 
         } else {
@@ -240,29 +248,29 @@ public class CancelFragment extends Fragment {
                 ||to_name.contains("по городу")
                 || to_name.contains("around the city")
         ) {
-            to_name_local = getString(R.string.on_city_tv);
+            to_name_local = context.getString(R.string.on_city_tv);
         }
         Logger.d(context, TAG, "startFinishPage: to_name 4" + to_name_local);
-        String pay_method_message = getString(R.string.pay_method_message_main);
+        String pay_method_message = context.getString(R.string.pay_method_message_main);
         switch (Objects.requireNonNull(sendUrlMap.get("pay_method"))) {
             case "bonus_payment":
-                pay_method_message += " " + getString(R.string.pay_method_message_bonus);
+                pay_method_message += " " + context.getString(R.string.pay_method_message_bonus);
                 break;
             case "card_payment":
             case "fondy_payment":
             case "mono_payment":
             case "wfp_payment":
-                pay_method_message += " " + getString(R.string.pay_method_message_card);
+                pay_method_message += " " + context.getString(R.string.pay_method_message_card);
                 break;
             default:
-                pay_method_message += " " + getString(R.string.pay_method_message_nal);
+                pay_method_message += " " + context.getString(R.string.pay_method_message_nal);
         }
-        String messageResult = getString(R.string.thanks_message) +
-                sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
+        String messageResult = context.getString(R.string.thanks_message) +
+                sendUrlMap.get("routefrom") + " " + context.getString(R.string.to_message) +
                 to_name_local + "." +
-                getString(R.string.call_of_order) + Objects.requireNonNull(sendUrlMap.get("orderWeb")) + getString(R.string.UAH) + " " + pay_method_message;
-        String messageFondy = getString(R.string.fondy_message) + " " +
-                sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
+                context.getString(R.string.call_of_order) + Objects.requireNonNull(sendUrlMap.get("orderWeb")) + context.getString(R.string.UAH) + " " + pay_method_message;
+        String messageFondy = context.getString(R.string.fondy_message) + " " +
+                sendUrlMap.get("routefrom") + " " + context.getString(R.string.to_message) +
                 to_name_local + ".";
         Logger.d(context, TAG, "startFinishPage: messageResult " + messageResult);
         Logger.d(context, TAG, "startFinishPage: to_name " + to_name);
@@ -276,7 +284,7 @@ public class CancelFragment extends Fragment {
         startActivity(intent);
     }
 
-  
+
     private void fetchRoutesCancel(String value) {
         listView.setVisibility(View.GONE);
         scrollButtonDown.setVisibility(View.GONE);
@@ -286,11 +294,12 @@ public class CancelFragment extends Fragment {
         databaseHelperUid.clearTableCancel();
         routeList = new ArrayList<>();
 
-        upd_but.setText(getString(R.string.cancel_gps));
+        upd_but.setText(context.getString(R.string.cancel_gps));
         upd_but.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                navController.navigate(R.id.nav_visicom);
+                MainActivity.navController.popBackStack();
+                MainActivity.navController.navigate(R.id.nav_visicom);
             }
         });
 
@@ -326,7 +335,7 @@ public class CancelFragment extends Fragment {
                         textUid.setText(R.string.no_routs);
                     }
                 } else {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                 }
@@ -340,7 +349,7 @@ public class CancelFragment extends Fragment {
 
         });
         if (isAdded()) {
-            upd_but.setText(requireActivity().getString(R.string.order));
+            upd_but.setText(context.getString(R.string.order));
             progressBar.setVisibility(View.GONE);
         }
     }
@@ -353,7 +362,7 @@ public class CancelFragment extends Fragment {
 
 
 
-        String closeReasonText = getString(R.string.close_resone_def);
+        String closeReasonText = context.getString(R.string.close_resone_def);
 
         for (int i = 0; i < routeList.size(); i++) {
             RouteResponseCancel route = routeList.get(i);
@@ -371,54 +380,54 @@ public class CancelFragment extends Fragment {
 
             switch (closeReason){
                 case "-1":
-                    closeReasonText = getString(R.string.close_resone_in_work);
+                    closeReasonText = context.getString(R.string.close_resone_in_work);
                     break;
                 case "0":
-                    closeReasonText = getString(R.string.close_resone_0);
+                    closeReasonText = context.getString(R.string.close_resone_0);
                     break;
                 case "1":
-                    closeReasonText = getString(R.string.close_resone_1);
+                    closeReasonText = context.getString(R.string.close_resone_1);
                     break;
                 case "2":
-                    closeReasonText = getString(R.string.close_resone_2);
+                    closeReasonText = context.getString(R.string.close_resone_2);
                     break;
                 case "3":
-                    closeReasonText = getString(R.string.close_resone_3);
+                    closeReasonText = context.getString(R.string.close_resone_3);
                     break;
                 case "4":
-                    closeReasonText = getString(R.string.close_resone_4);
+                    closeReasonText = context.getString(R.string.close_resone_4);
                     break;
                 case "5":
-                    closeReasonText = getString(R.string.close_resone_5);
+                    closeReasonText = context.getString(R.string.close_resone_5);
                     break;
                 case "6":
-                    closeReasonText = getString(R.string.close_resone_6);
+                    closeReasonText = context.getString(R.string.close_resone_6);
                     break;
                 case "7":
-                    closeReasonText = getString(R.string.close_resone_7);
+                    closeReasonText = context.getString(R.string.close_resone_7);
                     break;
                 case "8":
-                    closeReasonText = getString(R.string.close_resone_8);
+                    closeReasonText = context.getString(R.string.close_resone_8);
                     break;
                 case "9":
-                    closeReasonText = getString(R.string.close_resone_9);
+                    closeReasonText = context.getString(R.string.close_resone_9);
                     break;
 
             }
 
             if(routeFrom.equals("Місце відправлення")) {
-                routeFrom = getString(R.string.start_point_text);
+                routeFrom = context.getString(R.string.start_point_text);
             }
 
 
             if(routeTo.equals("Точка на карте")) {
-                routeTo = getString(R.string.end_point_marker);
+                routeTo = context.getString(R.string.end_point_marker);
             }
             if(routeTo.contains("по городу")) {
-                routeTo = getString(R.string.on_city);
+                routeTo = context.getString(R.string.on_city);
             }
             if(routeTo.contains("по місту")) {
-                routeTo = getString(R.string.on_city);
+                routeTo = context.getString(R.string.on_city);
             }
             String routeInfo = "";
 
@@ -427,20 +436,20 @@ public class CancelFragment extends Fragment {
             }
 
             if(routeFrom.equals(routeTo)) {
-                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + getString(R.string.close_resone_to)
-                        + getString(R.string.on_city)
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
-                        + getString(R.string.auto_info) + " " + auto + " "
-                        + getString(R.string.close_resone_time)
-                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
+                routeInfo = context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                        + context.getString(R.string.close_resone_to)
+                        + context.getString(R.string.on_city)
+                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)
+                        + context.getString(R.string.auto_info) + " " + auto + " "
+                        + context.getString(R.string.close_resone_time)
+                        + createdAt + context.getString(R.string.close_resone_text) + closeReasonText;
             } else {
-                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
-                        + getString(R.string.auto_info) + " " + auto + " "
-                        + getString(R.string.close_resone_time)
-                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
+                routeInfo = context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                        + context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
+                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)
+                        + context.getString(R.string.auto_info) + " " + auto + " "
+                        + context.getString(R.string.close_resone_time)
+                        + createdAt + context.getString(R.string.close_resone_text) + closeReasonText;
             }
 
 //                array[i] = routeInfo;

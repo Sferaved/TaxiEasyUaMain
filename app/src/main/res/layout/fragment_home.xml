@@ -9,7 +9,7 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content">
 
         <TextView
             android:id="@+id/num1"
@@ -92,13 +92,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="4sp"
-            android:layout_marginTop="8sp"
             android:fontFamily="@font/light"
             android:text="@string/from_text"
             android:textColor="#9DA0A8"
             android:textSize="14sp"
             app:layout_constraintStart_toStartOf="@+id/text_from"
-            app:layout_constraintTop_toBottomOf="@+id/gpsbut" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <AutoCompleteTextView
             android:id="@+id/text_from"
@@ -183,28 +182,6 @@
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_view_cost" />
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btnMap"
-            android:layout_width="200sp"
-            android:layout_height="45sp"
-            android:layout_marginTop="16sp"
-            android:background="@drawable/buttons"
-            android:fontFamily="@font/regular"
-            android:insetLeft="0sp"
-            android:insetTop="0sp"
-            android:visibility="invisible"
-            android:insetRight="0sp"
-            android:insetBottom="0sp"
-            android:text="@string/on_map"
-
-            android:textAlignment="center"
-            android:textColor="#D9D9D9"
-            android:textSize="16sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.124"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnGeo"
@@ -351,16 +328,15 @@
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_call"
-            android:layout_width="52sp"
-            android:layout_height="139sp"
-
+            android:layout_width="52dp"
+            android:layout_height="139dp"
             android:layout_gravity="bottom|end"
-            android:layout_marginTop="12sp"
+            android:layout_margin="8dp"
             android:contentDescription="@string/call_admin"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.98"
+            app:layout_constraintHorizontal_bias="0.977"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btnGeo"
+            app:layout_constraintTop_toBottomOf="@+id/btnOrder"
             app:srcCompat="@android:drawable/stat_sys_phone_call_forward" />
 
         <androidx.constraintlayout.widget.Guideline

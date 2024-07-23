@@ -49,8 +49,6 @@ import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
 import androidx.room.Room;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -107,7 +105,6 @@ public class HomeFragment extends Fragment {
     public static AppCompatButton btn_minus;
     public static AppCompatButton btn_plus;
     public static AppCompatButton btnGeo;
-    public AppCompatButton on_map;
     public static AppCompatButton btn_clear;
 
     public static long addCost, cost, costFirst;
@@ -149,7 +146,7 @@ public class HomeFragment extends Fragment {
     long MIN_COST_VALUE;
     AutoCompleteTextView textViewFrom, textViewTo;
     ArrayAdapter<String> adapter;
-    NavController navController;
+
     String city;
     LocationManager locationManager;
     Activity context;
@@ -158,14 +155,13 @@ public class HomeFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
         context = requireActivity();
         fragmentManager = getParentFragmentManager();
-        navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
-
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
 
         city = stringList.get(1);
         if (!NetworkUtils.isNetworkAvailable(requireContext()) || city.equals("foreign countries")) {
-            navController.navigate(R.id.nav_visicom);
+            MainActivity.navController.popBackStack();
+            MainActivity.navController.navigate(R.id.nav_visicom);
         }
 
         binding = FragmentHomeBinding.inflate(inflater, container, false);
@@ -438,39 +434,6 @@ public class HomeFragment extends Fragment {
             }
         });
 
-        on_map = binding.btnMap;
-        on_map.setVisibility(View.INVISIBLE);
-        on_map.setOnClickListener(v -> {
-            LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-            boolean gps_enabled = false;
-            boolean network_enabled = false;
-
-            try {
-                gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-            } catch(Exception e) {
-                FirebaseCrashlytics.getInstance().recordException(e);
-            }
-
-            try {
-                network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-            } catch(Exception e) {
-                FirebaseCrashlytics.getInstance().recordException(e);
-            }
-
-            if(!gps_enabled || !network_enabled) {
-                MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-            }  else  {
-                // Разрешения уже предоставлены, выполнить ваш код
-                if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                        || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                    checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                }  else {
-                    startActivity(new Intent(requireContext(), OpenStreetMapActivity.class));
-                }
-            }
-        });
         fab_call = binding.fabCall;
         fab_call.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -515,12 +478,9 @@ public class HomeFragment extends Fragment {
     private void orderFinished() {
 
         if (!MainActivity.verifyPhone){
-            String message = getString(R.string.phone_input_error);
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show();
-
             MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment(context, "home");
             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-            progressBar.setVisibility(View.INVISIBLE);
+            progressBar.setVisibility(View.GONE);
         } else {
             Toast.makeText(context, R.string.check_order_mes, Toast.LENGTH_SHORT).show();
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
@@ -596,7 +556,7 @@ public class HomeFragment extends Fragment {
                         intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
                         intent.putExtra("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
                         startActivity(intent);
-                        progressBar.setVisibility(View.INVISIBLE);
+                        progressBar.setVisibility(View.GONE);
 
                     } else {
                         btnVisible(View.INVISIBLE);
@@ -684,11 +644,11 @@ public class HomeFragment extends Fragment {
         if(!verifyOrder(requireContext())) {
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.black_list_message));
             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-            progressBar.setVisibility(View.INVISIBLE);
+            progressBar.setVisibility(View.GONE);
             return false;
         } else {
             List<String> stringListRoutHome = logCursor(MainActivity.ROUT_HOME, context);
-            progressBar.setVisibility(View.INVISIBLE);
+            progressBar.setVisibility(View.GONE);
             if (stringListRoutHome.get(1).equals(" ") && !textViewTo.getText().equals("")) {
                 boolean stop = false;
                 if (numberFlagFrom.equals("1") && from_number.getText().toString().equals(" ")) {
@@ -820,6 +780,7 @@ public class HomeFragment extends Fragment {
     }
     static void btnVisible(int visible) {
         text_view_cost.setVisibility(visible);
+        btn_clear.setVisibility(visible);
         btn_minus.setVisibility(visible);
         btn_plus.setVisibility(visible);
         buttonAddServices.setVisibility(visible);
@@ -830,7 +791,7 @@ public class HomeFragment extends Fragment {
         if (visible == View.INVISIBLE) {
             progressBar.setVisibility(View.VISIBLE);
         } else {
-            progressBar.setVisibility(View.INVISIBLE);
+            progressBar.setVisibility(View.GONE);
         }
     }
 
@@ -879,7 +840,7 @@ public class HomeFragment extends Fragment {
         String application =  getString(R.string.application);
         new VerifyUserTask(context).execute();
 
-        progressBar.setVisibility(View.INVISIBLE);
+        progressBar.setVisibility(View.GONE);
         pay_method =  logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
 
         if(bottomSheetDialogFragment != null) {
@@ -913,7 +874,8 @@ public class HomeFragment extends Fragment {
                     if (hasFocus) {
                         // Фокус установлен на TextView, очищаем его
                         resetRoutHome();
-                        navController.navigate(R.id.nav_home);
+                        MainActivity.navController.popBackStack();
+                        MainActivity.navController.navigate(R.id.nav_home);
                     }
                 }
             });
@@ -928,7 +890,8 @@ public class HomeFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 resetRoutHome();
-                navController.navigate(R.id.nav_home);
+                MainActivity.navController.popBackStack();
+                MainActivity.navController.navigate(R.id.nav_home);
 
             }
         });
@@ -1002,10 +965,10 @@ public class HomeFragment extends Fragment {
                         default:
                             Logger.d(getActivity(), TAG, "onItemClick: " + new IllegalStateException("Unexpected value: " + Objects.requireNonNull(orderCost)));
                     }
-                    progressBar.setVisibility(View.INVISIBLE);
+                    progressBar.setVisibility(View.GONE);
 
                 } else {
-                    progressBar.setVisibility(View.INVISIBLE);
+                    progressBar.setVisibility(View.GONE);
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 }
@@ -1334,7 +1297,7 @@ public class HomeFragment extends Fragment {
             @SuppressLint("StaticFieldLeak")
             @Override
             protected void onPostExecute(RouteCost retrievedRouteCost) {
-                progressBar.setVisibility(View.INVISIBLE);
+                progressBar.setVisibility(View.GONE);
                 if (retrievedRouteCost != null) {
                     // Данные с указанным routeId существуют в базе данных
                     textViewFrom.setText(retrievedRouteCost.from);
@@ -1834,7 +1797,7 @@ public class HomeFragment extends Fragment {
         cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                HomeFragment.progressBar.setVisibility(View.INVISIBLE);
+                HomeFragment.progressBar.setVisibility(View.GONE);
                 progressBar.setVisibility(View.GONE);
                 alertDialog.dismiss();
             }

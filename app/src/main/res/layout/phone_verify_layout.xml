@@ -14,6 +14,7 @@
         android:layout_margin="8sp"
         android:gravity="left|fill_horizontal"
         android:text="@string/please_phone_message"
+        android:background="@drawable/input"
         android:textColor="@color/white"
         android:textSize="16sp"
         app:layout_constraintEnd_toEndOf="parent"

@@ -79,7 +79,6 @@ import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
-import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.tariff.DatabaseHelperTariffs;
 import com.taxi.easy.ua.utils.tariff.Tariff;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
@@ -98,12 +97,12 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 
-public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbackMapbox{
+public class VisicomFragment extends Fragment{
 
     @SuppressLint("StaticFieldLeak")
     public static ProgressBar progressBar;
     private FragmentVisicomBinding binding;
-    private static final String TAG = "TAG_VISICOM";
+    private static final String TAG = "VisicomFragment";
     private static final int REQUEST_LOCATION_PERMISSION = 1;
     FloatingActionButton fab_call;
 
@@ -130,7 +129,6 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
     public static String urlOrder;
     public static long MIN_COST_VALUE;
     public static long firstCostForMin;
-    private static List<String> addresses;
 
     public static AppCompatButton btnAdd, btn_clear_from_text, btn1, btn2, btn3;
     @SuppressLint("StaticFieldLeak")
@@ -142,12 +140,9 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
     public static TextView textfrom;
     @SuppressLint("StaticFieldLeak")
     public static TextView num1;
-    private String cityMenu;
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
-    private NetworkChangeReceiver networkChangeReceiver;
     private final int LOCATION_PERMISSION_REQUEST_CODE = 123;
-    private static final String BASE_URL = "https://api64.ipify.org";
 
     @SuppressLint("StaticFieldLeak")
     static LinearLayout linearLayout;
@@ -166,9 +161,9 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
         progressBar.setVisibility(View.VISIBLE);
 
         linearLayout = binding.linearLayoutButtons;
-        btn1 = binding.button1;
-        btn2 = binding.button2;
-        btn3 = binding.button3;
+//        btn1 = binding.button1;
+//        btn2 = binding.button2;
+//        btn3 = binding.button3;
 
 
 
@@ -181,7 +176,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
          if (visible == View.INVISIBLE) {
              progressBar.setVisibility(View.VISIBLE);
          } else {
-             progressBar.setVisibility(View.INVISIBLE);
+             progressBar.setVisibility(View.GONE);;
          }
 
          btn_clear_from.setVisibility(View.INVISIBLE);
@@ -204,7 +199,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
         }
         if (!NetworkUtils.isNetworkAvailable(requireContext())) {
 
-            progressBar.setVisibility(View.INVISIBLE);
+            progressBar.setVisibility(View.GONE);;
 
             btn_clear_from_text.setText(getString(R.string.try_again));
             btn_clear_from_text.setVisibility(View.VISIBLE);
@@ -212,7 +207,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                 startActivity(new Intent(context, MainActivity.class));
             });
             geoText.setVisibility(View.INVISIBLE);
-            progressBar.setVisibility(View.INVISIBLE);
+            progressBar.setVisibility(View.GONE);;
 
             btn_clear_from.setVisibility(View.INVISIBLE);
             btn_clear_to.setVisibility(View.INVISIBLE);
@@ -593,7 +588,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
         Tariff foundTariff;
         try (DatabaseHelperTariffs dbHelper = new DatabaseHelperTariffs(context)) {
 
-            progressBar.setVisibility(View.INVISIBLE);
+            progressBar.setVisibility(View.GONE);;
             String searchTariffName = "Базовый";
             List<String> finalTariffDetailsList1 = dbHelper.getTariffDetailsByFlexibleTariffName(searchTariffName, new ArrayList<>());
             Logger.d(context, TAG, "readTariffInfo 1: " + finalTariffDetailsList1);
@@ -698,7 +693,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
         if(!black_list_yes) {
             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.black_list_message));
             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-            progressBar.setVisibility(View.INVISIBLE);
+            progressBar.setVisibility(View.GONE);;
             return false;
         } else {
             urlOrder = getTaxiUrlSearchMarkers( "orderSearchMarkersVisicom", context);
@@ -708,14 +703,13 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
 
     }
     public void orderFinished() throws MalformedURLException {
+        Logger.d(context, TAG, "orderFinished: MainActivity.verifyPhone "+ MainActivity.verifyPhone);
         if (!MainActivity.verifyPhone){
-            String message = getString(R.string.phone_input_error);
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show();
-            
             MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment(context, "visicom");
             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-            progressBar.setVisibility(View.INVISIBLE);
+            progressBar.setVisibility(View.GONE);;
         } else {
+            Toast.makeText(context, R.string.check_order_mes, Toast.LENGTH_SHORT).show();
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
             Logger.d(context, TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
@@ -817,7 +811,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                                     changePayMethodToNal();
                                     break;
                                 default:
-                                    progressBar.setVisibility(View.INVISIBLE);
+                                    progressBar.setVisibility(View.GONE);;
                                     message = context.getString(R.string.error_message);
                             }
 
@@ -929,11 +923,10 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
             @Override
             public void onClick(View v) {
                 progressBar.setVisibility(View.VISIBLE);
-                Toast.makeText(context, R.string.check_order_mes, Toast.LENGTH_SHORT).show();
                 switch (paymentType) {
                     case "bonus_payment":
                         if (Long.parseLong(bonus_max_pay) <= Long.parseLong(textCost) * 100) {
-                            paymentType("nal_payment");
+                            paymentType();
                         }
                         break;
                     case "card_payment":
@@ -941,7 +934,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                     case "mono_payment":
                     case "wfp_payment":
                         if (Long.parseLong(card_max_pay) <= Long.parseLong(textCost)) {
-                            paymentType("nal_payment");
+                            paymentType();
                         }
                         break;
                 }
@@ -960,12 +953,9 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
         });
 
         Button cancelButton = dialogView.findViewById(R.id.dialog_cancel_button);
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                progressBar.setVisibility(View.GONE);
-                alertDialog.dismiss();
-            }
+        cancelButton.setOnClickListener(v -> {
+            progressBar.setVisibility(View.GONE);
+            alertDialog.dismiss();
         });
 
         alertDialog.show();
@@ -990,8 +980,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
             @Override
             public void onClick(View v) {
                 progressBar.setVisibility(View.VISIBLE);
-                Toast.makeText(context, R.string.check_order_mes, Toast.LENGTH_SHORT).show();
-                paymentType("nal_payment");
+                paymentType();
 
                 try {
                     if(orderRout()){
@@ -1018,9 +1007,9 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
         alertDialog.show();
     }
 
-    private void paymentType(String paymentCode) {
+    private void paymentType() {
         ContentValues cv = new ContentValues();
-        cv.put("payment_type", paymentCode);
+        cv.put("payment_type", "nal_payment");
         // обновляем по id
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
@@ -1035,14 +1024,13 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
         super.onResume();
         progressBar.setVisibility(View.VISIBLE);
 
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
 
-        String application =  getString(R.string.application);
+
         new VerifyUserTask(context).execute();
-
 
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         String city = listCity.get(1);
+        String cityMenu;
         switch (city){
             case "Kyiv City":
                 cityMenu = getString(R.string.city_kyiv);
@@ -1050,22 +1038,22 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                 break;
             case "Dnipropetrovsk Oblast":
                 cityMenu = getString(R.string.city_dnipro);
-                paymentType("nal_payment");
+                paymentType();
                 break;
             case "Odessa":
                 cityMenu = getString(R.string.city_odessa);
                 MainActivity.countryState = "UA";
-                paymentType("nal_payment");
+                paymentType();
                 break;
             case "Zaporizhzhia":
                 cityMenu = getString(R.string.city_zaporizhzhia);
                 MainActivity.countryState = "UA";
-                paymentType("nal_payment");
+                paymentType();
                 break;
             case "Cherkasy Oblast":
                 cityMenu = getString(R.string.city_cherkasy);
                 MainActivity.countryState = "UA";
-                paymentType("nal_payment");
+                paymentType();
                 break;
             case "OdessaTest":
                 cityMenu = "Test";
@@ -1073,16 +1061,13 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                 break;
             default:
                 cityMenu = getString(R.string.foreign_countries);
-                paymentType("nal_payment");
+                paymentType();
                 break;
         }
-        if (MainActivity.countryState != null) {
-            if (!MainActivity.countryState.equals("UA")) {
-                mapboxKey(this);
-            } else {
-                visicomKey(this);
-            }
-        }
+
+
+
+
 
         String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
         // Изменяем текст элемента меню
@@ -1095,15 +1080,12 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
 
 
         fab_call = binding.fabCall;
-        fab_call.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_DIAL);
-                List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
-                String phone = stringList.get(3);
-                intent.setData(Uri.parse(phone));
-                startActivity(intent);
-            }
+        fab_call.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            List<String> stringList1 = logCursor(MainActivity.CITY_INFO, context);
+            String phone = stringList1.get(3);
+            intent.setData(Uri.parse(phone));
+            startActivity(intent);
         });
 
 
@@ -1111,8 +1093,6 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
         textfrom = binding.textfrom;
         num1 = binding.num1;
 
-//        textfrom.setVisibility(View.INVISIBLE);
-//        num1.setVisibility(View.INVISIBLE);
         addCost = 0;
         updateAddCost(String.valueOf(addCost));
 
@@ -1179,7 +1159,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
             }
         });
 
-        addresses = new ArrayList<>();
+        List<String> addresses = new ArrayList<>();
 
         btn_minus = binding.btnMinus;
         btn_plus = binding.btnPlus;
@@ -1239,7 +1219,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
             @Override
             public void onClick(View v) {
                 btnVisible(View.INVISIBLE);
-                Toast.makeText(context, R.string.check_order_mes, Toast.LENGTH_SHORT).show();
+
                 List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
 
                 pay_method =  logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
@@ -1255,7 +1235,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                         if(pay_method.equals("bonus_payment")) {
                             String bonus = logCursor(MainActivity.TABLE_USER_INFO, context).get(5);
                             if(Long.parseLong(bonus) < cost * 100 ) {
-                                paymentType("nal_payment");
+                                paymentType();
                             }
                         }
                         break;
@@ -1552,7 +1532,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
 
             binding.textwhere.setVisibility(View.INVISIBLE);
             btn_clear_from.setVisibility(View.INVISIBLE);
-            progressBar.setVisibility(View.INVISIBLE);
+            progressBar.setVisibility(View.GONE);
 
 
             btn_clear_from_text.setText(getString(R.string.try_again));
@@ -1566,85 +1546,6 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
         }
 
 
-
-    }
-
-    private void mapboxKey(final ApiCallbackMapbox callback) {
-        ApiClientMapbox.getMapboxKeyInfo(new Callback<ApiResponseMapbox>() {
-            @Override
-            public void onResponse(@NonNull Call<ApiResponseMapbox> call, @NonNull Response<ApiResponseMapbox> response) {
-                if (response.isSuccessful()) {
-                    ApiResponseMapbox apiResponse = response.body();
-                    if (apiResponse != null) {
-                        String keyMaxbox = apiResponse.getKeyMapbox();
-                        Log.d("ApiResponseMapbox", "keyMapbox: " + keyMaxbox);
-
-                        // Теперь у вас есть ключ Visicom для дальнейшего использования
-                        callback.onMapboxKeyReceived(keyMaxbox);
-                    }
-                } else {
-                    // Обработка ошибки
-                    Log.e("ApiResponseMapbox", "Error: " + response.code());
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<ApiResponseMapbox> call, @NonNull Throwable t) {
-                // Обработка ошибки
-                Log.e("ApiResponseMapbox", "Failed to make API call", t);
-            }
-        }, getString(R.string.application)
-        );
-    }
-    @Override
-    public void onMapboxKeyReceived(String key) {
-        Logger.d(context, TAG, "onMapboxKeyReceived: " + key);
-        MainActivity.apiKeyMapBox = key;
-    }
-
-
-    private void visicomKey(final ApiCallback callback) {
-        ApiClient.getVisicomKeyInfo(new Callback<ApiResponse>() {
-                                        @Override
-                                        public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
-                                            if (response.isSuccessful()) {
-                                                ApiResponse apiResponse = response.body();
-                                                if (apiResponse != null) {
-                                                    String keyVisicom = apiResponse.getKeyVisicom();
-                                                    Log.d("ApiResponse", "keyVisicom: " + keyVisicom);
-
-                                                    // Теперь у вас есть ключ Visicom для дальнейшего использования
-                                                    callback.onVisicomKeyReceived(keyVisicom);
-                                                }
-                                            } else {
-                                                // Обработка ошибки
-                                                Log.e("ApiResponseMapbox", "Error: " + response.code());
-                                                callback.onApiError(response.code());
-                                            }
-                                        }
-
-                                        @Override
-                                        public void onFailure(Call<ApiResponse> call, Throwable t) {
-                                            // Обработка ошибки
-                                            Log.e("ApiResponseMapbox", "Failed to make API call", t);
-                                            callback.onApiFailure(t);
-                                        }
-                                    },
-                getString(R.string.application)
-        );
-    }
-    @Override
-    public void onVisicomKeyReceived(String key) {
-        Logger.d(context, TAG, "onVisicomKeyReceived: " + key);
-        MainActivity.apiKey = key;
-    }
-    @Override
-    public void onApiError(int errorCode) {
-
-    }
-
-    @Override
-    public void onApiFailure(Throwable t) {
 
     }
 
@@ -2036,7 +1937,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
 
                 assert orderCost != null;
                 if (orderCost.equals("0")) {
-                    progressBar.setVisibility(View.INVISIBLE);
+                    progressBar.setVisibility(View.GONE);
                     String message = context.getString(R.string.error_message);
                     assert orderMessage != null;
                     if (orderMessage.equals("ErrorMessage")) {
@@ -2071,7 +1972,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
 
 
                         geoText.setVisibility(View.VISIBLE);
-                        progressBar.setVisibility(View.INVISIBLE);
+                        progressBar.setVisibility(View.GONE);;
 
                         btn_clear_from.setVisibility(View.INVISIBLE);
                         btn_clear_to.setVisibility(View.INVISIBLE);
@@ -2129,7 +2030,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
             @Override
             public void onFailure(@NonNull Call<CountryResponse> call, @NonNull Throwable t) {
                 Logger.d(context, TAG, "Error: " + t.getMessage());
-                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+                VisicomFragment.progressBar.setVisibility(View.GONE);;
             }
         });
     }
@@ -2167,7 +2068,7 @@ public class VisicomFragment extends Fragment implements ApiCallback, ApiCallbac
                     String errorMessage = t.getMessage();
                     FirebaseCrashlytics.getInstance().recordException(t);
                     Log.d("TAG", "onFailure: " + errorMessage);
-                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+                    VisicomFragment.progressBar.setVisibility(View.GONE);;
                 }
             });
             // Сохраняем информацию о том, что разрешение было запрошено

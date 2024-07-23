@@ -20,7 +20,6 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
 import com.taxi.easy.ua.MainActivity;
@@ -50,7 +49,7 @@ public class BonusFragment extends Fragment {
     private NetworkChangeReceiver networkChangeReceiver;
     private ProgressBar progressBar;
     private TextView text0;
-    NavController navController;
+
     Activity context;
     FragmentManager fragmentManager;
     @SuppressLint("SourceLockedOrientationActivity")
@@ -61,9 +60,9 @@ public class BonusFragment extends Fragment {
         context = requireActivity();
         context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         fragmentManager = getParentFragmentManager();
-        navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
+        MainActivity.navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
         if (!NetworkUtils.isNetworkAvailable(context)) {
-            navController.navigate(R.id.nav_visicom);
+            MainActivity.navController.navigate(R.id.nav_visicom);
         }
         text0 =  binding.text0;
         networkChangeReceiver = new NetworkChangeReceiver();
@@ -86,9 +85,9 @@ public class BonusFragment extends Fragment {
         btnBonus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
                 if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-                    navController.navigate(R.id.nav_visicom);
+                    MainActivity.navController.popBackStack();
+                    MainActivity.navController.navigate(R.id.nav_visicom);
                 } else {
                     @SuppressLint("UseRequireInsteadOfGet")
                     String email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(context)).get(3);
@@ -109,8 +108,8 @@ public class BonusFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту
-                navController.popBackStack();
-                navController.navigate(R.id.nav_visicom);
+                MainActivity.navController.popBackStack();
+                MainActivity.navController.navigate(R.id.nav_visicom);
             }
         });
     }

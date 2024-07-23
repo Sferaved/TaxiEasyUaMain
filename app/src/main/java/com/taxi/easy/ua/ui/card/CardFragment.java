@@ -24,8 +24,6 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.Gson;
@@ -77,7 +75,7 @@ import retrofit2.converter.scalars.ScalarsConverterFactory;
 public class CardFragment extends Fragment {
 
     private FragmentCardBinding binding;
-    public static AppCompatButton btnCardLink;
+    public static AppCompatButton btnCardLink, btnOrder;
 
     private NetworkChangeReceiver networkChangeReceiver;
     private final String baseUrl = "https://m.easy-order-taxi.site";
@@ -94,7 +92,7 @@ public class CardFragment extends Fragment {
     public static ListView listView;
     public static String table;
     String pay_method;
-    NavController navController;
+
     private boolean show_cards;
     Activity context;
     WebView webView;
@@ -106,13 +104,22 @@ public class CardFragment extends Fragment {
         fragmentManager = getParentFragmentManager();
         webView = binding.webView;
         context = requireActivity();
-        navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
+       
         if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-            navController.navigate(R.id.nav_visicom);
+            MainActivity.navController.popBackStack();
+            MainActivity.navController.navigate(R.id.nav_visicom);
         }
         context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         btnCardLink  = binding.btnCardLink;
-
+        btnOrder = binding.btnOrder;
+        btnOrder.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту
+                MainActivity.navController.popBackStack();
+                MainActivity.navController.navigate(R.id.nav_visicom);
+            }
+        });
         return root;
     }
     private void pay_system() {
@@ -178,9 +185,9 @@ public class CardFragment extends Fragment {
                             progressBar.setVisibility(View.VISIBLE);
 
                                 Logger.d(context, TAG, "onClick: " + pay_method);
-                                NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
                                 if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-                                    navController.navigate(R.id.nav_visicom);
+                                    MainActivity.navController.popBackStack();
+                                    MainActivity.navController.navigate(R.id.nav_visicom);
                                 } else {
                                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getActivity());
 
@@ -601,7 +608,7 @@ public class CardFragment extends Fragment {
         webView.setVisibility(View.VISIBLE);
 
         // Присваиваем WebViewClient для отслеживания URL
-        webView.setWebViewClient(new MyWebViewClient(context, navController));
+        webView.setWebViewClient(new MyWebViewClient(context, MainActivity.navController));
 
         // Загружаем HTML-контент в WebView
         webView.loadDataWithBaseURL(baseUrl, htmlContent, "text/html", "UTF-8", null);
@@ -714,9 +721,7 @@ public class CardFragment extends Fragment {
                             Logger.d(context, TAG, "onFailure: " + response.code());
                         }
                         progressBar.setVisibility(View.GONE);
-//                navController.navigate(R.id.nav_visicom);
-
-                    }
+                     }
 
                     @Override
                     public void onFailure(@NonNull Call<ApiResponsePay<SuccessResponseDataPay>> call, @NonNull Throwable t) {

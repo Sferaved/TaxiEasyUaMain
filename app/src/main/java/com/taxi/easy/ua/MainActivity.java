@@ -6,7 +6,6 @@ import static com.taxi.easy.ua.R.string.format_phone;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
@@ -71,13 +70,14 @@ import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
-import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
-import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetCityFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
+import com.taxi.easy.ua.ui.open_map.visicom.key_mapbox.ApiClientMapbox;
+import com.taxi.easy.ua.ui.open_map.visicom.key_mapbox.ApiResponseMapbox;
+import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiResponse;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
@@ -100,6 +100,7 @@ import com.taxi.easy.ua.utils.user_verify.VerifyUserTask;
 import org.json.JSONException;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -111,6 +112,7 @@ import java.util.Random;
 import java.util.regex.Pattern;
 
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -145,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String TABLE_LAST_PUSH = "tableLastPush";
     public static Cursor cursorDb;
-    public static boolean verifyPhone;
+    public static boolean verifyPhone = false;
     private AppBarConfiguration mAppBarConfiguration;
     private NetworkChangeReceiver networkChangeReceiver;
     /**
@@ -166,9 +168,6 @@ public class MainActivity extends AppCompatActivity {
     public static String apiKeyMapBox;
     public static String apiKey;
 
-    private static String verifyInternet;
-    public static final long MAX_TASK_EXECUTION_TIME_SECONDS = 3;
-
     DatabaseHelper databaseHelper;
     DatabaseHelperUid databaseHelperUid;
     String baseUrl = "https://m.easy-order-taxi.site";
@@ -188,6 +187,7 @@ public class MainActivity extends AppCompatActivity {
     private static final long ONE_DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
 //    private static final long ONE_DAY_IN_MILLISECONDS = 60 * 1000; // 1 минута в миллисекундах
     private List<RouteResponseCancel> routeListCancel;
+    public static NavController navController;
    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -209,12 +209,13 @@ public class MainActivity extends AppCompatActivity {
         navMenu = navigationView.getMenu();
         navVisicomMenuItem = navMenu.findItem(R.id.nav_visicom);
 
+        databaseHelper = new DatabaseHelper(this);
+        databaseHelperUid = new DatabaseHelperUid(this);
 
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
+        navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
         networkChangeReceiver = new NetworkChangeReceiver();
-        verifyInternet = getString(R.string.verify_internet);
 
         sharedPreferences = getSharedPreferences(MainActivity.PERMISSIONS_PREF_NAME, Context.MODE_PRIVATE);
         sharedPreferencesCount = getSharedPreferences(MainActivity.PERMISSION_REQUEST_COUNT_KEY, Context.MODE_PRIVATE);
@@ -284,55 +285,6 @@ public class MainActivity extends AppCompatActivity {
             gps_upd = false;
         }
     }
-
-    void checkNotificationPermissionAndRequestIfNeeded() {
-        // Проверяем разрешение на отправку уведомлений
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (!notificationManager.areNotificationsEnabled()) {
-            // Разрешение на отправку уведомлений отключено, показываем диалоговое окно или системный экран для запроса разрешения
-            Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-            intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
-            startActivity(intent);
-            // После отображения системного экрана для настроек уведомлений, можно предположить, что пользователь примет необходимые действия и вернется в приложение.
-            // Здесь вы можете использовать метод onActivityResult() для обработки результата запроса разрешения.
-        }
-
-    }
-
-
-    public void insertOrUpdatePushDate() {
-
-        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        if (database != null) {
-            try {
-                // Получаем текущее время и дату
-                @SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                String currentDateandTime = sdf.format(new Date());
-                Logger.d(this, TAG, "Current date and time: " + currentDateandTime);
-
-                // Создаем объект ContentValues для передачи данных в базу данных
-                ContentValues values = new ContentValues();
-                values.put("push_date", currentDateandTime);
-
-                // Пытаемся вставить новую запись. Если запись уже существует, выполняется обновление.
-                int rowsAffected = database.update(MainActivity.TABLE_LAST_PUSH, values, "ROWID=1", null);
-                if (rowsAffected > 0) {
-                    Logger.d(this, TAG, "Update successful");
-                } else {
-                    Logger.d(this, TAG, "Error updating");
-                }
-
-
-            } catch (Exception e) {
-                FirebaseCrashlytics.getInstance().recordException(e);
-            } finally {
-                database.close();
-            }
-        }
-        assert database != null;
-        database.close();
-    }
-
 
     @Override
     protected void onRestart() {
@@ -485,10 +437,6 @@ public class MainActivity extends AppCompatActivity {
 
 
         }
-        cursorDb = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-        verifyPhone = cursorDb.getCount() == 1;
-        if (cursorDb != null && !cursorDb.isClosed())
-            cursorDb.close();
 
         database.execSQL("CREATE TABLE IF NOT EXISTS " + ROUT_HOME + "(id integer primary key autoincrement," +
                 " from_street text," +
@@ -501,7 +449,7 @@ public class MainActivity extends AppCompatActivity {
             insertRoutHome();
         }
         if (cursorDb != null && !cursorDb.isClosed())
-        cursorDb.close();
+            cursorDb.close();
 
         database.execSQL("CREATE TABLE IF NOT EXISTS " + ROUT_GEO + "(id integer primary key autoincrement," +
                 " startLat double," +
@@ -796,7 +744,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onSupportNavigateUp() {
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         return NavigationUI.navigateUp(navController, mAppBarConfiguration)
                 || super.onSupportNavigateUp();
     }
@@ -1119,7 +1066,7 @@ public class MainActivity extends AppCompatActivity {
 
         List<String> stringList =  logCursor(MainActivity.TABLE_USER_INFO);
 
-        if(stringList.size() != 0) {
+        if(!stringList.isEmpty()) {
             phoneNumber.setText(stringList.get(2));
             userName.setText(stringList.get(4));
 
@@ -1234,7 +1181,8 @@ public class MainActivity extends AppCompatActivity {
     public void newUser() {
         String userEmail = logCursor(TABLE_USER_INFO).get(3);
         Logger.d(this, TAG, "newUser: " + userEmail);
-
+        new Thread(this::mapboxKey).start();
+        new Thread(this::visicomKey).start();
         if(userEmail.equals("email")) {
             new Thread(() -> insertPushDate(getApplicationContext())).start();
 
@@ -1244,7 +1192,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
 
             new Thread(this::versionFromMarket).start();
-            new Thread(() -> fetchRoutes(userEmail)).start();
             new Thread(() -> fetchRoutesCancel(userEmail)).start();
             new Thread(() -> updatePushDate(getApplicationContext())).start();
             new VerifyUserTask(this).execute();
@@ -1405,12 +1352,8 @@ public class MainActivity extends AppCompatActivity {
 
                 assert user != null;
                 settingsNewUser(user.getEmail());
-                Toast.makeText(this, R.string.city_search, Toast.LENGTH_SHORT).show();
-
-                new Thread(() -> fetchRoutes(user.getEmail())).start();
-
-
-            } else {
+//                Toast.makeText(this, R.string.city_search, Toast.LENGTH_SHORT).show();
+          } else {
                 Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
                 VisicomFragment.progressBar.setVisibility(View.GONE);
                 cv.put("verifyOrder", "0");
@@ -1430,163 +1373,6 @@ public class MainActivity extends AppCompatActivity {
             VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
         }
     }
-    private void fetchRoutes(String value) {
-
-        String url = baseUrl + "/android/UIDStatusShowEmail/" + value;
-        Call<List<RouteResponse>> call = ApiClient.getApiService().getRoutes(url);
-        routeList = new ArrayList<>();
-        Logger.d(this, TAG, "fetchRoutes: " + url);
-        call.enqueue(new Callback<List<RouteResponse>>() {
-            @Override
-            public void onResponse(@NonNull Call<List<RouteResponse>> call, @NonNull Response<List<RouteResponse>> response) {
-                if (response.isSuccessful()) {
-                    List<RouteResponse> routes = response.body();
-                    Logger.d(getApplicationContext(), TAG, "onResponse: " + routes);
-                    if (routes != null && !routes.isEmpty()) {
-                        boolean hasRouteWithAsterisk = false;
-                        for (RouteResponse route : routes) {
-                            if ("*".equals(route.getRouteFrom())) {
-                                // Найден объект с routefrom = "*"
-                                hasRouteWithAsterisk = true;
-                                break;  // Выход из цикла, так как условие уже выполнено
-                            }
-                        }
-                        if (!hasRouteWithAsterisk) {
-                            routeList.addAll(routes);
-                            processRouteList();
-                        }
-
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<List<RouteResponse>> call, @NonNull Throwable t) {
-
-            }
-        });
-    }
-
-    private void processRouteList() {
-        // В этом методе вы можете использовать routeList для выполнения дополнительных действий с данными.
-
-        // Создайте массив строк
-
-        array = new String[routeList.size()];
-
-
-        String closeReasonText = getString(R.string.close_resone_def);
-
-        for (int i = 0; i < routeList.size(); i++) {
-            RouteResponse route = routeList.get(i);
-
-            String routeFrom = route.getRouteFrom();
-            String routefromnumber = route.getRouteFromNumber();
-            String startLat = route.getStartLat();
-            String startLan = route.getStartLan();
-
-            String routeTo = route.getRouteTo();
-            String routeTonumber = route.getRouteToNumber();
-            String to_lat = route.getTo_lat();
-            String to_lng = route.getTo_lng();
-
-            String webCost = route.getWebCost();
-            String createdAt = route.getCreatedAt();
-            String closeReason = route.getCloseReason();
-            String auto = route.getAuto();
-
-            switch (closeReason){
-                case "-1":
-                    closeReasonText = getString(R.string.close_resone_in_work);
-                    break;
-                case "0":
-                    closeReasonText = getString(R.string.close_resone_0);
-                    break;
-                case "1":
-                    closeReasonText = getString(R.string.close_resone_1);
-                    break;
-                case "2":
-                    closeReasonText = getString(R.string.close_resone_2);
-                    break;
-                case "3":
-                    closeReasonText = getString(R.string.close_resone_3);
-                    break;
-                case "4":
-                    closeReasonText = getString(R.string.close_resone_4);
-                    break;
-                case "5":
-                    closeReasonText = getString(R.string.close_resone_5);
-                    break;
-                case "6":
-                    closeReasonText = getString(R.string.close_resone_6);
-                    break;
-                case "7":
-                    closeReasonText = getString(R.string.close_resone_7);
-                    break;
-                case "8":
-                    closeReasonText = getString(R.string.close_resone_8);
-                    break;
-                case "9":
-                    closeReasonText = getString(R.string.close_resone_9);
-                    break;
-
-            }
-
-            if(routeFrom.equals("Місце відправлення")) {
-                routeFrom = getString(R.string.start_point_text);
-            }
-
-
-            if(routeTo.equals("Точка на карте")) {
-                routeTo = getString(R.string.end_point_marker);
-            }
-            if(routeTo.contains("по городу")) {
-                routeTo = getString(R.string.on_city);
-            }
-            if(routeTo.contains("по місту")) {
-                routeTo = getString(R.string.on_city);
-            }
-            String routeInfo = "";
-
-            if(auto == null) {
-                auto = "??";
-            }
-
-            if(routeFrom.equals(routeTo)) {
-                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + getString(R.string.close_resone_to)
-                        + getString(R.string.on_city)
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
-                        + getString(R.string.auto_info) + " " + auto + " "
-                        + getString(R.string.close_resone_time)
-                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
-            } else {
-                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
-                        + getString(R.string.auto_info) + " " + auto + " "
-                        + getString(R.string.close_resone_time)
-                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
-            }
-
-            databaseHelper.addRouteInfo(routeInfo);
-
-            List<String> settings = new ArrayList<>();
-
-            settings.add(startLat);
-            settings.add(startLan);
-            settings.add(to_lat);
-            settings.add(to_lng);
-            settings.add(routeFrom + " " + routefromnumber);
-            settings.add(routeTo + " " + routeTonumber);
-            Logger.d(this, TAG, settings.toString());
-            databaseHelperUid.addRouteInfoUid(settings);
-
-
-        }
-        array = databaseHelper.readRouteInfo();
-        Logger.d(this, TAG, "processRouteList: array 1211" + Arrays.toString(array));
-    }
 
     private void settingsNewUser (String emailUser) {
         // Assuming this code is inside a method or a runnable block
@@ -1601,9 +1387,6 @@ public class MainActivity extends AppCompatActivity {
             database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
             database.close();
             Logger.d(this, TAG, "settingsNewUser" + emailUser);
-
-//            Intent intent = new Intent(this, MyFirebaseMessagingService.class);
-//            startService(intent);
         });
         updateUserInfoThread.start();
 
@@ -1795,94 +1578,6 @@ public class MainActivity extends AppCompatActivity {
         database.close();
     }
 
-    private void getCardToken(String pay_system, String table, String email) {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site") // Замените на фактический URL вашего сервера
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        String baseUrl = retrofit.baseUrl().toString();
-
-        Logger.d(this, TAG, "Base URL: " + baseUrl);
-        // Создайте сервис
-        CallbackService service = retrofit.create(CallbackService.class);
-
-        Logger.d(this, TAG, "getCardTokenFondy: ");
-        List<String>  arrayList = logCursor(MainActivity.CITY_INFO);
-        String MERCHANT_ID = arrayList.get(6);
-        Logger.d(this, TAG, "getCardToken:MERCHANT_ID " + MERCHANT_ID);
-        if(MERCHANT_ID != null) {
-    // Выполните запрос
-    Call<CallbackResponse> call = service.handleCallback(email, pay_system, MERCHANT_ID);
-    String requestUrl = call.request().toString();
-    Logger.d(this, TAG, "Request URL: " + requestUrl);
-
-    call.enqueue(new Callback<CallbackResponse>() {
-        @Override
-        public void onResponse(@NonNull Call<CallbackResponse> call, @NonNull Response<CallbackResponse> response) {
-            Logger.d(getApplicationContext(), TAG, "onResponse: " + response.body());
-            if (response.isSuccessful()) {
-                CallbackResponse callbackResponse = response.body();
-                if (callbackResponse != null) {
-                    List<CardInfo> cards = callbackResponse.getCards();
-                    Logger.d(getApplicationContext(), TAG, "onResponse: cards" + cards);
-                    if (cards != null && !cards.isEmpty()) {
-                        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        // Очистка таблицы
-                        database.delete(table, "1", null);
-
-                        for (CardInfo cardInfo : cards) {
-                            ContentValues cv = new ContentValues();
-                            String masked_card = cardInfo.getMasked_card(); // Маска карты
-                            String card_type = cardInfo.getCard_type(); // Тип карты
-                            String bank_name = cardInfo.getBank_name(); // Название банка
-                            String rectoken = cardInfo.getRectoken(); // Токен карты
-                            String merchantId = cardInfo.getMerchant(); // Токен карты
-
-                            Logger.d(getApplicationContext(), TAG, "onResponse: card_token: " + rectoken);
-
-                            cv.put("masked_card", masked_card);
-                            cv.put("card_type", card_type);
-                            cv.put("bank_name", bank_name);
-                            cv.put("rectoken", rectoken);
-                            cv.put("merchant", merchantId);
-                            cv.put("rectoken_check", "-1");
-                            database.insert(table, null, cv);
-                        }
-                        // Выбираем минимальное значение ID из таблицы
-                        Cursor cursor = database.rawQuery("SELECT MIN(id) FROM " + table, null);
-                        if (cursor != null && cursor.moveToFirst()) {
-                            // Получаем минимальное значение ID
-                            int minId = cursor.getInt(0);
-                            cursor.close();
-
-                            // Обновляем строку с минимальным ID
-                            ContentValues cv = new ContentValues();
-                            cv.put("rectoken_check", "1");
-                            database.update(table, cv, "id = ?", new String[] { String.valueOf(minId) });
-                        }
-                        database.close();
-
-                    }
-                }
-
-            } else {
-                // Обработка случаев, когда ответ не 200 OK
-            }
-        }
-
-        @Override
-        public void onFailure(@NonNull Call<CallbackResponse> call, @NonNull Throwable t) {
-            // Обработка ошибки запроса
-            Logger.d(getApplicationContext(), TAG, "onResponse: failure " + t);
-//                Toast.makeText(getApplicationContext(), getApplicationContext().getString(verify_internet), Toast.LENGTH_SHORT).show();
-            VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-        }
-    });
-}
-
-
-    }
-
 
     private void cityMaxPay(String city) {
         CityService cityService = CityApiClient.getClient().create(CityService.class);
@@ -1976,7 +1671,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void userPhoneFromServer (String email) {
         ApiClientPhone apiClient = new ApiClientPhone();
-        MainActivity.verifyPhone = false;
         apiClient.getUserPhone(email, new ApiClientPhone.OnUserPhoneResponseListener() {
             @Override
             public void onSuccess(String phone) {
@@ -2249,5 +1943,93 @@ public class MainActivity extends AppCompatActivity {
             MyBottomSheetErrorFragment myBottomSheetMessageFragment = new MyBottomSheetErrorFragment(message);
             myBottomSheetMessageFragment.show(getSupportFragmentManager(), myBottomSheetMessageFragment.getTag());
         }
+    }
+    private void mapboxKey() {
+        ApiClientMapbox.getMapboxKeyInfo(new Callback<ApiResponseMapbox>() {
+            @Override
+            public void onResponse(@NonNull Call<ApiResponseMapbox> call, @NonNull Response<ApiResponseMapbox> response) {
+                if (response.isSuccessful()) {
+                    ApiResponseMapbox apiResponse = response.body();
+                    if (apiResponse != null) {
+                        String keyMaxbox = apiResponse.getKeyMapbox();
+                        Logger.d(getApplicationContext(),"ApiResponseMapbox", "keyMapbox: " + keyMaxbox);
+                        MainActivity.apiKeyMapBox = keyMaxbox;
+                        // Теперь у вас есть ключ Visicom для дальнейшего использования
+                    }
+                } else {
+                    // Обработка ошибки
+                    Logger.d(getApplicationContext(),"mapboxKey", "Error: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ApiResponseMapbox> call, @NonNull Throwable t) {
+                // Обработка ошибки
+                Logger.d(getApplicationContext(),"ApiResponseMapbox", "Failed to make API call" + t);
+            }
+        }, getString(R.string.application)
+        );
+    }
+
+    private void visicomKey() {
+        com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiClient.getVisicomKeyInfo(new Callback<ApiResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
+                if (response.isSuccessful()) {
+                    ApiResponse apiResponse = response.body();
+                    if (apiResponse != null) {
+                        String keyVisicom = apiResponse.getKeyVisicom();
+                        Logger.d(getApplicationContext(),"ApiResponse", "keyVisicom: " + keyVisicom);
+                        MainActivity.apiKey = keyVisicom;
+
+                        String apiUrl = "https://api.visicom.ua/data-api/5.0/";
+                        String url = apiUrl  + LocaleHelper.getLocale() + "/geocode.json";
+
+                        String modifiedText = "чер";
+                        Logger.d(getApplicationContext(), TAG, "performAddressSearch:modifiedText " + modifiedText);
+
+                        url = url
+                                + "?"
+                                + ",adr_street"
+                                + "&l=1"
+                                + "&text=" + modifiedText + "&key=" + MainActivity.apiKey;
+                        Request request = new Request.Builder()
+                                .url(url)
+                                .build();
+                        Logger.d(getApplicationContext(), TAG, "performAddressSearch: " + url);
+                        OkHttpClient client = new OkHttpClient();
+                        client.newCall(request).enqueue(new okhttp3.Callback() {
+                            @Override
+                            public void onResponse(@NonNull okhttp3.Call call, @NonNull okhttp3.Response response) {
+                                try {
+                                    assert response.body() != null;
+                                    String responseData = response.body().string();
+                                    Logger.d(getApplicationContext(), TAG, "onResponse: " + responseData);
+                                } catch (Exception e) {
+                                    FirebaseCrashlytics.getInstance().recordException(e);
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(@NonNull okhttp3.Call call, @NonNull IOException e) {
+                            }
+                        });
+
+
+                    }
+                } else {
+                    // Обработка ошибки
+                    Logger.d(getApplicationContext(),"visicomKey", "Error: " + response.code());
+
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
+                // Обработка ошибки
+                Logger.d(getApplicationContext(),"visicomKey", "Failed to make API call" + t);
+            }
+        },getString(R.string.application)
+        );
     }
 }

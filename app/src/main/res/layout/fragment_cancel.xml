@@ -96,4 +96,18 @@
         app:layout_constraintStart_toEndOf="@+id/scrollButtonUp"
         app:layout_constraintTop_toBottomOf="@+id/listView"
         tools:ignore="ContentDescription" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_call"
+        android:layout_width="52dp"
+        android:layout_height="139dp"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="8dp"
+        android:contentDescription="@string/call_admin"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.955"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@android:drawable/stat_sys_phone_call_forward" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

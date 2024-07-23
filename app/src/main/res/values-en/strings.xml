@@ -2,13 +2,10 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.759</string>
-    <string name="version">Version: 1.759</string>
+    <string name="version_code">1.760</string>
+    <string name="version">Version: 1.760</string>
 
     <string name="app_name">Taxi Dostavka</string>
-    <string name="back4app_server_url">https://parseapi.back4app.com/</string>
-    <string name="back4app_app_id">01YGF894m3NJRXT1BlH6qPo9pUfDlG9sqi9K9mIL</string>
-    <string name="back4app_client_key">T5f5GuT1UCmaiJn8Dek3sVmayGuJa2jfelQR6V6f</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -36,8 +33,7 @@
     <string name="make_rout">Make route</string>
     <string name="call_admin">Call operator</string>
     <string name="email_friend">Tell a friend</string>
-    <!-- <string name="default_web_client_id">356539267738-5bs72asrar11ud7ckcis68ophlnm3gfj.apps.googleusercontent.com</string>-->
-    <!--<string name="default_web_client_id">356539267738-0v3d1nsci9g7fij8cemnlid7cfalvdo2.apps.googleusercontent.com</string>-->
+
     <string name="my_phone">My phone</string>
     <string name="open_maps">Order by map</string>
     <string name="driver">Work as a driver (advertisement)</string>
@@ -90,7 +86,8 @@
     <string name="make_order_message">Make at least one trip</string>
     <string name="to_adress_message">Where are we going?</string>
     <string name="coastMarkersMessage">"Cost of traveling along the route "</string>
-    <string name="please_phone_message">The application transmits your mobile phone number to enable the taxi ordering function. By clicking the Save button, you confirm your consent to transfer the phone number to the dispatcher to search for the car and save it for future orders.</string><string name="check_message">Wait, the connection is in progress.</string>
+    <string name="please_phone_message">Ordering is not possible without entering your phone number. The application transmits your mobile phone number to enable the taxi ordering function. By clicking the Save button you confirm your consent to transfer the phone number to the dispatcher to search for the car and save it for future orders.</string>
+    <string name="check_message">Please wait, connecting.</string>
     <string name="find_of_map">Try to find on the map</string>
     <string name="end_point_marker">Destination</string>
     <string name="error_firebase_start">Validation error. Dial the operator via "HELP"</string>
@@ -301,11 +298,15 @@
     <string name="hi_mes">Greetings to you</string>
     <string name="change_mes">No results. Try changing the search parameters</string>
     <string name="two_point_mes">2. Specify the drop-off location on the map</string>
-    <string name="gdpr0">Privacy Policy</string>
-    <string name="gdpr1">We value your trust and are committed to ensuring that your personal data is securely protected. This privacy policy explains how we collect, use and protect your personal data as part of your use of our app.</string>
-    <string name="gdpr2">In order to provide taxi ordering functionality in our application, we collect and store users\' mobile phone numbers. These data are necessary to contact you and provide the taxi ordering service.</string>
-    <string name="gdpr3">By using our app and providing us with your personal data, you consent to the collection, use and transfer of that data in accordance with this privacy policy. We take all necessary measures to ensure the security of your personal data and prevent unauthorized access to them. Our application complies with the provisions of the General Data Protection Regulation (GDPR) of the European Union regarding the collection, use and processing of personal data. You have the right at any time to request access to your personal data, to make changes or to delete it from our database. To do this, contact us at taxi.easy.ua@gmail.com. By using our app, you agree to the terms of our privacy policy. We reserve the right to make changes to this policy and you will be notified. You have the right at any time to request access to your personal data, to make changes or to delete it from our database. To do this, contact us at taxi.easy.ua@gmail.com. If you have any further questions or concerns about your privacy and data, please contact us at the contact address below.</string>
-    <string name="my_name">Andrii Korzhov</string>
+
+    <string name="gdpr0">Privacy Policy and \n Data Protection</string>
+    <string name="gdpr2">We value your trust and strive to ensure the reliable protection of your personal data. This privacy policy explains how we collect, use and protect your personal information when you use our software.</string>
+    <string name="gdbr3_0">User email data is obtained through an authentication process using Firebase. This information is used to identify and authenticate the user to our application. Email is used to create and manage a user account, provide security, and restore access.</string>
+    <string name="gdpr3_1">To provide taxi ordering functionality in our application, we collect and store users\' mobile phone numbers. This data is necessary to contact you and provide taxi ordering services.</string>
+    <string name="gdpr3_2">User device data is obtained through the process of sending a device token to a secure server using Firebase. This information is used to send personalized push notifications to users in our application. You can disable push notifications in your device settings.</string>
+    <string name="gdpr3_3">We make every effort to ensure the security of your data. All information, including email and phone number, is stored encrypted and access is limited to authorized employees only.</string>
+    <string name="gdpr3_4">By using our program and providing us with your personal data, you consent to the collection, use and transfer of data in accordance with this privacy policy. We take all necessary measures to ensure the security of your personal data and prevent unauthorized access to it. Our app adheres to the provisions of the European Union\'s General Data Protection Regulation (GDPR) on the collection, use and processing of personal data. You have the right to request access to, change or delete your personal data from our database at any time. To do this, contact us at taxi.easy.ua@gmail.com. By using our program, you agree to the terms of our privacy policy. We reserve the right to make changes to this policy, which will be notified to you. You have the right to request access to, change or delete your personal data from our database at any time. To do this, contact us at taxi.easy.ua@gmail.com. If you have additional questions or requests regarding privacy and data, please contact us at the contact address below.</string>  <string name="my_name">Andrii Korzhov</string>
+
     <string name="conf">Privacy</string>
     <string name="author_about">About the author</string>
     <string name="foreign_countries">Other</string>
@@ -329,7 +330,7 @@
     <string name="auto_info">, auto</string>
     <string name="city_no_cards">Bank card payment is not available in this settlement. We will notify you when payment by bank cards becomes available.</string>
     <string name="pos_k">Str. Khreschatyk 16, Kyiv city\t</string>
-    <string name="pos_d">Prospekt Dmytro Yavornytskyi (Karl Marxa), building 52, city of Dnipro\t</string>
+    `<string name="pos_d">Prospekt Dmytro Yavornytskyi (Karl Marxa), building 52, city of Dnipro\t</string>
     <string name="pos_o">Panteleymonivska St., bldg. 64, Odesa city\t</string>
     <string name="pos_z">Ave. Soborny, bldg. 139, city of Zaporozhye\t</string>
     <string name="pos_c">Baidy Vyshnevetskoho str., building 36, Cherkasy city\t</string>
@@ -383,4 +384,5 @@
     <string name="order_to_cancel_review">Go to review</string>
     <string name="order_to_cancel_true">You have scheduled trips</string>
     <string name="no_house_vis_mes">The requested address was not found. Try something else or click the green back arrow button</string>
+    <string name="no_adrees_mes">Check the address or dial operators</string>
 </resources>

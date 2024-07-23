@@ -10,6 +10,8 @@ import android.text.style.ClickableSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -23,6 +25,7 @@ import com.taxi.easy.ua.databinding.FragmentAboutBinding;
 public class AboutFragment extends Fragment {
 
     private FragmentAboutBinding binding;
+    private int desiredHeight;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -35,7 +38,7 @@ public class AboutFragment extends Fragment {
         // Текст, который вы хотите отображать
         TextView textSite = binding.textView1;
         // Текст, который вы хотите отображать
-        String displayText = getString(R.string.gdpr0);
+        String displayText = requireActivity().getString(R.string.gdpr0);
 
         final String url = "https://m.easy-order-taxi.site/taxi-gdbr";
 
@@ -82,6 +85,22 @@ public class AboutFragment extends Fragment {
         final TextView textViewEmail = binding.textEmail;
         aboutViewModel.getTextBuild().observe(getViewLifecycleOwner(), textViewBuild::setText);
         aboutViewModel.getTextEmail().observe(getViewLifecycleOwner(), textViewEmail::setText);
+        ScrollView scrollView = binding.layoutScroll;
+
+
+
+
+        scrollView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                root.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                // Теперь мы можем получить высоту фрагмента
+                desiredHeight = root.getHeight() - 350;
+                ViewGroup.LayoutParams layoutParams = scrollView.getLayoutParams();
+                layoutParams.height = desiredHeight;
+                scrollView.setLayoutParams(layoutParams);
+            }
+        });
 
         return root;
     }

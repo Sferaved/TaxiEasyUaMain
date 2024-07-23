@@ -5,9 +5,11 @@ import static android.content.Context.MODE_PRIVATE;
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -28,9 +30,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.NetworkChangeReceiver;
@@ -43,11 +44,11 @@ import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.db.RouteInfo;
+import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -64,7 +65,6 @@ public class UIDFragment extends Fragment {
     private static TextView textView;
     private NetworkChangeReceiver networkChangeReceiver;
     ProgressBar progressBar;
-    NavController navController;
     DatabaseHelper databaseHelper;
     DatabaseHelperUid databaseHelperUid;
     String baseUrl = "https://m.easy-order-taxi.site";
@@ -75,28 +75,25 @@ public class UIDFragment extends Fragment {
     private TextView textUid;
     private String email;
     private FragmentManager fragmentManager;
-    private final int desiredHeight = 1200;
-
+    private int desiredHeight;
+    Context context;
+    
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-
         binding = FragmentUidBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
         fragmentManager = getParentFragmentManager();
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
-
+        context = requireActivity();
         listView = binding.listView;
         progressBar = binding.progressBar;
         networkChangeReceiver = new NetworkChangeReceiver();
 
-        email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(requireActivity())).get(3);
-        routeList = new ArrayList<>();
-        databaseHelper = new DatabaseHelper(getContext());
-        array = databaseHelper.readRouteInfo();
+        databaseHelper = new DatabaseHelper(context);
+        databaseHelperUid = new DatabaseHelperUid(context);
 
-        databaseHelperUid = new DatabaseHelperUid(getContext());
+        array = databaseHelper.readRouteInfo();
 
         textUid  = binding.textUid;
         upd_but = binding.updBut;
@@ -104,82 +101,76 @@ public class UIDFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-                    navController.navigate(R.id.nav_visicom);
-                } else {
-                    progressBar.setVisibility(View.VISIBLE);
-                    fetchRoutes(email);
-
+                    MainActivity.navController.popBackStack();
+                    MainActivity.navController.navigate(R.id.nav_visicom);
                 }
 
             }
         });
         scrollButtonUp = binding.scrollButtonUp;
         scrollButtonDown = binding.scrollButtonDown;
-        scrollButtonDown.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Определяем следующую позицию для прокрутки
-                int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
 
-                // Проверяем, чтобы не прокручивать за пределы списка
-                if (nextVisiblePosition < array.length) {
-                    // Плавно прокручиваем к следующей позиции
-                    listView.smoothScrollToPosition(nextVisiblePosition);
-                }
+        FloatingActionButton fab_call = binding.fabCall;
+        fab_call.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+            String phone = stringList.get(3);
+            intent.setData(Uri.parse(phone));
+            startActivity(intent);
+        });
+
+        progressBar.setVisibility(View.VISIBLE);
+        scrollButtonDown.setVisibility(View.GONE);
+        scrollButtonUp.setVisibility(View.GONE);
+        scrollButtonDown.setOnClickListener(v -> {
+            // Определяем следующую позицию для прокрутки
+            int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
+
+            // Проверяем, чтобы не прокручивать за пределы списка
+            if (nextVisiblePosition < array.length) {
+                // Плавно прокручиваем к следующей позиции
+                listView.smoothScrollToPosition(nextVisiblePosition);
             }
         });
 
-        scrollButtonUp.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                int offset = -1; // или другое значение, чтобы указать направление прокрутки
-                listView.smoothScrollByOffset(offset);
+        scrollButtonUp.setOnClickListener(v -> {
+            // Определяем следующую позицию для прокрутки
+            int nextVisiblePosition = listView.getFirstVisiblePosition() - 1;
+
+            // Проверяем, чтобы не прокручивать за пределы списка
+            if (nextVisiblePosition >= 0) {
+                // Плавно прокручиваем к предыдущей позиции
+                listView.smoothScrollToPosition(nextVisiblePosition);
             }
         });
 
-        if (array == null || array.length == 0) {
-            // Вызов метода fetchRoutes(email) только если массив пуст
-            progressBar.setVisibility(View.VISIBLE);
-//            fetchRoutes(email);
-            progressBar.setVisibility(View.GONE);
-            scrollButtonDown.setVisibility(View.INVISIBLE);
-            scrollButtonUp.setVisibility(View.INVISIBLE);
-        } else {
-            progressBar.setVisibility(View.GONE);
-            upd_but.setVisibility(View.VISIBLE);
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(requireActivity(), R.layout.drop_down_layout, array);
-            listView.setAdapter(adapter);
-            scrollButtonDown.setVisibility(View.VISIBLE);
-            scrollButtonUp.setVisibility(View.VISIBLE);
 
-            scrollButtonUp = binding.scrollButtonUp;
-            scrollButtonDown = binding.scrollButtonDown;
+        fetchRoutes();
+        registerForContextMenu(listView);
+        listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                root.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                // Теперь мы можем получить высоту фрагмента
+                desiredHeight = root.getHeight() - 350;
+                ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
+                layoutParams.height = desiredHeight;
+                listView.setLayoutParams(layoutParams);
 
-            ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
-            layoutParams.height = desiredHeight;
-            listView.setLayoutParams(layoutParams);
-            registerForContextMenu(listView);
-            listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    int totalItemHeight = 0;
-                    for (int i = 0; i < listView.getChildCount(); i++) {
-                        totalItemHeight += listView.getChildAt(i).getHeight();
-                    }
-
-                    if (totalItemHeight > desiredHeight) {
-                        scrollButtonUp.setVisibility(View.VISIBLE);
-                        scrollButtonDown.setVisibility(View.VISIBLE);
-                    } else {
-                        scrollButtonUp.setVisibility(View.GONE);
-                        scrollButtonDown.setVisibility(View.GONE);
-                    }
-
-                    // Убираем слушатель, чтобы он не срабатывал многократно
-//                    listView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                int totalItemHeight = 0;
+                for (int i = 0; i < listView.getChildCount(); i++) {
+                    totalItemHeight += listView.getChildAt(i).getHeight();
                 }
-            });
-        }
+
+                if (totalItemHeight > desiredHeight) {
+                    scrollButtonUp.setVisibility(View.VISIBLE);
+                    scrollButtonDown.setVisibility(View.VISIBLE);
+                } else {
+                    scrollButtonUp.setVisibility(View.GONE);
+                    scrollButtonDown.setVisibility(View.GONE);
+                }
+            }
+        });
         return root;
     }
 
@@ -220,8 +211,8 @@ public class UIDFragment extends Fragment {
             settings.add(routeInfo.getFinish());
 
             updateRoutMarker(settings);
-
-            navController.navigate(R.id.nav_visicom);
+            MainActivity.navController.popBackStack();
+            MainActivity.navController.navigate(R.id.nav_visicom);
             MainActivity.gps_upd = false;
             return true;
         } else if (item.getItemId() == R.id.action_exit) {
@@ -252,26 +243,39 @@ public class UIDFragment extends Fragment {
         }
     }
 
-    private void fetchRoutes(String value) {
+    private void fetchRoutes() {
 
-        upd_but.setText(getString(R.string.cancel_gps));
+        String email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+
+        routeList = new ArrayList<>();
+
+        databaseHelper.clearTable();
+        databaseHelperUid.clearTableUid();
+
+        progressBar.setVisibility(View.VISIBLE);
+
+        listView.setVisibility(View.GONE);
+        routeList = new ArrayList<>();
         upd_but.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                navController.navigate(R.id.nav_visicom);
+                MainActivity.navController.popBackStack();
+                MainActivity.navController.navigate(R.id.nav_visicom);
             }
         });
-
-        String url = baseUrl + "/android/UIDStatusShowEmail/" + value;
+        List<String> stringList = logCursor(MainActivity.CITY_INFO,requireActivity());
+        String city = stringList.get(1);
+        String url = baseUrl + "/android/UIDStatusShowEmailCityApp/" + email + "/" + city + "/" +  context.getString(R.string.application);
         Call<List<RouteResponse>> call = ApiClient.getApiService().getRoutes(url);
-        Log.d("TAG", "fetchRoutes: " + url);
+        Logger.d (getActivity(), TAG, "fetchRoutes: " + url);
+
         call.enqueue(new Callback<List<RouteResponse>>() {
             @Override
             public void onResponse(@NonNull Call<List<RouteResponse>> call, @NonNull Response<List<RouteResponse>> response) {
                 progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful()) {
                     List<RouteResponse> routes = response.body();
-                    Log.d("TAG", "onResponse: " + routes);
+                    Logger.d (getActivity(), TAG, "onResponse: " + routes);
                     if (routes != null && !routes.isEmpty()) {
                         boolean hasRouteWithAsterisk = false;
                         for (RouteResponse route : routes) {
@@ -294,9 +298,10 @@ public class UIDFragment extends Fragment {
                         textUid.setText(R.string.no_routs);
                     }
                 } else {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-
+                    if (isAdded()) {
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    }
                 }
             }
 
@@ -308,7 +313,6 @@ public class UIDFragment extends Fragment {
 
         });
         if (isAdded()) {
-            upd_but.setText(requireActivity().getString(R.string.order));
             progressBar.setVisibility(View.GONE);
         }
     }
@@ -319,9 +323,7 @@ public class UIDFragment extends Fragment {
         // Создайте массив строк
         array = new String[routeList.size()];
 
-        databaseHelper.clearTable();
-
-        String closeReasonText = getString(R.string.close_resone_def);
+        String closeReasonText = context.getString(R.string.close_resone_def);
 
         for (int i = 0; i < routeList.size(); i++) {
             RouteResponse route = routeList.get(i);
@@ -333,57 +335,61 @@ public class UIDFragment extends Fragment {
             String createdAt = route.getCreatedAt();
             String closeReason = route.getCloseReason();
             String auto = route.getAuto();
+            String startLat = route.getStartLat();
+            String startLan = route.getStartLan();
+            String to_lat = route.getTo_lat();
+            String to_lng = route.getTo_lng();
 
             switch (closeReason){
                 case "-1":
-                    closeReasonText = getString(R.string.close_resone_in_work);
+                    closeReasonText = context.getString(R.string.close_resone_in_work);
                     break;
                 case "0":
-                    closeReasonText = getString(R.string.close_resone_0);
+                    closeReasonText = context.getString(R.string.close_resone_0);
                     break;
                 case "1":
-                    closeReasonText = getString(R.string.close_resone_1);
+                    closeReasonText = context.getString(R.string.close_resone_1);
                     break;
                 case "2":
-                    closeReasonText = getString(R.string.close_resone_2);
+                    closeReasonText = context.getString(R.string.close_resone_2);
                     break;
                 case "3":
-                    closeReasonText = getString(R.string.close_resone_3);
+                    closeReasonText = context.getString(R.string.close_resone_3);
                     break;
                 case "4":
-                    closeReasonText = getString(R.string.close_resone_4);
+                    closeReasonText = context.getString(R.string.close_resone_4);
                     break;
                 case "5":
-                    closeReasonText = getString(R.string.close_resone_5);
+                    closeReasonText = context.getString(R.string.close_resone_5);
                     break;
                 case "6":
-                    closeReasonText = getString(R.string.close_resone_6);
+                    closeReasonText = context.getString(R.string.close_resone_6);
                     break;
                 case "7":
-                    closeReasonText = getString(R.string.close_resone_7);
+                    closeReasonText = context.getString(R.string.close_resone_7);
                     break;
                 case "8":
-                    closeReasonText = getString(R.string.close_resone_8);
+                    closeReasonText = context.getString(R.string.close_resone_8);
                     break;
                 case "9":
-                    closeReasonText = getString(R.string.close_resone_9);
+                    closeReasonText = context.getString(R.string.close_resone_9);
                     break;
 
             }
 
             if(routeFrom.equals("Місце відправлення")) {
-                routeFrom = getString(R.string.start_point_text);
+                routeFrom = context.getString(R.string.start_point_text);
             }
 
 
             if(routeTo.equals("Точка на карте")) {
-                routeTo = getString(R.string.end_point_marker);
+                routeTo = context.getString(R.string.end_point_marker);
             }
             if(routeTo.contains("по городу")) {
-                routeTo = getString(R.string.on_city);
+                routeTo = context.getString(R.string.on_city);
             }
             if(routeTo.contains("по місту")) {
-                routeTo = getString(R.string.on_city);
+                routeTo = context.getString(R.string.on_city);
             }
             String routeInfo = "";
 
@@ -392,43 +398,80 @@ public class UIDFragment extends Fragment {
             }
 
             if(routeFrom.equals(routeTo)) {
-                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + getString(R.string.close_resone_to)
-                        + getString(R.string.on_city)
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
-                        + getString(R.string.auto_info) + " " + auto + " "
-                        + getString(R.string.close_resone_time)
-                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
+                routeInfo = context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                        + context.getString(R.string.close_resone_to)
+                        + context.getString(R.string.on_city)
+                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)
+                        + context.getString(R.string.auto_info) + " " + auto + " "
+                        + context.getString(R.string.close_resone_time)
+                        + createdAt + context.getString(R.string.close_resone_text) + closeReasonText;
             } else {
-                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
-                        + getString(R.string.auto_info) + " " + auto + " "
-                        + getString(R.string.close_resone_time)
-                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
+                routeInfo = context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                        + context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
+                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)
+                        + context.getString(R.string.auto_info) + " " + auto + " "
+                        + context.getString(R.string.close_resone_time)
+                        + createdAt + context.getString(R.string.close_resone_text) + closeReasonText;
             }
 
 //                array[i] = routeInfo;
-                databaseHelper.addRouteInfo(routeInfo);
+            databaseHelper.addRouteInfo(routeInfo);
+            List<String> settings = new ArrayList<>();
 
+            settings.add(startLat);
+            settings.add(startLan);
+            settings.add(to_lat);
+            settings.add(to_lng);
+            settings.add(routeFrom + " " + routefromnumber);
+            settings.add(routeTo + " " + routeTonumber);
+            Logger.d(getActivity(), TAG, settings.toString());
+            databaseHelperUid.addRouteInfoUid(settings);
+            Logger.d(getActivity(), TAG, settings.toString());
         }
         array = databaseHelper.readRouteInfo();
-        Log.d("TAG", "processRouteList: array " + Arrays.toString(array));
+        Logger.d (getActivity(), TAG, "processRouteList: array " + Arrays.toString(array));
         if(array != null) {
             ArrayAdapter<String> adapter = new ArrayAdapter<>(requireActivity(), R.layout.drop_down_layout, array);
             listView.setAdapter(adapter);
-            scrollButtonDown.setVisibility(View.VISIBLE);
-            scrollButtonUp.setVisibility(View.VISIBLE);
+            listView.setVisibility(View.VISIBLE);
             progressBar.setVisibility(View.GONE);
             upd_but.setVisibility(View.VISIBLE);
 
             listView.setAdapter(adapter);
 
-            int desiredHeight = 1200; // Ваше желаемое значение высоты в пикселях
+
             ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
             layoutParams.height = desiredHeight;
             listView.setLayoutParams(layoutParams);
             registerForContextMenu(listView);
+
+            scrollButtonDown.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    // Определяем следующую позицию для прокрутки
+                    int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
+
+                    // Проверяем, чтобы не прокручивать за пределы списка
+                    if (nextVisiblePosition < array.length) {
+                        // Плавно прокручиваем к следующей позиции
+                        listView.smoothScrollToPosition(nextVisiblePosition);
+                    }
+                }
+            });
+
+            scrollButtonUp.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    // Определяем следующую позицию для прокрутки
+                    int nextVisiblePosition = listView.getFirstVisiblePosition() - 1;
+
+                    // Проверяем, чтобы не прокручивать за пределы списка
+                    if (nextVisiblePosition >= 0) {
+                        // Плавно прокручиваем к предыдущей позиции
+                        listView.smoothScrollToPosition(nextVisiblePosition);
+                    }
+                }
+            });
         }
     }
 

@@ -24,8 +24,6 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -89,7 +87,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
     static SQLiteDatabase database;
     private final String baseUrl = "https://m.easy-order-taxi.site";
     Activity context;
-    private NavController navController;
+
     String city;
     FragmentManager fragmentManager;
     public MyBottomSheetCardVerification(String checkoutUrl, String amount) {
@@ -102,7 +100,6 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.activity_fondy_payment, container, false);
-        navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
         fragmentManager = getParentFragmentManager();
         webView = view.findViewById(R.id.webView);
         email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
@@ -299,7 +296,8 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                             database.close();
                         }
                     }
-                    navController.navigate(R.id.nav_card);
+                    MainActivity.navController.popBackStack();
+                    MainActivity.navController.navigate(R.id.nav_card);
                 } else {
                     if (isAdded()) {
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
@@ -367,8 +365,8 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                     }
 
                 }
-                navController.popBackStack();
-                navController.navigate(R.id.nav_bonus);
+                MainActivity.navController.popBackStack();
+                MainActivity.navController.navigate(R.id.nav_bonus);
             }
 
             @Override
