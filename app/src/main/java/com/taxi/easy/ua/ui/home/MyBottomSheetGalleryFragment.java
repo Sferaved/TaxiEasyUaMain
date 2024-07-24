@@ -506,7 +506,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
     }
     private void updateAddCost(String addCost) {
         ContentValues cv = new ContentValues();
-        Logger.d(getActivity(), TAG, "updateAddCost: addCost" + addCost);
+
         cv.put("addCost", addCost);
 
         // обновляем по id
