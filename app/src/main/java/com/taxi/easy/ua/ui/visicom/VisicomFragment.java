@@ -52,7 +52,6 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
-import com.taxi.easy.ua.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentVisicomBinding;
 import com.taxi.easy.ua.ui.finish.ApiService;
@@ -66,12 +65,6 @@ import com.taxi.easy.ua.ui.home.MyBottomSheetGeoFragment;
 import com.taxi.easy.ua.ui.home.MyPhoneDialogFragment;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.open_map.visicom.ActivityVisicomOnePage;
-import com.taxi.easy.ua.ui.open_map.visicom.key_mapbox.ApiCallbackMapbox;
-import com.taxi.easy.ua.ui.open_map.visicom.key_mapbox.ApiClientMapbox;
-import com.taxi.easy.ua.ui.open_map.visicom.key_mapbox.ApiResponseMapbox;
-import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiCallback;
-import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiClient;
-import com.taxi.easy.ua.ui.open_map.visicom.key_visicom.ApiResponse;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
@@ -106,7 +99,7 @@ public class VisicomFragment extends Fragment{
     private static final int REQUEST_LOCATION_PERMISSION = 1;
     FloatingActionButton fab_call;
 
-    public static AppCompatButton btn_minus, btn_plus, btnOrder, buttonBonus, gpsbut;
+    public static AppCompatButton btn_minus, btn_plus, btnOrder, buttonBonus, gpsbut, btnCallAdmin;
     @SuppressLint("StaticFieldLeak")
     public static TextView geoText;
     static String api;
@@ -165,7 +158,14 @@ public class VisicomFragment extends Fragment{
 //        btn2 = binding.button2;
 //        btn3 = binding.button3;
 
-
+        btnCallAdmin = binding.btnCallAdmin;
+        btnCallAdmin.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+            String phone = stringList.get(3);
+            intent.setData(Uri.parse(phone));
+            startActivity(intent);
+        });
 
         return root;
     }
@@ -176,7 +176,7 @@ public class VisicomFragment extends Fragment{
          if (visible == View.INVISIBLE) {
              progressBar.setVisibility(View.VISIBLE);
          } else {
-             progressBar.setVisibility(View.GONE);;
+             progressBar.setVisibility(View.GONE);
          }
 
          btn_clear_from.setVisibility(View.INVISIBLE);
@@ -317,10 +317,13 @@ public class VisicomFragment extends Fragment{
         database.close();
     }
 
-     
+    private String cleanString(String input) {
+        if (input == null) return "";
+        return input.trim().replaceAll("\\s+", " ").replaceAll("\\s{2,}$", " ");
+    }
     private boolean newRout() {
         boolean result = false;
-
+        progressBar.setVisibility(View.VISIBLE);
         Logger.d(context, TAG, "newRout: ");
         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -782,9 +785,13 @@ public class VisicomFragment extends Fragment{
                                 sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
                                 to_name_local + "." +
                                 getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH) + " " + pay_method_message;
+                        messageResult = cleanString(messageResult);
+
                         String messageFondy = getString(R.string.fondy_message) + " " +
                                 sendUrlMap.get("routefrom") + " " + getString(R.string.to_message) +
                                 to_name_local + ".";
+
+
                         Logger.d(context, TAG, "orderFinished: messageResult " + messageResult);
                         Logger.d(context, TAG, "orderFinished: to_name " + to_name);
                         Intent intent = new Intent(context, FinishActivity.class);
@@ -1024,8 +1031,6 @@ public class VisicomFragment extends Fragment{
         super.onResume();
         progressBar.setVisibility(View.VISIBLE);
 
-
-
         new VerifyUserTask(context).execute();
 
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
@@ -1077,17 +1082,6 @@ public class VisicomFragment extends Fragment{
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
         api =  stringList.get(2);
-
-
-        fab_call = binding.fabCall;
-        fab_call.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_DIAL);
-            List<String> stringList1 = logCursor(MainActivity.CITY_INFO, context);
-            String phone = stringList1.get(3);
-            intent.setData(Uri.parse(phone));
-            startActivity(intent);
-        });
-
 
         buttonBonus = binding.btnBonus;
         textfrom = binding.textfrom;

@@ -12,16 +12,15 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.FragmentManager;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -97,13 +96,13 @@ public class FinishActivity extends AppCompatActivity {
     public static String messageFondy;
     public static String uid_Double;
     @SuppressLint("StaticFieldLeak")
-    public static Button btn_reset_status;
+    public static AppCompatButton btn_reset_status;
     @SuppressLint("StaticFieldLeak")
-    public static Button btn_cancel_order;
+    public static AppCompatButton btn_cancel_order;
     @SuppressLint("StaticFieldLeak")
-    public static Button btn_again;
+    public static AppCompatButton btn_again;
     @SuppressLint("StaticFieldLeak")
-    public static Button btn_cancel;
+    public static AppCompatButton btn_cancel;
     public static Runnable myRunnable;
     public static Runnable runnableBonusBtn;
     public static Handler handler, handlerBonusBtn,  handlerStatus;
@@ -119,6 +118,7 @@ public class FinishActivity extends AppCompatActivity {
     long delayMillisStatus;
     FragmentManager fragmentManager;
     private static boolean no_pay;
+    private AppCompatButton btnCallAdmin;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -130,6 +130,14 @@ public class FinishActivity extends AppCompatActivity {
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
         Logger.d(getApplicationContext(), TAG, "onCreate: " + pay_method);
 
+        btnCallAdmin = findViewById(R.id.btnCallAdmin);
+        btnCallAdmin.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            List<String> stringList = logCursor(MainActivity.CITY_INFO);
+            String phone = stringList.get(3);
+            intent.setData(Uri.parse(phone));
+            startActivity(intent);
+        });
         messageFondy = getString(R.string.fondy_message);
         email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
         phoneNumber = logCursor(MainActivity.TABLE_USER_INFO).get(2);
@@ -328,17 +336,7 @@ public class FinishActivity extends AppCompatActivity {
                 finishAffinity();
             });
 
-            FloatingActionButton fab_cal = findViewById(R.id.fab_call);
-            fab_cal.setOnClickListener(v -> {
 
-            Intent intent = new Intent(Intent.ACTION_DIAL);
-
-            List<String> stringList = logCursor(MainActivity.CITY_INFO);
-            String phone = stringList.get(3);
-            intent.setData(Uri.parse(phone));
-            startActivity(intent);
-        });
-//        infoPaymentType();
         if(!no_pay) {
             switch (pay_method) {
                 case "wfp_payment":

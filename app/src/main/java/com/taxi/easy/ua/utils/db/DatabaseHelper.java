@@ -104,7 +104,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
             // Чтение данных из курсора и сохранение их в массив
             do {
-                String routeInfo = cursor.getString(columnIndexRouteInfo);
+                String routeInfo = cleanString(cursor.getString(columnIndexRouteInfo));
                 array[index] = routeInfo;
                 index++;
             } while (cursor.moveToNext());
@@ -138,7 +138,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
             // Чтение данных из курсора и сохранение их в массив
             do {
-                String routeInfo = cursor.getString(columnIndexRouteInfo);
+                String routeInfo = cleanString(cursor.getString(columnIndexRouteInfo));
                 array[index] = routeInfo;
                 index++;
             } while (cursor.moveToNext());
@@ -152,39 +152,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         return array;
     }
-    public String[] readUidCancel() {
-        SQLiteDatabase db = this.getReadableDatabase();
-        String[] array = null;
 
-        // Запрос к таблице
-        String query = "SELECT * FROM " + TABLE_ROUT_CANCEL;
-        Cursor cursor = db.rawQuery(query, null);
-
-        // Проверка наличия данных в таблице
-        if (cursor != null && cursor.moveToFirst()) {
-            array = new String[cursor.getCount()];
-
-            // Индексы столбцов
-            int columnIndexRouteInfo = cursor.getColumnIndex(COLUMN_UID);
-
-            // Индекс для массива
-            int index = 0;
-
-            // Чтение данных из курсора и сохранение их в массив
-            do {
-                String routeInfo = cursor.getString(columnIndexRouteInfo);
-                array[index] = routeInfo;
-                index++;
-            } while (cursor.moveToNext());
-
-            // Закрытие курсора
-            cursor.close();
-        }
-
-        // Закрытие базы данных
-        db.close();
-
-        return array;
+    private String cleanString(String input) {
+        if (input == null) return "";
+        return input.trim().replaceAll("\\s+", " ").replaceAll("\\s{2,}$", " ");
     }
+
+
 }
 

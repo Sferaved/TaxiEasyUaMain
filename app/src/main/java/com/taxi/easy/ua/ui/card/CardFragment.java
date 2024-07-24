@@ -6,9 +6,11 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -97,6 +99,8 @@ public class CardFragment extends Fragment {
     Activity context;
     WebView webView;
     FragmentManager fragmentManager;
+    private AppCompatButton btnCallAdmin;
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentCardBinding.inflate(inflater, container, false);
@@ -119,6 +123,14 @@ public class CardFragment extends Fragment {
                 MainActivity.navController.popBackStack();
                 MainActivity.navController.navigate(R.id.nav_visicom);
             }
+        });
+
+        btnCallAdmin = binding.btnCallAdmin;
+        btnCallAdmin.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
+            intent.setData(Uri.parse(phone));
+            startActivity(intent);
         });
         return root;
     }

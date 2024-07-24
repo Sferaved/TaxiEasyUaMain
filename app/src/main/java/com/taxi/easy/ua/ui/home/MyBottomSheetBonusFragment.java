@@ -59,7 +59,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
-    private static final String TAG = "TAG_BON";
+    private static final String TAG = "MyBottomSheetBonusFragment";
     long cost;
     String rout;
     String api;

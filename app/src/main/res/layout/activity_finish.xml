@@ -59,7 +59,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="4sp"
-            android:layout_marginTop="28sp"
+            android:layout_marginTop="8dp"
             android:fontFamily="@font/light"
             android:text="@string/textStatus"
             android:textColor="#B0BEC5"
@@ -71,11 +71,12 @@
             android:id="@+id/progress_bar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
+            android:layout_marginTop="4dp"
             android:visibility="invisible"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.498"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/text_full_message" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
             android:id="@+id/text_status"
@@ -96,7 +97,7 @@
             app:layout_constraintTop_toBottomOf="@+id/textStatus"
             tools:ignore="RtlHardcoded" />
 
-        <Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_reset_status"
             android:layout_width="293sp"
             android:layout_height="48dp"
@@ -111,7 +112,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_status" />
 
-        <Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_cancel_order"
             android:layout_width="293sp"
             android:layout_height="48dp"
@@ -127,7 +128,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/btn_reset_status" />
 
-        <Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_again"
             android:layout_width="293sp"
             android:layout_height="45sp"
@@ -144,7 +145,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/btn_cancel_order" />
 
-        <Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_cancel"
             android:layout_width="293sp"
             android:layout_height="45sp"
@@ -161,19 +162,20 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/btn_again" />
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_call"
-            android:layout_width="52dp"
-            android:layout_height="139dp"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="8dp"
-            android:contentDescription="@string/call_admin"
-            app:layout_constraintBottom_toBottomOf="parent"
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnCallAdmin"
+            android:layout_width="293sp"
+            android:layout_height="45sp"
+            android:layout_marginTop="8sp"
+            android:background="@drawable/buttons"
+            android:fontFamily="@font/regular"
+            android:text="@string/call_admin"
+            android:textAlignment="center"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:visibility="visible"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.952"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_cancel"
-            app:layout_constraintVertical_bias="1.0"
-            app:srcCompat="@android:drawable/stat_sys_phone_call_forward" />
+            app:layout_constraintTop_toBottomOf="@+id/btn_cancel" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

@@ -6,9 +6,11 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -52,6 +54,8 @@ public class BonusFragment extends Fragment {
 
     Activity context;
     FragmentManager fragmentManager;
+    private AppCompatButton btnCallAdmin;
+
     @SuppressLint("SourceLockedOrientationActivity")
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -67,6 +71,14 @@ public class BonusFragment extends Fragment {
         text0 =  binding.text0;
         networkChangeReceiver = new NetworkChangeReceiver();
         progressBar = binding.progressBar;
+
+        btnCallAdmin = binding.btnCallAdmin;
+        btnCallAdmin.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
+            intent.setData(Uri.parse(phone));
+            startActivity(intent);
+        });
         return root;
     }
 

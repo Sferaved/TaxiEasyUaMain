@@ -326,18 +326,21 @@
             app:layout_constraintTop_toBottomOf="@+id/btnAdd" />
 
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_call"
-            android:layout_width="52dp"
-            android:layout_height="139dp"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="8dp"
-            android:contentDescription="@string/call_admin"
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnCallAdmin"
+            android:layout_width="293sp"
+            android:layout_height="45sp"
+            android:layout_marginTop="12sp"
+            android:background="@drawable/buttons"
+            android:fontFamily="@font/regular"
+            android:text="@string/call_admin"
+            android:textAlignment="center"
+            android:textColor="@color/white"
+            android:textSize="16sp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.977"
+            app:layout_constraintHorizontal_bias="0.525"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btnOrder"
-            app:srcCompat="@android:drawable/stat_sys_phone_call_forward" />
+            app:layout_constraintTop_toBottomOf="@+id/btnOrder" />
 
         <androidx.constraintlayout.widget.Guideline
             android:id="@+id/guideline4"

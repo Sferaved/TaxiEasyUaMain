@@ -29,7 +29,6 @@ import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.NetworkChangeReceiver;
@@ -81,6 +80,7 @@ public class CancelFragment extends Fragment {
     private FragmentManager fragmentManager;
     Context context;
     private final int desiredHeight = 1200;
+    public static AppCompatButton btnCallAdmin;
 
     public CancelFragment() {
     }
@@ -105,17 +105,15 @@ public class CancelFragment extends Fragment {
         databaseHelper = new DatabaseHelper(getContext());
         databaseHelperUid = new DatabaseHelperUid(getContext());
         array = databaseHelper.readRouteCancel();
-        FloatingActionButton fab_call = binding.fabCall;
-        fab_call.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_DIAL);
-                List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
-                String phone = stringList.get(3);
-                intent.setData(Uri.parse(phone));
-                startActivity(intent);
-            }
+
+        btnCallAdmin = binding.btnCallAdmin;
+        btnCallAdmin.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
+            intent.setData(Uri.parse(phone));
+            startActivity(intent);
         });
+
         textUid  = binding.textUid;
         upd_but = binding.updBut;
         upd_but.setOnClickListener(new View.OnClickListener() {
@@ -265,11 +263,27 @@ public class CancelFragment extends Fragment {
             default:
                 pay_method_message += " " + context.getString(R.string.pay_method_message_nal);
         }
-        String messageResult = context.getString(R.string.thanks_message) +
-                sendUrlMap.get("routefrom") + " " + context.getString(R.string.to_message) +
-                to_name_local + "." +
-                context.getString(R.string.call_of_order) + Objects.requireNonNull(sendUrlMap.get("orderWeb")) + context.getString(R.string.UAH) + " " + pay_method_message;
-        String messageFondy = context.getString(R.string.fondy_message) + " " +
+         String thanksMessage = cleanString(context.getString(R.string.thanks_message));
+         String routeFrom = cleanString(sendUrlMap.get("routefrom"));
+         String toMessage = cleanString(context.getString(R.string.to_message));
+         String toNameLocal = cleanString(to_name_local);
+         String callOfOrder = cleanString(context.getString(R.string.call_of_order));
+         String orderWeb = cleanString(Objects.requireNonNull(sendUrlMap.get("orderWeb")));
+         String uah = cleanString(context.getString(R.string.UAH));
+         String payMethodMessage = cleanString(pay_method_message);
+
+         String messageResult = thanksMessage + " " +
+                 routeFrom + " " +
+                 toMessage + " " +
+                 toNameLocal + ". " +
+                 callOfOrder + " " +
+                 orderWeb + " " +
+                 uah + " " +
+                 payMethodMessage;
+
+         Logger.d(getActivity(), TAG, "messageResult: " + messageResult);
+
+         String messageFondy = context.getString(R.string.fondy_message) + " " +
                 sendUrlMap.get("routefrom") + " " + context.getString(R.string.to_message) +
                 to_name_local + ".";
         Logger.d(context, TAG, "startFinishPage: messageResult " + messageResult);
@@ -283,7 +297,10 @@ public class CancelFragment extends Fragment {
         intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
         startActivity(intent);
     }
-
+    private String cleanString(String input) {
+        if (input == null) return "";
+        return input.trim().replaceAll("\\s+", " ").replaceAll("\\s{2,}$", " ");
+    }
 
     private void fetchRoutesCancel(String value) {
         listView.setVisibility(View.GONE);

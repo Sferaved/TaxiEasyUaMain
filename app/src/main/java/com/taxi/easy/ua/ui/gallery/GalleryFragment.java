@@ -31,7 +31,6 @@ import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
@@ -70,7 +69,7 @@ public class GalleryFragment extends Fragment {
     @SuppressLint("StaticFieldLeak")
     public static TextView textView, text_view_cost;
     String from_mes, to_mes;
-    public static AppCompatButton del_but, btnRouts, btn_minus, btn_plus, btnAdd, buttonBonus;
+    public static AppCompatButton del_but, btnRouts, btn_minus, btn_plus, btnAdd, buttonBonus, btnCallAdmin;
     int selectedItem;
     String FromAddressString, ToAddressString;
     public static long  addCost, cost;
@@ -116,8 +115,8 @@ public class GalleryFragment extends Fragment {
 
         listView = binding.listView;
 
-        FloatingActionButton fab_call = binding.fabCall;
-        fab_call.setOnClickListener(v -> {
+        btnCallAdmin = binding.btnCallAdmin;
+        btnCallAdmin.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_DIAL);
             List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
             String phone = stringList.get(3);
@@ -253,13 +252,7 @@ public class GalleryFragment extends Fragment {
                         scrollButtonUp.setVisibility(View.GONE);
                         scrollButtonDown.setVisibility(View.GONE);
                     }
-                    del_but.setVisibility(View.VISIBLE);
-                    btnRouts.setVisibility(View.VISIBLE);
-                    text_view_cost.setVisibility(View.VISIBLE);
-                    buttonBonus.setVisibility(View.VISIBLE);
-                    btn_minus.setVisibility(View.VISIBLE);
-                    btn_plus.setVisibility(View.VISIBLE);
-                    btnAdd.setVisibility(View.VISIBLE);
+
                     selectedItem = position + 1;
                     Logger.d(getActivity(), TAG, "onItemClick: selectedItem " + selectedItem);
                     try {
@@ -344,22 +337,23 @@ public class GalleryFragment extends Fragment {
                 String api =  stringList.get(2);
                 updateAddCost("0");
                 MyBottomSheetBonusFragment bottomSheetDialogFragment = new MyBottomSheetBonusFragment(Long.parseLong(text_view_cost.getText().toString()), "marker", api, text_view_cost) ;
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             }
         });
-        del_but.setVisibility(View.INVISIBLE);
-        text_view_cost.setVisibility(View.INVISIBLE);
-        btnRouts.setVisibility(View.INVISIBLE);
-        btn_minus.setVisibility(View.INVISIBLE);
-        btn_plus.setVisibility(View.INVISIBLE);
-        btnAdd.setVisibility(View.INVISIBLE);
-        buttonBonus.setVisibility(View.INVISIBLE);
+
+        btnVisible(View.INVISIBLE);
 
         return root;
     }
+
+    private String cleanString(String input) {
+        if (input == null) return "";
+        return input.trim().replaceAll("\\s+", " ").replaceAll("\\s{2,}$", " ");
+    }
+
     private void btnVisible (int visible) {
 
-//        del_but.setVisibility(visible);
+        del_but.setVisibility(visible);
         text_view_cost.setVisibility(visible);
         btnRouts.setVisibility(visible);
         btn_minus.setVisibility(visible);
@@ -367,10 +361,11 @@ public class GalleryFragment extends Fragment {
         btnAdd.setVisibility(visible);
         buttonBonus.setVisibility(visible);
 
+
         if (visible == View.INVISIBLE) {
-            progressbar.setVisibility(View.VISIBLE);
+            progressbar.setVisibility(View.GONE);
         } else {
-            progressbar.setVisibility(View.INVISIBLE);
+            progressbar.setVisibility(View.GONE);
         }
     }
     @SuppressLint("ResourceAsColor")
@@ -466,6 +461,8 @@ public class GalleryFragment extends Fragment {
                             sendUrlMap.get("routefrom") + sendUrlMap.get("routefromnumber") + " " + getString(R.string.to_message) +
                             to_name_local + "." +
                             getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH) + ". " + pay_method_message;
+                    messageResult = cleanString(messageResult);
+
                     String messageFondy = getString(R.string.fondy_message) + " " +
                             sendUrlMap.get("routefrom") + sendUrlMap.get("routefromnumber") + " " + getString(R.string.to_message) +
                             to_name_local + ".";
@@ -647,18 +644,12 @@ public class GalleryFragment extends Fragment {
 
                         costFirstForMin = cost;
                         MIN_COST_VALUE = (long) (cost*0.6);
-                    } else {
+                        btnVisible(View.VISIBLE);
+                      } else {
                         message = getString(R.string.error_message);
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-
-                        text_view_cost.setVisibility(View.INVISIBLE);
-                        btnRouts.setVisibility(View.INVISIBLE);
-                        btn_minus.setVisibility(View.INVISIBLE);
-                        btn_plus.setVisibility(View.INVISIBLE);
-                        btnAdd.setVisibility(View.INVISIBLE);
-                        buttonBonus.setVisibility(View.INVISIBLE);
-                    }
+                        btnVisible(View.INVISIBLE);                   }
                 }
 
                 @Override
@@ -668,6 +659,7 @@ public class GalleryFragment extends Fragment {
             });
 
         }
+        progressbar.setVisibility(View.GONE);
     }
     private Map <String, String> routChoice(int i) {
         Map <String, String> rout = new HashMap<>();
@@ -955,26 +947,10 @@ public class GalleryFragment extends Fragment {
             ArrayAdapter<String> adapter = new ArrayAdapter<>(requireActivity(), R.layout.services_adapter_layout, new String[]{});
             listView.setAdapter(adapter);
             textView.setText(R.string.no_routs);
-
-            del_but.setVisibility(View.INVISIBLE);
-            text_view_cost.setVisibility(View.INVISIBLE);
-            btnRouts.setVisibility(View.INVISIBLE);
-            btn_minus.setVisibility(View.INVISIBLE);
-            btn_plus.setVisibility(View.INVISIBLE);
-            btnAdd.setVisibility(View.INVISIBLE);
-            buttonBonus.setVisibility(View.INVISIBLE);
-            scrollButtonDown.setVisibility(View.INVISIBLE);
-            scrollButtonUp.setVisibility(View.INVISIBLE);
+            btnVisible(View.INVISIBLE);
 
         }
-        del_but.setVisibility(View.INVISIBLE);
-        text_view_cost.setVisibility(View.INVISIBLE);
-        btnRouts.setVisibility(View.INVISIBLE);
-        btn_minus.setVisibility(View.INVISIBLE);
-        btn_plus.setVisibility(View.INVISIBLE);
-        btnAdd.setVisibility(View.INVISIBLE);
-        buttonBonus.setVisibility(View.INVISIBLE);
-
+        btnVisible(View.INVISIBLE);
 
     }
     private String[] arrayToRoutsAdapter() {
