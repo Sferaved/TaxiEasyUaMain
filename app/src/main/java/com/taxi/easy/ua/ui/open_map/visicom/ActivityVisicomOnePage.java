@@ -1712,10 +1712,13 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                                 textGeoError.setText(R.string.no_adrees_mes);
                                 scrollButtonDown.setVisibility(View.GONE);
                                 scrollButtonUp.setVisibility(View.GONE);
+                                layoutParams.height = desiredHeight/3;
+                                addressListView.setLayoutParams(layoutParams);
+                                btnCallAdmin.setVisibility(View.VISIBLE);
                             }
 
 
-                       }
+                        }
                     } else {
                         String textEdit = toEditAddress.getText().toString();
                         if (textEdit.length() >= max_length_string_size) {
@@ -1734,6 +1737,9 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                                 scrollButtonUp.setVisibility(View.GONE);
                                 text_toError.setVisibility(View.VISIBLE);
                                 text_toError.setText(R.string.no_adrees_mes);
+                                layoutParams.height = desiredHeight/3;
+                                addressListView.setLayoutParams(layoutParams);
+                                btnCallAdmin.setVisibility(View.VISIBLE);
                             }
                         }
                     }
