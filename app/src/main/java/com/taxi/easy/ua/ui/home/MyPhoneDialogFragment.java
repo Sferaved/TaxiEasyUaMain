@@ -30,11 +30,8 @@ import androidx.core.app.ActivityCompat;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.finish.FinishActivity;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.log.Logger;
-import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 
 import java.util.ArrayList;
 import java.util.List;

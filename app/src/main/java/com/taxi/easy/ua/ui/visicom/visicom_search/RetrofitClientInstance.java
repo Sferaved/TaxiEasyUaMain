@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.open_map.visicom;
+package com.taxi.easy.ua.ui.visicom.visicom_search;
 
 import android.util.Log;
 

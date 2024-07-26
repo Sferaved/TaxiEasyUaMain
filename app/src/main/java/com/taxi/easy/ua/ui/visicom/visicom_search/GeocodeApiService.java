@@ -1,6 +1,6 @@
-package com.taxi.easy.ua.ui.open_map.visicom;
+package com.taxi.easy.ua.ui.visicom.visicom_search;
 
-import com.taxi.easy.ua.ui.open_map.visicom.resp.GeocodeResponse;
+import com.taxi.easy.ua.ui.visicom.visicom_search.resp.GeocodeResponse;
 
 import retrofit2.Call;
 import retrofit2.http.GET;

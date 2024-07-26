@@ -104,7 +104,6 @@ public class CancelFragment extends Fragment {
 
         databaseHelper = new DatabaseHelper(getContext());
         databaseHelperUid = new DatabaseHelperUid(getContext());
-        array = databaseHelper.readRouteCancel();
 
         btnCallAdmin = binding.btnCallAdmin;
         btnCallAdmin.setOnClickListener(v -> {
@@ -122,11 +121,7 @@ public class CancelFragment extends Fragment {
                 if (!NetworkUtils.isNetworkAvailable(context)) {
                     MainActivity.navController.popBackStack();
                     MainActivity.navController.navigate(R.id.nav_visicom);
-                } else {
-                    progressBar.setVisibility(View.VISIBLE);
-                    fetchRoutesCancel(email);
                 }
-
             }
         });
         scrollButtonUp = binding.scrollButtonUp;
@@ -152,7 +147,6 @@ public class CancelFragment extends Fragment {
                 listView.smoothScrollByOffset(offset);
             }
         });
-
 
         fetchRoutesCancel(email);
 
@@ -309,6 +303,7 @@ public class CancelFragment extends Fragment {
 
         databaseHelper.clearTableCancel();
         databaseHelperUid.clearTableCancel();
+
         routeList = new ArrayList<>();
 
         upd_but.setText(context.getString(R.string.cancel_gps));

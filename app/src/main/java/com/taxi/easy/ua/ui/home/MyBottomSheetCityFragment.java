@@ -193,8 +193,6 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 positionFirst = 6;
                 phoneNumber = Kyiv_City_phone;
                 cityMenu = context.getString(R.string.foreign_countries);
-//                getPublicIPAddress();
-//                new GetPublicIPAddressTask().execute();
         }
         Logger.d(context, TAG, "onCreateView: city" + city);
         updateMyPosition(city);
@@ -493,7 +491,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 break;
             default:
                 phoneNumber = Kyiv_City_phone;
-                position = "DW631 47, 00-514 Warszawa, Poland\t";
+                position = context.getString(R.string.pos_f);
                 startLat = 52.13472;
                 startLan = 21.00424;
                 break;
@@ -742,6 +740,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         super.onDismiss(dialog);
         MainActivity.navController.popBackStack();
         MainActivity.navController.navigate(R.id.nav_visicom);
+        MainActivity.firstStart = false;
         if (positionFirst != 6) {
             message = context.getString(R.string.change_message) + context.getString(R.string.hi_mes) + " " + context.getString(R.string.order_in) + cityMenu + ".";
         } else {

@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.762</string>
-    <string name="version">Version: 1.762</string>
+    <string name="version_code">1.763</string>
+    <string name="version">Version: 1.763</string>
 
     <string name="app_name">Taxi Dostavka</string>
 
@@ -385,4 +385,5 @@
     <string name="order_to_cancel_true">You have scheduled trips</string>
     <string name="no_house_vis_mes">The requested address was not found. Try something else or click the green back arrow button</string>
     <string name="no_adrees_mes">Check the address or dial operators</string>
+    <string name="pos_f">DW631 47, 00-514 Warszawa, Poland\t</string>
 </resources>

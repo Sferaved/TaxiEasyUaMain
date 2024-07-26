@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.open_map.visicom.key_mapbox;
+package com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox;
 
 import retrofit2.Call;
 import retrofit2.http.GET;

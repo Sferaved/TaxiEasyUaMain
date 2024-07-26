@@ -1,11 +1,11 @@
-package com.taxi.easy.ua.ui.open_map.visicom.key_visicom;
+package com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class ApiClient {
+public class ApiClientMapbox {
 
     private static final String BASE_URL = "https://m.easy-order-taxi.site/";
 
@@ -14,10 +14,10 @@ public class ApiClient {
             .addConverterFactory(GsonConverterFactory.create())
             .build();
 
-    private static final ApiService apiService = retrofit.create(ApiService.class);
+    private static final ApiServiceMapbox apiService = retrofit.create(ApiServiceMapbox.class);
 
-    public static void getVisicomKeyInfo(Callback<ApiResponse> callback, String appName) {
-        Call<ApiResponse> call = apiService.getVisicomKeyInfo(appName);
+    public static void getMapboxKeyInfo(Callback<ApiResponseMapbox> callback, String appName) {
+        Call<ApiResponseMapbox> call = apiService.getMaxboxKeyInfo(appName);
         call.enqueue(callback);
     }
 }

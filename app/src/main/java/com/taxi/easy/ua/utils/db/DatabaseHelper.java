@@ -6,6 +6,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class DatabaseHelper extends SQLiteOpenHelper {
     // Имя вашей базы данных
     private static final String DATABASE_NAME = "Database_25022024";
@@ -120,7 +123,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
     public String[] readRouteCancel() {
         SQLiteDatabase db = this.getReadableDatabase();
-        String[] array = null;
+        Set<String> uniqueRoutes = new HashSet<>();
 
         // Запрос к таблице
         String query = "SELECT * FROM " + TABLE_ROUT_CANCEL;
@@ -128,19 +131,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         // Проверка наличия данных в таблице
         if (cursor != null && cursor.moveToFirst()) {
-            array = new String[cursor.getCount()];
-
             // Индексы столбцов
             int columnIndexRouteInfo = cursor.getColumnIndex(COLUMN_ROUTE_INFO);
 
-            // Индекс для массива
-            int index = 0;
-
-            // Чтение данных из курсора и сохранение их в массив
+            // Чтение данных из курсора и сохранение их в множество
             do {
                 String routeInfo = cleanString(cursor.getString(columnIndexRouteInfo));
-                array[index] = routeInfo;
-                index++;
+                uniqueRoutes.add(routeInfo);
             } while (cursor.moveToNext());
 
             // Закрытие курсора
@@ -150,8 +147,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // Закрытие базы данных
         db.close();
 
+        // Преобразование множества в массив
+        String[] array = uniqueRoutes.toArray(new String[0]);
+
         return array;
     }
+
 
     private String cleanString(String input) {
         if (input == null) return "";

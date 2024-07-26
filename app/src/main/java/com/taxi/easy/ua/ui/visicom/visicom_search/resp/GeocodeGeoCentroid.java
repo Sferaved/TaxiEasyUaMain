@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.open_map.visicom.resp;
+package com.taxi.easy.ua.ui.visicom.visicom_search.resp;
 
 import com.google.gson.annotations.SerializedName;
 

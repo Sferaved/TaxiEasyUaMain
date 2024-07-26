@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.762</string>
-    <string name="version">Версія: 1.762</string>
+    <string name="version_code">1.763</string>
+    <string name="version">Версія: 1.763</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -388,5 +388,6 @@
     <string name="order_to_cancel_true">У Вас є заплановані подорожі</string>
     <string name="no_house_vis_mes">Запитану адресу не знайдено. Спробуйте інший або натисніть зелену кнопку зі стрілкою "назад"</string>
     <string name="no_adrees_mes">Уточніть адресу або наберіть операторів</string>
+    <string name="pos_f">DW631 47, 00-514 Warszawa, Poland\t</string>
 
 </resources>
