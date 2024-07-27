@@ -96,7 +96,7 @@
             tools:ignore="Instantiatable"
             />
 
-        <activity android:name=".ui.open_map.visicom.ActivityVisicomOnePage"
+        <activity android:name=".ui.visicom.visicom_search.ActivityVisicomOnePage"
             android:exported="true"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar"
