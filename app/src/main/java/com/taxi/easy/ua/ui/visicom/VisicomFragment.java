@@ -182,7 +182,7 @@ public class VisicomFragment extends Fragment{
          btn_clear_from.setVisibility(View.INVISIBLE);
          btn_clear_to.setVisibility(View.INVISIBLE);
 
-         gpsbut.setVisibility(visible);
+//         gpsbut.setVisibility(visible);
          btnAdd.setVisibility(visible);
 
          buttonBonus.setVisibility(visible);
@@ -351,10 +351,7 @@ public class VisicomFragment extends Fragment{
                 result = true;
             } else {
                 geoText.setText(start);
-                result = false;
             }
-
-
 
         }
         if(originLatitude == toLatitude) {
@@ -832,7 +829,7 @@ public class VisicomFragment extends Fragment{
 
                         }
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                     }
                 }
 
@@ -1493,7 +1490,17 @@ public class VisicomFragment extends Fragment{
                     }
                 } else {
                     Logger.d(context, TAG, "onResume: 7");
-                    btnVisible(View.VISIBLE);
+
+                    btn_clear_from_text.setVisibility(View.INVISIBLE);
+                    textfrom.setVisibility(View.VISIBLE);
+                    num1.setVisibility(View.VISIBLE);
+                    geoText.setVisibility(View.VISIBLE);
+
+                    binding.textwhere.setVisibility(View.VISIBLE);
+                    num2.setVisibility(View.VISIBLE);
+                    textViewTo.setVisibility(View.VISIBLE);
+
+                    btnVisible(View.INVISIBLE);
                 }
             }
 

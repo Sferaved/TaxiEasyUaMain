@@ -483,7 +483,7 @@ public class CancelFragment extends Fragment {
         array = databaseHelper.readRouteCancel();
         Logger.d(context, TAG, "processRouteList: array " + Arrays.toString(array));
         if(array != null) {
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(requireActivity(), R.layout.drop_down_layout, array);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(context, R.layout.drop_down_layout, array);
             listView.setAdapter(adapter);
             listView.setVisibility(View.VISIBLE);
             scrollButtonDown.setVisibility(View.VISIBLE);

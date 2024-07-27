@@ -1170,7 +1170,7 @@ public class MainActivity extends AppCompatActivity {
 
         } else {
             firstStart = false;
-            MainActivity.verifyPhone = true;
+
             new Thread(this::versionFromMarket).start();
             new Thread(() -> fetchRoutesCancel(userEmail)).start();
             new Thread(() -> updatePushDate(getApplicationContext())).start();
