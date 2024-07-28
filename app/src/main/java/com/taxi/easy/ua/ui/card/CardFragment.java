@@ -191,44 +191,41 @@ public class CardFragment extends Fragment {
                         progressBar.setVisibility(View.VISIBLE);
                         networkChangeReceiver = new NetworkChangeReceiver();
                         email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-                        btnCardLink.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                            progressBar.setVisibility(View.VISIBLE);
+                        btnCardLink.setOnClickListener(v -> {
+                        progressBar.setVisibility(View.VISIBLE);
 
-                                Logger.d(context, TAG, "onClick: " + pay_method);
-                                if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-                                    MainActivity.navController.popBackStack();
-                                    MainActivity.navController.navigate(R.id.nav_visicom);
-                                } else {
-                                    MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getActivity());
+                            Logger.d(context, TAG, "onClick: " + pay_method);
+                            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+                                MainActivity.navController.popBackStack();
+                                MainActivity.navController.navigate(R.id.nav_visicom);
+                            } else {
+                                MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getActivity());
 
-                                    messageFondy = getString(R.string.fondy_message);
+                                messageFondy = getString(R.string.fondy_message);
 
-                                    switch (pay_method) {
-                                        case "wfp_payment":
-                                            try {
-                                                getUrlToPaymentWfp(MainActivity.order_id, messageFondy);
-                                            } catch (UnsupportedEncodingException e) {
-                                                FirebaseCrashlytics.getInstance().recordException(e);
-                                                throw new RuntimeException(e);
-                                            }
-                                            break;
-                                        case "fondy_payment":
-                                            try {
-                                                getUrlToPaymentFondy(MainActivity.order_id, messageFondy);
-                                            } catch (UnsupportedEncodingException e) {
-                                                FirebaseCrashlytics.getInstance().recordException(e);
-                                                throw new RuntimeException(e);
-                                            }
-                                            break;
-                                        case "mono_payment":
-                                            getUrlToPaymentMono(MainActivity.order_id, messageFondy);
-                                            break;
-                                    }
-                                    progressBar.setVisibility(View.GONE);
-
+                                switch (pay_method) {
+                                    case "wfp_payment":
+                                        try {
+                                            getUrlToPaymentWfp(MainActivity.order_id, messageFondy);
+                                        } catch (UnsupportedEncodingException e) {
+                                            FirebaseCrashlytics.getInstance().recordException(e);
+                                            throw new RuntimeException(e);
+                                        }
+                                        break;
+                                    case "fondy_payment":
+                                        try {
+                                            getUrlToPaymentFondy(MainActivity.order_id, messageFondy);
+                                        } catch (UnsupportedEncodingException e) {
+                                            FirebaseCrashlytics.getInstance().recordException(e);
+                                            throw new RuntimeException(e);
+                                        }
+                                        break;
+                                    case "mono_payment":
+                                        getUrlToPaymentMono(MainActivity.order_id, messageFondy);
+                                        break;
                                 }
+                                progressBar.setVisibility(View.GONE);
+
                             }
                         });
                         Logger.d(context, TAG, "onResponse:pay_method "+pay_method);
@@ -599,7 +596,10 @@ public class CardFragment extends Fragment {
             public void onResponse(@NonNull Call<String> call, @NonNull Response<String> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     // Отобразить HTML в WebView
-                    displayHtmlContent(response.body());
+                     btnCardLink.setVisibility(View.GONE);
+                     btnOrder.setVisibility(View.GONE);
+                     btnCallAdmin.setVisibility(View.GONE);
+                     displayHtmlContent(response.body());
                 } else {
                     Logger.d(context, TAG, "Response was not successful or body was null");
                 }

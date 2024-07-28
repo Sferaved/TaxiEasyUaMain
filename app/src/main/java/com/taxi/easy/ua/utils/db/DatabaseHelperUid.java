@@ -7,8 +7,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
-import com.taxi.easy.ua.utils.log.Logger;
-
 import java.util.List;
 
 public class DatabaseHelperUid extends SQLiteOpenHelper {

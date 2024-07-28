@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 34
-        versionCode 1765
-        versionName '1.765'
+        versionCode 1766
+        versionName '1.766'
         multiDexEnabled true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
@@ -57,20 +57,20 @@ dependencies {
 
 
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.8.2'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.2'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.8.4'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4'
     implementation 'androidx.navigation:navigation-fragment:2.7.7'
     implementation 'androidx.navigation:navigation-ui:2.7.7'
     implementation 'com.google.android.gms:play-services-maps:19.0.0'
-    implementation 'androidx.annotation:annotation:1.8.0'
+    implementation 'androidx.annotation:annotation:1.8.1'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
 
     implementation 'com.firebaseui:firebase-ui-auth:7.2.0'
-    implementation platform('com.google.firebase:firebase-bom:33.1.1')
+    implementation platform('com.google.firebase:firebase-bom:33.1.2')
     implementation 'com.google.firebase:firebase-analytics'
-    implementation 'com.google.firebase:firebase-crashlytics:19.0.2'
+    implementation 'com.google.firebase:firebase-crashlytics:19.0.3'
 
 
     implementation 'org.osmdroid:osmdroid-android:6.1.16'
@@ -111,6 +111,9 @@ dependencies {
 
     implementation "androidx.startup:startup-runtime:1.1.1"
 
-    implementation 'com.google.firebase:firebase-messaging:24.0.0' // Замените версию на актуальную
+    implementation 'com.google.firebase:firebase-messaging:24.0.0'
 
+    implementation 'com.google.firebase:firebase-firestore-ktx'
+
+    implementation 'com.google.firebase:firebase-firestore:25.0.0'
 }

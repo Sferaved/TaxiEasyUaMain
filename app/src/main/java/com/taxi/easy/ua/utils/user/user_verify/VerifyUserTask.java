@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.utils.user_verify;
+package com.taxi.easy.ua.utils.user.user_verify;
 
 import static android.content.Context.MODE_PRIVATE;
 

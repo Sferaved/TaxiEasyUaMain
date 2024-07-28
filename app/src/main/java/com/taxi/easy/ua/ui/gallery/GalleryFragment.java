@@ -43,7 +43,7 @@ import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
-import com.taxi.easy.ua.utils.user_verify.VerifyUserTask;
+import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 
 import org.json.JSONException;
 
@@ -744,14 +744,14 @@ public class GalleryFragment extends Fragment {
                 c.close();
             }
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + displayName + "*" + userEmail  + "*" + payment_type;
+                    + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "*" + payment_type;
         }
         if(urlAPI.equals("orderSearchMarkersVisicom")) {
             phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
 
 
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + displayName + "*" + userEmail  + "*" + payment_type + "/" + addCost + "/"
+                    + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "*" + payment_type + "/" + addCost + "/"
                     + time + "/" + comment + "/" + date+ "/" + start + "/" + finish;
 
             ContentValues cv = new ContentValues();

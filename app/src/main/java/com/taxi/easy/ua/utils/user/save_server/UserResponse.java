@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.utils.user;
+package com.taxi.easy.ua.utils.user.save_server;
 
 import com.google.gson.annotations.SerializedName;
 

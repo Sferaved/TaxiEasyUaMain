@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.utils.user;
+package com.taxi.easy.ua.utils.user.save_server;
 
 import retrofit2.Call;
 import retrofit2.http.GET;

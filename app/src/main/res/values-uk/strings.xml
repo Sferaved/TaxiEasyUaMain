@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.765</string>
-    <string name="version">Версія: 1.765</string>
+    <string name="version_code">1.766</string>
+    <string name="version">Версія: 1.766</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -378,7 +378,7 @@
     <string name="checkout_status">Чекайте, йде перевірка статусу замовлення...</string>
     <string name="check_order_mes">Чекайте на реєстрацію замовлення...</string>
     <string name="sent_cancel_message">Запит на скасування замовлення надіслано</string>
-    <string name="aplay_card_message">Вашу картку прийнято та відправлено на перевірку. Скоро вона стане доступною для оплати подорожей.</string>
+    <string name="aplay_card_message">Вашу картку прийн585858585858585858585858585858ято та відправлено на перевірку. Скоро вона стане доступною для оплати подорожей.</string>
     <string name="status_checkout_message">Запитано оновлення статусу. Чекайте або уточніть оператора</string>
     <string name="update_finish_mes">Оновлення завершено. Програма буде перезапущена.</string>
     <string name="udate_cancel">Оновити список</string>

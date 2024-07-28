@@ -90,9 +90,11 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
 import com.taxi.easy.ua.utils.phone.ApiClientPhone;
-import com.taxi.easy.ua.utils.user.ApiServiceUser;
-import com.taxi.easy.ua.utils.user.UserResponse;
-import com.taxi.easy.ua.utils.user_verify.VerifyUserTask;
+import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
+import com.taxi.easy.ua.utils.user.save_firebase.UserProfile;
+import com.taxi.easy.ua.utils.user.save_server.ApiServiceUser;
+import com.taxi.easy.ua.utils.user.save_server.UserResponse;
+import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 
 import org.json.JSONException;
 
@@ -185,6 +187,7 @@ public class MainActivity extends AppCompatActivity {
     private List<RouteResponseCancel> routeListCancel;
     @SuppressLint("StaticFieldLeak")
     public static NavController navController;
+    private FirebaseUserManager userManager;
    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -1064,12 +1067,17 @@ public class MainActivity extends AppCompatActivity {
                                 Logger.d(getApplicationContext(), TAG, "onClick:phoneNumber.getText().toString() " + phoneNumber.getText().toString());
 
                             } else {
-                               updateRecordsUser("phone_number", phoneNumber.getText().toString());
-                               String newName = userName.getText().toString();
-                               if (newName.trim().isEmpty()) {
+                                String phone = phoneNumber.getText().toString();
+
+                                updateRecordsUser("phone_number", phone);
+                                userManager = new FirebaseUserManager();
+                                userManager.saveUserPhone(phone);
+
+                                String newName = userName.getText().toString();
+                                if (newName.trim().isEmpty()) {
                                    newName = "No_name";
-                               }
-                               updateRecordsUser("username", newName);
+                                }
+                                updateRecordsUser("username", newName);
                             }
 //                        }
                     }
@@ -1087,6 +1095,9 @@ public class MainActivity extends AppCompatActivity {
         database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
                 new String[] { "1" });
         database.close();
+
+
+
     }
     private boolean connected() {
 
@@ -1172,9 +1183,12 @@ public class MainActivity extends AppCompatActivity {
             firstStart = false;
 
             new Thread(this::versionFromMarket).start();
+            new Thread(this::userPhoneFromFb).start();
             new Thread(() -> fetchRoutesCancel(userEmail)).start();
             new Thread(() -> updatePushDate(getApplicationContext())).start();
+
             new VerifyUserTask(this).execute();
+
             UserPermissions.getPermissions(userEmail, getApplicationContext());
 
             Thread wfpCardThread = new Thread(() -> {
@@ -1266,13 +1280,15 @@ public class MainActivity extends AppCompatActivity {
 
                 } else {
                     // Обработка случаев, когда ответ не 200 OK
+                    Logger.d(getApplicationContext(), TAG, "onResponse: getCardTokenWfp error ");
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
-                Logger.d(getApplicationContext(), TAG, "onResponse: failure " + t);
+                Logger.d(getApplicationContext(), TAG, "onResponse:getCardTokenWfp onFailure" + t);
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
     }
@@ -1382,10 +1398,8 @@ public class MainActivity extends AppCompatActivity {
         addUserNoNameThread.start();
 
 // Task 3: Fetch user phone information from the server in a separate thread
-        Thread userPhoneThread = new Thread(() -> {
-            userPhoneFromServer(emailUser);
-        });
-        userPhoneThread.start();
+        //            userPhoneFromServer(emailUser);
+        new Thread(this::userPhoneFromFb).start();
 
 // Task 4: Get card token for "fondy" in a separate thread
 //        Thread fondyCardThread = new Thread(() -> {
@@ -1411,7 +1425,6 @@ public class MainActivity extends AppCompatActivity {
         try {
             updateUserInfoThread.join();
             addUserNoNameThread.join();
-            userPhoneThread.join();
 //            fondyCardThread.join();
 //            monoCardThread.join();
         } catch (InterruptedException e) {
@@ -1649,6 +1662,36 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void userPhoneFromFb ()
+    {
+        userManager = new FirebaseUserManager();
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+
+        if (currentUser != null) {
+            String userId = currentUser.getUid();
+            userManager.getUserPhoneById(userId, new FirebaseUserManager.UserPhoneCallback() {
+                @Override
+                public void onUserPhoneRetrieved(String phone) {
+                    if (phone != null) {
+                        // Используйте phone по своему усмотрению
+                        Logger.d(getApplicationContext(), TAG, "User phone: " + phone);
+                        String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
+                        boolean val = Pattern.compile(PHONE_PATTERN).matcher(phone).matches();
+
+                        if (val) {
+                            updateRecordsUser("phone_number", phone);
+                            MainActivity.verifyPhone = true;
+                        } else {
+                            // Handle case where phone doesn't match the pattern
+                            Logger.d(getApplicationContext(), TAG, "Phone does not match pattern");
+                        }
+                    } else {
+                        Logger.d(getApplicationContext(), TAG, "Phone is null");
+                    }
+                }
+            });
+        }
+    }
     private void userPhoneFromServer (String email) {
         ApiClientPhone apiClient = new ApiClientPhone();
         apiClient.getUserPhone(email, new ApiClientPhone.OnUserPhoneResponseListener() {

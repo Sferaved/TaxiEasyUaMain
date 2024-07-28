@@ -32,6 +32,7 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +52,9 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
     final String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
     private final String TAG = "MyPhoneDialogFragment";
     private Context mContext;
+    FirebaseUserManager userManager;
+
+
     public MyPhoneDialogFragment(Context context, String page) {
         this.mContext = context;
         this.page = page;
@@ -73,6 +77,10 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                 updateRecordsUser(phoneNumber.getText().toString(), mContext);
                 Logger.d(getActivity(), TAG, "setOnClickListener " + phoneNumber.getText().toString());
                 Logger.d(getActivity(), TAG, "setOnClickListener " + page);
+
+                userManager = new FirebaseUserManager();
+                userManager.saveUserPhone(phoneNumber.getText().toString());
+
                 switch (page) {
                     case "home":
                         HomeFragment.btnVisible(View.INVISIBLE);
@@ -183,6 +191,8 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
 
         if(phone != null) {
             phoneNumber.setText(phone);
+            userManager = new FirebaseUserManager();
+            userManager.saveUserPhone(phone);
         }
 
     }
