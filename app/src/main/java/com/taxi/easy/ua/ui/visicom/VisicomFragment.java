@@ -72,6 +72,7 @@ import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.tariff.DatabaseHelperTariffs;
 import com.taxi.easy.ua.utils.tariff.Tariff;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
@@ -141,6 +142,9 @@ public class VisicomFragment extends Fragment{
     static LinearLayout linearLayout;
     Activity context;
     FragmentManager fragmentManager;
+    private String countryState;
+    private SharedPreferencesHelper sharedPreferencesHelper;
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
 
@@ -1030,14 +1034,16 @@ public class VisicomFragment extends Fragment{
     }
 
 
+
     @SuppressLint("UseCompatLoadingForDrawables")
     @Override
     public void onResume() {
         super.onResume();
-        if (MainActivity.countryState == null) {
+        sharedPreferencesHelper = new SharedPreferencesHelper(context);
+        countryState = (String) sharedPreferencesHelper.getValue("countryState", "**");
+        if (countryState.equals("**") || MainActivity.firstStart) {
             getPublicIPAddress();
         }
-
         new VerifyUserTask(context).execute();
 
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
@@ -1047,34 +1053,24 @@ public class VisicomFragment extends Fragment{
         switch (city){
             case "Kyiv City":
                 cityMenu = getString(R.string.city_kyiv);
-                MainActivity.countryState = "UA";
                 break;
             case "Dnipropetrovsk Oblast":
                 cityMenu = getString(R.string.city_dnipro);
-                paymentType();
                 break;
             case "Odessa":
                 cityMenu = getString(R.string.city_odessa);
-                MainActivity.countryState = "UA";
-                paymentType();
                 break;
             case "Zaporizhzhia":
                 cityMenu = getString(R.string.city_zaporizhzhia);
-                MainActivity.countryState = "UA";
-                paymentType();
                 break;
             case "Cherkasy Oblast":
                 cityMenu = getString(R.string.city_cherkasy);
-                MainActivity.countryState = "UA";
-                paymentType();
                 break;
             case "OdessaTest":
                 cityMenu = "Test";
-                MainActivity.countryState = "UA";
                 break;
             default:
                 cityMenu = getString(R.string.foreign_countries);
-                paymentType();
                 break;
         }
 
@@ -2004,12 +2000,12 @@ public class VisicomFragment extends Fragment{
 
 
     public void getPublicIPAddress() {
-        getCountryByIP(context);
+        getCountryByIP();
         getCityByIP();
     }
 
 
-    private static void getCountryByIP(Context context) {
+    private void getCountryByIP() {
         ApiServiceCountry apiService = RetrofitClient.getClient().create(ApiServiceCountry.class);
         Call<CountryResponse> call = apiService.getCountryByIP("ipAddress");
         call.enqueue(new Callback<CountryResponse>() {
@@ -2019,16 +2015,18 @@ public class VisicomFragment extends Fragment{
                     CountryResponse countryResponse = response.body();
                     assert countryResponse != null;
                     Logger.d(context, TAG, "onResponse:countryResponse.getCountry(); " + countryResponse.getCountry());
-                    MainActivity.countryState = countryResponse.getCountry();
+                    countryState = countryResponse.getCountry();
                 } else {
-                    MainActivity.countryState = "UA";
+                    countryState = "UA";
                 }
+                sharedPreferencesHelper.saveValue("countryState", countryState);
            }
 
             @Override
             public void onFailure(@NonNull Call<CountryResponse> call, @NonNull Throwable t) {
                 Logger.d(context, TAG, "Error: " + t.getMessage());
                 VisicomFragment.progressBar.setVisibility(View.GONE);;
+                sharedPreferencesHelper.saveValue("countryState", "UA");
             }
         });
     }

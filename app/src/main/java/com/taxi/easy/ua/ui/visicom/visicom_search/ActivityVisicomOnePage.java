@@ -66,6 +66,7 @@ import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.connect.ConnectionSpeedTester;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -135,6 +136,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
     List<String> addressesList;
     AppCompatButton btnCallAdmin;
     ViewGroup.LayoutParams layoutParams;
+    String countryState;
+    private SharedPreferencesHelper sharedPreferencesHelper;
 
     @SuppressLint({"MissingInflatedId", "UseCompatLoadingForDrawables"})
     @Override
@@ -153,6 +156,9 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
         if(MainActivity.apiKeyMapBox == null) {
             mapboxKey();
         }
+        sharedPreferencesHelper = new SharedPreferencesHelper(this);
+        countryState = (String) sharedPreferencesHelper.getValue("countryState", "**");
+
         switch (LocaleHelper.getLocale()) {
             case "ru":
                 switch (stringList.get(1)) {
@@ -816,16 +822,17 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 if (charCount > 2) {
                     Logger.d(getApplicationContext(), TAG, "onTextChanged:startPoint " + startPoint);
                     Logger.d(getApplicationContext(), TAG, "onTextChanged:fromEditAddress.getText().toString() " + fromEditAddress.getText().toString());
-                    Logger.d(getApplicationContext(), TAG, "onTextChanged:MainActivity.countryState " + MainActivity.countryState);
+
+                    Logger.d(getApplicationContext(), TAG, "onTextChanged:countryState " + countryState);
 
                     if (startPoint == null) {
-                        if(MainActivity.countryState.equals("UA")) {
+                        if(countryState.equals("UA")) {
                             performAddressSearch(inputString, "start");
                         } else {
                             mapBoxSearch(inputString, "start");
                         }
                     } else if (!startPoint.equals(inputString)) {
-                        if(MainActivity.countryState.equals("UA")) {
+                        if(countryState.equals("UA")) {
                             performAddressSearch(inputString, "start");
                         } else {
                             mapBoxSearch(inputString, "start");
@@ -864,13 +871,13 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 if (charCount > 2) {
 
                     if (finishPoint == null) {
-                        if(MainActivity.countryState.equals("UA")) {
+                        if(countryState.equals("UA")) {
                             performAddressSearch(inputString, "finish");
                         } else {
                             mapBoxSearch(inputString, "finish");
                         }
                     } else if (!finishPoint.equals(inputString)) {
-                        if(MainActivity.countryState.equals("UA")) {
+                        if(countryState.equals("UA")) {
                             performAddressSearch(inputString, "finish");
                         } else {
                             mapBoxSearch(inputString, "finish");

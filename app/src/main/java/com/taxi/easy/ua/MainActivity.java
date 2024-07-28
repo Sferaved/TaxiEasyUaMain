@@ -90,6 +90,7 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
 import com.taxi.easy.ua.utils.phone.ApiClientPhone;
+import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
 import com.taxi.easy.ua.utils.user.save_firebase.UserProfile;
 import com.taxi.easy.ua.utils.user.save_server.ApiServiceUser;
@@ -162,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
     public static SQLiteDatabase database;
     public static Menu navMenu;
     public static MenuItem navVisicomMenuItem;
-    public static String countryState;
+
     public static String apiKeyMapBox;
     public static String apiKey;
 
@@ -188,6 +189,8 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("StaticFieldLeak")
     public static NavController navController;
     private FirebaseUserManager userManager;
+    private SharedPreferencesHelper sharedPreferencesHelper;
+
    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -197,6 +200,7 @@ public class MainActivity extends AppCompatActivity {
         Logger.writeLog(this, getString(R.string.version));
         Logger.writeLog(this, "MainActivity started");
         setSupportActionBar(binding.appBarMain.toolbar);
+        sharedPreferencesHelper = new SharedPreferencesHelper(this);
 
         DrawerLayout drawer = binding.drawerLayout;
         NavigationView navigationView = binding.navView;

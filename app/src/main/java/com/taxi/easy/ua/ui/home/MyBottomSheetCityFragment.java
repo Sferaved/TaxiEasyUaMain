@@ -29,7 +29,6 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.FragmentManager;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
@@ -52,9 +51,8 @@ import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
-import com.taxi.easy.ua.utils.ip.ip_util_retrofit.IpResponse;
-import com.taxi.easy.ua.utils.ip.ip_util_retrofit.IpifyService;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -117,7 +115,8 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     String phoneNumber;
     private final String baseUrl = "https://m.easy-order-taxi.site";
     Context context;
-
+    String countryState;
+    SharedPreferencesHelper sharedPreferencesHelper;
 
 
     @SuppressLint("MissingInflatedId")
@@ -153,13 +152,12 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         if(city == null) {
             city = "Kyiv City";
         }
+        sharedPreferencesHelper = new SharedPreferencesHelper(context);
         switch (city){
             case "Kyiv City":positionFirst = 0;
                 phoneNumber = Kyiv_City_phone;
                 cityMenu = context.getString(R.string.city_kyiv);
-                MainActivity.countryState = "UA";
                 break;
-
             case "Dnipropetrovsk Oblast":
                 positionFirst = 1;
                 phoneNumber = Dnipropetrovsk_Oblast_phone;
@@ -169,31 +167,28 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 positionFirst = 2;
                 phoneNumber = Odessa_phone;
                 cityMenu = context.getString(R.string.city_odessa);
-                MainActivity.countryState = "UA";
                 break;
             case "Zaporizhzhia":
                 positionFirst = 3;
                 phoneNumber = Zaporizhzhia_phone;
                 cityMenu = context.getString(R.string.city_zaporizhzhia);
-                MainActivity.countryState = "UA";
                 break;
             case "Cherkasy Oblast":
                 positionFirst = 4;
                 phoneNumber = Cherkasy_Oblast_phone;
                 cityMenu = context.getString(R.string.city_cherkasy);
-                MainActivity.countryState = "UA";
                 break;
             case "OdessaTest":
                 positionFirst = 5;
                 phoneNumber = Kyiv_City_phone;
                 cityMenu = "Test";
-                MainActivity.countryState = "UA";
                 break;
             default:
                 positionFirst = 6;
                 phoneNumber = Kyiv_City_phone;
                 cityMenu = context.getString(R.string.foreign_countries);
         }
+
         Logger.d(context, TAG, "onCreateView: city" + city);
         updateMyPosition(city);
         listView.setItemChecked(positionFirst, true);
@@ -207,37 +202,37 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                     case "Kyiv City":positionFirst = 0;
                         phoneNumber = Kyiv_City_phone;
                         cityMenu = context.getString(R.string.city_kyiv);
-                        MainActivity.countryState = "UA";
+                        countryState = "UA";
                         break;
                     case "Dnipropetrovsk Oblast":
                         positionFirst = 1;
                         phoneNumber = Dnipropetrovsk_Oblast_phone;
                         cityMenu = context.getString(R.string.city_dnipro);
-                        MainActivity.countryState = "UA";
+                        countryState = "UA";
                         break;
                     case "Odessa":
                         positionFirst = 2;
                         phoneNumber = Odessa_phone;
                         cityMenu = context.getString(R.string.city_odessa);
-                        MainActivity.countryState = "UA";
+                        countryState = "UA";
                         break;
                     case "Zaporizhzhia":
                         positionFirst = 3;
                         phoneNumber = Zaporizhzhia_phone;
                         cityMenu = context.getString(R.string.city_zaporizhzhia);
-                        MainActivity.countryState = "UA";
+                        countryState = "UA";
                         break;
                     case "Cherkasy Oblast":
                         positionFirst = 4;
                         phoneNumber = Cherkasy_Oblast_phone;
                         cityMenu = context.getString(R.string.city_cherkasy);
-                        MainActivity.countryState = "UA";
+                        countryState = "UA";
                         break;
                     case "OdessaTest":
                         positionFirst = 5;
                         phoneNumber = Kyiv_City_phone;
                         cityMenu = "Test";
-                        MainActivity.countryState = "UA";
+                        countryState = "UA";
                         break;
                     case "foreign countries":
                         positionFirst = 6;
@@ -248,9 +243,10 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         phoneNumber = Kyiv_City_phone;
                         positionFirst = 0;
                         cityMenu = context.getString(R.string.city_kyiv);
-                        MainActivity.countryState = "UA";
+                        countryState = "UA";
                         break;
                 }
+                sharedPreferencesHelper.saveValue("countryState", countryState);
                 String cityCodeNew;
                     if (positionFirst == 6) {
                         getPublicIPAddress();
@@ -1036,84 +1032,39 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     }
 
     public void getPublicIPAddress() {
-
-        getCountryByIP("ipAddress");
-
-        IpifyService apiService = com.taxi.easy.ua.utils.ip.ip_util_retrofit.RetrofitClient.getClient(BASE_URL).create(IpifyService.class);
-        Call<IpResponse> call = apiService.getPublicIPAddress();
-
-        call.enqueue(new Callback<IpResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<IpResponse> call, @NonNull Response<IpResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    String ipAddress = response.body().getIp();
-                    Logger.d(context, TAG, "onResponse: Local IP Address: " + ipAddress);
-                    getCountryByIP(ipAddress);
-                } else {
-                    Logger.d(context, TAG, "Error in API response: " + response.errorBody());
-                    MainActivity.countryState = "UA";
-                }
-                // Hide progress bar after response
-                if (VisicomFragment.progressBar != null) {
-                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<IpResponse> call, @NonNull Throwable t) {
-                Context context = getActivity() != null ? getActivity().getApplicationContext() : MyApplication.getContext();
-                if (context != null) {
-                    Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
-                } else {
-                    Log.e(TAG, "Context is null, cannot write log.");
-                }
-                FirebaseCrashlytics.getInstance().recordException(t);
-                MainActivity.countryState = "UA";
-                // Hide progress bar after failure
-                if (VisicomFragment.progressBar != null) {
-                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-                }
-            }
-        });
+        getCountryByIP();
     }
 
-    private void getCountryByIP(String ipAddress) {
+    private void getCountryByIP() {
         ApiServiceCountry apiService = RetrofitClient.getClient().create(ApiServiceCountry.class);
-        Call<CountryResponse> call = apiService.getCountryByIP(ipAddress);
-
+        Call<CountryResponse> call = apiService.getCountryByIP("ipAddress");
         call.enqueue(new Callback<CountryResponse>() {
             @Override
             public void onResponse(@NonNull Call<CountryResponse> call, @NonNull Response<CountryResponse> response) {
                 if (response.isSuccessful()) {
                     CountryResponse countryResponse = response.body();
-                    if (countryResponse != null) {
-                        MainActivity.countryState = countryResponse.getCountry();
-                    } else {
-                        MainActivity.countryState = "UA";
-                    }
+                    assert countryResponse != null;
+                    Logger.d(context, TAG, "onResponse:countryResponse.getCountry(); " + countryResponse.getCountry());
+                    countryState = countryResponse.getCountry();
                 } else {
-                    MainActivity.countryState = "UA";
+                    countryState = "UA";
                 }
+                sharedPreferencesHelper.saveValue("countryState", countryState);
             }
 
             @Override
             public void onFailure(@NonNull Call<CountryResponse> call, @NonNull Throwable t) {
-                Context context = getActivity() != null ? getActivity().getApplicationContext() : MyApplication.getContext();
-                if (context != null) {
-                    Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
-                } else {
-                    Log.e(TAG, "Context is null, cannot write log.");
-                }
-                FirebaseCrashlytics.getInstance().recordException(t);
+                Logger.d(context, TAG, "Error: " + t.getMessage());
+                VisicomFragment.progressBar.setVisibility(View.GONE);;
+                sharedPreferencesHelper.saveValue("countryState", "UA");
             }
-
         });
     }
 
     void checkNotificationPermissionAndRequestIfNeeded() {
         if (isAdded()) {
             // Получаем доступ к настройкам приложения
-            SharedPreferences sharedPreferences = requireActivity().getPreferences(Context.MODE_PRIVATE);
+            SharedPreferences sharedPreferences = requireActivity().getPreferences(MODE_PRIVATE);
 
             // Проверяем, было ли уже запрошено разрешение
             boolean isNotificationPermissionRequested = sharedPreferences.getBoolean("notification_permission_requested", false);
