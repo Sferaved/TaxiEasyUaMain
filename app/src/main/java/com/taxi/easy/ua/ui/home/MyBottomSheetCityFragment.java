@@ -246,13 +246,14 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         countryState = "UA";
                         break;
                 }
-                sharedPreferencesHelper.saveValue("countryState", countryState);
+
                 String cityCodeNew;
                     if (positionFirst == 6) {
                         getPublicIPAddress();
                         cityCodeNew = cityCode[0];
                     } else {
                         cityCodeNew = cityCode[positionFirst];
+                        sharedPreferencesHelper.saveValue("countryState", countryState);
                     }
                 Logger.d(context, TAG, "onItemClick: pay_method" + pay_method);
 
