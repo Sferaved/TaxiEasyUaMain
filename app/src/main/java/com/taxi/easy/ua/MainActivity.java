@@ -47,6 +47,7 @@ import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract;
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
@@ -54,7 +55,6 @@ import com.google.android.play.core.appupdate.AppUpdateManager;
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
 import com.google.android.play.core.install.model.AppUpdateType;
 import com.google.android.play.core.install.model.UpdateAvailability;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -62,9 +62,7 @@ import com.taxi.easy.ua.cities.api.CityApiClient;
 import com.taxi.easy.ua.cities.api.CityResponse;
 import com.taxi.easy.ua.cities.api.CityResponseMerchantFondy;
 import com.taxi.easy.ua.cities.api.CityService;
-import com.taxi.easy.ua.cities.check.CityCheckActivity;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
-import com.taxi.easy.ua.ui.account.ExitActivity;
 import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
@@ -74,14 +72,12 @@ import com.taxi.easy.ua.ui.home.MyBottomSheetCityFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
-import com.taxi.easy.ua.ui.keyboard.KeyboardUtils;
 import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiClientMapbox;
 import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiResponseMapbox;
-import com.taxi.easy.ua.ui.visicom.visicom_search.key_visicom.ApiResponse;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.ui.visicom.visicom_search.key_visicom.ApiResponse;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
-
 import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
@@ -89,17 +85,11 @@ import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.fcm.token_send.ApiServiceToken;
 import com.taxi.easy.ua.utils.fcm.token_send.RetrofitClientToken;
-import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
-import com.taxi.easy.ua.utils.ip.CountryResponse;
-import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
-import com.taxi.easy.ua.utils.phone.ApiClientPhone;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
-import com.taxi.easy.ua.utils.user.del_server.UserRepository;
 import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
-import com.taxi.easy.ua.utils.user.save_firebase.UserProfile;
 import com.taxi.easy.ua.utils.user.save_server.ApiServiceUser;
 import com.taxi.easy.ua.utils.user.save_server.UserResponse;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
@@ -1800,6 +1790,8 @@ public class MainActivity extends AppCompatActivity {
                                 "*".equals(route.getRouteTo()) && "*".equals(route.getRouteToNumber()) &&
                                 "*".equals(route.getWebCost()) && "*".equals(route.getCloseReason()) &&
                                 "*".equals(route.getAuto()) && "*".equals(route.getCreatedAt())) {
+                            databaseHelper.clearTableCancel();
+                            databaseHelperUid.clearTableCancel();
                             return;
                         }
                     }
@@ -1952,6 +1944,9 @@ public class MainActivity extends AppCompatActivity {
             String message = getString(R.string.order_to_cancel_true);
             MyBottomSheetErrorFragment myBottomSheetMessageFragment = new MyBottomSheetErrorFragment(message);
             myBottomSheetMessageFragment.show(getSupportFragmentManager(), myBottomSheetMessageFragment.getTag());
+        } else {
+            databaseHelper.clearTableCancel();
+            databaseHelperUid.clearTableCancel();
         }
     }
     private void mapboxKey() {

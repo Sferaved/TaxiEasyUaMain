@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.ui.account;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.R.string.format_phone;
 
 import android.annotation.SuppressLint;
@@ -147,7 +146,23 @@ public class AccountFragment extends Fragment {
         del_but.setOnClickListener(v -> {
             del_but.setVisibility(View.GONE);
             progressBar.setVisibility(View.VISIBLE);
-            fetchRoutesCancel(userEmail);
+            array = databaseHelper.readRouteCancel();
+            Logger.d(getActivity(), TAG, "processRouteList: array " + Arrays.toString(array));
+            if (array.length != 0) {
+                String message = getString(R.string.order_to_cancel_true);
+                MyBottomSheetErrorFragment myBottomSheetMessageFragment = new MyBottomSheetErrorFragment(message);
+                myBottomSheetMessageFragment.show(getChildFragmentManager(), myBottomSheetMessageFragment.getTag());
+            } else {
+                // Запустить указанный код
+                KeyboardUtils.hideKeyboard(requireActivity(), root);
+                userManager.deleteUserPhone();
+                userRepository = new UserRepository();
+                userRepository.destroyEmail(userEmail);
+                resetUserInfo();
+                Toast.makeText(getActivity(), R.string.del_info, Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(getActivity(), ExitActivity.class));
+            }
+
         });
         btnCallAdmin.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_DIAL);
