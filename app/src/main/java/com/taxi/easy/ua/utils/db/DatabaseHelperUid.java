@@ -13,7 +13,7 @@ public class DatabaseHelperUid extends SQLiteOpenHelper {
     // Имя вашей базы данных
     private static final String DATABASE_NAME = "Database_21052024_UID";
     // Версия вашей базы данных
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 5;
     // Имя таблицы для хранения данных routeInfo
     private static final String TABLE_ROUT_INFO_UID = "RoutInfoTableUid";
     private static final String TABLE_CANCEL_INFO_UID = "RoutInfoTableUid";

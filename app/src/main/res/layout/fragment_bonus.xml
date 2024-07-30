@@ -214,23 +214,24 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/text_0" />
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btnOrder"
-        android:layout_width="293sp"
-        android:layout_height="45sp"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnOrder"
+                android:layout_width="293sp"
+                android:layout_height="45sp"
 
-        android:layout_marginTop="16dp"
-        android:background="@drawable/buttons"
-        android:fontFamily="@font/regular"
-        android:text="@string/order"
-        android:textAlignment="center"
-        android:textSize="15sp"
-        android:textColor="@color/colorAccent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+                android:layout_marginTop="16dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:text="@string/order"
+                android:textAlignment="center"
+                android:textColor="@color/colorAccent"
+                android:textSize="15sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.525"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-    <androidx.appcompat.widget.AppCompatButton
+            <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnCallAdmin"
         android:layout_width="293sp"
         android:layout_height="45sp"
@@ -240,7 +241,7 @@
         android:text="@string/call_admin"
         android:textAlignment="center"
         android:textColor="@color/white"
-        android:textSize="16sp"
+        android:textSize="15sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.525"
         app:layout_constraintStart_toStartOf="parent"

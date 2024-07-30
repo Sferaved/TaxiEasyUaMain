@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.768</string>
-    <string name="version">Версия: 1.768</string>
+    <string name="version_code">1.769</string>
+    <string name="version">Версия: 1.769</string>
 
     <string name="app_name">Такси Доставка</string>
 
@@ -390,4 +390,14 @@
     <string name="no_house_vis_mes">Запрошенный адрес не найден. Попробуйте дргуой или нажмите зеленую кнопку со стрелкой "назад"</string>
     <string name="no_adrees_mes">Уточните адрес или наберите операторов</string>
     <string name="pos_f">DW631 47, 00-514 Warszawa, Poland\t</string>
+    <string name="check_city">Выберите службу такси Вашего города</string>
+    <string name="upd_account">Сохранить изменения</string>
+    <string name="del_account">Удалить аккаунт</string>
+    <string name="account_menu">Аккаунт</string>
+    <string name="email_upd">Изменения не доступны</string>
+    <string name="info_upd">Информация обновлена</string>
+    <string name="del_info">Данные акаунта удалены с сервера</string>
+
+    <string name="user_name">Имя пользователя</string>
+    <string name="phone_number">Телефон</string>
 </resources>

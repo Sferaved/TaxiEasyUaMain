@@ -470,7 +470,7 @@ public class HomeFragment extends Fragment {
 
     private void orderFinished() {
 
-        if (!MainActivity.verifyPhone){
+        if (!verifyPhone()){
             MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment(context, "home");
             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             progressBar.setVisibility(View.GONE);
@@ -806,31 +806,23 @@ public class HomeFragment extends Fragment {
             alertDialog.dismiss();
         }
     }
+    private boolean verifyPhone() {
 
+        List<String> stringList =  logCursor(MainActivity.TABLE_USER_INFO, requireActivity());
+
+        String phone = stringList.get(2);
+
+        Logger.d(requireActivity(), TAG, "onClick befor validate: ");
+        String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
+        boolean val = Pattern.compile(PHONE_PATTERN).matcher(phone).matches();
+        Logger.d(requireActivity(), TAG, "onClick No validate: " + val);
+        return val;
+    }
     @SuppressLint("UseCompatLoadingForDrawables")
     @Override
     public void onResume() {
         super.onResume();
-//        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-//            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-//                    || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//                gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_yellow));
-//                gpsbut.setTextColor(Color.BLACK);
-//                btnGeo.setVisibility(View.VISIBLE);
-//            } else {
-//                gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_green));
-//                gpsbut.setTextColor(Color.WHITE);
-//                btnGeo.setVisibility(View.INVISIBLE);
-//            }
-//        } else {
-//            gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_red));
-//            gpsbut.setTextColor(Color.WHITE);
-//            btnGeo.setVisibility(View.VISIBLE);
-//        }
 
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-
-        String application =  getString(R.string.application);
         new VerifyUserTask(context).execute();
 
         progressBar.setVisibility(View.GONE);
@@ -1482,21 +1474,6 @@ public class HomeFragment extends Fragment {
         return verify;
     }
 
-    private boolean verifyPhone(Context context) {
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-        boolean verify = true;
-        if (cursor.getCount() == 1) {
-
-            if (logCursor(MainActivity.TABLE_USER_INFO, context).get(2).equals("+380") ||
-                    !MainActivity.verifyPhone) {
-                verify = false;
-            }
-            cursor.close();
-        }
-        database.close();
-        return verify;
-    }
     private void updateRecordsUser(String result, Context context) {
         ContentValues cv = new ContentValues();
 

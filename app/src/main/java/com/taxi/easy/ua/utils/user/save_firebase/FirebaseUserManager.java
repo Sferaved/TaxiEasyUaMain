@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.utils.user.save_firebase;
 
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -9,6 +10,7 @@ import com.google.firebase.firestore.SetOptions;
 import android.util.Log;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class FirebaseUserManager {
     private static final String TAG = "FirebaseUserManager";
@@ -64,4 +66,24 @@ public class FirebaseUserManager {
     public interface UserPhoneCallback {
         void onUserPhoneRetrieved(String phone);
     }
+
+    public void deleteUserPhone() {
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser != null) {
+            String userId = currentUser.getUid();
+            // Ссылка на документ
+            DocumentReference userDocRef = firestore.collection("users").document(userId);
+
+            // Удаление поля "phone" из документа
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("phone", FieldValue.delete());
+
+            userDocRef.update(updates)
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Phone successfully deleted"))
+                    .addOnFailureListener(e -> Log.e(TAG, "Error deleting phone", e));
+        } else {
+            Log.e(TAG, "No current user available to delete phone");
+        }
+    }
+
 }

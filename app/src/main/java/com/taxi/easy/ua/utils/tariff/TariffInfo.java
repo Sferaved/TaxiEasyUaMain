@@ -5,7 +5,6 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 
 import com.taxi.easy.ua.MainActivity;
-import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 
 import java.util.List;
 

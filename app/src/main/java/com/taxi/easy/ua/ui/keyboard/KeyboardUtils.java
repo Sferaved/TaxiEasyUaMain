@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.utils;
+package com.taxi.easy.ua.ui.keyboard;
 
 import android.content.Context;
 import android.view.View;

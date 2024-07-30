@@ -13,7 +13,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     // Имя вашей базы данных
     private static final String DATABASE_NAME = "Database_25022024";
     // Версия вашей базы данных
-    private static final int DATABASE_VERSION = 5;
+    private static final int DATABASE_VERSION = 6;
     // Имя таблицы для хранения данных routeInfo
     private static final String TABLE_ROUT_INFO = "RoutInfoTable";
     private static final String TABLE_ROUT_CANCEL = "RoutCancelTable";

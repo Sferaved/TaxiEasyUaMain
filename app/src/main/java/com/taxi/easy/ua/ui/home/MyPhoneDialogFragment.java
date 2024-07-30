@@ -68,12 +68,12 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         button = view.findViewById(R.id.ok_button);
         checkBox = view.findViewById(R.id.checkbox);
 
-        MainActivity.verifyPhone = false;
+
         phoneFull(mContext);
 
         button.setOnClickListener(v -> {
             if (Pattern.compile(PHONE_PATTERN).matcher(phoneNumber.getText().toString()).matches()) {
-                MainActivity.verifyPhone = true;
+
                 updateRecordsUser(phoneNumber.getText().toString(), mContext);
                 Logger.d(getActivity(), TAG, "setOnClickListener " + phoneNumber.getText().toString());
                 Logger.d(getActivity(), TAG, "setOnClickListener " + page);
@@ -94,7 +94,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                         break;
                 }
             } else {
-                MainActivity.verifyPhone = false;
+
                 Toast.makeText(mContext, getString(R.string.format_phone) , Toast.LENGTH_SHORT).show();
             }
         });
@@ -134,7 +134,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         if (imm != null && requireActivity().getCurrentFocus() != null) {
             imm.hideSoftInputFromWindow(Objects.requireNonNull(requireActivity().getCurrentFocus()).getWindowToken(), 0);
         }
-        if (!MainActivity.verifyPhone) {
+        if (!verifyPhone()) {
             switch (page) {
                 case "visicom":
                     VisicomFragment.btnVisible(View.VISIBLE);
@@ -144,6 +144,19 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                     break;
             }
         }
+    }
+
+    private boolean verifyPhone() {
+
+        List<String> stringList =  logCursor(MainActivity.TABLE_USER_INFO);
+
+        String phone = stringList.get(2);
+
+        Logger.d(requireActivity(), TAG, "onClick befor validate: ");
+        String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
+        boolean val = Pattern.compile(PHONE_PATTERN).matcher(phone).matches();
+        Logger.d(requireActivity(), TAG, "onClick No validate: " + val);
+        return val;
     }
 
     @Override

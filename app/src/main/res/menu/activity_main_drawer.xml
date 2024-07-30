@@ -38,6 +38,10 @@
             android:icon="@drawable/ic_menu_gallery"
             android:title="@string/conf" />
         <item
+            android:id="@+id/nav_account"
+            android:icon="@drawable/ic_menu_gallery"
+            android:title="@string/account_menu" />
+        <item
             android:id="@+id/nav_author"
             android:icon="@android:drawable/ic_menu_info_details"
             android:title="@string/author_about" />

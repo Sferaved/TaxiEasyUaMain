@@ -61,7 +61,7 @@ import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiClientMapbox;
 import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiResponseMapbox;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.visicom.visicom_search.key_visicom.ApiResponse;
-import com.taxi.easy.ua.utils.KeyboardUtils;
+import com.taxi.easy.ua.ui.keyboard.KeyboardUtils;
 import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.connect.ConnectionSpeedTester;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
@@ -1530,11 +1530,13 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 List<String> settlementList = new ArrayList<>();
 
                 for (String[] addressArray : addresses) {
-                    // Выбираем значение 'address' из массива и добавляем его в addressesList
-                    addressesList.add(addressArray[0]);
-                    nameList.add(addressArray[1]);
-                    zoneList.add(addressArray[2]);
-                    settlementList.add(addressArray[3]);
+                    if (addressArray != null) {
+                        // Выбираем значение 'address' из массива и добавляем его в addressesList
+                        addressesList.add(addressArray[0]);
+                        nameList.add(addressArray[1]);
+                        zoneList.add(addressArray[2]);
+                        settlementList.add(addressArray[3]);
+                    }
                 }
 
                 addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
