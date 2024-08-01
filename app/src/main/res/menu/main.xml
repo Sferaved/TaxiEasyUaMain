@@ -7,12 +7,6 @@
     <!-- Определение элементов меню -->
 
     <item
-        android:id="@+id/phone_settings"
-        android:orderInCategory="100"
-        android:title="@string/my_phone"
-        app:showAsAction="never" />
-
-    <item
         android:id="@+id/nav_driver"
         android:orderInCategory="100"
         android:title="@string/driver" />
@@ -41,6 +35,10 @@
         android:id="@+id/update"
         android:orderInCategory="100"
         android:title="@string/update_app" />
+    <item
+        android:id="@+id/uninstal_app"
+        android:orderInCategory="100"
+        android:title="@string/uninstal" />
     <item
         android:id="@+id/action_exit"
         android:orderInCategory="100"

@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.770</string>
-    <string name="version">Версія: 1.770</string>
+    <string name="version_code">1.771</string>
+    <string name="version">Версія: 1.771</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -44,7 +44,7 @@
     <string name="gps_on_button">включить gps</string>
     <string name="wellcome">Сформуйте маршрут або виберіть улюблений.</string>
     <string name="verify_phone">Перевірка телефону</string>
-    <string name="format_phone">Формат вводу номера телефону: +380936665544</string>
+    <string name="format_phone">Формат вводу номера телефону: +38 093 666 55 44</string>
     <string name="sent_button">Відправити</string>
     <string name="verify_internet">Перевірте інтернет-з\'єднання, зателефонуйте оператору або перезавантажте програму.</string>
     <string name="save_button">Зберегти</string>
@@ -398,4 +398,5 @@
     <string name="del_info">Дані акаунта видалені з сервера</string>
     <string name="user_name">Ім\'я користувача</string>
     <string name="phone_number">Телефон</string>
+    <string name="uninstal">Видалити додаток</string>
 </resources>

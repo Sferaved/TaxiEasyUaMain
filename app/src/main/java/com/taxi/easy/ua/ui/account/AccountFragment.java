@@ -1,10 +1,12 @@
 package com.taxi.easy.ua.ui.account;
 
 import static android.content.Context.MODE_PRIVATE;
+
 import static com.taxi.easy.ua.R.string.format_phone;
 
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -65,22 +67,25 @@ public class AccountFragment extends Fragment {
     View root;
     UserRepository userRepository;
     String userEmail;
-    DatabaseHelper databaseHelper;
-    DatabaseHelperUid databaseHelperUid;
+    DatabaseHelper dbH;
+    DatabaseHelperUid dbHUid;
     private String[] array;
     private List<RouteResponseCancel> routeListCancel;
-
+    private Context context;
+    private List<RouteResponseCancel> routeList;
+    String baseUrl = "https://m.easy-order-taxi.site";
 
     @SuppressLint("SourceLockedOrientationActivity")
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentAccountBinding.inflate(inflater, container, false);
         root = binding.getRoot();
-
+        context = requireActivity();
         userManager = new FirebaseUserManager();
 
         upd_but = binding.updBut;
         del_but = binding.delBut;
+        del_but.setVisibility(View.GONE);
         btnCallAdmin = binding.btnCallAdmin;
 
         userName = binding.userName;
@@ -91,8 +96,9 @@ public class AccountFragment extends Fragment {
         userEmail = stringList.get(3);
 
         userName.setText(stringList.get(4));
-        phoneNumber.setText(stringList.get(2));
+        phoneNumber.setText(formatPhoneNumber(stringList.get(2)));
         email.setText(userEmail);
+        fetchRoutesCancel(userEmail);
 
         userName.addTextChangedListener(new TextWatcher() {
             @Override
@@ -103,6 +109,7 @@ public class AccountFragment extends Fragment {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 upd_but.setVisibility(View.VISIBLE);
+
             }
 
             @Override
@@ -140,30 +147,22 @@ public class AccountFragment extends Fragment {
             accountSet();
         });
 
-        databaseHelper = new DatabaseHelper(getActivity());
-        databaseHelperUid = new DatabaseHelperUid(getActivity());
-
         del_but.setOnClickListener(v -> {
+            Logger.d(context, TAG, "Delete button clicked");
             del_but.setVisibility(View.GONE);
             progressBar.setVisibility(View.VISIBLE);
-            array = databaseHelper.readRouteCancel();
-            Logger.d(getActivity(), TAG, "processRouteList: array " + Arrays.toString(array));
-            if (array.length != 0) {
-                String message = getString(R.string.order_to_cancel_true);
-                MyBottomSheetErrorFragment myBottomSheetMessageFragment = new MyBottomSheetErrorFragment(message);
-                myBottomSheetMessageFragment.show(getChildFragmentManager(), myBottomSheetMessageFragment.getTag());
-            } else {
-                // Запустить указанный код
-                KeyboardUtils.hideKeyboard(requireActivity(), root);
-                userManager.deleteUserPhone();
-                userRepository = new UserRepository();
-                userRepository.destroyEmail(userEmail);
-                resetUserInfo();
-                Toast.makeText(getActivity(), R.string.del_info, Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(getActivity(), ExitActivity.class));
-            }
 
+            // Запустить указанный код
+            KeyboardUtils.hideKeyboard(requireActivity(), root);
+            userManager.deleteUserPhone();
+            userRepository = new UserRepository();
+            userRepository.destroyEmail(userEmail);
+            resetUserInfo();
+            Toast.makeText(getActivity(), R.string.del_info, Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(getActivity(), ExitActivity.class));
         });
+
+
         btnCallAdmin.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_DIAL);
             String phone = logCursor(MainActivity.CITY_INFO).get(3);
@@ -182,88 +181,97 @@ public class AccountFragment extends Fragment {
         });
         return root;
     }
-    private void fetchRoutesCancel(String value) {
-        Logger.d(getActivity(), TAG, "fetchRoutesCancel: ");
+    private String formatPhoneNumber(String phoneNumber) {
+        String input = phoneNumber.replaceAll("[^+\\d]", "");
 
-        routeListCancel = new ArrayList<>();
-        String baseUrl = "https://m.easy-order-taxi.site";
+        StringBuilder formattedNumber = new StringBuilder();
+        if (input.length() == 13) {
+            formattedNumber.append(input.substring(0, 3)).append(" ");
+            formattedNumber.append(input.substring(3, 6)).append(" ");
+            formattedNumber.append(input.substring(6, 9)).append(" ");
+            formattedNumber.append(input.substring(9, 11)).append(" ");
+            formattedNumber.append(input.substring(11, 13));
+            return formattedNumber.toString();
+        } else {
+            return input;
+        }
+
+    }
+
+    private void fetchRoutesCancel(String value) {
+        dbH = new DatabaseHelper(getContext());
+        dbHUid = new DatabaseHelperUid(getContext());
+
+        dbH.clearTableCancel();
+        dbHUid.clearTableCancel();
+
+        routeList = new ArrayList<>();
 
         String url = baseUrl + "/android/UIDStatusShowEmailCancel/" + value;
         Call<List<RouteResponseCancel>> call = ApiClient.getApiService().getRoutesCancel(url);
-        Logger.d(getActivity(), TAG, "fetchRoutesCancel: " + url);
+        Logger.d(context, TAG, "fetchRoutesCancel: " + url);
         call.enqueue(new Callback<List<RouteResponseCancel>>() {
             @Override
             public void onResponse(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Response<List<RouteResponseCancel>> response) {
+                progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful()) {
                     List<RouteResponseCancel> routes = response.body();
-                    assert routes != null;
-                    Logger.d(getActivity(), TAG, "onResponse: " + response.body());
-
-                    if (routes.size() == 1) {
-                        RouteResponseCancel route = routes.get(0);
-                        if ("*".equals(route.getRouteFrom()) && "*".equals(route.getRouteFromNumber()) &&
-                                "*".equals(route.getRouteTo()) && "*".equals(route.getRouteToNumber()) &&
-                                "*".equals(route.getWebCost()) && "*".equals(route.getCloseReason()) &&
-                                "*".equals(route.getAuto()) && "*".equals(route.getCreatedAt())) {
-
-                            // Запустить указанный код
-                            KeyboardUtils.hideKeyboard(requireActivity(), root);
-                            userManager.deleteUserPhone();
-                            userRepository = new UserRepository();
-                            userRepository.destroyEmail(userEmail);
-                            resetUserInfo();
-                            Toast.makeText(getActivity(), R.string.del_info, Toast.LENGTH_SHORT).show();
-                            startActivity(new Intent(getActivity(), ExitActivity.class));
-                            return;
-                        }
-                    }
-                    if (!routes.isEmpty()) {
-                        boolean hasRouteWithAsterisk = false;
-                        for (RouteResponseCancel route : routes) {
+                    Logger.d(context, TAG, "onResponse: " + routes);
+                    if (routes != null && !routes.isEmpty()) {
+                        if (routes.size() == 1) {
+                            RouteResponseCancel route = routes.get(0);
+                            Logger.d(context, TAG, "Checking route: " + route);
                             if ("*".equals(route.getRouteFrom())) {
-                                // Найден объект с routefrom = "*"
-                                hasRouteWithAsterisk = true;
-                                break;  // Выход из цикла, так как условие уже выполнено
+                                Logger.d(context, TAG, "Route with asterisk found, performing delete actions");
+                                // Выполняем действия удаления
+                                Logger.d(context, TAG, "processRouteList: Array is empty, showing delete button");
+                                del_but.setVisibility(View.VISIBLE);
+                            } else {
+                                routeList.addAll(routes);
+                                processCancelList();
                             }
-                        }
-                        if (!hasRouteWithAsterisk) {
-                            if (routeListCancel == null) {
-                                routeListCancel = new ArrayList<>();
+                        } else {
+                            boolean hasRouteWithAsterisk = false;
+                            for (RouteResponseCancel route : routes) {
+                                if ("*".equals(route.getRouteFrom())) {
+                                    // Найден объект с routefrom = "*"
+                                    hasRouteWithAsterisk = true;
+                                    break;  // Выход из цикла, так как условие уже выполнено
+                                }
                             }
-                            routeListCancel.addAll(routes);
-                            processCancelList();
+                            if (!hasRouteWithAsterisk) {
+                                routeList.addAll(routes);
+                                processCancelList();
+                            }
                         }
 
                     }
+                } else {
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
+                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+
                 }
             }
-
 
             public void onFailure(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Throwable t) {
                 // Обработка ошибок сети или других ошибок
                 FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
-        progressBar.setVisibility(View.INVISIBLE);
     }
 
     private void processCancelList() {
-        if (routeListCancel == null || routeListCancel.isEmpty()) {
-            Logger.d(getActivity(), TAG, "routeListCancel is null or empty");
-           return;
-        }
+        // В этом методе вы можете использовать routeList для выполнения дополнительных действий с данными.
 
         // Создайте массив строк
-        array = new String[routeListCancel.size()];
+        array = new String[routeList.size()];
 
 
-        databaseHelper.clearTableCancel();
-        databaseHelperUid.clearTableCancel();
 
-        String closeReasonText = getString(R.string.close_resone_def);
+        String closeReasonText = context.getString(R.string.close_resone_def);
 
-        for (int i = 0; i < routeListCancel.size(); i++) {
-            RouteResponseCancel route = routeListCancel.get(i);
+        for (int i = 0; i < routeList.size(); i++) {
+            RouteResponseCancel route = routeList.get(i);
             String uid = route.getUid();
             String routeFrom = route.getRouteFrom();
             String routefromnumber = route.getRouteFromNumber();
@@ -276,79 +284,82 @@ public class AccountFragment extends Fragment {
             String dispatchingOrderUidDouble = route.getDispatchingOrderUidDouble();
             String pay_method = route.getPay_method();
 
-            switch (closeReason) {
+            switch (closeReason){
                 case "-1":
-                    closeReasonText = getString(R.string.close_resone_in_work);
+                    closeReasonText = context.getString(R.string.close_resone_in_work);
                     break;
                 case "0":
-                    closeReasonText = getString(R.string.close_resone_0);
+                    closeReasonText = context.getString(R.string.close_resone_0);
                     break;
                 case "1":
-                    closeReasonText = getString(R.string.close_resone_1);
+                    closeReasonText = context.getString(R.string.close_resone_1);
                     break;
                 case "2":
-                    closeReasonText = getString(R.string.close_resone_2);
+                    closeReasonText = context.getString(R.string.close_resone_2);
                     break;
                 case "3":
-                    closeReasonText = getString(R.string.close_resone_3);
+                    closeReasonText = context.getString(R.string.close_resone_3);
                     break;
                 case "4":
-                    closeReasonText = getString(R.string.close_resone_4);
+                    closeReasonText = context.getString(R.string.close_resone_4);
                     break;
                 case "5":
-                    closeReasonText = getString(R.string.close_resone_5);
+                    closeReasonText = context.getString(R.string.close_resone_5);
                     break;
                 case "6":
-                    closeReasonText = getString(R.string.close_resone_6);
+                    closeReasonText = context.getString(R.string.close_resone_6);
                     break;
                 case "7":
-                    closeReasonText = getString(R.string.close_resone_7);
+                    closeReasonText = context.getString(R.string.close_resone_7);
                     break;
                 case "8":
-                    closeReasonText = getString(R.string.close_resone_8);
+                    closeReasonText = context.getString(R.string.close_resone_8);
                     break;
                 case "9":
-                    closeReasonText = getString(R.string.close_resone_9);
+                    closeReasonText = context.getString(R.string.close_resone_9);
                     break;
+
             }
 
-            if (routeFrom.equals("Місце відправлення")) {
-                routeFrom = getString(R.string.start_point_text);
+            if(routeFrom.equals("Місце відправлення")) {
+                routeFrom = context.getString(R.string.start_point_text);
             }
 
-            if (routeTo.equals("Точка на карте")) {
-                routeTo = getString(R.string.end_point_marker);
+
+            if(routeTo.equals("Точка на карте")) {
+                routeTo = context.getString(R.string.end_point_marker);
             }
-            if (routeTo.contains("по городу")) {
-                routeTo = getString(R.string.on_city);
+            if(routeTo.contains("по городу")) {
+                routeTo = context.getString(R.string.on_city);
             }
-            if (routeTo.contains("по місту")) {
-                routeTo = getString(R.string.on_city);
+            if(routeTo.contains("по місту")) {
+                routeTo = context.getString(R.string.on_city);
             }
             String routeInfo = "";
 
-            if (auto == null) {
+            if(auto == null) {
                 auto = "??";
             }
 
-            if (routeFrom.equals(routeTo)) {
-                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + getString(R.string.close_resone_to)
-                        + getString(R.string.on_city)
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
-                        + getString(R.string.auto_info) + " " + auto + " "
-                        + getString(R.string.close_resone_time)
-                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
+            if(routeFrom.equals(routeTo)) {
+                routeInfo = context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                        + context.getString(R.string.close_resone_to)
+                        + context.getString(R.string.on_city)
+                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)
+                        + context.getString(R.string.auto_info) + " " + auto + " "
+                        + context.getString(R.string.close_resone_time)
+                        + createdAt + context.getString(R.string.close_resone_text) + closeReasonText;
             } else {
-                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
-                        + getString(R.string.auto_info) + " " + auto + " "
-                        + getString(R.string.close_resone_time)
-                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
+                routeInfo = context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                        + context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
+                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)
+                        + context.getString(R.string.auto_info) + " " + auto + " "
+                        + context.getString(R.string.close_resone_time)
+                        + createdAt + context.getString(R.string.close_resone_text) + closeReasonText;
             }
 
-            databaseHelper.addRouteCancel(uid, routeInfo);
+//                array[i] = routeInfo;
+            dbH.addRouteCancel(uid, routeInfo);
             List<String> settings = new ArrayList<>();
 
             settings.add(uid);
@@ -360,19 +371,27 @@ public class AccountFragment extends Fragment {
             settings.add(dispatchingOrderUidDouble);
             settings.add(pay_method);
 
-            Logger.d(getActivity(), TAG, settings.toString());
-            databaseHelperUid.addCancelInfoUid(settings);
+            Logger.d(context, TAG, settings.toString());
+            dbHUid.addCancelInfoUid(settings);
         }
-
-        array = databaseHelper.readRouteCancel();
-        Logger.d(getActivity(), TAG, "processRouteList: array " + Arrays.toString(array));
-        if (array.length != 0) {
+        array = dbH.readRouteCancel();
+        Logger.d(context, TAG, "processRouteList: array " + Arrays.toString(array));
+        if (array != null) {
             String message = getString(R.string.order_to_cancel_true);
             MyBottomSheetErrorFragment myBottomSheetMessageFragment = new MyBottomSheetErrorFragment(message);
             myBottomSheetMessageFragment.show(getChildFragmentManager(), myBottomSheetMessageFragment.getTag());
+        } else {
+            dbH.clearTableCancel();
+            dbHUid.clearTableCancel();
         }
-
     }
+
+
+
+
+
+
+
     @Override
     public void onResume() {
         super.onResume();
@@ -384,10 +403,14 @@ public class AccountFragment extends Fragment {
     }
 
     private void accountSet() {
-        String phone = phoneNumber.getText().toString();
+        Logger.d(requireActivity(), TAG, "phoneNumber.getText().toString() " + phoneNumber.getText().toString());
+        String phone = formatPhoneNumber(phoneNumber.getText().toString());
+        Logger.d(requireActivity(), TAG, "phone " + phone);
 
         Logger.d(requireActivity(), TAG, "onClick befor validate: ");
-        String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
+        String PHONE_PATTERN = "\\+38 \\d{3} \\d{3} \\d{2} \\d{2}";
+
+
         boolean val = Pattern.compile(PHONE_PATTERN).matcher(phone).matches();
         Logger.d(requireActivity(), TAG, "onClick No validate: " + val);
         if (!val) {
@@ -395,7 +418,7 @@ public class AccountFragment extends Fragment {
             Logger.d(requireActivity(), TAG, "accountSet" + phoneNumber.getText().toString());
 
         } else {
-
+            phoneNumber.setText(phone);
             updateRecordsUser("phone_number", phone);
 
             userManager.saveUserPhone(phone);

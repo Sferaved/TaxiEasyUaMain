@@ -8,7 +8,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentSender;
@@ -19,15 +18,12 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -47,14 +43,13 @@ import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract;
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
 import com.google.android.play.core.install.model.AppUpdateType;
 import com.google.android.play.core.install.model.UpdateAvailability;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -64,6 +59,7 @@ import com.taxi.easy.ua.cities.api.CityResponseMerchantFondy;
 import com.taxi.easy.ua.cities.api.CityService;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
 import com.taxi.easy.ua.ui.card.CardInfo;
+import com.taxi.easy.ua.ui.clear.AppDataUtils;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
@@ -74,10 +70,11 @@ import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiClientMapbox;
 import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiResponseMapbox;
-import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.visicom.visicom_search.key_visicom.ApiResponse;
+import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
+
 import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
@@ -740,16 +737,13 @@ public class MainActivity extends AppCompatActivity {
             finishAffinity();
         }
 
-//        if (item.getItemId() == R.id.action_state_phone) {
-//            checkPermission();
-//        }
-
         if (item.getItemId() == R.id.gps) {
             eventGps();
         }
 
         if (item.getItemId() == R.id.send_email_admin) {
             sendEmailAdmin();
+
         }
 
         if (item.getItemId() == R.id.send_email) {
@@ -769,16 +763,8 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(Intent.createChooser(emailIntent, getString(R.string.share)));
             } catch (android.content.ActivityNotFoundException e) {
                 FirebaseCrashlytics.getInstance().recordException(e);
-        }
-
-            if (item.getItemId() == R.id.phone_settings) {
-                if (NetworkUtils.isNetworkAvailable(this)) {
-                    phoneNumberChange();
-                } else {
-                    Toast.makeText(this, R.string.verify_internet, Toast.LENGTH_SHORT).show();
-                }
-
             }
+
         }
         if (item.getItemId() == R.id.update) {
             Logger.d(this, TAG, "onOptionsItemSelected: " + getString(R.string.version));
@@ -793,13 +779,6 @@ public class MainActivity extends AppCompatActivity {
             if (NetworkUtils.isNetworkAvailable(this)) {
                 Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.taxieasyua.job"));
                 startActivity(browserIntent);
-            } else {
-                Toast.makeText(this, R.string.verify_internet, Toast.LENGTH_SHORT).show();
-            }
-        }
-        if (item.getItemId() == R.id.phone_settings) {
-            if (NetworkUtils.isNetworkAvailable(this)) {
-                phoneNumberChange();
             } else {
                 Toast.makeText(this, R.string.verify_internet, Toast.LENGTH_SHORT).show();
             }
@@ -822,6 +801,10 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 Toast.makeText(this, R.string.verify_internet, Toast.LENGTH_SHORT).show();
             }
+
+        }
+        if (item.getItemId() == R.id.uninstal_app) {
+            AppDataUtils.clearDataAndUninstall(this);
 
         }
         return false;
@@ -1032,58 +1015,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     public void phoneNumberChange() {
-
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this, R.style.AlertDialogTheme);
-
-        LayoutInflater inflater = this.getLayoutInflater();
-
-        View view = inflater.inflate(R.layout.phone_settings_layout, null);
-
-        builder.setView(view);
-
-        @SuppressLint({"MissingInflatedId", "LocalSuppress"})
-        EditText phoneNumber = view.findViewById(R.id.phoneNumber);
-        EditText userName = view.findViewById(R.id.userName);
-
-        List<String> stringList =  logCursor(MainActivity.TABLE_USER_INFO);
-
-        if(!stringList.isEmpty()) {
-            phoneNumber.setText(stringList.get(2));
-            userName.setText(stringList.get(4));
-
-
-//        String result = phoneNumber.getText().toString();
-        builder
-                .setPositiveButton(R.string.cheng, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-//                        if(connected()) {
-                            Logger.d(getApplicationContext(), TAG, "onClick befor validate: ");
-                            String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
-                            boolean val = Pattern.compile(PHONE_PATTERN).matcher(phoneNumber.getText().toString()).matches();
-                            Logger.d(getApplicationContext(), TAG, "onClick No validate: " + val);
-                            if (!val) {
-                                Toast.makeText(MainActivity.this, getString(format_phone) , Toast.LENGTH_SHORT).show();
-                                Logger.d(getApplicationContext(), TAG, "onClick:phoneNumber.getText().toString() " + phoneNumber.getText().toString());
-
-                            } else {
-                                String phone = phoneNumber.getText().toString();
-
-                                updateRecordsUser("phone_number", phone);
-                                userManager = new FirebaseUserManager();
-                                userManager.saveUserPhone(phone);
-
-                                String newName = userName.getText().toString();
-                                if (newName.trim().isEmpty()) {
-                                   newName = "No_name";
-                                }
-                                updateRecordsUser("username", newName);
-                            }
-//                        }
-                    }
-                }).setNegativeButton(cancel_button, null)
-                .show();
-        }
+        MainActivity.navController.popBackStack();
+        MainActivity.navController.navigate(R.id.nav_account);
     }
     private void updateRecordsUser(String field, String result) {
         ContentValues cv = new ContentValues();
@@ -1098,31 +1031,6 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    }
-    private boolean connected() {
-
-        boolean hasConnect = false;
-
-        ConnectivityManager cm = (ConnectivityManager) this.getSystemService(
-                CONNECTIVITY_SERVICE);
-        NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        if (wifiNetwork != null && wifiNetwork.isConnected()) {
-            hasConnect = true;
-        }
-        NetworkInfo mobileNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
-        if (mobileNetwork != null && mobileNetwork.isConnected()) {
-            hasConnect = true;
-        }
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        if (activeNetwork != null && activeNetwork.isConnected()) {
-            hasConnect = true;
-        }
-
-//        if (!hasConnect) {
-//            Toast.makeText(this, verify_internet, Toast.LENGTH_LONG).show();
-//        }
-        Logger.d(this, TAG, "connected: " + hasConnect);
-        return hasConnect;
     }
 
 

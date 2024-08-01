@@ -73,7 +73,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -88,20 +88,20 @@
 
         <activity
             android:name=".ui.open_map.OpenStreetMapActivity"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="portrait"
             android:exported="true"
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar" />
 
         <activity android:name=".ui.open_map.OpenStreetMapVisicomActivity"
             android:exported="true"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar"
             tools:ignore="Instantiatable"
             />
 
         <activity android:name=".ui.visicom.visicom_search.ActivityVisicomOnePage"
             android:exported="true"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar"
             tools:ignore="Instantiatable" />
         <activity android:name=".cities.check.CityCheckActivity" />

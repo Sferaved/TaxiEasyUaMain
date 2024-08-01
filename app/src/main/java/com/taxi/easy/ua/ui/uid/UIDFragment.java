@@ -77,11 +77,12 @@ public class UIDFragment extends Fragment {
     private FragmentManager fragmentManager;
     private int desiredHeight;
     Context context;
-    
+    View root;
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentUidBinding.inflate(inflater, container, false);
-        View root = binding.getRoot();
+        root = binding.getRoot();
 
         fragmentManager = getParentFragmentManager();
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
@@ -139,30 +140,7 @@ public class UIDFragment extends Fragment {
 
         fetchRoutes();
         registerForContextMenu(listView);
-        listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                root.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                // Теперь мы можем получить высоту фрагмента
-                desiredHeight = root.getHeight() - 350;
-                ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
-                layoutParams.height = desiredHeight;
-                listView.setLayoutParams(layoutParams);
 
-                int totalItemHeight = 0;
-                for (int i = 0; i < listView.getChildCount(); i++) {
-                    totalItemHeight += listView.getChildAt(i).getHeight();
-                }
-
-                if (totalItemHeight > desiredHeight) {
-                    scrollButtonUp.setVisibility(View.VISIBLE);
-                    scrollButtonDown.setVisibility(View.VISIBLE);
-                } else {
-                    scrollButtonUp.setVisibility(View.GONE);
-                    scrollButtonDown.setVisibility(View.GONE);
-                }
-            }
-        });
         btnCallAdmin = binding.btnCallAdmin;
         btnCallAdmin.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_DIAL);
@@ -434,6 +412,34 @@ public class UIDFragment extends Fragment {
         if(array != null) {
             ArrayAdapter<String> adapter = new ArrayAdapter<>(requireActivity(), R.layout.drop_down_layout, array);
             listView.setAdapter(adapter);
+            listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @Override
+                public void onGlobalLayout() {
+                    root.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                    // Теперь мы можем получить высоту фрагмента
+                    desiredHeight = root.getHeight()/2;
+                    ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
+                    layoutParams.height = desiredHeight;
+                    listView.setLayoutParams(layoutParams);
+
+                    int totalItemHeight = 0;
+                    for (int i = 0; i < listView.getChildCount(); i++) {
+                        totalItemHeight += listView.getChildAt(i).getHeight();
+                    }
+                    Log.d(TAG, "totalItemHeight: " + totalItemHeight);
+                    Log.d(TAG, "desiredHeight: " + desiredHeight);
+                    if (totalItemHeight > desiredHeight) {
+                        scrollButtonUp.setVisibility(View.VISIBLE);
+                        scrollButtonDown.setVisibility(View.VISIBLE);
+                    } else {
+                        scrollButtonUp.setVisibility(View.GONE);
+                        scrollButtonDown.setVisibility(View.GONE);
+                    }
+                }
+            });
+
+
+
             listView.setVisibility(View.VISIBLE);
             progressBar.setVisibility(View.GONE);
             upd_but.setVisibility(View.VISIBLE);

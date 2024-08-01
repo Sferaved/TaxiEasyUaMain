@@ -84,5 +84,32 @@ public class ExitActivity extends AppCompatActivity {
         db.close();
         return list;
     }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Проверяем, идет ли приложение в фон
+        if (isFinishing()) {
+            // Закрываем приложение полностью
+            closeApplication();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Проверяем, идет ли приложение в фон
+        if (isFinishing()) {
+            // Закрываем приложение полностью
+            closeApplication();
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        // Ничего не делать, блокируя действие кнопки "назад"
+        super.onBackPressed();
+        closeApplication();
+    }
 }
 

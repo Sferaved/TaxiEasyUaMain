@@ -3,8 +3,6 @@ package com.taxi.easy.ua.ui.visicom;
 
 import static android.content.Context.MODE_PRIVATE;
 
-import static com.taxi.easy.ua.R.string.format_phone;
-
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -1449,7 +1447,11 @@ public class VisicomFragment extends Fragment{
                             Logger.d(context, TAG, "onResume: 1");
                             progressBar.setVisibility(View.VISIBLE);
                             try {
-                                visicomCost();
+                                String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+                                if(!userEmail.equals("email")) {
+                                    visicomCost();
+                                }
+
                             } catch (MalformedURLException e) {
                                 FirebaseCrashlytics.getInstance().recordException(e);
                                 btn_clear_from_text.setVisibility(View.INVISIBLE);
