@@ -35,7 +35,6 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentGalleryBinding;
-import com.taxi.easy.ua.ui.finish.FinishActivity;
 import com.taxi.easy.ua.ui.home.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.home.MyBottomSheetGalleryFragment;
@@ -289,7 +288,7 @@ public class GalleryFragment extends Fragment {
                          if(pay_method.equals("bonus_payment")) {
                             String bonus = logCursor(MainActivity.TABLE_USER_INFO, requireActivity()).get(5);
                             if(Long.parseLong(bonus) < Long.parseLong(text_view_cost.getText().toString()) * 100 ) {
-                                paymentType("nal_payment");
+                                paymentType();
                             }
                         }
                         break;
@@ -470,13 +469,26 @@ public class GalleryFragment extends Fragment {
                             sendUrlMap.get("routefrom") + sendUrlMap.get("routefromnumber") + " " + getString(R.string.to_message) +
                             to_name_local + ".";
 
-                    Intent intent = new Intent(requireActivity(), FinishActivity.class);
-                    intent.putExtra("messageResult_key", messageResult);
-                    intent.putExtra("messageFondy_key", messageFondy);
-                    intent.putExtra("messageCost_key", orderWeb);
-                    intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
-                    intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
-                    startActivity(intent);
+//                    Intent intent = new Intent(requireActivity(), FinishActivity.class);
+//                    intent.putExtra("messageResult_key", messageResult);
+//                    intent.putExtra("messageFondy_key", messageFondy);
+//                    intent.putExtra("messageCost_key", orderWeb);
+//                    intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
+//                    intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+//                    startActivity(intent);
+
+                    Bundle bundle = new Bundle();
+                    bundle.putString("messageResult_key", messageResult);
+                    bundle.putString("messageFondy_key", messageFondy);
+                    bundle.putString("messageCost_key", orderWeb);
+                    bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
+                    bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+
+// Установите Bundle как аргументы фрагмента
+                    MainActivity.navController.navigate(R.id.nav_finish, bundle);
+
+
+
                 } else {
                     assert message != null;
                     if (message.contains("Дублирование")) {
@@ -532,7 +544,7 @@ public class GalleryFragment extends Fragment {
         okButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                paymentType("nal_payment");
+                paymentType();
 
                 if(orderRout()){
                     orderFinished();
@@ -554,14 +566,15 @@ public class GalleryFragment extends Fragment {
         alertDialog.show();
     }
 
-    private void paymentType(String paymentCode) {
+    private void paymentType() {
         ContentValues cv = new ContentValues();
-        cv.put("payment_type", paymentCode);
+        cv.put("payment_type", "nal_payment");
         // обновляем по id
         SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
         database.close();
+        pay_method = "nal_payment";
     }
 
      private void updateRoutMarker(List<String> settings) {
@@ -828,7 +841,7 @@ public class GalleryFragment extends Fragment {
                 switch (paymentType) {
                     case "bonus_payment":
                         if (Long.parseLong(bonus_max_pay) <= Long.parseLong(textCost) * 100) {
-                            paymentType("nal_payment");
+                            paymentType();
                         }
                         break;
                     case "card_payment":
@@ -836,7 +849,7 @@ public class GalleryFragment extends Fragment {
                     case "mono_payment":
                     case "wfp_payment":
                         if (Long.parseLong(card_max_pay) <= Long.parseLong(textCost)) {
-                            paymentType("nal_payment");
+                            paymentType();
                         }
                         break;
                 }

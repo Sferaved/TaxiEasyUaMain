@@ -219,11 +219,11 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         return view;
     }
 
-    private void cityMaxPay(String $city, Context context) {
+    private void cityMaxPay(String $city) {
         CityService cityService = CityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
-        Call<CityResponse> call = cityService.getMaxPayValues($city);
+        Call<CityResponse> call = cityService.getMaxPayValues($city, getString(R.string.application));
 
         call.enqueue(new Callback<CityResponse>() {
             @Override
@@ -291,7 +291,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                         } else {
 
                             adapter.setItemEnabled(2, true);
-                            cityMaxPay(city, context);
+                            cityMaxPay(city);
                         }
                     }
                 } else {

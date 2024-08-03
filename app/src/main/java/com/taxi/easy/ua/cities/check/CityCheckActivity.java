@@ -302,6 +302,7 @@ public class CityCheckActivity extends AppCompatActivity {
                 startLan = 21.00424;
                 break;
         }
+        cityMaxPay(city);
         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
         ContentValues cv = new ContentValues();
@@ -363,11 +364,11 @@ public class CityCheckActivity extends AppCompatActivity {
     }
 
 
-    private void cityMaxPay(String city, Context context) {
+    private void cityMaxPay(String city) {
         CityService cityService = CityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
-        Call<CityResponse> call = cityService.getMaxPayValues(city);
+        Call<CityResponse> call = cityService.getMaxPayValues(city, getString(R.string.application));
 
         call.enqueue(new Callback<CityResponse>() {
             @Override

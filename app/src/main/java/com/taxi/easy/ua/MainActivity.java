@@ -189,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        deleteOldLogFile();
         Logger.writeLog(this, getString(R.string.application));
         Logger.writeLog(this, getString(R.string.version));
         Logger.writeLog(this, "MainActivity started");
@@ -200,7 +201,10 @@ public class MainActivity extends AppCompatActivity {
             // Passing each menu ID as a set of Ids because each
             // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-              R.id.nav_visicom, R.id.nav_home, R.id.nav_cancel, R.id.nav_gallery, R.id.nav_about, R.id.nav_uid, R.id.nav_bonus, R.id.nav_card, R.id.nav_account, R.id.nav_author)
+              R.id.nav_visicom, R.id.nav_home, R.id.nav_cancel, R.id.nav_gallery,
+              R.id.nav_about, R.id.nav_uid, R.id.nav_bonus, R.id.nav_card,
+              R.id.nav_account, R.id.nav_author, R.id.nav_finish
+        )
              .setOpenableLayout(drawer)
              .build();
         navMenu = navigationView.getMenu();
@@ -403,8 +407,8 @@ public class MainActivity extends AppCompatActivity {
             settings.add(""); //7
             insertCity(settings);
 
-            cityMaxPay("Kyiv City");
-            merchantFondy("Kyiv City");
+//            cityMaxPay("Kyiv City");
+//            merchantFondy("Kyiv City");
             if (MainActivity.navVisicomMenuItem != null) {
                 // Новый текст элемента меню
                 String cityMenu = getString(R.string.city_kyiv);
@@ -1486,11 +1490,11 @@ public class MainActivity extends AppCompatActivity {
         CityService cityService = CityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
-        Call<CityResponse> call = cityService.getMaxPayValues(city);
+        Call<CityResponse> call = cityService.getMaxPayValues(city, getString(R.string.application));
 
         call.enqueue(new Callback<CityResponse>() {
             @Override
-            public void onResponse(Call<CityResponse> call, Response<CityResponse> response) {
+            public void onResponse(@NonNull Call<CityResponse> call, @NonNull Response<CityResponse> response) {
                 if (response.isSuccessful()) {
                     CityResponse cityResponse = response.body();
                     if (cityResponse != null) {

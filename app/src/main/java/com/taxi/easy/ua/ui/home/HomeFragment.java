@@ -61,7 +61,6 @@ import com.taxi.easy.ua.cities.Odessa.Odessa;
 import com.taxi.easy.ua.cities.Odessa.OdessaTest;
 import com.taxi.easy.ua.cities.Zaporizhzhia.Zaporizhzhia;
 import com.taxi.easy.ua.databinding.FragmentHomeBinding;
-import com.taxi.easy.ua.ui.finish.FinishActivity;
 import com.taxi.easy.ua.ui.home.room.AppDatabase;
 import com.taxi.easy.ua.ui.home.room.RouteCost;
 import com.taxi.easy.ua.ui.home.room.RouteCostDao;
@@ -180,19 +179,19 @@ public class HomeFragment extends Fragment {
             switch (city){
                 case "Dnipropetrovsk Oblast":
                     arrayStreet = DniproCity.arrayStreet();
-                    paymentType("nal_payment");
+                    paymentType();
                     break;
                 case "Zaporizhzhia":
                     arrayStreet = Zaporizhzhia.arrayStreet();
-                    paymentType("nal_payment");
+                    paymentType();
                     break;
                 case "Cherkasy Oblast":
                     arrayStreet = Cherkasy.arrayStreet();
-                    paymentType("nal_payment");
+                    paymentType();
                     break;
                 case "Odessa":
                     arrayStreet = Odessa.arrayStreet();
-                    paymentType("nal_payment");
+                    paymentType();
                     break;
                 case "OdessaTest":
                     arrayStreet = OdessaTest.arrayStreet();
@@ -314,7 +313,7 @@ public class HomeFragment extends Fragment {
                             if(pay_method.equals("bonus_payment")) {
                                 String bonus = logCursor(MainActivity.TABLE_USER_INFO, context).get(5);
                                 if(Long.parseLong(bonus) < cost * 100 ) {
-                                    paymentType("nal_payment");
+                                    paymentType();
                                 }
                             }
                             break;
@@ -543,13 +542,24 @@ public class HomeFragment extends Fragment {
                                 pay_method_message += " " + getString(R.string.pay_method_message_nal);
                         }
                         messageResult += ". " + pay_method_message;
-                        Intent intent = new Intent(context, FinishActivity.class);
-                        intent.putExtra("messageResult_key", messageResult);
-                        intent.putExtra("messageCost_key", orderWeb);
-                        intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
-                        intent.putExtra("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
-                        startActivity(intent);
-                        progressBar.setVisibility(View.GONE);
+//                        Intent intent = new Intent(context, FinishActivity.class);
+//                        intent.putExtra("messageResult_key", messageResult);
+//                        intent.putExtra("messageCost_key", orderWeb);
+//                        intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
+//                        intent.putExtra("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
+//                        startActivity(intent);
+//
+//                        progressBar.setVisibility(View.GONE);
+
+                        Bundle bundle = new Bundle();
+                        bundle.putString("messageResult_key", messageResult);
+                        bundle.putString("messageCost_key", orderWeb);
+                        bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
+                        bundle.putString("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
+
+// Установите Bundle как аргументы фрагмента
+                        MainActivity.navController.navigate(R.id.nav_finish, bundle);
+
 
                     } else {
                         btnVisible(View.INVISIBLE);
@@ -605,7 +615,7 @@ public class HomeFragment extends Fragment {
         okButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                paymentType("nal_payment");
+                paymentType();
 
                 try {
                     if(orderRout()){
@@ -1568,7 +1578,7 @@ public class HomeFragment extends Fragment {
                 new String[] { "1" });
         database.close();
         updateAddCost("0");
-        paymentType("nal_payment");
+        paymentType();
         text_view_cost.setVisibility(View.INVISIBLE);
         btn_minus.setVisibility(View.INVISIBLE);
         btn_plus.setVisibility(View.INVISIBLE);
@@ -1736,7 +1746,7 @@ public class HomeFragment extends Fragment {
                 switch (paymentType) {
                     case "bonus_payment":
                         if (Long.parseLong(bonus_max_pay) <= Long.parseLong(textCost) * 100) {
-                            paymentType("nal_payment");
+                            paymentType();
                         }
                         break;
                     case "card_payment":
@@ -1744,7 +1754,7 @@ public class HomeFragment extends Fragment {
                     case "mono_payment":
                     case "wfp_payment":
                         if (Long.parseLong(card_max_pay) <= Long.parseLong(textCost)) {
-                            paymentType("nal_payment");
+                            paymentType();
                         }
                         break;
                 }
@@ -1875,14 +1885,15 @@ public class HomeFragment extends Fragment {
         cursor_to.close();
 
     }
-    private void paymentType(String paymentCode) {
+    private void paymentType() {
         ContentValues cv = new ContentValues();
-        cv.put("payment_type", paymentCode);
+        cv.put("payment_type", "nal_payment");
         // обновляем по id
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
         database.close();
+        pay_method = "nal_payment";
     }
 
 }

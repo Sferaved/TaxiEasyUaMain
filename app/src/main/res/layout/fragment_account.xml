@@ -65,7 +65,8 @@
         android:minHeight="48sp"
         android:textColor="@color/white"
         android:textColorHint="#ABD9D9D9"
-
+        android:inputType="phone"
+        android:hint="+38 093 666 55 44"
         android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.525"

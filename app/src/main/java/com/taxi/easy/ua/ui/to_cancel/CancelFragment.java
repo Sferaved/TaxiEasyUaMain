@@ -184,9 +184,6 @@ public class CancelFragment extends Fragment {
             Map<String, String> costMap = getStringStringMap();
             Logger.d(context, TAG, "onContextItemSelected costMap: " + costMap);
             startFinishPage(costMap);
-            MainActivity.navController.popBackStack();
-            MainActivity.navController.navigate(R.id.nav_visicom);
-            MainActivity.gps_upd = false;
             return true;
         } else if (item.getItemId() == R.id.action_exit) {
 // Обработка действия "Delete"
@@ -282,15 +279,28 @@ public class CancelFragment extends Fragment {
                 to_name_local + ".";
         Logger.d(context, TAG, "startFinishPage: messageResult " + messageResult);
         Logger.d(context, TAG, "startFinishPage: to_name " + to_name);
-        Intent intent = new Intent(context, FinishActivity.class);
-        intent.putExtra("messageResult_key", messageResult);
-        intent.putExtra("messageFondy_key", messageFondy);
-        intent.putExtra("messageCost_key", Objects.requireNonNull(sendUrlMap.get("orderWeb")));
-        intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
-        intent.putExtra("card_payment_key", "no");
-        intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
-        startActivity(intent);
-    }
+//        Intent intent = new Intent(context, FinishActivity.class);
+//        intent.putExtra("messageResult_key", messageResult);
+//        intent.putExtra("messageFondy_key", messageFondy);
+//        intent.putExtra("messageCost_key", Objects.requireNonNull(sendUrlMap.get("orderWeb")));
+//        intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
+//        intent.putExtra("card_payment_key", "no");
+//        intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+//        startActivity(intent);
+
+         Bundle bundle = new Bundle();
+         bundle.putString("messageResult_key", messageResult);
+         bundle.putString("messageFondy_key", messageFondy);
+         bundle.putString("messageCost_key", Objects.requireNonNull(sendUrlMap.get("orderWeb")));
+         bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
+         bundle.putString("card_payment_key", "no");
+         bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+
+// Установите Bundle как аргументы фрагмента
+         MainActivity.navController.navigate(R.id.nav_finish, bundle);
+
+
+     }
     private String cleanString(String input) {
         if (input == null) return "";
         return input.trim().replaceAll("\\s+", " ").replaceAll("\\s{2,}$", " ");

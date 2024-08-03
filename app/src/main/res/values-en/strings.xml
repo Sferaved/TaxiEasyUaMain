@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.771</string>
-    <string name="version">Version: 1.771</string>
+    <string name="version_code">1.772</string>
+    <string name="version">Version: 1.772</string>
 
     <string name="app_name">Taxi Dostavka</string>
 
@@ -396,4 +396,5 @@
     <string name="user_name">Username</string>
     <string name="phone_number">Phone</string>
     <string name="uninstal">Uninstall application</string>
+    <string name="your_order">Your order</string>
 </resources>

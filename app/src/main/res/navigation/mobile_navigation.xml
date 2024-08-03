@@ -55,4 +55,9 @@
         android:name="com.taxi.easy.ua.ui.account.AccountFragment"
         android:label="@string/account_menu"
         tools:layout="@layout/fragment_account" />
+    <fragment
+        android:id="@+id/nav_finish"
+        android:name="com.taxi.easy.ua.ui.finish.fragm.FinishFragment"
+        android:label="@string/your_order"
+        tools:layout="@layout/fragment_finish" />
 </navigation>
