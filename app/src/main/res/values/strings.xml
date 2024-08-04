@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.772</string>
-    <string name="version">Версия: 1.772</string>
+    <string name="version_code">1.773</string>
+    <string name="version">Версия: 1.773</string>
 
     <string name="app_name">Такси Доставка</string>
 
@@ -12,6 +12,7 @@
     <string name="nav_header_subtitle">Быстрые поездки по городам Украины</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Настройки</string>
+
 
     <string name="menu_maps">Карта</string>
     <string name="menu_home">По адресу (старое)</string>
@@ -339,7 +340,7 @@
     <string name="pos_c">ул.Байды Вишневецкого, д.36, город Черкассы\t</string>
     <string name="cancel_gps">Отменить</string>
     <string name="ok_error">Понятно</string>
-    <string name="to_nal_payment">Оплата выбранным методом в данный момент невозможна. Заказать с оплатой наличными?</string>
+    <string name="to_nal_payment">У вас есть ограничение на сумму заказа по этому виду расчета. Для изменении обратитесь к операторам. Сейчас заказать за наличные?</string>
     <string name="to_nal_payment_count">Оплата выбранным методом в данный момент невозможна. Расчитать поездку с оплатой наличными?</string>
     <string name="tarif">Тариф:</string>
     <string name="tar">Тариф</string>

@@ -165,7 +165,7 @@ public class FinishFragment extends Fragment {
             intent.setData(Uri.parse(phone));
             startActivity(intent);
         });
-        messageFondy = context.getString(R.string.fondy_message);
+        messageFondy =  context.getString(R.string.fondy_message);
         email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
         phoneNumber = logCursor(MainActivity.TABLE_USER_INFO).get(2);
 
@@ -188,13 +188,13 @@ public class FinishFragment extends Fragment {
 
         text_status = root.findViewById(R.id.text_status);
 
-        text_status.setText(context.getString(R.string.status_checkout_message));
+        text_status.setText( context.getString(R.string.status_checkout_message));
         btn_reset_status = root.findViewById(R.id.btn_reset_status);
         btn_reset_status.setOnClickListener(v -> {
             if(connected()){
                 statusOrderWithDifferentValue(uid);
             } else {
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment( context.getString(R.string.verify_internet));
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
@@ -220,10 +220,10 @@ public class FinishFragment extends Fragment {
             runnableBonusBtn = () -> {
                 MainActivity.order_id = null;
                 String newStatus = text_status.getText().toString();
-                if(!newStatus.contains(context.getString(R.string.time_out_text))
-                        || !newStatus.contains(context.getString(R.string.error_payment_card))
-                        || !newStatus.contains(context.getString(R.string.double_order_error))
-                        || !newStatus.contains(context.getString(R.string.call_btn_cancel)) ) {
+                if(!newStatus.contains( context.getString(R.string.time_out_text))
+                        || !newStatus.contains( context.getString(R.string.error_payment_card))
+                        || !newStatus.contains( context.getString(R.string.double_order_error))
+                        || !newStatus.contains( context.getString(R.string.call_btn_cancel)) ) {
                     String cancelText = context.getString(R.string.status_checkout_message);
                     text_status.setText(cancelText);
 
@@ -247,7 +247,7 @@ public class FinishFragment extends Fragment {
                     intent.setData(Uri.parse(phone));
                     startActivity(intent);
                 });
-                btn_cancel_order.setText(context.getString(R.string.help_button));
+                btn_cancel_order.setText( context.getString(R.string.help_button));
                 btn_again.setVisibility(View.VISIBLE);
                 btn_cancel.setVisibility(View.VISIBLE);
                 btn_reset_status.setVisibility(View.GONE);
@@ -281,10 +281,10 @@ public class FinishFragment extends Fragment {
             myRunnable = () -> {
                 MainActivity.order_id = null;
                 String newStatus = text_status.getText().toString();
-                if(!newStatus.contains(context.getString(R.string.time_out_text))
-                        || !newStatus.contains(context.getString(R.string.error_payment_card))
-                        || !newStatus.contains(context.getString(R.string.double_order_error))
-                        || !newStatus.contains(context.getString(R.string.call_btn_cancel)) ) {
+                if(!newStatus.contains( context.getString(R.string.time_out_text))
+                        || !newStatus.contains( context.getString(R.string.error_payment_card))
+                        || !newStatus.contains( context.getString(R.string.double_order_error))
+                        || !newStatus.contains( context.getString(R.string.call_btn_cancel)) ) {
                     String cancelText = context.getString(R.string.status_checkout_message);
                     text_status.setText(cancelText);
 
@@ -292,7 +292,7 @@ public class FinishFragment extends Fragment {
                     text_status.setText(newStatus);
                 }
                 btn_reset_status.setVisibility(View.GONE);
-                btn_cancel_order.setText(context.getString(R.string.help_button));
+                btn_cancel_order.setText( context.getString(R.string.help_button));
                 btn_again.setVisibility(View.VISIBLE);
                 btn_cancel.setVisibility(View.VISIBLE);
                 btn_reset_status.setVisibility(View.GONE);
@@ -354,7 +354,7 @@ public class FinishFragment extends Fragment {
             if(connected()){
                 startActivity(new Intent(context, MainActivity.class));
             } else {
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment( context.getString(R.string.verify_internet));
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
@@ -388,7 +388,7 @@ public class FinishFragment extends Fragment {
                     break;
                 case "mono_payment":
                     String reference = MainActivity.order_id;
-                    String comment = context.getString(R.string.fondy_message);
+                    String comment =  context.getString(R.string.fondy_message);
 
                     getUrlToPaymentMono(amount, reference, comment);
                     break;
@@ -462,7 +462,7 @@ public class FinishFragment extends Fragment {
         String phone_number = stringList.get(2);
 
         Call<InvoiceResponse> call = service.createInvoice(
-                context.getString(R.string.application),
+                 context.getString(R.string.application),
                 city,
                 MainActivity.order_id,
                 Integer.parseInt(amount),
@@ -626,7 +626,7 @@ public class FinishFragment extends Fragment {
         StatusService service = retrofit.create(StatusService.class);
 
         Call<StatusResponse> call = service.checkStatus(
-                context.getString(R.string.application),
+                 context.getString(R.string.application),
                 city,
                 MainActivity.order_id
         );
@@ -682,7 +682,7 @@ public class FinishFragment extends Fragment {
         ReversService service = retrofit.create(ReversService.class);
 
         Call<ReversResponse> call = service.checkStatus(
-                context.getString(R.string.application),
+                 context.getString(R.string.application),
                 city,
                 MainActivity.order_id,
                 amount
@@ -1207,7 +1207,7 @@ public class FinishFragment extends Fragment {
     }
 
     private void fetchBonus() {
-        String url = baseUrl + "/bonusBalance/recordsBloke/" + uid + "/" + context.getString(R.string.application);
+        String url = baseUrl + "/bonusBalance/recordsBloke/" + uid + "/" +  context.getString(R.string.application);
         Call<BonusResponse> call = ApiClient.getApiService().getBonus(url);
         Logger.d(context, TAG, "fetchBonus: " + url);
         call.enqueue(new Callback<BonusResponse>() {
@@ -1218,13 +1218,13 @@ public class FinishFragment extends Fragment {
 
                     assert bonusResponse != null;
                     String bonus = String.valueOf(bonusResponse.getBonus());
-                    String message = context.getString(R.string.block_mes) + " " + bonus + " " + context.getString(R.string.bon);
+                    String message =  context.getString(R.string.block_mes) + " " + bonus + " " +  context.getString(R.string.bon);
 
                     MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                 } else {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment( context.getString(R.string.verify_internet));
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 }
             }
@@ -1340,7 +1340,7 @@ public class FinishFragment extends Fragment {
         String city = listCity.get(1);
         String api = listCity.get(2);
 
-        String url = baseUrl + "/" + api + "/android/webordersCancel/" + value + "/" + city  + "/" + context.getString(R.string.application);
+        String url = baseUrl + "/" + api + "/android/webordersCancel/" + value + "/" + city  + "/" +  context.getString(R.string.application);
 
         Call<Status> call = ApiClient.getApiService().cancelOrder(url);
         Logger.d(context, TAG, "cancelOrderWithDifferentValue cancelOrderUrl: " + url);
@@ -1377,7 +1377,7 @@ public class FinishFragment extends Fragment {
         String city = listCity.get(1);
         String api = listCity.get(2);
 
-        String url = baseUrl + "/" + api + "/android/webordersCancelDouble/" + uid+ "/" + uid_Double + "/" + pay_method + "/" + city  + "/" + context.getString(R.string.application);
+        String url = baseUrl + "/" + api + "/android/webordersCancelDouble/" + uid+ "/" + uid_Double + "/" + pay_method + "/" + city  + "/" +  context.getString(R.string.application);
 
         Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
         Logger.d(context, TAG, "cancelOrderDouble: " + url);
@@ -1416,7 +1416,7 @@ public class FinishFragment extends Fragment {
         String city = listCity.get(1);
         String api = listCity.get(2);
 
-        String url = baseUrl + "/" + api + "/android/historyUIDStatus/" + value + "/" + city  + "/" + context.getString(R.string.application);
+        String url = baseUrl + "/" + api + "/android/historyUIDStatus/" + value + "/" + city  + "/" +  context.getString(R.string.application);
 
         Call<OrderResponse> call = ApiClient.getApiService().statusOrder(url);
         Logger.d(context, TAG, "/android/historyUIDStatus/: " + url);
@@ -1448,14 +1448,14 @@ public class FinishFragment extends Fragment {
                         case "WaitingCarSearch":
                             delayMillisStatus = 5 * 1000;
                             if(!cancel_btn_click) {
-                                message = context.getString(R.string.ex_st_0);
+                                message =  context.getString(R.string.ex_st_0);
                                 btn_again.setVisibility(View.GONE);
                                 btn_cancel.setVisibility(View.GONE);
                                 btn_reset_status.setVisibility(View.VISIBLE);
                                 btn_cancel_order.setVisibility(View.VISIBLE);
                                 progressBar.setVisibility(View.GONE);
                             } else {
-                                message = context.getString(R.string.checkout_status);
+                                message =  context.getString(R.string.checkout_status);
                                 btn_again.setVisibility(View.VISIBLE);
                                 btn_cancel.setVisibility(View.VISIBLE);
                                 btn_reset_status.setVisibility(View.GONE);
@@ -1467,14 +1467,14 @@ public class FinishFragment extends Fragment {
                         case "SearchesForCar":
                             delayMillisStatus = 5 * 1000;
                             if(!cancel_btn_click) {
-                                message = context.getString(R.string.ex_st_0);
+                                message =  context.getString(R.string.ex_st_0);
                                 btn_again.setVisibility(View.GONE);
                                 btn_cancel.setVisibility(View.GONE);
                                 btn_reset_status.setVisibility(View.VISIBLE);
                                 btn_cancel_order.setVisibility(View.VISIBLE);
                                 progressBar.setVisibility(View.GONE);
                             } else {
-                                message = context.getString(R.string.checkout_status);
+                                message =  context.getString(R.string.checkout_status);
                                 btn_again.setVisibility(View.VISIBLE);
                                 btn_cancel.setVisibility(View.VISIBLE);
                                 btn_reset_status.setVisibility(View.GONE);
@@ -1487,13 +1487,13 @@ public class FinishFragment extends Fragment {
                             String newStatus = text_status.getText().toString();
                             if(closeReason == -1) {
                                 delayMillisStatus = 5 * 1000;
-                                message = context.getString(R.string.status_checkout_message);
+                                message =  context.getString(R.string.status_checkout_message);
                             } else {
-                                if(!newStatus.contains(context.getString(R.string.time_out_text))
-                                        || !newStatus.contains(context.getString(R.string.error_payment_card))
-                                        || !newStatus.contains(context.getString(R.string.double_order_error))
-                                        || !newStatus.contains(context.getString(R.string.call_btn_cancel)) ) {
-                                    message = context.getString(R.string.ex_st_canceled);
+                                if(!newStatus.contains( context.getString(R.string.time_out_text))
+                                        || !newStatus.contains( context.getString(R.string.error_payment_card))
+                                        || !newStatus.contains( context.getString(R.string.double_order_error))
+                                        || !newStatus.contains( context.getString(R.string.call_btn_cancel)) ) {
+                                    message =  context.getString(R.string.ex_st_canceled);
 
                                 } else {
                                     message = newStatus;
@@ -1512,15 +1512,15 @@ public class FinishFragment extends Fragment {
                             if(!cancel_btn_click) {
                                 delayMillisStatus = 30 * 1000;
                                 // Формируем сообщение с учетом возможных пустых значений переменных
-                                StringBuilder messageBuilder = new StringBuilder(context.getString(R.string.ex_st_2));
+                                StringBuilder messageBuilder = new StringBuilder( context.getString(R.string.ex_st_2));
 
                                 if (orderCarInfo != null && !orderCarInfo.isEmpty()) {
-                                    messageBuilder.append(context.getString(R.string.ex_st_3)).append(orderCarInfo);
+                                    messageBuilder.append( context.getString(R.string.ex_st_3)).append(orderCarInfo);
                                 }
 
                                 if (driverPhone != null && !driverPhone.isEmpty()) {
                                     Logger.d(context, TAG, "onResponse:driverPhone " + driverPhone);
-                                    btn_reset_status.setText(context.getString(R.string.phone_driver));
+                                    btn_reset_status.setText( context.getString(R.string.phone_driver));
                                     btn_reset_status.setOnClickListener(new View.OnClickListener() {
                                         @Override
                                         public void onClick(View v) {
@@ -1529,11 +1529,11 @@ public class FinishFragment extends Fragment {
                                             startActivity(intent);
                                         }
                                     });
-                                    messageBuilder.append(context.getString(R.string.ex_st_4)).append(driverPhone);
+                                    messageBuilder.append( context.getString(R.string.ex_st_4)).append(driverPhone);
                                 }
 
                                 if (requiredTime != null && !requiredTime.isEmpty()) {
-                                    messageBuilder.append(context.getString(R.string.ex_st_5)).append(requiredTime);
+                                    messageBuilder.append( context.getString(R.string.ex_st_5)).append(requiredTime);
                                 }
                                 btn_again.setVisibility(View.GONE);
                                 btn_cancel.setVisibility(View.GONE);
@@ -1542,7 +1542,7 @@ public class FinishFragment extends Fragment {
                                 progressBar.setVisibility(View.GONE);
                                 message = messageBuilder.toString();
                             } else {
-                                message = context.getString(R.string.ex_st_canceled);
+                                message =  context.getString(R.string.ex_st_canceled);
                                 btn_again.setVisibility(View.VISIBLE);
                                 btn_cancel.setVisibility(View.VISIBLE);
                                 btn_reset_status.setVisibility(View.GONE);
@@ -1553,7 +1553,7 @@ public class FinishFragment extends Fragment {
                             break;
                         default:
                             delayMillisStatus = 30 * 1000;
-                            message = context.getString(R.string.status_checkout_message);
+                            message =  context.getString(R.string.status_checkout_message);
                             btn_again.setVisibility(View.GONE);
                             btn_cancel.setVisibility(View.GONE);
                             btn_reset_status.setVisibility(View.VISIBLE);

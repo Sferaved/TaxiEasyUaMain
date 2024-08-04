@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.772</string>
-    <string name="version">Версія: 1.772</string>
+    <string name="version_code">1.773</string>
+    <string name="version">Версія: 1.773</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -339,7 +339,7 @@
     <string name="pos_c">вул.Байди Вишневецького, буд.36, місто Черкаси\t</string>
     <string name="cancel_gps">Скасувати</string>
     <string name="ok_error">Зрозуміло</string>
-    <string name="to_nal_payment">Оплата вибраним методом на даний момент неможлива. Замовити з оплатою готівкою?</string>
+    <string name="to_nal_payment">Ви маєте обмеження на суму замовлення за цим видом розрахунку. Для зміни зверніться до оператора. Зараз замовити за готівку?</string>
     <string name="to_nal_payment_count">Оплата вибраним методом на даний момент неможлива. Розрахувати поїздку з оплатою готівкою?</string>
     <string name="tarif">Тариф:</string>
     <string name="tar">Тариф</string>

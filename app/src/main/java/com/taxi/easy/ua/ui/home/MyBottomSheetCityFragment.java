@@ -783,7 +783,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         // Добавьте здесь код для обработки полученных значений
                     }
                 } else {
-                        Logger.d(getActivity(), TAG, "Failed. Error code: " + response.code());
+                        Logger.d(context, TAG, "Failed. Error code: " + response.code());
                 }
             }
 
@@ -834,7 +834,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         // Добавьте здесь код для обработки полученных значений
                     }
                 } else {
-                    Logger.d(getActivity(), TAG, "Failed. Error code: " + response.code());
+                    Logger.d(context, TAG, "Failed. Error code: " + response.code());
                 }
             }
 

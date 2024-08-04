@@ -566,8 +566,12 @@ public class HomeFragment extends Fragment {
                         assert message != null;
                         if (message.equals("ErrorMessage")) {
                             message = getString(R.string.server_error_connected);
+                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                         } else if (message.contains("Дублирование")) {
                             message = getResources().getString(R.string.double_order_error);
+                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                         } else {
                             switch (pay_method) {
                                 case "bonus_payment":
@@ -579,11 +583,12 @@ public class HomeFragment extends Fragment {
                                     break;
                                 default:
                                     message = getResources().getString(R.string.error_message);
+                                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                             }
                         }
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        btnVisible(View.VISIBLE);
                     }
                 }
 
@@ -634,7 +639,7 @@ public class HomeFragment extends Fragment {
         cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                progressBar.setVisibility(View.GONE);
+                btnVisible(View.VISIBLE);
                 alertDialog.dismiss();
             }
         });
