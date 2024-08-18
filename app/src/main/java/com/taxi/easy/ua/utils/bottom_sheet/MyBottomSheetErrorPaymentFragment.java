@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.home;
+package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -10,14 +10,12 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -32,8 +30,8 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.CustomCardAdapter;
 import com.taxi.easy.ua.ui.finish.ApiClient;
-import com.taxi.easy.ua.ui.finish.FinishActivity;
 import com.taxi.easy.ua.ui.finish.Status;
+import com.taxi.easy.ua.ui.finish.fragm.FinishFragment;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureClient;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureResponse;
 import com.taxi.easy.ua.ui.fondy.payment.ApiResponsePay;
@@ -92,6 +90,8 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     Context context;
     FragmentManager fragmentManager;
     private TextView text_card;
+    private String email;
+    private final String baseUrl = "https://m.easy-order-taxi.site/";
 
     public MyBottomSheetErrorPaymentFragment(
             String pay_method,
@@ -114,18 +114,18 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         arrayList = logCursor(MainActivity.CITY_INFO, requireContext());
         MERCHANT_ID = arrayList.get(6);
         fragmentManager = getParentFragmentManager();
-        btn_help = view.findViewById(R.id.btn_help);
-        btn_help.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                List<String> stringList = logCursor(MainActivity.CITY_INFO, requireContext());
-                Intent intent = new Intent(Intent.ACTION_DIAL);
-                String phone = stringList.get(3);
 
-                intent.setData(Uri.parse(phone));
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // Добавляем флаг FLAG_ACTIVITY_NEW_TASK
-                context.startActivity(intent);
-            }
+        email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+
+        btn_help = view.findViewById(R.id.btn_help);
+        btn_help.setOnClickListener(v -> {
+            List<String> stringList = logCursor(MainActivity.CITY_INFO, requireContext());
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            String phone = stringList.get(3);
+
+            intent.setData(Uri.parse(phone));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // Добавляем флаг FLAG_ACTIVITY_NEW_TASK
+            startActivity(intent);
         });
 
         btn_ok = view.findViewById(R.id.btn_ok);
@@ -133,44 +133,35 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             cancelOrderDouble();
 
             paymentType();
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                 try {
-                      orderFinished(page);
-                    } catch (MalformedURLException e) {
-                     FirebaseCrashlytics.getInstance().recordException(e);
-                 }
-                }
-            }, 5000);
-
+            try {
+                orderFinished(page);
+            } catch (MalformedURLException e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
+            }
             dismiss();
         });
         textViewInfo = view.findViewById(R.id.textViewInfo);
         text_card = view.findViewById(R.id.text_card);
 
         btn_card = view.findViewById(R.id.btn_card);
-        btn_card.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                switch (pay_method) {
-                    case "fondy_payment":
-                        rectoken = getCheckRectoken(MainActivity.TABLE_FONDY_CARDS);
-                        try {
-                            paymentByTokenFondy(messageFondy, amount, rectoken);
-                        } catch (UnsupportedEncodingException e) {
-                            FirebaseCrashlytics.getInstance().recordException(e);
-                            throw new RuntimeException(e);
-                        }
-                        break;
-                    case "wfp_payment":
-                        rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS);
-                        paymentByTokenWfp(messageFondy, amount, rectoken);
-                        break;
-                }
-
-                dismiss();
+        btn_card.setOnClickListener(v -> {
+            switch (pay_method) {
+                case "fondy_payment":
+                    rectoken = getCheckRectoken(MainActivity.TABLE_FONDY_CARDS);
+                    try {
+                        paymentByTokenFondy(messageFondy, amount, rectoken);
+                    } catch (UnsupportedEncodingException e) {
+                        FirebaseCrashlytics.getInstance().recordException(e);
+                        throw new RuntimeException(e);
+                    }
+                    break;
+                case "wfp_payment":
+                    rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS);
+                    paymentByTokenWfp(messageFondy, amount, rectoken);
+                    break;
             }
+
+            dismiss();
         });
         btn_add_card = view.findViewById(R.id.btn_add_card);
         btn_add_card.setOnClickListener(new View.OnClickListener() {
@@ -193,8 +184,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         btn_cancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FinishActivity.btn_cancel_order.performClick();
-                Toast.makeText(context, context.getString(R.string.cancel_3), Toast.LENGTH_SHORT).show();
+                cancelOrderDouble();
                 context.startActivity(new Intent(context, MainActivity.class));
             }
         });
@@ -230,7 +220,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 MainActivity.order_id,
                 Integer.parseInt(amount),
                 LocaleHelper.getLocale(),
-                FinishActivity.messageFondy,
+                FinishFragment.messageFondy,
                 userEmail,
                 phone_number
         );
@@ -249,8 +239,8 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                             MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
                                     checkoutUrl,
                                     amount,
-                                    FinishActivity.uid,
-                                    FinishActivity.uid_Double,
+                                    FinishFragment.uid,
+                                    FinishFragment.uid_Double,
                                     context
                             );
                             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -291,7 +281,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(FinishActivity.baseUrl)
+                .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
@@ -306,8 +296,8 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 MainActivity.order_id,
                 amount,
                 orderDescription,
-                FinishActivity.email,
-                FinishActivity.phoneNumber,
+                email,
+                FinishFragment.phoneNumber,
                 rectoken
         );
         call.enqueue(new Callback<PurchaseResponse>() {
@@ -322,17 +312,13 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                         // Ошибка при парсинге ответа
                         Logger.d(context, TAG, "Ошибка при парсинге ответа");
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                        FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
-                        MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getActivity());
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        cancelOrderDouble();
                     }
                 } else {
                     // Ошибка запроса
                     Logger.d(context, TAG, "Ошибка запроса");
                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                    FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
-                    MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getActivity());
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    cancelOrderDouble();
                 }
             }
 
@@ -340,10 +326,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             public void onFailure(@NonNull Call<PurchaseResponse> call, @NonNull Throwable t) {
                 // Ошибка при выполнении запроса
                 Logger.d(context, TAG, "Ошибка при выполнении запроса");
-                MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
-                MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, getActivity());
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                cancelOrderDouble();
             }
         });
 
@@ -363,7 +346,6 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
                 assert sendUrlMap != null;
                 String orderWeb = sendUrlMap.get("order_cost");
-                String message = sendUrlMap.get("message");
 
                 assert orderWeb != null;
                 if (!orderWeb.equals("0")) {
@@ -381,20 +363,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
 
                     String pay_method_message = context.getString(R.string.pay_method_message_main);
-                    pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
-                    switch (pay_method) {
-                        case "bonus_payment":
-                            pay_method_message += " " + context.getString(R.string.pay_method_message_bonus);
-                            break;
-                        case "card_payment":
-                        case "fondy_payment":
-                        case "mono_payment":
-                        case "wfp_payment":
-                            pay_method_message += " " + context.getString(R.string.pay_method_message_card);
-                            break;
-                        default:
-                            pay_method_message += " " + context.getString(R.string.pay_method_message_nal);
-                    }
+                    pay_method_message += " " + context.getString(R.string.pay_method_message_nal);
                     String to_name_local = to_name;
                     if(to_name.contains("по місту")
                             ||to_name.contains("по городу")
@@ -410,27 +379,20 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                             sendUrlMap.get("routefrom") + " " + context.getString(R.string.to_message) +
                             to_name_local + ".";
 
-                    FinishActivity.text_status.setText(messageResult);
-                    Intent intent = new Intent(context, FinishActivity.class);
-                    intent.putExtra("messageResult_key", messageResult);
-                    intent.putExtra("messageFondy_key", messageFondy);
-                    intent.putExtra("messageCost_key", orderWeb);
-                    intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
-                    intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // Добавляем флаг FLAG_ACTIVITY_NEW_TASK
-                    context.startActivity(intent);
-                } else {
-                    Logger.d(context, TAG, "orderFinished:message " + message);
-                    assert message != null;
-                    if(message != null && message.equals("Дублирование заказа. Вы не можете создавать подобный заказ, пока не нашлась машина на предыдущий заказ.")) {
-                        message = context.getString(R.string.double_order_error);
-                    }
-                    FinishActivity.text_status.setText(message);
+                    Bundle bundle = new Bundle();
+                    bundle.putString("messageResult_key", messageResult);
+                    bundle.putString("messageFondy_key", messageFondy);
+                    bundle.putString("messageCost_key", orderWeb);
+                    bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
+                    bundle.putString("card_payment_key", "no");
+                    bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+                    
+                    MainActivity.navController.navigate(R.id.nav_finish, bundle);
                 }
             }
 
             @Override
-            public void onFailure(Call<Map<String, String>> call, Throwable t) {
+            public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
                 FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
@@ -489,7 +451,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
 
-        if(urlAPI.equals("costSearchMarkers")) {
+        if(urlAPI.equals("costSearchMarkersTime")) {
             Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
 
             if (c.getCount() == 1) {
@@ -497,7 +459,8 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 c.close();
             }
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "*" + payment_type;
+                    + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "*" + payment_type + "/"
+                    + time + "/" + date ;
         }
         if(urlAPI.equals("orderSearchMarkersVisicom")) {
             phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
@@ -568,7 +531,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(requireActivity());
-        FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
+        FinishFragment.callOrderIdMemory(MainActivity.order_id, FinishFragment.uid, pay_method);
 
         PaymentApiToken paymentApi = retrofit.create(PaymentApiToken.class);
 
@@ -598,9 +561,6 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     .append(URLEncoder.encode(entry.getValue(), "UTF-8"));
         }
         String queryString = paramsBuilder.toString();
-
-
-
 
         Logger.d(context, TAG, "paymentByTokenFondy: " + rectoken);
 
@@ -653,19 +613,10 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                                         String errorResponseCode = responseBody.getErrorCode();
                                         Logger.d(context, TAG, "onResponse: errorResponseMessage " + errorResponseMessage);
                                         Logger.d(context, TAG, "onResponse: errorResponseCode" + errorResponseCode);
-
-//                                Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
-                                        FinishActivity.btn_again.setVisibility(View.VISIBLE);
-                                        FinishActivity.btn_cancel.setVisibility(View.VISIBLE);
-                                        FinishActivity.progressBar.setVisibility(View.INVISIBLE);
                                         cancelOrderDouble();
 
                                     }
                                 } else {
-//                            Toast.makeText(FinishActivity.this, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
-                                    FinishActivity.btn_again.setVisibility(View.VISIBLE);
-                                    FinishActivity.btn_cancel.setVisibility(View.VISIBLE);
-                                    FinishActivity.progressBar.setVisibility(View.INVISIBLE);
                                     cancelOrderDouble();
 
 //                            getUrlToPaymentFondy(messageFondy, amount);
@@ -674,18 +625,11 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                                 FirebaseCrashlytics.getInstance().recordException(e);
                                 // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
                                 Log.e(TAG, "Error parsing JSON response: " + e.getMessage());
-                                FirebaseCrashlytics.getInstance().recordException(e);
-                                FinishActivity.btn_again.setVisibility(View.VISIBLE);
-                                FinishActivity.btn_cancel.setVisibility(View.VISIBLE);
-                                FinishActivity.progressBar.setVisibility(View.INVISIBLE);
                                 cancelOrderDouble();
                             }
                         } else {
                             // Обработка ошибки
                             Logger.d(context, TAG, "onFailure: " + response.code());
-                            FinishActivity.btn_again.setVisibility(View.VISIBLE);
-                            FinishActivity.btn_cancel.setVisibility(View.VISIBLE);
-                            FinishActivity.progressBar.setVisibility(View.INVISIBLE);
                             cancelOrderDouble();
                         }
 
@@ -694,32 +638,17 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     @Override
                     public void onFailure(@NonNull Call<ApiResponseToken<SuccessResponseDataToken>> call, @NonNull Throwable t) {
                         Logger.d(context, TAG, "onFailure1111: " + t);
-
-                        FinishActivity.btn_again.setVisibility(View.VISIBLE);
-                        FinishActivity.btn_cancel.setVisibility(View.VISIBLE);
-                        FinishActivity.progressBar.setVisibility(View.INVISIBLE);
                         cancelOrderDouble();
                     }
                 });
             }
-
-
-            @Override
+           @Override
             public void onError(String error) {
                 // Обработка ошибки
                 Logger.d(context, TAG, "Received signature error: " + error);
-
-                FinishActivity.btn_again.setVisibility(View.VISIBLE);
-                FinishActivity.btn_cancel.setVisibility(View.VISIBLE);
-                FinishActivity.progressBar.setVisibility(View.INVISIBLE);
                 cancelOrderDouble();
             }
         });
-
-
-
-
-
     }
 
     private void getUrlToPaymentFondy(String orderDescription, String amount, FragmentManager fragmentManager) {
@@ -772,8 +701,8 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                                 MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
                                         checkoutUrl,
                                         amount,
-                                        FinishActivity.uid,
-                                        FinishActivity.uid_Double,
+                                        FinishFragment.uid,
+                                        FinishFragment.uid_Double,
                                         context
                                 );
                                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -788,6 +717,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                                 // Отобразить сообщение об ошибке пользователю
                             } else {
                                 // Обработка других возможных статусов ответа
+                                cancelOrderDouble();
                             }
                         } else {
                             // Обработка пустого тела ответа
@@ -811,7 +741,6 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             @Override
             public void onFailure(@NonNull Call<ApiResponsePay<SuccessResponseDataPay>> call, Throwable t) {
                 Logger.d(context, TAG, "onFailure1111: " + t);
-
                 cancelOrderDouble();
             }
 
@@ -824,7 +753,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         String city = listCity.get(1);
         String api = listCity.get(2);
 
-        String url = FinishActivity.baseUrl + "/" + api + "/android/webordersCancelDouble/" + FinishActivity.uid+ "/" + FinishActivity.uid_Double + "/" + pay_method + "/" + city  + "/" + context.getString(R.string.application);
+        String url = FinishFragment.baseUrl + "/" + api + "/android/webordersCancelDouble/" + FinishFragment.uid+ "/" + FinishFragment.uid_Double + "/" + pay_method + "/" + city  + "/" + context.getString(R.string.application);
 
         Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
         Logger.d(context, TAG, "cancelOrderDouble: " + url);
@@ -837,21 +766,8 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     if (status != null) {
                         String result =  String.valueOf(status.getResponse());
                         Logger.d(context, TAG, "onResponse: result" + result);
-                        String newStatus = FinishActivity.text_status.getText().toString();
-                        Logger.d(context, TAG, "onResponse:newStatus " + newStatus);
-
-                        FinishActivity.text_status.setText(newStatus);
-
-                        FinishActivity.progressBar.setVisibility(View.INVISIBLE);
-                        FinishActivity.btn_cancel_order.setVisibility(View.GONE);
-                    }
-                } else {
-                    // Обработка неуспешного ответа
-                    if (pay_method.equals("nal_payment")) {
-                        FinishActivity.text_status.setText(R.string.verify_internet);
                     }
                 }
-                FinishActivity.progressBar.setVisibility(View.INVISIBLE);
             }
 
             @Override
@@ -860,10 +776,9 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 String errorMessage = t.getMessage();
                 FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "onFailure: " + errorMessage);
-                FinishActivity.text_status.setText(R.string.verify_internet);
-                FinishActivity.progressBar.setVisibility(View.INVISIBLE);
             }
         });
+        dismiss();
     }
 
     @Override
@@ -916,8 +831,6 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         }
 
         database.close();
-
-//        logTableContent(table);
 
         return result;
     }

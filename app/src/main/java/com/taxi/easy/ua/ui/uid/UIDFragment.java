@@ -30,6 +30,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.navigation.NavOptions;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
@@ -38,12 +39,13 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentUidBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
-import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.db.RouteInfo;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -85,8 +87,9 @@ public class UIDFragment extends Fragment {
         root = binding.getRoot();
 
         fragmentManager = getParentFragmentManager();
-        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+
         context = requireActivity();
+        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         listView = binding.listView;
         progressBar = binding.progressBar;
         networkChangeReceiver = new NetworkChangeReceiver();
@@ -102,8 +105,10 @@ public class UIDFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-                    MainActivity.navController.popBackStack();
-                    MainActivity.navController.navigate(R.id.nav_visicom);
+                    
+                    MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true) 
+                        .build());
                 }
 
             }
@@ -144,7 +149,7 @@ public class UIDFragment extends Fragment {
         btnCallAdmin = binding.btnCallAdmin;
         btnCallAdmin.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_DIAL);
-            String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
+            String phone = logCursor(MainActivity.CITY_INFO, context).get(3);
             intent.setData(Uri.parse(phone));
             startActivity(intent);
         });
@@ -169,9 +174,6 @@ public class UIDFragment extends Fragment {
 
         if (item.getItemId() == R.id.action_order) {
 
-            // Обработка действия "Edit"
-//            Toast.makeText(requireActivity(), "Edit: " + array[position], Toast.LENGTH_SHORT).show();
-//            Log.d(TAG, "onContextItemSelected: " + position);
             Log.d(TAG, "onContextItemSelected: " + array[position]);
 
             routeInfo = databaseHelperUid.getRouteInfoById(position+1);
@@ -189,9 +191,12 @@ public class UIDFragment extends Fragment {
             settings.add(routeInfo.getFinish());
 
             updateRoutMarker(settings);
-            MainActivity.navController.popBackStack();
-            MainActivity.navController.navigate(R.id.nav_visicom);
-            MainActivity.gps_upd = false;
+            
+            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true) 
+                        .build());
+            SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
+            sharedPreferencesHelper.saveValue("gps_upd", false);
             return true;
         } else if (item.getItemId() == R.id.action_exit) {
 // Обработка действия "Delete"
@@ -214,7 +219,7 @@ public class UIDFragment extends Fragment {
         cv.put("finish", settings.get(5));
         if(isAdded()) {
             // обновляем по id
-            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
                     new String[]{"1"});
             database.close();
@@ -237,15 +242,17 @@ public class UIDFragment extends Fragment {
         upd_but.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                MainActivity.navController.popBackStack();
-                MainActivity.navController.navigate(R.id.nav_visicom);
+                
+                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true) 
+                        .build());
             }
         });
-        List<String> stringList = logCursor(MainActivity.CITY_INFO,requireActivity());
+        List<String> stringList = logCursor(MainActivity.CITY_INFO,context);
         String city = stringList.get(1);
         String url = baseUrl + "/android/UIDStatusShowEmailCityApp/" + email + "/" + city + "/" +  context.getString(R.string.application);
         Call<List<RouteResponse>> call = ApiClient.getApiService().getRoutes(url);
-        Logger.d (getActivity(), TAG, "fetchRoutes: " + url);
+        Logger.d (context, TAG, "fetchRoutes: " + url);
 
         call.enqueue(new Callback<List<RouteResponse>>() {
             @Override
@@ -253,7 +260,7 @@ public class UIDFragment extends Fragment {
                 progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful()) {
                     List<RouteResponse> routes = response.body();
-                    Logger.d (getActivity(), TAG, "onResponse: " + routes);
+                    Logger.d (context, TAG, "onResponse: " + routes);
                     if (routes != null && !routes.isEmpty()) {
                         boolean hasRouteWithAsterisk = false;
                         for (RouteResponse route : routes) {
@@ -403,14 +410,14 @@ public class UIDFragment extends Fragment {
             settings.add(to_lng);
             settings.add(routeFrom + " " + routefromnumber);
             settings.add(routeTo + " " + routeTonumber);
-            Logger.d(getActivity(), TAG, settings.toString());
+            Logger.d(context, TAG, settings.toString());
             databaseHelperUid.addRouteInfoUid(settings);
-            Logger.d(getActivity(), TAG, settings.toString());
+            Logger.d(context, TAG, settings.toString());
         }
         array = databaseHelper.readRouteInfo();
-        Logger.d (getActivity(), TAG, "processRouteList: array " + Arrays.toString(array));
+        Logger.d (context, TAG, "processRouteList: array " + Arrays.toString(array));
         if(array != null) {
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(requireActivity(), R.layout.drop_down_layout, array);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(context, R.layout.drop_down_layout, array);
             listView.setAdapter(adapter);
             listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                 @Override

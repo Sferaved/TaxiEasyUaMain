@@ -2,7 +2,7 @@ package com.taxi.easy.ua.cities.Kyiv;
 
 public class KyivCity {
     public static String[]  arrayStreet() {
-        String[] arrayStreet = join(Kyiv1.street(),
+        return join(Kyiv1.street(),
                 Kyiv2.street(),
                 Kyiv3.street(),
                 Kyiv4.street(),
@@ -13,7 +13,6 @@ public class KyivCity {
                 Kyiv9.street(),
                 Kyiv10.street()
         );
-        return arrayStreet;
     }
 
     public static String[] join(String[] a1,

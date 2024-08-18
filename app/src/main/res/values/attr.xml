@@ -1,0 +1,7 @@
+<resources>
+    <declare-styleable name="CarProgressBar">
+        <attr name="carImage" format="reference" />
+        <attr name="carWidth" format="dimension" />
+        <attr name="carHeight" format="dimension" />
+    </declare-styleable>
+</resources>

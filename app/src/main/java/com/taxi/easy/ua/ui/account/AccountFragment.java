@@ -26,6 +26,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavOptions;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
@@ -33,11 +34,12 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentAccountBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
-import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.keyboard.KeyboardUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.user.del_server.UserRepository;
 import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
 
@@ -70,7 +72,6 @@ public class AccountFragment extends Fragment {
     DatabaseHelper dbH;
     DatabaseHelperUid dbHUid;
     private String[] array;
-    private List<RouteResponseCancel> routeListCancel;
     private Context context;
     private List<RouteResponseCancel> routeList;
     String baseUrl = "https://m.easy-order-taxi.site";
@@ -171,13 +172,15 @@ public class AccountFragment extends Fragment {
         });
 
         btnOrder = binding.btnOrder;
-        btnOrder.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту
-                MainActivity.navController.popBackStack();
-                MainActivity.navController.navigate(R.id.nav_visicom);
-            }
+        btnOrder.setOnClickListener(v -> {
+            SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
+            sharedPreferencesHelper.saveValue("gps_upd", true);
+            sharedPreferencesHelper.saveValue("gps_upd_address", true);
+            // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту
+            
+            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true) 
+                        .build());
         });
         return root;
     }

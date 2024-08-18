@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.773</string>
-    <string name="version">Version: 1.773</string>
+    <string name="version_code">1.774</string>
+    <string name="version">Version: 1.774</string>
 
     <string name="app_name">Taxi Dostavka</string>
 
@@ -127,12 +127,12 @@
     <string name="serve">Serve</string>
     <string name="coment">Comment</string>
     <string name="services">SERVICES</string>
-    <string name="resettimetoorder">Change date or time for preorder</string>
+    <string name="resettimetoorder">Check the date or time for pre-order</string>
     <string name="my_routs">Choose a route</string>
     <string name="no_routs">No routes</string>
     <string name="cheng">Change</string>
     <string name="delete_routs">delete</string>
-    <string name="text_result">Your order</string>
+    <string name="text_result">Trip information</string>
     <string name="btn_again_text">Order again</string>
     <string name="textStatus">Order status</string>
     <string name="cancel_order">Cancel order</string>
@@ -397,4 +397,12 @@
     <string name="phone_number">Phone</string>
     <string name="uninstal">Uninstall application</string>
     <string name="your_order">Your order</string>
+    <string name="sedan">sedan</string>
+    <string name="universal">station wagon</string>
+    <string name="bus">minibus</string>
+    <string name="upd_app">Update app</string>
+    <string name="time_to_order">Time to submit</string>
+    <string name="data_order">Select date</string>
+    <string name="on_now">On now</string>
+    <string name="on">On</string>
 </resources>

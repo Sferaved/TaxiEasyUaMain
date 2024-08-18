@@ -30,6 +30,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.appcompat.widget.AppCompatButton;
+import androidx.navigation.NavOptions;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.Gson;
@@ -56,10 +57,9 @@ import com.taxi.easy.ua.ui.fondy.token_pay.PaymentApiToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.RequestDataToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.StatusRequestToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.SuccessResponseDataToken;
-import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
-import com.taxi.easy.ua.ui.home.MyBottomSheetErrorPaymentFragment;
-import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
-import com.taxi.easy.ua.ui.maps.CostJSONParser;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.ui.mono.MonoApi;
 import com.taxi.easy.ua.ui.mono.payment.RequestPayMono;
 import com.taxi.easy.ua.ui.mono.payment.ResponsePayMono;
@@ -72,6 +72,7 @@ import com.taxi.easy.ua.ui.wfp.purchase.PurchaseService;
 import com.taxi.easy.ua.ui.wfp.revers.ReversResponse;
 import com.taxi.easy.ua.ui.wfp.revers.ReversService;
 import com.taxi.easy.ua.utils.LocaleHelper;
+import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.io.UnsupportedEncodingException;
@@ -126,8 +127,7 @@ public class FinishFragment extends Fragment {
     public static AppCompatButton btn_cancel_order;
     @SuppressLint("StaticFieldLeak")
     public static AppCompatButton btn_again;
-    @SuppressLint("StaticFieldLeak")
-    public static AppCompatButton btn_cancel;
+
     public static Runnable myRunnable;
     public static Runnable runnableBonusBtn;
     public static Handler handler, handlerBonusBtn,  handlerStatus;
@@ -142,22 +142,24 @@ public class FinishFragment extends Fragment {
     private boolean cancel_btn_click = false;
     long delayMillisStatus;
     private static boolean no_pay;
-    private AppCompatButton btnCallAdmin;
-    private Bundle arguments;
+    private CarProgressBar carProgressBar;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        context = requireActivity();
-        fragmentManager = getParentFragmentManager();
+
         binding = FragmentFinishBinding.inflate(inflater, container, false);
         root = binding.getRoot();
-        
+
+        context = requireActivity();
+
+        fragmentManager = getParentFragmentManager();
+
         context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         progressBar = root.findViewById(R.id.progress_bar);
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
         Logger.d(context, TAG, "onCreate: " + pay_method);
 
-        btnCallAdmin = root.findViewById(R.id.btnCallAdmin);
+        AppCompatButton btnCallAdmin = root.findViewById(R.id.btnCallAdmin);
         btnCallAdmin.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_DIAL);
             List<String> stringList = logCursor(MainActivity.CITY_INFO);
@@ -169,7 +171,8 @@ public class FinishFragment extends Fragment {
         email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
         phoneNumber = logCursor(MainActivity.TABLE_USER_INFO).get(2);
 
-        arguments = getArguments();
+        Bundle arguments = getArguments();
+        assert arguments != null;
         messageResult = arguments.getString("messageResult_key");
         String no_pay_key = arguments.getString("card_payment_key");
         no_pay = no_pay_key != null && no_pay_key.equals("no");
@@ -198,7 +201,7 @@ public class FinishFragment extends Fragment {
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
-
+        statusOrderWithDifferentValue(uid);
         btn_cancel_order = root.findViewById(R.id.btn_cancel_order);
         long delayMillis = 5 * 60 * 1000;
 
@@ -233,13 +236,8 @@ public class FinishFragment extends Fragment {
                 btn_cancel_order.setOnClickListener(v -> {
                     cancel_btn_click = true;
 
-                    btn_reset_status.setVisibility(View.GONE);
-                    btn_again.setVisibility(View.VISIBLE);
-                    btn_cancel.setVisibility(View.VISIBLE);
-                    btn_reset_status.setVisibility(View.GONE);
-                    btn_cancel_order.setVisibility(View.GONE);
+                    carProgressBar.setVisibility(View.INVISIBLE);
                     progressBar.setVisibility(View.GONE);
-
                     Intent intent = new Intent(Intent.ACTION_DIAL);
 
                     List<String> stringList = logCursor(MainActivity.CITY_INFO);
@@ -248,10 +246,10 @@ public class FinishFragment extends Fragment {
                     startActivity(intent);
                 });
                 btn_cancel_order.setText( context.getString(R.string.help_button));
-                btn_again.setVisibility(View.VISIBLE);
-                btn_cancel.setVisibility(View.VISIBLE);
-                btn_reset_status.setVisibility(View.GONE);
-                btn_cancel_order.setVisibility(View.GONE);
+               
+                
+                
+                
                 progressBar.setVisibility(View.GONE);
 
             };
@@ -291,21 +289,18 @@ public class FinishFragment extends Fragment {
                 } else {
                     text_status.setText(newStatus);
                 }
-                btn_reset_status.setVisibility(View.GONE);
+                
                 btn_cancel_order.setText( context.getString(R.string.help_button));
-                btn_again.setVisibility(View.VISIBLE);
-                btn_cancel.setVisibility(View.VISIBLE);
-                btn_reset_status.setVisibility(View.GONE);
-                btn_cancel_order.setVisibility(View.VISIBLE);
+               
+                
+                
+                
                 progressBar.setVisibility(View.GONE);
                 btn_cancel_order.setOnClickListener(v -> {
                     cancel_btn_click = true;
-
-                    btn_reset_status.setVisibility(View.GONE);
-                    btn_again.setVisibility(View.VISIBLE);
-                    btn_cancel.setVisibility(View.VISIBLE);
-                    btn_reset_status.setVisibility(View.GONE);
                     btn_cancel_order.setVisibility(View.GONE);
+                    carProgressBar.setVisibility(View.INVISIBLE);
+                    
                     progressBar.setVisibility(View.GONE);
 
                     handlerBonusBtn.removeCallbacks(runnableBonusBtn);
@@ -340,11 +335,6 @@ public class FinishFragment extends Fragment {
                 text_status.setText(R.string.verify_internet);
 
             }
-            btn_again.setVisibility(View.VISIBLE);
-            btn_cancel.setVisibility(View.VISIBLE);
-            btn_reset_status.setVisibility(View.GONE);
-            btn_cancel_order.setVisibility(View.GONE);
-
         });
 
         btn_again = root.findViewById(R.id.btn_again);
@@ -352,20 +342,16 @@ public class FinishFragment extends Fragment {
             MainActivity.order_id = null;
             updateAddCost(String.valueOf(0));
             if(connected()){
-                startActivity(new Intent(context, MainActivity.class));
+                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true)
+                        .build());
             } else {
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment( context.getString(R.string.verify_internet));
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
 
-        btn_cancel = root.findViewById(R.id.btn_cancel);
-        btn_cancel.setOnClickListener(v -> {
-            MainActivity.order_id = null;
-            MainActivity.navController.popBackStack();
-            MainActivity.navController.navigate(R.id.nav_visicom);
-
-        });
+        
 
 
         if(!no_pay) {
@@ -396,12 +382,13 @@ public class FinishFragment extends Fragment {
             }
         }
         ImageButton btn_no = root.findViewById(R.id.btn_no);
-        btn_no.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(new Intent(context, MainActivity.class));
-            }
-        });
+        btn_no.setOnClickListener(view -> startActivity(new Intent(context, MainActivity.class)));
+
+        carProgressBar = root.findViewById(R.id.carProgressBar);
+
+        // Запустить анимацию
+        carProgressBar.resumeAnimation();
+
         return root;
     }
     private void startCycle() {
@@ -484,6 +471,9 @@ public class FinishFragment extends Fragment {
                         String checkoutUrl = invoiceResponse.getInvoiceUrl();
                         Logger.d(context, TAG, "onResponse: Invoice URL: " + checkoutUrl);
                         if(checkoutUrl != null) {
+
+
+
                             MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
                                     checkoutUrl,
                                     amount,
@@ -525,10 +515,10 @@ public class FinishFragment extends Fragment {
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
-        btn_again.setVisibility(View.GONE);
-        btn_cancel.setVisibility(View.GONE);
-        btn_reset_status.setVisibility(View.VISIBLE);
-        btn_cancel_order.setVisibility(View.VISIBLE);
+        
+        
+        
+        
         progressBar.setVisibility(View.GONE);
     }
 
@@ -1091,7 +1081,6 @@ public class FinishFragment extends Fragment {
                             callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                             MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, context);
                             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-
                         }
 
                     }
@@ -1112,11 +1101,7 @@ public class FinishFragment extends Fragment {
                 Logger.d(context, TAG, "Received signature error: " + error);
             }
         });
-        btn_again.setVisibility(View.GONE);
-        btn_cancel.setVisibility(View.GONE);
-        btn_reset_status.setVisibility(View.VISIBLE);
-        btn_cancel_order.setVisibility(View.VISIBLE);
-        progressBar.setVisibility(View.GONE);
+         progressBar.setVisibility(View.GONE);
     }
 
 
@@ -1154,23 +1139,15 @@ public class FinishFragment extends Fragment {
                         String pageUrl = response.body().getPageUrl();
                         MainActivity.invoiceId = response.body().getInvoiceId();
 
-                        // Теперь у вас есть объект ResponseBodyRev для обработки
-                        if (pageUrl != null || !pageUrl.equals("null") ) {
 
-                            // Обработка успешного ответа
-
-                            MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
-                                    pageUrl,
-                                    amount,
-                                    uid,
-                                    uid_Double,
-                                    context
-                            );
-                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-
-                        } else {
-                            cancelOrderDouble();
-                        }
+                        MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
+                                pageUrl,
+                                amount,
+                                uid,
+                                uid_Double,
+                                context
+                        );
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
                     } catch (JsonSyntaxException e) {
                         // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
@@ -1186,7 +1163,7 @@ public class FinishFragment extends Fragment {
             }
 
             @Override
-            public void onFailure(Call<ResponsePayMono> call, Throwable t) {
+            public void onFailure(@NonNull Call<ResponsePayMono> call, @NonNull Throwable t) {
                 Logger.d(context, TAG, "onFailure1111: " + t);
                 cancelOrderDouble();
             }
@@ -1366,10 +1343,6 @@ public class FinishFragment extends Fragment {
                 text_status.setText(R.string.verify_internet);
             }
         });
-        btn_again.setVisibility(View.VISIBLE);
-        btn_cancel.setVisibility(View.VISIBLE);
-        btn_reset_status.setVisibility(View.GONE);
-        btn_cancel_order.setVisibility(View.GONE);
         progressBar.setVisibility(View.GONE);
     }
     private void cancelOrderDouble() {
@@ -1403,15 +1376,10 @@ public class FinishFragment extends Fragment {
                 text_status.setText(R.string.verify_internet);
             }
         });
-        btn_again.setVisibility(View.VISIBLE);
-        btn_cancel.setVisibility(View.VISIBLE);
-        btn_reset_status.setVisibility(View.GONE);
-        btn_cancel_order.setVisibility(View.GONE);
         progressBar.setVisibility(View.GONE);
     }
 
-    private void statusOrderWithDifferentValue(String value) {
-
+    public void statusOrderWithDifferentValue(String value) {
         List<String> listCity = logCursor(MainActivity.CITY_INFO);
         String city = listCity.get(1);
         String api = listCity.get(2);
@@ -1441,48 +1409,23 @@ public class FinishFragment extends Fragment {
                         requiredTime = formatDate (orderResponse.getRequiredTime());
                     }
 
-
                     String message;
                     // Обработка различных вариантов executionStatus
                     switch (executionStatus) {
                         case "WaitingCarSearch":
-                            delayMillisStatus = 5 * 1000;
-                            if(!cancel_btn_click) {
-                                message =  context.getString(R.string.ex_st_0);
-                                btn_again.setVisibility(View.GONE);
-                                btn_cancel.setVisibility(View.GONE);
-                                btn_reset_status.setVisibility(View.VISIBLE);
-                                btn_cancel_order.setVisibility(View.VISIBLE);
-                                progressBar.setVisibility(View.GONE);
-                            } else {
-                                message =  context.getString(R.string.checkout_status);
-                                btn_again.setVisibility(View.VISIBLE);
-                                btn_cancel.setVisibility(View.VISIBLE);
-                                btn_reset_status.setVisibility(View.GONE);
-                                btn_cancel_order.setVisibility(View.GONE);
-                                progressBar.setVisibility(View.GONE);
-                            }
-
-                            break;
                         case "SearchesForCar":
                             delayMillisStatus = 5 * 1000;
                             if(!cancel_btn_click) {
                                 message =  context.getString(R.string.ex_st_0);
-                                btn_again.setVisibility(View.GONE);
-                                btn_cancel.setVisibility(View.GONE);
-                                btn_reset_status.setVisibility(View.VISIBLE);
-                                btn_cancel_order.setVisibility(View.VISIBLE);
-                                progressBar.setVisibility(View.GONE);
                             } else {
                                 message =  context.getString(R.string.checkout_status);
-                                btn_again.setVisibility(View.VISIBLE);
-                                btn_cancel.setVisibility(View.VISIBLE);
-                                btn_reset_status.setVisibility(View.GONE);
-                                btn_cancel_order.setVisibility(View.GONE);
-                                progressBar.setVisibility(View.GONE);
                             }
+                            btn_cancel_order.setVisibility(View.VISIBLE);
+                            carProgressBar.setVisibility(View.VISIBLE);
                             break;
                         case "Canceled":
+                            btn_cancel_order.setVisibility(View.GONE);
+                            carProgressBar.setVisibility(View.GONE);
                             delayMillisStatus = 30 * 1000;
                             String newStatus = text_status.getText().toString();
                             if(closeReason == -1) {
@@ -1494,21 +1437,18 @@ public class FinishFragment extends Fragment {
                                         || !newStatus.contains( context.getString(R.string.double_order_error))
                                         || !newStatus.contains( context.getString(R.string.call_btn_cancel)) ) {
                                     message =  context.getString(R.string.ex_st_canceled);
-
+                                    carProgressBar.setVisibility(View.GONE);
                                 } else {
                                     message = newStatus;
                                 }
                             }
-                            btn_again.setVisibility(View.VISIBLE);
-                            btn_cancel.setVisibility(View.VISIBLE);
-                            btn_reset_status.setVisibility(View.GONE);
-                            btn_cancel_order.setVisibility(View.GONE);
-                            progressBar.setVisibility(View.GONE);
                             if (handlerStatus != null) {
                                 handlerStatus.removeCallbacks(myTaskStatus);
                             }
                             break;
                         case "CarFound":
+                            btn_cancel_order.setVisibility(View.VISIBLE);
+                            carProgressBar.setVisibility(View.GONE);
                             if(!cancel_btn_click) {
                                 delayMillisStatus = 30 * 1000;
                                 // Формируем сообщение с учетом возможных пустых значений переменных
@@ -1521,13 +1461,10 @@ public class FinishFragment extends Fragment {
                                 if (driverPhone != null && !driverPhone.isEmpty()) {
                                     Logger.d(context, TAG, "onResponse:driverPhone " + driverPhone);
                                     btn_reset_status.setText( context.getString(R.string.phone_driver));
-                                    btn_reset_status.setOnClickListener(new View.OnClickListener() {
-                                        @Override
-                                        public void onClick(View v) {
-                                            Intent intent = new Intent(Intent.ACTION_DIAL);
-                                            intent.setData(Uri.parse("tel:" + driverPhone));
-                                            startActivity(intent);
-                                        }
+                                    btn_reset_status.setOnClickListener(v -> {
+                                        Intent intent = new Intent(Intent.ACTION_DIAL);
+                                        intent.setData(Uri.parse("tel:" + driverPhone));
+                                        startActivity(intent);
                                     });
                                     messageBuilder.append( context.getString(R.string.ex_st_4)).append(driverPhone);
                                 }
@@ -1535,33 +1472,20 @@ public class FinishFragment extends Fragment {
                                 if (requiredTime != null && !requiredTime.isEmpty()) {
                                     messageBuilder.append( context.getString(R.string.ex_st_5)).append(requiredTime);
                                 }
-                                btn_again.setVisibility(View.GONE);
-                                btn_cancel.setVisibility(View.GONE);
-                                btn_reset_status.setVisibility(View.VISIBLE);
-                                btn_cancel_order.setVisibility(View.VISIBLE);
-                                progressBar.setVisibility(View.GONE);
                                 message = messageBuilder.toString();
                             } else {
                                 message =  context.getString(R.string.ex_st_canceled);
-                                btn_again.setVisibility(View.VISIBLE);
-                                btn_cancel.setVisibility(View.VISIBLE);
-                                btn_reset_status.setVisibility(View.GONE);
-                                btn_cancel_order.setVisibility(View.GONE);
-                                progressBar.setVisibility(View.GONE);
                             }
 
                             break;
                         default:
+                            btn_cancel_order.setVisibility(View.VISIBLE);
+                            carProgressBar.setVisibility(View.VISIBLE);
                             delayMillisStatus = 30 * 1000;
                             message =  context.getString(R.string.status_checkout_message);
-                            btn_again.setVisibility(View.GONE);
-                            btn_cancel.setVisibility(View.GONE);
-                            btn_reset_status.setVisibility(View.VISIBLE);
-                            btn_cancel_order.setVisibility(View.VISIBLE);
-                            progressBar.setVisibility(View.GONE);
                             break;
                     }
-
+                    progressBar.setVisibility(View.GONE);
                     text_status.setText(message);
                 }
             }
@@ -1570,7 +1494,6 @@ public class FinishFragment extends Fragment {
             public void onFailure(@NonNull Call<OrderResponse> call, @NonNull Throwable t) {
             }
         });
-
     }
 
     private String formatDate (String requiredTime) {

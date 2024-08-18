@@ -1,14 +1,14 @@
-package com.taxi.easy.ua.ui.home;
+package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
 
 import android.annotation.SuppressLint;
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
+import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Paint;
 import android.os.Bundle;
 import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
@@ -17,12 +17,11 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.NumberPicker;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.TimePicker;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -32,12 +31,18 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.home.CustomListAdapter;
+import com.taxi.easy.ua.ui.home.HomeFragment;
+import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
+import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -68,13 +73,22 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
     final static long MAX_VALUE = 200;
     TimeZone timeZone;
     SQLiteDatabase database;
+    Context context;
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.settings_layout, container, false);
+
+        context = requireActivity();
+        
         listView = view.findViewById(R.id.list);
-        database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        HomeFragment.text_view_cost.setText("");
+        
+        database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        ContentValues cv = new ContentValues();
+        cv.put("time", "no_time");
+        cv.put("date", "no_date");
+        database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+                new String[] { "1" });
 
         arrayService = new String[]{
                 getString(R.string.BAGGAGE),
@@ -92,28 +106,13 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 getString(R.string.WIRES),
                 getString(R.string.SMOKE),
         };
-        arrayServiceCode = new String[]{
-                "BAGGAGE",
-                "ANIMAL",
-                "CONDIT",
-                "MEET",
-                "COURIER",
-                "CHECK_OUT",
-                "BABY_SEAT",
-                "DRIVER",
-                "NO_SMOKE",
-                "ENGLISH",
-                "CABLE",
-                "FUEL",
-                "WIRES",
-                "SMOKE",
-        };
+        arrayServiceCode = DataArr.arrayServiceCode();
 
-        CustomListAdapter adapterSet = new CustomListAdapter(view.getContext(), arrayService, arrayService.length);
+        CustomListAdapter adapterSet = new CustomListAdapter(context, arrayService, arrayService.length);
         listView.setAdapter(adapterSet);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
 
-        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, getContext());
+        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
         for (int i = 0; i < arrayServiceCode.length; i++) {
             if(services.get(i+1).equals("1")) {
                 listView.setItemChecked(i,true);
@@ -121,25 +120,23 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         }
 
         String[] tariffArr = new String[]{
-                view.getContext().getResources().getString(R.string.start_t),
-                view.getContext().getResources().getString(R.string.base_onl_t),
-                view.getContext().getResources().getString(R.string.base_t),
-                view.getContext().getResources().getString(R.string.univers_t),
-                view.getContext().getResources().getString(R.string.bisnes_t),
-                view.getContext().getResources().getString(R.string.prem_t),
-                view.getContext().getResources().getString(R.string.econom_t),
-                view.getContext().getResources().getString(R.string.bus_t),
+                context.getResources().getString(R.string.start_t),
+                context.getResources().getString(R.string.base_onl_t),
+                context.getResources().getString(R.string.base_t),
+                context.getResources().getString(R.string.univers_t),
+                context.getResources().getString(R.string.bisnes_t),
+                context.getResources().getString(R.string.prem_t),
+                context.getResources().getString(R.string.econom_t),
+                context.getResources().getString(R.string.bus_t),
         };
-        ArrayAdapter<String> adapterTariff = new ArrayAdapter<String>(view.getContext(), R.layout.my_simple_spinner_item, tariffArr);
+        ArrayAdapter<String> adapterTariff = new ArrayAdapter<String>(context, R.layout.my_simple_spinner_item, tariffArr);
         @SuppressLint({"MissingInflatedId", "LocalSuppress"})
         Spinner spinner = view.findViewById(R.id.list_tariff);
         spinner.setAdapter(adapterTariff);
         spinner.setPrompt("Title");
         spinner.setBackgroundResource(R.drawable.spinner_border);
 
-        SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-
-        String tariffOld =  logCursor(MainActivity.TABLE_SETTINGS_INFO,getContext()).get(2);
+        String tariffOld =  logCursor(MainActivity.TABLE_SETTINGS_INFO,context).get(2);
         switch (tariffOld) {
             case "Базовий онлайн":
                 spinner.setSelection(1);
@@ -199,7 +196,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 cv.put("tarif", tariff_to_server);
 
                 // обновляем по id
-                SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                 database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                         new String[] { "1" });
                 database.close();
@@ -216,8 +213,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         // Добавим 10 минут к текущему времени
         calendar.add(Calendar.MINUTE, 10);
         timeZone = TimeZone.getDefault();
-
-//        updateSelectedTime();
+        updateSelectedTime();
         tvSelectedTime.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -229,10 +225,15 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         discount = view.findViewById(R.id.discinp);
 
 
-        discount.setText(logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3));
-        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, getContext()).get(3);
-        discountFist =  Integer.parseInt(discountText);
-        Logger.d(getActivity(), TAG, "discountFist" + discountFist);
+        discount.setText(logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3));
+        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
+        try {
+            discountFist = Long.parseLong(discountText);
+        } catch (NumberFormatException e) {
+            // Handle the case where the expression cannot be evaluated
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
+        Logger.d(context, TAG, "discountFist" + discountFist);
 
         btn_min = view.findViewById(R.id.btn_minus);
         btn_min.setOnClickListener(new View.OnClickListener() {
@@ -250,18 +251,15 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
             }
         });
         btn_plus = view.findViewById(R.id.btn_plus);
-        btn_plus.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                discountFist += 5;
-                if (discountFist >= MAX_VALUE) {
-                    discountFist = MAX_VALUE;
-                }
-                if(discountFist > 0) {
-                    discount.setText("+" + discountFist);
-                } else {
-                    discount.setText( String.valueOf(discountFist));
-                }
+        btn_plus.setOnClickListener(v -> {
+            discountFist += 5;
+            if (discountFist >= MAX_VALUE) {
+                discountFist = MAX_VALUE;
+            }
+            if(discountFist > 0) {
+                discount.setText("+" + discountFist);
+            } else {
+                discount.setText( String.valueOf(discountFist));
             }
         });
 
@@ -269,40 +267,69 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         LocalDate currentDate = LocalDate.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
         tvSelectedDate.setText(currentDate.format(formatter));
-        ContentValues cv = new ContentValues();
-        cv.put("date", currentDate.format(formatter));
-
-        // обновляем по id
-        database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
-                new String[] { "1" });
 
         tvSelectedDate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final Calendar calendar = Calendar.getInstance();
-
-                // Создание диалогового окна DatePicker
-                DatePickerDialog datePickerDialog = new DatePickerDialog(getContext(),
-                        (DatePicker datePicker, int year, int monthOfYear, int dayOfMonth) -> {
-                            // Обработчик выбора даты
-                            calendar.set(year, monthOfYear, dayOfMonth);
-                            updateSelectedDate(calendar);
-                        },
-                        calendar.get(Calendar.YEAR),
-                        calendar.get(Calendar.MONTH),
-                        calendar.get(Calendar.DAY_OF_MONTH));
-
-                // Показать диалоговое окно DatePicker
-                datePickerDialog.show();
+                showDataPickerDialog();
             }
         });
 
-        database.close();
-
-
-
         return view;
+    }
+
+    private void showDataPickerDialog() {
+        Dialog dataPickerDialog = new Dialog(context);
+        dataPickerDialog.setContentView(R.layout.custom_date_picker);
+
+        NumberPicker npYear = dataPickerDialog.findViewById(R.id.npYear);
+        NumberPicker npMonth = dataPickerDialog.findViewById(R.id.npMonth);
+        NumberPicker npDay = dataPickerDialog.findViewById(R.id.npDay);
+
+        int color = getResources().getColor(R.color.white, null); // Get the white color
+
+        setNumberPickerTextColor(npYear, color);
+        setNumberPickerTextColor(npMonth, color);
+        setNumberPickerTextColor(npDay, color);
+
+        float textSize = 24f; // Размер текста в sp
+
+        setNumberPickerTextSize(npYear, textSize);
+        setNumberPickerTextSize(npMonth, textSize);
+        setNumberPickerTextSize(npDay, textSize);
+
+        // Установка значений для NumberPicker
+        npYear.setMinValue(2024);
+        npYear.setMaxValue(2100);
+        npYear.setValue(calendar.get(Calendar.YEAR));
+
+        npMonth.setMinValue(1);
+        npMonth.setMaxValue(12);
+        npMonth.setValue(calendar.get(Calendar.MONTH) + 1);
+
+        npDay.setMinValue(1);
+        npDay.setMaxValue(getMaxDayOfMonth(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH)));
+        npDay.setValue(calendar.get(Calendar.DAY_OF_MONTH));
+
+        npMonth.setOnValueChangedListener((picker, oldVal, newVal) -> {
+            npDay.setMaxValue(getMaxDayOfMonth(calendar.get(Calendar.YEAR), newVal - 1));
+        });
+
+        Button okButton = dataPickerDialog.findViewById(R.id.okButton);
+        okButton.setOnClickListener(v -> {
+            calendar.set(npYear.getValue(), npMonth.getValue() - 1, npDay.getValue());
+            updateSelectedDate(calendar);
+            dataPickerDialog.dismiss();
+        });
+
+        // Show the dialog
+        dataPickerDialog.show();
+    }
+
+    private int getMaxDayOfMonth(int year, int month) {
+        Calendar cal = Calendar.getInstance();
+        cal.set(year, month, 1);
+        return cal.getActualMaximum(Calendar.DAY_OF_MONTH);
     }
     // Метод для обновления отображаемой даты
     private void updateSelectedDate(Calendar calendar) {
@@ -313,20 +340,57 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         cv.put("date", formattedDate);
 
         // Обновляем по id
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[] { "1" });
         database.close();
     }
-     
+    private void setNumberPickerTextColor(NumberPicker numberPicker, int color) {
+        try {
+            // Access the private mSelectorWheelPaint field of the NumberPicker class
+            @SuppressLint("SoonBlockedPrivateApi") Field selectorWheelPaintField = NumberPicker.class.getDeclaredField("mSelectorWheelPaint");
+            selectorWheelPaintField.setAccessible(true);
+
+            // Set the color on the Paint object used to draw the text
+            Paint paint = (Paint) selectorWheelPaintField.get(numberPicker);
+            assert paint != null;
+            paint.setColor(color);
+
+            // Apply the color to each EditText child of the NumberPicker
+            for (int i = 0; i < numberPicker.getChildCount(); i++) {
+                View child = numberPicker.getChildAt(i);
+                if (child instanceof EditText) {
+                    ((EditText) child).setTextColor(color);
+                    numberPicker.invalidate(); // Refresh the NumberPicker
+                }
+            }
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {
+
+        }
+    }
+    private void setNumberPickerTextSize(NumberPicker numberPicker, float textSize) {
+        try {
+            // Найти все EditText внутри NumberPicker
+            for (int i = 0; i < numberPicker.getChildCount(); i++) {
+                View child = numberPicker.getChildAt(i);
+                if (child instanceof EditText) {
+                    ((EditText) child).setTextSize(textSize);
+                    numberPicker.invalidate(); // Обновить NumberPicker
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     @Override
     public void onPause() {
         super.onPause();
-        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, requireActivity());
+        
+        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
 
         for (int i = 0; i < Math.min(services.size(), arrayServiceCode.length); i++) {
             ContentValues cv = new ContentValues();
             cv.put(arrayServiceCode[i], "0");
-            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?",
                     new String[] { "1" });
             database.close();
@@ -337,7 +401,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
             if(booleanArray.get(booleanArray.keyAt(i))) {
                 ContentValues cv = new ContentValues();
                 cv.put(arrayServiceCode[booleanArray.keyAt(i)], "1");
-                SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                 database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?",
                         new String[] { "1" });
                 database.close();
@@ -352,7 +416,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
             cv.put("comment", commentText);
 
             // обновляем по id
-            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
                     new String[]{"1"});
             database.close();
@@ -366,52 +430,49 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
             cv.put("discount", discountText);
 
             // обновляем по id
-            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                     new String[]{"1"});
             database.close();
         }
         //Проверка даты времени
-        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, getContext());
+        timeVerify();
+
+        try {
+            changeCost();
+        } catch (MalformedURLException | UnsupportedEncodingException e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void timeVerify() {
+        String mes;
+
+        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
         String time = stringList.get(1);
         String date = stringList.get(3);
 
-        if(!time.equals("no_time")) {
-            if(date.equals("no_date")) {
-                LocalDate currentDate = LocalDate.now();
+        Logger.d(context, TAG, "onPause:time 1 " + time);
+        Logger.d(context, TAG, "onPause:date 1 " + date);
 
-                // Получение завтрашней даты путем добавления одного дня к текущей дате
-                LocalDate tomorrowDate = currentDate.plusDays(1);
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+        DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
-                // Преобразование завтрашней даты в строку в формате "dd.MM.yyyy"
-                date = tomorrowDate.format(formatter);
+        LocalDateTime currentDateTimeInKyiv = LocalDateTime.now(ZoneId.of("Europe/Kiev"));
+        Logger.d(context, TAG, "onPause:currentDateTimeInKyiv 2 " + currentDateTimeInKyiv);
 
-                ContentValues cv = new ContentValues();
-                cv.put("date", date);
+        LocalDate currentDate = LocalDate.now();
+        Logger.d(context, TAG, "onPause:currentDate 2 " + currentDate);
 
-                // обновляем по id
-                SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
-                        new String[] { "1" });
-                database.close();
-
-            }
-
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
-
+        if(!time.equals("no_time") && !date.equals("no_date")) {
             // Преобразование времени и даты из строк в LocalDateTime
             LocalDateTime dateTimeFromString = LocalDateTime.parse(date + " " + time, formatter);
-
-            LocalDateTime currentDateTimeInKyiv = LocalDateTime.now(ZoneId.of("Europe/Kiev"));
-
+            Logger.d(context, TAG, "onPause:dateTimeFromString 2 " + dateTimeFromString);
             // Сравнение дат и времени
             if (dateTimeFromString.isBefore(currentDateTimeInKyiv)) {
-                Toast.makeText(getContext(), getContext().getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
-                ContentValues cv = new ContentValues();
-
-                LocalDate currentDate = LocalDate.now();
-
+                Toast.makeText(context, context.getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
+                Logger.d(context, TAG, "onPause:currentDate 3" + currentDate);
                 // Получение завтрашней даты путем добавления одного дня к текущей дате
                 LocalDate tomorrowDate = currentDate.plusDays(1);
                 formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
@@ -419,40 +480,139 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 // Преобразование завтрашней даты в строку в формате "dd.MM.yyyy"
                 date = tomorrowDate.format(formatter);
 
+                ContentValues cv  = new ContentValues();
+                cv.put("date", date);
+
+                // обновляем по id
+                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+                        new String[] { "1" });
+                database.close();
+                Logger.d(context, TAG, "onPause:date 6" + date);
+
+            }
+            mes = getString(R.string.on) + " " +  time + " " + date;
+
+            long minutesDifference = Duration.between(currentDateTimeInKyiv, dateTimeFromString).toMinutes();
+            Logger.d(context, TAG, "Разница во времени: " + minutesDifference + " минут");
+
+            if(minutesDifference <= 10 && minutesDifference >= 0) {
+                ContentValues cv = new ContentValues();
+                cv.put("time", "no_time");
+                cv.put("date", "no_date");
+
+                // обновляем по id
+                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+                        new String[]{"1"});
+                database.close();
+
+                Logger.d(context, TAG, "Разница во времени <= 10 1: " + minutesDifference + " минут");
+            }
+
+        } else if(!time.equals("no_time")) {
+
+            date = currentDate.format(formatterDate);
+
+            LocalDateTime dateTimeFromString = LocalDateTime.parse(date + " " + time, formatter);
+            if (dateTimeFromString.isBefore(currentDateTimeInKyiv)) {
+                Toast.makeText(context, context.getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
+                // Получение завтрашней даты путем добавления одного дня к текущей дате
+                LocalDate tomorrowDate = currentDate.plusDays(1);
+                // Преобразование завтрашней даты в строку в формате "dd.MM.yyyy"
+                date = tomorrowDate.format(formatterDate);
+            }
+            long minutesDifference = Duration.between(currentDateTimeInKyiv, dateTimeFromString).toMinutes();
+            Logger.d(context, TAG, "Разница во времени: " + minutesDifference + " минут");
+
+            if(minutesDifference <= 10 && minutesDifference >= 0) {
+                ContentValues cv = new ContentValues();
+                cv.put("time", "no_time");
+                cv.put("date", "no_date");
+
+                // обновляем по id
+                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+                        new String[]{"1"});
+                database.close();
+                mes = context.getString((R.string.on_now));
+                Logger.d(context, TAG, "Разница во времени <= 10 2: " + minutesDifference + " минут");
+            } else {
+                ContentValues cv = new ContentValues();
+                cv.put("date", date);
+
+                // обновляем по id
+                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+                        new String[] { "1" });
+                database.close();
+                Logger.d(context, TAG, "onPause:date 5" + date);
+
+                mes = getString(R.string.on) + " " +  time + " " + date;
+            }
+        }  else {
+            time = tvSelectedTime.getText().toString();
+            date = tvSelectedDate.getText().toString();
+
+            LocalDateTime dateTimeFromString = LocalDateTime.parse(date + " " + time, formatter);
+            if (dateTimeFromString.isBefore(currentDateTimeInKyiv)) {
+                Toast.makeText(context, context.getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
+                // Получение завтрашней даты путем добавления одного дня к текущей дате
+                LocalDate tomorrowDate = currentDate.plusDays(1);
+                // Преобразование завтрашней даты в строку в формате "dd.MM.yyyy"
+                date = tomorrowDate.format(formatterDate);
+            }
+            ContentValues cv = new ContentValues();
+            cv.put("time", time);
+            cv.put("date", date);
+
+            // обновляем по id
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+                    new String[] { "1" });
+
+            mes = getString(R.string.on) + " " + time + " " + date;
+
+            long minutesDifference = Duration.between(currentDateTimeInKyiv, dateTimeFromString).toMinutes();
+            Logger.d(context, TAG, "Разница во времени: " + minutesDifference + " минут");
+
+            if(minutesDifference <= 10 && minutesDifference >= 0) {
+
+                cv.put("time", "no_time");
+                cv.put("date", "no_date");
+
+                // обновляем по id
+                database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+                        new String[]{"1"});
+
+                mes = context.getString((R.string.on_now));
+                Logger.d(context, TAG, "Разница во времени <= 10 3: " + minutesDifference + " минут");
+            } else {
                 cv = new ContentValues();
                 cv.put("date", date);
 
                 // обновляем по id
-                SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+                  database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
                         new String[] { "1" });
-                database.close();
+
+                Logger.d(context, TAG, "onPause:date 5" + date);
+
+                mes = getString(R.string.on) + " " +  time + " " + date;
             }
-
-        } else {
-            ContentValues cv = new ContentValues();
-
-            cv.put("time", "no_time");
-            cv.put("date", "no_date");
-
-            // обновляем по id
-            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
-                    new String[] { "1" });
             database.close();
+
+            Logger.d(context, TAG, "onPause:date 4" + date);
         }
-        try {
-            changeCost();
-        } catch (MalformedURLException | UnsupportedEncodingException e) {
-            FirebaseCrashlytics.getInstance().recordException(e);
-            throw new RuntimeException(e);
+        if(time.equals("no_time") && date.equals("no_date")) {
+            mes = context.getString((R.string.on_now));
         }
 
+        HomeFragment.schedule.setText(mes);
     }
     private void changeCost() throws MalformedURLException, UnsupportedEncodingException {
-        String url = getTaxiUrlSearch("costSearch", requireActivity());
+        String url = getTaxiUrlSearch("costSearchTime", context);
         String message = getString(R.string.change_tarrif);
-        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(3);
+        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
         CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
         parser.sendURL(url, new Callback<Map<String, String>>() {
             @Override
@@ -475,12 +635,13 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
 
                     String newCost = String.valueOf(firstCost + discount);
                     HomeFragment.text_view_cost.setText(newCost);
+                    HomeFragment.btnVisible(View.VISIBLE);
                 } else  {
                     ContentValues cv = new ContentValues();
                     cv.put("tarif", " ");
 
                     // обновляем по id
-                    SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                     database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                             new String[] { "1" });
                     database.close();
@@ -498,7 +659,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
-
+        HomeFragment.addCheck(context);
     }
     private void updateAddCost(String addCost) {
         ContentValues cv = new ContentValues();
@@ -533,7 +694,10 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         String str_dest = to + "/" + to_number;
 
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-
+        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
+        String time = stringList.get(1);
+        String comment = stringList.get(2);
+        String date = stringList.get(3);
 
         List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
         String tarif =  stringListInfo.get(2);
@@ -546,14 +710,15 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
 
-        if(urlAPI.equals("costSearch")) {
+        if(urlAPI.equals("costSearchTime")) {
             Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
             if (c.getCount() == 1) {
                 phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
                 c.close();
             }
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "*" + payment_type;
+                    + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "*" + payment_type+ "/"
+                    + time + "/" + date ;
         }
 
 
@@ -581,11 +746,11 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 }
             }
             result = String.join("*", servicesChecked);
-            Logger.d(getActivity(), TAG, "getTaxiUrlSearchGeo result:" + result + "/");
+            Logger.d(context, TAG, "getTaxiUrlSearchGeo result:" + result + "/");
         } else {
             result = "no_extra_charge_codes";
         }
-        List<String> listCity = logCursor(MainActivity.CITY_INFO, requireActivity());
+        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         String city = listCity.get(1);
         String api = listCity.get(2);
 
@@ -593,7 +758,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
 
 
-        Logger.d(getActivity(), TAG, "getTaxiUrlSearch: " + url);
+        Logger.d(context, TAG, "getTaxiUrlSearch: " + url);
 
 
         return url;
@@ -617,35 +782,63 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         };
     }
     private void showTimePickerDialog() {
-        int hour = calendar.get(Calendar.HOUR_OF_DAY);
-        int minute = calendar.get(Calendar.MINUTE);
+        // Initialize the dialog
+        Dialog timePickerDialog = new Dialog(context);
+        timePickerDialog.setContentView(R.layout.dialog_time_picker);
 
-        TimePickerDialog timePickerDialog = new TimePickerDialog(getContext(),
-                new TimePickerDialog.OnTimeSetListener() {
-                    @Override
-                    public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-                        calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                        calendar.set(Calendar.MINUTE, minute);
-                        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
-                        String formattedTime = sdf.format(calendar.getTime());
-                        tvSelectedTime.setText(formattedTime);
-                        updateSelectedTime();
+        // Initialize the NumberPickers
+        NumberPicker hourPicker = timePickerDialog.findViewById(R.id.hourPicker);
+        NumberPicker minutePicker = timePickerDialog.findViewById(R.id.minutePicker);
+        int color = getResources().getColor(R.color.white, null); // Get the white color
 
-                            // Установленное время больше или равно текущему времени
-                            tvSelectedTime.setText(formattedTime);
-                            updateSelectedTime();
+        setNumberPickerTextColor(hourPicker, color);
+        setNumberPickerTextColor(minutePicker, color);
 
-                            ContentValues cv = new ContentValues();
-                            cv.put("time", formattedTime);
+        float textSize = 24f; // Размер текста в sp
 
-                            // Обновляем по id
-                            SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[] { "1" });
-                            database.close();
+        setNumberPickerTextSize(hourPicker, textSize);
+        setNumberPickerTextSize(minutePicker, textSize);
 
-                    }
-                }, hour, minute, true);
+        // Set the range for the hour and minute pickers
+        hourPicker.setMinValue(0);
+        hourPicker.setMaxValue(23);
+        minutePicker.setMinValue(0);
+        minutePicker.setMaxValue(59);
 
+        // Set the current time
+        Calendar calendar = Calendar.getInstance();
+        hourPicker.setValue(calendar.get(Calendar.HOUR_OF_DAY));
+        Logger.d(context, TAG, "calendar.get(Calendar.HOUR_OF_DAY)" + calendar.get(Calendar.HOUR_OF_DAY));
+        minutePicker.setValue(calendar.get(Calendar.MINUTE) +10);
+
+        // Set the OK button click listener
+        Button okButton = timePickerDialog.findViewById(R.id.okButton);
+        okButton.setOnClickListener(v -> {
+            int hourOfDay = hourPicker.getValue();
+            int minute = minutePicker.getValue();
+
+            calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
+            calendar.set(Calendar.MINUTE, minute);
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
+            String formattedTime = sdf.format(calendar.getTime());
+            Logger.d(context, TAG, "formattedTime: " + formattedTime);
+            tvSelectedTime.setText(formattedTime);
+
+            // Perform the required updates
+
+
+            ContentValues cv = new ContentValues();
+            cv.put("time", formattedTime);
+
+            // Update the database by id
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[]{"1"});
+            database.close();
+
+            timePickerDialog.dismiss();
+        });
+
+        // Show the dialog
         timePickerDialog.show();
     }
 

@@ -16,6 +16,7 @@
             android:layout_marginStart="24dp"
             android:layout_marginTop="8dp"
             android:background="@drawable/btn_accents"
+            android:contentDescription="TODO"
             android:scaleType="centerInside"
             android:visibility="gone"
             android:src="@drawable/arrow_back_fill0_wght400_grad0_opsz24"
@@ -60,13 +61,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="4sp"
-            android:layout_marginTop="8dp"
             android:fontFamily="@font/light"
             android:text="@string/textStatus"
             android:textColor="#B0BEC5"
             android:textSize="14sp"
             app:layout_constraintStart_toStartOf="@+id/text_full_message"
-            app:layout_constraintTop_toBottomOf="@+id/text_full_message" />
+            app:layout_constraintTop_toBottomOf="@+id/carProgressBar" />
 
         <ProgressBar
             android:id="@+id/progress_bar"
@@ -78,6 +78,17 @@
             app:layout_constraintHorizontal_bias="0.498"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <com.taxi.easy.ua.utils.animation.car.CarProgressBar
+            android:id="@+id/carProgressBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="12dp"
+            app:carImage="@drawable/button_image_button2"
+            app:layout_constraintTop_toBottomOf="@+id/text_full_message" />
+
+
 
         <TextView
             android:id="@+id/text_status"
@@ -134,40 +145,22 @@
             android:layout_width="293sp"
             android:layout_height="45sp"
 
-            android:layout_marginTop="8sp"
+            android:layout_marginTop="8dp"
             android:background="@drawable/buttons"
+
             android:fontFamily="@font/regular"
-            android:visibility="gone"
             android:text="@string/btn_again_text"
             android:textAlignment="center"
             android:textColor="#D9D9D9"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.502"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/btn_cancel_order" />
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_cancel"
-            android:layout_width="293sp"
-            android:layout_height="45sp"
-
-            android:layout_marginTop="8sp"
-            android:background="@drawable/buttons"
-            android:fontFamily="@font/regular"
-            android:visibility="gone"
-            android:text="@string/action_exit"
-            android:textAlignment="center"
-            android:textColor="#D9D9D9"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.502"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_again" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnCallAdmin"
             android:layout_width="293sp"
             android:layout_height="45sp"
-            android:layout_marginTop="8sp"
+            android:layout_marginTop="8dp"
             android:background="@drawable/buttons"
             android:fontFamily="@font/regular"
             android:text="@string/call_admin"
@@ -176,6 +169,8 @@
             android:visibility="visible"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_cancel" />
+            app:layout_constraintTop_toBottomOf="@+id/btn_again" />
+
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

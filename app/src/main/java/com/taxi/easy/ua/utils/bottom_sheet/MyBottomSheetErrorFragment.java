@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.home;
+package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -22,7 +22,6 @@ import androidx.appcompat.widget.AppCompatButton;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
@@ -110,7 +109,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                 });
                 btn_ok.setText(getString(R.string.order_to_cancel_review));
                 btn_ok.setOnClickListener(v -> {
-                    MainActivity.navController.popBackStack();
+                    
                     MainActivity.navController.navigate(R.id.nav_cancel);
                     dismiss();
                 });

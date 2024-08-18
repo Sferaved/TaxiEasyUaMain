@@ -128,11 +128,10 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
                     SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                     switch (pay_method) {
                         case "wfp_payment":
-                            database.delete(MainActivity.TABLE_WFP_CARDS, "rectoken = ?", new String[]{rectoken});
+
                             deleteCardToken(rectoken);
                             break;
                         case "fondy_payment":
-                            database.delete(MainActivity.TABLE_FONDY_CARDS, "rectoken = ?", new String[]{rectoken});
                             deleteCardToken(rectoken);
                             break;
 
@@ -250,8 +249,12 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                 if (response.isSuccessful()) {
                     // Обработка успешного ответа
-                    reIndexCards();
+
                     Toast.makeText(getContext(), getContext().getString(R.string.un_link_token), Toast.LENGTH_LONG).show();
+                    SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    database.delete(MainActivity.TABLE_WFP_CARDS, "rectoken = ?", new String[]{rectoken});
+                    database.close();
+                    reIndexCards();
 
                 } else {
 //                    Toast.makeText(getContext(), getContext().getString(R.string.verify_internet), Toast.LENGTH_LONG).show();

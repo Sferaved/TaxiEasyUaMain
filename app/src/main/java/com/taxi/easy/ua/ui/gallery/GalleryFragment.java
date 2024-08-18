@@ -28,18 +28,22 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.navigation.NavOptions;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentGalleryBinding;
-import com.taxi.easy.ua.ui.home.MyBottomSheetBonusFragment;
-import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
-import com.taxi.easy.ua.ui.home.MyBottomSheetGalleryFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetDialogFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGalleryFragment;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
@@ -87,18 +91,28 @@ public class GalleryFragment extends Fragment {
     FragmentManager fragmentManager;
 
     private int desiredHeight;
-   
-
+    @SuppressLint("StaticFieldLeak")
+    public static TextView schedule;
+    ImageButton shed_down;
+    @SuppressLint("StaticFieldLeak")
+    static ConstraintLayout constr2;
+    Context context;
+    
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-            MainActivity.navController.popBackStack();
-            MainActivity.navController.navigate(R.id.nav_visicom);
-        }
+        
+       
 
         binding = FragmentGalleryBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-
+        context = requireActivity();
+        
+        if (!NetworkUtils.isNetworkAvailable(context)) {
+            
+            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true) 
+                        .build());
+        }
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
 
         scrollButtonUp = binding.scrollButtonUp;
@@ -117,7 +131,7 @@ public class GalleryFragment extends Fragment {
         btnCallAdmin = binding.btnCallAdmin;
         btnCallAdmin.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_DIAL);
-            List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+            List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
             String phone = stringList.get(3);
             intent.setData(Uri.parse(phone));
             startActivity(intent);
@@ -135,7 +149,7 @@ public class GalleryFragment extends Fragment {
         btn_plus = binding.btnPlus;
 
         btn_minus.setOnClickListener(v -> {
-            List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
+            List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
             addCost = Long.parseLong(stringListInfo.get(5));
             cost = Long.parseLong(text_view_cost.getText().toString());
             cost -= 5;
@@ -151,7 +165,7 @@ public class GalleryFragment extends Fragment {
         btn_plus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity());
+                List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
                 addCost = Long.parseLong(stringListInfo.get(5));
                 cost = Long.parseLong(text_view_cost.getText().toString());
                 cost += 5;
@@ -196,7 +210,7 @@ public class GalleryFragment extends Fragment {
                 }
             });
 
-            listAdapter = new ArrayAdapter<>(requireActivity(), R.layout.services_adapter_layout, array);
+            listAdapter = new ArrayAdapter<>(context, R.layout.services_adapter_layout, array);
             listView.setAdapter(listAdapter);
             listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 
@@ -273,9 +287,9 @@ public class GalleryFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 progressbar.setVisibility(View.VISIBLE);
-                List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+                List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
 
-                pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(4);
+                pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
 
                 switch (stringList.get(1)) {
                     case "Kyiv City":
@@ -286,7 +300,7 @@ public class GalleryFragment extends Fragment {
                         break;
                     case "OdessaTest":
                          if(pay_method.equals("bonus_payment")) {
-                            String bonus = logCursor(MainActivity.TABLE_USER_INFO, requireActivity()).get(5);
+                            String bonus = logCursor(MainActivity.TABLE_USER_INFO, context).get(5);
                             if(Long.parseLong(bonus) < Long.parseLong(text_view_cost.getText().toString()) * 100 ) {
                                 paymentType();
                             }
@@ -294,7 +308,7 @@ public class GalleryFragment extends Fragment {
                         break;
                 }
 
-                List<String> stringListCity = logCursor(MainActivity.CITY_INFO, requireActivity());
+                List<String> stringListCity = logCursor(MainActivity.CITY_INFO, context);
                 String card_max_pay = stringListCity.get(4);
                 String bonus_max_pay = stringListCity.get(5);
                 switch (pay_method) {
@@ -332,7 +346,7 @@ public class GalleryFragment extends Fragment {
         buttonBonus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+                List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
                 String api =  stringList.get(2);
                 updateAddCost("0");
                 if (!text_view_cost.getText().toString().isEmpty()) {
@@ -343,18 +357,65 @@ public class GalleryFragment extends Fragment {
             }
         });
 
-        btnVisible(View.INVISIBLE);
 
+        schedule = binding.schedule;
+        shed_down = binding.shedDown;
+
+        constr2 = binding.constr2;
+        btnVisible(View.INVISIBLE);
+        constr2.setVisibility(View.INVISIBLE);
         return root;
     }
+    private void scheduleUpdate() {
+        schedule.setText(R.string.on_now);
+        if(!MainActivity.firstStart) {
+            ContentValues cv = new ContentValues();
+            cv.put("time", "no_time");
+            cv.put("date", "no_date");
 
+            // обновляем по id
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+                    new String[] { "1" });
+            database.close();
+        }
+
+        schedule.setOnClickListener(v -> {
+            btnVisible(View.INVISIBLE);
+            MyBottomSheetGalleryFragment bottomSheetDialogFragment = new MyBottomSheetGalleryFragment();
+            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+        });
+
+        shed_down.setOnClickListener(v -> {
+            btnVisible(View.INVISIBLE);
+            MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
+            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+        });
+        constr2.setVisibility(View.VISIBLE);
+        addCheck(context);
+    }
     private String cleanString(String input) {
         if (input == null) return "";
         return input.trim().replaceAll("\\s+", " ").replaceAll("\\s{2,}$", " ");
     }
+    public static void  addCheck(Context context) {
 
-    private void btnVisible (int visible) {
+        int newCheck = 0;
+        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
+        for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
+            if(services.get(i+1).equals("1")) {
+                newCheck++;
+            }
+        }
+        String mes = context.getString(R.string.add_services);
+        if(newCheck != 0) {
+            mes = context.getString(R.string.add_services) + " (" + newCheck + ")";
+        }
+        btnAdd.setText(mes);
 
+    }
+    public static void btnVisible(int visible) {
+        constr2.setVisibility(visible);
         del_but.setVisibility(visible);
         text_view_cost.setVisibility(visible);
         btnRouts.setVisibility(visible);
@@ -372,18 +433,20 @@ public class GalleryFragment extends Fragment {
     }
     @SuppressLint("ResourceAsColor")
     private boolean orderRout() {
-        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-            MainActivity.navController.popBackStack();
-            MainActivity.navController.navigate(R.id.nav_visicom);
+        if (!NetworkUtils.isNetworkAvailable(context)) {
+            
+            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true) 
+                        .build());
             return false;
         } else {
-            if (!verifyOrder(requireContext())) {
+            if (!verifyOrder(context)) {
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.black_list_message));
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 progressbar.setVisibility(View.INVISIBLE);
                 return false;
             } else {
-                urlOrder = getTaxiUrlSearchMarkers("orderSearchMarkersVisicom", requireActivity());
+                urlOrder = getTaxiUrlSearchMarkers("orderSearchMarkersVisicom", context);
                 progressbar.setVisibility(View.INVISIBLE);
                 return true;
             }
@@ -409,7 +472,7 @@ public class GalleryFragment extends Fragment {
 
     private void orderFinished() {
         btnVisible(View.INVISIBLE);
-        Toast.makeText(requireActivity(), R.string.check_order_mes, Toast.LENGTH_SHORT).show();
+        Toast.makeText(context, R.string.check_order_mes, Toast.LENGTH_SHORT).show();
         ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
 //            // Пример строки URL с параметрами
@@ -431,12 +494,12 @@ public class GalleryFragment extends Fragment {
                         to_name = getString(R.string.on_city_tv);
                     } else {
                         if(Objects.equals(sendUrlMap.get("routeto"), "Точка на карте")) {
-                            to_name = requireActivity().getString(R.string.end_point_marker);
+                            to_name = context.getString(R.string.end_point_marker);
                         } else {
                             to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
                         }
                     }
-                    String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(4);
+                    String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
 
                     String pay_method_message = getString(R.string.pay_method_message_main);
                     switch (pay_method) {
@@ -521,10 +584,10 @@ public class GalleryFragment extends Fragment {
 
     private void changePayMethodToNal() {
         // Инфлейтим макет для кастомного диалога
-        LayoutInflater inflater = LayoutInflater.from(requireActivity());
+        LayoutInflater inflater = LayoutInflater.from(context);
         View dialogView = inflater.inflate(R.layout.custom_dialog_layout, null);
 
-        alertDialog = new AlertDialog.Builder(requireActivity()).create();
+        alertDialog = new AlertDialog.Builder(context).create();
         alertDialog.setView(dialogView);
         alertDialog.setCancelable(false);
         // Настраиваем элементы макета
@@ -558,7 +621,7 @@ public class GalleryFragment extends Fragment {
         ContentValues cv = new ContentValues();
         cv.put("payment_type", "nal_payment");
         // обновляем по id
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
         database.close();
@@ -579,7 +642,7 @@ public class GalleryFragment extends Fragment {
          cv.put("finish", settings.get(5));
 
         // обновляем по id
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
                 new String[] { "1" });
         database.close();
@@ -587,9 +650,11 @@ public class GalleryFragment extends Fragment {
 
 
     private void dialogFromToOneRout(Map <String, String> rout) throws MalformedURLException, InterruptedException, JSONException {
-        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-            MainActivity.navController.popBackStack();
-            MainActivity.navController.navigate(R.id.nav_visicom);
+        if (!NetworkUtils.isNetworkAvailable(context)) {
+            
+            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true) 
+                        .build());
         } else  {
             Logger.d(getActivity(), TAG, "dialogFromToOneRout: " + rout.toString());
             from_lat =  Double.valueOf(rout.get("from_lat"));
@@ -620,7 +685,7 @@ public class GalleryFragment extends Fragment {
             settings.add(ToAddressString);
 
             updateRoutMarker(settings);
-            String urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", requireActivity());
+            String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
 
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
@@ -632,12 +697,13 @@ public class GalleryFragment extends Fragment {
                     progressbar.setVisibility(View.GONE);
                     Map<String, String> sendUrlMapCost = response.body();
 
-                    String message = requireActivity().getString(R.string.error_message);
+                    String message = context.getString(R.string.error_message);
                     String orderCost = sendUrlMapCost.get("order_cost");
                     Logger.d(getActivity(), TAG, "dialogFromToOneRout:orderCost " + orderCost);
                     assert orderCost != null;
                     if (!orderCost.equals("0")) {
-                        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, requireActivity()).get(3);
+                        scheduleUpdate();
+                        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
                         long discountInt = Integer.parseInt(discountText);
                         cost = Long.parseLong(orderCost);
                         discount = cost * discountInt / 100;
@@ -667,7 +733,7 @@ public class GalleryFragment extends Fragment {
     }
     private Map <String, String> routChoice(int i) {
         Map <String, String> rout = new HashMap<>();
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         @SuppressLint("Recycle") Cursor c = database.query(MainActivity.TABLE_ORDERS_INFO, null, null, null, null, null, null);
         c.move(i);
         rout.put("id", c.getString(c.getColumnIndexOrThrow ("id")));
@@ -715,7 +781,7 @@ public class GalleryFragment extends Fragment {
 
         cursor.close();
 
-        List<String> listCity = logCursor(MainActivity.CITY_INFO, requireActivity());
+        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         String city = listCity.get(1);
         String api = listCity.get(2);
 
@@ -737,7 +803,7 @@ public class GalleryFragment extends Fragment {
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
 
-        if(urlAPI.equals("costSearchMarkers")) {
+        if(urlAPI.equals("costSearchMarkersTime")) {
             Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
 
             if (c.getCount() == 1) {
@@ -745,7 +811,8 @@ public class GalleryFragment extends Fragment {
                 c.close();
             }
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "*" + payment_type;
+                    + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "*" + payment_type+ "/"
+                    + time + "/" + date ;
         }
         if(urlAPI.equals("orderSearchMarkersVisicom")) {
             phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
@@ -805,15 +872,15 @@ public class GalleryFragment extends Fragment {
     }
 
     private void changePayMethodMax(String textCost, String paymentType) {
-        List<String> stringListCity = logCursor(MainActivity.CITY_INFO, requireActivity());
+        List<String> stringListCity = logCursor(MainActivity.CITY_INFO, context);
         String card_max_pay =  stringListCity.get(4);
         String bonus_max_pay =  stringListCity.get(5);
 
         // Инфлейтим макет для кастомного диалога
-        LayoutInflater inflater = LayoutInflater.from(requireActivity());
+        LayoutInflater inflater = LayoutInflater.from(context);
         View dialogView = inflater.inflate(R.layout.custom_dialog_layout, null);
 
-        AlertDialog alertDialog = new AlertDialog.Builder(requireActivity()).create();
+        AlertDialog alertDialog = new AlertDialog.Builder(context).create();
         alertDialog.setView(dialogView);
         alertDialog.setCancelable(false);
         // Настраиваем элементы макета
@@ -862,9 +929,9 @@ public class GalleryFragment extends Fragment {
 
 
     @SuppressLint("Range")
-    public List<String> logCursor(String table, Context context) {
+    public static List<String> logCursor(String table, Context context) {
         List<String> list = new ArrayList<>();
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(table, null, null, null, null, null, null);
         if (c != null) {
             if (c.moveToFirst()) {
@@ -884,7 +951,7 @@ public class GalleryFragment extends Fragment {
         return list;
     }
     private void reIndexOrders() {
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.execSQL("CREATE TABLE  temp_table" + "(id integer primary key autoincrement," +
                 " from_street text," +
                 " from_number text," +
@@ -936,7 +1003,7 @@ public class GalleryFragment extends Fragment {
             int i = position + 1;
 
             String deleteQuery = "DELETE FROM " + MainActivity.TABLE_ORDERS_INFO + " WHERE id = " + i  + ";";
-            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
             database.execSQL(deleteQuery);
             database.close();
@@ -944,11 +1011,11 @@ public class GalleryFragment extends Fragment {
         reIndexOrders();
         array = arrayToRoutsAdapter();
         if (array != null) {
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(requireActivity(), R.layout.services_adapter_layout, array);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(context, R.layout.services_adapter_layout, array);
             listView.setAdapter(adapter);
         } else {
             // Если массив пустой, отобразите текст "no_routs" вместо списка
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(requireActivity(), R.layout.services_adapter_layout, new String[]{});
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(context, R.layout.services_adapter_layout, new String[]{});
             listView.setAdapter(adapter);
             textView.setText(R.string.no_routs);
             btnVisible(View.INVISIBLE);
@@ -958,7 +1025,7 @@ public class GalleryFragment extends Fragment {
 
     }
     private String[] arrayToRoutsAdapter() {
-        ArrayList<Map> routMaps = routMaps(requireActivity());
+        ArrayList<Map> routMaps = routMaps(context);
         String[] arrayRouts;
         if(routMaps.size() != 0) {
             arrayRouts = new String[routMaps.size()];
@@ -1050,7 +1117,7 @@ public class GalleryFragment extends Fragment {
         cv.put("addCost", addCost);
 
         // обновляем по id
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
         database.close();
@@ -1064,7 +1131,7 @@ public class GalleryFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        new VerifyUserTask(requireActivity()).execute();
+        new VerifyUserTask(context).execute();
 
         Logger.d(getActivity(), TAG, "onResume: selectedItem " + selectedItem);
         listView.clearChoices();

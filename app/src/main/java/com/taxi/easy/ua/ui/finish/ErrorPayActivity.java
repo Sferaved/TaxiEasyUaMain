@@ -24,8 +24,8 @@ import com.taxi.easy.ua.ui.fondy.revers.ReversApi;
 import com.taxi.easy.ua.ui.fondy.revers.ReversRequestData;
 import com.taxi.easy.ua.ui.fondy.revers.ReversRequestSent;
 import com.taxi.easy.ua.ui.fondy.revers.SuccessResponseDataRevers;
-import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
-import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.io.IOException;

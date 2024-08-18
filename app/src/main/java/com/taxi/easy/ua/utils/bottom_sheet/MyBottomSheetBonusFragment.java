@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.home;
+package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -35,6 +35,8 @@ import com.taxi.easy.ua.cities.api.CityResponseMerchantFondy;
 import com.taxi.easy.ua.cities.api.CityService;
 import com.taxi.easy.ua.ui.card.CardFragment;
 import com.taxi.easy.ua.ui.gallery.GalleryFragment;
+import com.taxi.easy.ua.ui.home.CustomArrayAdapter;
+import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
@@ -42,6 +44,7 @@ import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
+import com.taxi.easy.ua.utils.tariff.TariffInfo;
 
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -482,7 +485,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         if (rout != null && rout.equals("visicom")) {
             try {
                 if (isAdded()) {
-                    String urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", context);
+                    String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
                     String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
                     long discountInt = Integer.parseInt(discountText);
                     CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
@@ -534,7 +537,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         if (rout != null && rout.equals("marker")) {
             try {
                 if (isAdded()) {
-                    String urlCost = getTaxiUrlSearchMarkers("costSearchMarkers", context);
+                    String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
 
                     String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
                     long discountInt = Long.parseLong(discountText);
@@ -584,6 +587,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         }
         progressBar.setVisibility(View.GONE);
         btn_ok.setVisibility(View.VISIBLE);
+        costSearchMarkersLocalTariffs();
     }
     private AlertDialog alertDialog;
     private void changePayMethodToNal() {
@@ -629,15 +633,87 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         alertDialog.show();
     }
 
-    private void updateAddCost(String addCost) {
-        ContentValues cv = new ContentValues();
-        Log.d(TAG, "updateAddCost: addCost" + addCost);
-        cv.put("addCost", addCost);
+    @SuppressLint("Range")
+    public void costSearchMarkersLocalTariffs() {
 
-        // обновляем по id
-        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                new String[] { "1" });
+        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursor = database.rawQuery(query, null);
 
+        cursor.moveToFirst();
+
+        // Получите значения полей из первой записи
+
+        double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
+        double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
+        double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+        double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+
+
+        cursor.close();
+
+        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
+
+        String payment_type = stringListInfo.get(4);
+
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
+        String displayName = logCursor(MainActivity.TABLE_USER_INFO).get(4);
+
+
+
+        // Building the url to the web service
+        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO);
+        List<String> servicesChecked = new ArrayList<>();
+        String result;
+        boolean servicesVer = false;
+        for (int i = 1; i < services.size()-1 ; i++) {
+            if(services.get(i).equals("1")) {
+                servicesVer = true;
+                break;
+            }
+        }
+        if(servicesVer) {
+            for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
+                if(services.get(i+1).equals("1")) {
+                    servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
+                }
+            }
+            for (int i = 0; i < servicesChecked.size(); i++) {
+                if(servicesChecked.get(i).equals("CHECK_OUT")) {
+                    servicesChecked.set(i, "CHECK");
+                }
+            }
+            result = String.join("*", servicesChecked);
+            Logger.d(context, TAG, "getTaxiUrlSearchGeo result:" + result + "/");
+        } else {
+            result = "no_extra_charge_codes";
+        }
+
+        List<String> listCity = logCursor(MainActivity.CITY_INFO);
+        String city = listCity.get(1);
+
+
+        String user = displayName + "*" + userEmail  + "*" + payment_type;
+        database.close();
+
+        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO);
+        String time = stringList.get(1);
+        String date = stringList.get(3);
+
+
+        TariffInfo tariffInfo = new TariffInfo(context);
+        tariffInfo.fetchOrderCostDetails(
+                originLatitude,
+                originLongitude,
+                toLatitude,
+                toLongitude,
+                user,
+                time,
+                date,
+                result,
+                city,
+                context.getString(R.string.application)
+        );
     }
 
      
@@ -775,10 +851,15 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         // Destination of route
         String str_dest = toLatitude + "/" + toLongitude;
 
+        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO);
+        String time = stringList.get(1);
+        String comment = stringList.get(2);
+        String date = stringList.get(3);
 
-        List<String> stringList = logCursor(MainActivity.TABLE_SETTINGS_INFO);
-        String tarif =  stringList.get(2);
-        String payment_type = stringList.get(4);
+        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
+        String tarif =  stringListInfo.get(2);
+        String payment_type = stringListInfo.get(4);
+        String addCost = stringListInfo.get(5);
 
         // Building the parameters to the web service
 
@@ -787,7 +868,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
         String displayName = logCursor(MainActivity.TABLE_USER_INFO).get(4);
 
-        if(urlAPI.equals("costSearchMarkers")) {
+        if(urlAPI.equals("costSearchMarkersTime")) {
             Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
 
             if (c.getCount() == 1) {
@@ -795,7 +876,8 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 c.close();
             }
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "*" + payment_type;
+                    + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "*" + payment_type+ "/"
+                    + time + "/" + date ;
         }
 
         // Building the url to the web service

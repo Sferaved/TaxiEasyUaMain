@@ -4,8 +4,10 @@ import static android.content.Context.MODE_PRIVATE;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -45,7 +47,13 @@ public class MyBottomSheetErrorCardFragment extends BottomSheetDialogFragment {
         btn_help.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                MainActivity.navController.navigate(R.id.nav_visicom);
+                List<String> stringList = logCursor(MainActivity.CITY_INFO, requireContext());
+                Intent intent = new Intent(Intent.ACTION_DIAL);
+                String phone = stringList.get(3);
+
+                intent.setData(Uri.parse(phone));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // Добавляем флаг FLAG_ACTIVITY_NEW_TASK
+                startActivity(intent);
             }
         });
         textViewInfo = view.findViewById(R.id.textViewInfo);

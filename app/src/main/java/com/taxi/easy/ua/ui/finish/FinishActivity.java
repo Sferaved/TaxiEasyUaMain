@@ -40,10 +40,9 @@ import com.taxi.easy.ua.ui.fondy.token_pay.PaymentApiToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.RequestDataToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.StatusRequestToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.SuccessResponseDataToken;
-import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
-import com.taxi.easy.ua.ui.home.MyBottomSheetErrorPaymentFragment;
-import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
-import com.taxi.easy.ua.ui.maps.CostJSONParser;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.ui.mono.MonoApi;
 import com.taxi.easy.ua.ui.mono.payment.RequestPayMono;
 import com.taxi.easy.ua.ui.mono.payment.ResponsePayMono;
@@ -206,7 +205,7 @@ public class FinishActivity extends AppCompatActivity {
 
                     btn_reset_status.setVisibility(View.GONE);
                     btn_again.setVisibility(View.VISIBLE);
-                    btn_cancel.setVisibility(View.VISIBLE);
+                    
                     btn_reset_status.setVisibility(View.GONE);
                     btn_cancel_order.setVisibility(View.GONE);
                     progressBar.setVisibility(View.GONE);
@@ -220,7 +219,7 @@ public class FinishActivity extends AppCompatActivity {
                 });
                 btn_cancel_order.setText(getString(R.string.help_button));
                 btn_again.setVisibility(View.VISIBLE);
-                btn_cancel.setVisibility(View.VISIBLE);
+                
                 btn_reset_status.setVisibility(View.GONE);
                 btn_cancel_order.setVisibility(View.GONE);
                 progressBar.setVisibility(View.GONE);
@@ -265,7 +264,7 @@ public class FinishActivity extends AppCompatActivity {
                 btn_reset_status.setVisibility(View.GONE);
                 btn_cancel_order.setText(getString(R.string.help_button));
                 btn_again.setVisibility(View.VISIBLE);
-                btn_cancel.setVisibility(View.VISIBLE);
+                
                 btn_reset_status.setVisibility(View.GONE);
                 btn_cancel_order.setVisibility(View.VISIBLE);
                 progressBar.setVisibility(View.GONE);
@@ -274,7 +273,7 @@ public class FinishActivity extends AppCompatActivity {
 
                     btn_reset_status.setVisibility(View.GONE);
                     btn_again.setVisibility(View.VISIBLE);
-                    btn_cancel.setVisibility(View.VISIBLE);
+                    
                     btn_reset_status.setVisibility(View.GONE);
                     btn_cancel_order.setVisibility(View.GONE);
                     progressBar.setVisibility(View.GONE);
@@ -312,7 +311,7 @@ public class FinishActivity extends AppCompatActivity {
 
             }
             btn_again.setVisibility(View.VISIBLE);
-            btn_cancel.setVisibility(View.VISIBLE);
+            
             btn_reset_status.setVisibility(View.GONE);
             btn_cancel_order.setVisibility(View.GONE);
 
@@ -1362,7 +1361,7 @@ public class FinishActivity extends AppCompatActivity {
             }
         });
         btn_again.setVisibility(View.VISIBLE);
-        btn_cancel.setVisibility(View.VISIBLE);
+        
         btn_reset_status.setVisibility(View.GONE);
         btn_cancel_order.setVisibility(View.GONE);
         progressBar.setVisibility(View.GONE);
@@ -1399,7 +1398,7 @@ public class FinishActivity extends AppCompatActivity {
             }
         });
         btn_again.setVisibility(View.VISIBLE);
-        btn_cancel.setVisibility(View.VISIBLE);
+        
         btn_reset_status.setVisibility(View.GONE);
         btn_cancel_order.setVisibility(View.GONE);
         progressBar.setVisibility(View.GONE);
@@ -1452,7 +1451,7 @@ public class FinishActivity extends AppCompatActivity {
                             } else {
                                 message = getString(R.string.checkout_status);
                                 btn_again.setVisibility(View.VISIBLE);
-                                btn_cancel.setVisibility(View.VISIBLE);
+                                
                                 btn_reset_status.setVisibility(View.GONE);
                                 btn_cancel_order.setVisibility(View.GONE);
                                 progressBar.setVisibility(View.GONE);
@@ -1471,7 +1470,7 @@ public class FinishActivity extends AppCompatActivity {
                             } else {
                                 message = getString(R.string.checkout_status);
                                 btn_again.setVisibility(View.VISIBLE);
-                                btn_cancel.setVisibility(View.VISIBLE);
+                                
                                 btn_reset_status.setVisibility(View.GONE);
                                 btn_cancel_order.setVisibility(View.GONE);
                                 progressBar.setVisibility(View.GONE);
@@ -1495,7 +1494,7 @@ public class FinishActivity extends AppCompatActivity {
                                 }
                             }
                             btn_again.setVisibility(View.VISIBLE);
-                            btn_cancel.setVisibility(View.VISIBLE);
+                            
                             btn_reset_status.setVisibility(View.GONE);
                             btn_cancel_order.setVisibility(View.GONE);
                             progressBar.setVisibility(View.GONE);
@@ -1539,7 +1538,7 @@ public class FinishActivity extends AppCompatActivity {
                             } else {
                                 message = getString(R.string.ex_st_canceled);
                                 btn_again.setVisibility(View.VISIBLE);
-                                btn_cancel.setVisibility(View.VISIBLE);
+                                
                                 btn_reset_status.setVisibility(View.GONE);
                                 btn_cancel_order.setVisibility(View.GONE);
                                 progressBar.setVisibility(View.GONE);

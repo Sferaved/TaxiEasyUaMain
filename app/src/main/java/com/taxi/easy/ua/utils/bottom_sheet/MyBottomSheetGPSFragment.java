@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.home;
+package com.taxi.easy.ua.utils.bottom_sheet;
 
 import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
@@ -18,6 +18,7 @@ import androidx.appcompat.widget.AppCompatButton;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 

@@ -1,11 +1,10 @@
 package com.taxi.easy.ua;
 
-import static com.taxi.easy.ua.R.string.cancel_button;
-import static com.taxi.easy.ua.R.string.format_phone;
-
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -21,9 +20,12 @@ import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -42,7 +44,6 @@ import androidx.navigation.ui.NavigationUI;
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract;
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
@@ -64,10 +65,10 @@ import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.home.HomeFragment;
-import com.taxi.easy.ua.ui.home.MyBottomSheetCityFragment;
-import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
-import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
-import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetCityFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiClientMapbox;
 import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiResponseMapbox;
 import com.taxi.easy.ua.ui.visicom.visicom_search.key_visicom.ApiResponse;
@@ -165,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
     String baseUrl = "https://m.easy-order-taxi.site";
     private List<RouteResponse> routeList;
     private String[] array;
-    public static boolean gps_upd;
+    private boolean gps_upd;
     VisicomFragment visicomFragment;
     public static SharedPreferences sharedPreferences;
     public static SharedPreferences sharedPreferencesCount;
@@ -183,8 +184,11 @@ public class MainActivity extends AppCompatActivity {
     public static NavController navController;
     private FirebaseUserManager userManager;
     private SharedPreferencesHelper sharedPreferencesHelper;
+    private String cityMenu;
+    private String city;
+    private String newTitle;
 
-   @Override
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
@@ -236,8 +240,60 @@ public class MainActivity extends AppCompatActivity {
         } catch (MalformedURLException | JSONException | InterruptedException e) {
             FirebaseCrashlytics.getInstance().recordException(e);
         }
+
+       // Устанавливаем Action Bar, если он доступен
+       if (getSupportActionBar() != null) {
+           // Устанавливаем пользовательский макет в качестве заголовка Action Bar
+           getSupportActionBar().setDisplayShowCustomEnabled(true);
+           getSupportActionBar().setDisplayShowTitleEnabled(false); // Отключаем стандартный заголовок
+           getSupportActionBar().setCustomView(R.layout.custom_action_bar_title);
+
+           // Доступ к TextView в пользовательском заголовке
+           View customView = getSupportActionBar().getCustomView();
+           TextView titleTextView = customView.findViewById(R.id.action_bar_title);
+
+           setCityAppbar();
+
+           titleTextView.setText(newTitle);
+           // Установка обработчика нажатий
+           titleTextView.setOnClickListener(v -> {
+               // Ваш код при нажатии на заголовок
+               MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, MainActivity.this);
+               bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+           });
+       }
+
     }
 
+    private void setCityAppbar()
+    {
+        List<String> stringList = logCursor(MainActivity.CITY_INFO);
+        city = stringList.get(1);
+        switch (city){
+            case "Kyiv City":
+                cityMenu = getString(R.string.city_kyiv);
+                break;
+            case "Dnipropetrovsk Oblast":
+                cityMenu = getString(R.string.city_dnipro);
+                break;
+            case "Odessa":
+                cityMenu = getString(R.string.city_odessa);
+                break;
+            case "Zaporizhzhia":
+                cityMenu = getString(R.string.city_zaporizhzhia);
+                break;
+            case "Cherkasy Oblast":
+                cityMenu = getString(R.string.city_cherkasy);
+                break;
+            case "OdessaTest":
+                cityMenu = "Test";
+                break;
+            default:
+                cityMenu = getString(R.string.foreign_countries);
+        }
+        newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+        sharedPreferencesHelper.saveValue("newTitle", newTitle);
+    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -266,6 +322,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             gps_upd = false;
         }
+        sharedPreferencesHelper.saveValue("gps_upd", gps_upd);
     }
 
     @Override
@@ -787,16 +844,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, R.string.verify_internet, Toast.LENGTH_SHORT).show();
             }
         }
-        if (item.getItemId() == R.id.nav_city) {
-            if (NetworkUtils.isNetworkAvailable(this)) {
-                List<String> listCity = logCursor(MainActivity.CITY_INFO);
-                String city = listCity.get(1);
-                MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, MainActivity.this);
-                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-            } else {
-                Toast.makeText(this, R.string.verify_internet, Toast.LENGTH_SHORT).show();
-            }
-        }
+
 
         if (item.getItemId() == R.id.send_like) {
             if (NetworkUtils.isNetworkAvailable(this)) {
@@ -815,12 +863,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private AppUpdater appUpdater;
+    private static AppUpdater appUpdater;
 
-    private void updateApp() {
+    public void updateApp() {
 
         // Создание экземпляра AppUpdater
-        appUpdater = new AppUpdater(this);
+        appUpdater = new AppUpdater();
         Logger.d(this, TAG, "Starting app update process");
 
         // Установка слушателя для обновления состояния установки
@@ -829,7 +877,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.update_finish_mes, Toast.LENGTH_SHORT).show();
 
             // Перезапуск приложения для применения обновлений
-            restartApplication();
+            new Handler(Looper.getMainLooper()).postDelayed(this::restartApplication, 1000); // Задержка 1 секунда
         });
 
         // Регистрация слушателя
@@ -895,9 +943,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void restartApplication() {
         Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
+        int pendingIntentId = 123456;
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, pendingIntentId, intent, PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        alarmManager.set(AlarmManager.RTC, System.currentTimeMillis() + 1000, pendingIntent); // Задержка 1 секунда
+        System.exit(0); // Завершение текущего процесса
     }
+
 
     @Override
     protected void onDestroy() {
@@ -1019,7 +1071,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     public void phoneNumberChange() {
-        MainActivity.navController.popBackStack();
+        
         MainActivity.navController.navigate(R.id.nav_account);
     }
     private void updateRecordsUser(String field, String result) {
@@ -1085,6 +1137,7 @@ public class MainActivity extends AppCompatActivity {
         new Thread(this::mapboxKey).start();
         new Thread(this::visicomKey).start();
         new Thread(() -> insertPushDate(getApplicationContext())).start();
+
         if(sharedPreferencesHelper.getValue("CityCheckActivity", "**").equals("run")) {
             if(userEmail.equals("email")) {
                 firstStart = true;
@@ -1588,7 +1641,7 @@ public class MainActivity extends AppCompatActivity {
                     if (phone != null) {
                         // Используйте phone по своему усмотрению
                         Logger.d(getApplicationContext(), TAG, "User phone: " + phone);
-                        String PHONE_PATTERN = "((\\+?380)(\\d{9}))$";
+                        String PHONE_PATTERN = "\\+38 \\d{3} \\d{3} \\d{2} \\d{2}";
                         boolean val = Pattern.compile(PHONE_PATTERN).matcher(phone).matches();
 
                         if (val) {
@@ -1665,18 +1718,33 @@ public class MainActivity extends AppCompatActivity {
 
         AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(this);
         Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
-        appUpdateInfoTask.addOnSuccessListener(new OnSuccessListener<AppUpdateInfo>() {
-            @Override
-            public void onSuccess(AppUpdateInfo appUpdateInfo) {
-                if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
-                    // Доступны обновления
-                    Logger.d(getApplicationContext(), TAG, "Available updates found");
-                    String title = getString(R.string.new_version);
-                    String messageNotif = getString(R.string.news_of_version);
+        appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
+            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
+                // Доступны обновления
+                Logger.d(getApplicationContext(), TAG, "Available updates found");
+                String title = getString(R.string.new_version);
+                String messageNotif = getString(R.string.news_of_version);
 
-                    String urlStr = "https://play.google.com/store/apps/details?id=com.taxi.easy.ua";
-                    NotificationHelper.showNotification(MainActivity.this, title, messageNotif, urlStr);
-                }
+                String urlStr = "https://play.google.com/store/apps/details?id=com.taxi.easy.ua";
+                NotificationHelper.showNotification(MainActivity.this, title, messageNotif, urlStr);
+            }
+        });
+    }
+    private void checkForUpdateForBtn() {
+
+
+        AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(this);
+        Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
+        appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
+            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
+                // Доступны обновления
+
+                Logger.d(getApplicationContext(), TAG, "Available updates found");
+                String title = getString(R.string.new_version);
+                String messageNotif = getString(R.string.news_of_version);
+
+                String urlStr = "https://play.google.com/store/apps/details?id=com.taxi.easy.ua";
+                NotificationHelper.showNotification(MainActivity.this, title, messageNotif, urlStr);
             }
         });
     }

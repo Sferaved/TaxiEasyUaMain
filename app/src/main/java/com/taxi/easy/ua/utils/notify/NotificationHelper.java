@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.utils.notify;
 
+import static com.taxi.easy.ua.ui.visicom.VisicomFragment.ubt_btn;
+
 import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -13,6 +15,8 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
+import android.view.View;
+
 import androidx.annotation.Nullable;
 
 import androidx.core.app.ActivityCompat;
@@ -26,10 +30,7 @@ import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
 import com.google.android.play.core.install.model.AppUpdateType;
 import com.google.android.play.core.install.model.UpdateAvailability;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
-import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
-import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.log.Logger;
 
 
@@ -198,7 +199,7 @@ public class NotificationHelper {
 
     private static final int MY_REQUEST_CODE = 1234;
 
-    private static void checkForUpdate(Context context) {
+    public static void checkForUpdate(Context context) {
         AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(context);
         Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
 
@@ -216,6 +217,9 @@ public class NotificationHelper {
                             AppUpdateType.IMMEDIATE,
                             (Activity) context,
                             MY_REQUEST_CODE);
+
+                    ubt_btn.setVisibility(View.VISIBLE);
+
                 } catch (IntentSender.SendIntentException e) {
                     Logger.e(context, TAG, "Failed to start update flow: " + e.getMessage());
                     FirebaseCrashlytics.getInstance().recordException(e);

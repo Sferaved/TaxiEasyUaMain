@@ -11,6 +11,21 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefreshLayout"
+            android:layout_width="40dp"
+            android:layout_height="580dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="16dp"
+
+            app:layout_constraintStart_toEndOf="@+id/btn_clear"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"></TextView>
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
         <TextView
             android:id="@+id/num1"
             android:layout_width="wrap_content"
@@ -28,13 +43,12 @@
             android:id="@+id/btn_minus"
             android:layout_width="60sp"
             android:layout_height="60sp"
-            android:layout_marginTop="16sp"
+             android:layout_marginStart="58dp"
+            android:layout_marginTop="16dp"
             android:gravity="center"
             android:text="-"
             android:textSize="30sp"
             android:visibility="invisible"
-            app:layout_constraintEnd_toStartOf="@+id/text_view_cost"
-            app:layout_constraintHorizontal_bias="0.621"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/btnBonus" />
 
@@ -42,13 +56,12 @@
             android:id="@+id/progress_bar"
             android:layout_width="48sp"
             android:layout_height="48sp"
-            android:layout_marginTop="8sp"
 
-            android:visibility="invisible"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.388"
-            app:layout_constraintStart_toEndOf="@+id/textwhere"
-            app:layout_constraintTop_toBottomOf="@+id/text_from" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/constr_2" />
 
         <TextView
             android:id="@+id/text_view_cost"
@@ -56,7 +69,7 @@
             android:layout_height="60sp"
             android:layout_margin="@dimen/activity_vertical_margin"
 
-            android:layout_marginTop="12sp"
+            android:layout_marginTop="16dp"
             android:background="@drawable/input"
             android:ems="10"
             android:fontFamily="@font/light"
@@ -65,9 +78,8 @@
             android:textSize="25sp"
             android:visibility="invisible"
 
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.498"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/btn_plus"
+            app:layout_constraintStart_toEndOf="@+id/btn_minus"
             app:layout_constraintTop_toBottomOf="@+id/btnBonus"
             tools:ignore="MissingConstraints" />
 
@@ -76,14 +88,13 @@
             android:layout_width="60sp"
             android:layout_height="60sp"
             android:layout_marginTop="16sp"
+            android:layout_marginEnd="4dp"
             android:backgroundTint="@color/colorAccent"
             android:gravity="center"
             android:text="+"
             android:textSize="30sp"
             android:visibility="invisible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.385"
-            app:layout_constraintStart_toEndOf="@+id/text_view_cost"
+            app:layout_constraintEnd_toStartOf="@+id/swipeRefreshLayout"
             app:layout_constraintTop_toBottomOf="@+id/btnBonus"
             tools:ignore="MissingConstraints" />
 
@@ -101,9 +112,9 @@
 
         <AutoCompleteTextView
             android:id="@+id/text_from"
-            android:layout_width="200dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="24sp"
+             android:layout_marginStart="58dp"
             android:background="@drawable/input"
             android:dropDownWidth="match_parent"
             android:dropDownHeight="wrap_content"
@@ -113,11 +124,12 @@
             android:inputType="textMultiLine"
             android:lines="3"
             android:maxLines="3"
-            android:minHeight="48sp"
+            android:minHeight="50dp"
+            android:minWidth="230dp"
             android:minLines="1"
             android:textColor="#D9D9D9"
             android:textColorHint="#ABD9D9D9"
-            android:textSize="18sp"
+            android:textSize="16dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textfrom" />
 
@@ -125,48 +137,27 @@
             android:id="@+id/from_number"
             android:layout_width="55sp"
             android:layout_height="40sp"
-            android:layout_marginStart="4sp"
+            android:layout_marginStart="8dp"
             android:background="@drawable/input"
             android:ems="10"
             android:fontFamily="@font/light"
             android:inputType="number"
             android:text=" "
-            android:textAlignment="textStart"
+            android:textAlignment="center"
             android:textAllCaps="true"
             android:textColor="#D9D9D9"
             android:textColorHint="#ABD9D9D9"
             android:textSize="18sp"
             android:visibility="invisible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toEndOf="@+id/text_from"
             app:layout_constraintTop_toTopOf="@+id/text_from" />
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/gpsbut"
-
-            android:layout_width="100sp"
-            android:layout_height="44sp"
-            android:layout_marginTop="16sp"
-            android:layout_marginEnd="8sp"
-            android:background="@drawable/buttons"
-            android:fontFamily="@font/regular"
-            android:insetLeft="0sp"
-            android:insetTop="0sp"
-            android:insetRight="0sp"
-            android:insetBottom="0sp"
-            android:text="@string/on_map"
-
-            android:textAlignment="center"
-            android:textColor="#D9D9D9"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnOrder"
             android:layout_width="293sp"
             android:layout_height="45sp"
-            android:layout_marginTop="16sp"
+             android:layout_marginStart="58dp"
+            android:layout_marginTop="16dp"
             android:background="@drawable/buttons"
             android:fontFamily="@font/regular"
             android:insetLeft="0sp"
@@ -178,8 +169,6 @@
             android:textColor="@color/colorAccent"
             android:textSize="16sp"
             android:visibility="invisible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_view_cost" />
 
@@ -220,9 +209,10 @@
 
         <AutoCompleteTextView
             android:id="@+id/text_to"
-            android:layout_width="200dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="24sp"
+             android:layout_marginStart="58dp"
+            android:layout_marginTop="4dp"
             android:background="@drawable/input"
             android:dropDownWidth="match_parent"
             android:dropDownHeight="wrap_content"
@@ -232,21 +222,59 @@
             android:inputType="textMultiLine"
             android:lines="3"
             android:maxLines="3"
-            android:minHeight="48sp"
+            android:minHeight="50dp"
+            android:minWidth="230dp"
             android:minLines="1"
             android:textColor="#D9D9D9"
             android:textColorHint="#ABD9D9D9"
-            android:textSize="18sp"
+            android:textSize="16sp"
             android:visibility="invisible"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textwhere" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/constr_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+             android:layout_marginStart="58dp"
+
+            app:layout_constraintHorizontal_bias="0.508"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_to">
+
+            <TextView
+                android:id="@+id/schedule"
+                android:layout_width="293dp"
+                android:layout_height="33dp"
+                android:background="@drawable/input"
+                android:ems="10"
+                android:fontFamily="@font/light"
+                android:textColor="@color/white"
+                android:textColorHint="#ABD9D9D9"
+
+
+                android:textSize="18sp"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="MissingConstraints"
+                tools:layout_editor_absoluteX="4dp" />
+
+            <ImageButton
+                android:id="@+id/shed_down"
+                android:layout_width="32dp"
+                android:layout_height="30dp" 
+                android:background="@drawable/input"
+                android:src="@drawable/down_arrow_white"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <TextView
             android:id="@+id/textwhere"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="4sp"
-            android:layout_marginTop="40sp"
+            android:layout_marginTop="4dp"
             android:fontFamily="@font/light"
             android:text="@string/to_text"
             android:textColor="#9DA0A8"
@@ -255,33 +283,34 @@
             app:layout_constraintStart_toStartOf="@+id/text_to"
             app:layout_constraintTop_toBottomOf="@+id/text_from" />
 
+
         <EditText
             android:id="@+id/to_number"
             android:layout_width="55sp"
             android:layout_height="40sp"
-            android:layout_marginStart="4sp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="40dp"
             android:background="@drawable/input"
             android:ems="10"
             android:fontFamily="@font/light"
             android:inputType="number"
+
             android:text=" "
-            android:textAlignment="textStart"
+            android:textAlignment="center"
             android:textAllCaps="true"
             android:textColor="#D9D9D9"
             android:textColorHint="#ABD9D9D9"
             android:textSize="18sp"
             android:visibility="invisible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toEndOf="@+id/text_to"
-            app:layout_constraintTop_toTopOf="@+id/text_to" />
-
+            app:layout_constraintTop_toBottomOf="@+id/from_number" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_clear"
-            android:layout_width="293sp"
-            android:layout_height="45sp"
-            android:layout_marginTop="12sp"
+            android:layout_width="293dp"
+            android:layout_height="45dp"
+            android:layout_marginTop="8dp"
+             android:layout_marginStart="58dp"
             android:background="@drawable/buttons"
             android:fontFamily="@font/regular"
             android:text="@string/clear_home"
@@ -289,15 +318,15 @@
             android:textColor="#D9D9D9"
             android:textSize="16sp"
             android:visibility="invisible"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/text_to" />
+            app:layout_constraintTop_toBottomOf="@+id/progress_bar" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnAdd"
             android:layout_width="293sp"
             android:layout_height="45sp"
-            android:layout_marginTop="8sp"
+            android:layout_marginTop="8dp"
+             android:layout_marginStart="58dp"
             android:background="@drawable/buttons"
             android:fontFamily="@font/regular"
             android:text="@string/add_services"
@@ -305,7 +334,6 @@
             android:textColor="#D9D9D9"
             android:textSize="16sp"
             android:visibility="invisible"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/btn_clear" />
 
@@ -313,7 +341,8 @@
             android:id="@+id/btnBonus"
             android:layout_width="293sp"
             android:layout_height="45sp"
-            android:layout_marginTop="8sp"
+            android:layout_marginTop="8dp"
+             android:layout_marginStart="58dp"
             android:background="@drawable/buttons"
             android:fontFamily="@font/regular"
             android:text="@string/btn_bonus"
@@ -321,24 +350,21 @@
             android:textColor="#D9D9D9"
             android:textSize="16sp"
             android:visibility="invisible"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/btnAdd" />
-
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnCallAdmin"
             android:layout_width="293sp"
             android:layout_height="45sp"
-            android:layout_marginTop="12sp"
+            android:layout_marginTop="12dp"
+             android:layout_marginStart="58dp"
             android:background="@drawable/buttons"
             android:fontFamily="@font/regular"
             android:text="@string/call_admin"
             android:textAlignment="center"
             android:textColor="@color/white"
             android:textSize="16sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.525"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/btnOrder" />
 

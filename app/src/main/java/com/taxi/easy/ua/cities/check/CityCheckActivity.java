@@ -26,10 +26,10 @@ import com.taxi.easy.ua.cities.api.CityService;
 import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
-import com.taxi.easy.ua.ui.home.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
@@ -63,8 +63,6 @@ public class CityCheckActivity extends AppCompatActivity {
     ListView listView;
     String city;
     private String cityMenu;
-    private String message;
-    String pay_method;
 
 
     /**
@@ -118,6 +116,8 @@ public class CityCheckActivity extends AppCompatActivity {
             city = "Kyiv City";
             phoneNumber = Kyiv_City_phone;
             cityMenu = getString(R.string.city_kyiv);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelper.saveValue("newTitle", newTitle);
             updateMyPosition();
         });
         btn_city_2.setOnClickListener(view12 -> {
@@ -125,6 +125,8 @@ public class CityCheckActivity extends AppCompatActivity {
             city = "Dnipropetrovsk Oblast";
             phoneNumber = Dnipropetrovsk_Oblast_phone;
             cityMenu = getString(R.string.city_dnipro);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelper.saveValue("newTitle", newTitle);
             updateMyPosition();
         });
         btn_city_3.setOnClickListener(view13 -> {
@@ -132,6 +134,8 @@ public class CityCheckActivity extends AppCompatActivity {
             city = "Odessa";
             phoneNumber = Odessa_phone;
             cityMenu = getString(R.string.city_odessa);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelper.saveValue("newTitle", newTitle);
             updateMyPosition();
         });
         btn_city_4.setOnClickListener(view14 -> {
@@ -139,6 +143,8 @@ public class CityCheckActivity extends AppCompatActivity {
             city = "Zaporizhzhia";
             phoneNumber = Zaporizhzhia_phone;
             cityMenu = getString(R.string.city_zaporizhzhia);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelper.saveValue("newTitle", newTitle);
             updateMyPosition();
         });
         btn_city_5.setOnClickListener(view -> {
@@ -146,6 +152,8 @@ public class CityCheckActivity extends AppCompatActivity {
             city = "Cherkasy Oblast";
             phoneNumber = Cherkasy_Oblast_phone;
             cityMenu = getString(R.string.city_cherkasy);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelper.saveValue("newTitle", newTitle);
             updateMyPosition();
         });
         btn_city_6.setOnClickListener(view15 -> {
@@ -153,6 +161,8 @@ public class CityCheckActivity extends AppCompatActivity {
             city = "OdessaTest";
             phoneNumber = Kyiv_City_phone;
             cityMenu = "Test";
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelper.saveValue("newTitle", newTitle);
             updateMyPosition();
         });
         btn_city_7.setOnClickListener(view16 -> {
@@ -160,6 +170,8 @@ public class CityCheckActivity extends AppCompatActivity {
             city = "foreign countries";
             phoneNumber = Kyiv_City_phone;
             cityMenu = getString(R.string.foreign_countries);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelper.saveValue("newTitle", newTitle);
             updateMyPosition();
         });
         btn_exit.setOnClickListener(view16 -> {
@@ -340,6 +352,10 @@ public class CityCheckActivity extends AppCompatActivity {
         settings.add(position);
 
         updateRoutMarker(settings);
+
+        String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+        sharedPreferencesHelper.saveValue("newTitle", newTitle);
+
     }
 
    

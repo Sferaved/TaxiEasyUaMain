@@ -49,7 +49,7 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.cities.Kyiv.KyivRegion;
 import com.taxi.easy.ua.cities.Kyiv.KyivRegionRu;
-import com.taxi.easy.ua.ui.home.MyBottomSheetGPSFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapVisicomActivity;
 import com.taxi.easy.ua.ui.open_map.mapbox.Feature;
@@ -229,8 +229,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             // Пытаемся скрыть клавиатуру
             immHide.hideSoftInputFromWindow(v.getWindowToken(), 0);
             if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-
-                VisicomFragment.btn_clear_from.setVisibility(View.INVISIBLE);
 
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
                 VisicomFragment.btn_clear_from_text.setText(getString(R.string.try_again));
@@ -440,8 +438,10 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             }
         });
         btn_ok.setOnClickListener(v -> {
-            VisicomFragment.btnVisible(View.INVISIBLE);
-            finish();
+            sharedPreferencesHelper.saveValue("gps_upd_address", false);
+            Logger.d(this, TAG, "sharedPreferencesHelper.getValue(\"gps_upd\", false)" +sharedPreferencesHelper.getValue("gps_upd", false));
+
+            startActivity(new Intent(this, MainActivity.class));
         });
 
         scrollButtonDown.setOnClickListener(v -> {
@@ -1703,7 +1703,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                             List<String> settings = new ArrayList<>();
 
                             VisicomFragment.textViewTo.setText(addressesList.get(position));
-                            VisicomFragment.btn_clear_to.setVisibility(View.INVISIBLE);
+
                             Logger.d(getApplicationContext(), TAG, "processAddressData: ");
 //                                            if (!toEditAddress.getText().toString().equals("")) {
                             String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
@@ -1996,12 +1996,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                         VisicomFragment.geoText.setText(startPoint);
                         Logger.d(getApplicationContext(), TAG, "processAddressData: startPoint 2" + startPoint);
                         if(startPoint.contains("\t")) {
-
-                                Intent intent = new Intent(getApplicationContext(), ActivityVisicomOnePage.class);
-                                intent.putExtra("start", "no");
-                                intent.putExtra("end", "ok");
-                                startActivity(intent);
-
+                            btn_ok.performClick();
                         }
                     }
                 } else if (point.equals("finish")) {
@@ -2015,7 +2010,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                         VisicomFragment.textViewTo.setText(addressesList.get(position));
                         Logger.d(getApplicationContext(), TAG, "oldAddresses: " + addressesList.get(position));
-                        VisicomFragment.btn_clear_to.setVisibility(View.INVISIBLE);
+
                         Logger.d(getApplicationContext(), TAG, "oldAddresses:2222 "+ VisicomFragment.geoText.getText().toString());
                         if (!VisicomFragment.geoText.getText().toString().equals("")) {
                             String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
@@ -2316,7 +2311,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                             List<String> settings = new ArrayList<>();
 
                             VisicomFragment.textViewTo.setText(addressesList.get(position));
-                            VisicomFragment.btn_clear_to.setVisibility(View.INVISIBLE);
+
                             String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
                             SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                             @SuppressLint("Recycle") Cursor cursor = database.rawQuery(query, null);

@@ -44,7 +44,6 @@ import com.taxi.easy.ua.ui.fondy.status.FondyApiService;
 import com.taxi.easy.ua.ui.fondy.status.StatusRequest;
 import com.taxi.easy.ua.ui.fondy.status.StatusRequestBody;
 import com.taxi.easy.ua.ui.fondy.status.SuccessfulResponseData;
-import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.mono.MonoApi;
 import com.taxi.easy.ua.ui.mono.cancel.RequestCancelMono;
 import com.taxi.easy.ua.ui.mono.cancel.ResponseCancelMono;
@@ -57,6 +56,7 @@ import com.taxi.easy.ua.ui.wfp.revers.ReversResponse;
 import com.taxi.easy.ua.ui.wfp.revers.ReversService;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.io.IOException;
@@ -296,7 +296,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                             database.close();
                         }
                     }
-                    MainActivity.navController.popBackStack();
+                    
                     MainActivity.navController.navigate(R.id.nav_card);
                 } else {
                     if (isAdded()) {
@@ -365,7 +365,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                     }
 
                 }
-                MainActivity.navController.popBackStack();
+                
                 MainActivity.navController.navigate(R.id.nav_bonus);
             }
 

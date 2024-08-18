@@ -28,18 +28,16 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.navigation.NavOptions;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentCancelBinding;
-import com.taxi.easy.ua.databinding.FragmentUidBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
-import com.taxi.easy.ua.ui.finish.FinishActivity;
-import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
-import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
@@ -115,13 +113,12 @@ public class CancelFragment extends Fragment {
 
         textUid  = binding.textUid;
         upd_but = binding.updBut;
-        upd_but.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!NetworkUtils.isNetworkAvailable(context)) {
-                    MainActivity.navController.popBackStack();
-                    MainActivity.navController.navigate(R.id.nav_visicom);
-                }
+        upd_but.setOnClickListener(v -> {
+            if (!NetworkUtils.isNetworkAvailable(context)) {
+                
+                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true) 
+                        .build());
             }
         });
         scrollButtonUp = binding.scrollButtonUp;
@@ -279,14 +276,7 @@ public class CancelFragment extends Fragment {
                 to_name_local + ".";
         Logger.d(context, TAG, "startFinishPage: messageResult " + messageResult);
         Logger.d(context, TAG, "startFinishPage: to_name " + to_name);
-//        Intent intent = new Intent(context, FinishActivity.class);
-//        intent.putExtra("messageResult_key", messageResult);
-//        intent.putExtra("messageFondy_key", messageFondy);
-//        intent.putExtra("messageCost_key", Objects.requireNonNull(sendUrlMap.get("orderWeb")));
-//        intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
-//        intent.putExtra("card_payment_key", "no");
-//        intent.putExtra("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
-//        startActivity(intent);
+
 
          Bundle bundle = new Bundle();
          bundle.putString("messageResult_key", messageResult);
@@ -320,8 +310,10 @@ public class CancelFragment extends Fragment {
         upd_but.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                MainActivity.navController.popBackStack();
-                MainActivity.navController.navigate(R.id.nav_visicom);
+                
+                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true) 
+                        .build());
             }
         });
 

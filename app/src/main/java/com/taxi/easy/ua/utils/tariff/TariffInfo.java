@@ -26,7 +26,8 @@ public class TariffInfo {
 
     private static final String BASE_URL = "https://m.easy-order-taxi.site/" + MainActivity.api + "/android/";
 
-    public void fetchOrderCostDetails(double startLat, double startLng, double endLat, double endLng, String user, String services, String city, String application) {
+    public void fetchOrderCostDetails(double startLat, double startLng, double endLat, double endLng,
+                                      String user, String time, String date, String services, String city, String application) {
         // Создание логгера для логирования запросов
 
 
@@ -46,7 +47,9 @@ public class TariffInfo {
 
         ApiService apiService = retrofit.create(ApiService.class);
 
-        Call<List<Tariff>> call = apiService.getOrderCostDetails(startLat, startLng, endLat, endLng, user, services, city, application);
+        Call<List<Tariff>> call = apiService.getOrderCostDetails(
+                startLat, startLng, endLat, endLng,
+                user, time, date, services, city, application);
 
         call.enqueue(new Callback<List<Tariff>>() {
             @Override
@@ -90,7 +93,7 @@ public class TariffInfo {
                             databaseHelperTariffs.close();
                         }
                     } catch (Exception ignored) {}
-//                    VisicomFragment.readTariffInfo(context);
+                    VisicomFragment.readTariffInfo(context);
                 } else {
                     // Обработка ошибки
                 }

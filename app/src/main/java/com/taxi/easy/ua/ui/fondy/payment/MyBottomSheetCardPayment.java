@@ -29,14 +29,16 @@ import androidx.fragment.app.FragmentManager;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.CardInfo;
-import com.taxi.easy.ua.ui.finish.FinishActivity;
+import com.taxi.easy.ua.ui.finish.ApiService;
+import com.taxi.easy.ua.ui.finish.fragm.FinishFragment;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureClient;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureResponse;
-import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
-import com.taxi.easy.ua.ui.home.MyBottomSheetErrorPaymentFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
@@ -359,9 +361,9 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                                 break;
                             default:
                                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                                FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
+                                callOrderIdMemory(MainActivity.order_id, FinishFragment.uid, pay_method);
 
-                                MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishActivity.messageFondy, amount, context);
+                                MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishFragment.messageFondy, amount, context);
                                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                                 dismiss();
                         }
@@ -369,16 +371,16 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                     } else {
                         Logger.d(getActivity(), TAG, "Response body is null");
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                        FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
+                        callOrderIdMemory(MainActivity.order_id, FinishFragment.uid, pay_method);
 
-                        MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishActivity.messageFondy, amount, context);
+                        MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishFragment.messageFondy, amount, context);
                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
                 } else {
                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                    FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
+                    callOrderIdMemory(MainActivity.order_id, FinishFragment.uid, pay_method);
 
-                    MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishActivity.messageFondy, amount, context);
+                    MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishFragment.messageFondy, amount, context);
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     Logger.d(getActivity(), TAG, "Request failed:");
 
@@ -388,14 +390,36 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                FinishActivity.callOrderIdMemory(MainActivity.order_id, FinishActivity.uid, pay_method);
+                callOrderIdMemory(MainActivity.order_id, FinishFragment.uid, pay_method);
 
-                MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishActivity.messageFondy, amount, context);
+                MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishFragment.messageFondy, amount, context);
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 Logger.d(getActivity(), TAG, "Request failed:"+ t.getMessage());
             }
         });
 
+    }
+
+    private void callOrderIdMemory(String orderId, String uid, String paySystem) {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        ApiService apiService = retrofit.create(ApiService.class);
+        Call<Void> call = apiService.orderIdMemory(orderId, uid, paySystem);
+
+        call.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                // Обработка ошибки
+                FirebaseCrashlytics.getInstance().recordException(t);
+            }
+        });
     }
 
     private void getCardTokenWfp(String city) {

@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.773</string>
-    <string name="version">Версія: 1.773</string>
+    <string name="version_code">1.774</string>
+    <string name="version">Версія: 1.774</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -30,7 +30,7 @@
     <string name="action_exit">Вихід</string>
     <string name="delete_record">видалити?</string>
     <string name="make_rout">Створити маршрут</string>
-    <string name="call_admin">Дзвонок оператору</string>
+    <string name="call_admin">Дзвінок оператору</string>
     <string name="email_friend">Розповісти другові</string>
 
     <string name="my_phone">Мій телефон</string>
@@ -128,12 +128,12 @@
     <string name="serve">Подача</string>
     <string name="coment">Коментар</string>
     <string name="services">ПОСЛУГИ</string>
-    <string name="resettimetoorder">Змініть дату або час для попереднього замовлення</string>
+    <string name="resettimetoorder">Перевірте дату або час для попереднього замовлення</string>
     <string name="my_routs">Оберить маршрут</string>
     <string name="no_routs">Немає маршрутів</string>
     <string name="cheng">Змінити</string>
     <string name="delete_routs">видалити</string>
-    <string name="text_result">Ваше замовлення</string>
+    <string name="text_result">Інформація про подорож</string>
     <string name="btn_again_text">Замовити ще</string>
     <string name="textStatus">Статус замовлення</string>
     <string name="cancel_order">Скасувати замовлення</string>
@@ -400,4 +400,12 @@
     <string name="phone_number">Телефон</string>
     <string name="uninstal">Видалити додаток</string>
     <string name="your_order">Ваше замовлення</string>
+    <string name="sedan">седан</string>
+    <string name="universal">універсал</string>
+    <string name="bus">мікроавтобус</string>
+    <string name="upd_app">Оновити додаток</string>
+    <string name="time_to_order">Час подачі</string>
+    <string name="data_order">Виберіть дату</string>
+    <string name="on_now">На даний момент</string>
+    <string name="on">На</string>
 </resources>

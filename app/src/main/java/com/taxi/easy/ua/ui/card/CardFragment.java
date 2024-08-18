@@ -26,6 +26,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.navigation.NavOptions;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.Gson;
@@ -42,7 +43,7 @@ import com.taxi.easy.ua.ui.fondy.payment.RequestData;
 import com.taxi.easy.ua.ui.fondy.payment.StatusRequestPay;
 import com.taxi.easy.ua.ui.fondy.payment.SuccessResponseDataPay;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
-import com.taxi.easy.ua.ui.home.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.mono.MonoApi;
 import com.taxi.easy.ua.ui.mono.cancel.RequestCancelMono;
 import com.taxi.easy.ua.ui.mono.cancel.ResponseCancelMono;
@@ -54,6 +55,7 @@ import com.taxi.easy.ua.ui.wfp.verify.VerifyService;
 import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.web.MyWebViewClient;
 
 import java.io.IOException;
@@ -110,19 +112,23 @@ public class CardFragment extends Fragment {
         context = requireActivity();
        
         if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-            MainActivity.navController.popBackStack();
-            MainActivity.navController.navigate(R.id.nav_visicom);
+            
+            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true) 
+                        .build());
         }
         context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         btnCardLink  = binding.btnCardLink;
         btnOrder = binding.btnOrder;
-        btnOrder.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту
-                MainActivity.navController.popBackStack();
-                MainActivity.navController.navigate(R.id.nav_visicom);
-            }
+        btnOrder.setOnClickListener(v -> {
+            // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту
+            SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
+            sharedPreferencesHelper.saveValue("gps_upd", true);
+            sharedPreferencesHelper.saveValue("gps_upd_address", true);
+            
+            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true) 
+                        .build());
         });
 
         btnCallAdmin = binding.btnCallAdmin;
@@ -196,8 +202,10 @@ public class CardFragment extends Fragment {
 
                             Logger.d(context, TAG, "onClick: " + pay_method);
                             if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-                                MainActivity.navController.popBackStack();
-                                MainActivity.navController.navigate(R.id.nav_visicom);
+                                
+                                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true) 
+                        .build());
                             } else {
                                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getActivity());
 
