@@ -62,6 +62,7 @@ public class ToJSONParserRetrofit {
                         costMap.put("routefromnumber", jsonarray.getRouteFromNumber());
                         costMap.put("routeto", jsonarray.getRouteTo());
                         costMap.put("to_number", jsonarray.getToNumber());
+                        costMap.put("required_time", jsonarray.getRequired_time());
 
                         if (jsonarray.getDoubleOrder() != null) {
                             costMap.put("doubleOrder", jsonarray.getDoubleOrder());

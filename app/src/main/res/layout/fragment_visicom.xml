@@ -213,13 +213,12 @@
             android:id="@+id/textfrom"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="44dp"
-            android:layout_marginTop="60dp"
+            android:layout_marginTop="56dp"
             android:fontFamily="@font/light"
             android:text="@string/from_text"
             android:textColor="#9DA0A8"
             android:textSize="14sp"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/textGeo"
             app:layout_constraintTop_toTopOf="parent" />
 
         <androidx.appcompat.widget.AppCompatButton
@@ -240,14 +239,13 @@
             android:id="@+id/textwhere"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="48dp"
             android:layout_marginTop="16dp"
             android:fontFamily="@font/light"
             android:text="@string/to_edit"
             android:textColor="#9DA0A8"
             android:textSize="14sp"
             android:visibility="invisible"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/text_to"
             app:layout_constraintTop_toBottomOf="@+id/change" />
 
         <androidx.appcompat.widget.AppCompatButton
@@ -375,7 +373,7 @@
                     android:layout_marginBottom="4dp"
                     android:text="@string/sedan"
                     android:textColor="#D9D9D9"
-                    android:textSize="12sp" />
+                    android:textSize="10dp" />
             </FrameLayout>
 
             <FrameLayout
@@ -407,7 +405,7 @@
                     android:layout_marginBottom="4dp"
                     android:text="@string/universal"
                     android:textColor="#D9D9D9"
-                    android:textSize="12sp" />
+                    android:textSize="10dp" />
             </FrameLayout>
 
             <!-- FrameLayout 3 -->
@@ -441,7 +439,7 @@
                     android:layout_marginBottom="4dp"
                     android:text="@string/bus"
                     android:textColor="#D9D9D9"
-                    android:textSize="12sp" />
+                    android:textSize="10dp" />
             </FrameLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>

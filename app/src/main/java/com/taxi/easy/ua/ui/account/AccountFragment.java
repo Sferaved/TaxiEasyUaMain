@@ -99,7 +99,7 @@ public class AccountFragment extends Fragment {
         userName.setText(stringList.get(4));
         phoneNumber.setText(formatPhoneNumber(stringList.get(2)));
         email.setText(userEmail);
-        fetchRoutesCancel(userEmail);
+        fetchRoutesCancel();
 
         userName.addTextChangedListener(new TextWatcher() {
             @Override
@@ -201,7 +201,7 @@ public class AccountFragment extends Fragment {
 
     }
 
-    private void fetchRoutesCancel(String value) {
+    private void fetchRoutesCancel() {
         dbH = new DatabaseHelper(getContext());
         dbHUid = new DatabaseHelperUid(getContext());
 
@@ -210,7 +210,12 @@ public class AccountFragment extends Fragment {
 
         routeList = new ArrayList<>();
 
-        String url = baseUrl + "/android/UIDStatusShowEmailCancel/" + value;
+        String baseUrl = "https://m.easy-order-taxi.site";
+
+        List<String> stringList = logCursor(MainActivity.CITY_INFO);
+        String city = stringList.get(1);
+
+        String url = baseUrl + "/android/UIDStatusShowEmailCancelApp/" + userEmail + "/" + city + "/" +  context.getString(R.string.application);
         Call<List<RouteResponseCancel>> call = ApiClient.getApiService().getRoutesCancel(url);
         Logger.d(context, TAG, "fetchRoutesCancel: " + url);
         call.enqueue(new Callback<List<RouteResponseCancel>>() {
@@ -286,6 +291,7 @@ public class AccountFragment extends Fragment {
             String auto = route.getAuto();
             String dispatchingOrderUidDouble = route.getDispatchingOrderUidDouble();
             String pay_method = route.getPay_method();
+            String required_time = route.getRequired_time();
 
             switch (closeReason){
                 case "-1":
@@ -343,18 +349,25 @@ public class AccountFragment extends Fragment {
             if(auto == null) {
                 auto = "??";
             }
+            if(required_time != null && !required_time.contains("01.01.1970")) {
+                required_time = getString(R.string.time_order) + required_time;
+            } else {
+                required_time = "";
+            }
 
             if(routeFrom.equals(routeTo)) {
                 routeInfo = context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
                         + context.getString(R.string.close_resone_to)
                         + context.getString(R.string.on_city)
+                        + required_time
                         + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)
                         + context.getString(R.string.auto_info) + " " + auto + " "
                         + context.getString(R.string.close_resone_time)
                         + createdAt + context.getString(R.string.close_resone_text) + closeReasonText;
             } else {
                 routeInfo = context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
+                        + context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber + "."
+                        + required_time
                         + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)
                         + context.getString(R.string.auto_info) + " " + auto + " "
                         + context.getString(R.string.close_resone_time)
@@ -373,6 +386,7 @@ public class AccountFragment extends Fragment {
             settings.add(routeTonumber);
             settings.add(dispatchingOrderUidDouble);
             settings.add(pay_method);
+            settings.add(required_time);
 
             Logger.d(context, TAG, settings.toString());
             dbHUid.addCancelInfoUid(settings);

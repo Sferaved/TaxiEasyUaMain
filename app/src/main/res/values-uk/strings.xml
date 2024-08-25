@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.774</string>
-    <string name="version">Версія: 1.774</string>
+    <string name="version_code">1.775</string>
+    <string name="version">Версія: 1.775</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -129,7 +129,7 @@
     <string name="coment">Коментар</string>
     <string name="services">ПОСЛУГИ</string>
     <string name="resettimetoorder">Перевірте дату або час для попереднього замовлення</string>
-    <string name="my_routs">Оберить маршрут</string>
+    <string name="my_routs">Оберіть маршрут</string>
     <string name="no_routs">Немає маршрутів</string>
     <string name="cheng">Змінити</string>
     <string name="delete_routs">видалити</string>
@@ -408,4 +408,5 @@
     <string name="data_order">Виберіть дату</string>
     <string name="on_now">На даний момент</string>
     <string name="on">На</string>
+    <string name="time_order">" Подача автомобіля на "</string>
 </resources>

@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="300dp"
     android:layout_height="match_parent"
-    android:background="@color/background_color_new">
+    android:background="@color/white">
 
     <TextView
         android:id="@+id/tvTitle"
@@ -16,7 +17,7 @@
         android:textColor="@color/white"
         android:textSize="20sp"
         android:textStyle="bold"
-  app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -25,11 +26,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginStart="80dp"
         android:layout_marginTop="12dp"
-        android:layout_marginEnd="24dp"
+        android:solidColor="@color/background_color_new"
         app:layout_constraintEnd_toStartOf="@+id/minutePicker"
-        app:layout_constraintHorizontal_bias="0.008"
+        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvTitle" />
 
@@ -38,12 +38,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginStart="24dp"
         android:layout_marginTop="12dp"
-        android:layout_marginEnd="80dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="16dp"
+        android:solidColor="@color/background_color_new"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/hourPicker"
         app:layout_constraintTop_toBottomOf="@+id/tvTitle" />
 
     <androidx.appcompat.widget.AppCompatButton
@@ -51,8 +49,7 @@
         android:layout_width="100dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_margin="12dp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
         android:text="@android:string/ok"

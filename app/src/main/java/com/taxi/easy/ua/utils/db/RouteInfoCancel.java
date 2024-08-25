@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName;
 
 public class RouteInfoCancel {
 
-    public RouteInfoCancel(String dispatchingOrderUid, String orderCost, String routeFrom, String routeFromNumber, String routeTo, String toNumber, String dispatchingOrderUidDouble, String pay_method) {
+    public RouteInfoCancel(String dispatchingOrderUid, String orderCost, String routeFrom, String routeFromNumber, String routeTo, String toNumber, String dispatchingOrderUidDouble, String pay_method, String required_time) {
         this.dispatchingOrderUid = dispatchingOrderUid;
         this.orderCost = orderCost;
         this.routeFrom = routeFrom;
@@ -13,6 +13,7 @@ public class RouteInfoCancel {
         this.toNumber = toNumber;
         this.dispatchingOrderUidDouble = dispatchingOrderUidDouble;
         this.Pay_method = pay_method;
+        this.required_time = required_time;
     }
     @SerializedName("dispatching_order_uid")
     private String dispatchingOrderUid;
@@ -37,6 +38,9 @@ public class RouteInfoCancel {
 
     @SerializedName("pay_method")
     private String Pay_method;
+
+    @SerializedName("required_time")
+    private String required_time;
 
     // геттеры и сеттеры
 
@@ -71,5 +75,9 @@ public class RouteInfoCancel {
 
     public String getToPay_method() {
         return Pay_method;
+    }
+
+    public String getRequired_time() {
+        return required_time;
     }
 }

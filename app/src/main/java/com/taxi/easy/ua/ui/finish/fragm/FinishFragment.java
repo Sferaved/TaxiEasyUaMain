@@ -46,7 +46,7 @@ import com.taxi.easy.ua.ui.finish.Status;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureClient;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureResponse;
 import com.taxi.easy.ua.ui.fondy.payment.ApiResponsePay;
-import com.taxi.easy.ua.ui.fondy.payment.MyBottomSheetCardPayment;
+import com.taxi.easy.ua.ui.card.MyBottomSheetCardPayment;
 import com.taxi.easy.ua.ui.fondy.payment.PaymentApi;
 import com.taxi.easy.ua.ui.fondy.payment.RequestData;
 import com.taxi.easy.ua.ui.fondy.payment.StatusRequestPay;
@@ -233,23 +233,8 @@ public class FinishFragment extends Fragment {
                 } else {
                     text_status.setText(newStatus);
                 }
-                btn_cancel_order.setOnClickListener(v -> {
-                    cancel_btn_click = true;
 
-                    carProgressBar.setVisibility(View.INVISIBLE);
-                    progressBar.setVisibility(View.GONE);
-                    Intent intent = new Intent(Intent.ACTION_DIAL);
-
-                    List<String> stringList = logCursor(MainActivity.CITY_INFO);
-                    String phone = stringList.get(3);
-                    intent.setData(Uri.parse(phone));
-                    startActivity(intent);
-                });
-                btn_cancel_order.setText( context.getString(R.string.help_button));
-               
-                
-                
-                
+                carProgressBar.setVisibility(View.GONE);
                 progressBar.setVisibility(View.GONE);
 
             };
@@ -296,21 +281,8 @@ public class FinishFragment extends Fragment {
                 
                 
                 progressBar.setVisibility(View.GONE);
-                btn_cancel_order.setOnClickListener(v -> {
-                    cancel_btn_click = true;
-                    btn_cancel_order.setVisibility(View.GONE);
-                    carProgressBar.setVisibility(View.INVISIBLE);
-                    
-                    progressBar.setVisibility(View.GONE);
+                carProgressBar.setVisibility(View.GONE);
 
-                    handlerBonusBtn.removeCallbacks(runnableBonusBtn);
-
-                    Intent intent = new Intent(Intent.ACTION_DIAL);
-                    List<String> stringList = logCursor(MainActivity.CITY_INFO);
-                    String phone = stringList.get(3);
-                    intent.setData(Uri.parse(phone));
-                    startActivity(intent);
-                });
             };
             handler.postDelayed(myRunnable, delayMillis);
         }
@@ -1447,7 +1419,7 @@ public class FinishFragment extends Fragment {
                             }
                             break;
                         case "CarFound":
-                            btn_cancel_order.setVisibility(View.VISIBLE);
+                            btn_cancel_order.setVisibility(View.GONE);
                             carProgressBar.setVisibility(View.GONE);
                             if(!cancel_btn_click) {
                                 delayMillisStatus = 30 * 1000;

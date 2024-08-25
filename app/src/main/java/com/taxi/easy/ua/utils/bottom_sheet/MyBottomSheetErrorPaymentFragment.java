@@ -21,6 +21,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.FragmentManager;
+import androidx.navigation.NavOptions;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -35,7 +36,7 @@ import com.taxi.easy.ua.ui.finish.fragm.FinishFragment;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureClient;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureResponse;
 import com.taxi.easy.ua.ui.fondy.payment.ApiResponsePay;
-import com.taxi.easy.ua.ui.fondy.payment.MyBottomSheetCardPayment;
+import com.taxi.easy.ua.ui.card.MyBottomSheetCardPayment;
 import com.taxi.easy.ua.ui.fondy.payment.PaymentApi;
 import com.taxi.easy.ua.ui.fondy.payment.RequestData;
 import com.taxi.easy.ua.ui.fondy.payment.StatusRequestPay;
@@ -346,7 +347,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
                 assert sendUrlMap != null;
                 String orderWeb = sendUrlMap.get("order_cost");
-
+                String message = sendUrlMap.get("message");
                 assert orderWeb != null;
                 if (!orderWeb.equals("0")) {
                     String to_name;
@@ -387,7 +388,25 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     bundle.putString("card_payment_key", "no");
                     bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
                     
-                    MainActivity.navController.navigate(R.id.nav_finish, bundle);
+                    MainActivity.navController.navigate(R.id.nav_finish, bundle, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_visicom, true)
+                            .build());
+                }
+                else {
+                    assert message != null;
+                    if (message.contains("Дублирование")) {
+                        message = getResources().getString(R.string.double_order_error);
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    } else if (message.equals("ErrorMessage")) {
+                        message = getResources().getString(R.string.server_error_connected);
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    } else {
+                        message = getResources().getString(R.string.error_message);
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    }
                 }
             }
 

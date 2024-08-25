@@ -46,6 +46,8 @@ public class JsonResponse {
     @SerializedName("Message")
     private String message;
 
+    @SerializedName("required_time")
+    private String required_time;
     // геттеры и сеттеры
 
     public String getFromLat() {
@@ -102,6 +104,10 @@ public class JsonResponse {
 
     public String getMessage() {
         return message;
+    }
+
+    public String getRequired_time() {
+        return required_time;
     }
 }
 

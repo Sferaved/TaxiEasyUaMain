@@ -166,8 +166,6 @@ public class CancelFragment extends Fragment {
 
         if (item.getItemId() == R.id.action_order) {
 
-            // Обработка действия "Edit"
-//            Toast.makeText(requireActivity(), "Edit: " + array[position], Toast.LENGTH_SHORT).show();
             Logger.d(context, TAG, "onContextItemSelected: " + position);
             Logger.d(context, TAG, "onContextItemSelected: " + array[position]);
 
@@ -209,6 +207,7 @@ public class CancelFragment extends Fragment {
         }
         costMap.put("pay_method", routeInfo.getToPay_method());
         costMap.put("orderWeb", routeInfo.getOrderCost());
+        costMap.put("required_time", routeInfo.getRequired_time());
         return costMap;
     }
 
@@ -259,11 +258,13 @@ public class CancelFragment extends Fragment {
          String orderWeb = cleanString(Objects.requireNonNull(sendUrlMap.get("orderWeb")));
          String uah = cleanString(context.getString(R.string.UAH));
          String payMethodMessage = cleanString(pay_method_message);
+         String required_time = sendUrlMap.get("required_time");
 
          String messageResult = thanksMessage + " " +
                  routeFrom + " " +
                  toMessage + " " +
                  toNameLocal + ". " +
+                 required_time  + ". " +
                  callOfOrder + " " +
                  orderWeb + " " +
                  uah + " " +
@@ -287,7 +288,9 @@ public class CancelFragment extends Fragment {
          bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
 
 // Установите Bundle как аргументы фрагмента
-         MainActivity.navController.navigate(R.id.nav_finish, bundle);
+         MainActivity.navController.navigate(R.id.nav_finish, bundle, new NavOptions.Builder()
+                 .setPopUpTo(R.id.nav_visicom, true)
+                 .build());
 
 
      }
@@ -307,17 +310,16 @@ public class CancelFragment extends Fragment {
         routeList = new ArrayList<>();
 
         upd_but.setText(context.getString(R.string.cancel_gps));
-        upd_but.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                
-                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true) 
-                        .build());
-            }
-        });
+        upd_but.setOnClickListener(v -> MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                .setPopUpTo(R.id.nav_visicom, true)
+                .build()));
 
-        String url = baseUrl + "/android/UIDStatusShowEmailCancel/" + value;
+        String baseUrl = "https://m.easy-order-taxi.site";
+
+        List<String> stringList = logCursor(MainActivity.CITY_INFO,context);
+        String city = stringList.get(1);
+
+        String url = baseUrl + "/android/UIDStatusShowEmailCancelApp/" + value + "/" + city + "/" +  context.getString(R.string.application);
         Call<List<RouteResponseCancel>> call = ApiClient.getApiService().getRoutesCancel(url);
         Logger.d(context, TAG, "fetchRoutesCancel: " + url);
         call.enqueue(new Callback<List<RouteResponseCancel>>() {
@@ -391,6 +393,7 @@ public class CancelFragment extends Fragment {
             String auto = route.getAuto();
             String dispatchingOrderUidDouble = route.getDispatchingOrderUidDouble();
             String pay_method = route.getPay_method();
+            String required_time = route.getRequired_time();
 
             switch (closeReason){
                 case "-1":
@@ -449,17 +452,24 @@ public class CancelFragment extends Fragment {
                 auto = "??";
             }
 
+            if(required_time != null && !required_time.contains("01.01.1970")) {
+                required_time = context.getString(R.string.time_order) + required_time;
+            } else {
+                required_time = "";
+            }
             if(routeFrom.equals(routeTo)) {
                 routeInfo = context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
                         + context.getString(R.string.close_resone_to)
                         + context.getString(R.string.on_city)
+                        + required_time
                         + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)
                         + context.getString(R.string.auto_info) + " " + auto + " "
                         + context.getString(R.string.close_resone_time)
                         + createdAt + context.getString(R.string.close_resone_text) + closeReasonText;
             } else {
                 routeInfo = context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
+                        + context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber + "."
+                        + required_time
                         + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)
                         + context.getString(R.string.auto_info) + " " + auto + " "
                         + context.getString(R.string.close_resone_time)
@@ -478,6 +488,7 @@ public class CancelFragment extends Fragment {
              settings.add(routeTonumber);
              settings.add(dispatchingOrderUidDouble);
              settings.add(pay_method);
+             settings.add(required_time);
 
             Logger.d(context, TAG, settings.toString());
             databaseHelperUid.addCancelInfoUid(settings);

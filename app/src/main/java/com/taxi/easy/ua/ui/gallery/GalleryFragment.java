@@ -500,8 +500,13 @@ public class GalleryFragment extends Fragment {
                         }
                     }
                     String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
-
                     String pay_method_message = getString(R.string.pay_method_message_main);
+                    String required_time = sendUrlMap.get("required_time");
+                    if(required_time != null && !required_time.contains("01.01.1970")) {
+                        required_time = context.getString(R.string.time_order) + required_time + ". ";
+                    } else {
+                        required_time = "";
+                    }
                     switch (pay_method) {
                         case "bonus_payment":
                             pay_method_message += " " + getString(R.string.pay_method_message_bonus);
@@ -522,9 +527,11 @@ public class GalleryFragment extends Fragment {
                     ) {
                         to_name_local = getString(R.string.on_city_tv);
                     }
+
                     String messageResult = getString(R.string.thanks_message) +
                             sendUrlMap.get("routefrom") + sendUrlMap.get("routefromnumber") + " " + getString(R.string.to_message) +
                             to_name_local + "." +
+                            required_time +
                             getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH) + ". " + pay_method_message;
                     messageResult = cleanString(messageResult);
 
@@ -540,8 +547,9 @@ public class GalleryFragment extends Fragment {
                     bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
 
 // Установите Bundle как аргументы фрагмента
-                    MainActivity.navController.navigate(R.id.nav_finish, bundle);
-
+                    MainActivity.navController.navigate(R.id.nav_finish, bundle, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_visicom, true)
+                            .build());
                 } else {
                     assert message != null;
                     if (message.contains("Дублирование")) {

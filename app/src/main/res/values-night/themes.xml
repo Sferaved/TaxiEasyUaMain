@@ -17,11 +17,10 @@
 
 
     <style name="Theme.TaxiEasyUa.NoActionBar">
-        <item name="windowActionBar">false</item>
+        <item name="android:windowBackground">@color/background_color_new</item>
+        <item name="windowActionBar">true</item>
         <item name="windowNoTitle">true</item>
-        <!--                <item name="android:windowTranslucentNavigation">true</item>-->
-        <!--                <item name="android:fitsSystemWindows">true</item>-->
-        <!--                <item name="android:clipToPadding">false</item>-->
+        <item name="android:textColor">@color/black</item>
     </style>
 
     <style name="Theme.TaxiEasyUa.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" >

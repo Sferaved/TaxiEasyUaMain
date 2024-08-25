@@ -47,6 +47,9 @@ public class RouteResponseCancel {
     @SerializedName("created_at")
     private String createdAt;
 
+    @SerializedName("required_time")
+    private String required_time;
+
 
     public String getStartLat() {
         return startLat;
@@ -116,5 +119,9 @@ public class RouteResponseCancel {
 
     public void setPay_method(String pay_method) {
         this.pay_method = pay_method;
+    }
+
+    public String getRequired_time() {
+        return required_time;
     }
 }

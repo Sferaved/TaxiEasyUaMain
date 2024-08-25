@@ -198,14 +198,14 @@ public class CardFragment extends Fragment {
                         networkChangeReceiver = new NetworkChangeReceiver();
                         email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
                         btnCardLink.setOnClickListener(v -> {
-                        progressBar.setVisibility(View.VISIBLE);
+                            progressBar.setVisibility(View.VISIBLE);
 
                             Logger.d(context, TAG, "onClick: " + pay_method);
                             if (!NetworkUtils.isNetworkAvailable(requireContext())) {
                                 
                                 MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true) 
-                        .build());
+                                    .setPopUpTo(R.id.nav_visicom, true)
+                                    .build());
                             } else {
                                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getActivity());
 
@@ -213,12 +213,14 @@ public class CardFragment extends Fragment {
 
                                 switch (pay_method) {
                                     case "wfp_payment":
-                                        try {
-                                            getUrlToPaymentWfp(MainActivity.order_id, messageFondy);
-                                        } catch (UnsupportedEncodingException e) {
-                                            FirebaseCrashlytics.getInstance().recordException(e);
-                                            throw new RuntimeException(e);
-                                        }
+                                        MyBottomSheetCardVerificationWithOneUah bottomSheetDialogFragment = new MyBottomSheetCardVerificationWithOneUah();
+                                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+//                                        try {
+//                                            getUrlToPaymentWfp(MainActivity.order_id, messageFondy);
+//                                        } catch (UnsupportedEncodingException e) {
+//                                            FirebaseCrashlytics.getInstance().recordException(e);
+//                                            throw new RuntimeException(e);
+//                                        }
                                         break;
                                     case "fondy_payment":
                                         try {

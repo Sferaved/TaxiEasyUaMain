@@ -686,7 +686,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         + createdAt +context.getString(R.string.close_resone_text) + closeReasonText;
             } else {
                 routeInfo =context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        +context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
+                        +context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber + "."
                         +context.getString(R.string.close_resone_cost) + webCost + " " +context.getString(R.string.UAH)
                         +context.getString(R.string.auto_info) + " " + auto + " "
                         +context.getString(R.string.close_resone_time)

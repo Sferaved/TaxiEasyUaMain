@@ -309,6 +309,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
 
         ArrayList<Map<String, String>> cardMaps = getCardMapsFromDatabase();
         Logger.d(getContext(), TAG, "onResume: cardMaps" + cardMaps);
+
         if (cardMaps.isEmpty()) {
             // Если массив пустой, отобразите текст "no_routs" вместо списка
             CardFragment.textCard.setVisibility(View.VISIBLE);
@@ -332,23 +333,21 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
         ArrayList<Map<String, String>> cardMaps = new ArrayList<>();
         SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         // Выполните запрос к таблице TABLE_FONDY_CARDS и получите данные
-        Cursor cursor = database.query(MainActivity.TABLE_FONDY_CARDS, null, null, null, null, null, null);
+        Cursor cursor = database.query(table, null, null, null, null, null, null);
         Logger.d(getContext(), TAG, "getCardMapsFromDatabase: card count: " + cursor.getCount());
 
-        if (cursor != null) {
-            if (cursor.moveToFirst()) {
-                do {
-                    Map<String, String> cardMap = new HashMap<>();
-                    cardMap.put("card_type", cursor.getString(cursor.getColumnIndex("card_type")));
-                    cardMap.put("bank_name", cursor.getString(cursor.getColumnIndex("bank_name")));
-                    cardMap.put("masked_card", cursor.getString(cursor.getColumnIndex("masked_card")));
-                    cardMap.put("rectoken", cursor.getString(cursor.getColumnIndex("rectoken")));
+        if (cursor.moveToFirst()) {
+            do {
+                Map<String, String> cardMap = new HashMap<>();
+                cardMap.put("card_type", cursor.getString(cursor.getColumnIndex("card_type")));
+                cardMap.put("bank_name", cursor.getString(cursor.getColumnIndex("bank_name")));
+                cardMap.put("masked_card", cursor.getString(cursor.getColumnIndex("masked_card")));
+                cardMap.put("rectoken", cursor.getString(cursor.getColumnIndex("rectoken")));
 
-                    cardMaps.add(cardMap);
-                } while (cursor.moveToNext());
-            }
-            cursor.close();
+                cardMaps.add(cardMap);
+            } while (cursor.moveToNext());
         }
+        cursor.close();
         database.close();
 
         return cardMaps;

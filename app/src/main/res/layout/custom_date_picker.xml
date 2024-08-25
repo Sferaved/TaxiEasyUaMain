@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="300dp"
     android:layout_height="match_parent"
-    android:background="@color/background_color_new">
+
+    android:background="@color/white">
 
     <TextView
         android:id="@+id/tvTitle"
@@ -26,8 +28,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginStart="32dp"
         android:layout_marginTop="12dp"
+        android:solidColor="@color/background_color_new"
+        app:layout_constraintEnd_toStartOf="@+id/npMonth"
+        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvTitle" />
 
@@ -37,6 +41,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="12dp"
+        android:solidColor="@color/background_color_new"
         app:layout_constraintEnd_toStartOf="@+id/npYear"
         app:layout_constraintStart_toEndOf="@+id/npDay"
         app:layout_constraintTop_toBottomOf="@+id/tvTitle" />
@@ -47,10 +52,10 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="12dp"
-        android:layout_marginEnd="32dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="16dp"
+        android:solidColor="@color/background_color_new"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/npMonth"
         app:layout_constraintTop_toBottomOf="@+id/tvTitle" />
 
     <androidx.appcompat.widget.AppCompatButton
@@ -62,6 +67,7 @@
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
         android:text="@android:string/ok"
+        android:layout_margin="12dp"
         android:textAlignment="center"
         android:textColor="@color/white"
         android:textSize="16sp"
@@ -69,7 +75,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/npMonth"
-        app:layout_constraintVertical_bias="0.07" />
+        app:layout_constraintVertical_bias="0.087" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

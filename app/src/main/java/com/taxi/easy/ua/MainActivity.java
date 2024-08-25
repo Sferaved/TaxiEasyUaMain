@@ -61,12 +61,10 @@ import com.taxi.easy.ua.cities.api.CityService;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
 import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.clear.AppDataUtils;
-import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetCityFragment;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiClientMapbox;
@@ -78,8 +76,6 @@ import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 
 import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
-import com.taxi.easy.ua.utils.db.DatabaseHelper;
-import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.fcm.token_send.ApiServiceToken;
 import com.taxi.easy.ua.utils.fcm.token_send.RetrofitClientToken;
@@ -98,7 +94,6 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -161,11 +156,10 @@ public class MainActivity extends AppCompatActivity {
     public static String apiKeyMapBox;
     public static String apiKey;
 
-    DatabaseHelper databaseHelper;
-    DatabaseHelperUid databaseHelperUid;
-    String baseUrl = "https://m.easy-order-taxi.site";
+
+
     private List<RouteResponse> routeList;
-    private String[] array;
+
     private boolean gps_upd;
     VisicomFragment visicomFragment;
     public static SharedPreferences sharedPreferences;
@@ -214,8 +208,7 @@ public class MainActivity extends AppCompatActivity {
         navMenu = navigationView.getMenu();
         navVisicomMenuItem = navMenu.findItem(R.id.nav_visicom);
 
-        databaseHelper = new DatabaseHelper(this);
-        databaseHelperUid = new DatabaseHelperUid(this);
+
 
         navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
@@ -309,13 +302,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
-        databaseHelper = new DatabaseHelper(getApplicationContext());
-        databaseHelper.clearTable();
-
-        databaseHelperUid = new DatabaseHelperUid(getApplicationContext());
-        databaseHelperUid.clearTableUid();
-
         if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             gps_upd = getIntent().getBooleanExtra("gps_upd", true);
@@ -1070,10 +1056,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, getString(R.string.gps_ok), Toast.LENGTH_SHORT).show();
         }
     }
-    public void phoneNumberChange() {
-        
-        MainActivity.navController.navigate(R.id.nav_account);
-    }
+
     private void updateRecordsUser(String field, String result) {
         ContentValues cv = new ContentValues();
 
@@ -1137,7 +1120,7 @@ public class MainActivity extends AppCompatActivity {
         new Thread(this::mapboxKey).start();
         new Thread(this::visicomKey).start();
         new Thread(() -> insertPushDate(getApplicationContext())).start();
-
+        Logger.d(this, TAG, "CityCheckActivity: " + sharedPreferencesHelper.getValue("CityCheckActivity", "**"));
         if(sharedPreferencesHelper.getValue("CityCheckActivity", "**").equals("run")) {
             if(userEmail.equals("email")) {
                 firstStart = true;
@@ -1150,7 +1133,6 @@ public class MainActivity extends AppCompatActivity {
 
                 new Thread(this::versionFromMarket).start();
                 new Thread(this::userPhoneFromFb).start();
-                new Thread(() -> fetchRoutesCancel(userEmail)).start();
                 new Thread(() -> updatePushDate(getApplicationContext())).start();
 
                 new VerifyUserTask(this).execute();
@@ -1749,186 +1731,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void fetchRoutesCancel(String value) {
-        Logger.d(this, TAG, "fetchRoutesCancel: ");
 
-        routeListCancel = new ArrayList<>();
-
-        String url = baseUrl + "/android/UIDStatusShowEmailCancel/" + value;
-        Call<List<RouteResponseCancel>> call = ApiClient.getApiService().getRoutesCancel(url);
-        Logger.d(this, TAG, "fetchRoutesCancel: " + url);
-        call.enqueue(new Callback<List<RouteResponseCancel>>() {
-            @Override
-            public void onResponse(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Response<List<RouteResponseCancel>> response) {
-                if (response.isSuccessful()) {
-                    List<RouteResponseCancel> routes = response.body();
-                    assert routes != null;
-                    Logger.d(MainActivity.this, TAG, "onResponse: " + routes.toString());
-                    if (routes.size() == 1) {
-                        RouteResponseCancel route = routes.get(0);
-                        if ("*".equals(route.getRouteFrom()) && "*".equals(route.getRouteFromNumber()) &&
-                                "*".equals(route.getRouteTo()) && "*".equals(route.getRouteToNumber()) &&
-                                "*".equals(route.getWebCost()) && "*".equals(route.getCloseReason()) &&
-                                "*".equals(route.getAuto()) && "*".equals(route.getCreatedAt())) {
-                            databaseHelper.clearTableCancel();
-                            databaseHelperUid.clearTableCancel();
-                            return;
-                        }
-                    }
-                    if (!routes.isEmpty()) {
-                        boolean hasRouteWithAsterisk = false;
-                        for (RouteResponseCancel route : routes) {
-                            if ("*".equals(route.getRouteFrom())) {
-                                // Найден объект с routefrom = "*"
-                                hasRouteWithAsterisk = true;
-                                break;  // Выход из цикла, так как условие уже выполнено
-                            }
-                        }
-                        if (!hasRouteWithAsterisk) {
-                            if (routeListCancel == null) {
-                                routeListCancel = new ArrayList<>();
-                            }
-                            routeListCancel.addAll(routes);
-                            processCancelList();
-                        }
-
-                    }
-                }
-            }
-
-            public void onFailure(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Throwable t) {
-                // Обработка ошибок сети или других ошибок
-                FirebaseCrashlytics.getInstance().recordException(t);
-            }
-        });
-    }
-
-    private void processCancelList() {
-        if (routeListCancel == null || routeListCancel.isEmpty()) {
-            Logger.d(this, TAG, "routeListCancel is null or empty");
-            return;
-        }
-
-        // Создайте массив строк
-        array = new String[routeListCancel.size()];
-        databaseHelper.clearTableCancel();
-        databaseHelperUid.clearTableCancel();
-
-        String closeReasonText = getString(R.string.close_resone_def);
-
-        for (int i = 0; i < routeListCancel.size(); i++) {
-            RouteResponseCancel route = routeListCancel.get(i);
-            String uid = route.getUid();
-            String routeFrom = route.getRouteFrom();
-            String routefromnumber = route.getRouteFromNumber();
-            String routeTo = route.getRouteTo();
-            String routeTonumber = route.getRouteToNumber();
-            String webCost = route.getWebCost();
-            String createdAt = route.getCreatedAt();
-            String closeReason = route.getCloseReason();
-            String auto = route.getAuto();
-            String dispatchingOrderUidDouble = route.getDispatchingOrderUidDouble();
-            String pay_method = route.getPay_method();
-
-            switch (closeReason) {
-                case "-1":
-                    closeReasonText = getString(R.string.close_resone_in_work);
-                    break;
-                case "0":
-                    closeReasonText = getString(R.string.close_resone_0);
-                    break;
-                case "1":
-                    closeReasonText = getString(R.string.close_resone_1);
-                    break;
-                case "2":
-                    closeReasonText = getString(R.string.close_resone_2);
-                    break;
-                case "3":
-                    closeReasonText = getString(R.string.close_resone_3);
-                    break;
-                case "4":
-                    closeReasonText = getString(R.string.close_resone_4);
-                    break;
-                case "5":
-                    closeReasonText = getString(R.string.close_resone_5);
-                    break;
-                case "6":
-                    closeReasonText = getString(R.string.close_resone_6);
-                    break;
-                case "7":
-                    closeReasonText = getString(R.string.close_resone_7);
-                    break;
-                case "8":
-                    closeReasonText = getString(R.string.close_resone_8);
-                    break;
-                case "9":
-                    closeReasonText = getString(R.string.close_resone_9);
-                    break;
-            }
-
-            if (routeFrom.equals("Місце відправлення")) {
-                routeFrom = getString(R.string.start_point_text);
-            }
-
-            if (routeTo.equals("Точка на карте")) {
-                routeTo = getString(R.string.end_point_marker);
-            }
-            if (routeTo.contains("по городу")) {
-                routeTo = getString(R.string.on_city);
-            }
-            if (routeTo.contains("по місту")) {
-                routeTo = getString(R.string.on_city);
-            }
-            String routeInfo = "";
-
-            if (auto == null) {
-                auto = "??";
-            }
-
-            if (routeFrom.equals(routeTo)) {
-                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + getString(R.string.close_resone_to)
-                        + getString(R.string.on_city)
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
-                        + getString(R.string.auto_info) + " " + auto + " "
-                        + getString(R.string.close_resone_time)
-                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
-            } else {
-                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
-                        + getString(R.string.auto_info) + " " + auto + " "
-                        + getString(R.string.close_resone_time)
-                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
-            }
-
-            databaseHelper.addRouteCancel(uid, routeInfo);
-            List<String> settings = new ArrayList<>();
-
-            settings.add(uid);
-            settings.add(webCost);
-            settings.add(routeFrom);
-            settings.add(routefromnumber);
-            settings.add(routeTo);
-            settings.add(routeTonumber);
-            settings.add(dispatchingOrderUidDouble);
-            settings.add(pay_method);
-
-            Logger.d(this, TAG, settings.toString());
-            databaseHelperUid.addCancelInfoUid(settings);
-        }
-
-        array = databaseHelper.readRouteCancel();
-        Logger.d(this, TAG, "processRouteList: array " + Arrays.toString(array));
-        if (array != null) {
-            String message = getString(R.string.order_to_cancel_true);
-            MyBottomSheetErrorFragment myBottomSheetMessageFragment = new MyBottomSheetErrorFragment(message);
-            myBottomSheetMessageFragment.show(getSupportFragmentManager(), myBottomSheetMessageFragment.getTag());
-        } else {
-            databaseHelper.clearTableCancel();
-            databaseHelperUid.clearTableCancel();
-        }
-    }
     private void mapboxKey() {
         ApiClientMapbox.getMapboxKeyInfo(new Callback<ApiResponseMapbox>() {
             @Override

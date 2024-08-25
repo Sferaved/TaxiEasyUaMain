@@ -845,11 +845,11 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         NumberPicker npMonth = dataPickerDialog.findViewById(R.id.npMonth);
         NumberPicker npDay = dataPickerDialog.findViewById(R.id.npDay);
 
-        int color = getResources().getColor(R.color.white, null); // Get the white color
-
-        setNumberPickerTextColor(npYear, color);
-        setNumberPickerTextColor(npMonth, color);
-        setNumberPickerTextColor(npDay, color);
+//        int color = getResources().getColor(R.color.white, null); // Get the white color
+//
+//        setNumberPickerTextColor(npYear, color);
+//        setNumberPickerTextColor(npMonth, color);
+//        setNumberPickerTextColor(npDay, color);
 
         float textSize = 24f; // Размер текста в sp
 
@@ -899,10 +899,10 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         // Initialize the NumberPickers
         NumberPicker hourPicker = timePickerDialog.findViewById(R.id.hourPicker);
         NumberPicker minutePicker = timePickerDialog.findViewById(R.id.minutePicker);
-        int color = getResources().getColor(R.color.white, null); // Get the white color
+//        int color =  Color.WHITE; // Get the white color
 
-        setNumberPickerTextColor(hourPicker, color);
-        setNumberPickerTextColor(minutePicker, color);
+//        setNumberPickerTextColor(hourPicker, color);
+//        setNumberPickerTextColor(minutePicker, color);
 
         float textSize = 24f; // Размер текста в sp
 
@@ -953,27 +953,34 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
     }
     private void setNumberPickerTextColor(NumberPicker numberPicker, int color) {
         try {
-            // Access the private mSelectorWheelPaint field of the NumberPicker class
+            // Доступ к полю mSelectorWheelPaint с помощью рефлексии
             @SuppressLint("SoonBlockedPrivateApi") Field selectorWheelPaintField = NumberPicker.class.getDeclaredField("mSelectorWheelPaint");
             selectorWheelPaintField.setAccessible(true);
 
-            // Set the color on the Paint object used to draw the text
+            // Установка цвета текста
             Paint paint = (Paint) selectorWheelPaintField.get(numberPicker);
-            assert paint != null;
-            paint.setColor(color);
+            if (paint != null) {
+                paint.setColor(color);
+            }
 
-            // Apply the color to each EditText child of the NumberPicker
+            // Установка цвета текста для каждого EditText внутри NumberPicker
             for (int i = 0; i < numberPicker.getChildCount(); i++) {
                 View child = numberPicker.getChildAt(i);
                 if (child instanceof EditText) {
                     ((EditText) child).setTextColor(color);
-                    numberPicker.invalidate(); // Refresh the NumberPicker
                 }
             }
+
+            // Обновление NumberPicker
+            numberPicker.invalidate();
+            numberPicker.requestLayout();
+
         } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }
     }
+
+
     private void setNumberPickerTextSize(NumberPicker numberPicker, float textSize) {
         try {
             // Найти все EditText внутри NumberPicker

@@ -65,20 +65,22 @@ import com.taxi.easy.ua.cities.Odessa.Odessa;
 import com.taxi.easy.ua.cities.Odessa.OdessaTest;
 import com.taxi.easy.ua.cities.Zaporizhzhia.Zaporizhzhia;
 import com.taxi.easy.ua.databinding.FragmentHomeBinding;
+import com.taxi.easy.ua.ui.finish.ApiClient;
+import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.home.room.AppDatabase;
 import com.taxi.easy.ua.ui.home.room.RouteCost;
 import com.taxi.easy.ua.ui.home.room.RouteCostDao;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetDialogFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGeoFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.data.DataArr;
+import com.taxi.easy.ua.utils.db.DatabaseHelper;
+import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
@@ -88,6 +90,7 @@ import org.json.JSONException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -168,6 +171,10 @@ public class HomeFragment extends Fragment {
 
     @SuppressLint("StaticFieldLeak")
     static ConstraintLayout constr2;
+
+    private List<RouteResponseCancel> routeListCancel;
+    DatabaseHelper databaseHelper;
+    DatabaseHelperUid databaseHelperUid;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -497,17 +504,25 @@ public class HomeFragment extends Fragment {
 
                         String from_name = sendUrlMap.get("routefrom");
                         String to_name = sendUrlMap.get("routeto");
-
+                        String required_time = sendUrlMap.get("required_time");
+                        if(required_time != null && !required_time.contains("01.01.1970")) {
+                            required_time = context.getString(R.string.time_order) + required_time + ". ";
+                        } else {
+                            required_time = "";
+                        }
                         assert from_name != null;
+                        String callOfOrder = context.getString(R.string.call_of_order);
                         if (from_name.equals(to_name)) {
                             messageResult = getString(R.string.thanks_message) +
                                     from_name + " " + from_number.getText() + getString(R.string.on_city) +
-                                    getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
+                                    required_time  + ". " +
+                                    callOfOrder + orderWeb + getString(R.string.UAH);
                         } else {
                             messageResult = getString(R.string.thanks_message) +
                                     from_name + " " + from_number.getText() + " " + getString(R.string.to_message) +
                                     to_name + " " + to_number.getText() + "." +
-                                    getString(R.string.cost_of_order) + orderWeb + getString(R.string.UAH);
+                                    required_time +
+                                    callOfOrder + orderWeb + getString(R.string.UAH);
                         }
                         Logger.d(context, TAG, "order: sendUrlMap.get(\"from_lat\")" + sendUrlMap.get("from_lat"));
                         Logger.d(context, TAG, "order: sendUrlMap.get(\"lat\")" + sendUrlMap.get("lat"));
@@ -546,14 +561,7 @@ public class HomeFragment extends Fragment {
                                 pay_method_message += " " + getString(R.string.pay_method_message_nal);
                         }
                         messageResult += ". " + pay_method_message;
-//                        Intent intent = new Intent(context, FinishActivity.class);
-//                        intent.putExtra("messageResult_key", messageResult);
-//                        intent.putExtra("messageCost_key", orderWeb);
-//                        intent.putExtra("sendUrlMap", new HashMap<>(sendUrlMap));
-//                        intent.putExtra("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
-//                        startActivity(intent);
-//
-//                        progressBar.setVisibility(View.GONE);
+
 
                         Bundle bundle = new Bundle();
                         bundle.putString("messageResult_key", messageResult);
@@ -562,7 +570,9 @@ public class HomeFragment extends Fragment {
                         bundle.putString("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
 
 // Установите Bundle как аргументы фрагмента
-                        MainActivity.navController.navigate(R.id.nav_finish, bundle);
+                        MainActivity.navController.navigate(R.id.nav_finish, bundle, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_visicom, true)
+                                .build());
 
 
                     } else {
@@ -841,6 +851,10 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        databaseHelper = new DatabaseHelper(context);
+        databaseHelperUid = new DatabaseHelperUid(context);
+
+        new Thread(this::fetchRoutesCancel).start();
 
         new VerifyUserTask(context).execute();
 
@@ -892,7 +906,9 @@ public class HomeFragment extends Fragment {
                         // Фокус установлен на TextView, очищаем его
                         resetRoutHome();
                         
-                        MainActivity.navController.navigate(R.id.nav_home);
+                        MainActivity.navController.navigate(R.id.nav_home, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_visicom, true)
+                                .build());
                     }
                 }
             });
@@ -908,7 +924,9 @@ public class HomeFragment extends Fragment {
             public void onClick(View v) {
                 resetRoutHome();
                 
-                MainActivity.navController.navigate(R.id.nav_home);
+                MainActivity.navController.navigate(R.id.nav_home, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true)
+                        .build());
 
             }
         });
@@ -1945,5 +1963,206 @@ public class HomeFragment extends Fragment {
         database.close();
         pay_method = "nal_payment";
     }
+    private void fetchRoutesCancel() {
+        Logger.d(context, TAG, "fetchRoutesCancel: ");
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+        if (!userEmail.equals("email"))
+        {
+            databaseHelper.clearTable();
 
+            databaseHelperUid.clearTableUid();
+
+            routeListCancel = new ArrayList<>();
+
+            String baseUrl = "https://m.easy-order-taxi.site";
+
+            List<String> stringList = logCursor(MainActivity.CITY_INFO,context);
+            String city = stringList.get(1);
+
+            String url = baseUrl + "/android/UIDStatusShowEmailCancelApp/" + userEmail + "/" + city + "/" +  context.getString(R.string.application);
+
+            Call<List<RouteResponseCancel>> call = ApiClient.getApiService().getRoutesCancel(url);
+            Logger.d(context, TAG, "fetchRoutesCancel: " + url);
+            call.enqueue(new Callback<List<RouteResponseCancel>>() {
+                @Override
+                public void onResponse(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Response<List<RouteResponseCancel>> response) {
+                    if (response.isSuccessful()) {
+                        List<RouteResponseCancel> routes = response.body();
+                        assert routes != null;
+                        Logger.d(context, TAG, "onResponse: " + routes.toString());
+                        if (routes.size() == 1) {
+                            RouteResponseCancel route = routes.get(0);
+                            if ("*".equals(route.getRouteFrom()) && "*".equals(route.getRouteFromNumber()) &&
+                                    "*".equals(route.getRouteTo()) && "*".equals(route.getRouteToNumber()) &&
+                                    "*".equals(route.getWebCost()) && "*".equals(route.getCloseReason()) &&
+                                    "*".equals(route.getAuto()) && "*".equals(route.getCreatedAt())) {
+                                databaseHelper.clearTableCancel();
+                                databaseHelperUid.clearTableCancel();
+                                return;
+                            }
+                        }
+                        if (!routes.isEmpty()) {
+                            boolean hasRouteWithAsterisk = false;
+                            for (RouteResponseCancel route : routes) {
+                                if ("*".equals(route.getRouteFrom())) {
+                                    // Найден объект с routefrom = "*"
+                                    hasRouteWithAsterisk = true;
+                                    break;  // Выход из цикла, так как условие уже выполнено
+                                }
+                            }
+                            if (!hasRouteWithAsterisk) {
+                                if (routeListCancel == null) {
+                                    routeListCancel = new ArrayList<>();
+                                }
+                                routeListCancel.addAll(routes);
+                                processCancelList();
+                            }
+
+                        }
+                    }
+                }
+
+                public void onFailure(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Throwable t) {
+                    // Обработка ошибок сети или других ошибок
+                    FirebaseCrashlytics.getInstance().recordException(t);
+                }
+            });
+        }
+
+    }
+
+    private void processCancelList() {
+        if (routeListCancel == null || routeListCancel.isEmpty()) {
+            Logger.d(context, TAG, "routeListCancel is null or empty");
+            return;
+        }
+
+        // Создайте массив строк
+
+        databaseHelper.clearTableCancel();
+        databaseHelperUid.clearTableCancel();
+
+        String closeReasonText = getString(R.string.close_resone_def);
+
+        for (int i = 0; i < routeListCancel.size(); i++) {
+            RouteResponseCancel route = routeListCancel.get(i);
+            String uid = route.getUid();
+            String routeFrom = route.getRouteFrom();
+            String routefromnumber = route.getRouteFromNumber();
+            String routeTo = route.getRouteTo();
+            String routeTonumber = route.getRouteToNumber();
+            String webCost = route.getWebCost();
+            String createdAt = route.getCreatedAt();
+            String closeReason = route.getCloseReason();
+            String auto = route.getAuto();
+            String dispatchingOrderUidDouble = route.getDispatchingOrderUidDouble();
+            String pay_method = route.getPay_method();
+            String required_time = route.getRequired_time();
+
+            switch (closeReason) {
+                case "-1":
+                    closeReasonText = getString(R.string.close_resone_in_work);
+                    break;
+                case "0":
+                    closeReasonText = getString(R.string.close_resone_0);
+                    break;
+                case "1":
+                    closeReasonText = getString(R.string.close_resone_1);
+                    break;
+                case "2":
+                    closeReasonText = getString(R.string.close_resone_2);
+                    break;
+                case "3":
+                    closeReasonText = getString(R.string.close_resone_3);
+                    break;
+                case "4":
+                    closeReasonText = getString(R.string.close_resone_4);
+                    break;
+                case "5":
+                    closeReasonText = getString(R.string.close_resone_5);
+                    break;
+                case "6":
+                    closeReasonText = getString(R.string.close_resone_6);
+                    break;
+                case "7":
+                    closeReasonText = getString(R.string.close_resone_7);
+                    break;
+                case "8":
+                    closeReasonText = getString(R.string.close_resone_8);
+                    break;
+                case "9":
+                    closeReasonText = getString(R.string.close_resone_9);
+                    break;
+            }
+
+            if (routeFrom.equals("Місце відправлення")) {
+                routeFrom = getString(R.string.start_point_text);
+            }
+
+            if (routeTo.equals("Точка на карте")) {
+                routeTo = getString(R.string.end_point_marker);
+            }
+            if (routeTo.contains("по городу")) {
+                routeTo = getString(R.string.on_city);
+            }
+            if (routeTo.contains("по місту")) {
+                routeTo = getString(R.string.on_city);
+            }
+            String routeInfo = "";
+
+            if (auto == null) {
+                auto = "??";
+            }
+            if(required_time != null && !required_time.contains("01.01.1970")) {
+                required_time = getString(R.string.time_order) + required_time;
+            } else {
+                required_time = "";
+            }
+            if (routeFrom.equals(routeTo)) {
+                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                        + getString(R.string.close_resone_to)
+                        + getString(R.string.on_city)
+                        + required_time
+                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
+                        + getString(R.string.auto_info) + " " + auto + " "
+                        + getString(R.string.close_resone_time)
+                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
+            } else {
+                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                        + getString(R.string.close_resone_to) + routeTo + " " + routeTonumber + "."
+                        + required_time
+                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
+                        + getString(R.string.auto_info) + " " + auto + " "
+                        + getString(R.string.close_resone_time)
+                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
+            }
+
+            databaseHelper.addRouteCancel(uid, routeInfo);
+            List<String> settings = new ArrayList<>();
+
+            settings.add(uid);
+            settings.add(webCost);
+            settings.add(routeFrom);
+            settings.add(routefromnumber);
+            settings.add(routeTo);
+            settings.add(routeTonumber);
+            settings.add(dispatchingOrderUidDouble);
+            settings.add(pay_method);
+            settings.add(required_time);
+
+            Logger.d(context, TAG, settings.toString());
+            databaseHelperUid.addCancelInfoUid(settings);
+        }
+
+        String[] array = databaseHelper.readRouteCancel();
+        Logger.d(context, TAG, "processRouteList: array " + Arrays.toString(array));
+        if (array != null) {
+            String message = getString(R.string.order_to_cancel_true);
+            MyBottomSheetErrorFragment myBottomSheetMessageFragment = new MyBottomSheetErrorFragment(message);
+            myBottomSheetMessageFragment.show(fragmentManager, myBottomSheetMessageFragment.getTag());
+        } else {
+            databaseHelper.clearTableCancel();
+            databaseHelperUid.clearTableCancel();
+        }
+    }
 }
