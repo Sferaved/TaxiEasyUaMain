@@ -117,7 +117,7 @@ public class CardFragment extends Fragment {
                         .setPopUpTo(R.id.nav_visicom, true) 
                         .build());
         }
-        context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         btnCardLink  = binding.btnCardLink;
         btnOrder = binding.btnOrder;
         btnOrder.setOnClickListener(v -> {

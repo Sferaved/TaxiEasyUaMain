@@ -1,12 +1,15 @@
 package com.taxi.easy.ua.ui.visicom.visicom_search;
 
 
+import static com.taxi.easy.ua.MainActivity.sharedPreferencesHelperMain;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -143,6 +146,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_visicom_address_layout);
 
         start = getIntent().getStringExtra("start");
@@ -157,7 +161,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             mapboxKey();
         }
         sharedPreferencesHelper = new SharedPreferencesHelper(this);
-        countryState = (String) sharedPreferencesHelper.getValue("countryState", "**");
+        countryState = (String) sharedPreferencesHelperMain.getValue("countryState", "**");
 
         switch (LocaleHelper.getLocale()) {
             case "ru":
@@ -174,10 +178,124 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                         citySearch = "Одесса";
                         break;
                     case "Zaporizhzhia":
-                        citySearch = "Запорож";
+                        citySearch = "Запорожье";
                         break;
                     case "Cherkasy Oblast":
                         citySearch = "Черкассы";
+                        break;
+                    case "Ivano_frankivsk":
+                        citySearch = "Ивано-Франковск";
+                        break;
+                    case "Vinnytsia":
+                        citySearch = "Винница";
+                        break;
+                    case "Poltava":
+                        citySearch = "Полтава";
+                        break;
+                    case "Sumy":
+                        citySearch = "Сумы";
+                        break;
+                    case "Kharkiv":
+                        citySearch = "Харьков";
+                        break;
+                    case "Chernihiv":
+                        citySearch = "Чернигов";
+                        break;
+                    case "Rivne":
+                        citySearch = "Ровно";
+                        break;
+                    case "Ternopil":
+                        citySearch = "Тернополь";
+                        break;
+                    case "Khmelnytskyi":
+                        citySearch = "Хмельницкий";
+                        break;
+                    case "Zakarpattya":
+                        citySearch = "Ужгород";
+                        break;
+                    case "Zhytomyr":
+                        citySearch = "Житомир";
+                        break;
+                    case "Kropyvnytskyi":
+                        citySearch = "Кропивницкий";
+                        break;
+                    case "Mykolaiv":
+                        citySearch = "Николаев";
+                        break;
+                    case "Сhernivtsi":
+                        citySearch = "Черновцы";
+                        break;
+                    case "Lutsk":
+                        citySearch = "Луцк";
+                        break;
+                    default:
+                        citySearch = "FC";
+                        break;
+                }
+                break;
+            case "en":
+                switch (stringList.get(1)) {
+                    case "Kyiv City":
+                        citySearch = "Kyiv";
+                        kyivRegionArr = KyivRegionRu.city();
+                        break;
+                    case "Dnipropetrovsk Oblast":
+                        citySearch = "Dnipro";
+                        break;
+                    case "Odessa":
+                    case "OdessaTest":
+                        citySearch = "Odessa";
+                        break;
+                    case "Zaporizhzhia":
+                        citySearch = "Zaporizhzhia";
+                        break;
+                    case "Cherkasy Oblast":
+                        citySearch = "Cherkasy";
+                        break;
+                    case "Ivano_frankivsk":
+                        citySearch = "Ivano-";
+                        break;
+                    case "Vinnytsia":
+                        citySearch = "Vinnytsia";
+                        break;
+                    case "Poltava":
+                        citySearch = "Poltava";
+                        break;
+                    case "Sumy":
+                        citySearch = "Sumy";
+                        break;
+                    case "Kharkiv":
+                        citySearch = "Kharkiv";
+                        break;
+                    case "Chernihiv":
+                        citySearch = "Chernihiv";
+                        break;
+                    case "Rivne":
+                        citySearch = "Rivne";
+                        break;
+                    case "Ternopil":
+                        citySearch = "Ternopil";
+                        break;
+                    case "Khmelnytskyi":
+                        citySearch = "Khmelnytskyi";
+                        break;
+                    case "Zakarpattya":
+                        citySearch = "Zakarpattya";
+                        break;
+                    case "Zhytomyr":
+                        citySearch = "Zhytomyr";
+                        break;
+                    case "Kropyvnytskyi":
+                        citySearch = "Kropyvnytskyi";
+                        break;
+                    case "Mykolaiv":
+                        citySearch = "Mykolaiv";
+                        break;
+                    case "Сhernivtsi":
+                        citySearch = "Сhernivtsi";
+                        break;
+                    case "Lutsk":
+                        citySearch = "Lutsk";
                         break;
                     default:
                         citySearch = "FC";
@@ -191,17 +309,62 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                         kyivRegionArr = KyivRegion.city();
                         break;
                     case "Dnipropetrovsk Oblast":
-                        citySearch = "Дніпр";
+                        citySearch = "Дніпро";
                         break;
                     case "Odessa":
                     case "OdessaTest":
                         citySearch = "Одеса";
                         break;
                     case "Zaporizhzhia":
-                        citySearch = "Запорі";
+                        citySearch = "Запоріжжя";
                         break;
                     case "Cherkasy Oblast":
-                        citySearch = "Черкас";
+                        citySearch = "Черкаси";
+                        break;
+                    case "Ivano_frankivsk":
+                        citySearch = "Івано-Франківськ";
+                        break;
+                    case "Vinnytsia":
+                        citySearch = "Вінниця";
+                        break;
+                    case "Poltava":
+                        citySearch = "Полтава";
+                        break;
+                    case "Sumy":
+                        citySearch = "Суми";
+                        break;
+                    case "Kharkiv":
+                        citySearch = "Харків";
+                        break;
+                    case "Chernihiv":
+                        citySearch = "Чернігів";
+                        break;
+                    case "Rivne":
+                        citySearch = "Рівне";
+                        break;
+                    case "Ternopil":
+                        citySearch = "Тернопіль";
+                        break;
+                    case "Khmelnytskyi":
+                        citySearch = "Хмельницький";
+                        break;
+                    case "Zakarpattya":
+                        citySearch = "Ужгород";
+                        break;
+                    case "Zhytomyr":
+                        citySearch = "Житомир";
+                        break;
+                    case "Kropyvnytskyi":
+                        citySearch = "Кропивницький";
+                        break;
+                    case "Mykolaiv":
+                        citySearch = "Миколаїв";
+                        break;
+                    case "Сhernivtsi":
+                        citySearch = "Чернівці";
+                        break;
+                    case "Lutsk":
+                        citySearch = "Луцьк";
                         break;
                     default:
                         citySearch = "FC";
@@ -233,12 +396,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
                 VisicomFragment.btn_clear_from_text.setText(getString(R.string.try_again));
                 VisicomFragment.btn_clear_from_text.setVisibility(View.VISIBLE);
-                VisicomFragment.btn_clear_from_text.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        startActivity(new Intent(getApplicationContext(), MainActivity.class));
-                    }
-                });
+                VisicomFragment.btn_clear_from_text.setOnClickListener(v1 -> startActivity(new Intent(getApplicationContext(), MainActivity.class)));
                 VisicomFragment.geoText.setVisibility(View.INVISIBLE);
                 progressBar.setVisibility(View.INVISIBLE);
 
@@ -292,27 +450,24 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             }
         });
         btn_clear_to = findViewById(R.id.btn_clear_to);
-        btn_clear_to.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                scrollButtonUp.setVisibility(View.GONE);
-                scrollButtonDown.setVisibility(View.GONE);
+        btn_clear_to.setOnClickListener(v -> {
+            scrollButtonUp.setVisibility(View.GONE);
+            scrollButtonDown.setVisibility(View.GONE);
 
-                addresses = new ArrayList<>();
-                coordinatesList = new ArrayList<>();
-                addressesList = new ArrayList<>();
-                addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
+            addresses = new ArrayList<>();
+            coordinatesList = new ArrayList<>();
+            addressesList = new ArrayList<>();
+            addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
 
-                
-                addressListView.setAdapter(addressAdapter);
 
-                toEditAddress.setText("");
-                btn_clear_to.setVisibility(View.INVISIBLE);
-                text_toError.setVisibility(View.GONE);
-                toEditAddress.requestFocus();
-                KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
+            addressListView.setAdapter(addressAdapter);
 
-            }
+            toEditAddress.setText("");
+            btn_clear_to.setVisibility(View.INVISIBLE);
+            text_toError.setVisibility(View.GONE);
+            toEditAddress.requestFocus();
+            KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
+
         });
 
         verifyRoutStart = true;
@@ -425,17 +580,14 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             });
         }
         btnOnMap = findViewById(R.id.btn_on_map);
-        btnOnMap.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getApplicationContext(), OpenStreetMapVisicomActivity.class);
+        btnOnMap.setOnClickListener(v -> {
+            Intent intent = new Intent(getApplicationContext(), OpenStreetMapVisicomActivity.class);
 
-                intent.putExtra("startMarker", start);
-                intent.putExtra("finishMarker", end);
+            intent.putExtra("startMarker", start);
+            intent.putExtra("finishMarker", end);
 
-                startActivity(intent);
-                finish();
-            }
+            startActivity(intent);
+            finish();
         });
         btn_ok.setOnClickListener(v -> {
             sharedPreferencesHelper.saveValue("gps_upd_address", false);
@@ -653,13 +805,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                              JSONException ignored) {
 
                     }
-
-
-
-
-
-
-                    }
+                }
             }
 
         };

@@ -75,8 +75,10 @@ public class VerifyUserTask {
 
         if (message != null && message.equals("В черном списке")) {
             cv.put("verifyOrder", "0");
-            database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+        } else {
+            cv.put("verifyOrder", "1");
         }
+        database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
         database.close();
     }
 

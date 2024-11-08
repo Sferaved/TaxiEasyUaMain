@@ -75,6 +75,9 @@ public class OrderResponse {
     @SerializedName("push_type")
     private int pushType;
 
+    @SerializedName("time_to_start_point")
+    private String timeToStartPoint;
+
     // Getters
     public boolean isChangeCostAllowed() {
         return changeCostAllowed;
@@ -114,6 +117,10 @@ public class OrderResponse {
 
     public String getRequiredTime() {
         return requiredTime;
+    }
+
+    public String getTimeToStartPoint() {
+        return timeToStartPoint;
     }
 
     public int getCloseReason() {

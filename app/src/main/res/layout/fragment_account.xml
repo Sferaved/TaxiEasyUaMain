@@ -133,7 +133,7 @@
         android:fontFamily="@font/regular"
         android:text="@string/del_account"
         android:textAlignment="center"
-        android:textColor="#D9D9D9"
+        android:textColor="@color/black"
         android:textSize="15sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

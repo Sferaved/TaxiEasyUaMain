@@ -4,6 +4,7 @@ package com.taxi.easy.ua.androidx.startup;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -33,6 +34,8 @@ public class MyApplication extends Application {
     private final String TAG = "MyApplication";
     private static final String LOG_FILE_NAME = "app_log.txt";
     private static MyApplication instance;
+    private static Activity currentActivity = null;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -43,8 +46,26 @@ public class MyApplication extends Application {
 
         initializeFirebaseAndCrashlytics();
         setupANRWatchDog();
+        setDefaultOrientation();
         registerActivityLifecycleCallbacks();
     }
+
+    private void setDefaultOrientation() {
+        // Установка ориентации экрана в портретный режим
+        // Это может не сработать для всех активити
+        Activity activity = getCurrentActivity();
+        if (activity != null) {
+            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        }
+    }
+
+    // Для получения текущей активити (необходимый метод, чтобы использовать его в setDefaultOrientation)
+    private Activity getCurrentActivity() {
+        // Этот метод нужно реализовать для отслеживания текущей активити
+        // Можно использовать ActivityLifecycleCallbacks для этого
+        return currentActivity;
+    }
+
     public static Context getContext() {
         return instance.getApplicationContext();
     }
@@ -81,6 +102,7 @@ public class MyApplication extends Application {
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
             @Override
             public void onActivityCreated(@NonNull Activity activity, Bundle savedInstanceState) {
+                currentActivity = activity;
             }
 
             @Override
@@ -109,6 +131,9 @@ public class MyApplication extends Application {
 
             @Override
             public void onActivityDestroyed(@NonNull Activity activity) {
+                if (currentActivity == activity) {
+                    currentActivity = null;
+                }
             }
         });
     }

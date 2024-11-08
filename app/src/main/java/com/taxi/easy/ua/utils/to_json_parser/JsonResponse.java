@@ -48,6 +48,14 @@ public class JsonResponse {
 
     @SerializedName("required_time")
     private String required_time;
+
+    @SerializedName("flexible_tariff_name")
+    private String flexible_tariff_name;
+    @SerializedName("comment_info")
+    private String comment_info;
+    @SerializedName("extra_charge_codes")
+    private String extra_charge_codes;
+
     // геттеры и сеттеры
 
     public String getFromLat() {
@@ -108,6 +116,16 @@ public class JsonResponse {
 
     public String getRequired_time() {
         return required_time;
+    }
+
+    public String getFlexible_tariff_name() {
+        return flexible_tariff_name;
+    }
+    public String getComment_info() {
+        return comment_info;
+    }
+    public String getExtra_charge_codes() {
+        return extra_charge_codes;
     }
 }
 

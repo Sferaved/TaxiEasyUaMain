@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -76,6 +77,7 @@ import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 
 import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+
 import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.fcm.token_send.ApiServiceToken;
 import com.taxi.easy.ua.utils.fcm.token_send.RetrofitClientToken;
@@ -177,31 +179,36 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("StaticFieldLeak")
     public static NavController navController;
     private FirebaseUserManager userManager;
-    private SharedPreferencesHelper sharedPreferencesHelper;
+    public static SharedPreferencesHelper sharedPreferencesHelperMain;
     private String cityMenu;
     private String city;
     private String newTitle;
-
+    public static List<Call<?>> activeCalls = new ArrayList<>();
+    public static NavigationView navigationView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(binding.getRoot());
+
         deleteOldLogFile();
         Logger.writeLog(this, getString(R.string.application));
         Logger.writeLog(this, getString(R.string.version));
         Logger.writeLog(this, "MainActivity started");
         setSupportActionBar(binding.appBarMain.toolbar);
-        sharedPreferencesHelper = new SharedPreferencesHelper(this);
+
+        sharedPreferencesHelperMain = new SharedPreferencesHelper(this);
 
         DrawerLayout drawer = binding.drawerLayout;
-        NavigationView navigationView = binding.navView;
+        navigationView = binding.navView;
             // Passing each menu ID as a set of Ids because each
             // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-              R.id.nav_visicom, R.id.nav_home, R.id.nav_cancel, R.id.nav_gallery,
+              R.id.nav_visicom, R.id.nav_home, R.id.nav_cancel,
+//                R.id.nav_gallery,
               R.id.nav_about, R.id.nav_uid, R.id.nav_bonus, R.id.nav_card,
-              R.id.nav_account, R.id.nav_author, R.id.nav_finish
+              R.id.nav_account, R.id.nav_author, R.id.nav_finish_separate
         )
              .setOpenableLayout(drawer)
              .build();
@@ -276,7 +283,55 @@ public class MainActivity extends AppCompatActivity {
                 cityMenu = getString(R.string.city_zaporizhzhia);
                 break;
             case "Cherkasy Oblast":
-                cityMenu = getString(R.string.city_cherkasy);
+                cityMenu = getString(R.string.city_cherkassy);
+                break;
+            case "Lviv":
+                cityMenu = getString(R.string.city_lviv);
+                break;
+            case "Ivano_frankivsk":
+                cityMenu = getString(R.string.city_ivano_frankivsk);
+                break;
+            case "Vinnytsia":
+                cityMenu = getString(R.string.city_vinnytsia);
+                break;
+            case "Poltava":
+                cityMenu = getString(R.string.city_poltava);
+                break;
+            case "Sumy":
+                cityMenu = getString(R.string.city_sumy);
+                break;
+            case "Kharkiv":
+                cityMenu = getString(R.string.city_kharkiv);
+                break;
+            case "Chernihiv":
+                cityMenu = getString(R.string.city_chernihiv);
+                break;
+            case "Rivne":
+                cityMenu = getString(R.string.city_rivne);
+                break;
+            case "Ternopil":
+                cityMenu = getString(R.string.city_ternopil);
+                break;
+            case "Khmelnytskyi":
+                cityMenu = getString(R.string.city_khmelnytskyi);
+                break;
+            case "Zakarpattya":
+                cityMenu = getString(R.string.city_zakarpattya);
+                break;
+            case "Zhytomyr":
+                cityMenu = getString(R.string.city_zhytomyr);
+                break;
+            case "Kropyvnytskyi":
+                cityMenu = getString(R.string.city_kropyvnytskyi);
+                break;
+            case "Mykolaiv":
+                cityMenu = getString(R.string.city_mykolaiv);
+                break;
+            case "Сhernivtsi":
+                cityMenu = getString(R.string.city_chernivtsi);
+                break;
+            case "Lutsk":
+                cityMenu = getString(R.string.city_lutsk);
                 break;
             case "OdessaTest":
                 cityMenu = "Test";
@@ -285,7 +340,7 @@ public class MainActivity extends AppCompatActivity {
                 cityMenu = getString(R.string.foreign_countries);
         }
         newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-        sharedPreferencesHelper.saveValue("newTitle", newTitle);
+        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
     }
 
     @Override
@@ -308,7 +363,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             gps_upd = false;
         }
-        sharedPreferencesHelper.saveValue("gps_upd", gps_upd);
+        sharedPreferencesHelperMain.saveValue("gps_upd", gps_upd);
     }
 
     @Override
@@ -1117,11 +1172,12 @@ public class MainActivity extends AppCompatActivity {
     public void newUser() {
         String userEmail = logCursor(TABLE_USER_INFO).get(3);
         Logger.d(this, TAG, "newUser: " + userEmail);
+        new VerifyUserTask(this).execute();
         new Thread(this::mapboxKey).start();
         new Thread(this::visicomKey).start();
         new Thread(() -> insertPushDate(getApplicationContext())).start();
-        Logger.d(this, TAG, "CityCheckActivity: " + sharedPreferencesHelper.getValue("CityCheckActivity", "**"));
-        if(sharedPreferencesHelper.getValue("CityCheckActivity", "**").equals("run")) {
+        Logger.d(this, TAG, "CityCheckActivity: " + sharedPreferencesHelperMain.getValue("CityCheckActivity", "**"));
+        if(sharedPreferencesHelperMain.getValue("CityCheckActivity", "**").equals("run")) {
             if(userEmail.equals("email")) {
                 firstStart = true;
 
@@ -1135,7 +1191,7 @@ public class MainActivity extends AppCompatActivity {
                 new Thread(this::userPhoneFromFb).start();
                 new Thread(() -> updatePushDate(getApplicationContext())).start();
 
-                new VerifyUserTask(this).execute();
+
 
                 UserPermissions.getPermissions(userEmail, getApplicationContext());
 
@@ -1299,7 +1355,6 @@ public class MainActivity extends AppCompatActivity {
 
 
           } else {
-                Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
                 VisicomFragment.progressBar.setVisibility(View.GONE);
                 cv.put("verifyOrder", "0");
                 SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -1327,7 +1382,6 @@ public class MainActivity extends AppCompatActivity {
             ContentValues cv = new ContentValues();
             updateRecordsUserInfo("email", emailUser, getApplicationContext());
             cv.put("verifyOrder", "1");
-
             SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
             database.close();
@@ -1535,10 +1589,12 @@ public class MainActivity extends AppCompatActivity {
                     if (cityResponse != null) {
                         int cardMaxPay = cityResponse.getCardMaxPay();
                         int bonusMaxPay = cityResponse.getBonusMaxPay();
+                        String black_list = cityResponse.getBlack_list();
 
                         ContentValues cv = new ContentValues();
                         cv.put("card_max_pay", cardMaxPay);
                         cv.put("bonus_max_pay", bonusMaxPay);
+                        sharedPreferencesHelperMain.saveValue("black_list", black_list);
 
                         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                         database.update(MainActivity.CITY_INFO, cv, "id = ?",
@@ -1548,6 +1604,7 @@ public class MainActivity extends AppCompatActivity {
 
                         Logger.d(getApplicationContext(), TAG, "onResponse: cardMaxPay" + cardMaxPay);
                         Logger.d(getApplicationContext(), TAG, "onResponse: bonus_max_pay" + bonusMaxPay);
+                        Logger.d(getApplicationContext(), TAG, "onResponse: black_list" + black_list);
                         Logger.d(getApplicationContext(), TAG, "onResponse: " + logCursor(CITY_INFO).toString());
 
                         // Добавьте здесь код для обработки полученных значений

@@ -1,5 +1,6 @@
 package com.taxi.easy.ua.cities.check;
 
+import static com.taxi.easy.ua.MainActivity.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
@@ -10,7 +11,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ListView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -27,8 +27,6 @@ import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
-import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
-import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
@@ -39,8 +37,6 @@ import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import java.util.ArrayList;
 import java.util.List;
 
-import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -58,9 +54,24 @@ public class CityCheckActivity extends AppCompatActivity {
     AppCompatButton btn_city_5;
     AppCompatButton btn_city_6;
     AppCompatButton btn_city_7;
+    AppCompatButton btn_city_8;
+    AppCompatButton btn_city_9;
+    AppCompatButton btn_city_10;
+    AppCompatButton btn_city_11;
+    AppCompatButton btn_city_12;
+    AppCompatButton btn_city_13;
+    AppCompatButton btn_city_14;
+    AppCompatButton btn_city_15;
+    AppCompatButton btn_city_16;
+    AppCompatButton btn_city_17;
+    AppCompatButton btn_city_18;
+    AppCompatButton btn_city_19;
+    AppCompatButton btn_city_20;
+    AppCompatButton btn_city_21;
+    AppCompatButton btn_city_22;
+    AppCompatButton btn_city_23;
     AppCompatButton btn_exit;
 
-    ListView listView;
     String city;
     private String cityMenu;
 
@@ -99,169 +110,263 @@ public class CityCheckActivity extends AppCompatActivity {
         btn_city_5 = findViewById(R.id.btn_city_5);
         btn_city_6 = findViewById(R.id.btn_city_6);
         btn_city_7 = findViewById(R.id.btn_city_7);
+        btn_city_8 = findViewById(R.id.btn_city_8);
+        btn_city_9 = findViewById(R.id.btn_city_9);
+        btn_city_10 = findViewById(R.id.btn_city_10);
+        btn_city_11 = findViewById(R.id.btn_city_11);
+        btn_city_12 = findViewById(R.id.btn_city_12);
+        btn_city_13 = findViewById(R.id.btn_city_13);
+        btn_city_14 = findViewById(R.id.btn_city_14);
+        btn_city_15 = findViewById(R.id.btn_city_15);
+        btn_city_16 = findViewById(R.id.btn_city_16);
+        btn_city_17 = findViewById(R.id.btn_city_17);
+        btn_city_18 = findViewById(R.id.btn_city_18);
+        btn_city_19 = findViewById(R.id.btn_city_19);
+        btn_city_20 = findViewById(R.id.btn_city_20);
+        btn_city_21 = findViewById(R.id.btn_city_21);
+        btn_city_22 = findViewById(R.id.btn_city_22);
+        btn_city_23 = findViewById(R.id.btn_city_23);
         btn_exit = findViewById(R.id.btn_exit);
 
-
-        btn_city_1.setText(R.string.Kyiv_city);
-        btn_city_2.setText(R.string.Dnipro_city);
-        btn_city_3.setText(R.string.Odessa);
-        btn_city_4.setText(R.string.Zaporizhzhia);
-        btn_city_5.setText(R.string.Cherkasy);
-        btn_city_6.setText(R.string.test_city);
-        btn_city_7.setText(R.string.foreign_countries);
+        btn_city_1.setText(R.string.city_kyiv); //
+        btn_city_2.setText(R.string.city_dnipro); //
+        btn_city_3.setText(R.string.city_odessa); //
+        btn_city_4.setText(R.string.city_zaporizhzhia); //
+        btn_city_5.setText(R.string.city_cherkassy); //
+        btn_city_6.setText(R.string.city_lviv); //
+        btn_city_7.setText(R.string.city_ivano_frankivsk); //
+        btn_city_8.setText(R.string.city_vinnytsia); //
+        btn_city_9.setText(R.string.city_poltava); //
+        btn_city_10.setText(R.string.city_sumy); //
+        btn_city_11.setText(R.string.city_kharkiv); //
+        btn_city_12.setText(R.string.city_chernihiv); //
+        btn_city_13.setText(R.string.city_rivne);//
+        btn_city_14.setText(R.string.city_ternopil); //
+        btn_city_15.setText(R.string.city_khmelnytskyi); //
+        btn_city_16.setText(R.string.city_zakarpattya); //
+        btn_city_17.setText(R.string.city_zhytomyr);//
+        btn_city_18.setText(R.string.city_kropyvnytskyi);//
+        btn_city_19.setText(R.string.city_mykolaiv); //
+        btn_city_20.setText(R.string.city_chernivtsi); //
+        btn_city_21.setText(R.string.city_lutsk); //
+        btn_city_22.setText(R.string.test_city); //
+        btn_city_23.setText(R.string.foreign_countries); //
         btn_exit.setText(R.string.action_exit);
 
+
         btn_city_1.setOnClickListener(view1 -> {
-            sharedPreferencesHelper.saveValue("countryState", "UA");
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
             city = "Kyiv City";
             phoneNumber = Kyiv_City_phone;
             cityMenu = getString(R.string.city_kyiv);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelper.saveValue("newTitle", newTitle);
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
             updateMyPosition();
         });
-        btn_city_2.setOnClickListener(view12 -> {
-            sharedPreferencesHelper.saveValue("countryState", "UA");
+        btn_city_2.setOnClickListener(view2 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
             city = "Dnipropetrovsk Oblast";
             phoneNumber = Dnipropetrovsk_Oblast_phone;
             cityMenu = getString(R.string.city_dnipro);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelper.saveValue("newTitle", newTitle);
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
             updateMyPosition();
         });
-        btn_city_3.setOnClickListener(view13 -> {
-            sharedPreferencesHelper.saveValue("countryState", "UA");
+        btn_city_3.setOnClickListener(view3 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
             city = "Odessa";
             phoneNumber = Odessa_phone;
             cityMenu = getString(R.string.city_odessa);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelper.saveValue("newTitle", newTitle);
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
             updateMyPosition();
         });
-        btn_city_4.setOnClickListener(view14 -> {
-            sharedPreferencesHelper.saveValue("countryState", "UA");
+        btn_city_4.setOnClickListener(view4 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
             city = "Zaporizhzhia";
             phoneNumber = Zaporizhzhia_phone;
             cityMenu = getString(R.string.city_zaporizhzhia);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelper.saveValue("newTitle", newTitle);
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
             updateMyPosition();
         });
-        btn_city_5.setOnClickListener(view -> {
-            sharedPreferencesHelper.saveValue("countryState", "UA");
+        btn_city_5.setOnClickListener(view5 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
             city = "Cherkasy Oblast";
             phoneNumber = Cherkasy_Oblast_phone;
-            cityMenu = getString(R.string.city_cherkasy);
+            cityMenu = getString(R.string.city_cherkassy);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelper.saveValue("newTitle", newTitle);
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
             updateMyPosition();
         });
-        btn_city_6.setOnClickListener(view15 -> {
-            sharedPreferencesHelper.saveValue("countryState", "UA");
+        btn_city_6.setOnClickListener(view6 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Lviv";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = getString(R.string.city_lviv);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+       btn_city_7.setOnClickListener(view7 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Ivano_frankivsk";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = getString(R.string.city_ivano_frankivsk);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+        btn_city_8.setOnClickListener(view8 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Vinnytsia";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = getString(R.string.city_vinnytsia);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+
+        btn_city_9.setOnClickListener(view9 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Poltava";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = getString(R.string.city_poltava);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+        btn_city_10.setOnClickListener(view10 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Sumy";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = getString(R.string.city_sumy);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+        btn_city_11.setOnClickListener(view11 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Kharkiv";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = getString(R.string.city_kharkiv);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+        btn_city_12.setOnClickListener(view12 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Chernihiv";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = getString(R.string.city_chernihiv);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+
+        btn_city_13.setOnClickListener(view13 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Rivne";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = getString(R.string.city_rivne);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+        btn_city_14.setOnClickListener(view14 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Ternopil";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = getString(R.string.city_ternopil);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+        btn_city_15.setOnClickListener(view15 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Khmelnytskyi";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = getString(R.string.city_khmelnytskyi);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+        btn_city_16.setOnClickListener(view16 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Zakarpattya";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = getString(R.string.city_zakarpattya);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+        btn_city_17.setOnClickListener(view17 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Zhytomyr";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = getString(R.string.city_zhytomyr);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+        btn_city_18.setOnClickListener(view18 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Kropyvnytskyi";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = getString(R.string.city_kropyvnytskyi);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+        btn_city_19.setOnClickListener(view19 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Mykolaiv";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = getString(R.string.city_mykolaiv);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+        btn_city_20.setOnClickListener(view20 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Сhernivtsi";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = getString(R.string.city_chernivtsi);
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+        btn_city_21.setOnClickListener(view21 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
+            city = "Lutsk";
+            phoneNumber = Kyiv_City_phone;
+            cityMenu = "Lutsk";
+            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+            updateMyPosition();
+        });
+        btn_city_22.setOnClickListener(view21 -> {
+            sharedPreferencesHelperMain.saveValue("countryState", "UA");
             city = "OdessaTest";
             phoneNumber = Kyiv_City_phone;
             cityMenu = "Test";
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelper.saveValue("newTitle", newTitle);
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
             updateMyPosition();
         });
-        btn_city_7.setOnClickListener(view16 -> {
+        btn_city_23.setOnClickListener(view22 -> {
             new Thread(this::getCountryByIP).start();
             city = "foreign countries";
             phoneNumber = Kyiv_City_phone;
             cityMenu = getString(R.string.foreign_countries);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelper.saveValue("newTitle", newTitle);
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
             updateMyPosition();
         });
         btn_exit.setOnClickListener(view16 -> {
             closeApplication();
         });
     }
-
-    private void getCardTokenWfp(String city) {
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(interceptor)
-                .build();
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site") // Замените на фактический URL вашего сервера
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
-
-        // Создайте сервис
-        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
-        Logger.d(getApplicationContext(), TAG, "getCardTokenWfp: ");
-        String email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
-        // Выполните запрос
-        Call<CallbackResponseWfp> call = service.handleCallbackWfp(
-                getString(R.string.application),
-                city,
-                email,
-                "wfp"
-        );
-        call.enqueue(new Callback<CallbackResponseWfp>() {
-            @Override
-            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
-                Logger.d(getApplicationContext(), TAG, "onResponse: " + response.body());
-                if (response.isSuccessful()) {
-                    CallbackResponseWfp callbackResponse = response.body();
-                    if (callbackResponse != null) {
-                        List<CardInfo> cards = callbackResponse.getCards();
-                        Logger.d(getApplicationContext(), TAG, "onResponse: cards" + cards);
-                        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
-                        if (cards != null && !cards.isEmpty()) {
-                            for (CardInfo cardInfo : cards) {
-                                String masked_card = cardInfo.getMasked_card(); // Маска карты
-                                String card_type = cardInfo.getCard_type(); // Тип карты
-                                String bank_name = cardInfo.getBank_name(); // Название банка
-                                String rectoken = cardInfo.getRectoken(); // Токен карты
-                                String merchant = cardInfo.getMerchant(); // Токен карты
-
-                                Logger.d(getApplicationContext(), TAG, "onResponse: card_token: " + rectoken);
-                                ContentValues cv = new ContentValues();
-                                cv.put("masked_card", masked_card);
-                                cv.put("card_type", card_type);
-                                cv.put("bank_name", bank_name);
-                                cv.put("rectoken", rectoken);
-                                cv.put("merchant", merchant);
-                                cv.put("rectoken_check", "0");
-                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
-                            }
-                            Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_WFP_CARDS + " ORDER BY id DESC LIMIT 1", null);
-                            if (cursor != null && cursor.moveToFirst()) {
-                                // Получаем значение ID последней записи
-                                @SuppressLint("Range") int lastId = cursor.getInt(cursor.getColumnIndex("id"));
-                                cursor.close();
-
-                                // Обновляем строку с найденным ID
-                                ContentValues cv = new ContentValues();
-                                cv.put("rectoken_check", "1");
-                                database.update(MainActivity.TABLE_WFP_CARDS, cv, "id = ?", new String[] { String.valueOf(lastId) });
-                            }
-
-                            database.close();
-                        }
-                    }
-
-                } else {
-                    // Обработка случаев, когда ответ не 200 OK
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
-                // Обработка ошибки запроса
-                 Logger.d(getApplicationContext(), TAG, "Failed. Error message: " + t.getMessage());                
-            }
-        });
-    }
-
 
 
     private void updateMyPosition() {
@@ -271,49 +376,150 @@ public class CityCheckActivity extends AppCompatActivity {
         String position;
         Logger.d(getApplicationContext(), TAG, "updateMyPosition:city "+ city);
 
-        switch (city){
+        switch (city) {
             case "Kyiv City":
                 position = getString(R.string.pos_k);
                 startLat = 50.451107;
                 startLan = 30.524907;
+                phoneNumber = Kyiv_City_phone; // Здесь также добавляем номер телефона
                 break;
             case "Dnipropetrovsk Oblast":
                 // Днепр
                 position = getString(R.string.pos_d);
                 startLat = 48.4647;
                 startLan = 35.0462;
+                phoneNumber = Dnipropetrovsk_Oblast_phone; // Укажите соответствующий номер телефона
                 break;
             case "Odessa":
-                phoneNumber = Odessa_phone;
                 position = getString(R.string.pos_o);
                 startLat = 46.4694;
                 startLan = 30.7404;
+                phoneNumber = Odessa_phone;
                 break;
             case "Zaporizhzhia":
-                phoneNumber = Zaporizhzhia_phone;
                 position = getString(R.string.pos_z);
                 startLat = 47.84015;
                 startLan = 35.13634;
+                phoneNumber = Zaporizhzhia_phone;
                 break;
             case "Cherkasy Oblast":
-                phoneNumber = Cherkasy_Oblast_phone;
                 position = getString(R.string.pos_c);
                 startLat = 49.44469;
                 startLan = 32.05728;
+                phoneNumber = Cherkasy_Oblast_phone;
                 break;
+            case "Lviv":
+                position = getString(R.string.pos_l);
+                startLat = 49.83993;
+                startLan = 24.02973;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Ivano_frankivsk":
+                position = getString(R.string.pos_if);
+                startLat = 48.92005;
+                startLan = 24.71067;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Vinnytsia":
+                position = getString(R.string.pos_v);
+                startLat = 49.23325;
+                startLan = 28.46865;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Poltava":
+                position = getString(R.string.pos_p);
+                startLat = 49.59325;
+                startLan = 34.54938;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Sumy":
+                position = getString(R.string.pos_s);
+                startLat = 50.90775;
+                startLan = 34.79865;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Kharkiv":
+                position = getString(R.string.pos_h);
+                startLat = 49.99358;
+                startLan = 36.23191;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Chernihiv":
+                position = getString(R.string.pos_ch);
+                startLat = 51.4933;
+                startLan = 31.2972;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Rivne":
+                position = getString(R.string.pos_r);
+                startLat = 50.6198;
+                startLan = 26.2406;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Ternopil":
+                position = getString(R.string.pos_t);
+                startLat = 49.54479;
+                startLan = 25.5990;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Khmelnytskyi":
+                position = getString(R.string.pos_kh);
+                startLat = 49.41548;
+                startLan = 27.00674;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+
+            case "Zakarpattya":
+                position = getString(R.string.pos_uz);
+                startLat = 48.61913;
+                startLan = 22.29475;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Zhytomyr":
+                position = getString(R.string.pos_zt);
+                startLat = 50.26801;
+                startLan = 28.68026;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Kropyvnytskyi":
+                position = getString(R.string.pos_kr);
+                startLat = 48.51159;
+                startLan = 32.26982;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Mykolaiv":
+                position = getString(R.string.pos_m);
+                startLat = 46.97498;
+                startLan = 31.99378;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Сhernivtsi":
+                position = getString(R.string.pos_chr);
+                startLat = 48.29306;
+                startLan = 25.93484;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Lutsk":
+                position = getString(R.string.pos_ltk);
+                startLat = 50.73968;
+                startLan = 25.32400;
+            phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+            break;
             case "OdessaTest":
-                phoneNumber = Kyiv_City_phone;
                 position = getString(R.string.pos_o);
                 startLat = 46.4694;
                 startLan = 30.7404;
-                break;
-            default:
                 phoneNumber = Kyiv_City_phone;
+                break;
+
+            default:
                 position = getString(R.string.pos_f);
                 startLat = 52.13472;
                 startLan = 21.00424;
+                phoneNumber = Kyiv_City_phone; // Номер телефона по умолчанию
                 break;
         }
+
         cityMaxPay(city);
         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
@@ -354,7 +560,7 @@ public class CityCheckActivity extends AppCompatActivity {
         updateRoutMarker(settings);
 
         String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-        sharedPreferencesHelper.saveValue("newTitle", newTitle);
+        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
 
     }
 
@@ -394,10 +600,12 @@ public class CityCheckActivity extends AppCompatActivity {
                     if (cityResponse != null) {
                         int cardMaxPay = cityResponse.getCardMaxPay();
                         int bonusMaxPay = cityResponse.getBonusMaxPay();
+                        String black_list = cityResponse.getBlack_list();
 
                         ContentValues cv = new ContentValues();
                         cv.put("card_max_pay", cardMaxPay);
                         cv.put("bonus_max_pay", bonusMaxPay);
+                        sharedPreferencesHelperMain.saveValue("black_list", black_list);
 
                         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                         database.update(MainActivity.CITY_INFO, cv, "id = ?",
@@ -637,14 +845,14 @@ public class CityCheckActivity extends AppCompatActivity {
                 } else {
                     countryState = "UA";
                 }
-                sharedPreferencesHelper.saveValue("countryState", countryState);
+                sharedPreferencesHelperMain.saveValue("countryState", countryState);
             }
 
             @Override
             public void onFailure(@NonNull Call<CountryResponse> call, @NonNull Throwable t) {
                 Logger.d(getApplicationContext(), TAG, "Error: " + t.getMessage());
-                VisicomFragment.progressBar.setVisibility(View.GONE);;
-                sharedPreferencesHelper.saveValue("countryState", "UA");
+                VisicomFragment.progressBar.setVisibility(View.GONE);
+                sharedPreferencesHelperMain.saveValue("countryState", "UA");
             }
         });
     }

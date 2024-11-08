@@ -130,6 +130,10 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         });
 
         btn_ok = view.findViewById(R.id.btn_ok);
+        boolean black_list_yes = verifyOrder(requireContext());
+        if(!black_list_yes) {
+            btn_ok.setVisibility(View.GONE);
+        }
         btn_ok.setOnClickListener(v -> {
             cancelOrderDouble();
 
@@ -165,32 +169,43 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             dismiss();
         });
         btn_add_card = view.findViewById(R.id.btn_add_card);
-        btn_add_card.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                switch (pay_method) {
-                    case "fondy_payment":
-                        getUrlToPaymentFondy(messageFondy, amount, getParentFragmentManager());
-                        break;
-                    case "wfp_payment":
-                        getUrlToPaymentWfp();
-                        break;
-                }
-
-                dismiss();
+        btn_add_card.setOnClickListener(v -> {
+            switch (pay_method) {
+                case "fondy_payment":
+                    getUrlToPaymentFondy(messageFondy, amount, getParentFragmentManager());
+                    break;
+                case "wfp_payment":
+                    getUrlToPaymentWfp();
+                    break;
             }
+
+            dismiss();
         });
 
         btn_cancel = view.findViewById(R.id.btn_cancel_order);
-        btn_cancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                cancelOrderDouble();
-                context.startActivity(new Intent(context, MainActivity.class));
-            }
+        btn_cancel.setOnClickListener(v -> {
+            cancelOrderDouble();
+            context.startActivity(new Intent(context, MainActivity.class));
         });
         listView = view.findViewById(R.id.listView);
         return view;
+    }
+
+    private boolean verifyOrder(Context context) {
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursor = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
+
+        boolean verify = true;
+        if (cursor.getCount() == 1) {
+
+            if (logCursor(MainActivity.TABLE_USER_INFO, context).get(1).equals("0")) {
+                verify = false;
+                Log.d("TAG", "verifyOrder:verify " + verify);
+            }
+            cursor.close();
+        }
+        database.close();
+        return verify;
     }
 
     private void getUrlToPaymentWfp() {
@@ -372,40 +387,46 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     ) {
                         to_name_local = context.getString(R.string.on_city_tv);
                     }
-                    String messageResult = context.getString(R.string.thanks_message) +
+                    String messageResult =
                             sendUrlMap.get("routefrom") + " " + context.getString(R.string.to_message) +
-                            to_name_local + "." +
-                            context.getString(R.string.call_of_order) + orderWeb + context.getString(R.string.UAH) + " " + pay_method_message;
+                            to_name_local + ".";
+                    String messagePayment = orderWeb + context.getString(R.string.UAH) + " " + pay_method_message;
+
+
                     String messageFondy = context.getString(R.string.fondy_message) + " " +
                             sendUrlMap.get("routefrom") + " " + context.getString(R.string.to_message) +
                             to_name_local + ".";
 
                     Bundle bundle = new Bundle();
                     bundle.putString("messageResult_key", messageResult);
+                    bundle.putString("messagePay_key", messagePayment);
                     bundle.putString("messageFondy_key", messageFondy);
                     bundle.putString("messageCost_key", orderWeb);
                     bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
                     bundle.putString("card_payment_key", "no");
                     bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
                     
-                    MainActivity.navController.navigate(R.id.nav_finish, bundle, new NavOptions.Builder()
+                    MainActivity.navController.navigate(R.id.nav_finish_separate, bundle, new NavOptions.Builder()
                             .setPopUpTo(R.id.nav_visicom, true)
                             .build());
                 }
                 else {
                     assert message != null;
                     if (message.contains("Дублирование")) {
-                        message = getResources().getString(R.string.double_order_error);
+                        message = context.getResources().getString(R.string.double_order_error);
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
                         bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                     } else if (message.equals("ErrorMessage")) {
-                        message = getResources().getString(R.string.server_error_connected);
+                        message = context.getResources().getString(R.string.server_error_connected);
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
                         bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                     } else {
-                        message = getResources().getString(R.string.error_message);
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        if(isAdded()) {
+                            message = context.getResources().getString(R.string.error_message);
+                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        }
+
                     }
                 }
             }

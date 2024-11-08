@@ -10,15 +10,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.ContextMenu;
 import android.view.LayoutInflater;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -41,14 +35,11 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
-import com.taxi.easy.ua.utils.db.RouteInfoCancel;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import retrofit2.Call;
@@ -62,13 +53,13 @@ public class CancelFragment extends Fragment {
     private @NonNull FragmentCancelBinding binding = null;
     private ListView listView;
     private String[] array;
-    private RouteInfoCancel routeInfo;
+
     private NetworkChangeReceiver networkChangeReceiver;
     ProgressBar progressBar;
 
     DatabaseHelper databaseHelper;
     DatabaseHelperUid databaseHelperUid;
-    String baseUrl = "https://m.easy-order-taxi.site";
+
     private List<RouteResponseCancel> routeList;
 
     AppCompatButton upd_but;
@@ -92,7 +83,7 @@ public class CancelFragment extends Fragment {
         Logger.d(context, TAG, "onContextItemSelected: ");
 
         fragmentManager = getParentFragmentManager();
-        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         listView = binding.listView;
         progressBar = binding.progressBar;
@@ -137,166 +128,14 @@ public class CancelFragment extends Fragment {
             }
         });
 
-        scrollButtonUp.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                int offset = -1; // или другое значение, чтобы указать направление прокрутки
-                listView.smoothScrollByOffset(offset);
-            }
+        scrollButtonUp.setOnClickListener(v -> {
+            int offset = -1; // или другое значение, чтобы указать направление прокрутки
+            listView.smoothScrollByOffset(offset);
         });
 
         fetchRoutesCancel(email);
 
         return root;
-    }
-
-    @Override
-    public void onCreateContextMenu(@NonNull ContextMenu menu, @NonNull View v, ContextMenu.ContextMenuInfo menuInfo) {
-        super.onCreateContextMenu(menu, v, menuInfo);
-        MenuInflater inflater = requireActivity().getMenuInflater();
-        inflater.inflate(R.menu.context_menu, menu);
-    }
-
-    @SuppressLint("NonConstantResourceId")
-    @Override
-    public boolean onContextItemSelected(@NonNull MenuItem item) {
-        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-        assert info != null;
-        int position = info.position;
-
-        if (item.getItemId() == R.id.action_order) {
-
-            Logger.d(context, TAG, "onContextItemSelected: " + position);
-            Logger.d(context, TAG, "onContextItemSelected: " + array[position]);
-
-            routeInfo = databaseHelperUid.getCancelInfoById(position+1);
-            if (routeInfo != null) {
-                Logger.d(context, TAG, "onContextItemSelected: " + routeInfo);
-            } else {
-                Logger.d(context, TAG, "onContextItemSelected: RouteInfo not found for id: " + (position + 1));
-            }
-
-            Map<String, String> costMap = getStringStringMap();
-            Logger.d(context, TAG, "onContextItemSelected costMap: " + costMap);
-            startFinishPage(costMap);
-            return true;
-        } else if (item.getItemId() == R.id.action_exit) {
-// Обработка действия "Delete"
-
-            return true;
-        }   else {
-            return super.onContextItemSelected(item);
-        }
-
-    }
-
-    private @NonNull Map<String, String> getStringStringMap() {
-        Map<String, String> costMap = new HashMap<>();
-
-        costMap.put("dispatching_order_uid", routeInfo.getDispatchingOrderUid());
-        costMap.put("order_cost", routeInfo.getOrderCost());
-        costMap.put("routefrom", routeInfo.getRouteFrom());
-        costMap.put("routefromnumber", routeInfo.getRouteFromNumber());
-        costMap.put("routeto", routeInfo.getRouteTo());
-        costMap.put("to_number", routeInfo.getToNumber());
-
-        if (routeInfo.getDispatchingOrderUidDouble() != null) {
-            costMap.put("dispatching_order_uid_Double", routeInfo.getDispatchingOrderUidDouble());
-        } else {
-            costMap.put("dispatching_order_uid_Double", " ");
-        }
-        costMap.put("pay_method", routeInfo.getToPay_method());
-        costMap.put("orderWeb", routeInfo.getOrderCost());
-        costMap.put("required_time", routeInfo.getRequired_time());
-        return costMap;
-    }
-
-    private void startFinishPage(Map<String, String> sendUrlMap)
-     {
-        String to_name;
-        if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
-            to_name = context.getString(R.string.on_city_tv);
-            Logger.d(context, TAG, "startFinishPage: to_name 1 " + to_name);
-
-        } else {
-
-            if(Objects.equals(sendUrlMap.get("routeto"), "Точка на карте")) {
-                to_name = context.getString(R.string.end_point_marker);
-            } else {
-                to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
-            }
-            Logger.d(context, TAG, "startFinishPage: to_name 2 " + to_name);
-        }
-        Logger.d(context, TAG, "startFinishPage: to_name 3" + to_name);
-        String to_name_local = to_name;
-        if(to_name.contains("по місту")
-                ||to_name.contains("по городу")
-                || to_name.contains("around the city")
-        ) {
-            to_name_local = context.getString(R.string.on_city_tv);
-        }
-        Logger.d(context, TAG, "startFinishPage: to_name 4" + to_name_local);
-        String pay_method_message = context.getString(R.string.pay_method_message_main);
-        switch (Objects.requireNonNull(sendUrlMap.get("pay_method"))) {
-            case "bonus_payment":
-                pay_method_message += " " + context.getString(R.string.pay_method_message_bonus);
-                break;
-            case "card_payment":
-            case "fondy_payment":
-            case "mono_payment":
-            case "wfp_payment":
-                pay_method_message += " " + context.getString(R.string.pay_method_message_card);
-                break;
-            default:
-                pay_method_message += " " + context.getString(R.string.pay_method_message_nal);
-        }
-         String thanksMessage = cleanString(context.getString(R.string.thanks_message));
-         String routeFrom = cleanString(sendUrlMap.get("routefrom"));
-         String toMessage = cleanString(context.getString(R.string.to_message));
-         String toNameLocal = cleanString(to_name_local);
-         String callOfOrder = cleanString(context.getString(R.string.call_of_order));
-         String orderWeb = cleanString(Objects.requireNonNull(sendUrlMap.get("orderWeb")));
-         String uah = cleanString(context.getString(R.string.UAH));
-         String payMethodMessage = cleanString(pay_method_message);
-         String required_time = sendUrlMap.get("required_time");
-
-         String messageResult = thanksMessage + " " +
-                 routeFrom + " " +
-                 toMessage + " " +
-                 toNameLocal + ". " +
-                 required_time  + ". " +
-                 callOfOrder + " " +
-                 orderWeb + " " +
-                 uah + " " +
-                 payMethodMessage;
-
-         Logger.d(getActivity(), TAG, "messageResult: " + messageResult);
-
-         String messageFondy = context.getString(R.string.fondy_message) + " " +
-                sendUrlMap.get("routefrom") + " " + context.getString(R.string.to_message) +
-                to_name_local + ".";
-        Logger.d(context, TAG, "startFinishPage: messageResult " + messageResult);
-        Logger.d(context, TAG, "startFinishPage: to_name " + to_name);
-
-
-         Bundle bundle = new Bundle();
-         bundle.putString("messageResult_key", messageResult);
-         bundle.putString("messageFondy_key", messageFondy);
-         bundle.putString("messageCost_key", Objects.requireNonNull(sendUrlMap.get("orderWeb")));
-         bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
-         bundle.putString("card_payment_key", "no");
-         bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
-
-// Установите Bundle как аргументы фрагмента
-         MainActivity.navController.navigate(R.id.nav_finish, bundle, new NavOptions.Builder()
-                 .setPopUpTo(R.id.nav_visicom, true)
-                 .build());
-
-
-     }
-    private String cleanString(String input) {
-        if (input == null) return "";
-        return input.trim().replaceAll("\\s+", " ").replaceAll("\\s{2,}$", " ");
     }
 
     private void fetchRoutesCancel(String value) {
@@ -320,8 +159,8 @@ public class CancelFragment extends Fragment {
         String city = stringList.get(1);
 
         String url = baseUrl + "/android/UIDStatusShowEmailCancelApp/" + value + "/" + city + "/" +  context.getString(R.string.application);
-        Call<List<RouteResponseCancel>> call = ApiClient.getApiService().getRoutesCancel(url);
         Logger.d(context, TAG, "fetchRoutesCancel: " + url);
+        Call<List<RouteResponseCancel>> call = ApiClient.getApiService().getRoutesCancel(url);
         call.enqueue(new Callback<List<RouteResponseCancel>>() {
             @Override
             public void onResponse(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Response<List<RouteResponseCancel>> response) {
@@ -341,6 +180,8 @@ public class CancelFragment extends Fragment {
                         if (!hasRouteWithAsterisk) {
                             routeList.addAll(routes);
                             processCancelList();
+                            textUid.setVisibility(View.VISIBLE);
+                            textUid.setText(R.string.order_to_cancel);
                         }  else {
                             textUid.setVisibility(View.VISIBLE);
                             textUid.setText(R.string.no_routs);
@@ -384,9 +225,9 @@ public class CancelFragment extends Fragment {
             RouteResponseCancel route = routeList.get(i);
             String uid = route.getUid();
             String routeFrom = route.getRouteFrom();
-            String routefromnumber = route.getRouteFromNumber();
+            String routeFromNumber = route.getRouteFromNumber();
             String routeTo = route.getRouteTo();
-            String routeTonumber = route.getRouteToNumber();
+            String routeToNumber = route.getRouteToNumber();
             String webCost = route.getWebCost();
             String createdAt = route.getCreatedAt();
             String closeReason = route.getCloseReason();
@@ -394,6 +235,9 @@ public class CancelFragment extends Fragment {
             String dispatchingOrderUidDouble = route.getDispatchingOrderUidDouble();
             String pay_method = route.getPay_method();
             String required_time = route.getRequired_time();
+            String flexible_tariff_name = route.getFlexible_tariff_name();
+            String comment_info = route.getComment_info();
+            String extra_charge_codes = route.getExtra_charge_codes();
 
             switch (closeReason){
                 case "-1":
@@ -453,27 +297,28 @@ public class CancelFragment extends Fragment {
             }
 
             if(required_time != null && !required_time.contains("01.01.1970")) {
-                required_time = context.getString(R.string.time_order) + required_time;
+                required_time = ". " + context.getString(R.string.time_order) + required_time;
             } else {
                 required_time = "";
             }
-            if(routeFrom.equals(routeTo)) {
-                routeInfo = context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + context.getString(R.string.close_resone_to)
-                        + context.getString(R.string.on_city)
-                        + required_time
-                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)
-                        + context.getString(R.string.auto_info) + " " + auto + " "
-                        + context.getString(R.string.close_resone_time)
-                        + createdAt + context.getString(R.string.close_resone_text) + closeReasonText;
+            if (routeFrom.equals(routeTo)) {
+                routeInfo = routeFrom + ", " + routeFromNumber
+                        + getString(R.string.close_resone_to)
+                        + getString(R.string.on_city)
+                        + required_time  + "#"
+                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)  + "#"
+                        + getString(R.string.auto_info) + " " + auto + "#"
+                        + getString(R.string.close_resone_time)
+                        + createdAt  + "#"
+                        + getString(R.string.close_resone_text) + closeReasonText;
             } else {
-                routeInfo = context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber + "."
-                        + required_time
-                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)
-                        + context.getString(R.string.auto_info) + " " + auto + " "
-                        + context.getString(R.string.close_resone_time)
-                        + createdAt + context.getString(R.string.close_resone_text) + closeReasonText;
+                routeInfo = routeFrom + ", " + routeFromNumber
+                        + getString(R.string.close_resone_to) + routeTo + " " + routeToNumber + "."
+                        + required_time + "#"
+                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)  + "#"
+                        + getString(R.string.auto_info) + " " + auto + "#"
+                        + getString(R.string.close_resone_time) + createdAt  + "#"
+                        + getString(R.string.close_resone_text) + closeReasonText;
             }
 
 //                array[i] = routeInfo;
@@ -483,21 +328,38 @@ public class CancelFragment extends Fragment {
              settings.add(uid);
              settings.add(webCost);
              settings.add(routeFrom);
-             settings.add(routefromnumber);
+             settings.add(routeFromNumber);
              settings.add(routeTo);
-             settings.add(routeTonumber);
+             settings.add(routeToNumber);
              settings.add(dispatchingOrderUidDouble);
              settings.add(pay_method);
              settings.add(required_time);
+             settings.add(flexible_tariff_name);
+             settings.add(comment_info);
+             settings.add(extra_charge_codes);
 
             Logger.d(context, TAG, settings.toString());
             databaseHelperUid.addCancelInfoUid(settings);
         }
         array = databaseHelper.readRouteCancel();
         Logger.d(context, TAG, "processRouteList: array " + Arrays.toString(array));
+
         if(array != null) {
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(context, R.layout.drop_down_layout, array);
+            List<String> itemList = Arrays.asList(array); // Преобразование в List
+
+            CustomArrayCancelAdapter adapter = new CustomArrayCancelAdapter(
+                    context,
+                    R.layout.drop_down_layout,  // Ваш макет элемента списка
+                    R.id.text1,  // ID TextView в вашем макете
+                    R.id.text2,  // ID TextView в вашем макете
+                    R.id.text3,  // ID TextView в вашем макете
+                    R.id.text4,  // ID TextView в вашем макете
+                    R.id.text5,  // ID TextView в вашем макете
+                    itemList  // Список строк
+            );
             listView.setAdapter(adapter);
+            listView.setAdapter(adapter);
+
             listView.setVisibility(View.VISIBLE);
             scrollButtonDown.setVisibility(View.VISIBLE);
             scrollButtonUp.setVisibility(View.VISIBLE);
@@ -510,26 +372,23 @@ public class CancelFragment extends Fragment {
             ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
             layoutParams.height = desiredHeight;
             listView.setLayoutParams(layoutParams);
-            registerForContextMenu(listView);
-            listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    int totalItemHeight = 0;
-                    for (int i = 0; i < listView.getChildCount(); i++) {
-                        totalItemHeight += listView.getChildAt(i).getHeight();
-                    }
 
-                    if (totalItemHeight > desiredHeight) {
-                        scrollButtonUp.setVisibility(View.VISIBLE);
-                        scrollButtonDown.setVisibility(View.VISIBLE);
-                    } else {
-                        scrollButtonUp.setVisibility(View.GONE);
-                        scrollButtonDown.setVisibility(View.GONE);
-                    }
-
-                    // Убираем слушатель, чтобы он не срабатывал многократно
-//                    listView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+            listView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+                int totalItemHeight = 0;
+                for (int i = 0; i < listView.getChildCount(); i++) {
+                    totalItemHeight += listView.getChildAt(i).getHeight();
                 }
+
+                if (totalItemHeight > desiredHeight) {
+                    scrollButtonUp.setVisibility(View.VISIBLE);
+                    scrollButtonDown.setVisibility(View.VISIBLE);
+                } else {
+                    scrollButtonUp.setVisibility(View.GONE);
+                    scrollButtonDown.setVisibility(View.GONE);
+                }
+
+                // Убираем слушатель, чтобы он не срабатывал многократно
+//                    listView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
             });
 
 

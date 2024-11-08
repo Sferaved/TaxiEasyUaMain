@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
@@ -123,7 +124,10 @@ public class FinishActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_finish);
+
+
         fragmentManager = getSupportFragmentManager();
         progressBar = findViewById(R.id.progress_bar);
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
@@ -1230,35 +1234,7 @@ public class FinishActivity extends AppCompatActivity {
             }
         });
     }
-    private void fetchCarFound() {
 
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl) // Замените BASE_URL на ваш базовый URL сервера
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-// Создайте экземпляр ApiServiceMapbox
-        ApiService apiService = retrofit.create(ApiService.class);
-
-// Вызов метода startNewProcessExecutionStatus с передачей параметров
-        Call<Void> call = apiService.startNewProcessExecutionStatus(
-                receivedMap.get("doubleOrder")
-        );
-        String url = call.request().url().toString();
-        Logger.d(getApplicationContext(), TAG, "URL запроса: " + url);
-        call.enqueue(new Callback<Void>() {
-            @Override
-            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
-                // Обработайте ошибку при выполнении запроса
-                FirebaseCrashlytics.getInstance().recordException(t);
-            }
-        });
-
-    }
 
     public static void callOrderIdMemory(String orderId, String uid, String paySystem) {
         if(!no_pay) {
@@ -1422,7 +1398,7 @@ public class FinishActivity extends AppCompatActivity {
                 if (response.isSuccessful()) {
                     // Получаем объект OrderResponse из успешного ответа
                     OrderResponse orderResponse = response.body();
-
+                    Logger.d(getApplicationContext(), TAG, "orderResponse: " + orderResponse);
                     // Далее вы можете использовать полученные данные из orderResponse
                     // например:
                     assert orderResponse != null;
@@ -1445,8 +1421,10 @@ public class FinishActivity extends AppCompatActivity {
                                 message = getString(R.string.ex_st_0);
                                 btn_again.setVisibility(View.GONE);
                                 btn_cancel.setVisibility(View.GONE);
-                                btn_reset_status.setVisibility(View.VISIBLE);
-                                btn_cancel_order.setVisibility(View.VISIBLE);
+                                if(!cancel_btn_click) {
+                                    btn_reset_status.setVisibility(View.VISIBLE);
+                                    btn_cancel_order.setVisibility(View.VISIBLE);
+                                }
                                 progressBar.setVisibility(View.GONE);
                             } else {
                                 message = getString(R.string.checkout_status);
@@ -1523,14 +1501,15 @@ public class FinishActivity extends AppCompatActivity {
                                             startActivity(intent);
                                         }
                                     });
+
                                     messageBuilder.append(getString(R.string.ex_st_4)).append(driverPhone);
                                 }
 
                                 if (requiredTime != null && !requiredTime.isEmpty()) {
                                     messageBuilder.append(getString(R.string.ex_st_5)).append(requiredTime);
                                 }
-                                btn_again.setVisibility(View.GONE);
-                                btn_cancel.setVisibility(View.GONE);
+                                btn_again.setVisibility(View.VISIBLE);
+                                btn_cancel.setVisibility(View.VISIBLE);
                                 btn_reset_status.setVisibility(View.VISIBLE);
                                 btn_cancel_order.setVisibility(View.VISIBLE);
                                 progressBar.setVisibility(View.GONE);

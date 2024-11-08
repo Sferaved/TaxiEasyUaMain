@@ -2,43 +2,50 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_color_new"
     tools:context=".ui.home.HomeFragment">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/gpsbut"
-            android:layout_width="wrap_content"
-            android:layout_height="44sp"
-
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="12dp"
-            android:background="@drawable/buttons"
-            android:text="@string/change"
-            android:textColor="#D9D9D9"
+        android:orientation="vertical"
+        >
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/visicomMain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent">
 
-        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/gpsbut"
+                android:layout_width="84dp"
+                android:layout_height="33dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp"
+                android:background="@drawable/buttons"
+                android:text="@string/change"
+
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="@+id/textGeo"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipeRefreshLayout"
-            android:layout_width="40dp"
-            android:layout_height="500dp"
-            android:layout_marginEnd="12dp"
+            android:layout_width="31dp"
+            android:layout_height="664dp"
+            android:layout_marginEnd="4dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/gpsbut">
+            tools:layout_editor_absoluteY="-1dp"
+            tools:ignore="MissingConstraints">
+
             <TextView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                >
-            </TextView>
+                android:layout_height="match_parent"></TextView>
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
         <ProgressBar
@@ -46,9 +53,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
 
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="100dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.702"
+            app:layout_constraintHorizontal_bias="0.501"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -98,27 +105,27 @@
             app:layout_constraintEnd_toStartOf="@+id/textGeo"
             app:layout_constraintTop_toBottomOf="@+id/textfrom" />
 
-        <TextView
-            android:id="@+id/textGeo"
-            android:layout_width="293dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="8dp"
-            android:layout_marginTop="4dp"
-            android:background="@drawable/input"
-            android:ems="10"
-            android:fontFamily="@font/light"
-            android:hint="@string/Street_hint"
-            android:minHeight="48sp"
-            android:textColor="@color/white"
-            android:textColorHint="#ABD9D9D9"
-            android:textSize="18sp"
-            android:visibility="invisible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textfrom"
-            tools:ignore="MissingConstraints" />
+            <TextView
+                android:id="@+id/textGeo"
+                android:layout_width="293dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/input"
+                android:ems="10"
+                android:fontFamily="@font/light"
+                android:hint="@string/Street_hint"
+                android:minHeight="48sp"
+                android:textColor="@color/white"
+                android:textColorHint="#ABD9D9D9"
+                android:textSize="18sp"
+                android:visibility="invisible"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/textfrom"
+                tools:ignore="MissingConstraints" />
 
-        <androidx.appcompat.widget.AppCompatButton
+            <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_clear_from_text"
             android:layout_width="200sp"
             android:layout_height="48sp"
@@ -180,46 +187,20 @@
             app:layout_constraintTop_toBottomOf="@+id/text_to"
             >
 
-            <TextView
-                android:id="@+id/schedule"
-                android:layout_width="293dp"
-                android:layout_height="wrap_content"
-                android:layout_margin="8dp"
-                android:background="@drawable/input"
-                android:ems="10"
-                android:fontFamily="@font/light"
-                android:textColor="@color/white"
-                android:textColorHint="#ABD9D9D9"
-                android:textSize="18sp"
-
-
-                app:layout_constraintTop_toTopOf="parent"
-                tools:ignore="MissingConstraints"
-                tools:layout_editor_absoluteX="0dp" />
-
-            <ImageButton
-                android:id="@+id/shed_down"
-                android:layout_width="32dp"
-                android:layout_height="30dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/input"
-                android:src="@drawable/down_arrow_white"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
 
-        <TextView
-            android:id="@+id/textfrom"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="56dp"
-            android:fontFamily="@font/light"
-            android:text="@string/from_text"
-            android:textColor="#9DA0A8"
-            android:textSize="14sp"
-            app:layout_constraintStart_toStartOf="@+id/textGeo"
-            app:layout_constraintTop_toTopOf="parent" />
+            <TextView
+                android:id="@+id/textfrom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:fontFamily="@font/light"
+                android:text="@string/from_text"
+                android:textColor="#9DA0A8"
+                android:textSize="14sp"
+                app:layout_constraintStart_toStartOf="@+id/textGeo"
+                app:layout_constraintTop_toTopOf="@+id/gpsbut" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/change"
@@ -239,7 +220,7 @@
             android:id="@+id/textwhere"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             android:fontFamily="@font/light"
             android:text="@string/to_edit"
             android:textColor="#9DA0A8"
@@ -250,47 +231,46 @@
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnAdd"
-            android:layout_width="293sp"
-            android:layout_height="wrap_content"
+            android:layout_width="140dp"
+            android:layout_height="37dp"
 
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/buttons"
             android:fontFamily="@font/regular"
             android:text="@string/add_services"
             android:textAlignment="center"
             android:textColor="#D9D9D9"
             android:visibility="invisible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/constr_2" />
+            app:layout_constraintStart_toStartOf="@+id/text_to"
+            app:layout_constraintTop_toBottomOf="@+id/schedule" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnBonus"
-            android:layout_width="293sp"
-            android:layout_height="wrap_content"
+            android:layout_width="140dp"
+            android:layout_height="39dp"
             android:layout_marginTop="12dp"
             android:background="@drawable/buttons"
             android:fontFamily="@font/regular"
+
             android:text="@string/btn_bonus"
             android:textAlignment="center"
-
             android:textColor="#D9D9D9"
             android:visibility="invisible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btnAdd" />
+            app:layout_constraintEnd_toEndOf="@+id/text_to"
+            app:layout_constraintTop_toBottomOf="@+id/schedule" />
+
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_minus"
             android:layout_width="60sp"
             android:layout_height="60sp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="4dp"
             android:gravity="center"
             android:text="-"
             android:textSize="30sp"
             android:visibility="invisible"
             app:layout_constraintEnd_toStartOf="@+id/text_view_cost"
-            app:layout_constraintHorizontal_bias="0.79"
+            app:layout_constraintHorizontal_bias="0.858"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/btnBonus" />
 
@@ -298,8 +278,8 @@
             android:id="@+id/text_view_cost"
             android:layout_width="100sp"
             android:layout_height="60sp"
-            android:layout_margin="@dimen/activity_vertical_margin"
-            android:layout_marginTop="16dp"
+            android:layout_margin="4dp"
+            android:layout_marginTop="4dp"
             android:background="@drawable/input"
             android:ems="10"
             android:fontFamily="@font/light"
@@ -308,7 +288,7 @@
             android:textSize="25sp"
             android:visibility="invisible"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.498"
+            app:layout_constraintHorizontal_bias="0.494"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/btnBonus"
             tools:ignore="MissingConstraints" />
@@ -317,18 +297,17 @@
             android:id="@+id/btn_plus"
             android:layout_width="60sp"
             android:layout_height="60sp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="4dp"
             android:backgroundTint="@color/colorAccent"
             android:gravity="center"
             android:text="+"
             android:textSize="30sp"
             android:visibility="invisible"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.16"
+            app:layout_constraintHorizontal_bias="0.162"
             app:layout_constraintStart_toEndOf="@+id/text_view_cost"
             app:layout_constraintTop_toBottomOf="@+id/btnBonus"
             tools:ignore="MissingConstraints" />
-
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/linear_layout_buttons"
@@ -480,15 +459,257 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/btnOrder" />
 
-        <androidx.constraintlayout.widget.Guideline
-            android:id="@+id/guideline4"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            app:layout_constraintGuide_percent="-0.18491484" />
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guideline4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_begin="0dp" />
+
+        <TextView
+            android:id="@+id/schedule"
+            android:layout_width="293dp"
+            android:layout_height="33dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/input"
+            android:ems="10"
+            android:fontFamily="@font/light"
+            android:textColor="@color/white"
+            android:textColorHint="#ABD9D9D9"
+            android:textSize="18sp"
+            app:layout_constraintEnd_toEndOf="@+id/text_to"
+            app:layout_constraintTop_toBottomOf="@+id/text_to"
+            tools:ignore="MissingConstraints" />
+
+        <ImageButton
+            android:id="@+id/shed_down"
+            android:layout_width="32dp"
+            android:layout_height="30dp"
+            android:layout_marginEnd="12dp"
+            android:background="@drawable/input"
+            android:src="@drawable/down_arrow_white"
+            app:layout_constraintEnd_toEndOf="@+id/schedule"
+            app:layout_constraintTop_toTopOf="@+id/schedule" />
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/visicomFinish"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageButton
+            android:id="@+id/btn_no"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/btn_accents"
+            android:contentDescription="TODO"
+            android:scaleType="centerInside"
+            android:src="@drawable/arrow_back_fill0_wght400_grad0_opsz24"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/textResult"
+
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="4dp"
+            android:fontFamily="@font/light"
+            android:text="@string/text_result"
+            android:textColor="#B0BEC5"
+            android:textSize="14sp"
+            app:layout_constraintStart_toStartOf="@+id/text_full_message"
+            app:layout_constraintTop_toBottomOf="@+id/btn_no" />
+
+        <TextView
+            android:id="@+id/text_full_message"
+
+            android:layout_width="293sp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4sp"
+            android:background="@drawable/input"
+            android:ems="10"
+            android:fontFamily="@font/light"
+            android:gravity="left"
+            android:minHeight="48sp"
+            android:textColor="#D9D9D9"
+            android:textSize="18sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.502"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textResult"
+            tools:ignore="RtlHardcoded" />
+
+        <TextView
+            android:id="@+id/textCost"
+
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:fontFamily="@font/light"
+            android:text="@string/text_cost"
+            android:textColor="#B0BEC5"
+            android:textSize="14sp"
+            app:layout_constraintStart_toStartOf="@+id/text_full_message"
+            app:layout_constraintTop_toBottomOf="@+id/text_full_message" />
+
+        <TextView
+            android:id="@+id/text_cost_message"
+
+            android:layout_width="293sp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/input"
+            android:ems="10"
+            android:fontFamily="@font/light"
+            android:gravity="left"
+            android:minHeight="48sp"
+            android:textColor="#D9D9D9"
+            android:textSize="18sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textCost"
+            tools:ignore="RtlHardcoded" />
+
+
+        <ProgressBar
+            android:visibility="gone"
+            android:id="@+id/carProgressBar"
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="20dp"
+            style="?android:attr/progressBarStyleHorizontal"
+
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_cost_message"
+            android:progress="50"
+            android:max="100"
+            android:progressTint="@color/colorAccent"
+        />
+
+        <LinearLayout
+            android:id="@+id/progressSteps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/carProgressBar">
+
+            <View
+                android:id="@+id/step1"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:background="@drawable/circle_step_active" />
+
+            <View
+                android:layout_width="76dp"
+                android:layout_height="4dp"
+                android:background="#689194" />
+
+            <View
+                android:id="@+id/step2"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:background="@drawable/circle_step_inactive" />
+
+            <View
+                android:layout_width="76dp"
+                android:layout_height="4dp"
+                android:background="#689194" />
+
+            <View
+                android:id="@+id/step3"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:background="@drawable/circle_step_inactive" />
+
+            <View
+                android:layout_width="76dp"
+                android:layout_height="4dp"
+                android:background="#689194" />
+
+            <View
+                android:id="@+id/step4"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:background="@drawable/circle_step_inactive" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textStatus"
+
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4sp"
+            android:layout_marginTop="4dp"
+            android:fontFamily="@font/light"
+            android:text="@string/textStatus"
+            android:textColor="#B0BEC5"
+            android:textSize="14sp"
+            app:layout_constraintStart_toStartOf="@+id/text_full_message"
+            app:layout_constraintTop_toBottomOf="@+id/progressSteps" />
+
+
+        <TextView
+            android:id="@+id/countdownTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textSize="24sp"
+            android:textColor="@color/white"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_status" />
+
+        <TextView
+            android:id="@+id/text_status"
+
+            android:layout_width="293sp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/input"
+            android:ems="10"
+            android:fontFamily="@font/light"
+            android:gravity="left"
+            android:minHeight="48sp"
+            android:textColor="#D9D9D9"
+            android:textSize="18sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/progressSteps"
+            tools:ignore="RtlHardcoded" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnCallAdminFin"
+            android:layout_width="293sp"
+            android:layout_height="45sp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/buttons"
+            android:fontFamily="@font/regular"
+            android:text="@string/call_admin"
+            android:textAlignment="center"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/text_status" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 </ScrollView>

@@ -6,14 +6,14 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     // Имя вашей базы данных
     private static final String DATABASE_NAME = "Database_25022024";
     // Версия вашей базы данных
-    private static final int DATABASE_VERSION = 6;
+    private static final int DATABASE_VERSION = 7;
     // Имя таблицы для хранения данных routeInfo
     private static final String TABLE_ROUT_INFO = "RoutInfoTable";
     private static final String TABLE_ROUT_CANCEL = "RoutCancelTable";
@@ -123,7 +123,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
     public String[] readRouteCancel() {
         SQLiteDatabase db = this.getReadableDatabase();
-        Set<String> uniqueRoutes = new HashSet<>();
+        List<String> routeList = new ArrayList<>();
 
         // Запрос к таблице
         String query = "SELECT * FROM " + TABLE_ROUT_CANCEL;
@@ -134,10 +134,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             // Индексы столбцов
             int columnIndexRouteInfo = cursor.getColumnIndex(COLUMN_ROUTE_INFO);
 
-            // Чтение данных из курсора и сохранение их в множество
+            // Чтение данных из курсора и сохранение их в список
             do {
                 String routeInfo = cleanString(cursor.getString(columnIndexRouteInfo));
-                uniqueRoutes.add(routeInfo);
+                routeList.add(routeInfo); // Добавляем все строки без проверки уникальности
             } while (cursor.moveToNext());
 
             // Закрытие курсора
@@ -147,11 +147,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // Закрытие базы данных
         db.close();
 
-        // Преобразование множества в массив
-        String[] array = uniqueRoutes.toArray(new String[0]);
+        // Преобразование списка в массив
+        String[] array = routeList.toArray(new String[0]);
 
         return array;
     }
+
 
 
     private String cleanString(String input) {

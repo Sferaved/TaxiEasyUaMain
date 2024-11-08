@@ -6,126 +6,327 @@
     android:layout_height="match_parent"
     android:background="@color/new_background_color">
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_city_1"
-        android:layout_width="293sp"
-        android:layout_height="wrap_content"
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-        android:layout_marginTop="12dp"
-        android:background="@drawable/buttons"
-        android:fontFamily="@font/regular"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-        android:textAlignment="center"
-        android:textColor="#D9D9D9"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_1"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_2"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_1" />
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_city_2"
-        android:layout_width="293sp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/buttons"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_3"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_2" />
 
-        android:fontFamily="@font/regular"
-        android:textAlignment="center"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_4"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_3" />
 
-        android:textColor="#D9D9D9"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_city_1" />
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_5"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_4" />
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_city_3"
-        android:layout_width="293sp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/buttons"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_6"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_5" />
 
-        android:fontFamily="@font/regular"
-        android:textAlignment="center"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_7"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_6" />
 
-        android:textColor="#D9D9D9"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_city_2" />
+            <!-- Добавьте остальные кнопки здесь -->
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_city_4"
-        android:layout_width="293sp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/buttons"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_8"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_7" />
 
-        android:fontFamily="@font/regular"
-        android:textAlignment="center"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_9"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_8" />
 
-        android:textColor="#D9D9D9"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_city_3" />
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_10"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_9" />
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_city_5"
-        android:layout_width="293sp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/buttons"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_11"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_10" />
 
-        android:fontFamily="@font/regular"
-        android:textAlignment="center"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_12"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_11" />
 
-        android:textColor="#D9D9D9"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_city_4" />
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_13"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_12" />
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_city_6"
-        android:layout_width="293sp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/buttons"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_14"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_13" />
 
-        android:fontFamily="@font/regular"
-        android:textAlignment="center"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_15"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_14" />
 
-        android:textColor="#D9D9D9"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_city_5" />
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_16"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_15" />
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_city_7"
-        android:layout_width="293sp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/buttons"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_17"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_16" />
 
-        android:fontFamily="@font/regular"
-        android:textAlignment="center"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_18"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_17" />
 
-        android:textColor="#D9D9D9"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_city_6" />
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_19"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_18" />
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_exit"
-        android:layout_width="293sp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/buttons_red"
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_20"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_19" />
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_21"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_20" />
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_22"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_21" />
 
-        android:fontFamily="@font/regular"
-        android:textAlignment="center"
+           <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_city_23"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_22" />
 
-        android:textColor="#D9D9D9"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_city_7" />
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_exit"
+                android:layout_width="293sp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/buttons_red"
+                android:fontFamily="@font/regular"
+                android:textAlignment="center"
+                android:textColor="#D9D9D9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_city_23" />
 
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>

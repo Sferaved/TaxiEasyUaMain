@@ -3,6 +3,8 @@ package com.taxi.easy.ua.ui.home;
 
 import static android.content.Context.MODE_PRIVATE;
 import static android.graphics.Color.RED;
+import static com.taxi.easy.ua.MainActivity.navController;
+import static com.taxi.easy.ua.MainActivity.sharedPreferencesHelperMain;
 import static com.taxi.easy.ua.R.string.address_error_message;
 
 import android.Manifest;
@@ -20,7 +22,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.graphics.BlendMode;
-import android.location.LocationManager;
+import android.graphics.Typeface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -29,9 +31,15 @@ import android.os.Build;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
 import android.text.InputType;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.style.StyleSpan;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -55,6 +63,7 @@ import androidx.navigation.NavOptions;
 import androidx.room.Room;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
@@ -70,11 +79,16 @@ import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.home.room.AppDatabase;
 import com.taxi.easy.ua.ui.home.room.RouteCost;
 import com.taxi.easy.ua.ui.home.room.RouteCostDao;
+import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
+import com.taxi.easy.ua.ui.payment_system.PayApi;
+import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
+import com.taxi.easy.ua.utils.blacklist.BlacklistManager;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetDialogFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGeoFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
@@ -97,9 +111,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class HomeFragment extends Fragment {
 
@@ -110,7 +128,6 @@ public class HomeFragment extends Fragment {
     public static EditText from_number, to_number;
     String messageResult;
 
-    Button gpsbut;
     public static AppCompatButton btn_order;
     public static AppCompatButton buttonAddServices;
     public static AppCompatButton buttonBonus;
@@ -119,6 +136,7 @@ public class HomeFragment extends Fragment {
     public static AppCompatButton btnGeo;
     public static AppCompatButton btn_clear;
     public static AppCompatButton btnCallAdmin;
+    public static AppCompatButton btnCallAdminFin;
 
     public static long addCost, cost, costFirst;
     private static String[] arrayStreet;
@@ -162,7 +180,7 @@ public class HomeFragment extends Fragment {
     ArrayAdapter<String> adapter;
 
     String city;
-    LocationManager locationManager;
+
     Activity context;
     FragmentManager fragmentManager;
     @SuppressLint("StaticFieldLeak")
@@ -176,10 +194,23 @@ public class HomeFragment extends Fragment {
     DatabaseHelper databaseHelper;
     DatabaseHelperUid databaseHelperUid;
 
+    ConstraintLayout constraintLayoutHomeMain, constraintLayoutHomeFinish;
+    public static TextView text_full_message, textCostMessage, textStatusCar;
+    private Animation blinkAnimation;
+    private final String baseUrl = "https://m.easy-order-taxi.site";
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
+
+        constraintLayoutHomeMain = root.findViewById(R.id.homeMain);
+        constraintLayoutHomeFinish = root.findViewById(R.id.homeFinish);
+        constraintLayoutHomeFinish.setVisibility(View.GONE);
+
+        text_full_message = root.findViewById(R.id.text_full_message);
+        textCostMessage = root.findViewById(R.id.text_cost_message);
+        textStatusCar = root.findViewById(R.id.text_status);
 
         context = requireActivity();
         fragmentManager = getParentFragmentManager();
@@ -187,7 +218,30 @@ public class HomeFragment extends Fragment {
         List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
 
         city = stringList.get(1);
-        if (!NetworkUtils.isNetworkAvailable(requireContext()) || city.equals("foreign countries")) {
+        switch (city){
+            case "Ivano_frankivsk":
+            case "Vinnytsia":
+            case "Poltava":
+            case "Sumy":
+            case "Kharkiv":
+            case "Chernihiv":
+            case "Rivne":
+            case "Ternopil":
+            case "Khmelnytskyi":
+            case "Zakarpattya":
+            case "Zhytomyr":
+            case "Kropyvnytskyi":
+            case "Mykolaiv":
+            case "Сhernivtsi":
+            case "Lutsk":
+            case "foreign countries":
+                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true)
+                        .build());
+                break;
+        }
+
+        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
             
             MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_visicom, true) 
@@ -196,7 +250,7 @@ public class HomeFragment extends Fragment {
 
         finiched = true;
 
-        context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         progressBar = binding.progressBar;
         buttonBonus = binding.btnBonus;
@@ -229,45 +283,42 @@ public class HomeFragment extends Fragment {
                     arrayStreet = KyivCity.arrayStreet();
                     break;
             }
-            adapter = new ArrayAdapter<>(context,R.layout.drop_down_layout, arrayStreet);
+            adapter = new ArrayAdapter<>(context,R.layout.drop_down_layout_home, arrayStreet);
         }
 
         text_view_cost = binding.textViewCost;
         btnGeo = binding.btnGeo;
 
-        btnGeo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(loadPermissionRequestCount() >= 3 && !MainActivity.location_update) {
-                    MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment(getString(R.string.location_on));
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+        btnGeo.setOnClickListener(v -> {
+            if(loadPermissionRequestCount() >= 3 && !MainActivity.location_update) {
+                MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment(getString(R.string.location_on));
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        // Обработка отсутствия необходимых разрешений
+                        checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                    }
                 } else {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                            // Обработка отсутствия необходимых разрешений
-                            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                        }
-                    } else {
-                        // Для версий Android ниже 10
-                        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                                || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                            // Обработка отсутствия необходимых разрешений
-                            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                        }
+                    // Для версий Android ниже 10
+                    if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                            || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        // Обработка отсутствия необходимых разрешений
+                        checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                        checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
                     }
                 }
-
-                // Обработка отсутствия необходимых разрешений
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                        // Обработка отсутствия необходимых разрешений
-                        MainActivity.location_update = true;
-                    }
-                } else MainActivity.location_update = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                        || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-
             }
+
+            // Обработка отсутствия необходимых разрешений
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    // Обработка отсутствия необходимых разрешений
+                    MainActivity.location_update = true;
+                }
+            } else MainActivity.location_update = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+
         });
         if(!text_view_cost.getText().toString().isEmpty()) {
             costFirst = Long.parseLong(text_view_cost.getText().toString());
@@ -294,17 +345,14 @@ public class HomeFragment extends Fragment {
             }
         });
 
-        btn_plus.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
-                addCost = Long.parseLong(stringListInfo.get(5));
-                cost = Long.parseLong(text_view_cost.getText().toString());
-                cost += 5;
-                addCost += 5;
-                updateAddCost(String.valueOf(addCost));
-                text_view_cost.setText(String.valueOf(cost));
-            }
+        btn_plus.setOnClickListener(v -> {
+            List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
+            addCost = Long.parseLong(stringListInfo.get(5));
+            cost = Long.parseLong(text_view_cost.getText().toString());
+            cost += 5;
+            addCost += 5;
+            updateAddCost(String.valueOf(addCost));
+            text_view_cost.setText(String.valueOf(cost));
         });
 
         textViewFrom =binding.textFrom;
@@ -409,30 +457,32 @@ public class HomeFragment extends Fragment {
 
 
         buttonAddServices = binding.btnAdd;
-        buttonAddServices.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-            }
+        buttonAddServices.setOnClickListener(v -> {
+            MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
+            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         });
-        buttonBonus.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
-                String api =  stringList.get(2);
-                updateAddCost("0");
-                MyBottomSheetBonusFragment bottomSheetDialogFragment = new MyBottomSheetBonusFragment(
-                        Long.parseLong(text_view_cost.getText().toString()),
-                        "home",
-                        api,
-                        text_view_cost
-                );
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-            }
+        buttonBonus.setOnClickListener(v -> {
+            List<String> stringList1 = logCursor(MainActivity.CITY_INFO, context);
+            String api =  stringList1.get(2);
+            updateAddCost("0");
+            MyBottomSheetBonusFragment bottomSheetDialogFragment = new MyBottomSheetBonusFragment(
+                    Long.parseLong(text_view_cost.getText().toString()),
+                    "home",
+                    api,
+                    text_view_cost
+            );
+            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         });
         btnCallAdmin = binding.btnCallAdmin;
         btnCallAdmin.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
+            intent.setData(Uri.parse(phone));
+            startActivity(intent);
+        });
+
+        btnCallAdminFin = binding.btnCallAdminFin;
+        btnCallAdminFin.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_DIAL);
             String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
             intent.setData(Uri.parse(phone));
@@ -446,10 +496,27 @@ public class HomeFragment extends Fragment {
         constr2 = binding.constr2;
 
         constr2.setVisibility(View.INVISIBLE);
-
+        setBtnBonusName(context);
         return root;
     }
-
+    public static void setBtnBonusName(Context context) {
+        String btnBonusName;
+        String pay_method =  logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
+        switch (pay_method) {
+            case "bonus_payment":
+                btnBonusName = context.getString(R.string.btn_bon);
+                break;
+            case "card_payment":
+            case "fondy_payment":
+            case "mono_payment":
+            case "wfp_payment":
+                btnBonusName = context.getString(R.string.btn_card);
+                break;
+            default:
+                btnBonusName = context.getString(R.string.btn_cache);
+        }
+        buttonBonus.setText(btnBonusName);
+    }
     private void scheduleUpdate() {
         schedule.setText(R.string.on_now);
         if(!MainActivity.firstStart) {
@@ -485,8 +552,28 @@ public class HomeFragment extends Fragment {
             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             progressBar.setVisibility(View.GONE);
         } else {
-            Toast.makeText(context, R.string.check_order_mes, Toast.LENGTH_SHORT).show();
-            ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
+            constraintLayoutHomeMain.setVisibility(View.GONE);
+
+            String toRout = textViewTo.getText().toString();
+            Logger.d(context, TAG, "orderFinished toRout: "  + toRout);
+            if(toRout.equals("")) {
+                toRout =  getString(R.string.on_city);
+            } else {
+                toRout = textViewTo.getText().toString() + ", " + to_number.getText().toString();
+            }
+            String messageResultFin =
+                    textViewFrom.getText().toString() + ", " + from_number.getText().toString() + " " + getString(R.string.to_message) + toRout;
+            text_full_message.setText(messageResultFin);
+
+            messageResult = getString(R.string.check_cost_message);
+            textCostMessage.setText(messageResult);
+
+            textStatusCar.setText(R.string.order_reg);
+
+            blinkAnimation = AnimationUtils.loadAnimation(context, R.anim.blink_animation);
+            textStatusCar.startAnimation(blinkAnimation);
+
+            constraintLayoutHomeFinish.setVisibility(View.VISIBLE);ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
 //            // Пример строки URL с параметрами
             Logger.d(context, TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
@@ -500,52 +587,26 @@ public class HomeFragment extends Fragment {
                     String message = sendUrlMap.get("message");
 
                     assert orderWeb != null;
+
                     if (!orderWeb.equals("0")) {
 
                         String from_name = sendUrlMap.get("routefrom");
                         String to_name = sendUrlMap.get("routeto");
-                        String required_time = sendUrlMap.get("required_time");
-                        if(required_time != null && !required_time.contains("01.01.1970")) {
-                            required_time = context.getString(R.string.time_order) + required_time + ". ";
-                        } else {
-                            required_time = "";
-                        }
+
                         assert from_name != null;
-                        String callOfOrder = context.getString(R.string.call_of_order);
+
                         if (from_name.equals(to_name)) {
-                            messageResult = getString(R.string.thanks_message) +
-                                    from_name + " " + from_number.getText() + getString(R.string.on_city) +
-                                    required_time  + ". " +
-                                    callOfOrder + orderWeb + getString(R.string.UAH);
+                            messageResult =
+                                    from_name + ", " + from_number.getText() + " " + getString(R.string.to_message) + getString(R.string.on_city);
                         } else {
-                            messageResult = getString(R.string.thanks_message) +
-                                    from_name + " " + from_number.getText() + " " + getString(R.string.to_message) +
-                                    to_name + " " + to_number.getText() + "." +
-                                    required_time +
-                                    callOfOrder + orderWeb + getString(R.string.UAH);
+                            messageResult =
+                                    from_name + ", " + from_number.getText() + " " + getString(R.string.to_message) +
+                                    to_name + ", " + to_number.getText() + ".";
                         }
                         Logger.d(context, TAG, "order: sendUrlMap.get(\"from_lat\")" + sendUrlMap.get("from_lat"));
                         Logger.d(context, TAG, "order: sendUrlMap.get(\"lat\")" + sendUrlMap.get("lat"));
-                        if (!Objects.equals(sendUrlMap.get("from_lat"), "0") && !Objects.equals(sendUrlMap.get("lat"), "0")) {
-                            if (from_name.equals(to_name)) {
-                                insertRecordsOrders(
-                                        from_name, from_name,
-                                        from_number.getText().toString(), from_number.getText().toString(),
-                                        sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                        sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                        requireContext()
-                                );
-                            } else {
-                                insertRecordsOrders(
-                                        from_name, to_name,
-                                        from_number.getText().toString(), to_number.getText().toString(),
-                                        sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
-                                        sendUrlMap.get("lat"), sendUrlMap.get("lng"),
-                                        requireContext()
-                                );
-                            }
-                        }
-//                    insertRouteCostToDatabase();
+
+
                         String pay_method_message = getString(R.string.pay_method_message_main);
                         switch (pay_method) {
                             case "bonus_payment":
@@ -560,33 +621,48 @@ public class HomeFragment extends Fragment {
                             default:
                                 pay_method_message += " " + getString(R.string.pay_method_message_nal);
                         }
-                        messageResult += ". " + pay_method_message;
 
+                        String messagePayment = orderWeb + " " + getString(R.string.UAH) + " " + pay_method_message;
 
                         Bundle bundle = new Bundle();
                         bundle.putString("messageResult_key", messageResult);
+                        bundle.putString("messagePay_key", messagePayment);
                         bundle.putString("messageCost_key", orderWeb);
                         bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
                         bundle.putString("UID_key", String.valueOf(sendUrlMap.get("dispatching_order_uid")));
 
 // Установите Bundle как аргументы фрагмента
-                        MainActivity.navController.navigate(R.id.nav_finish, bundle, new NavOptions.Builder()
+                        MainActivity.navController.navigate(R.id.nav_finish_separate, bundle, new NavOptions.Builder()
                                 .setPopUpTo(R.id.nav_visicom, true)
                                 .build());
 
 
                     } else {
-                        btnVisible(View.INVISIBLE);
+                        constraintLayoutHomeFinish.setVisibility(View.GONE);
+                        constraintLayoutHomeMain.setVisibility(View.VISIBLE);
                         assert message != null;
+                        String addType ="60";
                         if (message.equals("ErrorMessage")) {
                             message = getString(R.string.server_error_connected);
                             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
                             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                         } else if (message.contains("Дублирование")) {
-                            message = getResources().getString(R.string.double_order_error);
-                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                        } else {
+                            sharedPreferencesHelperMain.saveValue("doubleOrderPrefHome", true);
+                            showAddCostDoubleDialog(addType);
+                        } else if (message.equals("cash") || message.equals("cards only")) {
+                            boolean black_list_yes = verifyOrder(requireContext());
+                                 if(message.equals("cards only")) {
+
+                                    addType ="45";
+                                    showAddCostDoubleDialog(addType);
+                                } else {
+                                    message = context.getString(R.string.black_list_message);
+                                    if (!isStateSaved() && isAdded()) {
+                                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                                    }
+                                }
+                        }  else {
                             switch (pay_method) {
                                 case "bonus_payment":
                                 case "card_payment":
@@ -631,31 +707,25 @@ public class HomeFragment extends Fragment {
         messageTextView.setText(messagePaymentType);
 
         Button okButton = dialogView.findViewById(R.id.dialog_ok_button);
-        okButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                paymentType();
+        okButton.setOnClickListener(v -> {
+            paymentType();
 
-                try {
-                    if(orderRout()){
-                        orderFinished();
-                    }
-                } catch (UnsupportedEncodingException e) {
-                    FirebaseCrashlytics.getInstance().recordException(e);
-                    throw new RuntimeException(e);
+            try {
+                if(orderRout()){
+                    orderFinished();
                 }
-                progressBar.setVisibility(View.GONE);
-                alertDialog.dismiss();
+            } catch (UnsupportedEncodingException e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
+                throw new RuntimeException(e);
             }
+            progressBar.setVisibility(View.GONE);
+            alertDialog.dismiss();
         });
 
         Button cancelButton = dialogView.findViewById(R.id.dialog_cancel_button);
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                btnVisible(View.VISIBLE);
-                alertDialog.dismiss();
-            }
+        cancelButton.setOnClickListener(v -> {
+            btnVisible(View.VISIBLE);
+            alertDialog.dismiss();
         });
 
         alertDialog.show();
@@ -663,97 +733,88 @@ public class HomeFragment extends Fragment {
 
     @SuppressLint("ResourceAsColor")
     private boolean orderRout() throws UnsupportedEncodingException {
-        if(!verifyOrder(requireContext())) {
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.black_list_message));
-            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-            progressBar.setVisibility(View.GONE);
-            return false;
-        } else {
-            List<String> stringListRoutHome = logCursor(MainActivity.ROUT_HOME, context);
-            progressBar.setVisibility(View.GONE);
-            if (stringListRoutHome.get(1).equals(" ") && !textViewTo.getText().equals("")) {
-                boolean stop = false;
-                if (numberFlagFrom.equals("1") && from_number.getText().toString().equals(" ")) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
-                        from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
-                        from_number.requestFocus();
-                    } else {
-                        ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
-                        from_number.requestFocus();
-                    }
-                    stop = true;
-                }
-                if (numberFlagTo.equals("1") && to_number.getText().toString().equals(" ")) {
-                    to_number.setBackgroundTintList(ColorStateList.valueOf(R.color.selected_text_color));
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        to_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
-                        to_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
-                        to_number.requestFocus();
-                    } else {
-                        ViewCompat.setBackgroundTintList(to_number, ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
-                        to_number.requestFocus();
-                    }
-                    stop = true;
-
-                }
-                if (stop) {
-                    return false;
-                }
-
-                if (numberFlagFrom.equals("1") && !from_number.getText().toString().equals(" ")) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
-                        from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
-                        from_number.requestFocus();
-                    } else {
-                        ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
-                        from_number.requestFocus();
-                    }
-
-                }
-                if (numberFlagTo.equals("1") && !to_number.getText().toString().equals(" ")) {
-                    to_number.setBackgroundTintList(ColorStateList.valueOf(R.color.selected_text_color));
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        to_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
-                        to_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
-                        to_number.requestFocus();
-                    } else {
-                        ViewCompat.setBackgroundTintList(to_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
-                        to_number.requestFocus();
-                    }
-
-
-                }
-
-                String from_numberCost;
-                if (from_number.getText().toString().equals(" ")) {
-                    from_numberCost = " ";
+        List<String> stringListRoutHome = logCursor(MainActivity.ROUT_HOME, context);
+        progressBar.setVisibility(View.GONE);
+        if (stringListRoutHome.get(1).equals(" ") && !textViewTo.getText().equals("")) {
+            boolean stop = false;
+            if (numberFlagFrom.equals("1") && from_number.getText().toString().equals(" ")) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                    from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+                    from_number.requestFocus();
                 } else {
-
-                    from_numberCost = from_number.getText().toString();
+                    ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                    from_number.requestFocus();
                 }
-                String toCost, to_numberCost;
-                if (to == null) {
-                    toCost = from;
-                    to_numberCost = from_number.getText().toString();
+                stop = true;
+            }
+            if (numberFlagTo.equals("1") && to_number.getText().toString().equals(" ")) {
+                to_number.setBackgroundTintList(ColorStateList.valueOf(R.color.selected_text_color));
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    to_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                    to_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+                    to_number.requestFocus();
                 } else {
-                    toCost = to;
-                    to_numberCost = to_number.getText().toString();
+                    ViewCompat.setBackgroundTintList(to_number, ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                    to_number.requestFocus();
                 }
-                List<String> settings = new ArrayList<>();
-                settings.add(from);
-                settings.add(from_numberCost);
-                settings.add(toCost);
-                settings.add(to_numberCost);
-                Logger.d(context, TAG, "order: settings" + settings);
-                updateRoutHome(settings);
+                stop = true;
+
+            }
+            if (stop) {
+                return false;
             }
 
-            urlOrder = getTaxiUrlSearch( "orderSearch", context);
-            return true;
-        }
+            if (numberFlagFrom.equals("1") && !from_number.getText().toString().equals(" ")) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                    from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+                    from_number.requestFocus();
+                } else {
+                    ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                    from_number.requestFocus();
+                }
 
+            }
+            if (numberFlagTo.equals("1") && !to_number.getText().toString().equals(" ")) {
+                to_number.setBackgroundTintList(ColorStateList.valueOf(R.color.selected_text_color));
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    to_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                    to_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+                    to_number.requestFocus();
+                } else {
+                    ViewCompat.setBackgroundTintList(to_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                    to_number.requestFocus();
+                }
+
+
+            }
+
+            String from_numberCost;
+            if (from_number.getText().toString().equals(" ")) {
+                from_numberCost = " ";
+            } else {
+
+                from_numberCost = from_number.getText().toString();
+            }
+            String toCost, to_numberCost;
+            if (to == null) {
+                toCost = from;
+                to_numberCost = from_number.getText().toString();
+            } else {
+                toCost = to;
+                to_numberCost = to_number.getText().toString();
+            }
+            List<String> settings = new ArrayList<>();
+            settings.add(from);
+            settings.add(from_numberCost);
+            settings.add(toCost);
+            settings.add(to_numberCost);
+            Logger.d(context, TAG, "order: settings" + settings);
+            updateRoutHome(settings);
+        }
+        urlOrder = getTaxiUrlSearch( "orderSearch", context);
+        return true;
     }
     private void updateAddCost(String addCost) {
         ContentValues cv = new ContentValues();
@@ -851,6 +912,7 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+
         databaseHelper = new DatabaseHelper(context);
         databaseHelperUid = new DatabaseHelperUid(context);
 
@@ -871,45 +933,38 @@ public class HomeFragment extends Fragment {
         SwipeRefreshLayout swipeRefreshLayout = binding.swipeRefreshLayout;
 
         // Устанавливаем слушатель для распознавания жеста свайпа вниз
-        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                // Метод, который нужно запустить по свайпу вниз
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            // Метод, который нужно запустить по свайпу вниз
 
-                btn_clear.performClick();
+            btn_clear.performClick();
 
-                // После завершения обновления, уберите индикатор загрузки
-                swipeRefreshLayout.setRefreshing(false);
-            }
+            // После завершения обновления, уберите индикатор загрузки
+            swipeRefreshLayout.setRefreshing(false);
+            new VerifyUserTask(context).execute();
         });
-        textViewTo.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (hasFocus) {
-                    // Фокус установлен на TextView, очищаем его
-                    textViewTo.setText("");
-                    to_number.setText("");
-                    to_number.setVisibility(View.INVISIBLE);
-                }
+        textViewTo.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                // Фокус установлен на TextView, очищаем его
+                textViewTo.setText("");
+                to_number.setText("");
+                to_number.setVisibility(View.INVISIBLE);
             }
         });
         List<String> stringListRoutHome = logCursor(MainActivity.ROUT_HOME, context);
         String valueAtIndex1 = stringListRoutHome.get(1);
+
         rout();
 
 
         if (valueAtIndex1 != null && !valueAtIndex1.equals(" ")) {
-            textViewFrom.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-                @Override
-                public void onFocusChange(View v, boolean hasFocus) {
-                    if (hasFocus) {
-                        // Фокус установлен на TextView, очищаем его
-                        resetRoutHome();
-                        
-                        MainActivity.navController.navigate(R.id.nav_home, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_visicom, true)
-                                .build());
-                    }
+            textViewFrom.setOnFocusChangeListener((v, hasFocus) -> {
+                if (hasFocus) {
+                    // Фокус установлен на TextView, очищаем его
+                    resetRoutHome();
+
+                    MainActivity.navController.navigate(R.id.nav_home, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_visicom, true)
+                            .build());
                 }
             });
             costRoutHome(stringListRoutHome);
@@ -919,16 +974,13 @@ public class HomeFragment extends Fragment {
         }
 
 
-        btn_clear.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                resetRoutHome();
-                
-                MainActivity.navController.navigate(R.id.nav_home, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true)
-                        .build());
+        btn_clear.setOnClickListener(v -> {
+            resetRoutHome();
 
-            }
+            MainActivity.navController.navigate(R.id.nav_home, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_visicom, true)
+                    .build());
+
         });
 
     }
@@ -1011,103 +1063,94 @@ public class HomeFragment extends Fragment {
             }
         });
 
-        from_number.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (!hasFocus) {
-                    if (!from_number.getText().toString().equals(" ")) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
-                            from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
-                        } else {
-                            ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
-                        }
-                   }
-                } else {
+        from_number.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                if (!from_number.getText().toString().equals(" ")) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
                         from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
                     } else {
                         ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
                     }
+               }
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                    from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+                } else {
+                    ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
                 }
             }
         });
-        textViewTo.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//                    selectesposition = position; // Обновляем выбранную позицию
-//                    adapter.notifyDataSetChanged(); // Обновляем вид списка
+        textViewTo.setOnItemClickListener((parent, view, position, id) -> {
 
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment;
+            MyBottomSheetErrorFragment bottomSheetDialogFragment;
 
-                    if (connected()) {
-                        updateAddCost("0");
-                        to = String.valueOf(adapter.getItem(position));
-                        if (to.indexOf("/") != -1) {
-                            to = to.substring(0, to.indexOf("/"));
-                        }
-                        List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
-                        String city = stringList.get(1);
-                        String api =  stringList.get(2);
-
-                        String url = "https://m.easy-order-taxi.site/" + api + "/android/autocompleteSearchComboHid/" + to + "/" + city;
-
-                        Map sendUrlMapCost = null;
-                        try {
-                            sendUrlMapCost = ResultSONParser.sendURL(url);
-                        } catch (MalformedURLException | InterruptedException | JSONException e) {
-                            FirebaseCrashlytics.getInstance().recordException(e);
-                            Toast.makeText(context, R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
-                        }
-
-                        String orderCost = (String) sendUrlMapCost.get("message");
-                        Logger.d(context, TAG, "onItemClick: orderCost" + orderCost);
-                        switch (Objects.requireNonNull(orderCost)) {
-                            case "200":
-                                bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_firebase_start));
-                                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                                break;
-                            case "400":
-                                textViewTo.setTextColor(RED);
-                                bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.address_error_message));
-                                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                                break;
-                            case "1":
-                                to_number.setVisibility(View.VISIBLE);
-                                to_number.requestFocus();
-                                numberFlagTo = "1";
-                                to_number.setText("1");
-                                cost();
-                                to_number.setText(" ");
-                                break;
-                            case "0":
-                                to_number.setText(" ");
-                                to_number.setVisibility(View.INVISIBLE);
-                                numberFlagTo = "0";
-                                cost();
-                                break;
-                            default:
-                                Logger.d(context, TAG, "onItemClick: " + new IllegalStateException("Unexpected value: " + Objects.requireNonNull(orderCost)));
-                        }
-                        if (textViewFrom.getText().toString().isEmpty()) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                textViewFrom.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
-                                textViewFrom.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
-                            } else {
-                                ViewCompat.setBackgroundTintList(textViewFrom, ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
-                            }
-
-                        }
-
+            if (connected()) {
+                updateAddCost("0");
+                to = String.valueOf(adapter.getItem(position));
+                if (to.indexOf("/") != -1) {
+                    to = to.substring(0, to.indexOf("/"));
                 }
-                    else {
-                        bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
+                String city = stringList.get(1);
+                String api =  stringList.get(2);
+
+                String url = "https://m.easy-order-taxi.site/" + api + "/android/autocompleteSearchComboHid/" + to + "/" + city;
+
+                Map sendUrlMapCost = null;
+                try {
+                    sendUrlMapCost = ResultSONParser.sendURL(url);
+                } catch (MalformedURLException | InterruptedException | JSONException e) {
+                    FirebaseCrashlytics.getInstance().recordException(e);
+                    Toast.makeText(context, R.string.error_firebase_start, Toast.LENGTH_SHORT).show();
+                }
+
+                String orderCost = (String) sendUrlMapCost.get("message");
+                Logger.d(context, TAG, "onItemClick: orderCost" + orderCost);
+                switch (Objects.requireNonNull(orderCost)) {
+                    case "200":
+                        bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_firebase_start));
                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        break;
+                    case "400":
+                        textViewTo.setTextColor(RED);
+                        bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.address_error_message));
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        break;
+                    case "1":
+                        to_number.setVisibility(View.VISIBLE);
+                        to_number.requestFocus();
+                        numberFlagTo = "1";
+                        to_number.setText("1");
+                        cost();
+                        to_number.setText(" ");
+                        break;
+                    case "0":
+                        to_number.setText(" ");
+                        to_number.setVisibility(View.INVISIBLE);
+                        numberFlagTo = "0";
+                        cost();
+                        break;
+                    default:
+                        Logger.d(context, TAG, "onItemClick: " + new IllegalStateException("Unexpected value: " + Objects.requireNonNull(orderCost)));
+                }
+                if (textViewFrom.getText().toString().isEmpty()) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        textViewFrom.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                        textViewFrom.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
+                    } else {
+                        ViewCompat.setBackgroundTintList(textViewFrom, ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
                     }
-            }
 
-        });
+                }
+
+        }
+            else {
+                bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+            }
+    });
 
     }
     @SuppressLint("ResourceAsColor")
@@ -1193,9 +1236,15 @@ public class HomeFragment extends Fragment {
 
         assert orderCostStr != null;
         long orderCostLong = Long.parseLong(orderCostStr);
+        boolean black_list_yes = verifyOrder(requireContext());
 
         String orderCost = String.valueOf(orderCostLong + addCost);
-
+        if(!black_list_yes) {
+            String black_list_city = sharedPreferencesHelperMain.getValue("black_list", "cache").toString();
+            if(black_list_city.equals("cards only")) {
+                orderCost = addCostBlackList(orderCost);
+            }
+        }
         if (!orderCost.equals("0")) {
             scheduleUpdate();
 
@@ -1252,6 +1301,17 @@ public class HomeFragment extends Fragment {
 
 
         }
+    }
+
+    private String addCostBlackList (String addcost) {
+
+        int cost = Integer.parseInt(addcost); // Преобразуем строку в целое число
+        cost += 45; // Увеличиваем на 45
+        addcost = String.valueOf(cost); // Преобразуем обратно в строку
+
+// Теперь addCost содержит новое значение
+        return  addcost; // Вывод: "145"
+
     }
 
     private void insertRouteCostToDatabase() {
@@ -1343,7 +1403,7 @@ public class HomeFragment extends Fragment {
                     from_number.setText(retrievedRouteCost.fromNumber);
                     textViewTo.setText(retrievedRouteCost.to);
                     to_number.setText(retrievedRouteCost.toNumber);
-                    text_view_cost.setVisibility(View.INVISIBLE);
+//                    text_view_cost.setVisibility(View.INVISIBLE);
 //                    text_view_cost.setText(retrievedRouteCost.text_view_cost);
 //                    updateAddCost(retrievedRouteCost.addCost);
 
@@ -1375,6 +1435,7 @@ public class HomeFragment extends Fragment {
                     } else {
                         to_number.setVisibility(View.INVISIBLE);
                     }
+
                     List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
                     long addCostforMin = Long.parseLong(stringListInfo.get(5));
                     Logger.d(context, TAG, "onPostExecute: addCostforMin" + addCostforMin);
@@ -1439,22 +1500,38 @@ public class HomeFragment extends Fragment {
                 public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
                     Map<String, String> sendUrlMapCost = response.body();
                     assert sendUrlMapCost != null;
-                    String orderCostStr = sendUrlMapCost.get("order_cost");
+                    String orderCost = sendUrlMapCost.get("order_cost");
+                    Logger.d(context, TAG, "costRoutHome:orderCost " + orderCost);
+//
+//
+//                    assert orderCostStr != null;
+//                    long orderCostLong = Long.parseLong(orderCostStr);
+//                    String orderCost = String.valueOf(orderCostLong);
 
-
-
-                    assert orderCostStr != null;
-                    long orderCostLong = Long.parseLong(orderCostStr);
-                    String orderCost = String.valueOf(orderCostLong + addCost);
                     String message = sendUrlMapCost.get("Message");
-
+                    String addType ="60";
                     if (orderCost.equals("0")) {
+                        constraintLayoutHomeFinish.setVisibility(View.GONE);
+                        constraintLayoutHomeMain.setVisibility(View.VISIBLE);
                         assert message != null;
                         if (message.contains("Дублирование")) {
-                            resetRoutHome();
-                            message = getResources().getString(R.string.double_order_error);
+                            sharedPreferencesHelperMain.saveValue("doubleOrderPref", true);
+                            showAddCostDoubleDialog(addType);
+                        } else if (message.equals("cash") || message.equals("cards only")) {
+                            if (message.equals("cards only")) {
+                                addType = "45";
+                                showAddCostDoubleDialog(addType);
+                            } else {
+                                message = context.getString(R.string.black_list_message);
+                                if (!isStateSaved() && isAdded()) {
+                                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                                }
+                            }
+                        }else if (message.equals("ErrorMessage")) {
+                            message = getResources().getString(R.string.server_error_connected);
                             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                         } else {
                             switch (pay_method) {
                                 case "bonus_payment":
@@ -1491,7 +1568,7 @@ public class HomeFragment extends Fragment {
                         cost = cost + discount;
                         updateAddCost(String.valueOf(discount));
                         text_view_cost.setText(Long.toString(cost));
-
+                        Logger.d(context, TAG, "costRoutHome:Long.toString(cost) " + cost);
                         costFirstForMin = cost;
                         MIN_COST_VALUE = (long) (cost * 0.6);
                     }
@@ -1522,7 +1599,8 @@ public class HomeFragment extends Fragment {
         if (cursor.getCount() == 1) {
 
             if (logCursor(MainActivity.TABLE_USER_INFO, context).get(1).equals("0")) {
-                verify = false;Logger.d(context, TAG, "verifyOrder:verify " +verify);
+                verify = false;
+                Logger.d(context, TAG, "verifyOrder:verify " +verify);
             }
             cursor.close();
         }
@@ -1717,7 +1795,24 @@ public class HomeFragment extends Fragment {
         String phoneNumber = "no phone";
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
+        boolean black_list_yes = verifyOrder(requireContext());
 
+        if(!black_list_yes) {
+            payment_type = "wfp_payment";
+            ContentValues cv = new ContentValues();
+            cv.put("payment_type", payment_type);
+            // обновляем по id
+            database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                    new String[] { "1" });
+
+            buttonBonus.setText(context.getString(R.string.card_payment));
+            buttonBonus.setOnClickListener(v -> {
+                String message = context.getString(R.string.black_list_message_err);
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+            });
+        }
         if(urlAPI.equals("costSearchTime")) {
             Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
             if (c.getCount() == 1) {
@@ -1733,9 +1828,24 @@ public class HomeFragment extends Fragment {
 
         if(urlAPI.equals("orderSearch")) {
             phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
+            Logger.d(context, TAG, "black_list_yes: addCost11111" + black_list_yes);
 
+            String paramsUserArr = displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail + "*" + payment_type;
+
+            if(!black_list_yes) {
+                String lastCharacter = phoneNumber.substring(phoneNumber.length() - 1); // Получаем последний знак
+                phoneNumber = phoneNumber.substring(0, phoneNumber.length() - 1); // Часть без последнего знака
+                phoneNumber = phoneNumber.replace(" ", ""); // удаляем пробелы
+                comment = "цифра номера" + " " +  lastCharacter + ". Оплатили службе 45грн. " + comment;
+                addCost = addCostBlackList(addCost);
+            }
+            boolean doubleOrder = (boolean) sharedPreferencesHelperMain.getValue("doubleOrderPrefHome", false);
+            if(doubleOrder) {
+                paramsUserArr = displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail + "*" + payment_type + "*" + "doubleOrder";
+                sharedPreferencesHelperMain.saveValue("doubleOrderPrefHome", false);
+            }
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "*" + payment_type + "/" + addCost + "/" + time + "/" + comment + "/" + date;
+                    + paramsUserArr + "/" + addCost + "/" + time + "/" + comment + "/" + date;
 
             ContentValues cv = new ContentValues();
 
@@ -2058,6 +2168,9 @@ public class HomeFragment extends Fragment {
             String dispatchingOrderUidDouble = route.getDispatchingOrderUidDouble();
             String pay_method = route.getPay_method();
             String required_time = route.getRequired_time();
+            String flexible_tariff_name = route.getFlexible_tariff_name();
+            String comment_info = route.getComment_info();
+            String extra_charge_codes = route.getExtra_charge_codes();
 
             switch (closeReason) {
                 case "-1":
@@ -2119,22 +2232,23 @@ public class HomeFragment extends Fragment {
                 required_time = "";
             }
             if (routeFrom.equals(routeTo)) {
-                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                routeInfo = routeFrom + " " + routefromnumber
                         + getString(R.string.close_resone_to)
                         + getString(R.string.on_city)
-                        + required_time
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
-                        + getString(R.string.auto_info) + " " + auto + " "
+                        + required_time  + "#"
+                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)  + "#"
+                        + getString(R.string.auto_info) + " " + auto + "#"
                         + getString(R.string.close_resone_time)
-                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
+                        + createdAt  + "#"
+                        + getString(R.string.close_resone_text) + closeReasonText;
             } else {
-                routeInfo = getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                routeInfo = routeFrom + " " + routefromnumber
                         + getString(R.string.close_resone_to) + routeTo + " " + routeTonumber + "."
-                        + required_time
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)
-                        + getString(R.string.auto_info) + " " + auto + " "
-                        + getString(R.string.close_resone_time)
-                        + createdAt + getString(R.string.close_resone_text) + closeReasonText;
+                        + required_time + "#"
+                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)  + "#"
+                        + getString(R.string.auto_info) + " " + auto + "#"
+                        + getString(R.string.close_resone_time) + createdAt  + "#"
+                        + getString(R.string.close_resone_text) + closeReasonText;
             }
 
             databaseHelper.addRouteCancel(uid, routeInfo);
@@ -2149,6 +2263,9 @@ public class HomeFragment extends Fragment {
             settings.add(dispatchingOrderUidDouble);
             settings.add(pay_method);
             settings.add(required_time);
+            settings.add(flexible_tariff_name);
+            settings.add(comment_info);
+            settings.add(extra_charge_codes);
 
             Logger.d(context, TAG, settings.toString());
             databaseHelperUid.addCancelInfoUid(settings);
@@ -2164,5 +2281,224 @@ public class HomeFragment extends Fragment {
             databaseHelper.clearTableCancel();
             databaseHelperUid.clearTableCancel();
         }
+    }
+
+    private void showAddCostDoubleDialog(String addType) {
+
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext());
+        LayoutInflater inflater = requireActivity().getLayoutInflater();
+        int  dialogViewInt = R.layout.dialog_add_cost;
+        switch(addType) {
+            case "60":
+                dialogViewInt = R.layout.dialog_add_60_cost;
+                break;
+            case "45":
+                break;
+        }
+        View dialogView = inflater.inflate(dialogViewInt, null);
+
+
+        String title = getString(R.string.double_order);
+        String message = getString(R.string.add_cost_fin_60);
+        String numberIndexString = "";
+
+        switch(addType) {
+            case "60":
+                title = getString(R.string.double_order);
+
+                Button minus = dialogView.findViewById(R.id.btn_minus);
+                Button plus = dialogView.findViewById(R.id.btn_plus);
+                EditText discinp = dialogView.findViewById(R.id.discinp);
+
+                minus.setOnClickListener(v -> {
+                    String addCost = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(5);
+                    int addCostInt = Integer.parseInt(addCost);
+                    if(addCostInt >= 5) {
+                        addCostInt -=5;
+                        updateAddCost(String.valueOf(addCostInt));
+                        discinp.setText(String.valueOf(addCostInt + 60));
+                    }
+
+                });
+
+                plus.setOnClickListener(v -> {
+                    String addCost = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(5);
+                    int addCostInt = Integer.parseInt(addCost);
+                    addCostInt +=5;
+                    updateAddCost(String.valueOf(addCostInt));
+                    discinp.setText(String.valueOf(addCostInt + 60));
+                });
+
+                message = getString(R.string.add_cost_fin_60);
+                numberIndexString = message;
+                break;
+            case "45":
+                title = getString(R.string.black_list);
+                message = getString(R.string.add_cost_fin_45);
+                numberIndexString = "45";
+                blockUserBlackList();
+                break;
+        }
+        TextView titleView = dialogView.findViewById(R.id.dialogTitle);
+        titleView.setText(title);
+
+        TextView messageView = dialogView.findViewById(R.id.dialogMessage);
+
+        SpannableStringBuilder spannable = new SpannableStringBuilder(message);
+
+        int numberIndex = message.indexOf(numberIndexString);
+        int length = numberIndexString.length();
+        spannable.setSpan(new StyleSpan(Typeface.BOLD), numberIndex, numberIndex + length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        messageView.setText(spannable);
+
+        builder.setView(dialogView)
+                .setCancelable(false)
+                .setPositiveButton(R.string.ok_button, (dialog, which) -> {
+                    dialog.dismiss();
+
+                    switch (addType) {
+                        case "60":
+                            createDoubleOrder();
+                            break;
+                        case "45":
+                            createBlackList();
+                            break;
+                    }
+
+                })
+                .setNegativeButton(R.string.cancel_button, (dialog, which) -> dialog.dismiss())
+                .show();
+
+    }
+
+    private void blockUserBlackList() {
+        // Log the start of the block process
+        Log.d("blockUserBlackList", "Starting the block process for user.");
+
+        // Update button text and make it non-clickable
+        buttonBonus.setText(context.getString(R.string.card_payment));
+//        buttonBonus.setClickable(false);
+        buttonBonus.setOnClickListener(v -> {
+            String message = context.getString(R.string.black_list_message_err);
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+
+        });
+
+        Log.d("blockUserBlackList", "Button text set and made non-clickable.");
+
+        // Retrieve email from the database
+        String email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+        Log.d("blockUserBlackList", "Retrieved email from database: " + email);
+
+        // Add email to the blacklist
+        BlacklistManager blacklistManager = new BlacklistManager();
+        blacklistManager.addToBlacklist(email);
+        Log.d("blockUserBlackList", "Request to add email to blacklist sent: " + email);
+
+        // Update database entry to set "verifyOrder" to "0"
+        ContentValues cv = new ContentValues();
+        cv.put("verifyOrder", "0");
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        int rowsUpdated = database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+        Log.d("blockUserBlackList", "Updated 'verifyOrder' in database. Rows affected: " + rowsUpdated);
+
+        // Close the database
+        database.close();
+        Log.d("blockUserBlackList", "Database connection closed.");
+    }
+
+    private void createBlackList() {
+
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(interceptor)
+                .build();
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+
+        PayApi apiService = retrofit.create(PayApi.class);
+        Call<ResponsePaySystem> call = apiService.getPaySystem();
+        call.enqueue(new Callback<ResponsePaySystem>() {
+            @Override
+            public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
+                if (response.isSuccessful()) {
+                    // Обработка успешного ответа
+                    ResponsePaySystem responsePaySystem = response.body();
+                    assert responsePaySystem != null;
+                    String paymentCode = responsePaySystem.getPay_system();
+                    switch (paymentCode) {
+                        case "wfp":
+                            pay_method = "wfp_payment";
+                            break;
+                        case "fondy":
+                            pay_method = "fondy_payment";
+                            break;
+                        case "mono":
+                            pay_method = "mono_payment";
+                            break;
+                    }
+                    if(isAdded()){
+                        ContentValues cv = new ContentValues();
+                        cv.put("payment_type", pay_method);
+                        // обновляем по id
+                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                                new String[] { "1" });
+                        database.close();
+
+                        try {
+                            orderRout();
+                        } catch (UnsupportedEncodingException e) {
+                            throw new RuntimeException(e);
+                        }
+                        orderFinished();
+                    }
+
+
+                } else {
+                    if (isAdded()) { //
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    }
+
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
+                if (isAdded()) { //
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                }
+            }
+        });
+
+
+
+
+
+    }
+    public void createDoubleOrder() {
+
+        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
+
+        String addCost = stringListInfo.get(5);
+        int cost = Integer.parseInt(addCost);
+        cost += 60;
+        addCost = String.valueOf(cost);
+        updateAddCost(addCost);
+
+        try {
+            orderRout();
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        orderFinished();
     }
 }

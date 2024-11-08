@@ -2,6 +2,9 @@ package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static com.taxi.easy.ua.MainActivity.sharedPreferencesHelperMain;
+import static com.taxi.easy.ua.ui.visicom.VisicomFragment.setBtnBonusName;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -236,10 +239,12 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     if (cityResponse != null) {
                         int cardMaxPay = cityResponse.getCardMaxPay();
                         int bonusMaxPay = cityResponse.getBonusMaxPay();
+                        String black_list = cityResponse.getBlack_list();
 
                         ContentValues cv = new ContentValues();
                         cv.put("card_max_pay", cardMaxPay);
                         cv.put("bonus_max_pay", bonusMaxPay);
+                        sharedPreferencesHelperMain.saveValue("black_list", black_list);
 
                         database.update(MainActivity.CITY_INFO, cv, "id = ?",
                                     new String[]{"1"});
@@ -435,6 +440,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {
         super.onDismiss(dialog);
+        setBtnBonusName(context);
         UserPermissions.getPermissions(email, context);
         VisicomFragment.btnVisible(View.VISIBLE);
     }

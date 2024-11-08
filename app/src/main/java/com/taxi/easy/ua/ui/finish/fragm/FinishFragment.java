@@ -154,7 +154,7 @@ public class FinishFragment extends Fragment {
 
         fragmentManager = getParentFragmentManager();
 
-        context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         progressBar = root.findViewById(R.id.progress_bar);
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
         Logger.d(context, TAG, "onCreate: " + pay_method);
@@ -1185,35 +1185,7 @@ public class FinishFragment extends Fragment {
             }
         });
     }
-    private void fetchCarFound() {
 
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl) // Замените BASE_URL на ваш базовый URL сервера
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-// Создайте экземпляр ApiServiceMapbox
-        ApiService apiService = retrofit.create(ApiService.class);
-
-// Вызов метода startNewProcessExecutionStatus с передачей параметров
-        Call<Void> call = apiService.startNewProcessExecutionStatus(
-                receivedMap.get("doubleOrder")
-        );
-        String url = call.request().url().toString();
-        Logger.d(context, TAG, "URL запроса: " + url);
-        call.enqueue(new Callback<Void>() {
-            @Override
-            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
-                // Обработайте ошибку при выполнении запроса
-                FirebaseCrashlytics.getInstance().recordException(t);
-            }
-        });
-
-    }
 
     public static void callOrderIdMemory(String orderId, String uid, String paySystem) {
         if(!no_pay) {
@@ -1392,8 +1364,10 @@ public class FinishFragment extends Fragment {
                             } else {
                                 message =  context.getString(R.string.checkout_status);
                             }
-                            btn_cancel_order.setVisibility(View.VISIBLE);
-                            carProgressBar.setVisibility(View.VISIBLE);
+                            if(!cancel_btn_click) {
+                                btn_reset_status.setVisibility(View.VISIBLE);
+                                btn_cancel_order.setVisibility(View.VISIBLE);
+                            }
                             break;
                         case "Canceled":
                             btn_cancel_order.setVisibility(View.GONE);
@@ -1422,7 +1396,7 @@ public class FinishFragment extends Fragment {
                             btn_cancel_order.setVisibility(View.GONE);
                             carProgressBar.setVisibility(View.GONE);
                             if(!cancel_btn_click) {
-                                delayMillisStatus = 30 * 1000;
+                                delayMillisStatus = 5 * 1000;
                                 // Формируем сообщение с учетом возможных пустых значений переменных
                                 StringBuilder messageBuilder = new StringBuilder( context.getString(R.string.ex_st_2));
 
@@ -1444,6 +1418,46 @@ public class FinishFragment extends Fragment {
                                 if (requiredTime != null && !requiredTime.isEmpty()) {
                                     messageBuilder.append( context.getString(R.string.ex_st_5)).append(requiredTime);
                                 }
+                                btn_again.setVisibility(View.VISIBLE);
+                                btn_reset_status.setVisibility(View.VISIBLE);
+                                btn_cancel_order.setVisibility(View.VISIBLE);
+                                progressBar.setVisibility(View.GONE);
+                                message = messageBuilder.toString();
+                            } else {
+                                message =  context.getString(R.string.ex_st_canceled);
+                            }
+
+                            break;
+                        case "CarInStartPoint":
+                            btn_cancel_order.setVisibility(View.GONE);
+                            carProgressBar.setVisibility(View.GONE);
+                            if(!cancel_btn_click) {
+                                delayMillisStatus = 5 * 1000;
+                                // Формируем сообщение с учетом возможных пустых значений переменных
+                                StringBuilder messageBuilder = new StringBuilder( context.getString(R.string.ex_st_2_1));
+
+                                if (orderCarInfo != null && !orderCarInfo.isEmpty()) {
+                                    messageBuilder.append( context.getString(R.string.ex_st_3)).append(orderCarInfo);
+                                }
+
+                                if (driverPhone != null && !driverPhone.isEmpty()) {
+                                    Logger.d(context, TAG, "onResponse:driverPhone " + driverPhone);
+                                    btn_reset_status.setText( context.getString(R.string.phone_driver));
+                                    btn_reset_status.setOnClickListener(v -> {
+                                        Intent intent = new Intent(Intent.ACTION_DIAL);
+                                        intent.setData(Uri.parse("tel:" + driverPhone));
+                                        startActivity(intent);
+                                    });
+                                    messageBuilder.append( context.getString(R.string.ex_st_4)).append(driverPhone);
+                                }
+
+                                if (requiredTime != null && !requiredTime.isEmpty()) {
+                                    messageBuilder.append( context.getString(R.string.ex_st_5)).append(requiredTime);
+                                }
+                                btn_again.setVisibility(View.VISIBLE);
+                                btn_reset_status.setVisibility(View.VISIBLE);
+                                btn_cancel_order.setVisibility(View.VISIBLE);
+                                progressBar.setVisibility(View.GONE);
                                 message = messageBuilder.toString();
                             } else {
                                 message =  context.getString(R.string.ex_st_canceled);

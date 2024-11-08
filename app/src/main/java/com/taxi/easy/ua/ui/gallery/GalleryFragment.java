@@ -113,7 +113,7 @@ public class GalleryFragment extends Fragment {
                         .setPopUpTo(R.id.nav_visicom, true) 
                         .build());
         }
-        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         scrollButtonUp = binding.scrollButtonUp;
         scrollButtonDown = binding.scrollButtonDown;
@@ -528,11 +528,12 @@ public class GalleryFragment extends Fragment {
                         to_name_local = getString(R.string.on_city_tv);
                     }
 
-                    String messageResult = getString(R.string.thanks_message) +
-                            sendUrlMap.get("routefrom") + sendUrlMap.get("routefromnumber") + " " + getString(R.string.to_message) +
+                    String messageResult =
+                            sendUrlMap.get("routefrom")
+                            + sendUrlMap.get("routefromnumber") + " " + getString(R.string.to_message) +
                             to_name_local + "." +
-                            required_time +
-                            getString(R.string.call_of_order) + orderWeb + getString(R.string.UAH) + ". " + pay_method_message;
+                            required_time;
+                    String messagePayment = orderWeb + " " + getString(R.string.UAH) + " " + pay_method_message;
                     messageResult = cleanString(messageResult);
 
                     String messageFondy = getString(R.string.fondy_message) + " " +
@@ -541,13 +542,14 @@ public class GalleryFragment extends Fragment {
 
                     Bundle bundle = new Bundle();
                     bundle.putString("messageResult_key", messageResult);
+                    bundle.putString("messagePay_key", messagePayment);
                     bundle.putString("messageFondy_key", messageFondy);
                     bundle.putString("messageCost_key", orderWeb);
                     bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
                     bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
 
 // Установите Bundle как аргументы фрагмента
-                    MainActivity.navController.navigate(R.id.nav_finish, bundle, new NavOptions.Builder()
+                    MainActivity.navController.navigate(R.id.nav_finish_separate, bundle, new NavOptions.Builder()
                             .setPopUpTo(R.id.nav_visicom, true)
                             .build());
                 } else {

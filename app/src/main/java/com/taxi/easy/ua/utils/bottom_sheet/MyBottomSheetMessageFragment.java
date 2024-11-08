@@ -42,25 +42,17 @@ public class MyBottomSheetMessageFragment extends BottomSheetDialogFragment {
         View view = inflater.inflate(R.layout.message_list_layout, container, false);
 
         btn_help = view.findViewById(R.id.btn_help);
-        btn_help.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                List<String> stringList = logCursor(MainActivity.CITY_INFO, getContext());
-                Intent intent = new Intent(Intent.ACTION_DIAL);
-                String phone = stringList.get(3);
+        btn_help.setOnClickListener(v -> {
+            List<String> stringList = logCursor(MainActivity.CITY_INFO, getContext());
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            String phone = stringList.get(3);
 
-                intent.setData(Uri.parse(phone));
-                startActivity(intent);
-            }
+            intent.setData(Uri.parse(phone));
+            startActivity(intent);
         });
         textViewInfo = view.findViewById(R.id.textViewInfo);
         textViewInfo.setText(message);
-        textViewInfo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                dismiss();
-            }
-        });
+        textViewInfo.setOnClickListener(v -> dismiss());
         return view;
     }
 

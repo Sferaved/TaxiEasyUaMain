@@ -19,11 +19,11 @@
         android:name="com.taxi.easy.ua.ui.to_cancel.CancelFragment"
         android:label="@string/order_to_cancel"
         tools:layout="@layout/fragment_cancel" />
-    <fragment
-        android:id="@+id/nav_gallery"
-        android:name="com.taxi.easy.ua.ui.gallery.GalleryFragment"
-        android:label="@string/menu_gallery"
-        tools:layout="@layout/fragment_gallery" />
+<!--    <fragment-->
+<!--        android:id="@+id/nav_gallery"-->
+<!--        android:name="com.taxi.easy.ua.ui.gallery.GalleryFragment"-->
+<!--        android:label="@string/menu_gallery"-->
+<!--        tools:layout="@layout/fragment_gallery" />-->
     <fragment
         android:id="@+id/nav_uid"
         android:name="com.taxi.easy.ua.ui.uid.UIDFragment"
@@ -56,8 +56,8 @@
         android:label="@string/account_menu"
         tools:layout="@layout/fragment_account" />
     <fragment
-        android:id="@+id/nav_finish"
-        android:name="com.taxi.easy.ua.ui.finish.fragm.FinishFragment"
+        android:id="@+id/nav_finish_separate"
+        android:name="com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment"
         android:label="@string/your_order"
-        tools:layout="@layout/fragment_finish" />
+        tools:layout="@layout/fragment_finish_separate" />
 </navigation>

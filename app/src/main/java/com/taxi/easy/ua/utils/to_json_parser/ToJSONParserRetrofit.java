@@ -1,6 +1,9 @@
 package com.taxi.easy.ua.utils.to_json_parser;
 
+import static com.taxi.easy.ua.MainActivity.activeCalls;
 import static com.taxi.easy.ua.ui.finish.FinishActivity.baseUrl;
+
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -41,14 +44,21 @@ public class ToJSONParserRetrofit {
     }
 
     public void sendURL(String urlString, final Callback<Map<String, String>> callback) {
+        Log.d("API_CALL", "Sending URL: " + urlString); // Логируем URL
+
         Call<JsonResponse> call = apiService.getData(urlString);
+        activeCalls.add(call);
 
         call.enqueue(new Callback<JsonResponse>() {
             @Override
             public void onResponse(@NonNull Call<JsonResponse> call, @NonNull Response<JsonResponse> response) {
                 Map<String, String> costMap = new HashMap<>();
+                Log.d("API_CALL", "Response received: " + response.toString()); // Логируем ответ
+
                 if (response.isSuccessful() && response.body() != null) {
                     JsonResponse jsonarray = response.body();
+
+                    Log.d("API_CALL", "Order cost: " + jsonarray.getOrderCost()); // Логируем стоимость заказа
 
                     if (!jsonarray.getOrderCost().equals("0")) {
                         costMap.put("from_lat", jsonarray.getFromLat());
@@ -63,6 +73,9 @@ public class ToJSONParserRetrofit {
                         costMap.put("routeto", jsonarray.getRouteTo());
                         costMap.put("to_number", jsonarray.getToNumber());
                         costMap.put("required_time", jsonarray.getRequired_time());
+                        costMap.put("flexible_tariff_name", jsonarray.getFlexible_tariff_name());
+                        costMap.put("comment_info", jsonarray.getComment_info());
+                        costMap.put("extra_charge_codes", jsonarray.getExtra_charge_codes());
 
                         if (jsonarray.getDoubleOrder() != null) {
                             costMap.put("doubleOrder", jsonarray.getDoubleOrder());
@@ -75,10 +88,12 @@ public class ToJSONParserRetrofit {
                     } else {
                         costMap.put("order_cost", "0");
                         costMap.put("message", jsonarray.getMessage());
+                        Log.d("API_CALL", "No cost found. Message: " + jsonarray.getMessage()); // Логируем сообщение
                     }
                 } else {
                     costMap.put("order_cost", "0");
                     costMap.put("message", "Сталася помилка");
+                    Log.e("API_CALL", "Error in response: " + response.message()); // Логируем ошибку ответа
                 }
                 callback.onResponse(null, Response.success(costMap));
             }
@@ -88,8 +103,10 @@ public class ToJSONParserRetrofit {
                 Map<String, String> costMap = new HashMap<>();
                 costMap.put("order_cost", "0");
                 costMap.put("message", "Сталася помилка");
+                Log.e("API_CALL", "Request failed: " + t.getMessage()); // Логируем ошибку запроса
                 callback.onResponse(null, Response.success(costMap));
             }
         });
     }
+
 }

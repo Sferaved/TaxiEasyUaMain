@@ -13,7 +13,7 @@ public class DatabaseHelperUid extends SQLiteOpenHelper {
     // Имя вашей базы данных
     private static final String DATABASE_NAME = "Database_21082024_UID";
     // Версия вашей базы данных
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
     // Имя таблицы для хранения данных routeInfo
     private static final String TABLE_ROUT_INFO_UID = "RoutInfoTableUid";
     private static final String TABLE_CANCEL_INFO_UID = "RoutInfoTableUid";
@@ -91,7 +91,10 @@ public class DatabaseHelperUid extends SQLiteOpenHelper {
                 " toNumber text," +
                 " dispatchingOrderUidDouble text,"+
                 " pay_method text," +
-                " required_time text);";
+                " required_time text," +
+                " flexible_tariff_name text," +
+                " comment_info text," +
+                " extra_charge_codes text);";
         db.execSQL(createTableQuery);
     }
 
@@ -127,6 +130,9 @@ public class DatabaseHelperUid extends SQLiteOpenHelper {
         cv.put("dispatchingOrderUidDouble", settings.get(6));
         cv.put("pay_method", settings.get(7));
         cv.put("required_time", settings.get(8));
+        cv.put("flexible_tariff_name", settings.get(9));
+        cv.put("comment_info", settings.get(10));
+        cv.put("extra_charge_codes", settings.get(11));
 
         db.insert(TABLE_CANCEL_INFO_UID, null, cv);
         db.close();
@@ -180,6 +186,9 @@ public class DatabaseHelperUid extends SQLiteOpenHelper {
                 String dispatchingOrderUidDouble = cursor.getString(cursor.getColumnIndexOrThrow("dispatchingOrderUidDouble"));
                 String pay_method = cursor.getString(cursor.getColumnIndexOrThrow("pay_method"));
                 String required_time = cursor.getString(cursor.getColumnIndexOrThrow("required_time"));
+                String flexible_tariff_name = cursor.getString(cursor.getColumnIndexOrThrow("flexible_tariff_name"));
+                String comment_info = cursor.getString(cursor.getColumnIndexOrThrow("comment_info"));
+                String extra_charge_codes = cursor.getString(cursor.getColumnIndexOrThrow("extra_charge_codes"));
 
                 routeInfo = new RouteInfoCancel(
                         dispatchingOrderUid,
@@ -190,8 +199,11 @@ public class DatabaseHelperUid extends SQLiteOpenHelper {
                         toNumber,
                         dispatchingOrderUidDouble,
                         pay_method,
-                        required_time
-                );
+                        required_time,
+                        flexible_tariff_name,
+                        comment_info,
+                        extra_charge_codes
+                        );
             }
             cursor.close();
         }

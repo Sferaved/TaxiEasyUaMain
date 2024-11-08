@@ -8,6 +8,8 @@ public class CityResponse {
 
     @SerializedName("bonus_max_pay")
     private int bonusMaxPay;
+    @SerializedName("black_list")
+    private String black_list;
 
     public int getCardMaxPay() {
         return cardMaxPay;
@@ -15,5 +17,10 @@ public class CityResponse {
 
     public int getBonusMaxPay() {
         return bonusMaxPay;
+    }
+
+
+    public String getBlack_list() {
+        return black_list;
     }
 }

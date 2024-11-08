@@ -2,6 +2,8 @@ package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static com.taxi.easy.ua.MainActivity.sharedPreferencesHelperMain;
+
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
@@ -81,7 +83,6 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     String[] array;
     DatabaseHelper databaseHelper;
     DatabaseHelperUid databaseHelperUid;
-    private SharedPreferencesHelper sharedPreferencesHelper;
 
     public MyBottomSheetCityFragment() {
         // Пустой конструктор без аргументов
@@ -98,6 +99,22 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             "Odessa",
             "Zaporizhzhia",
             "Cherkasy Oblast",
+            "Lviv",
+            "Ivano_frankivsk",
+            "Vinnytsia",
+            "Poltava",
+            "Sumy",
+            "Kharkiv",
+            "Chernihiv",
+            "Rivne",
+            "Ternopil",
+            "Khmelnytskyi",
+            "Zakarpattya",
+            "Zhytomyr",
+            "Kropyvnytskyi",
+            "Mykolaiv",
+            "Сhernivtsi",
+            "Lutsk",
             "OdessaTest",
             "foreign countries"
     };
@@ -132,14 +149,32 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             context = requireActivity();
         }
         String[] cityList = new String[]{
-                context.getString(R.string.Kyiv_city),
-                context.getString(R.string.Dnipro_city),
-                context.getString(R.string.Odessa),
-                context.getString(R.string.Zaporizhzhia),
-                context.getString(R.string.Cherkasy),
+                context.getString(R.string.city_kyiv),
+                context.getString(R.string.city_dnipro),
+                context.getString(R.string.city_odessa),
+                context.getString(R.string.city_zaporizhzhia),
+                context.getString(R.string.city_cherkassy),
+                context.getString(R.string.city_lviv),
+                context.getString(R.string.city_ivano_frankivsk),
+                context.getString(R.string.city_vinnytsia),
+                context.getString(R.string.city_poltava),
+                context.getString(R.string.city_sumy),
+                context.getString(R.string.city_kharkiv),
+                context.getString(R.string.city_chernihiv),
+                context.getString(R.string.city_rivne),
+                context.getString(R.string.city_ternopil),
+                context.getString(R.string.city_khmelnytskyi),
+                context.getString(R.string.city_zakarpattya),
+                context.getString(R.string.city_zhytomyr),
+                context.getString(R.string.city_kropyvnytskyi),
+                context.getString(R.string.city_mykolaiv),
+                context.getString(R.string.city_chernivtsi),
+                context.getString(R.string.city_lutsk),
                 context.getString(R.string.test_city),
-                context.getString(R.string.foreign_countries),
+                context.getString(R.string.foreign_countries)
         };
+
+
 
         databaseHelper = new DatabaseHelper(context);
         databaseHelperUid = new DatabaseHelperUid(context);
@@ -150,9 +185,10 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         if(city == null) {
             city = "Kyiv City";
         }
-        sharedPreferencesHelper = new SharedPreferencesHelper(context);
+
         switch (city){
-            case "Kyiv City":positionFirst = 0;
+            case "Kyiv City":
+                positionFirst = 0;
                 phoneNumber = Kyiv_City_phone;
                 cityMenu = context.getString(R.string.city_kyiv);
                 break;
@@ -174,20 +210,100 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             case "Cherkasy Oblast":
                 positionFirst = 4;
                 phoneNumber = Cherkasy_Oblast_phone;
-                cityMenu = context.getString(R.string.city_cherkasy);
+                cityMenu = context.getString(R.string.city_cherkassy);
+                break;
+            case "Lviv":
+                positionFirst = 5;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_lviv);
+                break;
+            case "Ivano_frankivsk":
+                positionFirst = 6;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_ivano_frankivsk);
+                break;
+            case "Vinnytsia":
+                positionFirst = 7;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_vinnytsia);
+                break;
+            case "Poltava":
+                positionFirst = 8;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_poltava);
+                break;
+            case "Sumy":
+                positionFirst = 9;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_sumy);
+                break;
+            case "Kharkiv":
+                positionFirst = 10;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_kharkiv);
+                break;
+            case "Chernihiv":
+                positionFirst = 11;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_chernihiv);
+                break;
+            case "Rivne":
+                positionFirst = 12;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_rivne);
+                break;
+            case "Ternopil":
+                positionFirst = 13;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_ternopil);
+                break;
+            case "Khmelnytskyi":
+                positionFirst = 14;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_khmelnytskyi);
+                break;
+            case "Zakarpattya":
+                positionFirst = 15;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_zakarpattya);
+                break;
+            case "Zhytomyr":
+                positionFirst = 16;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_zhytomyr);
+                break;
+            case "Kropyvnytskyi":
+                positionFirst = 17;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_kropyvnytskyi);
+                break;
+            case "Mykolaiv":
+                positionFirst = 18;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_mykolaiv);
+                break;
+            case "Сhernivtsi":
+                positionFirst = 19;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_chernivtsi);
+                break;
+            case "Lutsk":
+                positionFirst = 20;
+                phoneNumber = Kyiv_City_phone;
+                cityMenu = getString(R.string.city_lutsk);
                 break;
             case "OdessaTest":
-                positionFirst = 5;
+                positionFirst = 21;
                 phoneNumber = Kyiv_City_phone;
                 cityMenu = "Test";
                 break;
             default:
-                positionFirst = 6;
+                positionFirst = 22;
                 phoneNumber = Kyiv_City_phone;
                 cityMenu = context.getString(R.string.foreign_countries);
         }
         newTitle =  context.getString(R.string.menu_city) + " " + cityMenu;
-        sharedPreferencesHelper.saveValue("newTitle", newTitle);
+        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
 
         Logger.d(context, TAG, "onCreateView: city" + city);
         updateMyPosition(city);
@@ -225,17 +341,113 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                     case "Cherkasy Oblast":
                         positionFirst = 4;
                         phoneNumber = Cherkasy_Oblast_phone;
-                        cityMenu = context.getString(R.string.city_cherkasy);
+                        cityMenu = context.getString(R.string.city_cherkassy);
+                        countryState = "UA";
+                        break;
+                    case "Lviv":
+                        positionFirst = 5;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_lviv);
+                        countryState = "UA";
+                        break;
+                    case "Ivano_frankivsk":
+                        positionFirst = 6;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_ivano_frankivsk);
+                        countryState = "UA";
+                        break;
+                    case "Vinnytsia":
+                        positionFirst = 7;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_vinnytsia);
+                        countryState = "UA";
+                        break;
+                    case "Poltava":
+                        positionFirst = 8;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_poltava);
+                        countryState = "UA";
+                        break;
+                    case "Sumy":
+                        positionFirst = 9;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_sumy);
+                        countryState = "UA";
+                        break;
+                    case "Kharkiv":
+                        positionFirst = 10;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_kharkiv);
+                        countryState = "UA";
+                        break;
+                    case "Chernihiv":
+                        positionFirst = 11;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_chernihiv);
+                        countryState = "UA";
+                        break;
+                    case "Rivne":
+                        positionFirst = 12;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_rivne);
+                        countryState = "UA";
+                        break;
+                    case "Ternopil":
+                        positionFirst = 13;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_ternopil);
+                        countryState = "UA";
+                        break;
+                    case "Khmelnytskyi":
+                        positionFirst = 14;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_khmelnytskyi);
+                        countryState = "UA";
+                        break;
+                    case "Zakarpattya":
+                        positionFirst = 15;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_zakarpattya);
+                        countryState = "UA";
+                        break;
+                    case "Zhytomyr":
+                        positionFirst = 16;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_zhytomyr);
+                        countryState = "UA";
+                        break;
+                    case "Kropyvnytskyi":
+                        positionFirst = 17;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_kropyvnytskyi);
+                        countryState = "UA";
+                        break;
+                    case "Mykolaiv":
+                        positionFirst = 18;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_mykolaiv);
+                        countryState = "UA";
+                        break;
+                    case "Сhernivtsi":
+                        positionFirst = 19;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_chernivtsi);
+                        countryState = "UA";
+                        break;
+                    case "Lutsk":
+                        positionFirst = 20;
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_chernivtsi);
                         countryState = "UA";
                         break;
                     case "OdessaTest":
-                        positionFirst = 5;
+                        positionFirst = 21;
                         phoneNumber = Kyiv_City_phone;
                         cityMenu = "Test";
                         countryState = "UA";
                         break;
                     case "foreign countries":
-                        positionFirst = 6;
+                        positionFirst = 22;
                         phoneNumber = Kyiv_City_phone;
                         cityMenu = context.getString(R.string.foreign_countries);
                         break;
@@ -247,14 +459,14 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         break;
                 }
                 newTitle =  context.getString(R.string.menu_city) + " " + cityMenu;
-                sharedPreferencesHelper.saveValue("newTitle", newTitle);
+                sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
                  String cityCodeNew;
-                    if (positionFirst == 6) {
+                    if (positionFirst == 22) {
                         getPublicIPAddress();
                         cityCodeNew = cityCode[0];
                     } else {
                         cityCodeNew = cityCode[positionFirst];
-                        sharedPreferencesHelper.saveValue("countryState", countryState);
+                        sharedPreferencesHelperMain.saveValue("countryState", countryState);
                     }
                 Logger.d(context, TAG, "onItemClick: pay_method" + pay_method);
 
@@ -443,52 +655,169 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             case "Cherkasy Oblast":
             case "OdessaTest":
             case "Kyiv City":
+            case "Lviv":
+            case "Ivano_frankivsk":
+            case "Vinnytsia":
+            case "Poltava":
+            case "Sumy":
+            case "Kharkiv":
+            case "Chernihiv":
+            case "Rivne":
+            case "Ternopil":
+            case "Khmelnytskyi":
+            case "Zakarpattya":
+            case "Zhytomyr":
+            case "Kropyvnytskyi":
+            case "Mykolaiv":
+            case "Сhernivtsi":
+            case "Lutsk":
                 break;
             default:
                 city = "foreign countries";
         }
 
-        switch (city){
-            case "Kyiv City":positionFirst = 0;
-                position = context.getString(R.string.pos_k);
+        switch (city) {
+            case "Kyiv City":
+                position = getString(R.string.pos_k);
                 startLat = 50.451107;
                 startLan = 30.524907;
+                phoneNumber = Kyiv_City_phone; // Здесь также добавляем номер телефона
                 break;
             case "Dnipropetrovsk Oblast":
                 // Днепр
-                position = context.getString(R.string.pos_d);
+                position = getString(R.string.pos_d);
                 startLat = 48.4647;
                 startLan = 35.0462;
+                phoneNumber = Dnipropetrovsk_Oblast_phone; // Укажите соответствующий номер телефона
                 break;
             case "Odessa":
-                phoneNumber = Odessa_phone;
-                position = context.getString(R.string.pos_o);
+                position = getString(R.string.pos_o);
                 startLat = 46.4694;
                 startLan = 30.7404;
+                phoneNumber = Odessa_phone;
                 break;
             case "Zaporizhzhia":
-                phoneNumber = Zaporizhzhia_phone;
-                position = context.getString(R.string.pos_z);
+                position = getString(R.string.pos_z);
                 startLat = 47.84015;
                 startLan = 35.13634;
+                phoneNumber = Zaporizhzhia_phone;
                 break;
             case "Cherkasy Oblast":
-                phoneNumber = Cherkasy_Oblast_phone;
-                position = context.getString(R.string.pos_c);
+                position = getString(R.string.pos_c);
                 startLat = 49.44469;
                 startLan = 32.05728;
+                phoneNumber = Cherkasy_Oblast_phone;
                 break;
+            case "Lviv":
+                position = getString(R.string.pos_l);
+                startLat = 49.83993;
+                startLan = 24.02973;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Ivano_frankivsk":
+                position = getString(R.string.pos_if);
+                startLat = 48.92005;
+                startLan = 24.71067;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Vinnytsia":
+                position = getString(R.string.pos_v);
+                startLat = 49.23325;
+                startLan = 28.46865;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Poltava":
+                position = getString(R.string.pos_p);
+                startLat = 49.59325;
+                startLan = 34.54938;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Sumy":
+                position = getString(R.string.pos_s);
+                startLat = 50.90775;
+                startLan = 34.79865;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Kharkiv":
+                position = getString(R.string.pos_h);
+                startLat = 49.99358;
+                startLan = 36.23191;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Chernihiv":
+                position = getString(R.string.pos_ch);
+                startLat = 51.4933;
+                startLan = 31.2972;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Rivne":
+                position = getString(R.string.pos_r);
+                startLat = 50.6198;
+                startLan = 26.2406;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Ternopil":
+                position = getString(R.string.pos_t);
+                startLat = 49.54479;
+                startLan = 25.5990;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Khmelnytskyi":
+                position = getString(R.string.pos_kh);
+                startLat = 49.41548;
+                startLan = 27.00674;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+
+            case "Zakarpattya":
+                position = getString(R.string.pos_uz);
+                startLat = 48.61913;
+                startLan = 22.29475;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Zhytomyr":
+                position = getString(R.string.pos_zt);
+                startLat = 50.26801;
+                startLan = 28.68026;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Kropyvnytskyi":
+                position = getString(R.string.pos_kr);
+                startLat = 48.51159;
+                startLan = 32.26982;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Mykolaiv":
+                position = getString(R.string.pos_m);
+                startLat = 46.97498;
+                startLan = 31.99378;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Сhernivtsi":
+                position = getString(R.string.pos_chr);
+                startLat = 48.29306;
+                startLan = 25.93484;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Lutsk":
+                position = getString(R.string.pos_ltk);
+                startLat = 50.73968;
+                startLan = 25.32400;
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+
             case "OdessaTest":
-                phoneNumber = Kyiv_City_phone;
-                position = context.getString(R.string.pos_o);
+                position = getString(R.string.pos_o);
                 startLat = 46.4694;
                 startLan = 30.7404;
-                break;
-            default:
                 phoneNumber = Kyiv_City_phone;
-                position = context.getString(R.string.pos_f);
+                break;
+
+            default:
+                position = getString(R.string.pos_f);
                 startLat = 52.13472;
                 startLan = 21.00424;
+                phoneNumber = Kyiv_City_phone; // Номер телефона по умолчанию
                 break;
         }
         pay_system(city);
@@ -677,7 +1006,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             }
 
             if(routeFrom.equals(routeTo)) {
-                routeInfo =context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                routeInfo = routeFrom + " " + routefromnumber
                         +context.getString(R.string.close_resone_to)
                         +context.getString(R.string.on_city)
                         +context.getString(R.string.close_resone_cost) + webCost + " " +context.getString(R.string.UAH)
@@ -685,7 +1014,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         +context.getString(R.string.close_resone_time)
                         + createdAt +context.getString(R.string.close_resone_text) + closeReasonText;
             } else {
-                routeInfo =context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                routeInfo = routeFrom + " " + routefromnumber
                         +context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber + "."
                         +context.getString(R.string.close_resone_cost) + webCost + " " +context.getString(R.string.UAH)
                         +context.getString(R.string.auto_info) + " " + auto + " "
@@ -743,7 +1072,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         if (MainActivity.navVisicomMenuItem != null) {
             // Новый текст элемента меню
             newTitle =  context.getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelper.saveValue("newTitle", newTitle);
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
 //            ActionBarUtil.setupCustomActionBar(this, R.layout.custom_action_bar_title, R.id.action_bar_title, newTitle);
 
             // Изменяем текст элемента меню
@@ -773,10 +1102,13 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                     if (cityResponse != null) {
                         int cardMaxPay = cityResponse.getCardMaxPay();
                         int bonusMaxPay = cityResponse.getBonusMaxPay();
+                        String black_list = cityResponse.getBlack_list();
 
                         ContentValues cv = new ContentValues();
                         cv.put("card_max_pay", cardMaxPay);
                         cv.put("bonus_max_pay", bonusMaxPay);
+                        sharedPreferencesHelperMain.saveValue("black_list", black_list);
+                        Logger.d(context, TAG, "black_list 2" + black_list);
                         if(isAdded()) {
                             SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                             database.update(MainActivity.CITY_INFO, cv, "id = ?",
@@ -1018,14 +1350,14 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 } else {
                     countryState = "UA";
                 }
-                sharedPreferencesHelper.saveValue("countryState", countryState);
+                sharedPreferencesHelperMain.saveValue("countryState", countryState);
             }
 
             @Override
             public void onFailure(@NonNull Call<CountryResponse> call, @NonNull Throwable t) {
                 Logger.d(context, TAG, "Error: " + t.getMessage());
                 VisicomFragment.progressBar.setVisibility(View.GONE);;
-                sharedPreferencesHelper.saveValue("countryState", "UA");
+                sharedPreferencesHelperMain.saveValue("countryState", "UA");
             }
         });
     }

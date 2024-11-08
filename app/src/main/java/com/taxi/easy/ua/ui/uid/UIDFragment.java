@@ -3,7 +3,6 @@ package com.taxi.easy.ua.ui.uid;
 import static android.content.Context.MODE_PRIVATE;
 
 import android.annotation.SuppressLint;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -12,15 +11,10 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.ContextMenu;
 import android.view.LayoutInflater;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -39,6 +33,7 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentUidBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
+import com.taxi.easy.ua.ui.to_cancel.CustomArrayCancelAdapter;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
@@ -89,7 +84,7 @@ public class UIDFragment extends Fragment {
         fragmentManager = getParentFragmentManager();
 
         context = requireActivity();
-        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         listView = binding.listView;
         progressBar = binding.progressBar;
         networkChangeReceiver = new NetworkChangeReceiver();
@@ -101,17 +96,14 @@ public class UIDFragment extends Fragment {
 
         textUid  = binding.textUid;
         upd_but = binding.updBut;
-        upd_but.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-                    
-                    MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true) 
-                        .build());
-                }
+        upd_but.setOnClickListener(v -> {
+            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
 
+                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_visicom, true)
+                    .build());
             }
+
         });
         scrollButtonUp = binding.scrollButtonUp;
         scrollButtonDown = binding.scrollButtonDown;
@@ -158,73 +150,73 @@ public class UIDFragment extends Fragment {
     }
 
 
-    @Override
-    public void onCreateContextMenu(@NonNull ContextMenu menu, @NonNull View v, ContextMenu.ContextMenuInfo menuInfo) {
-        super.onCreateContextMenu(menu, v, menuInfo);
-        MenuInflater inflater = requireActivity().getMenuInflater();
-        inflater.inflate(R.menu.context_menu, menu);
-    }
-
-    @SuppressLint("NonConstantResourceId")
-    @Override
-    public boolean onContextItemSelected(@NonNull MenuItem item) {
-        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-        assert info != null;
-        int position = info.position;
-
-        if (item.getItemId() == R.id.action_order) {
-
-            Log.d(TAG, "onContextItemSelected: " + array[position]);
-
-            routeInfo = databaseHelperUid.getRouteInfoById(position+1);
-            if (routeInfo != null) {
-                Log.d(TAG, "onContextItemSelected: " + routeInfo);
-            } else {
-                Log.d(TAG, "onContextItemSelected: RouteInfo not found for id: " + (position + 1));
-            }
-            List<String> settings = new ArrayList<>();
-            settings.add(routeInfo.getStartLat());
-            settings.add(routeInfo.getStartLan());
-            settings.add(routeInfo.getToLat());
-            settings.add(routeInfo.getToLng());
-            settings.add(routeInfo.getStart());
-            settings.add(routeInfo.getFinish());
-
-            updateRoutMarker(settings);
-            
-            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true) 
-                        .build());
-            SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
-            sharedPreferencesHelper.saveValue("gps_upd", false);
-            return true;
-        } else if (item.getItemId() == R.id.action_exit) {
-// Обработка действия "Delete"
-
-            return true;
-        }   else {
-            return super.onContextItemSelected(item);
-        }
-
-    }
-    private void updateRoutMarker(List<String> settings) {
-        Log.d(TAG, "updateRoutMarker: " + settings.toString());
-        ContentValues cv = new ContentValues();
-
-        cv.put("startLat", Double.parseDouble(settings.get(0)));
-        cv.put("startLan", Double.parseDouble(settings.get(1)));
-        cv.put("to_lat", Double.parseDouble(settings.get(2)));
-        cv.put("to_lng", Double.parseDouble(settings.get(3)));
-        cv.put("start", settings.get(4));
-        cv.put("finish", settings.get(5));
-        if(isAdded()) {
-            // обновляем по id
-            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
-                    new String[]{"1"});
-            database.close();
-        }
-    }
+//    @Override
+//    public void onCreateContextMenu(@NonNull ContextMenu menu, @NonNull View v, ContextMenu.ContextMenuInfo menuInfo) {
+//        super.onCreateContextMenu(menu, v, menuInfo);
+//        MenuInflater inflater = requireActivity().getMenuInflater();
+//        inflater.inflate(R.menu.context_menu, menu);
+//    }
+//
+//    @SuppressLint("NonConstantResourceId")
+//    @Override
+//    public boolean onContextItemSelected(@NonNull MenuItem item) {
+//        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+//        assert info != null;
+//        int position = info.position;
+//
+//        if (item.getItemId() == R.id.action_order) {
+//
+//            Log.d(TAG, "onContextItemSelected: " + array[position]);
+//
+//            routeInfo = databaseHelperUid.getRouteInfoById(position+1);
+//            if (routeInfo != null) {
+//                Log.d(TAG, "onContextItemSelected: " + routeInfo);
+//            } else {
+//                Log.d(TAG, "onContextItemSelected: RouteInfo not found for id: " + (position + 1));
+//            }
+//            List<String> settings = new ArrayList<>();
+//            settings.add(routeInfo.getStartLat());
+//            settings.add(routeInfo.getStartLan());
+//            settings.add(routeInfo.getToLat());
+//            settings.add(routeInfo.getToLng());
+//            settings.add(routeInfo.getStart());
+//            settings.add(routeInfo.getFinish());
+//
+//            updateRoutMarker(settings);
+//
+//            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+//                        .setPopUpTo(R.id.nav_visicom, true)
+//                        .build());
+//            SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
+//            sharedPreferencesHelper.saveValue("gps_upd", false);
+//            return true;
+//        } else if (item.getItemId() == R.id.action_exit) {
+//// Обработка действия "Delete"
+//
+//            return true;
+//        }   else {
+//            return super.onContextItemSelected(item);
+//        }
+//
+//    }
+//    private void updateRoutMarker(List<String> settings) {
+//        Log.d(TAG, "updateRoutMarker: " + settings.toString());
+//        ContentValues cv = new ContentValues();
+//
+//        cv.put("startLat", Double.parseDouble(settings.get(0)));
+//        cv.put("startLan", Double.parseDouble(settings.get(1)));
+//        cv.put("to_lat", Double.parseDouble(settings.get(2)));
+//        cv.put("to_lng", Double.parseDouble(settings.get(3)));
+//        cv.put("start", settings.get(4));
+//        cv.put("finish", settings.get(5));
+//        if(isAdded()) {
+//            // обновляем по id
+//            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//            database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
+//                    new String[]{"1"});
+//            database.close();
+//        }
+//    }
 
     private void fetchRoutes() {
 
@@ -239,15 +231,9 @@ public class UIDFragment extends Fragment {
 
         listView.setVisibility(View.GONE);
         routeList = new ArrayList<>();
-        upd_but.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                
-                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true) 
-                        .build());
-            }
-        });
+        upd_but.setOnClickListener(v -> MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                .setPopUpTo(R.id.nav_visicom, true)
+                .build()));
         List<String> stringList = logCursor(MainActivity.CITY_INFO,context);
         String city = stringList.get(1);
         String url = baseUrl + "/android/UIDStatusShowEmailCityApp/" + email + "/" + city + "/" +  context.getString(R.string.application);
@@ -273,6 +259,8 @@ public class UIDFragment extends Fragment {
                         if (!hasRouteWithAsterisk) {
                             routeList.addAll(routes);
                             processRouteList();
+                            textUid.setVisibility(View.VISIBLE);
+                            textUid.setText(R.string.uid_menu);
                         }  else {
                             textUid.setVisibility(View.VISIBLE);
                             textUid.setText(R.string.no_routs);
@@ -384,20 +372,20 @@ public class UIDFragment extends Fragment {
             }
 
             if(routeFrom.equals(routeTo)) {
-                routeInfo = context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
+                routeInfo = routeFrom + " " + routefromnumber
                         + context.getString(R.string.close_resone_to)
-                        + context.getString(R.string.on_city)
-                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)
-                        + context.getString(R.string.auto_info) + " " + auto + " "
-                        + context.getString(R.string.close_resone_time)
-                        + createdAt + context.getString(R.string.close_resone_text) + closeReasonText;
+                        + context.getString(R.string.on_city)  + "#"
+                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)  + "#"
+                        + context.getString(R.string.auto_info) + " " + auto + "#"
+                        + context.getString(R.string.close_resone_time) + createdAt + "#"
+                        + context.getString(R.string.close_resone_text) + closeReasonText;
             } else {
-                routeInfo = context.getString(R.string.close_resone_from) + routeFrom + " " + routefromnumber
-                        + context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber
-                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)
-                        + context.getString(R.string.auto_info) + " " + auto + " "
-                        + context.getString(R.string.close_resone_time)
-                        + createdAt + context.getString(R.string.close_resone_text) + closeReasonText;
+                routeInfo = routeFrom + " " + routefromnumber
+                        + context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber  + "#"
+                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)  + "#"
+                        + context.getString(R.string.auto_info) + " " + auto + "#"
+                        + context.getString(R.string.close_resone_time) + createdAt + "#"
+                        + context.getString(R.string.close_resone_text) + closeReasonText;
             }
 
 //                array[i] = routeInfo;
@@ -417,8 +405,18 @@ public class UIDFragment extends Fragment {
         array = databaseHelper.readRouteInfo();
         Logger.d (context, TAG, "processRouteList: array " + Arrays.toString(array));
         if(array != null) {
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(context, R.layout.drop_down_layout, array);
-            listView.setAdapter(adapter);
+            List<String> itemList = Arrays.asList(array); // Преобразование в List
+
+            CustomArrayUidAdapter adapter = new CustomArrayUidAdapter(
+                    context,
+                    R.layout.drop_down_layout_uid,  // Ваш макет элемента списка
+                    R.id.text1,  // ID TextView в вашем макете
+                    R.id.text2,  // ID TextView в вашем макете
+                    R.id.text3,  // ID TextView в вашем макете
+                    R.id.text4,  // ID TextView в вашем макете
+                    R.id.text5,  // ID TextView в вашем макете
+                    itemList  // Список строк
+            );
             listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                 @Override
                 public void onGlobalLayout() {
@@ -457,7 +455,7 @@ public class UIDFragment extends Fragment {
             ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
             layoutParams.height = desiredHeight;
             listView.setLayoutParams(layoutParams);
-            registerForContextMenu(listView);
+//            registerForContextMenu(listView);
 
             scrollButtonDown.setOnClickListener(new View.OnClickListener() {
                 @Override
