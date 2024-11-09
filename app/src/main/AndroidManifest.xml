@@ -60,10 +60,6 @@
             android:value="true" />
 
         <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="@string/google_maps_key_storage" />
-
-        <meta-data
             android:name="androidx.room.RoomDatabase.VERSION"
             android:value="3" />
         <activity
