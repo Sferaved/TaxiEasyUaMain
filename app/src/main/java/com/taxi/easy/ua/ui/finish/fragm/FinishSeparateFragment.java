@@ -518,8 +518,24 @@ public class FinishSeparateFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        super.onPause();
+        // Отменяем выполнение Runnable, если активити остановлена
+        if (handler != null) {
+            handler.removeCallbacks(myRunnable);
+        }
+        if (handlerBonusBtn != null) {
+            handlerBonusBtn.removeCallbacks(runnableBonusBtn);
+        }
+        if (handlerStatus != null) {
+            handlerStatus.removeCallbacks(myTaskStatus);
+        }
+        if (handlerAddcost != null && showDialogAddcost != null) {
+            handlerAddcost.removeCallbacks(showDialogAddcost);
+        }
+    }
 
+    @Override
+    public void onDetach() {
+        super.onDetach();
         if (handler != null) {
             handler.removeCallbacks(myRunnable);
         }
@@ -549,6 +565,26 @@ public class FinishSeparateFragment extends Fragment {
         }
 
     }
+
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        // Отменяем выполнение Runnable, если активити остановлена
+        if (handler != null) {
+            handler.removeCallbacks(myRunnable);
+        }
+        if (handlerBonusBtn != null) {
+            handlerBonusBtn.removeCallbacks(runnableBonusBtn);
+        }
+        if (handlerStatus != null) {
+            handlerStatus.removeCallbacks(myTaskStatus);
+        }
+        if (handlerAddcost != null && showDialogAddcost != null) {
+            handlerAddcost.removeCallbacks(showDialogAddcost);
+        }
+    }
+
     //"transactionStatus":"InProcessing"
     private void getUrlToPaymentWfp() {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
@@ -1857,16 +1893,41 @@ public class FinishSeparateFragment extends Fragment {
                 timeCheckOutAddCost);
     }
 
+
     @Override
     public void onStop() {
         super.onStop();
-
-        // Отменяем выполнение Runnable, если активити остановлена
+        // Отменяем выполнение Runnable, если фрагмент уходит в фон
+        if (handler != null) {
+            handler.removeCallbacks(myRunnable);
+        }
+        if (handlerBonusBtn != null) {
+            handlerBonusBtn.removeCallbacks(runnableBonusBtn);
+        }
+        if (handlerStatus != null) {
+            handlerStatus.removeCallbacks(myTaskStatus);
+        }
         if (handlerAddcost != null && showDialogAddcost != null) {
             handlerAddcost.removeCallbacks(showDialogAddcost);
         }
     }
-
+    @Override
+    public void onStart() {
+        super.onStart();
+        // Повторный запуск Runnable при возвращении активности
+        if (handler != null && myRunnable != null) {
+            handler.postDelayed(myRunnable, 1000); // Устанавливаем нужную задержку
+        }
+        if (handlerBonusBtn != null && runnableBonusBtn != null) {
+            handlerBonusBtn.postDelayed(runnableBonusBtn, 2000); // Устанавливаем нужную задержку
+        }
+        if (handlerStatus != null && myTaskStatus != null) {
+            handlerStatus.postDelayed(myTaskStatus, 3000); // Устанавливаем нужную задержку
+        }
+        if (handlerAddcost != null && showDialogAddcost != null) {
+            handlerAddcost.postDelayed(showDialogAddcost, 4000); // Устанавливаем нужную задержку
+        }
+    }
     private void startAddCostDialog (
             String payMetod,
             String uid_old,

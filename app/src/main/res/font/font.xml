@@ -1,19 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <font-family xmlns:android="http://schemas.android.com/apk/res/android">
-    <font
-    android:fontStyle="normal"
-    android:fontWeight="400"
-    android:font="@font/akzidenzgroteskpro_boldit" />
+    <!-- Указание стандартного шрифта sans-serif в качестве основного -->
     <font
         android:fontStyle="normal"
         android:fontWeight="400"
+        android:fontFamily="sans-serif" />
+
+    <!-- Кастомные шрифты для различных начертаний -->
+    <font
+        android:fontStyle="normal"
+        android:fontWeight="300"
         android:font="@font/light" />
+
     <font
         android:fontStyle="normal"
-        android:fontWeight="400"
+        android:fontWeight="500"
         android:font="@font/medium" />
+
     <font
         android:fontStyle="normal"
-        android:fontWeight="400"
+        android:fontWeight="700"
         android:font="@font/regular" />
 </font-family>

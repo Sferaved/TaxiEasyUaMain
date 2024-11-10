@@ -216,7 +216,7 @@ public class VisicomFragment extends Fragment {
 
 
         context = requireActivity();
-
+        binding.textwhere.setVisibility(View.VISIBLE);
 
         SwipeRefreshLayout swipeRefreshLayout = binding.swipeRefreshLayout;
 
@@ -2143,7 +2143,7 @@ public class VisicomFragment extends Fragment {
         num1.setVisibility(View.VISIBLE);
         geoText.setVisibility(View.VISIBLE);
 
-        binding.textwhere.setVisibility(View.VISIBLE);
+
         num2.setVisibility(View.VISIBLE);
         textViewTo.setVisibility(View.VISIBLE);
 
