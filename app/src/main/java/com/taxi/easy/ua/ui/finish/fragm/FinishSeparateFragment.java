@@ -170,7 +170,7 @@ public class FinishSeparateFragment extends Fragment {
     private Handler handlerAddcost;
     private Runnable showDialogAddcost;
 
-    int timeCheckOutAddCost = 60*1000;
+    private  int timeCheckOutAddCost = 60*1000;
 
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -343,10 +343,6 @@ public class FinishSeparateFragment extends Fragment {
                 }
                 
                 btn_cancel_order.setText( context.getString(R.string.help_button));
-               
-                
-                
-                
                 progressBar.setVisibility(View.GONE);
                 carProgressBar.setVisibility(View.GONE);
 
@@ -374,7 +370,6 @@ public class FinishSeparateFragment extends Fragment {
             handler.removeCallbacks(myRunnable);
 
             if(connected()){
-
                 if(!uid_Double.equals(" ")) {
                     cancelOrderDouble();
                 } else{
@@ -519,12 +514,6 @@ public class FinishSeparateFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         // Отменяем выполнение Runnable, если активити остановлена
-        if (handler != null) {
-            handler.removeCallbacks(myRunnable);
-        }
-        if (handlerBonusBtn != null) {
-            handlerBonusBtn.removeCallbacks(runnableBonusBtn);
-        }
         if (handlerStatus != null) {
             handlerStatus.removeCallbacks(myTaskStatus);
         }
@@ -536,12 +525,6 @@ public class FinishSeparateFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
-        if (handler != null) {
-            handler.removeCallbacks(myRunnable);
-        }
-        if (handlerBonusBtn != null) {
-            handlerBonusBtn.removeCallbacks(runnableBonusBtn);
-        }
         if (handlerStatus != null) {
             handlerStatus.removeCallbacks(myTaskStatus);
         }
@@ -571,12 +554,6 @@ public class FinishSeparateFragment extends Fragment {
     public void onPause() {
         super.onPause();
         // Отменяем выполнение Runnable, если активити остановлена
-        if (handler != null) {
-            handler.removeCallbacks(myRunnable);
-        }
-        if (handlerBonusBtn != null) {
-            handlerBonusBtn.removeCallbacks(runnableBonusBtn);
-        }
         if (handlerStatus != null) {
             handlerStatus.removeCallbacks(myTaskStatus);
         }
@@ -1566,6 +1543,9 @@ public class FinishSeparateFragment extends Fragment {
                     switch (executionStatus) {
                         case "WaitingCarSearch":
                         case "SearchesForCar":
+                            if (handlerAddcost != null && showDialogAddcost != null) {
+                                handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost); // Устанавливаем нужную задержку
+                            }
                             if(cancel_btn_click) {
                                 btn_reset_status.setVisibility(View.GONE);
                                 btn_cancel_order.setVisibility(View.GONE);
@@ -1575,12 +1555,7 @@ public class FinishSeparateFragment extends Fragment {
                             } else {
                                 message =  context.getString(R.string.ex_st_0);
                                 carProgressBar.setVisibility(View.VISIBLE);
-                                if (handlerAddcost == null) {
-                                    startAddCostDialog (
-                                            pay_method,
-                                            uid,
-                                            timeCheckOutAddCost);
-                                }
+
                                 text_status.startAnimation(blinkAnimation);
                                 updateProgress(2);
                                 countdownTextView.setVisibility(View.GONE);
@@ -1762,6 +1737,9 @@ public class FinishSeparateFragment extends Fragment {
 
                             break;
                         default:
+                            if (handlerAddcost != null && showDialogAddcost != null) {
+                                handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost); // Устанавливаем нужную задержку
+                            }
                             textCost.setVisibility(View.VISIBLE);
                             textCostMessage.setVisibility(View.VISIBLE);
                             btn_cancel_order.setVisibility(View.VISIBLE);
@@ -1898,12 +1876,6 @@ public class FinishSeparateFragment extends Fragment {
     public void onStop() {
         super.onStop();
         // Отменяем выполнение Runnable, если фрагмент уходит в фон
-        if (handler != null) {
-            handler.removeCallbacks(myRunnable);
-        }
-        if (handlerBonusBtn != null) {
-            handlerBonusBtn.removeCallbacks(runnableBonusBtn);
-        }
         if (handlerStatus != null) {
             handlerStatus.removeCallbacks(myTaskStatus);
         }
@@ -1924,9 +1896,7 @@ public class FinishSeparateFragment extends Fragment {
         if (handlerStatus != null && myTaskStatus != null) {
             handlerStatus.postDelayed(myTaskStatus, 3000); // Устанавливаем нужную задержку
         }
-        if (handlerAddcost != null && showDialogAddcost != null) {
-            handlerAddcost.postDelayed(showDialogAddcost, 4000); // Устанавливаем нужную задержку
-        }
+
     }
     private void startAddCostDialog (
             String payMetod,
@@ -1936,21 +1906,18 @@ public class FinishSeparateFragment extends Fragment {
         Logger.d(context, TAG, "payMetod " + payMetod);
         if ("nal_payment".equals(payMetod)) {
             handlerAddcost = new Handler();
-            showDialogAddcost = new Runnable() {
-                @Override
-                public void run() {
-                    // Вызов метода для отображения диалога
-                    showAddCostDialog(uid_old);
-
-                    // Повторный запуск задачи через заданный интервал
-                    handlerAddcost.postDelayed(this, timeCheckout);
-                }
+            showDialogAddcost = () -> {
+                // Вызов метода для отображения диалога
+                showAddCostDialog(uid_old, timeCheckout);
             };
-            // Запускаем выполнение через 2 минуты (120 000 миллисекунд)
+            // Запускаем выполнение через 1 минуты (60 000 миллисекунд)
             handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
         }
     }
-    private void showAddCostDialog(String uid) {
+    private void showAddCostDialog(String uid, int timeCheckout) {
+        if (handlerAddcost != null && showDialogAddcost != null) {
+            handlerAddcost.removeCallbacks(showDialogAddcost);
+        }
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext());
         LayoutInflater inflater = requireActivity().getLayoutInflater();
         View dialogView = inflater.inflate(R.layout.dialog_add_cost, null);
@@ -1968,8 +1935,14 @@ public class FinishSeparateFragment extends Fragment {
                 .setPositiveButton(R.string.ok_button, (dialog, which) -> {
                     dialog.dismiss();
                     startAddCostUpdate(uid, typeAdd);
+                    // Повторный запуск задачи через заданный интервал
+                    handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
                 })
-                .setNegativeButton(R.string.cancel_button, (dialog, which) -> dialog.dismiss())
+                .setNegativeButton(R.string.cancel_button, (dialog, which) -> {
+                    // Повторный запуск задачи через заданный интервал
+                    handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
+                    dialog.dismiss();
+                })
                 .show();
     }
 
