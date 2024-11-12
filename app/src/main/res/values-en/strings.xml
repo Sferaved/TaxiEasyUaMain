@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.779</string>
-    <string name="version">Version: 1.779</string>
+    <string name="version_code">1.780</string>
+    <string name="version">Version: 1.780</string>
 
     <string name="app_name">Taxi Dostavka</string>
 
@@ -464,4 +464,6 @@
     <string name="finish_info">Order cancelled</string>
     <string name="no_options">Your order does not have any additional options</string>
     <string name="check_cost_message">Please wait, getting trip cost...</string>
+    <string name="android_version">Android version:</string>
+    <string name="device">Device:</string>
 </resources>

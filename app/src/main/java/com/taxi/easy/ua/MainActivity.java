@@ -63,7 +63,6 @@ import com.taxi.easy.ua.databinding.ActivityMainBinding;
 import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.clear.AppDataUtils;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
-import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetCityFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
@@ -175,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
     //    private static final long ONE_DAY_IN_MILLISECONDS = 0; // 24 часа в миллисекундах
     private static final long ONE_DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
 //    private static final long ONE_DAY_IN_MILLISECONDS = 60 * 1000; // 1 минута в миллисекундах
-    private List<RouteResponseCancel> routeListCancel;
+
     @SuppressLint("StaticFieldLeak")
     public static NavController navController;
     private FirebaseUserManager userManager;
@@ -193,9 +192,19 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         deleteOldLogFile();
-        Logger.writeLog(this, getString(R.string.application));
-        Logger.writeLog(this, getString(R.string.version));
-        Logger.writeLog(this, "MainActivity started");
+        Logger.i(this, TAG, "MainActivity started");
+
+        Logger.i(this, TAG, getString(R.string.application));
+        Logger.i(this, TAG, getString(R.string.version));
+
+        String model = Build.MODEL;
+        String androidVersion = Build.VERSION.RELEASE;
+        int sdkVersion = Build.VERSION.SDK_INT;
+
+        Logger.i(this, TAG, "device: " + model);
+        Logger.i(this, TAG, "android_version: " + androidVersion);
+        Logger.i(this, TAG, "Build.VERSION.SDK_INT: " + sdkVersion);
+
         setSupportActionBar(binding.appBarMain.toolbar);
 
         sharedPreferencesHelperMain = new SharedPreferencesHelper(this);

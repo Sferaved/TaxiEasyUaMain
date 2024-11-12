@@ -1738,7 +1738,7 @@ public class FinishSeparateFragment extends Fragment {
                             break;
                         default:
                             if (handlerAddcost != null && showDialogAddcost != null) {
-                                handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost); // Устанавливаем нужную задержку
+                                handlerAddcost.removeCallbacks(showDialogAddcost);
                             }
                             textCost.setVisibility(View.VISIBLE);
                             textCostMessage.setVisibility(View.VISIBLE);

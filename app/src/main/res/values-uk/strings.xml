@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.779</string>
-    <string name="version">Версія: 1.779</string>
+    <string name="version_code">1.780</string>
+    <string name="version">Версія: 1.780</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -467,4 +467,6 @@
     <string name="finish_info">Замовлення знято</string>
     <string name="no_options">У Вашому замовленні немає додаткових опцій</string>
     <string name="check_cost_message">Чекайте, йде розрахунок вартості поїздки...</string>
+    <string name="android_version">Версія Андроїда:</string>
+    <string name="device">Пристрій:</string>
 </resources>

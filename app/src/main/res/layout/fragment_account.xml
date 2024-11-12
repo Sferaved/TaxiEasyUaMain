@@ -7,17 +7,75 @@
     tools:context=".ui.uid.UIDFragment">
 
     <TextView
+        android:id="@+id/text_model_1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/light"
+        android:text="@string/device"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        android:gravity="start|center_vertical"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/text_model"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+
+        android:fontFamily="@font/light"
+        android:gravity="start|center_vertical"
+        android:text="model"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        app:layout_constraintStart_toEndOf="@+id/text_model_1"
+        app:layout_constraintStart_toStartOf="@+id/text_androidVersion"
+        app:layout_constraintTop_toTopOf="@id/text_model_1" />
+
+    <TextView
+        android:id="@+id/text_androidVersion_1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/light"
+        android:text="@string/android_version"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        android:gravity="start|center_vertical"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/text_model" />
+
+    <TextView
+        android:id="@+id/text_androidVersion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+
+        android:fontFamily="@font/light"
+        android:gravity="start|center_vertical"
+        android:text="10"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        app:layout_constraintStart_toEndOf="@+id/text_androidVersion_1"
+        app:layout_constraintTop_toTopOf="@id/text_androidVersion_1" />
+
+
+    <TextView
         android:id="@+id/text_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="32dp"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="8dp"
         android:fontFamily="@font/light"
         android:text="@string/user_name"
         android:textColor="#9DA0A8"
         android:textSize="14sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/text_androidVersion" />
 
     <EditText
         android:id="@+id/userName"
