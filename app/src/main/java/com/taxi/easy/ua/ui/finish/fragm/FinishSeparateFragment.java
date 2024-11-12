@@ -171,7 +171,7 @@ public class FinishSeparateFragment extends Fragment {
     private Runnable showDialogAddcost;
 
     private  int timeCheckOutAddCost = 60*1000;
-
+    boolean need_20_add;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -228,6 +228,44 @@ public class FinishSeparateFragment extends Fragment {
 
 
         flexible_tariff_name = receivedMap.get("flexible_tariff_name");
+
+        String required_time = receivedMap.get("required_time");
+        Logger.d(context, TAG, "required_time: " + required_time);
+
+        @SuppressLint("SimpleDateFormat")
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+
+
+
+        if (required_time == null || required_time.isEmpty() || required_time.equals("01.01.1970 00:00")) {
+            need_20_add = true;
+        } else {
+            try {
+                // Регулярное выражение для проверки формата даты "dd.MM.yyyy HH:mm"
+                String dateTimePattern = "\\d{2}\\.\\d{2}\\.\\d{4} \\d{2}:\\d{2}";
+                Pattern pattern = Pattern.compile(dateTimePattern);
+                Matcher matcher = pattern.matcher(required_time);
+                // Извлекаем только дату и время, если они найдены
+                if (matcher.find()) {
+                    required_time = matcher.group(); // Оставляем только дату и время
+                } else {
+                    required_time = ""; // Если формат не найден, установим пустую строку
+                }
+                Date requiredDate = dateFormat.parse(required_time);
+                Date currentDate = new Date();
+
+                // Проверка, если время required_time уже наступило
+                need_20_add = requiredDate != null && requiredDate.before(currentDate);
+            } catch (ParseException e) {
+                need_20_add = true; // Если произошла ошибка разбора, установить need_20_add в true
+                Logger.e(context, TAG, "Ошибка разбора даты: " + e.getMessage());
+            }
+        }
+
+
+        Logger.d(context, TAG, "need_20_add: " + need_20_add);
+
+
         comment_info = receivedMap.get("comment_info");
         extra_charge_codes = receivedMap.get("extra_charge_codes");
 
@@ -1543,7 +1581,7 @@ public class FinishSeparateFragment extends Fragment {
                     switch (executionStatus) {
                         case "WaitingCarSearch":
                         case "SearchesForCar":
-                            if (handlerAddcost != null && showDialogAddcost != null) {
+                            if (handlerAddcost != null && showDialogAddcost != null && need_20_add) {
                                 handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost); // Устанавливаем нужную задержку
                             }
                             if(cancel_btn_click) {
@@ -1904,7 +1942,7 @@ public class FinishSeparateFragment extends Fragment {
             int timeCheckout
     ) {
         Logger.d(context, TAG, "payMetod " + payMetod);
-        if ("nal_payment".equals(payMetod)) {
+        if ("nal_payment".equals(payMetod) && need_20_add) {
             handlerAddcost = new Handler();
             showDialogAddcost = () -> {
                 // Вызов метода для отображения диалога
