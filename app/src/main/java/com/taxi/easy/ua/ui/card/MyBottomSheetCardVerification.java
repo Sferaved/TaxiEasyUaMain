@@ -2,6 +2,8 @@ package com.taxi.easy.ua.ui.card;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ContentValues;
@@ -86,7 +88,8 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
     String email;
     String pay_method;
     static SQLiteDatabase database;
-    private final String baseUrl = "https://m.easy-order-taxi.site";
+//    private final String baseUrl = "https://m.easy-order-taxi.site";
+    private String baseUrl;
     Activity context;
 
     String city;
@@ -102,6 +105,8 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.activity_fondy_payment, container, false);
         fragmentManager = getParentFragmentManager();
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+
         webView = view.findViewById(R.id.webView);
         email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
         context = requireActivity();
@@ -159,7 +164,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
 
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site/")
+                .baseUrl(baseUrl  + "/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
@@ -237,7 +242,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                 .addInterceptor(interceptor)
                 .build();
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site") // Замените на фактический URL вашего сервера
+                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
@@ -327,13 +332,13 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
     private void getReversWfp(String city) {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(interceptor)
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site/")
+                .baseUrl(baseUrl + "/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
@@ -458,7 +463,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
     }
     private void getCardTokenFondy(String MERCHANT_ID) {
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site") // Замените на фактический URL вашего сервера
+                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
@@ -867,7 +872,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                                         @Override
                                         public boolean shouldOverrideUrlLoading(WebView view, String url) {
                                             Logger.d(context, TAG, "Загружен URL: " + url);
-                                            if(url.equals("https://m.easy-order-taxi.site/mono/redirectUrl")) {
+                                            if(url.equals(baseUrl  + "/mono/redirectUrl")) {
                                                 Logger.d(context, TAG, "shouldOverrideUrlLoading: " + pay_method);
                                                 switch (pay_method) {
                                                     case "fondy_payment":

@@ -2,6 +2,8 @@ package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
@@ -32,7 +34,7 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.CustomCardAdapter;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.Status;
-import com.taxi.easy.ua.ui.finish.fragm.FinishFragment;
+import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureClient;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureResponse;
 import com.taxi.easy.ua.ui.fondy.payment.ApiResponsePay;
@@ -92,7 +94,8 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     FragmentManager fragmentManager;
     private TextView text_card;
     private String email;
-    private final String baseUrl = "https://m.easy-order-taxi.site/";
+//    private final String baseUrl = "https://m.easy-order-taxi.site/";
+    String baseUrl =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
 
     public MyBottomSheetErrorPaymentFragment(
             String pay_method,
@@ -212,12 +215,12 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(interceptor)
                 .build();
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site/")
+                .baseUrl(baseUrl + "/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
@@ -236,7 +239,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 MainActivity.order_id,
                 Integer.parseInt(amount),
                 LocaleHelper.getLocale(),
-                FinishFragment.messageFondy,
+                FinishSeparateFragment.messageFondy,
                 userEmail,
                 phone_number
         );
@@ -255,9 +258,10 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                             MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
                                     checkoutUrl,
                                     amount,
-                                    FinishFragment.uid,
-                                    FinishFragment.uid_Double,
-                                    context
+                                    FinishSeparateFragment.uid,
+                                    FinishSeparateFragment.uid_Double,
+                                    context,
+                                    MainActivity.order_id
                             );
                             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
@@ -313,7 +317,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 amount,
                 orderDescription,
                 email,
-                FinishFragment.phoneNumber,
+                FinishSeparateFragment.phoneNumber,
                 rectoken
         );
         call.enqueue(new Callback<PurchaseResponse>() {
@@ -354,7 +358,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
 //            // Пример строки URL с параметрами
-        Logger.d(context, TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
+        Logger.d(context, TAG, "orderFinished: "  + baseUrl + urlOrder);
         parser.sendURL(urlOrder, new Callback<Map<String, String>>() {
             @Override
             public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
@@ -571,7 +575,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(requireActivity());
-        FinishFragment.callOrderIdMemory(MainActivity.order_id, FinishFragment.uid, pay_method);
+        FinishSeparateFragment.callOrderIdMemory(MainActivity.order_id, FinishSeparateFragment.uid, pay_method);
 
         PaymentApiToken paymentApi = retrofit.create(PaymentApiToken.class);
 
@@ -741,9 +745,10 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                                 MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
                                         checkoutUrl,
                                         amount,
-                                        FinishFragment.uid,
-                                        FinishFragment.uid_Double,
-                                        context
+                                        FinishSeparateFragment.uid,
+                                        FinishSeparateFragment.uid_Double,
+                                        context,
+                                        MainActivity.order_id
                                 );
                                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
@@ -792,8 +797,8 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         List<String> listCity = logCursor(MainActivity.CITY_INFO,context);
         String city = listCity.get(1);
         String api = listCity.get(2);
-
-        String url = FinishFragment.baseUrl + "/" + api + "/android/webordersCancelDouble/" + FinishFragment.uid+ "/" + FinishFragment.uid_Double + "/" + pay_method + "/" + city  + "/" + context.getString(R.string.application);
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") +"/";
+        String url = baseUrl  + api + "/android/webordersCancelDouble/" + FinishSeparateFragment.uid+ "/" + FinishSeparateFragment.uid_Double + "/" + pay_method + "/" + city  + "/" + context.getString(R.string.application);
 
         Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
         Logger.d(context, TAG, "cancelOrderDouble: " + url);

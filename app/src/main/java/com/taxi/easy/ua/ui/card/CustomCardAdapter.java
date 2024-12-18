@@ -2,6 +2,8 @@ package com.taxi.easy.ua.ui.card;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
@@ -42,7 +44,8 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
     public static String table;
     public static String pay_method;
 
-    private final String baseUrl = "https://m.easy-order-taxi.site";
+//    private  String baseUrl = "https://m.easy-order-taxi.site";
+    private  final String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
     public CustomCardAdapter(Context context, ArrayList<Map<String, String>> cardMaps, String table, String pay_method) {
         super(context, R.layout.cards_adapter_layout, cardMaps);
         this.cardMaps = cardMaps;

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="language_en">english</string>
+    <string name="language_ru">russian</string>
+    <string name="language_uk">ukrainian</string>
+</resources>

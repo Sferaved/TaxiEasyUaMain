@@ -2,6 +2,8 @@ package com.taxi.easy.ua.ui.card;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ContentValues;
@@ -82,7 +84,7 @@ public class CardFragment extends Fragment {
     public static AppCompatButton btnCardLink, btnOrder;
 
     private NetworkChangeReceiver networkChangeReceiver;
-    private final String baseUrl = "https://m.easy-order-taxi.site";
+    private String baseUrl;
     private String messageFondy;
     @SuppressLint("StaticFieldLeak")
     public static ProgressBar progressBar;
@@ -103,6 +105,7 @@ public class CardFragment extends Fragment {
     FragmentManager fragmentManager;
     private AppCompatButton btnCallAdmin;
 
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentCardBinding.inflate(inflater, container, false);
@@ -110,7 +113,7 @@ public class CardFragment extends Fragment {
         fragmentManager = getParentFragmentManager();
         webView = binding.webView;
         context = requireActivity();
-       
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         if (!NetworkUtils.isNetworkAvailable(requireContext())) {
             
             MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
@@ -301,7 +304,7 @@ public class CardFragment extends Fragment {
                 .addInterceptor(interceptor)
                 .build();
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site") // Замените на фактический URL вашего сервера
+                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
@@ -568,9 +571,10 @@ public class CardFragment extends Fragment {
         logging.setLevel(HttpLoggingInterceptor.Level.BODY);
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
         httpClient.addInterceptor(logging);
-
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site/")
+//                .baseUrl("https://m.easy-order-taxi.site/")
+                .baseUrl(baseUrl + "/")
                 .addConverterFactory(ScalarsConverterFactory.create())
                 .client(httpClient.build())
                 .build();
@@ -641,7 +645,7 @@ public class CardFragment extends Fragment {
     }
 
     private void getUrlToPaymentFondy(String order_id, String orderDescription) throws UnsupportedEncodingException {
-
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://pay.fondy.eu/api/")
                 .addConverterFactory(GsonConverterFactory.create())
@@ -660,7 +664,7 @@ public class CardFragment extends Fragment {
         params.put("required_rectoken", "Y");
         params.put("merchant_id", MERCHANT_ID);
         params.put("sender_email", email);
-        params.put("server_callback_url", "https://m.easy-order-taxi.site/server-callback");
+        params.put("server_callback_url", baseUrl + "/server-callback");
 
         Logger.d(context, TAG, "getStatusFondy: " + params);
         SignatureClient signatureClient = new SignatureClient();

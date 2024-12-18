@@ -2,6 +2,8 @@ package com.taxi.easy.ua.ui.gallery;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.ContentValues;
@@ -97,7 +99,7 @@ public class GalleryFragment extends Fragment {
     @SuppressLint("StaticFieldLeak")
     static ConstraintLayout constr2;
     Context context;
-    
+    String baseUrl;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         
@@ -106,7 +108,7 @@ public class GalleryFragment extends Fragment {
         binding = FragmentGalleryBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
         context = requireActivity();
-        
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         if (!NetworkUtils.isNetworkAvailable(context)) {
             
             MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
@@ -476,7 +478,7 @@ public class GalleryFragment extends Fragment {
         ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
 //            // Пример строки URL с параметрами
-        Logger.d(getActivity(), TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlOrder);
+        Logger.d(getActivity(), TAG, "orderFinished: "  + baseUrl+ urlOrder);
         parser.sendURL(urlOrder, new Callback<Map<String, String>>() {
             @Override
             public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
@@ -503,7 +505,7 @@ public class GalleryFragment extends Fragment {
                     String pay_method_message = getString(R.string.pay_method_message_main);
                     String required_time = sendUrlMap.get("required_time");
                     if(required_time != null && !required_time.contains("01.01.1970")) {
-                        required_time = context.getString(R.string.time_order) + required_time + ". ";
+                        required_time = " " + context.getString(R.string.time_order) + required_time + ". ";
                     } else {
                         required_time = "";
                     }
@@ -698,9 +700,9 @@ public class GalleryFragment extends Fragment {
             String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
 
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
-
+            baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 //            // Пример строки URL с параметрами
-            Logger.d(getActivity(), TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlCost);
+            Logger.d(getActivity(), TAG, "orderFinished: "  + baseUrl + urlCost);
             parser.sendURL(urlCost, new Callback<Map<String, String>>() {
                 @Override
                 public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {

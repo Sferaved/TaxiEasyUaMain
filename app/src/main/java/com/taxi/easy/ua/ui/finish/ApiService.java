@@ -29,17 +29,32 @@ public interface ApiService {
     Call<BonusResponse> getBonus(@Url String url);
 
 
-    @GET("/android/orderIdMemory/{order_id}/{uid}/{paySystem}")
+    @GET("android/orderIdMemory/{order_id}/{uid}/{paySystem}")
     Call<Void> orderIdMemory(
             @Path("order_id") String fondy_order_id,
             @Path("uid") String uid,
             @Path("paySystem") String paySystem
     );
+    @GET("android/wfpInvoice/{order_id}/{amount}/{uid}")
+    Call<Void> wfpInvoice(
+            @Path("order_id") String fondy_order_id,
+            @Path("amount") String amount,
+            @Path("uid") String uid
+    );
 
-    @GET("/android/startAddCostUpdate/{uid}/{typeAdd}")
-    Call<Void> startAddCostUpdate(
+    @GET("android/startAddCostUpdate/{uid}/{typeAdd}")
+    Call<Status> startAddCostUpdate(
             @Path("uid") String uid,
             @Path("typeAdd") String typeAdd
+    );
+    @GET("android/startAddCostCardUpdate/{uid}/{uid_Double}/{pay_method}/{order_id}/{city}")
+    Call<Status> startAddCostCardUpdate(
+            @Path("uid") String uid,
+            @Path("uid_Double") String uid_Double,
+            @Path("pay_method") String pay_method,
+            @Path("order_id") String order_id,
+            @Path("city") String city
+
     );
 
     @GET("apiTest/android/searchOrderToDelete/{originLatitude}/{originLongitude}/{toLatitude}/{toLongitude}/{email}/{start}/{finish}/{payment_type}/{city}/{application}/")

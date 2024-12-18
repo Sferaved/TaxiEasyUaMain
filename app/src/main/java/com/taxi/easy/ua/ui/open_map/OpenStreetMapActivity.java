@@ -1,6 +1,8 @@
 package com.taxi.easy.ua.ui.open_map;
 
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
@@ -101,7 +103,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
     public static ProgressBar progressBar;
     @SuppressLint("StaticFieldLeak")
     private String city;
-
+    String baseUrl;
 
     public static String[] arrayServiceCode() {
         return new String[]{
@@ -136,7 +138,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         setContentView(R.layout.open_street_map_layout);
 
         new VerifyUserTask(getApplicationContext()).execute();
-
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         networkChangeReceiver = new NetworkChangeReceiver();
 
         Context ctx = getApplicationContext();
@@ -379,8 +381,8 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
                         Locale locale = Locale.getDefault();
                         String language = locale.getLanguage(); // Получаем язык устройства
-
-                        String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
+                        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+                        String urlFrom = baseUrl + "/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
 
                         try {
 //                            sendUrlFrom = FromJSONParserRetrofit.sendURL(urlFrom);
@@ -447,8 +449,8 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                     }
                     Locale locale = Locale.getDefault();
                     String language = locale.getLanguage(); // Получаем язык устройства
-
-                    String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
+                    baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+                    String urlFrom = baseUrl + "/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
 
                     try {
                         FromJSONParser parser = new FromJSONParser(urlFrom);
@@ -550,8 +552,8 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
                 Locale locale = Locale.getDefault();
                 String language = locale.getLanguage(); // Получаем язык устройства
-
-                String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
+                String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+                String urlFrom = baseUrl + "/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
 
                 try {
                     FromJSONParser parser = new FromJSONParser(urlFrom);
@@ -632,7 +634,8 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
-            Logger.d(context, TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ urlCost);
+            String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+            Logger.d(context, TAG, "orderFinished: "  + baseUrl + urlCost);
             parser.sendURL(urlCost, new Callback<Map<String, String>>() {
                 @Override
                 public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {

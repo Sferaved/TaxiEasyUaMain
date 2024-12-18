@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.ui.fondy.gen_signatur;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import androidx.annotation.NonNull;
 
 import retrofit2.Call;
@@ -10,7 +12,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class SignatureClient {
 
-    private static final String BASE_URL = "https://m.easy-order-taxi.site/";
+//    private static final String BASE_URL = "https://m.easy-order-taxi.site/";
+    private static final String BASE_URL = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
     private static final String TAG = "SignatureClient";
 
     private final ApiService apiService;

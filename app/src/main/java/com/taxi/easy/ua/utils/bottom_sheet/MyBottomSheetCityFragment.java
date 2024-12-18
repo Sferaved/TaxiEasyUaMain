@@ -2,7 +2,7 @@ package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
 
-import static com.taxi.easy.ua.MainActivity.sharedPreferencesHelperMain;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
@@ -33,6 +33,8 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.cities.api.CityApiClient;
+import com.taxi.easy.ua.cities.api.CityApiTestClient;
+import com.taxi.easy.ua.cities.api.CityLastAddressResponse;
 import com.taxi.easy.ua.cities.api.CityResponse;
 import com.taxi.easy.ua.cities.api.CityResponseMerchantFondy;
 import com.taxi.easy.ua.cities.api.CityService;
@@ -129,7 +131,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     public static final String Zaporizhzhia_phone = "tel:0687257070";
     public static final String Cherkasy_Oblast_phone = "tel:0962294243";
     String phoneNumber;
-    private final String baseUrl = "https://m.easy-order-taxi.site";
+    String baseUrl;
     Context context;
     String countryState;
     String newTitle;
@@ -144,10 +146,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
         fragmentManager = getParentFragmentManager();
         listView = view.findViewById(R.id.listViewBonus);
-        VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-        if(context == null) {
-            context = requireActivity();
-        }
+
         String[] cityList = new String[]{
                 context.getString(R.string.city_kyiv),
                 context.getString(R.string.city_dnipro),
@@ -179,9 +178,10 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         databaseHelper = new DatabaseHelper(context);
         databaseHelperUid = new DatabaseHelperUid(context);
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireActivity(), R.layout.services_adapter_layout, cityList);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(context, R.layout.services_adapter_layout, cityList);
         listView.setAdapter(adapter);
         listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+
         if(city == null) {
             city = "Kyiv City";
         }
@@ -306,7 +306,9 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
 
         Logger.d(context, TAG, "onCreateView: city" + city);
-        updateMyPosition(city);
+
+//        lastAddressUser(city);
+
         listView.setItemChecked(positionFirst, true);
 
         int positionFirstOld = positionFirst;
@@ -458,6 +460,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         countryState = "UA";
                         break;
                 }
+
                 newTitle =  context.getString(R.string.menu_city) + " " + cityMenu;
                 sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
                  String cityCodeNew;
@@ -472,14 +475,10 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
                 pay_system(cityCodeNew);
 
-                resetRoutHome();
-                resetRoutMarker();
-                updateMyPosition(cityCode[positionFirst]);
 
-                cityMaxPay(cityCodeNew);
-                Logger.d(context, TAG, "1");
-                getCardTokenWfp(cityCode[positionFirst]);
-                dismiss();
+//                updateMyPosition(cityCode[positionFirst]);
+                lastAddressUser(cityCode[positionFirst]);
+
             }
         });
         databaseHelper = new DatabaseHelper(context);
@@ -492,13 +491,14 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     private void getCardTokenWfp(String city) {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(interceptor)
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site") // Замените на фактический URL вашего сервера
+                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
@@ -574,7 +574,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     }
 
     private void pay_system(String cityCodeNew) {
-        
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
@@ -653,7 +653,6 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             case "Odessa":
             case "Zaporizhzhia":
             case "Cherkasy Oblast":
-            case "OdessaTest":
             case "Kyiv City":
             case "Lviv":
             case "Ivano_frankivsk":
@@ -671,150 +670,155 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             case "Mykolaiv":
             case "Сhernivtsi":
             case "Lutsk":
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                break;
+            case "OdessaTest":
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
                 break;
             default:
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
                 city = "foreign countries";
         }
 
         switch (city) {
             case "Kyiv City":
-                position = getString(R.string.pos_k);
+                position = context.getString(R.string.pos_k);
                 startLat = 50.451107;
                 startLan = 30.524907;
                 phoneNumber = Kyiv_City_phone; // Здесь также добавляем номер телефона
                 break;
             case "Dnipropetrovsk Oblast":
                 // Днепр
-                position = getString(R.string.pos_d);
+                position = context.getString(R.string.pos_d);
                 startLat = 48.4647;
                 startLan = 35.0462;
                 phoneNumber = Dnipropetrovsk_Oblast_phone; // Укажите соответствующий номер телефона
                 break;
             case "Odessa":
-                position = getString(R.string.pos_o);
+                position = context.getString(R.string.pos_o);
                 startLat = 46.4694;
                 startLan = 30.7404;
                 phoneNumber = Odessa_phone;
                 break;
             case "Zaporizhzhia":
-                position = getString(R.string.pos_z);
+                position = context.getString(R.string.pos_z);
                 startLat = 47.84015;
                 startLan = 35.13634;
                 phoneNumber = Zaporizhzhia_phone;
                 break;
             case "Cherkasy Oblast":
-                position = getString(R.string.pos_c);
+                position = context.getString(R.string.pos_c);
                 startLat = 49.44469;
                 startLan = 32.05728;
                 phoneNumber = Cherkasy_Oblast_phone;
                 break;
             case "Lviv":
-                position = getString(R.string.pos_l);
+                position = context.getString(R.string.pos_l);
                 startLat = 49.83993;
                 startLan = 24.02973;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
             case "Ivano_frankivsk":
-                position = getString(R.string.pos_if);
+                position = context.getString(R.string.pos_if);
                 startLat = 48.92005;
                 startLan = 24.71067;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
             case "Vinnytsia":
-                position = getString(R.string.pos_v);
+                position = context.getString(R.string.pos_v);
                 startLat = 49.23325;
                 startLan = 28.46865;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
             case "Poltava":
-                position = getString(R.string.pos_p);
+                position = context.getString(R.string.pos_p);
                 startLat = 49.59325;
                 startLan = 34.54938;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
             case "Sumy":
-                position = getString(R.string.pos_s);
+                position = context.getString(R.string.pos_s);
                 startLat = 50.90775;
                 startLan = 34.79865;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
             case "Kharkiv":
-                position = getString(R.string.pos_h);
+                position = context.getString(R.string.pos_h);
                 startLat = 49.99358;
                 startLan = 36.23191;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
             case "Chernihiv":
-                position = getString(R.string.pos_ch);
+                position = context.getString(R.string.pos_ch);
                 startLat = 51.4933;
                 startLan = 31.2972;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
             case "Rivne":
-                position = getString(R.string.pos_r);
+                position = context.getString(R.string.pos_r);
                 startLat = 50.6198;
                 startLan = 26.2406;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
             case "Ternopil":
-                position = getString(R.string.pos_t);
+                position = context.getString(R.string.pos_t);
                 startLat = 49.54479;
                 startLan = 25.5990;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
             case "Khmelnytskyi":
-                position = getString(R.string.pos_kh);
+                position = context.getString(R.string.pos_kh);
                 startLat = 49.41548;
                 startLan = 27.00674;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
 
             case "Zakarpattya":
-                position = getString(R.string.pos_uz);
+                position = context.getString(R.string.pos_uz);
                 startLat = 48.61913;
                 startLan = 22.29475;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
             case "Zhytomyr":
-                position = getString(R.string.pos_zt);
+                position = context.getString(R.string.pos_zt);
                 startLat = 50.26801;
                 startLan = 28.68026;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
             case "Kropyvnytskyi":
-                position = getString(R.string.pos_kr);
+                position = context.getString(R.string.pos_kr);
                 startLat = 48.51159;
                 startLan = 32.26982;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
             case "Mykolaiv":
-                position = getString(R.string.pos_m);
+                position = context.getString(R.string.pos_m);
                 startLat = 46.97498;
                 startLan = 31.99378;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
             case "Сhernivtsi":
-                position = getString(R.string.pos_chr);
+                position = context.getString(R.string.pos_chr);
                 startLat = 48.29306;
                 startLan = 25.93484;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
             case "Lutsk":
-                position = getString(R.string.pos_ltk);
+                position = context.getString(R.string.pos_ltk);
                 startLat = 50.73968;
                 startLan = 25.32400;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
 
             case "OdessaTest":
-                position = getString(R.string.pos_o);
+                position = context.getString(R.string.pos_o);
                 startLat = 46.4694;
                 startLan = 30.7404;
                 phoneNumber = Kyiv_City_phone;
                 break;
 
             default:
-                position = getString(R.string.pos_f);
+                position = context.getString(R.string.pos_f);
                 startLat = 52.13472;
                 startLan = 21.00424;
                 phoneNumber = Kyiv_City_phone; // Номер телефона по умолчанию
@@ -822,7 +826,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         }
         pay_system(city);
 
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
         ContentValues cv = new ContentValues();
 
@@ -848,11 +852,6 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
         database.close();
-//        }
-
-
-        database.close();
-
 
         List<String> settings = new ArrayList<>();
 
@@ -870,6 +869,200 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         Logger.d(context, TAG, "newUser: " + userEmail);
 
         new Thread(() -> fetchRoutes(userEmail)).start();
+        cityMaxPay(city);
+        Logger.d(context, TAG, "1");
+        getCardTokenWfp(cityCode[positionFirst]);
+        dismiss();
+    }
+
+    private void updateMyLatsPosition(String routefrom, String startLatString, String startLanString, String city) {
+
+        double startLat = Double.parseDouble(startLatString);;
+        double startLan = Double.parseDouble(startLanString);
+        String position = routefrom;
+        Logger.d(context, TAG, "updateMyPosition:city "+ city);
+//        ActionBarUtil.setupCustomActionBar(this, R.layout.custom_action_bar_title, R.id.action_bar_title, newTitle);
+
+        switch (city){
+            case "Dnipropetrovsk Oblast":
+            case "Odessa":
+            case "Zaporizhzhia":
+            case "Cherkasy Oblast":
+            case "Kyiv City":
+            case "Lviv":
+            case "Ivano_frankivsk":
+            case "Vinnytsia":
+            case "Poltava":
+            case "Sumy":
+            case "Kharkiv":
+            case "Chernihiv":
+            case "Rivne":
+            case "Ternopil":
+            case "Khmelnytskyi":
+            case "Zakarpattya":
+            case "Zhytomyr":
+            case "Kropyvnytskyi":
+            case "Mykolaiv":
+            case "Сhernivtsi":
+            case "Lutsk":
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                break;
+            case "OdessaTest":
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
+                break;
+            default:
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                city = "foreign countries";
+        }
+
+        switch (city) {
+            case "Kyiv City":
+
+                phoneNumber = Kyiv_City_phone; // Здесь также добавляем номер телефона
+                break;
+            case "Dnipropetrovsk Oblast":
+                // Днепр
+
+                phoneNumber = Dnipropetrovsk_Oblast_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Odessa":
+
+                phoneNumber = Odessa_phone;
+                break;
+            case "Zaporizhzhia":
+
+                phoneNumber = Zaporizhzhia_phone;
+                break;
+            case "Cherkasy Oblast":
+
+                phoneNumber = Cherkasy_Oblast_phone;
+                break;
+            case "Lviv":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Ivano_frankivsk":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Vinnytsia":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Poltava":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Sumy":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Kharkiv":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Chernihiv":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Rivne":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Ternopil":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Khmelnytskyi":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+
+            case "Zakarpattya":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Zhytomyr":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Kropyvnytskyi":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Mykolaiv":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Сhernivtsi":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Lutsk":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+
+            case "OdessaTest":
+
+                phoneNumber = Kyiv_City_phone;
+                break;
+
+            default:
+
+                phoneNumber = Kyiv_City_phone; // Номер телефона по умолчанию
+                break;
+        }
+        pay_system(city);
+
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+
+        ContentValues cv = new ContentValues();
+
+        cv.put("city", city);
+        cv.put("phone", phoneNumber);
+        database.update(MainActivity.CITY_INFO, cv, "id = ?", new String[]{"1"});
+
+        cv = new ContentValues();
+        cv.put("startLat", startLat);
+        cv.put("startLan", startLan);
+        cv.put("position", position);
+        database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
+                new String[] { "1" });
+
+        cv = new ContentValues();
+        cv.put("tarif", " ");
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                new String[] { "1" });
+
+        cv = new ContentValues();
+        cv.put("payment_type", "nal_payment");
+
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                new String[] { "1" });
+        database.close();
+
+        List<String> settings = new ArrayList<>();
+
+
+        settings.add(Double.toString(startLat));
+        settings.add(Double.toString(startLan));
+        settings.add(Double.toString(startLat));
+        settings.add(Double.toString(startLan));
+        settings.add(position);
+        settings.add(position);
+
+        updateRoutMarker(settings);
+
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+        Logger.d(context, TAG, "newUser: " + userEmail);
+
+        new Thread(() -> fetchRoutes(userEmail)).start();
+
+        cityMaxPay(city);
+        Logger.d(context, TAG, "1");
+        getCardTokenWfp(cityCode[positionFirst]);
+        dismiss();
     }
     private void fetchRoutes(String value) {
 
@@ -878,6 +1071,8 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
         String city = stringList.get(1);
+
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         String url = baseUrl + "/android/UIDStatusShowEmailCityApp/" + value + "/" + city + "/" + context.getString(R.string.application);
 
         Call<List<RouteResponse>> call = ApiClient.getApiService().getRoutes(url);
@@ -1052,7 +1247,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         cv.put("finish", settings.get(5));
 
         // обновляем по id
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
                 new String[]{"1"});
         database.close();
@@ -1089,6 +1284,8 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     }
 
     private void cityMaxPay(String city) {
+
+
         CityService cityService = CityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
@@ -1110,7 +1307,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         sharedPreferencesHelperMain.saveValue("black_list", black_list);
                         Logger.d(context, TAG, "black_list 2" + black_list);
                         if(isAdded()) {
-                            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                             database.update(MainActivity.CITY_INFO, cv, "id = ?",
                                     new String[]{"1"});
 
@@ -1134,8 +1331,9 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     }
 
     private void merchantFondy(String city, Context context) {
-        CityService cityService = CityApiClient.getClient().create(CityService.class);
 
+
+        CityService cityService = CityApiClient.getClient().create(CityService.class);
         // Замените "your_city" на фактическое название города
         Call<CityResponseMerchantFondy> call = cityService.getMerchantFondy(city);
 
@@ -1275,7 +1473,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         cv.put("to_number", " ");
 
         // обновляем по id
-        SQLiteDatabase database = requireContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.ROUT_HOME, cv, "id = ?",
                 new String[]{"1"});
         database.close();
@@ -1300,7 +1498,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         cv.put("finish", settings.get(5));
 
         // обновляем по id
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
                 new String[]{"1"});
         database.close();
@@ -1372,12 +1570,12 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
             // Проверяем версию Android
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // API 33 и выше
-                NotificationManagerCompat notificationManager = NotificationManagerCompat.from(requireContext());
+                NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
                 boolean areNotificationsEnabled = notificationManager.areNotificationsEnabled();
 
                 // Если уведомления не разрешены и разрешение еще не запрашивалось
                 if (!areNotificationsEnabled && !isNotificationPermissionRequested) {
-                    openNotificationSettings(requireContext());
+                    openNotificationSettings(context);
                     // Сохраняем информацию о том, что разрешение было запрошено
                     SharedPreferences.Editor editor = sharedPreferences.edit();
                     editor.putBoolean("notification_permission_requested", true);
@@ -1392,6 +1590,89 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
         intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.getPackageName());
         context.startActivity(intent);
+    }
+
+    private void lastAddressUser(String cityString) {
+
+        String email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+
+
+        Logger.d(context, TAG, "lastAddressUser: cityString" + cityString);
+        switch (cityString){
+//            case "Dnipropetrovsk Oblast":
+//            case "Odessa":
+//            case "Zaporizhzhia":
+//            case "Cherkasy Oblast":
+//            case "Kyiv City":
+//            case "Lviv":
+//            case "Ivano_frankivsk":
+//            case "Vinnytsia":
+//            case "Poltava":
+//            case "Sumy":
+//            case "Kharkiv":
+//            case "Chernihiv":
+//            case "Rivne":
+//            case "Ternopil":
+//            case "Khmelnytskyi":
+//            case "Zakarpattya":
+//            case "Zhytomyr":
+//            case "Kropyvnytskyi":
+//            case "Mykolaiv":
+//            case "Сhernivtsi":
+//            case "Lutsk":
+//                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+//                break;
+            case "OdessaTest":
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
+
+                break;
+            default:
+
+
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+        }
+        Logger.d(context, TAG, "lastAddressUser: baseUrl" + sharedPreferencesHelperMain.getValue("baseUrl", ""));
+        CityService cityService= CityApiClient.getClient().create(CityService.class);
+
+        Call<CityLastAddressResponse> call = cityService.lastAddressUser(email, cityString, context.getString(R.string.application));
+
+        call.enqueue(new Callback<CityLastAddressResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<CityLastAddressResponse> call, @NonNull Response<CityLastAddressResponse> response) {
+                if (response.isSuccessful()) {
+                    CityLastAddressResponse cityResponse = response.body();
+                    Logger.d(context, TAG, "onResponse: cityResponse" + cityResponse);
+                    if (cityResponse != null) {
+
+                        resetRoutHome();
+                        resetRoutMarker();
+
+                        String routefrom = cityResponse.getRoutefrom();
+                        String startLat = cityResponse.getStartLat();
+                        String startLan = cityResponse.getStartLan();
+
+
+                        Logger.d(context, TAG, "lastAddressUser: routefrom" + routefrom);
+                        Logger.d(context, TAG, "lastAddressUser: startLat" + startLat);
+                        Logger.d(context, TAG, "lastAddressUser: startLan" + startLan);
+                        if(routefrom.equals("*") || startLat.equals("0.0") || startLan.equals("0.0")) {
+                            updateMyPosition(cityString);
+                        } else {
+                             updateMyLatsPosition(routefrom, startLat, startLan, cityString);
+                        }
+
+                    }
+                } else {
+                    Logger.d(context, TAG, "Failed. Error code: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<CityLastAddressResponse> call, Throwable t) {
+                Logger.d(getContext(), TAG, "Failed. Error message: " + t.getMessage());
+                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+            }
+        });
     }
 }
 

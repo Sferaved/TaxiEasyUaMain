@@ -38,7 +38,7 @@ public class RouteResponseCancel {
     @SerializedName("auto")
     private String auto;
 
-    @SerializedName("dispatchingOrderUidDouble")
+    @SerializedName("dispatching_order_uid_Double")
     private String dispatchingOrderUidDouble;
 
     @SerializedName("pay_method")

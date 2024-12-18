@@ -1,10 +1,11 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.781</string>
-    <string name="version">Версія: 1.781</string>
+    <string name="version_code">1.782</string>
+    <string name="version">Версія: 1.782</string>
 
     <string name="app_name">Таксі Доставка</string>
+    <string name="alfa_test">(Альфа-тестування)</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -333,7 +334,7 @@
     <string name="order_in">"заказ в "</string>
     <string name="checking">Чекайте, йде перевірка даних.</string>
     <string name="time_out_text">Скасування поїздки по таймауту оплати. Спробуйте ще.</string>
-    <string name="pay_cancel">Поїздку скасовано через відсутність оплати. Спробуйте ще.</string>
+    <string name="pay_cancel">Поїздку скасовано через відсутність успішної оплати протягом відведеного таймінгу. Спробуйте ще.</string>
     <string name="ex_st_canceled">Заказ скасовано. Спробуйте ще.</string>
     <string name="search">Пошук адреси...</string>
     <string name="account_verify">Відбувається перевірка реєстрації...</string>
@@ -469,4 +470,18 @@
     <string name="check_cost_message">Чекайте, йде розрахунок вартості поїздки...</string>
     <string name="android_version">Версія Андроїда:</string>
     <string name="device">Пристрій:</string>
+    <string name="time_car_found">Время поиска машины подошло к концу</string>
+    <string name="cancel_car_found_time">Нажмите кнопку Ок чтобы отменить текущий заказ и перейти к новому заказу</string>
+
+    <string name="update_timeout">Процес оновлення зайняв надто багато часу. Спробуйте пізніше.</string>
+    <string name="update_error">Помилка перевірки оновлень. Перевірте підключення до Інтернету.</string>
+    <string name="update_successful">Оновлення пройшло успішно!</string>
+    <string name="update_failed">Помилка при оновленні.Будь ласка, спробуйте пізніше.</string>
+    <string name="update_canceled">Оновлення було скасовано.</string>
+    <string name="restart_error">Помилка при перезапуску програми.</string>
+    <string name="btn_option_text">Дії</string>
+    <string name="language">Мова</string>
+    <string name="item_settings">Настройки</string>
+    <string name="save_btn">Зберегти</string>
+    <string name="close">Закрити</string>
 </resources>

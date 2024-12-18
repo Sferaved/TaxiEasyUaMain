@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.utils.cost_json_parser;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import androidx.annotation.NonNull;
 
 import java.net.MalformedURLException;
@@ -32,9 +34,10 @@ public class CostJSONParserRetrofit {
         httpClient.readTimeout(60, TimeUnit.SECONDS);    // Тайм-аут для чтения
         httpClient.writeTimeout(60, TimeUnit.SECONDS);   // Тайм-аут для записи
         // httpClient.addInterceptor(loggingInterceptor);
+        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site")
+                .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(httpClient.build()) // Подключение клиента OkHttpClient с логгером
                 .build();

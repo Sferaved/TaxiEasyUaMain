@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.utils.fcm.token_send;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
@@ -7,11 +9,10 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class RetrofitClientToken {
 
-    private static final String BASE_URL = "https://m.easy-order-taxi.site/";
 
     private static Retrofit retrofit = null;
 
-    public static Retrofit getClient() {
+    public static Retrofit getClient(String baseUrl) {
         if (retrofit == null) {
             // Добавляем логирование HTTP запросов
             HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
@@ -20,8 +21,9 @@ public class RetrofitClientToken {
             OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
             httpClient.addInterceptor(loggingInterceptor);
 
+
             retrofit = new Retrofit.Builder()
-                    .baseUrl(BASE_URL)
+                    .baseUrl(baseUrl)
                     .client(httpClient.build())
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();

@@ -2,6 +2,8 @@ package com.taxi.easy.ua.ui.uid;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -63,7 +65,9 @@ public class UIDFragment extends Fragment {
     ProgressBar progressBar;
     DatabaseHelper databaseHelper;
     DatabaseHelperUid databaseHelperUid;
-    String baseUrl = "https://m.easy-order-taxi.site";
+//    String baseUrl = "https://m.easy-order-taxi.site";
+    String baseUrl;
+
     private List<RouteResponse> routeList;
 
     AppCompatButton upd_but;
@@ -236,6 +240,8 @@ public class UIDFragment extends Fragment {
                 .build()));
         List<String> stringList = logCursor(MainActivity.CITY_INFO,context);
         String city = stringList.get(1);
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+
         String url = baseUrl + "/android/UIDStatusShowEmailCityApp/" + email + "/" + city + "/" +  context.getString(R.string.application);
         Call<List<RouteResponse>> call = ApiClient.getApiService().getRoutes(url);
         Logger.d (context, TAG, "fetchRoutes: " + url);

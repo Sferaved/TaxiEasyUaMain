@@ -1,13 +1,13 @@
 package com.taxi.easy.ua.utils.user.save_firebase;
 
+import android.util.Log;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.SetOptions;
-
-import android.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -2,6 +2,7 @@ package com.taxi.easy.ua.ui.account;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 import static com.taxi.easy.ua.R.string.format_phone;
 
 import android.annotation.SuppressLint;
@@ -225,7 +226,8 @@ public class AccountFragment extends Fragment {
 
         routeList = new ArrayList<>();
 
-        String baseUrl = "https://m.easy-order-taxi.site";
+//        String baseUrl = "https://m.easy-order-taxi.site";
+        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         String city = stringList.get(1);
@@ -368,7 +370,7 @@ public class AccountFragment extends Fragment {
                 auto = "??";
             }
             if(required_time != null && !required_time.contains("01.01.1970")) {
-                required_time = getString(R.string.time_order) + required_time;
+                required_time = " " + getString(R.string.time_order) + required_time;
             } else {
                 required_time = "";
             }

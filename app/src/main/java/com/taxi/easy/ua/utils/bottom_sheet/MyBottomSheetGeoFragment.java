@@ -2,6 +2,8 @@ package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
@@ -546,7 +548,9 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         String message = context.getString(R.string.change_tarrif);
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
         ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
-        Logger.d(context, TAG, "orderFinished: "  + "https://m.easy-order-taxi.site"+ url);
+        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+
+        Logger.d(context, TAG, "orderFinished: "  + baseUrl + url);
         costSearchMarkersLocalTariffs(context);
 
         parser.sendURL(url, new Callback<Map<String, String>>() {

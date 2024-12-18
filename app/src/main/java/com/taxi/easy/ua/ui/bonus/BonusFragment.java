@@ -2,6 +2,9 @@ package com.taxi.easy.ua.ui.bonus;
 
 import static android.content.Context.MODE_PRIVATE;
 
+
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ContentValues;
@@ -94,29 +97,27 @@ public class BonusFragment extends Fragment {
         String bonus = logCursor(MainActivity.TABLE_USER_INFO, context).get(5);
         if(bonus == null) {
             bonus = getString(R.string.upd_bonus_info);
+            textView.setText(bonus);
         } else {
             textView.setText(getString(R.string.my_bonus) + bonus);
         }
         btnBonus  = binding.btnBonus;
-        btnBonus.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-                    
-                    MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true) 
-                        .build());
-                } else {
-                    @SuppressLint("UseRequireInsteadOfGet")
-                    String email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(context)).get(3);
-                    progressBar.setVisibility(View.VISIBLE);
-                    textView.setVisibility(View.GONE);
-                    binding.text0.setVisibility(View.GONE);
-                    binding.text7.setVisibility(View.GONE);
-                    btnBonus.setVisibility(View.GONE);
+        btnBonus.setOnClickListener(v -> {
+            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
 
-                    fetchBonus(email, context);
-                }
+                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_visicom, true)
+                    .build());
+            } else {
+                @SuppressLint("UseRequireInsteadOfGet")
+                String email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(context)).get(3);
+                progressBar.setVisibility(View.VISIBLE);
+                textView.setVisibility(View.GONE);
+                binding.text0.setVisibility(View.GONE);
+                binding.text7.setVisibility(View.GONE);
+                btnBonus.setVisibility(View.GONE);
+
+                fetchBonus(email, context);
             }
         });
 
@@ -134,10 +135,11 @@ public class BonusFragment extends Fragment {
         });
     }
 
-    String baseUrl = "https://m.easy-order-taxi.site";
+    String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
     private void fetchBonus(String value, Context context) {
         btnOrder.setVisibility(View.INVISIBLE);
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         String url = baseUrl + "/bonus/bonusUserShow/" + value + "/" + context.getString(R.string.application);
 //        String url = baseUrl + "/bonus/bonusUserShow/" + value;
         Call<BonusResponse> call = ApiClient.getApiService().getBonus(url);

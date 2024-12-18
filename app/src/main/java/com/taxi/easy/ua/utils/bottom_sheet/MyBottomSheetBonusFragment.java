@@ -2,7 +2,7 @@ package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
 
-import static com.taxi.easy.ua.MainActivity.sharedPreferencesHelperMain;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 import static com.taxi.easy.ua.ui.visicom.VisicomFragment.setBtnBonusName;
 
 import android.annotation.SuppressLint;
@@ -18,7 +18,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -86,7 +85,9 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     public MyBottomSheetBonusFragment() {
     }
 
-    private final String baseUrl = "https://m.easy-order-taxi.site";
+//    private final String baseUrl = "https://m.easy-order-taxi.site";
+    private final  String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+
 
     public MyBottomSheetBonusFragment(long cost, String rout, String api, TextView textView) {
         this.cost = cost;
@@ -130,12 +131,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         listView.setAdapter(adapter);
         listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         btn_ok = view.findViewById(R.id.btn_ok);
-        btn_ok.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                dismiss();
-            }
-        });
+        btn_ok.setOnClickListener(v -> dismiss());
 
 
         userPayPermissions = UserPermissions.getUserPayPermissions(context);
@@ -179,46 +175,42 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             adapter.setItemEnabled(2, false);
         }
 
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                progressBar.setVisibility(View.VISIBLE);
-                btn_ok.setVisibility(View.GONE);
-                textView.setText("");
-                pos = position;
-                Log.d(TAG, "onItemClick: pos " + pos);
-                if (pos == 2) {
-                    if(userPayPermissions[0].equals("0")) {
-                        adapter.setItemEnabled(2, false);
-                    } else {
-                        paySystem(new CardFragment.PaySystemCallback() {
-                            @Override
-                            public void onPaySystemResult(String paymentCode) {
-                                Log.d(TAG, "onPaySystemResult: paymentCode" + paymentCode);
-                                // Здесь вы можете использовать полученное значение paymentCode
-                                try {
-                                    paymentType(paymentCode, context);
-                                } catch (MalformedURLException | UnsupportedEncodingException e) {
-                                    FirebaseCrashlytics.getInstance().recordException(e);
-                                    throw new RuntimeException(e);
-                                }
-                            }
-
-                            @Override
-                            public void onPaySystemFailure(String errorMessage) {
-                            }
-                        });
-                    }
-
+        listView.setOnItemClickListener((parent, view1, position, id) -> {
+            progressBar.setVisibility(View.VISIBLE);
+            btn_ok.setVisibility(View.GONE);
+            textView.setText("");
+            pos = position;
+            Log.d(TAG, "onItemClick: pos " + pos);
+            if (pos == 2) {
+                if(userPayPermissions[0].equals("0")) {
+                    adapter.setItemEnabled(2, false);
                 } else {
-                    try {
-                        paymentType(arrayCode [pos], context);
-                    } catch (MalformedURLException | UnsupportedEncodingException e) {
-                        FirebaseCrashlytics.getInstance().recordException(e);
-                        throw new RuntimeException(e);
-                    }
+                    paySystem(new CardFragment.PaySystemCallback() {
+                        @Override
+                        public void onPaySystemResult(String paymentCode) {
+                            Log.d(TAG, "onPaySystemResult: paymentCode" + paymentCode);
+                            // Здесь вы можете использовать полученное значение paymentCode
+                            try {
+                                paymentType(paymentCode, context);
+                            } catch (MalformedURLException | UnsupportedEncodingException e) {
+                                FirebaseCrashlytics.getInstance().recordException(e);
+                                throw new RuntimeException(e);
+                            }
+                        }
+
+                        @Override
+                        public void onPaySystemFailure(String errorMessage) {
+                        }
+                    });
                 }
 
+            } else {
+                try {
+                    paymentType(arrayCode [pos], context);
+                } catch (MalformedURLException | UnsupportedEncodingException e) {
+                    FirebaseCrashlytics.getInstance().recordException(e);
+                    throw new RuntimeException(e);
+                }
             }
 
         });
@@ -226,6 +218,8 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     }
 
     private void cityMaxPay(String $city) {
+
+
         CityService cityService = CityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
@@ -262,6 +256,8 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         });
     }
     private void merchantFondy(String city, Context context) {
+
+
         CityService cityService = CityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
@@ -490,7 +486,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         }
         if (rout != null && rout.equals("visicom")) {
             try {
-                if (isAdded()) {
+
                     String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
                     String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
                     long discountInt = Integer.parseInt(discountText);
@@ -530,10 +526,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                             Logger.d(getActivity(), TAG, " onFailure visicom" + t);
                         }
                     });
-
-
-                }
-
 
             } catch (MalformedURLException e) {
                 FirebaseCrashlytics.getInstance().recordException(e);
@@ -612,28 +604,32 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         messageTextView.setText(messagePaymentType);
 
         Button okButton = dialogView.findViewById(R.id.dialog_ok_button);
-        okButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                listView.setItemChecked(0, true);
-                try {
-                    paymentType(arrayCode [0], context);
-                } catch (MalformedURLException | UnsupportedEncodingException e) {
-                    FirebaseCrashlytics.getInstance().recordException(e);
-                    throw new RuntimeException(e);
-                }
-                progressBar.setVisibility(View.GONE);
-                alertDialog.dismiss();
+        okButton.setOnClickListener(v -> {
+            listView.setItemChecked(0, true);
+            try {
+                paymentType(arrayCode [0], context);
+                setBtnBonusName(context);
+            } catch (MalformedURLException | UnsupportedEncodingException e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
+                throw new RuntimeException(e);
             }
+            progressBar.setVisibility(View.GONE);
+            dismiss();
+            alertDialog.dismiss();
         });
 
         Button cancelButton = dialogView.findViewById(R.id.dialog_cancel_button);
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                progressBar.setVisibility(View.GONE);
-                alertDialog.dismiss();
+        cancelButton.setOnClickListener(v -> {
+            try {
+                paymentType(arrayCode [0], context);
+                setBtnBonusName(context);
+            } catch (MalformedURLException | UnsupportedEncodingException e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
+                throw new RuntimeException(e);
             }
+            progressBar.setVisibility(View.GONE);
+            alertDialog.dismiss();
+            dismiss();
         });
 
         alertDialog.show();
@@ -825,6 +821,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         String selection = "id = ?";
         String[] selectionArgs = { "1" }; // предполагается, что вы хотите получить данные для записи с id=1
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor cursor = database.query(
                 MainActivity.ROUT_MARKER, // имя таблицы
                 projection,   // столбцы, которые вы хотите получить
@@ -835,7 +832,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 null          // порядок сортировки
         );
 
-        if (cursor != null && cursor.moveToFirst()) {
+        if (cursor.moveToFirst()) {
             originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
             originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
             toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
@@ -921,6 +918,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         String url = "/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
         Log.d(TAG, "getTaxiUrlSearchMarkers: " + url);
+        database.close();
         return url;
     }
 
@@ -960,7 +958,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     @SuppressLint("Range")
     private List<String> logCursor(String table) {
         List<String> list = new ArrayList<>();
-
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(table, null, null, null, null, null, null);
         if (c != null) {
             if (c.moveToFirst()) {
@@ -977,8 +975,8 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             }
         }
 
-        assert c != null;
         c.close();
+        database.close();
         return list;
     }
    }

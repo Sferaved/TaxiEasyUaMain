@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <drawable name="marker_res_red" />
-
-
+    <drawable name="rounded_corner"><!-- Определение drawable с именем rounded_corner -->
+        <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+            <corners android:radius="10dp" /> <!-- Радиус скругления углов -->
+            <solid android:color="#FFFFFF" /> <!-- Цвет фона (белый) -->
+        </shape>
+    </drawable>
 </resources>

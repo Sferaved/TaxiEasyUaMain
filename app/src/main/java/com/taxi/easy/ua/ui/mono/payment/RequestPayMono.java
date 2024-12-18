@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.ui.mono.payment;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import com.google.gson.annotations.SerializedName;
 public class RequestPayMono {
     @SerializedName("amount")
@@ -7,7 +9,7 @@ public class RequestPayMono {
 
     @SerializedName("ccy")
     private int ccy;
-
+    String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
     public RequestPayMono(
             int amount,
             String reference,
@@ -19,8 +21,9 @@ public class RequestPayMono {
                 reference,
                 comment
         );
-        this.redirectUrl = "https://m.easy-order-taxi.site/mono/redirectUrl";
-        this.webHookUrl = "https://m.easy-order-taxi.site/mono/webHookUrl";
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        this.redirectUrl = baseUrl + "/mono/redirectUrl";
+        this.webHookUrl = baseUrl + "/mono/webHookUrl";
         this.validity = 3600;
         this.paymentType = "hold";
         this.qrId = "";

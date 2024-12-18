@@ -1,6 +1,8 @@
 package com.taxi.easy.ua.ui.open_map;
 
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
@@ -84,7 +86,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     private static final String TAG = "OpenStreetMapVisicomActivity";
     public static IMapController mapController;
-    private static final String BASE_URL = "https://m.easy-order-taxi.site/";
+//    private static final String BASE_URL = "https://m.easy-order-taxi.site/";
+    private static final String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
     private static ApiService apiService;
 
     public String[] arrayStreet;
@@ -757,7 +760,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                     Locale locale = Locale.getDefault();
                     String language = locale.getLanguage(); // Получаем язык устройства
 
-                    String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
+                    String urlFrom = BASE_URL + "/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
 
                     try {
                         FromJSONParser parser = new FromJSONParser(urlFrom);
@@ -984,7 +987,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         String city = listCity.get(1);
         String api = listCity.get(2);
 
-        String url = "https://m.easy-order-taxi.site/" + api + "/android/" + urlAPI + "/"
+        String url = BASE_URL + "/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
         database.close();
         Logger.d(map.getContext(), TAG, "getTaxiUrlSearchMarkers: " + url);

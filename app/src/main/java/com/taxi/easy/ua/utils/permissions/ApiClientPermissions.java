@@ -1,10 +1,12 @@
 package com.taxi.easy.ua.utils.permissions;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClientPermissions {
-    private static final String BASE_URL = "https://m.easy-order-taxi.site/apiTest/";
+    private static final String BASE_URL = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/apiTest/";
 
     private static Retrofit retrofit;
 

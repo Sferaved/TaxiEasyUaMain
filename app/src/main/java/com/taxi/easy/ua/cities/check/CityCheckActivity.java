@@ -1,6 +1,6 @@
 package com.taxi.easy.ua.cities.check;
 
-import static com.taxi.easy.ua.MainActivity.sharedPreferencesHelperMain;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
@@ -20,6 +20,8 @@ import androidx.appcompat.widget.AppCompatButton;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.cities.api.CityApiClient;
+import com.taxi.easy.ua.cities.api.CityApiTestClient;
+import com.taxi.easy.ua.cities.api.CityLastAddressResponse;
 import com.taxi.easy.ua.cities.api.CityResponse;
 import com.taxi.easy.ua.cities.api.CityResponseMerchantFondy;
 import com.taxi.easy.ua.cities.api.CityService;
@@ -97,7 +99,7 @@ public class CityCheckActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.city_activity_layout);
         sharedPreferencesHelper = new SharedPreferencesHelper(this);
-
+        sharedPreferencesHelperMain.saveValue("visible_shed", "ok");
 
         String message = getString(R.string.check_city);
         MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
@@ -161,7 +163,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_kyiv);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_2.setOnClickListener(view2 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -170,7 +173,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_dnipro);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_3.setOnClickListener(view3 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -179,7 +183,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_odessa);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_4.setOnClickListener(view4 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -188,7 +193,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_zaporizhzhia);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_5.setOnClickListener(view5 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -197,7 +203,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_cherkassy);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_6.setOnClickListener(view6 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -206,7 +213,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_lviv);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
        btn_city_7.setOnClickListener(view7 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -215,7 +223,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_ivano_frankivsk);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_8.setOnClickListener(view8 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -224,7 +233,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_vinnytsia);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
 
         btn_city_9.setOnClickListener(view9 -> {
@@ -234,7 +244,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_poltava);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_10.setOnClickListener(view10 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -243,7 +254,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_sumy);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_11.setOnClickListener(view11 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -252,7 +264,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_kharkiv);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_12.setOnClickListener(view12 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -261,7 +274,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_chernihiv);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
 
         btn_city_13.setOnClickListener(view13 -> {
@@ -271,7 +285,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_rivne);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_14.setOnClickListener(view14 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -280,7 +295,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_ternopil);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_15.setOnClickListener(view15 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -289,7 +305,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_khmelnytskyi);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_16.setOnClickListener(view16 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -298,7 +315,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_zakarpattya);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_17.setOnClickListener(view17 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -307,7 +325,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_zhytomyr);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_18.setOnClickListener(view18 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -316,7 +335,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_kropyvnytskyi);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_19.setOnClickListener(view19 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -325,7 +345,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_mykolaiv);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_20.setOnClickListener(view20 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -334,7 +355,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.city_chernivtsi);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_21.setOnClickListener(view21 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -343,7 +365,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = "Lutsk";
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_city_22.setOnClickListener(view21 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -352,7 +375,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = "Test";
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
+            lastAddressUser(city);
         });
         btn_city_23.setOnClickListener(view22 -> {
             new Thread(this::getCountryByIP).start();
@@ -361,7 +385,8 @@ public class CityCheckActivity extends AppCompatActivity {
             cityMenu = getString(R.string.foreign_countries);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            updateMyPosition();
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+            lastAddressUser(city);
         });
         btn_exit.setOnClickListener(view16 -> {
             closeApplication();
@@ -587,6 +612,8 @@ public class CityCheckActivity extends AppCompatActivity {
 
 
     private void cityMaxPay(String city) {
+
+
         CityService cityService = CityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
@@ -631,6 +658,8 @@ public class CityCheckActivity extends AppCompatActivity {
     }
 
     private void merchantFondy(String city, Context context) {
+
+
         CityService cityService = CityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
@@ -893,5 +922,244 @@ public class CityCheckActivity extends AppCompatActivity {
         finishAffinity();
         System.exit(0);
     }
+
+    private void lastAddressUser(String cityString) {
+
+        String email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
+        CityService cityService;
+
+        Logger.d(this, TAG, "lastAddressUser: cityString" + cityString);
+        switch (cityString){
+            case "OdessaTest":
+                cityService = CityApiTestClient.getClient().create(CityService.class);
+                break;
+            default:
+                cityService = CityApiClient.getClient().create(CityService.class);
+        }
+
+        Call<CityLastAddressResponse> call = cityService.lastAddressUser(email, cityString, this.getString(R.string.application));
+
+        call.enqueue(new Callback<CityLastAddressResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<CityLastAddressResponse> call, @NonNull Response<CityLastAddressResponse> response) {
+                if (response.isSuccessful()) {
+                    CityLastAddressResponse cityResponse = response.body();
+                    Logger.d(getApplicationContext(), TAG, "onResponse: cityResponse" + cityResponse);
+                    if (cityResponse != null) {
+                        String routefrom = cityResponse.getRoutefrom();
+                        String startLat = cityResponse.getStartLat();
+                        String startLan = cityResponse.getStartLan();
+
+
+                        Logger.d(getApplicationContext(), TAG, "lastAddressUser: routefrom" + routefrom);
+                        Logger.d(getApplicationContext(), TAG, "lastAddressUser: startLat" + startLat);
+                        Logger.d(getApplicationContext(), TAG, "lastAddressUser: startLan" + startLan);
+                        if(routefrom.equals("*") || startLat.equals("0.0") || startLan.equals("0.0")) {
+                            updateMyPosition();
+
+                        } else {
+                            updateMyLatsPosition(routefrom, startLat, startLan, cityString);
+                        }
+
+                    }
+                } else {
+                    Logger.d(getApplicationContext(), TAG, "Failed. Error code: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<CityLastAddressResponse> call, Throwable t) {
+                Logger.d(getApplicationContext(), TAG, "Failed. Error message: " + t.getMessage());
+                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+            }
+        });
+    }
+
+
+    private void updateMyLatsPosition(String routefrom, String startLatString, String startLanString, String city) {
+
+        double startLat = Double.parseDouble(startLatString);;
+        double startLan = Double.parseDouble(startLanString);
+        String position = routefrom;
+        Logger.d(getApplicationContext(), TAG, "updateMyPosition:city "+ city);
+//        ActionBarUtil.setupCustomActionBar(this, R.layout.custom_action_bar_title, R.id.action_bar_title, newTitle);
+
+        switch (city){
+            case "Dnipropetrovsk Oblast":
+            case "Odessa":
+            case "Zaporizhzhia":
+            case "Cherkasy Oblast":
+            case "Kyiv City":
+            case "Lviv":
+            case "Ivano_frankivsk":
+            case "Vinnytsia":
+            case "Poltava":
+            case "Sumy":
+            case "Kharkiv":
+            case "Chernihiv":
+            case "Rivne":
+            case "Ternopil":
+            case "Khmelnytskyi":
+            case "Zakarpattya":
+            case "Zhytomyr":
+            case "Kropyvnytskyi":
+            case "Mykolaiv":
+            case "Сhernivtsi":
+            case "Lutsk":
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                break;
+            case "OdessaTest":
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
+                break;
+            default:
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                city = "foreign countries";
+        }
+
+        switch (city) {
+            case "Kyiv City":
+
+                phoneNumber = Kyiv_City_phone; // Здесь также добавляем номер телефона
+                break;
+            case "Dnipropetrovsk Oblast":
+                // Днепр
+
+                phoneNumber = Dnipropetrovsk_Oblast_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Odessa":
+
+                phoneNumber = Odessa_phone;
+                break;
+            case "Zaporizhzhia":
+
+                phoneNumber = Zaporizhzhia_phone;
+                break;
+            case "Cherkasy Oblast":
+
+                phoneNumber = Cherkasy_Oblast_phone;
+                break;
+            case "Lviv":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Ivano_frankivsk":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Vinnytsia":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Poltava":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Sumy":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Kharkiv":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Chernihiv":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Rivne":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Ternopil":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Khmelnytskyi":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+
+            case "Zakarpattya":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Zhytomyr":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Kropyvnytskyi":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Mykolaiv":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Сhernivtsi":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+            case "Lutsk":
+
+                phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
+                break;
+
+            case "OdessaTest":
+
+                phoneNumber = Kyiv_City_phone;
+                break;
+
+            default:
+
+                phoneNumber = Kyiv_City_phone; // Номер телефона по умолчанию
+                break;
+        }
+
+
+        SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+
+        ContentValues cv = new ContentValues();
+
+        cv.put("city", city);
+        cv.put("phone", phoneNumber);
+        database.update(MainActivity.CITY_INFO, cv, "id = ?", new String[]{"1"});
+
+        cv = new ContentValues();
+        cv.put("startLat", startLat);
+        cv.put("startLan", startLan);
+        cv.put("position", position);
+        database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
+                new String[] { "1" });
+
+        cv = new ContentValues();
+        cv.put("tarif", " ");
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                new String[] { "1" });
+
+        cv = new ContentValues();
+        cv.put("payment_type", "nal_payment");
+
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                new String[] { "1" });
+        database.close();
+
+
+
+        List<String> settings = new ArrayList<>();
+
+
+        settings.add(Double.toString(startLat));
+        settings.add(Double.toString(startLan));
+        settings.add(Double.toString(startLat));
+        settings.add(Double.toString(startLan));
+        settings.add(position);
+        settings.add(position);
+
+        updateRoutMarker(settings);
+
+        String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+    }
+
 }
 

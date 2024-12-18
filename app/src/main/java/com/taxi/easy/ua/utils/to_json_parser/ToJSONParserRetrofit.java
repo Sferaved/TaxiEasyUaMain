@@ -1,7 +1,8 @@
 package com.taxi.easy.ua.utils.to_json_parser;
 
 import static com.taxi.easy.ua.MainActivity.activeCalls;
-import static com.taxi.easy.ua.ui.finish.FinishActivity.baseUrl;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 
 import android.util.Log;
 
@@ -13,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -23,15 +25,20 @@ public class ToJSONParserRetrofit {
 
 
     private final APIService apiService;
-
+    String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
     public ToJSONParserRetrofit() {
         Gson gson = new GsonBuilder()
                 .setLenient()
                 .create();
+        // Создайте interceptor для логирования
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY); // Логирование тела запроса/ответа
+
 
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .readTimeout(60, TimeUnit.SECONDS)
                 .connectTimeout(60, TimeUnit.SECONDS)
+                .addInterceptor(loggingInterceptor)
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()

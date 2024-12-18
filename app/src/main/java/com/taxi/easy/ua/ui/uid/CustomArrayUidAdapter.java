@@ -11,9 +11,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.TextView;
 
+import androidx.appcompat.widget.AppCompatButton;
 import androidx.navigation.NavOptions;
 
 import com.taxi.easy.ua.MainActivity;
@@ -104,8 +104,32 @@ public class CustomArrayUidAdapter extends ArrayAdapter<String> {
             textView5.setText(parts[4]); // Вторая часть
         }
 
+        textView1.setOnClickListener(v -> {
+            routeInfo = databaseHelperUid.getRouteInfoById(position+1);
+            if (routeInfo != null) {
+                Log.d(TAG, "onContextItemSelected: " + routeInfo);
+            } else {
+                Log.d(TAG, "onContextItemSelected: RouteInfo not found for id: " + (position + 1));
+            }
+            List<String> settings = new ArrayList<>();
+            settings.add(routeInfo.getStartLat());
+            settings.add(routeInfo.getStartLan());
+            settings.add(routeInfo.getToLat());
+            settings.add(routeInfo.getToLng());
+            settings.add(routeInfo.getStart());
+            settings.add(routeInfo.getFinish());
+
+            updateRoutMarker(settings);
+
+            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_visicom, true)
+                    .build());
+            SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
+            sharedPreferencesHelper.saveValue("gps_upd", false);
+
+        });
         // Получаем кнопку и устанавливаем обработчик нажатия
-        Button button = view.findViewById(R.id.button);
+        AppCompatButton button = view.findViewById(R.id.button);
         button.setOnClickListener(v -> {
 
             routeInfo = databaseHelperUid.getRouteInfoById(position+1);

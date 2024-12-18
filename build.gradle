@@ -1,23 +1,26 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     repositories {
         // Make sure that you have the following two repositories
         google()  // Google's Maven repository
-
         mavenCentral()  // Maven Central repository
         mavenLocal()
+        mavenCentral()
     }
     dependencies {
         classpath 'com.google.gms:google-services:4.4.2'
-        classpath 'com.android.tools.build:gradle:8.6.1'
-        classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.1'
+        classpath 'com.android.tools.build:gradle:8.7.3'
+        classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.2'
     }
+
 }
 plugins {
-    id 'com.android.application' version '8.6.1' apply false
-    id 'com.android.library' version '8.6.1' apply false
+    id 'com.android.application' version '8.7.3' apply false
+    id 'com.android.library' version '8.7.3' apply false
     id 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin' version '2.0.1' apply false
 }
+
 allprojects {
 
     repositories {

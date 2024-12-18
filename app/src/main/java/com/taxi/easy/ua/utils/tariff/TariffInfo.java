@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.utils.tariff;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.content.Context;
 
 import androidx.annotation.NonNull;
@@ -24,7 +26,7 @@ public class TariffInfo {
         this.context = context;
     }
 
-    private static final String BASE_URL = "https://m.easy-order-taxi.site/" + MainActivity.api + "/android/";
+//    private static final String BASE_URL = "https://m.easy-order-taxi.site/" + MainActivity.api + "/android/";
 
     public void fetchOrderCostDetails(double startLat, double startLng, double endLat, double endLng,
                                       String user, String time, String date, String services, String city, String application) {
@@ -38,9 +40,9 @@ public class TariffInfo {
         // Создание клиента OkHttpClient с подключенным логгером
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
         httpClient.addInterceptor(loggingInterceptor);
-
+        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") +"/" + MainActivity.api + "/android/";
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(BASE_URL)
+                .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(httpClient.build()) // Подключение клиента OkHttpClient с логгером
                 .build();

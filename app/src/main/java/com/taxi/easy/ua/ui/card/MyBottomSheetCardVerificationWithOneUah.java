@@ -2,7 +2,10 @@ package com.taxi.easy.ua.ui.card;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -11,12 +14,15 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.webkit.URLUtil;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
@@ -31,13 +37,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.finish.ApiService;
-import com.taxi.easy.ua.ui.finish.fragm.FinishFragment;
-import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureClient;
-import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureResponse;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
-import com.taxi.easy.ua.ui.payment_system.PayApi;
-import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceResponse;
@@ -48,7 +48,6 @@ import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
@@ -70,6 +69,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
     private String order_id;
     private String amount;
     String email;
+    String baseUrl;
 
     private FragmentManager fragmentManager;
     private Context context;
@@ -82,7 +82,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         View view = inflater.inflate(R.layout.activity_fondy_payment, container, false);
         context = requireActivity();
         webView = view.findViewById(R.id.webView);
-
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         amount = "1";
         messageFondy =  context.getString(R.string.fondy_message);
@@ -91,7 +91,47 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         fragmentManager = getParentFragmentManager();
 
          // Настройка WebView
-        webView.getSettings().setJavaScriptEnabled(true);
+
+
+        WebSettings webSettings = webView.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDomStorageEnabled(true); // Включает DOM-хранилище
+        webSettings.setJavaScriptCanOpenWindowsAutomatically(true); // Разрешает открытие новых окон
+        webSettings.setSupportMultipleWindows(true);
+
+//        webView.getSettings().setJavaScriptEnabled(true);
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                Logger.d(view.getContext(), "WebChromeClient", "onCreateWindow triggered");
+                try {
+                    WebView newWebView = new WebView(view.getContext());
+                    WebSettings webSettings = newWebView.getSettings();
+                    webSettings.setJavaScriptEnabled(true);
+                    webSettings.setDomStorageEnabled(true);
+                    webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+                    webSettings.setSupportMultipleWindows(true);
+
+                    newWebView.setWebViewClient(new WebViewClient());
+                    newWebView.setWebChromeClient(this);
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
+                    builder.setView(newWebView);
+                    builder.setPositiveButton(R.string.close, (dialog, which) -> newWebView.destroy());
+                    builder.show();
+
+                    WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                    transport.setWebView(newWebView);
+                    resultMsg.sendToTarget();
+                    return true;
+                } catch (Exception e) {
+                    Logger.e(view.getContext(), "WebChromeClient", "Ошибка в onCreateWindow: " + e.getMessage());
+                    return false;
+                }
+            }
+
+        });
+
         view.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
@@ -137,12 +177,12 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
     private void getUrlToPaymentWfp() {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(interceptor)
                 .build();
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site/")
+                .baseUrl(baseUrl + "/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
@@ -241,7 +281,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
 
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site/")
+                .baseUrl(baseUrl  + "/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
@@ -302,7 +342,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
                 .addInterceptor(interceptor)
                 .build();
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site") // Замените на фактический URL вашего сервера
+                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
@@ -383,20 +423,20 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
     private void getReversWfp(String city) {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(interceptor)
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site/")
+                .baseUrl(baseUrl + "/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
 
         ReversService service = retrofit.create(ReversService.class);
 
-        Call<ReversResponse> call = service.checkStatus(
+        Call<ReversResponse> call = service.refundVerifyCards(
                 context.getString(R.string.application),
                 city,
                 order_id,

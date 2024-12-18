@@ -2,6 +2,8 @@ package com.taxi.easy.ua.ui.to_cancel;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -114,17 +116,14 @@ public class CancelFragment extends Fragment {
         });
         scrollButtonUp = binding.scrollButtonUp;
         scrollButtonDown = binding.scrollButtonDown;
-        scrollButtonDown.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Определяем следующую позицию для прокрутки
-                int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
+        scrollButtonDown.setOnClickListener(v -> {
+            // Определяем следующую позицию для прокрутки
+            int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
 
-                // Проверяем, чтобы не прокручивать за пределы списка
-                if (nextVisiblePosition < array.length) {
-                    // Плавно прокручиваем к следующей позиции
-                    listView.smoothScrollToPosition(nextVisiblePosition);
-                }
+            // Проверяем, чтобы не прокручивать за пределы списка
+            if (nextVisiblePosition < array.length) {
+                // Плавно прокручиваем к следующей позиции
+                listView.smoothScrollToPosition(nextVisiblePosition);
             }
         });
 
@@ -153,7 +152,8 @@ public class CancelFragment extends Fragment {
                 .setPopUpTo(R.id.nav_visicom, true)
                 .build()));
 
-        String baseUrl = "https://m.easy-order-taxi.site";
+        String  baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO,context);
         String city = stringList.get(1);
@@ -233,6 +233,7 @@ public class CancelFragment extends Fragment {
             String closeReason = route.getCloseReason();
             String auto = route.getAuto();
             String dispatchingOrderUidDouble = route.getDispatchingOrderUidDouble();
+            Logger.d(getContext(), TAG, "uid_Double processCancelList: " + dispatchingOrderUidDouble);
             String pay_method = route.getPay_method();
             String required_time = route.getRequired_time();
             String flexible_tariff_name = route.getFlexible_tariff_name();
@@ -297,7 +298,7 @@ public class CancelFragment extends Fragment {
             }
 
             if(required_time != null && !required_time.contains("01.01.1970")) {
-                required_time = ". " + context.getString(R.string.time_order) + required_time;
+                required_time = " " + context.getString(R.string.time_order) + required_time;
             } else {
                 required_time = "";
             }
@@ -358,7 +359,7 @@ public class CancelFragment extends Fragment {
                     itemList  // Список строк
             );
             listView.setAdapter(adapter);
-            listView.setAdapter(adapter);
+
 
             listView.setVisibility(View.VISIBLE);
             scrollButtonDown.setVisibility(View.VISIBLE);

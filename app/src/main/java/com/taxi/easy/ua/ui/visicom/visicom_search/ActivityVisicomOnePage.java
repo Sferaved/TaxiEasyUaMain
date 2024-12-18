@@ -1,7 +1,7 @@
 package com.taxi.easy.ua.ui.visicom.visicom_search;
 
 
-import static com.taxi.easy.ua.MainActivity.sharedPreferencesHelperMain;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -424,8 +424,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
         scrollButtonUp = findViewById(R.id.scrollButtonUp);
         scrollButtonDown = findViewById(R.id.scrollButtonDown);
 
-        scrollButtonUp.setVisibility(View.GONE);
-        scrollButtonDown.setVisibility(View.GONE);
+        scrollSetVisibility();
         btn_clear_from = findViewById(R.id.btn_clear_from);
         btn_clear_from.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -625,14 +624,29 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
     private void scrollSetVisibility() {
         if (addressesList != null) {
-            Log.d(TAG, "scrollSetVisibility:addressListView.getChildCount() " + addressListView.getChildCount());
-            if (addressesList.size() > 4) {
-                scrollButtonUp.setVisibility(View.VISIBLE);
-                scrollButtonDown.setVisibility(View.VISIBLE);
-            } else {
-                scrollButtonUp.setVisibility(View.GONE);
-                scrollButtonDown.setVisibility(View.GONE);
-            }
+            addressListView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+                int totalHeight = 0;
+                int desiredWidth = View.MeasureSpec.makeMeasureSpec(addressListView.getWidth(), View.MeasureSpec.AT_MOST);
+
+                for (int i = 0; i < addressAdapter.getCount(); i++) {
+                    View listItem = addressAdapter.getView(i, null, addressListView);
+
+                    // Замер высоты элемента
+                    listItem.measure(desiredWidth, View.MeasureSpec.UNSPECIFIED);
+                    totalHeight += listItem.getMeasuredHeight();
+                }
+                Log.d("TotalHeight", "Total height of all items: " + totalHeight);
+                if (totalHeight > 300) {
+                    scrollButtonUp.setVisibility(View.VISIBLE);
+                    scrollButtonDown.setVisibility(View.VISIBLE);
+                } else {
+                    scrollButtonUp.setVisibility(View.GONE);
+                    scrollButtonDown.setVisibility(View.GONE);
+                }
+            });
+
+
+
         }
     }
 
@@ -646,80 +660,77 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
         Logger.d(getApplicationContext(), TAG, "firstLocation: ");
         btn_change.setText(R.string.cancel_gps);
 
-        btn_change.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                progressBar.setVisibility(View.INVISIBLE);
+        btn_change.setOnClickListener(v -> {
+            progressBar.setVisibility(View.INVISIBLE);
 //                btn_clear_from.performClick();
-                if (fusedLocationProviderClient != null && locationCallback != null) {
-                    fusedLocationProviderClient.removeLocationUpdates(locationCallback);
-                    Logger.d(getApplicationContext(), TAG, "Location updates cancelled");
-                    // Дополнительные действия, которые вы хотите выполнить при отмене геопоиска
-                    // Например, изменение текста на кнопке или другие обновления интерфейса
-                    btn_change.setText(R.string.change); // Предположим, что текст на кнопке изменяется на "Start GPS"
-                }
+            if (fusedLocationProviderClient != null && locationCallback != null) {
+                fusedLocationProviderClient.removeLocationUpdates(locationCallback);
+                Logger.d(getApplicationContext(), TAG, "Location updates cancelled");
+                // Дополнительные действия, которые вы хотите выполнить при отмене геопоиска
+                // Например, изменение текста на кнопке или другие обновления интерфейса
+                btn_change.setText(R.string.change); // Предположим, что текст на кнопке изменяется на "Start GPS"
+            }
 
-                btn_change.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-
-
-                        if (locationManager != null) {
-                            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                                Logger.d(getApplicationContext(), TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
-                                if(loadPermissionRequestCount() >= 3  && !location_update) {
-                                    MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment(getString(R.string.location_on));
-                                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-                                } else {
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                        if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                                            // Обработка отсутствия необходимых разрешений
-                                            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                                        }
-                                    } else {
-                                        // Для версий Android ниже 10
-                                        if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                                                || ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                                            // Обработка отсутствия необходимых разрешений
-                                            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                                            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                                        }
-                                    }
-                                }
-
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                    if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                                        // Обработка отсутствия необходимых разрешений
-                                        location_update = true;
-                                    }
-                                } else location_update = ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                                        || ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+            btn_change.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
 
 
-                                // GPS включен, выполните ваш код здесь
-                                if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-                                    Toast.makeText(getApplicationContext(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
-                                } else {
-
-                                    if (location_update) {
-                                        String searchText = getString(R.string.search_text) + "...";
-                                        Toast.makeText(ActivityVisicomOnePage.this, searchText, Toast.LENGTH_SHORT).show();
-                                        progressBar.setVisibility(View.VISIBLE);
-                                        firstLocation();
-
-                                    }
-                                }
-
-                            } else {
-                                // GPS выключен, выполните необходимые действия
-                                // Например, показать диалоговое окно с предупреждением о включении GPS
-                                MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
+                    if (locationManager != null) {
+                        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                            Logger.d(getApplicationContext(), TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
+                            if(loadPermissionRequestCount() >= 3  && !location_update) {
+                                MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment(getString(R.string.location_on));
                                 bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                            } else {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                    if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                        // Обработка отсутствия необходимых разрешений
+                                        checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                                    }
+                                } else {
+                                    // Для версий Android ниже 10
+                                    if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                                            || ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                        // Обработка отсутствия необходимых разрешений
+                                        checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                                        checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                                    }
+                                }
                             }
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                                    // Обработка отсутствия необходимых разрешений
+                                    location_update = true;
+                                }
+                            } else location_update = ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                                    || ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+
+
+                            // GPS включен, выполните ваш код здесь
+                            if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+                                Toast.makeText(getApplicationContext(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
+                            } else {
+
+                                if (location_update) {
+                                    String searchText = getString(R.string.search_text) + "...";
+                                    Toast.makeText(ActivityVisicomOnePage.this, searchText, Toast.LENGTH_SHORT).show();
+                                    progressBar.setVisibility(View.VISIBLE);
+                                    firstLocation();
+
+                                }
+                            }
+
+                        } else {
+                            // GPS выключен, выполните необходимые действия
+                            // Например, показать диалоговое окно с предупреждением о включении GPS
+                            MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
+                            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                         }
                     }
-                });
-            }
+                }
+            });
         });
 
         locationCallback = new LocationCallback() {
@@ -743,8 +754,8 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                     Locale locale = Locale.getDefault();
                     String language = locale.getLanguage(); // Получаем язык устройства
-
-                    String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/"  + latitude + "/" + longitude + "/" + language;
+                    String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+                    String urlFrom = baseUrl + "/" + api + "/android/fromSearchGeoLocal/"  + latitude + "/" + longitude + "/" + language;
 
                     try {
                         FromJSONParser parser = new FromJSONParser(urlFrom);
@@ -1660,9 +1671,6 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             }
 
 
-
-
-
         } catch (JSONException e) {
             FirebaseCrashlytics.getInstance().recordException(e);
         }
@@ -2228,7 +2236,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
         final long[] connectionTime = {0};  // Переменная для хранения времени подключения
 
         long startTime = System.currentTimeMillis();
-
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         // Убедимся, что baseUrl заканчивается символом /
         if (!baseUrl.endsWith("/")) {
             baseUrl = baseUrl + "/";

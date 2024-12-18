@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.ui.about;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.net.Uri;
@@ -40,7 +42,8 @@ public class AboutFragment extends Fragment {
         // Текст, который вы хотите отображать
         String displayText = requireActivity().getString(R.string.gdpr0);
 
-        final String url = "https://m.easy-order-taxi.site/taxi-gdbr";
+        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        String url = baseUrl +"/taxi-gdbr";
 
         SpannableString spannableString = new SpannableString(displayText);
         ClickableSpan clickableSpan = new ClickableSpan() {

@@ -12,4 +12,12 @@ public interface ReversService {
             @Path("orderReference") String orderReference,
             @Path("amount") String amount
     );
+
+    @GET("/wfp/refundVerifyCards/{application}/{city}/{orderReference}/{amount}")
+    Call<ReversResponse> refundVerifyCards(
+            @Path("application") String application,
+            @Path("city") String city,
+            @Path("orderReference") String orderReference,
+            @Path("amount") String amount
+    );
 }

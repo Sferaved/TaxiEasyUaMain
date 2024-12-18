@@ -4,7 +4,7 @@ package com.taxi.easy.ua.ui.visicom;
 import static android.content.Context.MODE_PRIVATE;
 
 import static com.taxi.easy.ua.MainActivity.activeCalls;
-import static com.taxi.easy.ua.MainActivity.sharedPreferencesHelperMain;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 import static com.taxi.easy.ua.utils.notify.NotificationHelper.checkForUpdate;
 
 import android.Manifest;
@@ -18,6 +18,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteStatement;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.location.Location;
@@ -69,6 +70,10 @@ import com.google.android.play.core.install.model.UpdateAvailability;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.cities.api.CityApiClient;
+import com.taxi.easy.ua.cities.api.CityApiTestClient;
+import com.taxi.easy.ua.cities.api.CityLastAddressResponse;
+import com.taxi.easy.ua.cities.api.CityService;
 import com.taxi.easy.ua.cities.check.CityCheckActivity;
 import com.taxi.easy.ua.databinding.FragmentVisicomBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
@@ -196,7 +201,8 @@ public class VisicomFragment extends Fragment {
     public static TextView text_full_message, textCostMessage, textStatusCar;
 
     private Animation blinkAnimation;
-    private final String baseUrl = "https://m.easy-order-taxi.site";
+//    private final String baseUrl = "https://m.easy-order-taxi.site";
+    private static String baseUrl;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -204,8 +210,13 @@ public class VisicomFragment extends Fragment {
         View root = binding.getRoot();
 
 
+
         constraintLayoutVisicomMain = root.findViewById(R.id.visicomMain);
         constraintLayoutVisicomFinish = root.findViewById(R.id.visicomFinish);
+
+
+
+
         constraintLayoutVisicomFinish.setVisibility(View.GONE);
 
         text_full_message = root.findViewById(R.id.text_full_message);
@@ -262,6 +273,8 @@ public class VisicomFragment extends Fragment {
         schedule = binding.schedule;
 
         shed_down = binding.shedDown;
+        Logger.d(requireActivity(), TAG, "MainActivity.firstStart" + MainActivity.firstStart);
+
 
 
         btnAdd = binding.btnAdd;
@@ -415,6 +428,9 @@ public class VisicomFragment extends Fragment {
         text_view_cost.setVisibility(visible);
         btn_plus.setVisibility(visible);
         btnOrder.setVisibility(visible);
+        schedule.setVisibility(visible);
+
+        shed_down.setVisibility(visible);
     }
 
     @Override
@@ -962,8 +978,8 @@ public class VisicomFragment extends Fragment {
 //            carProgressBar.resumeAnimation();
 
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
-
-            Logger.d(context, TAG, "orderFinished: " + "https://m.easy-order-taxi.site" + urlOrder);
+            baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+            Logger.d(context, TAG, "orderFinished: " + baseUrl + urlOrder);
             parser.sendURL(urlOrder, new Callback<Map<String, String>>() {
                 @Override
                 public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
@@ -982,6 +998,15 @@ public class VisicomFragment extends Fragment {
                         if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
                             to_name = getString(R.string.on_city_tv);
                             Logger.d(context, TAG, "orderFinished: to_name 1 " + to_name);
+                            if (!Objects.equals(sendUrlMap.get("lat"), "0")) {
+                                insertRecordsOrders(
+                                        sendUrlMap.get("routefrom"), sendUrlMap.get("routefrom"),
+                                        sendUrlMap.get("routefromnumber"), sendUrlMap.get("routefromnumber"),
+                                        sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                        sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                        context
+                                );
+                            }
                         } else {
                             if (Objects.equals(sendUrlMap.get("routeto"), "Точка на карте")) {
                                 to_name = context.getString(R.string.end_point_marker);
@@ -989,6 +1014,15 @@ public class VisicomFragment extends Fragment {
                                 to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
                             }
                             Logger.d(context, TAG, "orderFinished: to_name 2 " + to_name);
+                            if (!Objects.equals(sendUrlMap.get("lat"), "0")) {
+                                insertRecordsOrders(
+                                        sendUrlMap.get("routefrom"), to_name,
+                                        sendUrlMap.get("routefromnumber"), sendUrlMap.get("to_number"),
+                                        sendUrlMap.get("from_lat"), sendUrlMap.get("from_lng"),
+                                        sendUrlMap.get("lat"), sendUrlMap.get("lng"),
+                                        context
+                                );
+                            }
                         }
                         Logger.d(context, TAG, "orderFinished: to_name 3" + to_name);
                         String to_name_local = to_name;
@@ -1002,7 +1036,7 @@ public class VisicomFragment extends Fragment {
 
                         String required_time = sendUrlMap.get("required_time");
                         if (required_time != null && !required_time.contains("01.01.1970")) {
-                            required_time = context.getString(R.string.time_order) + required_time + ". ";
+                            required_time = " " + context.getString(R.string.time_order) + required_time + ". ";
                         } else {
                             required_time = "";
                         }
@@ -1113,6 +1147,59 @@ public class VisicomFragment extends Fragment {
                 }
             });
         }
+
+    }
+
+    private static void insertRecordsOrders( String from, String to,
+                                             String from_number, String to_number,
+                                             String from_lat, String from_lng,
+                                             String to_lat, String to_lng, Context context) {
+        Logger.d(context, TAG, "insertRecordsOrders: from_lat" + from_lat);
+        Logger.d(context, TAG, "insertRecordsOrders: from_lng" + from_lng);
+        Logger.d(context, TAG, "insertRecordsOrders: to_lat" + to_lat);
+        Logger.d(context, TAG, "insertRecordsOrders: to_lng" + to_lng);
+
+        String selection = "from_street = ?";
+        String[] selectionArgs = new String[] {from};
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursor_from = database.query(MainActivity.TABLE_ORDERS_INFO,
+                null, selection, selectionArgs, null, null, null);
+
+        selection = "to_street = ?";
+        selectionArgs = new String[] {to};
+
+        Cursor cursor_to = database.query(MainActivity.TABLE_ORDERS_INFO,
+                null, selection, selectionArgs, null, null, null);
+
+
+
+        if (cursor_from.getCount() == 0 || cursor_to.getCount() == 0) {
+
+            String sql = "INSERT INTO " + MainActivity.TABLE_ORDERS_INFO + " VALUES(?,?,?,?,?,?,?,?,?);";
+            SQLiteStatement statement = database.compileStatement(sql);
+            database.beginTransaction();
+            try {
+                statement.clearBindings();
+                statement.bindString(2, from);
+                statement.bindString(3, from_number);
+                statement.bindString(4, from_lat);
+                statement.bindString(5, from_lng);
+                statement.bindString(6, to);
+                statement.bindString(7, to_number);
+                statement.bindString(8, to_lat);
+                statement.bindString(9, to_lng);
+
+                statement.execute();
+                database.setTransactionSuccessful();
+
+            } finally {
+                database.endTransaction();
+            }
+
+        }
+
+        cursor_from.close();
+        cursor_to.close();
 
     }
 
@@ -1238,12 +1325,9 @@ public class VisicomFragment extends Fragment {
         });
 
         Button cancelButton = dialogView.findViewById(R.id.dialog_cancel_button);
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                progressBar.setVisibility(View.GONE);
-                alertDialog.dismiss();
-            }
+        cancelButton.setOnClickListener(v -> {
+            progressBar.setVisibility(View.GONE);
+            alertDialog.dismiss();
         });
 
         alertDialog.show();
@@ -1265,15 +1349,22 @@ public class VisicomFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        String visible_shed = (String) sharedPreferencesHelperMain.getValue("visible_shed", "no");
+        if(visible_shed.equals("no")) {
+            schedule.setVisibility(View.INVISIBLE);
+            shed_down.setVisibility(View.INVISIBLE);
+        } else  {
+            schedule.setVisibility(View.VISIBLE);
+            shed_down.setVisibility(View.VISIBLE);
+        }
+
+        constraintLayoutVisicomMain.setVisibility(View.VISIBLE);
+        constraintLayoutVisicomFinish.setVisibility(View.GONE);
 
         databaseHelper = new DatabaseHelper(context);
         databaseHelperUid = new DatabaseHelperUid(context);
-
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         new Thread(this::fetchRoutesCancel).start();
-
-        if (!sharedPreferencesHelperMain.getValue("CityCheckActivity", "**").equals("run")) {
-            startActivity(new Intent(getActivity(), CityCheckActivity.class));
-        }
 
         new VerifyUserTask(context).execute();
 
@@ -1407,30 +1498,23 @@ public class VisicomFragment extends Fragment {
 
         Logger.d(context, TAG, "onCreateView: geo_marker " + geo_marker);
 
-        buttonBonus.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                btnVisible(View.INVISIBLE);
-                String costText = text_view_cost.getText().toString().trim();
-                if (!costText.isEmpty() && costText.matches("\\d+")) {
-                    updateAddCost("0");
-                    MyBottomSheetBonusFragment bottomSheetDialogFragment = new MyBottomSheetBonusFragment(Long.parseLong(costText), geo_marker, api, text_view_cost);
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                }
+        buttonBonus.setOnClickListener(v -> {
+            btnVisible(View.INVISIBLE);
+            String costText = text_view_cost.getText().toString().trim();
+            if (!costText.isEmpty() && costText.matches("\\d+")) {
+                updateAddCost("0");
+                MyBottomSheetBonusFragment bottomSheetDialogFragment = new MyBottomSheetBonusFragment(Long.parseLong(costText), geo_marker, api, text_view_cost);
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
-
         });
 
         textViewTo = binding.textTo;
-        textViewTo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                textViewTo.setText("");
-                Intent intent = new Intent(getContext(), ActivityVisicomOnePage.class);
-                intent.putExtra("start", "no");
-                intent.putExtra("end", "ok");
-                startActivity(intent);
-            }
+        textViewTo.setOnClickListener(v -> {
+            textViewTo.setText("");
+            Intent intent = new Intent(getContext(), ActivityVisicomOnePage.class);
+            intent.putExtra("start", "no");
+            intent.putExtra("end", "ok");
+            startActivity(intent);
         });
 
         List<String> addresses = new ArrayList<>();
@@ -1902,8 +1986,8 @@ public class VisicomFragment extends Fragment {
 
                     Locale locale = Locale.getDefault();
                     String language = locale.getLanguage(); // Получаем язык устройства
-
-                    String urlFrom = "https://m.easy-order-taxi.site/" + api + "/android/fromSearchGeoLocal/" + latitude + "/" + longitude + "/" + language;
+                    baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+                    String urlFrom = baseUrl + "/" + api + "/android/fromSearchGeoLocal/" + latitude + "/" + longitude + "/" + language;
                     String mes_city = context.getString(R.string.on_city_tv);
                     FromJSONParserRetrofit.sendURL(urlFrom, result -> {
                         // Обработка результата в основном потоке
@@ -2314,11 +2398,11 @@ public class VisicomFragment extends Fragment {
 
             routeListCancel = new ArrayList<>();
 
-            String baseUrl = "https://m.easy-order-taxi.site";
+//            String baseUrl = "https://m.easy-order-taxi.site";
 
             List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
             String city = stringList.get(1);
-
+            baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
             String url = baseUrl + "/android/UIDStatusShowEmailCancelApp/" + userEmail + "/" + city + "/" + context.getString(R.string.application);
 
             Call<List<RouteResponseCancel>> call = ApiClient.getApiService().getRoutesCancel(url);
@@ -2457,7 +2541,7 @@ public class VisicomFragment extends Fragment {
                 auto = "??";
             }
             if (required_time != null && !required_time.contains("01.01.1970")) {
-                required_time = getString(R.string.time_order) + required_time;
+                required_time = " " + getString(R.string.time_order) + required_time;
             } else {
                 required_time = "";
             }
@@ -2506,7 +2590,9 @@ public class VisicomFragment extends Fragment {
         if (array != null) {
             String message = getString(R.string.order_to_cancel_true);
             MyBottomSheetErrorFragment myBottomSheetMessageFragment = new MyBottomSheetErrorFragment(message);
-            myBottomSheetMessageFragment.show(fragmentManager, myBottomSheetMessageFragment.getTag());
+            fragmentManager.beginTransaction()
+                    .add(myBottomSheetMessageFragment, myBottomSheetMessageFragment.getTag())
+                    .commitAllowingStateLoss();
         } else {
             databaseHelper.clearTableCancel();
             databaseHelperUid.clearTableCancel();
@@ -2596,7 +2682,17 @@ public class VisicomFragment extends Fragment {
                         }
 
                     })
-                    .setNegativeButton(R.string.cancel_button, (dialog, which) -> dialog.dismiss())
+                    .setNegativeButton(R.string.cancel_button, (dialog, which) -> {
+                        switch (addType) {
+                            case "60":
+                                sharedPreferencesHelperMain.saveValue("doubleOrderPref", false);
+                                break;
+                            case "45":
+                                break;
+                        }
+
+                        dialog.dismiss();
+                    })
                     .show();
 
     }
@@ -2697,6 +2793,5 @@ public class VisicomFragment extends Fragment {
         }
 
     }
-
 
 }

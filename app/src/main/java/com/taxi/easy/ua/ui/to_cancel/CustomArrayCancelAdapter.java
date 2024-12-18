@@ -7,10 +7,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.widget.AppCompatButton;
 import androidx.navigation.NavOptions;
 
 import com.taxi.easy.ua.MainActivity;
@@ -37,7 +37,7 @@ public class CustomArrayCancelAdapter extends ArrayAdapter<String> {
     private RouteInfoCancel routeInfo;
     DatabaseHelperUid databaseHelperUid;
     Context context;
-
+    AppCompatButton button;
     public CustomArrayCancelAdapter(
             Context context,
             int resource,
@@ -60,8 +60,9 @@ public class CustomArrayCancelAdapter extends ArrayAdapter<String> {
         this.databaseHelperUid = new DatabaseHelperUid(getContext());
     }
 
+    @NonNull
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(int position, View convertView, @NonNull ViewGroup parent) {
         View view = convertView;
         if (view == null) {
             LayoutInflater inflater = LayoutInflater.from(getContext());
@@ -102,7 +103,23 @@ public class CustomArrayCancelAdapter extends ArrayAdapter<String> {
         }
 
         // Получаем кнопку и устанавливаем обработчик нажатия
-        Button button = view.findViewById(R.id.button);
+        textView1.setOnClickListener(v -> {
+            Logger.d(getContext(), TAG, "position+1: " + position+1);
+            routeInfo = databaseHelperUid.getCancelInfoById(position+1);
+            if (routeInfo != null) {
+                Logger.d(getContext(), TAG, "onContextItemSelected: " + routeInfo.toString());
+            } else {
+                Logger.d(getContext(), TAG, "onContextItemSelected: RouteInfo not found for id: " + (position + 1));
+            }
+
+            Map<String, String> costMap = getStringStringMap();
+            Logger.d(getContext(), TAG, "costMap " + (position + 1));
+            Logger.d(getContext(), TAG, "onContextItemSelected costMap: " + costMap);
+            startFinishPage(costMap);
+
+        });
+
+        button = view.findViewById(R.id.button);
         button.setOnClickListener(v -> {
             Logger.d(getContext(), TAG, "position+1: " + position+1);
             routeInfo = databaseHelperUid.getCancelInfoById(position+1);
@@ -121,6 +138,7 @@ public class CustomArrayCancelAdapter extends ArrayAdapter<String> {
 
         return view;
     }
+
     private @NonNull Map<String, String> getStringStringMap() {
         Map<String, String> costMap = new HashMap<>();
 
@@ -130,7 +148,7 @@ public class CustomArrayCancelAdapter extends ArrayAdapter<String> {
         costMap.put("routefromnumber", routeInfo.getRouteFromNumber());
         costMap.put("routeto", routeInfo.getRouteTo());
         costMap.put("to_number", routeInfo.getToNumber());
-
+        Logger.d(context, TAG, "uid_Double getStringStringMap" + routeInfo.getDispatchingOrderUidDouble());
         if (routeInfo.getDispatchingOrderUidDouble() != null) {
             costMap.put("dispatching_order_uid_Double", routeInfo.getDispatchingOrderUidDouble());
         } else {
@@ -221,6 +239,7 @@ public class CustomArrayCancelAdapter extends ArrayAdapter<String> {
         bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
         bundle.putString("card_payment_key", "no");
         bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+        bundle.putString("dispatching_order_uid_Double", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid_Double")));
 
 // Установите Bundle как аргументы фрагмента
         MainActivity.navController.navigate(R.id.nav_finish_separate, bundle, new NavOptions.Builder()
