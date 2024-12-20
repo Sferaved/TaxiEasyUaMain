@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 35
-        versionCode 1782
-        versionName '1.782'
+        versionCode 1783
+        versionName '1.783'
         multiDexEnabled true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
@@ -69,9 +69,9 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
 
     implementation 'com.firebaseui:firebase-ui-auth:7.2.0'
-    implementation platform('com.google.firebase:firebase-bom:33.6.0')
+    implementation platform('com.google.firebase:firebase-bom:33.7.0')
     implementation 'com.google.firebase:firebase-analytics'
-    implementation 'com.google.firebase:firebase-crashlytics:19.2.1'
+    implementation 'com.google.firebase:firebase-crashlytics:19.3.0'
 
 
     implementation 'org.osmdroid:osmdroid-android:6.1.16'
@@ -103,7 +103,7 @@ dependencies {
     implementation 'androidx.work:work-runtime:2.10.0'
 
 
-    implementation 'com.google.android.play:asset-delivery:2.2.2'
+    implementation 'com.google.android.play:asset-delivery:2.3.0'
     implementation 'com.google.android.play:feature-delivery:2.1.0'
     implementation 'com.google.android.play:review:2.0.2'
     implementation 'com.google.android.play:app-update:2.1.0'

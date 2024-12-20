@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/new_background_color">
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_minus"
+        android:layout_width="60sp"
+        android:layout_height="60sp"
+        android:gravity="center"
+        android:text="-"
+        android:textSize="30sp"
+
+        app:layout_constraintEnd_toStartOf="@+id/text_view_cost"
+        app:layout_constraintHorizontal_bias="0.81"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/text_view_cost" />
+
+    <TextView
+        android:id="@+id/text_view_cost"
+        android:layout_width="100sp"
+        android:layout_height="60sp"
+
+        android:layout_marginTop="32dp"
+        android:background="@drawable/input"
+        android:ems="10"
+        android:fontFamily="@font/light"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:textSize="25sp"
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="MissingConstraints" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_plus"
+        android:layout_width="60sp"
+        android:layout_height="60sp"
+        android:backgroundTint="@color/colorAccent"
+        android:gravity="center"
+        android:text="+"
+        android:textSize="30sp"
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.162"
+        app:layout_constraintStart_toEndOf="@+id/text_view_cost"
+
+        app:layout_constraintTop_toTopOf="@+id/text_view_cost"
+        tools:ignore="MissingConstraints" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_ok"
+        android:layout_width="197sp"
+        android:layout_height="45sp"
+        android:layout_margin="16dp"
+        android:background="@drawable/buttons"
+        android:backgroundTint="@color/colorAccent"
+        android:fontFamily="@font/regular"
+        android:text="@string/ok_add_cost"
+        android:textAlignment="center"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+
+        app:layout_constraintTop_toBottomOf="@+id/text_view_cost"
+        app:layout_constraintVertical_bias="0.047" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -47,6 +47,28 @@ public interface ApiService {
             @Path("uid") String uid,
             @Path("typeAdd") String typeAdd
     );
+
+    @GET("android/startAddCostWithAddBottomUpdate/{uid}/{cost}")
+    Call<Status> startAddCostWithAddBottomUpdate(
+            @Path("uid") String uid,
+            @Path("cost") String cost
+    );
+
+    @GET("android/startAddCostBottomUpdate/{uid}/{addCost}")
+    Call<Status> startAddCostBottomUpdate(
+            @Path("uid") String uid,
+            @Path("addCost") String addCost
+    );
+    @GET("android/startAddCostCardBottomUpdate/{uid}/{uid_Double}/{pay_method}/{order_id}/{city}/{addCost}")
+    Call<Status> startAddCostCardBottomUpdate(
+            @Path("uid") String uid,
+            @Path("uid_Double") String uid_Double,
+            @Path("pay_method") String pay_method,
+            @Path("order_id") String order_id,
+            @Path("city") String city,
+            @Path("addCost") String addCost
+    );
+
     @GET("android/startAddCostCardUpdate/{uid}/{uid_Double}/{pay_method}/{order_id}/{city}")
     Call<Status> startAddCostCardUpdate(
             @Path("uid") String uid,

@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.782</string>
-    <string name="version">Версія: 1.782</string>
+    <string name="version_code">1.783</string>
+    <string name="version">Версія: 1.783</string>
 
     <string name="app_name">Таксі Доставка</string>
     <string name="alfa_test">(Альфа-тестування)</string>
@@ -481,7 +481,9 @@
     <string name="restart_error">Помилка при перезапуску програми.</string>
     <string name="btn_option_text">Дії</string>
     <string name="language">Мова</string>
-    <string name="item_settings">Настройки</string>
+    <string name="item_settings">Налаштування</string>
     <string name="save_btn">Зберегти</string>
     <string name="close">Закрити</string>
+    <string name="ok_add_cost">Підтвердити</string>
+    <string name="add_cost_btn">Хочу швидше</string>
 </resources>

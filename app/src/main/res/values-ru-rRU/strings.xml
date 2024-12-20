@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.782</string>
-    <string name="version">Версия: 1.782</string>
+    <string name="version_code">1.783</string>
+    <string name="version">Версия: 1.783</string>
 
     <string name="app_name">Такси Доставка</string>
     <string name="alfa_test">(Альфа-тестирование)</string>
@@ -335,7 +335,7 @@
     <string name="order_in">"заказ в "</string>
     <string name="checking">Ждите, идет проверка данных.</string>
     <string name="time_out_text">Отмена поездки по таймауту оплаты.</string>
-    <string name="pay_cancel">Поездка отменена из-за отсутствия удачной оплаты в течение отведенного тайминга. Попробуйте еще.</string>
+    <string name="pay_cancel">Поездка отменена из-за отсутствия успешной  оплаты в течении отведенного тайминга. Попробуйте еще.</string>
     <string name="ex_st_canceled">Заказ отменен. Попробуйте еще.</string>
     <string name="search">Поиск адреса...</string>
     <string name="account_verify">Происходит проверка регистрации...</string>
@@ -473,7 +473,6 @@
     <string name="device">Устройство:</string>
     <string name="time_car_found">Время поиска машины подошло к концу</string>
     <string name="cancel_car_found_time">Нажмите кнопку Ок для отмены текущего заказа и перехода к новому заказу</string>
-
     <string name="update_timeout">Процесс обновления занял слишком много времени. Попробуйте позже.</string>
     <string name="update_error">Ошибка проверки обновлений. Проверьте подключение к интернету.</string>
     <string name="update_successful">Обновление прошло успешно!</string>
@@ -485,4 +484,6 @@
     <string name="item_settings">Настройки</string>
     <string name="save_btn">Сохранить</string>
     <string name="close">Закрыть</string>
+    <string name="ok_add_cost">Подтвердить</string>
+    <string name="add_cost_btn">Хочу быстрее</string>
 </resources>

@@ -140,13 +140,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         btn_ok.setOnClickListener(v -> {
             cancelOrderDouble();
 
-            paymentType();
-            try {
-                orderFinished(page);
-            } catch (MalformedURLException e) {
-                FirebaseCrashlytics.getInstance().recordException(e);
-            }
-            dismiss();
+
         });
         textViewInfo = view.findViewById(R.id.textViewInfo);
         text_card = view.findViewById(R.id.text_card);
@@ -411,7 +405,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
                     
                     MainActivity.navController.navigate(R.id.nav_finish_separate, bundle, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_visicom, true)
+                            .setPopUpTo(R.id.nav_finish_separate, true)
                             .build());
                 }
                 else {
@@ -807,11 +801,14 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             @Override
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
                 if (response.isSuccessful()) {
-                    Status status = response.body();
-                    if (status != null) {
-                        String result =  String.valueOf(status.getResponse());
-                        Logger.d(context, TAG, "onResponse: result" + result);
+
+                    paymentType();
+                    try {
+                        orderFinished(page);
+                    } catch (MalformedURLException e) {
+                        FirebaseCrashlytics.getInstance().recordException(e);
                     }
+                    dismiss();
                 }
             }
 

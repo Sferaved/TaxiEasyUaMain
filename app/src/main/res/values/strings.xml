@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.782</string>
-    <string name="version">Версия: 1.782</string>
+    <string name="version_code">1.783</string>
+    <string name="version">Версия: 1.783</string>
 
     <string name="app_name">Такси Доставка</string>
 
@@ -482,4 +482,6 @@
     <string name="item_settings">Настройки</string>
     <string name="save_btn">Сохранить</string>
     <string name="close">Закрыть</string>
+    <string name="ok_add_cost">Подтвердить</string>
+    <string name="add_cost_btn">Хочу быстрее</string>
 </resources>
