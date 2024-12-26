@@ -23,7 +23,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.FragmentManager;
-import androidx.navigation.NavOptions;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -58,14 +57,15 @@ import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
 
 import okhttp3.OkHttpClient;
@@ -138,6 +138,8 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             btn_ok.setVisibility(View.GONE);
         }
         btn_ok.setOnClickListener(v -> {
+            btn_ok.setVisibility(View.INVISIBLE);
+            view.findViewById(R.id.progress_bar).setVisibility(View.VISIBLE);
             cancelOrderDouble();
 
 
@@ -363,50 +365,32 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 String message = sendUrlMap.get("message");
                 assert orderWeb != null;
                 if (!orderWeb.equals("0")) {
-                    String to_name;
-                    if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
-                        to_name = context.getString(R.string.on_city_tv);
-
-                    } else {
-                        if(sendUrlMap.get("routeto").equals("Точка на карте")) {
-                            to_name = context.getString(R.string.end_point_marker);
-                        } else {
-                            to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
-                        }
-                    }
-
 
                     String pay_method_message = context.getString(R.string.pay_method_message_main);
                     pay_method_message += " " + context.getString(R.string.pay_method_message_nal);
-                    String to_name_local = to_name;
-                    if(to_name.contains("по місту")
-                            ||to_name.contains("по городу")
-                            || to_name.contains("around the city")
-                    ) {
-                        to_name_local = context.getString(R.string.on_city_tv);
-                    }
-                    String messageResult =
-                            sendUrlMap.get("routefrom") + " " + context.getString(R.string.to_message) +
-                            to_name_local + ".";
+
                     String messagePayment = orderWeb + context.getString(R.string.UAH) + " " + pay_method_message;
 
 
-                    String messageFondy = context.getString(R.string.fondy_message) + " " +
-                            sendUrlMap.get("routefrom") + " " + context.getString(R.string.to_message) +
-                            to_name_local + ".";
 
-                    Bundle bundle = new Bundle();
-                    bundle.putString("messageResult_key", messageResult);
-                    bundle.putString("messagePay_key", messagePayment);
-                    bundle.putString("messageFondy_key", messageFondy);
-                    bundle.putString("messageCost_key", orderWeb);
-                    bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
-                    bundle.putString("card_payment_key", "no");
-                    bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
-                    
-                    MainActivity.navController.navigate(R.id.nav_finish_separate, bundle, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_finish_separate, true)
-                            .build());
+                    FinishSeparateFragment.textCost.setVisibility(View.VISIBLE);
+                    FinishSeparateFragment.textCostMessage.setVisibility(View.VISIBLE);
+                    FinishSeparateFragment.carProgressBar.setVisibility(View.VISIBLE);
+                    FinishSeparateFragment.progressBar.setVisibility(View.VISIBLE);
+                    FinishSeparateFragment.progressSteps.setVisibility(View.VISIBLE);
+
+                    FinishSeparateFragment.btn_options.setVisibility(View.VISIBLE);
+                    FinishSeparateFragment.btn_open.setVisibility(View.VISIBLE);
+
+
+                    FinishSeparateFragment.textCostMessage.setText(messagePayment);
+                    FinishSeparateFragment.uid = sendUrlMap.get("dispatching_order_uid");
+                    FinishSeparateFragment.uid_Double = " ";
+
+                    FinishSeparateFragment.handlerStatus.post(FinishSeparateFragment.myTaskStatus);
+                    FinishSeparateFragment.handlerAddcost.postDelayed( FinishSeparateFragment.showDialogAddcost, FinishSeparateFragment.timeCheckOutAddCost);
+                    FinishSeparateFragment.pay_method = "nal_payment";
+                    dismiss();
                 }
                 else {
                     assert message != null;
@@ -801,26 +785,37 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             @Override
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
                 if (response.isSuccessful()) {
-
+                    Logger.d(context, TAG, "cancelOrderDouble response: " + response.toString());
                     paymentType();
                     try {
                         orderFinished(page);
                     } catch (MalformedURLException e) {
                         FirebaseCrashlytics.getInstance().recordException(e);
                     }
-                    dismiss();
+
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
-                // Обработка ошибок сети или других ошибок
-                String errorMessage = t.getMessage();
+                if (t instanceof SocketTimeoutException) {
+                    Logger.d(context, TAG, "onFailure: Тайм-аут соединения");
+                } else if (t instanceof IOException) {
+                    Logger.d(context, TAG, "onFailure: Ошибка сети или соединения");
+                } else {
+                    Logger.d(context, TAG, "onFailure: Непредвиденная ошибка");
+                }
+
+                // Логируем исключение
                 FirebaseCrashlytics.getInstance().recordException(t);
-                Logger.d(context, TAG, "onFailure: " + errorMessage);
+
+                // Выводим сообщение пользователю
+                String errorMessage = t.getMessage();
+                Logger.d(context, TAG, "onFailure: Ошибка: " + errorMessage);
+                dismiss();
             }
+
         });
-        dismiss();
     }
 
     @Override
@@ -889,6 +884,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
         database.close();
+        Logger.d(context, TAG, "paymentType: nal_payment " );
     }
     @SuppressLint("Range")
     private ArrayList<Map<String, String>> getCardMapsFromDatabase(String table) {

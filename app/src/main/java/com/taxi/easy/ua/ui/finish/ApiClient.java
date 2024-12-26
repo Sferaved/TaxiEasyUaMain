@@ -5,6 +5,8 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.util.concurrent.TimeUnit;
+
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
@@ -22,9 +24,10 @@ public class ApiClient {
         loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(loggingInterceptor)
+                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут подключения
+                .writeTimeout(30, TimeUnit.SECONDS)  // Тайм-аут записи
+                .readTimeout(30, TimeUnit.SECONDS)   // Тайм-аут чтения
                 .build();
-        //****
 
         if (retrofit == null) {
             Gson gson = new GsonBuilder()

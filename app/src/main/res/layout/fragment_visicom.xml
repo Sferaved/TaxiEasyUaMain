@@ -35,20 +35,27 @@
                 app:layout_constraintTop_toTopOf="parent" />
 
             <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-            android:id="@+id/swipeRefreshLayout"
-            android:layout_width="31dp"
-            android:layout_height="664dp"
-            android:layout_marginEnd="4dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            tools:layout_editor_absoluteY="-1dp"
-            tools:ignore="MissingConstraints">
+                android:id="@+id/swipeRefreshLayout"
+                android:layout_width="31dp"
+                android:layout_height="600dp"
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"></TextView>
-        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/text_to"
+                app:layout_constraintTop_toTopOf="@+id/gpsbut"
+                tools:ignore="MissingConstraints">
 
-        <ProgressBar
+                <TextView
+                    android:id="@+id/sv_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="⬇️"
+                    android:textColor="#000"
+                    android:textSize="20sp" />
+
+            </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+            <ProgressBar
             android:id="@+id/progress_bar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

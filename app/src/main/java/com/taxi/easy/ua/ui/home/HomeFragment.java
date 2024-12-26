@@ -935,18 +935,34 @@ public class HomeFragment extends Fragment {
         addCost = 0;
         updateAddCost(String.valueOf(addCost));
         btn_clear = binding.btnClear;
-        SwipeRefreshLayout swipeRefreshLayout = binding.swipeRefreshLayout;
 
-        // Устанавливаем слушатель для распознавания жеста свайпа вниз
+
+        SwipeRefreshLayout swipeRefreshLayout =binding.swipeRefreshLayout;
+        TextView svButton = binding.svButton;
+
+// Устанавливаем слушатель для распознавания жеста свайпа вниз
         swipeRefreshLayout.setOnRefreshListener(() -> {
-            // Метод, который нужно запустить по свайпу вниз
+            // Скрываем TextView (⬇️) сразу после появления индикатора свайпа
+            svButton.setVisibility(View.GONE);
 
+            // Выполняем необходимое действие (например, запуск новой активности)
             btn_clear.performClick();
 
             // После завершения обновления, уберите индикатор загрузки
             swipeRefreshLayout.setRefreshing(false);
             new VerifyUserTask(context).execute();
+
+            // Эмулируем окончание обновления с задержкой
+            swipeRefreshLayout.postDelayed(() -> {
+                // Отключаем индикатор загрузки
+                swipeRefreshLayout.setRefreshing(false);
+
+                // Показываем TextView (⬇️) снова после завершения обновления
+                svButton.setVisibility(View.VISIBLE);
+            }, 500); // Задержка 500 мс
         });
+
+
         textViewTo.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
                 // Фокус установлен на TextView, очищаем его

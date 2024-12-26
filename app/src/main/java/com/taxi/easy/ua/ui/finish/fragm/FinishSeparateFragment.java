@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.ui.finish.fragm;
 
 import static android.content.Context.MODE_PRIVATE;
+
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -16,17 +17,17 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Looper;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.StyleSpan;
 import android.util.Log;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -34,6 +35,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavOptions;
@@ -125,7 +127,7 @@ public class FinishSeparateFragment extends Fragment {
     Map<String, String> receivedMap;
     public static String uid;
     Thread thread;
-    static String pay_method;
+    public static String pay_method;
 
     public static String amount;
     @SuppressLint("StaticFieldLeak")
@@ -173,10 +175,10 @@ public class FinishSeparateFragment extends Fragment {
     public static String comment_info;
     public static  String extra_charge_codes;
 
-    private Handler handlerAddcost;
-    private Runnable showDialogAddcost;
+    public static Handler handlerAddcost;
+    public static Runnable showDialogAddcost;
 
-    private  int timeCheckOutAddCost;
+    public static int timeCheckOutAddCost;
     boolean need_20_add;
     String required_time;
     boolean isTenMinutesRemaining;
@@ -572,7 +574,21 @@ public class FinishSeparateFragment extends Fragment {
 
         btn_options = binding.btnOptions;
 
+        int colorPressed = ContextCompat.getColor(context, R.color.colorDefault); // Цвет текста при нажатии
+        int colorDefault = ContextCompat.getColor(context, R.color.colorAccent); // Исходный цвет текста
         btn_options.setOnClickListener(v -> {
+
+            // Получаем текущий цвет текста кнопки
+            int currentColor = btn_options.getCurrentTextColor();
+
+            if (currentColor == colorDefault) {
+                btn_options.setTextColor(colorPressed);
+            } else {
+                btn_options.setTextColor(colorDefault);
+            }
+
+
+
             btnOptions();
         });
 
@@ -645,9 +661,9 @@ public class FinishSeparateFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         // Отменяем выполнение Runnable, если активити остановлена
-//        if (handlerStatus != null) {
-//            handlerStatus.removeCallbacks(myTaskStatus);
-//        }
+        if (handlerStatus != null) {
+            handlerStatus.removeCallbacks(myTaskStatus);
+        }
         if (handlerAddcost != null ) {
             handlerAddcost.removeCallbacks(showDialogAddcost);
         }
@@ -659,9 +675,9 @@ public class FinishSeparateFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
-//        if (handlerStatus != null) {
-//            handlerStatus.removeCallbacks(myTaskStatus);
-//        }
+        if (handlerStatus != null) {
+            handlerStatus.removeCallbacks(myTaskStatus);
+        }
         if (handlerAddcost != null) {
             handlerAddcost.removeCallbacks(showDialogAddcost);
         }
@@ -694,9 +710,7 @@ public class FinishSeparateFragment extends Fragment {
     public void onPause() {
         super.onPause();
         // Отменяем выполнение Runnable, если активити остановлена
-//        if (handlerStatus != null) {
-//            handlerStatus.removeCallbacks(myTaskStatus);
-//        }
+
         if (handlerAddcost != null) {
             handlerAddcost.removeCallbacks(showDialogAddcost);
         }
@@ -910,7 +924,10 @@ public class FinishSeparateFragment extends Fragment {
                     switch (orderStatus) {
                         case "Approved":
                         case "WaitingAuthComplete":
-                            newOrderCardPayAdd20(order_id);
+                            if(order_id != null) {
+                                newOrderCardPayAdd20(order_id);
+                            }
+
                             break;
                         default:
                             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
@@ -1578,7 +1595,6 @@ public class FinishSeparateFragment extends Fragment {
             }
         }
         database.close();
-        assert c != null;
         c.close();
         return list;
     }
@@ -1602,6 +1618,7 @@ public class FinishSeparateFragment extends Fragment {
                     Status status = response.body();
                     assert status != null;
                     Logger.d(context, TAG, "cancelOrder status: " + status.toString());
+//                    text_status.setText(status.getResponse());
                 } else {
                     // Обработка неуспешного ответа
                     text_status.setText(R.string.verify_internet);
@@ -1655,6 +1672,7 @@ public class FinishSeparateFragment extends Fragment {
             }
         });
         progressBar.setVisibility(View.GONE);
+        handlerStatus.postDelayed(myTaskStatus, delayMillisStatus);
     }
 
     public void statusOrderWithDifferentValue(String value) throws ParseException {
@@ -1737,7 +1755,14 @@ public class FinishSeparateFragment extends Fragment {
                             } else {
                                 if(need_20_add) {
                                     if (handlerAddcost != null && showDialogAddcost != null) {
-                                        handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost); // Устанавливаем нужную задержку
+                                        handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost);
+                                        textCost.setVisibility(View.VISIBLE);
+                                        textCostMessage.setVisibility(View.VISIBLE);
+                                        carProgressBar.setVisibility(View.VISIBLE);
+                                        progressBar.setVisibility(View.VISIBLE);
+                                        progressSteps.setVisibility(View.VISIBLE);
+                                        btn_options.setVisibility(View.VISIBLE);
+                                        btn_open.setVisibility(View.VISIBLE);
                                     }
                                 }
 
@@ -1752,21 +1777,6 @@ public class FinishSeparateFragment extends Fragment {
 
                                 textStatusCar.setVisibility(View.GONE);
                                 textCarMessage.setVisibility(View.GONE);
-
-//                                btn_reset_status.setText(context.getString(R.string.textStatus));
-//                                btn_reset_status.setOnClickListener(v -> {
-//                                    if(connected()){
-//                                        try {
-//                                            statusOrderWithDifferentValue(uid);
-//                                        } catch (ParseException e) {
-//                                            throw new RuntimeException(e);
-//                                        }
-//                                    } else {
-//                                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment( context.getString(R.string.verify_internet));
-//                                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-//                                    }
-//                                });
-
                             }
 
                             break;
@@ -1796,7 +1806,7 @@ public class FinishSeparateFragment extends Fragment {
                                 message =  context.getString(R.string.ex_st_canceled);
                             } else {
                                 if (pay_method.equals("fondy_payment") || pay_method.equals("mono_payment")|| pay_method.equals("wfp_payment")) {
-
+                                    Logger.d(context, TAG, "statusOrderWithDifferentValue canceled: " + uid);
                                     message =  context.getString(R.string.pay_cancel);
                                 } else {
                                     message =  context.getString(R.string.ex_st_canceled);
@@ -1810,18 +1820,21 @@ public class FinishSeparateFragment extends Fragment {
                                         .add(bottomSheetDialogFragment, bottomSheetDialogFragment.getTag())
                                         .commitAllowingStateLoss();
                             }
-                            textCost.setVisibility(View.GONE);
-                            textCostMessage.setVisibility(View.GONE);
-                            carProgressBar.setVisibility(View.GONE);
-                            progressBar.setVisibility(View.GONE);
-                            progressSteps.setVisibility(View.GONE);
+//                            if(!need_20_add) {
+//                                textCost.setVisibility(View.GONE);
+//                                textCostMessage.setVisibility(View.GONE);
+//                                carProgressBar.setVisibility(View.GONE);
+//                                progressBar.setVisibility(View.GONE);
+//                                progressSteps.setVisibility(View.GONE);
+//
+//
+//                                btn_options.setVisibility(View.GONE);
+//                                btn_open.setVisibility(View.GONE);
+//                                btn_reset_status.setVisibility(View.GONE);
+//                                btn_cancel_order.setVisibility(View.GONE);
+//                                btn_again.setVisibility(View.VISIBLE);
+//                            }
 
-
-                            btn_options.setVisibility(View.GONE);
-                            btn_open.setVisibility(View.GONE);
-                            btn_reset_status.setVisibility(View.GONE);
-                            btn_cancel_order.setVisibility(View.GONE);
-                            btn_again.setVisibility(View.VISIBLE);
 
                             text_status.setText(message);
                             break;
@@ -2046,23 +2059,33 @@ public class FinishSeparateFragment extends Fragment {
     public void onResume() {
         super.onResume();
         addCheck(context);
+
+        handler.postDelayed(myRunnable, 100);
+
+        int colorPressed = ContextCompat.getColor(context, R.color.colorDefault); // Цвет текста при нажатии
+        int colorDefault = ContextCompat.getColor(context, R.color.colorAccent); // Исходный цвет текста
+
         btn_open.setOnClickListener(v -> {
+            int currentColor = btn_open.getCurrentTextColor();
+
+            if (currentColor == colorDefault) {
+                btn_open.setTextColor(colorPressed);
+            } else {
+                btn_open.setTextColor(colorDefault);
+            }
             btnOpen();
         });
         startAddCostDialog (
-                pay_method,
-                uid,
                 timeCheckOutAddCost);
     }
-
 
     @Override
     public void onStop() {
         super.onStop();
         // Отменяем выполнение Runnable, если фрагмент уходит в фон
-//        if (handlerStatus != null) {
-//            handlerStatus.removeCallbacks(myTaskStatus);
-//        }
+        if (handlerStatus != null) {
+            handlerStatus.removeCallbacks(myTaskStatus);
+        }
         if (handlerAddcost != null) {
             handlerAddcost.removeCallbacks(showDialogAddcost);
         }
@@ -2083,52 +2106,69 @@ public class FinishSeparateFragment extends Fragment {
 
     }
     private void startAddCostDialog (
-            String pay_method,
-            String uid_old,
             int timeCheckout
     ) {
-
-
-
         Logger.d(context, TAG, "payMetod " + pay_method);
 
         if ("nal_payment".equals(pay_method) || "wfp_payment".equals(pay_method)) {
             handlerAddcost = new Handler();
             showDialogAddcost = () -> {
                 // Вызов метода для отображения диалога
-//                if (handlerStatus != null) {
-//                    handlerStatus.removeCallbacks(myTaskStatus);
-//                }
-                showAddCostDialog(uid_old, timeCheckout);
+                showAddCostDialog(timeCheckout);
             };
             // Запускаем выполнение через 1 минуты (60 000 миллисекунд)
             handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
+            btn_reset_status.setOnClickListener(view -> {
+                String text = textCostMessage.getText().toString();
+                Logger.d(getActivity(), TAG, "textCostMessage.getText().toString() " + text);
+
+                Pattern pattern = Pattern.compile("(\\d+)");
+                Matcher matcher = pattern.matcher(text);
+
+                if (matcher.find()) {
+                    Logger.d(context, TAG, "amount_to_add: " + matcher.group(1));
+                    MyBottomSheetAddCostFragment bottomSheetDialogFragment = new MyBottomSheetAddCostFragment(
+                            matcher.group(1),
+                            uid,
+                            uid_Double,
+                            pay_method,
+                            context,
+                            fragmentManager
+                    );
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                } else {
+                    Logger.d(context, TAG, "No numeric value found in the text.");
+                }
+            });
+        } else if ("bonus_payment".equals(pay_method)) {
+            btn_reset_status.setOnClickListener(view -> {
+                String text = textCostMessage.getText().toString();
+                Logger.d(getActivity(), TAG, "textCostMessage.getText().toString() " + text);
+
+                Pattern pattern = Pattern.compile("(\\d+)");
+                Matcher matcher = pattern.matcher(text);
+
+//                if (matcher.find()) {
+//                    Logger.d(context, TAG, "amount_to_add: " + matcher.group(1));
+//                    MyBottomSheetAddCostFragment bottomSheetDialogFragment = new MyBottomSheetAddCostFragment(
+//                            matcher.group(1),
+//                            uid,
+//                            uid_Double,
+//                            pay_method,
+//                            context,
+//                            fragmentManager
+//                    );
+//                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+//                } else {
+//                    Logger.d(context, TAG, "No numeric value found in the text.");
+//                }
+            });
+        } else {
+            btn_reset_status.setVisibility(View.GONE);
         }
 
-        btn_reset_status.setOnClickListener(view -> {
-            String text = textCostMessage.getText().toString();
-            Logger.d(getActivity(), TAG, "textCostMessage.getText().toString() " + text);
-
-            Pattern pattern = Pattern.compile("(\\d+)");
-            Matcher matcher = pattern.matcher(text);
-
-            if (matcher.find()) {
-                Logger.d(context, TAG, "amount_to_add: " + matcher.group(1));
-                MyBottomSheetAddCostFragment bottomSheetDialogFragment = new MyBottomSheetAddCostFragment(
-                        matcher.group(1),
-                        uid,
-                        uid_Double,
-                        pay_method,
-                        context,
-                        fragmentManager
-                );
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-            } else {
-                Logger.d(context, TAG, "No numeric value found in the text.");
-            }
-        });
     }
-    private void showAddCostDialog(String uid, int timeCheckout) {
+    private void showAddCostDialog(int timeCheckout) {
         // Убедитесь, что handlerAddcost не null и очищаем предыдущие задачи
         if (handlerAddcost != null) {
             handlerAddcost.removeCallbacks(showDialogAddcost);
@@ -2157,7 +2197,7 @@ public class FinishSeparateFragment extends Fragment {
                 .setPositiveButton(R.string.ok_button, (dialog, which) -> {
                     // Действие для кнопки "OK"
                     dialog.dismiss();
-                    startAddCostUpdate(uid);
+                    startAddCostUpdate();
 
                     // Перезапускаем задачу
                     if (handlerAddcost != null) {
@@ -2169,20 +2209,14 @@ public class FinishSeparateFragment extends Fragment {
                     if (handlerAddcost != null) {
                         handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
                     }
-
-//                    if (handlerStatus != null) {
-//                        handlerStatus.post(myTaskStatus);
-//                    }
-                    dialog.dismiss();
+                     dialog.dismiss();
                 })
                 .show();
     }
 
 
 
-    private void startAddCostUpdate(
-            String uid
-    ) {
+    private void startAddCostUpdate() {
 
         String cost = textCostMessage.getText().toString();
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
@@ -2259,7 +2293,6 @@ public class FinishSeparateFragment extends Fragment {
                 public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
                     // Обработайте ошибку при выполнении запроса
                     handlerStatus.post(myTaskStatus);
-                    textCostMessage.setText(cost);
                     FirebaseCrashlytics.getInstance().recordException(t);
                 }
             });
@@ -2308,6 +2341,30 @@ public class FinishSeparateFragment extends Fragment {
 
         String cost = textCostMessage.getText().toString();
 
+        Pattern pattern = Pattern.compile("(\\d+)");
+        Matcher matcher = pattern.matcher(cost);
+
+        if (matcher.find()) {
+            // Преобразуем найденное число в целое, добавляем 20
+            int originalNumber = Integer.parseInt(Objects.requireNonNull(matcher.group(1)));
+            int updatedNumber = originalNumber + 20;
+
+            // Заменяем старое значение на новое
+            String updatedCost = matcher.replaceFirst(String.valueOf(updatedNumber));
+            textCostMessage.setText(updatedCost);
+            Log.d("UpdatedCost", "Обновленная строка: " + updatedCost);
+
+        } else {
+            Log.e("UpdatedCost", "Число не найдено в строке: " + cost);
+        }
+        textCost.setVisibility(View.VISIBLE);
+        textCostMessage.setVisibility(View.VISIBLE);
+        carProgressBar.setVisibility(View.VISIBLE);
+        progressBar.setVisibility(View.VISIBLE);
+        progressSteps.setVisibility(View.VISIBLE);
+        btn_options.setVisibility(View.VISIBLE);
+        btn_open.setVisibility(View.VISIBLE);
+
         call.enqueue(new Callback<Status>() {
             @Override
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
@@ -2316,40 +2373,12 @@ public class FinishSeparateFragment extends Fragment {
                     assert status != null;
                     String responseStatus = status.getResponse();
                     Logger.d(context, TAG, "startAddCostUpdate wfp_payment status: " + responseStatus);
-                    if(responseStatus.equals("200")) {
-                        handlerStatus.post(myTaskStatus);
-
-                        Pattern pattern = Pattern.compile("(\\d+)");
-                        Matcher matcher = pattern.matcher(cost);
-
-                        if (matcher.find()) {
-                            // Преобразуем найденное число в целое, добавляем 20
-                            int originalNumber = Integer.parseInt(Objects.requireNonNull(matcher.group(1)));
-                            int updatedNumber = originalNumber + 20;
-
-                            // Заменяем старое значение на новое
-                            String updatedCost = matcher.replaceFirst(String.valueOf(updatedNumber));
-                            textCost.setVisibility(View.VISIBLE);
-                            textCostMessage.setVisibility(View.VISIBLE);
-                            carProgressBar.setVisibility(View.VISIBLE);
-                            progressBar.setVisibility(View.VISIBLE);
-                            progressSteps.setVisibility(View.VISIBLE);
-
-                            btn_options.setVisibility(View.VISIBLE);
-                            btn_open.setVisibility(View.VISIBLE);
-                            
-
-                            textCostMessage.setText(updatedCost);
-                            Log.d("UpdatedCost", "Обновленная строка: " + updatedCost);
-
-                        } else {
-                            Log.e("UpdatedCost", "Число не найдено в строке: " + cost);
-                        }
-
-                    } else {
-                        // Обработка неуспешного ответа
-                        text_status.setText(R.string.verify_internet);
-                    }
+//                    if(responseStatus.equals("200")) {
+//                        handlerStatus.post(myTaskStatus);
+//                    } else {
+//                        // Обработка неуспешного ответа
+//                        text_status.setText(R.string.verify_internet);
+//                    }
 
                 } else {
                     // Обработка неуспешного ответа
@@ -2361,7 +2390,7 @@ public class FinishSeparateFragment extends Fragment {
             public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
                 // Обработайте ошибку при выполнении запроса
                 handlerStatus.post(myTaskStatus);
-                textCostMessage.setText(cost);
+
                 FirebaseCrashlytics.getInstance().recordException(t);
             }
         });

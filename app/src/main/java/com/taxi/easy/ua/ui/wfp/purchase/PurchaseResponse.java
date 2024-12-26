@@ -144,5 +144,31 @@ public class PurchaseResponse {
     public String getPaymentSystem() {
         return paymentSystem;
     }
+
+    @Override
+    public String toString() {
+        return "PurchaseResponse{" +
+                "merchantAccount='" + merchantAccount + '\'' +
+                ", orderReference='" + orderReference + '\'' +
+                ", merchantSignature='" + merchantSignature + '\'' +
+                ", amount=" + amount +
+                ", currency='" + currency + '\'' +
+                ", authCode='" + authCode + '\'' +
+                ", email='" + email + '\'' +
+                ", phone='" + phone + '\'' +
+                ", createdDate=" + createdDate +
+                ", processingDate=" + processingDate +
+                ", cardPan='" + cardPan + '\'' +
+                ", cardType='" + cardType + '\'' +
+                ", issuerBankCountry='" + issuerBankCountry + '\'' +
+                ", issuerBankName='" + issuerBankName + '\'' +
+                ", recToken='" + recToken + '\'' +
+                ", transactionStatus='" + transactionStatus + '\'' +
+                ", reason='" + reason + '\'' +
+                ", reasonCode='" + reasonCode + '\'' +
+                ", fee=" + fee +
+                ", paymentSystem='" + paymentSystem + '\'' +
+                '}';
+    }
 }
 

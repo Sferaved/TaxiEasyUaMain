@@ -255,7 +255,7 @@
             android:fontFamily="@font/regular"
             android:text="@string/add_services"
             android:textAlignment="center"
-            android:textColor="#D9D9D9"
+            android:textColor="@color/colorDefault"
             app:layout_constraintStart_toStartOf="@+id/text_status"
             app:layout_constraintTop_toBottomOf="@+id/text_status_car" />
 
@@ -269,7 +269,7 @@
             android:fontFamily="@font/regular"
             android:text="@string/btn_option_text"
             android:textAlignment="center"
-            android:textColor="#D9D9D9"
+            android:textColor="@color/colorDefault"
             app:layout_constraintEnd_toEndOf="@+id/text_status"
 
             app:layout_constraintTop_toBottomOf="@+id/text_status_car" />

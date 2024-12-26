@@ -276,7 +276,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 //        map.setTileSource(TileSourceFactory.ChartbundleENRH);
 //        map.setTileSource(TileSourceFactory.ChartbundleENRL);
 //        map.setTileSource(TileSourceFactory.OpenTopo);
-        map.setOnTouchListener(new View.OnTouchListener() {
+         map.setOnTouchListener(new View.OnTouchListener() {
             @SuppressLint("ClickableViewAccessibility")
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -472,6 +472,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         String language = locale.getLanguage(); // Получаем язык устройства
         Call<ApiResponse> call = apiService.reverseAddressLocal(latitude, longitude, language);
         m = new Marker(map);
+
         call.enqueue(new Callback<ApiResponse>() {
             @Override
             public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {

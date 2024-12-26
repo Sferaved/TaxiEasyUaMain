@@ -2,11 +2,11 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.783</string>
-    <string name="version">Version: 1.783</string>
+    <string name="version_code">1.784</string>
+    <string name="version">Version: 1.784</string>
 
     <string name="app_name">Taxi Dostavka</string>
-    <string name="alfa_test">(Alpha testing)</string>
+
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -469,7 +469,7 @@
     <string name="device">Device:</string>
     <string name="time_car_found">The time to search for a car has expired</string>
     <string name="cancel_car_found_time">Click the OK button to cancel the current order and proceed to a new order</string>
-
+    <string name="alfa_test">(Alpha testing)</string>
     <string name="update_timeout">The update process took too long. Please try again later.</string>
     <string name="update_error">Error checking for updates. Check your internet connection.</string>
     <string name="update_successful">Update successful!</string>

@@ -2,11 +2,10 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.783</string>
-    <string name="version">Версия: 1.783</string>
+    <string name="version_code">1.784</string>
+    <string name="version">Версия: 1.784</string>
 
     <string name="app_name">Такси Доставка</string>
-    <string name="alfa_test">(Альфа-тестирование)</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -472,7 +471,7 @@
     <string name="android_version">Версия Андроида:</string>
     <string name="device">Устройство:</string>
     <string name="time_car_found">Время поиска машины подошло к концу</string>
-    <string name="cancel_car_found_time">Нажмите кнопку Ок для отмены текущего заказа и перехода к новому заказу</string>
+    <string name="cancel_car_found_time">Нажмите кнопку Ок для отмены текущего заказа и перехода к новому заказу</string> <string name="alfa_test">(Альфа-тестирование)</string>
     <string name="update_timeout">Процесс обновления занял слишком много времени. Попробуйте позже.</string>
     <string name="update_error">Ошибка проверки обновлений. Проверьте подключение к интернету.</string>
     <string name="update_successful">Обновление прошло успешно!</string>

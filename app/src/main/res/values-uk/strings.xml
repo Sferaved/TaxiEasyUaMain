@@ -1,11 +1,11 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.783</string>
-    <string name="version">Версія: 1.783</string>
+    <string name="version_code">1.784</string>
+    <string name="version">Версія: 1.784</string>
 
     <string name="app_name">Таксі Доставка</string>
-    <string name="alfa_test">(Альфа-тестування)</string>
+
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -472,7 +472,7 @@
     <string name="device">Пристрій:</string>
     <string name="time_car_found">Время поиска машины подошло к концу</string>
     <string name="cancel_car_found_time">Нажмите кнопку Ок чтобы отменить текущий заказ и перейти к новому заказу</string>
-
+    <string name="alfa_test">(Альфа-тестування)</string>
     <string name="update_timeout">Процес оновлення зайняв надто багато часу. Спробуйте пізніше.</string>
     <string name="update_error">Помилка перевірки оновлень. Перевірте підключення до Інтернету.</string>
     <string name="update_successful">Оновлення пройшло успішно!</string>

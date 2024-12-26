@@ -74,6 +74,7 @@ import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.settings.SettingsActivity;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetCityFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiClientMapbox;
@@ -291,9 +292,16 @@ public class MainActivity extends AppCompatActivity {
            titleTextView.setText(newTitle);
            // Установка обработчика нажатий
            titleTextView.setOnClickListener(v -> {
-               // Ваш код при нажатии на заголовок
-               MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, MainActivity.this);
-               bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+               Logger.d(this, TAG, " Установка обработчика нажатий" + NetworkUtils.isNetworkAvailable(getApplicationContext()));
+               if (NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+                   // Ваш код при нажатии на заголовок
+                   MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, MainActivity.this);
+                   bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+               } else {
+                   MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                   bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+               }
+
            });
        }
 
@@ -399,24 +407,32 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+            // Ваш код при нажатии на заголовок
 
-        visicomKeyFromFb();
-        mapboxKeyFromFb ();
-        newUser();
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+
+        } else  {
+            visicomKeyFromFb();
+            mapboxKeyFromFb ();
+            newUser();
 //        if (!sharedPreferencesHelperMain.getValue("CityCheckActivity", "**").equals("run")) {
 //            startActivity(new Intent(this, CityCheckActivity.class));
 //        } else if (NetworkUtils.isNetworkAvailable(this)) {
 //
 //        }
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+            baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
-        if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            gps_upd = getIntent().getBooleanExtra("gps_upd", true);
-        } else {
-            gps_upd = false;
+            if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
+                gps_upd = getIntent().getBooleanExtra("gps_upd", true);
+            } else {
+                gps_upd = false;
+            }
+            sharedPreferencesHelperMain.saveValue("gps_upd", gps_upd);
         }
-        sharedPreferencesHelperMain.saveValue("gps_upd", gps_upd);
+
     }
 
     @Override

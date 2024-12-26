@@ -4,6 +4,7 @@ import static android.content.Context.MODE_PRIVATE;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
@@ -19,6 +20,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
@@ -78,7 +80,12 @@ public class MyBottomSheetFinishOptionFragment extends BottomSheetDialogFragment
             view.findViewById(R.id.komentar).setVisibility(View.GONE);
             textView.setVisibility(View.GONE);
         }
-
+        view.findViewById(R.id.komenterinp).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dismiss();
+            }
+        });
         listView = view.findViewById(R.id.list);
 
         Button button = view.findViewById(R.id.btnOk);
@@ -227,7 +234,20 @@ public class MyBottomSheetFinishOptionFragment extends BottomSheetDialogFragment
         return view;
     }
 
+    @Override
+    public void onDismiss(@NonNull DialogInterface dialog) {
+        super.onDismiss(dialog);
+        int colorPressed = ContextCompat.getColor(context, R.color.colorDefault); // Цвет текста при нажатии
+        int colorDefault = ContextCompat.getColor(context, R.color.colorAccent); // Исходный цвет текста
 
+        int currentColor = FinishSeparateFragment.btn_options.getCurrentTextColor();
+
+        if (currentColor == colorDefault) {
+            FinishSeparateFragment.btn_options.setTextColor(colorPressed);
+        } else {
+            FinishSeparateFragment.btn_options.setTextColor(colorDefault);
+        }
+    }
 
     private String delAdminMessage(String comment) {
         // Указываем тег для логов, чтобы потом было легче найти записи

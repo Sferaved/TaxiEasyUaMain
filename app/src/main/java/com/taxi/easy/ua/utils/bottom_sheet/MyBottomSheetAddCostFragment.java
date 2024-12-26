@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
+
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -309,7 +310,39 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             String order_id,
             String addCost
     ) {
+
+        Pattern pattern = Pattern.compile("(\\d+)");
+        Matcher matcher = pattern.matcher( FinishSeparateFragment.textCostMessage.getText().toString());
+
+        if (matcher.find()) {
+            // Преобразуем найденное число в целое, добавляем 20
+            int originalNumber = Integer.parseInt(Objects.requireNonNull(matcher.group(1)));
+            int updatedNumber = originalNumber + Integer.parseInt(addCost);
+
+            // Заменяем старое значение на новое
+            String updatedCost = matcher.replaceFirst(String.valueOf(updatedNumber));
+            FinishSeparateFragment.textCost.setVisibility(View.VISIBLE);
+            FinishSeparateFragment.textCostMessage.setVisibility(View.VISIBLE);
+            FinishSeparateFragment.carProgressBar.setVisibility(View.VISIBLE);
+            FinishSeparateFragment.progressBar.setVisibility(View.VISIBLE);
+            FinishSeparateFragment.progressSteps.setVisibility(View.VISIBLE);
+            FinishSeparateFragment.progressBar.setVisibility(View.GONE);
+
+            FinishSeparateFragment.btn_options.setVisibility(View.VISIBLE);
+            FinishSeparateFragment.btn_open.setVisibility(View.VISIBLE);
+
+
+            FinishSeparateFragment.textCostMessage.setText(updatedCost);
+
+            Log.d("UpdatedCost", "Обновленная строка: " + updatedCost);
+
+        } else {
+            Log.e("UpdatedCost", "Число не найдено в строке: " + cost);
+        }
+
+        FinishSeparateFragment.handlerStatus.removeCallbacks(FinishSeparateFragment.myTaskStatus);
         String  baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
@@ -330,7 +363,6 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         String url = call.request().url().toString();
         Logger.d(context, TAG, "URL запроса wfp_payment: " + url);
 
-        String cost = FinishSeparateFragment.textCostMessage.getText().toString();
 
         call.enqueue(new Callback<Status>() {
             @Override
@@ -340,42 +372,10 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                     assert status != null;
                     String responseStatus = status.getResponse();
                     Logger.d(context, TAG, "startAddCostUpdate wfp_payment status: " + responseStatus);
-                    if(responseStatus.equals("200")) {
-
-                        Pattern pattern = Pattern.compile("(\\d+)");
-                        Matcher matcher = pattern.matcher(cost);
-
-                        if (matcher.find()) {
-                            // Преобразуем найденное число в целое, добавляем 20
-                            int originalNumber = Integer.parseInt(Objects.requireNonNull(matcher.group(1)));
-                            int updatedNumber = originalNumber + Integer.parseInt(addCost);
-
-                            // Заменяем старое значение на новое
-                            String updatedCost = matcher.replaceFirst(String.valueOf(updatedNumber));
-                            FinishSeparateFragment.textCost.setVisibility(View.VISIBLE);
-                            FinishSeparateFragment.textCostMessage.setVisibility(View.VISIBLE);
-                            FinishSeparateFragment.carProgressBar.setVisibility(View.VISIBLE);
-                            FinishSeparateFragment.progressBar.setVisibility(View.VISIBLE);
-                            FinishSeparateFragment.progressSteps.setVisibility(View.VISIBLE);
-                            FinishSeparateFragment.progressBar.setVisibility(View.GONE);
-
-                            FinishSeparateFragment.btn_options.setVisibility(View.VISIBLE);
-                            FinishSeparateFragment.btn_open.setVisibility(View.VISIBLE);
-
-
-                            FinishSeparateFragment.textCostMessage.setText(updatedCost);
-
-                            Log.d("UpdatedCost", "Обновленная строка: " + updatedCost);
-
-                        } else {
-                            Log.e("UpdatedCost", "Число не найдено в строке: " + cost);
-                        }
-
-                    } else {
+                    if(!responseStatus.equals("200")) {
                         // Обработка неуспешного ответа
                         FinishSeparateFragment.text_status.setText(R.string.verify_internet);
                     }
-
                 } else {
                     // Обработка неуспешного ответа
                     FinishSeparateFragment.text_status.setText(R.string.verify_internet);
@@ -554,8 +554,25 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                     PurchaseResponse purchaseResponse = response.body();
                     if (purchaseResponse != null) {
                         // Обработка ответа
-                        Logger.d(context, TAG, "onResponse:purchaseResponse " + purchaseResponse);
-                        getStatusWfp(order_id, amount);
+                        Logger.d(context, TAG, "onResponse:purchaseResponse " + purchaseResponse.toString());
+
+                        String orderStatus = purchaseResponse.getTransactionStatus();
+
+                        Logger.d(context, TAG, "Transaction Status: " + orderStatus);
+
+                        switch (orderStatus) {
+                            case "Approved":
+                            case "WaitingAuthComplete":
+                                newOrderCardPayAdd20(MainActivity.order_id, amount);
+                                break;
+                            default:
+                                MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+                                callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+                                MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
+                                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+
+                        }
+//                        getStatusWfp(order_id, amount);
                     } else {
                         // Ошибка при парсинге ответа
                         Logger.d(context, TAG, "Ошибка при парсинге ответа");

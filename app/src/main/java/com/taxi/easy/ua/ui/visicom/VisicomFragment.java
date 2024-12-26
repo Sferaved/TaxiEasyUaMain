@@ -229,15 +229,27 @@ public class VisicomFragment extends Fragment {
         context = requireActivity();
         binding.textwhere.setVisibility(View.VISIBLE);
 
-        SwipeRefreshLayout swipeRefreshLayout = binding.swipeRefreshLayout;
+        SwipeRefreshLayout swipeRefreshLayout = root.findViewById(R.id.swipeRefreshLayout);
+        TextView svButton = root.findViewById(R.id.sv_button);
 
-        // Устанавливаем слушатель для распознавания жеста свайпа вниз
+// Устанавливаем слушатель для распознавания жеста свайпа вниз
         swipeRefreshLayout.setOnRefreshListener(() -> {
-            // Метод, который нужно запустить по свайпу вниз
+            // Скрываем TextView (⬇️) сразу после появления индикатора свайпа
+            svButton.setVisibility(View.GONE);
+
+            // Выполняем необходимое действие (например, запуск новой активности)
             startActivity(new Intent(context, MainActivity.class));
-             // После завершения обновления, уберите индикатор загрузки
-            swipeRefreshLayout.setRefreshing(false);
+
+            // Эмулируем окончание обновления с задержкой
+            swipeRefreshLayout.postDelayed(() -> {
+                // Отключаем индикатор загрузки
+                swipeRefreshLayout.setRefreshing(false);
+
+                // Показываем TextView (⬇️) снова после завершения обновления
+                svButton.setVisibility(View.VISIBLE);
+            }, 500); // Задержка 500 мс
         });
+
 
         fragmentManager = getParentFragmentManager();
         progressBar = binding.progressBar;
@@ -1349,13 +1361,30 @@ public class VisicomFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        if (!NetworkUtils.isNetworkAvailable(context)) {
+            // Ваш код при нажатии на заголовок
+            gpsbut.setVisibility(View.INVISIBLE);
+            binding.num1.setVisibility(View.INVISIBLE);
+            binding.textfrom.setVisibility(View.INVISIBLE);
+            schedule.setVisibility(View.INVISIBLE);
+            shed_down.setVisibility(View.INVISIBLE);
+            binding.textwhere.setVisibility(View.VISIBLE);
+            progressBar.setVisibility(View.VISIBLE);
+
+        }
+
         String visible_shed = (String) sharedPreferencesHelperMain.getValue("visible_shed", "no");
         if(visible_shed.equals("no")) {
             schedule.setVisibility(View.INVISIBLE);
             shed_down.setVisibility(View.INVISIBLE);
         } else  {
-            schedule.setVisibility(View.VISIBLE);
-            shed_down.setVisibility(View.VISIBLE);
+            if (NetworkUtils.isNetworkAvailable(context)) {
+                schedule.setVisibility(View.VISIBLE);
+                shed_down.setVisibility(View.VISIBLE);
+            } else {
+                schedule.setVisibility(View.INVISIBLE);
+                shed_down.setVisibility(View.INVISIBLE);
+            }
         }
 
         constraintLayoutVisicomMain.setVisibility(View.VISIBLE);
