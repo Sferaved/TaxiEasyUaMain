@@ -14,6 +14,15 @@
         <!-- Customize your theme here. -->
     </style>
 
+    <style name="CustomPopupMenu" parent="Widget.AppCompat.PopupMenu.Overflow">
+        <item name="android:popupBackground">@drawable/popup_menu_background</item>
+        <item name="android:overlapAnchor">true</item> <!-- Убирает лишние отступы -->
+        <item name="android:paddingTop">0dp</item> <!-- Убирает отступ сверху -->
+        <item name="android:paddingBottom">0dp</item> <!-- Убирает отступ снизу -->
+        <item name="android:paddingLeft">0dp</item> <!-- Убирает отступ слева -->
+        <item name="android:paddingRight">0dp</item> <!-- Убирает отступ справа -->
+    </style>
+
     <style name="Theme.TaxiEasyUa.NoActionBar">
         <item name="android:windowBackground">@color/background_color_new</item>
         <item name="windowActionBar">true</item>
@@ -24,8 +33,8 @@
     <style name="Theme.TaxiEasyUa.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="Theme.TaxiEasyUa.PopupOverlay" parent="ThemeOverlay.AppCompat.Light"  >
-        <item name="android:background">#434C5E</item> <!-- Replace #FF0000 with your desired color code -->
-        <item name="android:textColor">@color/white</item> <!-- Replace #FF0000 with your desired color code -->
+<!--        <item name="android:background">#434C5E</item> &lt;!&ndash; Replace #FF0000 with your desired color code &ndash;&gt;-->
+<!--        <item name="android:textColor">@color/white</item> &lt;!&ndash; Replace #FF0000 with your desired color code &ndash;&gt;-->
     </style>
 
     <style name="AlertDialogTheme">

@@ -536,7 +536,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
                 MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                Logger.d(getActivity(), TAG, "Request failed:"+ t.getMessage());
+                Logger.d(context, TAG, "Request failed:"+ t.getMessage());
             }
         });
 
@@ -636,7 +636,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                             database.close();
                         }
                     }
-                    dismiss();
+
                 } else {
                       MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
                       bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -651,6 +651,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
+//        dismiss();
     }
 
     @Override

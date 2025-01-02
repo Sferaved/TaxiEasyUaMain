@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="24dp">
+    android:padding="24dp"
+    android:background="@color/background_color_new"
+    >
 
     <!-- Заголовок -->
     <TextView
@@ -14,6 +15,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:paddingBottom="16dp"
+        android:textColor="@color/colorDefault"
         android:text="@string/add_cost_fin"
         android:textAppearance="?attr/textAppearanceHeadline6"
         app:layout_constraintEnd_toEndOf="parent"
@@ -28,10 +30,10 @@
         android:layout_height="40dp"
 
         android:layout_marginEnd="12dp"
-        android:backgroundTint="@color/selected_text_color_2"
+        android:background="@drawable/buttons_red"
         android:gravity="center"
         android:text="-"
-        android:textColor="@color/black"
+        android:textColor="@color/white"
         android:textSize="15sp"
         app:layout_constraintEnd_toStartOf="@+id/discinp"
         app:layout_constraintTop_toTopOf="@+id/discinp" />
@@ -63,10 +65,10 @@
 
         android:layout_marginStart="12dp"
 
-        android:backgroundTint="@color/colorAccent"
+        android:background="@drawable/btn_green"
         android:text="+"
         android:textAlignment="center"
-        android:textColor="@color/black"
+        android:textColor="@color/white"
         android:textSize="15sp"
         app:layout_constraintStart_toEndOf="@+id/discinp"
         app:layout_constraintTop_toTopOf="@+id/discinp" />
@@ -77,10 +79,13 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:gravity="center"
+        android:textColor="@color/colorDefault"
         android:textAppearance="?attr/textAppearanceBody1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/dialogTitle" />
+
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

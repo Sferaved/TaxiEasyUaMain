@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.ui.finish.fragm;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -17,23 +16,27 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.StyleSpan;
 import android.util.Log;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -157,7 +160,8 @@ public class FinishSeparateFragment extends Fragment {
     private boolean cancel_btn_click = false;
     long delayMillisStatus;
     private static boolean no_pay;
-    private static boolean canceled;
+    private static boolean canceled = false;
+    @SuppressLint("StaticFieldLeak")
     public static  CarProgressBar carProgressBar;
     // Получаем доступ к кружочкам
     View step1;
@@ -185,6 +189,8 @@ public class FinishSeparateFragment extends Fragment {
     boolean isTenMinutesRemainingBlock;
     Handler handlerCheckTask;
     Runnable checkTask;
+    public boolean isTaskRunning = false;
+    public boolean isTaskCancelled = false;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -197,6 +203,15 @@ public class FinishSeparateFragment extends Fragment {
         fragmentManager = getParentFragmentManager();
 
         context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+
+        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .build());
+            }
+        });
+
         progressBar = root.findViewById(R.id.progress_bar);
 
         baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
@@ -413,8 +428,8 @@ public class FinishSeparateFragment extends Fragment {
                     text_status.setText(newStatus);
                 }
 
-                carProgressBar.setVisibility(View.GONE);
-                progressBar.setVisibility(View.GONE);
+//                carProgressBar.setVisibility(View.GONE);
+//                progressBar.setVisibility(View.GONE);
 
             };
             handlerBonusBtn.postDelayed(runnableBonusBtn, delayMillis);
@@ -425,19 +440,21 @@ public class FinishSeparateFragment extends Fragment {
         myTaskStatus = new Runnable() {
             @Override
             public void run() {
-                // Ваша логика
+                // Ваш код
+                isTaskRunning = true;
                 try {
                     statusOrderWithDifferentValue(uid);
                 } catch (ParseException e) {
                     throw new RuntimeException(e);
                 }
+
                 // Запланировать повторное выполнение
                 handlerStatus.postDelayed(this, delayMillisStatus);
+                isTaskRunning = false; // Сброс состояния
             }
         };
 
-        // Запускаем цикл
-        startCycle();
+
 
         // Запланируйте выполнение задачи
 
@@ -458,8 +475,8 @@ public class FinishSeparateFragment extends Fragment {
                 }
                 
 //                btn_cancel_order.setText( context.getString(R.string.help_button));
-                progressBar.setVisibility(View.GONE);
-                carProgressBar.setVisibility(View.GONE);
+//                progressBar.setVisibility(View.GONE);
+//                carProgressBar.setVisibility(View.GONE);
 
             };
             handler.postDelayed(myRunnable, delayMillis);
@@ -473,7 +490,7 @@ public class FinishSeparateFragment extends Fragment {
 
             carProgressBar.setVisibility(View.GONE);
             cancel_btn_click = true;
-            canceled = false;
+
             textCost.setVisibility(View.GONE);
             textCostMessage.setVisibility(View.GONE);
             progressBar.setVisibility(View.GONE);
@@ -631,21 +648,28 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     private void btnOpen() {
+        Log.d("btnOpen", "pay_method " + pay_method);
+        Log.d("btnOpen", "canceled " + canceled);
 
         if (btn_reset_status.getVisibility() == View.VISIBLE) {
             // Анимация исчезновения кнопок
-            btn_reset_status.animate().alpha(0f).setDuration(300).withEndAction(() -> btn_reset_status.setVisibility(View.GONE));
+            if ("nal_payment".equals(pay_method) || "wfp_payment".equals(pay_method)) {
+                btn_reset_status.animate().alpha(0f).setDuration(300).withEndAction(() -> btn_reset_status.setVisibility(View.GONE));
+            }
             btn_cancel_order.animate().alpha(0f).setDuration(300).withEndAction(() -> btn_cancel_order.setVisibility(View.GONE));
             btn_again.animate().alpha(0f).setDuration(300).withEndAction(() -> btn_again.setVisibility(View.GONE));
         } else {
             // Анимация появления кнопок
-            btn_reset_status.setVisibility(View.VISIBLE);
-            btn_reset_status.setAlpha(0f);
-            btn_reset_status.animate().alpha(1f).setDuration(300);
+            if ("nal_payment".equals(pay_method) || "wfp_payment".equals(pay_method)) {
+                btn_reset_status.setVisibility(View.VISIBLE);
+                btn_reset_status.setAlpha(0f);
+                btn_reset_status.animate().alpha(1f).setDuration(300);
+            }
 
             btn_cancel_order.setVisibility(View.VISIBLE);
             btn_cancel_order.setAlpha(0f);
             btn_cancel_order.animate().alpha(1f).setDuration(300);
+
 
             btn_again.setVisibility(View.VISIBLE);
             btn_again.setAlpha(0f);
@@ -653,17 +677,24 @@ public class FinishSeparateFragment extends Fragment {
         }
     }
 
+    private void stopCycle() {
+        isTaskCancelled = true; // Устанавливаем флаг
+        if (handlerStatus != null) {
+            handlerStatus.removeCallbacks(myTaskStatus);
+        }
+    }
+
     private void startCycle() {
-        handlerStatus.post(myTaskStatus);
+        if (!isTaskRunning && !isTaskCancelled) {
+            handlerStatus.post(myTaskStatus);
+        }
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         // Отменяем выполнение Runnable, если активити остановлена
-        if (handlerStatus != null) {
-            handlerStatus.removeCallbacks(myTaskStatus);
-        }
+        stopCycle();
         if (handlerAddcost != null ) {
             handlerAddcost.removeCallbacks(showDialogAddcost);
         }
@@ -675,9 +706,7 @@ public class FinishSeparateFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
-        if (handlerStatus != null) {
-            handlerStatus.removeCallbacks(myTaskStatus);
-        }
+        stopCycle();
         if (handlerAddcost != null) {
             handlerAddcost.removeCallbacks(showDialogAddcost);
         }
@@ -697,6 +726,9 @@ public class FinishSeparateFragment extends Fragment {
         Logger.d(context, TAG, "payWfp: MainActivity.order_id " + MainActivity.order_id);
         callOrderIdMemory(MainActivity.order_id, uid, pay_method);
         if (rectoken.isEmpty()) {
+            if (handlerAddcost != null) {
+                handlerAddcost.removeCallbacks(showDialogAddcost);
+            }
             getUrlToPaymentWfp(amount, MainActivity.order_id);
             getStatusWfp(MainActivity.order_id);
         } else {
@@ -946,7 +978,11 @@ public class FinishSeparateFragment extends Fragment {
                 getReversWfp(city);
             }
         });
-
+        if(need_20_add) {
+            if (handlerStatus == null) {
+                handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost);
+            }
+        }
     }
 
     private void getReversWfp(String city) {
@@ -1782,16 +1818,19 @@ public class FinishSeparateFragment extends Fragment {
                             break;
                         case "Canceled":
                             text_status.clearAnimation();
-                            canceled = false;
+                            btn_cancel_order.setVisibility(View.GONE);
+                            btn_reset_status.setVisibility(View.GONE);
+                            btn_open.setVisibility(View.GONE);
+                            btn_options.setVisibility(View.GONE);
+                            canceled = true;
                             if (handler != null) {
                                 handler.removeCallbacks(myRunnable);
                             }
                             if (handlerBonusBtn != null) {
                                 handlerBonusBtn.removeCallbacks(runnableBonusBtn);
                             }
-                            if (handlerStatus != null) {
-                                handlerStatus.removeCallbacks(myTaskStatus);
-                            }
+                            stopCycle();
+
                             if (handlerAddcost != null) {
                                 handlerAddcost.removeCallbacks(showDialogAddcost);
                             }
@@ -1800,41 +1839,30 @@ public class FinishSeparateFragment extends Fragment {
                             }
                             Logger.d(context, TAG, "statusOrderWithDifferentValue canceled: " + canceled);
                             if(cancel_btn_click) {
-                                message = context.getString(R.string.ex_st_canceled);
-
-
                                 message =  context.getString(R.string.ex_st_canceled);
                             } else {
                                 if (pay_method.equals("fondy_payment") || pay_method.equals("mono_payment")|| pay_method.equals("wfp_payment")) {
                                     Logger.d(context, TAG, "statusOrderWithDifferentValue canceled: " + uid);
                                     message =  context.getString(R.string.pay_cancel);
+                                    textCost.setVisibility(View.GONE);
+                                    textCostMessage.setVisibility(View.GONE);
+                                    carProgressBar.setVisibility(View.GONE);
+                                    progressSteps.setVisibility(View.GONE);
+                                    btn_again.setVisibility(View.VISIBLE);
                                 } else {
                                     message =  context.getString(R.string.ex_st_canceled);
+                                    textCost.setVisibility(View.GONE);
+                                    textCostMessage.setVisibility(View.GONE);
+                                    carProgressBar.setVisibility(View.GONE);
+                                    progressSteps.setVisibility(View.GONE);
+                                    btn_again.setVisibility(View.VISIBLE);
+//                                    MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
+//
+//                                    fragmentManager.beginTransaction()
+//                                            .add(bottomSheetDialogFragment, bottomSheetDialogFragment.getTag())
+//                                            .commitAllowingStateLoss();
                                 }
                             }
-
-                            if(canceled) {
-                                MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
-
-                                fragmentManager.beginTransaction()
-                                        .add(bottomSheetDialogFragment, bottomSheetDialogFragment.getTag())
-                                        .commitAllowingStateLoss();
-                            }
-//                            if(!need_20_add) {
-//                                textCost.setVisibility(View.GONE);
-//                                textCostMessage.setVisibility(View.GONE);
-//                                carProgressBar.setVisibility(View.GONE);
-//                                progressBar.setVisibility(View.GONE);
-//                                progressSteps.setVisibility(View.GONE);
-//
-//
-//                                btn_options.setVisibility(View.GONE);
-//                                btn_open.setVisibility(View.GONE);
-//                                btn_reset_status.setVisibility(View.GONE);
-//                                btn_cancel_order.setVisibility(View.GONE);
-//                                btn_again.setVisibility(View.VISIBLE);
-//                            }
-
 
                             text_status.setText(message);
                             break;
@@ -2059,8 +2087,10 @@ public class FinishSeparateFragment extends Fragment {
     public void onResume() {
         super.onResume();
         addCheck(context);
+        isTaskRunning = false;
+        isTaskCancelled = false;
+        startCycle();
 
-        handler.postDelayed(myRunnable, 100);
 
         int colorPressed = ContextCompat.getColor(context, R.color.colorDefault); // Цвет текста при нажатии
         int colorDefault = ContextCompat.getColor(context, R.color.colorAccent); // Исходный цвет текста
@@ -2083,9 +2113,9 @@ public class FinishSeparateFragment extends Fragment {
     public void onStop() {
         super.onStop();
         // Отменяем выполнение Runnable, если фрагмент уходит в фон
-        if (handlerStatus != null) {
-            handlerStatus.removeCallbacks(myTaskStatus);
-        }
+
+        stopCycle();
+
         if (handlerAddcost != null) {
             handlerAddcost.removeCallbacks(showDialogAddcost);
         }
@@ -2100,9 +2130,7 @@ public class FinishSeparateFragment extends Fragment {
         if (handlerBonusBtn != null && runnableBonusBtn != null) {
             handlerBonusBtn.postDelayed(runnableBonusBtn, 2000); // Устанавливаем нужную задержку
         }
-        if (handlerStatus != null && myTaskStatus != null) {
-            handlerStatus.postDelayed(myTaskStatus, 3000); // Устанавливаем нужную задержку
-        }
+        startCycle();
 
     }
     private void startAddCostDialog (
@@ -2140,30 +2168,11 @@ public class FinishSeparateFragment extends Fragment {
                     Logger.d(context, TAG, "No numeric value found in the text.");
                 }
             });
-        } else if ("bonus_payment".equals(pay_method)) {
-            btn_reset_status.setOnClickListener(view -> {
-                String text = textCostMessage.getText().toString();
-                Logger.d(getActivity(), TAG, "textCostMessage.getText().toString() " + text);
-
-                Pattern pattern = Pattern.compile("(\\d+)");
-                Matcher matcher = pattern.matcher(text);
-
-//                if (matcher.find()) {
-//                    Logger.d(context, TAG, "amount_to_add: " + matcher.group(1));
-//                    MyBottomSheetAddCostFragment bottomSheetDialogFragment = new MyBottomSheetAddCostFragment(
-//                            matcher.group(1),
-//                            uid,
-//                            uid_Double,
-//                            pay_method,
-//                            context,
-//                            fragmentManager
-//                    );
-//                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-//                } else {
-//                    Logger.d(context, TAG, "No numeric value found in the text.");
-//                }
-            });
-        } else {
+        }
+        else if ("bonus_payment".equals(pay_method)) {
+            btn_reset_status.setVisibility(View.GONE);
+        }
+        else {
             btn_reset_status.setVisibility(View.GONE);
         }
 
@@ -2210,8 +2219,30 @@ public class FinishSeparateFragment extends Fragment {
                         handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
                     }
                      dialog.dismiss();
-                })
-                .show();
+                });
+
+        AlertDialog dialog = builder.create();
+
+        dialog.show();
+
+        // Настройка цветов кнопок
+        Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+
+        if (positiveButton != null) {
+            positiveButton.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorAccent));
+            positiveButton.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.white));
+            ViewParent buttonPanel = positiveButton.getParent();
+            if (buttonPanel instanceof ViewGroup) {
+                ((ViewGroup) buttonPanel).setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.background_color_new));
+            }
+
+        }
+        if (negativeButton != null) {
+            negativeButton.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.selected_text_color_2));
+            negativeButton.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.white));
+
+        }
     }
 
 

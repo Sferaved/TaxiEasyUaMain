@@ -900,7 +900,9 @@ public class MainActivity extends AppCompatActivity {
         if (item.getItemId() == R.id.action_exit) {
             deleteOldLogFile();
             System.gc();
-            finishAffinity();
+
+            finishAffinity(); // Закрывает все активити
+            System.exit(0);
         }
 
         if (item.getItemId() == R.id.gps) {

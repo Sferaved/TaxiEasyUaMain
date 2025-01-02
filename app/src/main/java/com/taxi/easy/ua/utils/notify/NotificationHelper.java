@@ -18,7 +18,6 @@ import android.os.IBinder;
 import android.view.View;
 
 import androidx.annotation.Nullable;
-
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;

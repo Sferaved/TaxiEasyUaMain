@@ -95,7 +95,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     private TextView text_card;
     private String email;
 //    private final String baseUrl = "https://m.easy-order-taxi.site/";
-    String baseUrl =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+    String baseUrl;
 
     public MyBottomSheetErrorPaymentFragment(
             String pay_method,
@@ -140,7 +140,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         btn_ok.setOnClickListener(v -> {
             btn_ok.setVisibility(View.INVISIBLE);
             view.findViewById(R.id.progress_bar).setVisibility(View.VISIBLE);
-            cancelOrderDouble();
+            cancelOrderDoubleForNal();
 
 
         });
@@ -291,7 +291,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(interceptor)
                 .build();
@@ -350,7 +350,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
     public void orderFinished(String page) throws MalformedURLException {
         String urlOrder = getTaxiUrlSearchMarkers(page, context);
-
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
 //            // Пример строки URL с параметрами
@@ -371,8 +371,6 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
                     String messagePayment = orderWeb + context.getString(R.string.UAH) + " " + pay_method_message;
 
-
-
                     FinishSeparateFragment.textCost.setVisibility(View.VISIBLE);
                     FinishSeparateFragment.textCostMessage.setVisibility(View.VISIBLE);
                     FinishSeparateFragment.carProgressBar.setVisibility(View.VISIBLE);
@@ -390,7 +388,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     FinishSeparateFragment.handlerStatus.post(FinishSeparateFragment.myTaskStatus);
                     FinishSeparateFragment.handlerAddcost.postDelayed( FinishSeparateFragment.showDialogAddcost, FinishSeparateFragment.timeCheckOutAddCost);
                     FinishSeparateFragment.pay_method = "nal_payment";
-                    dismiss();
+
                 }
                 else {
                     assert message != null;
@@ -418,7 +416,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
-
+        dismiss();
     }
 
      
@@ -775,7 +773,50 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         List<String> listCity = logCursor(MainActivity.CITY_INFO,context);
         String city = listCity.get(1);
         String api = listCity.get(2);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") +"/";
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";;
+        String url = baseUrl  + api + "/android/webordersCancelDouble/" + FinishSeparateFragment.uid+ "/" + FinishSeparateFragment.uid_Double + "/" + pay_method + "/" + city  + "/" + context.getString(R.string.application);
+
+        Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
+        Logger.d(context, TAG, "cancelOrderDouble: " + url);
+
+        call.enqueue(new Callback<Status>() {
+            @Override
+            public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
+                if (response.isSuccessful()) {
+                    Logger.d(context, TAG, "cancelOrderDouble response: " + response.toString());
+
+
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
+                if (t instanceof SocketTimeoutException) {
+                    Logger.d(context, TAG, "onFailure: Тайм-аут соединения");
+                } else if (t instanceof IOException) {
+                    Logger.d(context, TAG, "onFailure: Ошибка сети или соединения");
+                } else {
+                    Logger.d(context, TAG, "onFailure: Непредвиденная ошибка");
+                }
+
+                // Логируем исключение
+                FirebaseCrashlytics.getInstance().recordException(t);
+
+                // Выводим сообщение пользователю
+                String errorMessage = t.getMessage();
+                Logger.d(context, TAG, "onFailure: Ошибка: " + errorMessage);
+
+            }
+
+        });
+        dismiss();
+    }
+
+    private void cancelOrderDoubleForNal() {
+        List<String> listCity = logCursor(MainActivity.CITY_INFO,context);
+        String city = listCity.get(1);
+        String api = listCity.get(2);
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";;
         String url = baseUrl  + api + "/android/webordersCancelDouble/" + FinishSeparateFragment.uid+ "/" + FinishSeparateFragment.uid_Double + "/" + pay_method + "/" + city  + "/" + context.getString(R.string.application);
 
         Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
@@ -812,12 +853,12 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 // Выводим сообщение пользователю
                 String errorMessage = t.getMessage();
                 Logger.d(context, TAG, "onFailure: Ошибка: " + errorMessage);
-                dismiss();
+
             }
 
         });
+        dismiss();
     }
-
     @Override
     public void onResume() {
         super.onResume();

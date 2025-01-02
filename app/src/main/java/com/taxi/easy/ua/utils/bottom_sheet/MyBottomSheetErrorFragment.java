@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.MainActivity.navController;
 
 import android.annotation.SuppressLint;
@@ -27,7 +26,6 @@ import androidx.navigation.NavOptions;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
@@ -97,7 +95,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                 btn_ok.setText(getString(R.string.order_to_cancel_review));
                 btn_ok.setOnClickListener(v -> {
                     navController.navigate(R.id.nav_cancel, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_cancel, true)
+                            .setPopUpTo(R.id.nav_visicom, true)
                             .build());
 
 
