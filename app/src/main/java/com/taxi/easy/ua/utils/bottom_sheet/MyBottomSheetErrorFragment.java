@@ -26,6 +26,7 @@ import androidx.navigation.NavOptions;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
@@ -85,7 +86,14 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                             new String[] { "1" });
                     database.close();
                     dismiss();
-                    startActivity(new Intent(requireContext(), MainActivity.class));
+
+                    if (NetworkUtils.isNetworkAvailable(requireContext())) {
+
+                        MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_visicom, true)
+                                .build());
+                    }
+//                    startActivity(new Intent(requireContext(), MainActivity.class));
                 });
             } else if(errorMessage.equals(getString(R.string.server_error_connected))) {
                 textViewInfo.setOnClickListener(v -> dismiss());

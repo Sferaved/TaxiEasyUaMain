@@ -96,6 +96,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     private String email;
 //    private final String baseUrl = "https://m.easy-order-taxi.site/";
     String baseUrl;
+    String message;
 
     public MyBottomSheetErrorPaymentFragment(
             String pay_method,
@@ -109,6 +110,19 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         this.context = context;
     }
 
+    public MyBottomSheetErrorPaymentFragment(
+            String pay_method,
+            String messageFondy,
+            String amount,
+            Context context,
+            String message
+    ) {
+        this.pay_method = pay_method;
+        MyBottomSheetErrorPaymentFragment.messageFondy = messageFondy;
+        this.amount = amount;
+        this.context = context;
+        this.message = message;
+    }
     @SuppressLint("MissingInflatedId")
      
     @Nullable
@@ -147,6 +161,9 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         textViewInfo = view.findViewById(R.id.textViewInfo);
         text_card = view.findViewById(R.id.text_card);
 
+        if( message != null) {
+            textViewInfo.setText(message);
+        }
         btn_card = view.findViewById(R.id.btn_card);
         btn_card.setOnClickListener(v -> {
             switch (pay_method) {
@@ -184,7 +201,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         btn_cancel = view.findViewById(R.id.btn_cancel_order);
         btn_cancel.setOnClickListener(v -> {
             cancelOrderDouble();
-            context.startActivity(new Intent(context, MainActivity.class));
+            dismiss();
         });
         listView = view.findViewById(R.id.listView);
         return view;
@@ -385,10 +402,12 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     FinishSeparateFragment.uid = sendUrlMap.get("dispatching_order_uid");
                     FinishSeparateFragment.uid_Double = " ";
 
+                    pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
                     FinishSeparateFragment.handlerStatus.post(FinishSeparateFragment.myTaskStatus);
-                    FinishSeparateFragment.handlerAddcost.postDelayed( FinishSeparateFragment.showDialogAddcost, FinishSeparateFragment.timeCheckOutAddCost);
+                    if (pay_method.equals("wfp_payment")) {
+                        FinishSeparateFragment.handlerAddcost.postDelayed( FinishSeparateFragment.showDialogAddcost, FinishSeparateFragment.timeCheckOutAddCost);
+                    }
                     FinishSeparateFragment.pay_method = "nal_payment";
-
                 }
                 else {
                     assert message != null;
@@ -416,6 +435,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
+        FinishSeparateFragment.progressBar.setVisibility(View.GONE);
         dismiss();
     }
 

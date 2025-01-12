@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.ui.visicom.visicom_search;
 
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.getContext;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.Manifest;
@@ -66,6 +67,7 @@ import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.visicom.visicom_search.key_visicom.ApiResponse;
 import com.taxi.easy.ua.ui.keyboard.KeyboardUtils;
 import com.taxi.easy.ua.utils.LocaleHelper;
+import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.connect.ConnectionSpeedTester;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -748,6 +750,9 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                     double latitude = firstLocation.getLatitude();
                     double longitude = firstLocation.getLongitude();
+
+                    CityFinder cityFinder = new CityFinder(getContext());
+                    cityFinder.findCity(latitude, longitude);
 
                     List<String> stringList = logCursor(MainActivity.CITY_INFO);
                     String api =  stringList.get(2);

@@ -48,8 +48,6 @@ public class MarkerOverlayVisicom extends Overlay {
             case "startMarker":
                 OpenStreetMapVisicomActivity.startPoint = pointGeo;
                 try {
-
-
                         OpenStreetMapVisicomActivity.dialogMarkerStartPoint();
 
                 } catch (MalformedURLException e) {

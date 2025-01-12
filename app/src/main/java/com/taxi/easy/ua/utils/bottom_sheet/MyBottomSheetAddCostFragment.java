@@ -6,6 +6,7 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
@@ -155,6 +156,8 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             );
             String url = call.request().url().toString();
             Logger.d(context, TAG, "URL запроса nal_payment: " + url);
+            FinishSeparateFragment.text_status.setText(R.string.recounting_order);
+
             call.enqueue(new Callback<Status>() {
                 @Override
                 public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
@@ -185,9 +188,9 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                                 FinishSeparateFragment.btn_options.setVisibility(View.VISIBLE);
                                 FinishSeparateFragment.btn_open.setVisibility(View.VISIBLE);
 
-
-
                                 FinishSeparateFragment.textCostMessage.setText(updatedCost);
+                                String message =  context.getString(R.string.ex_st_0);
+                                FinishSeparateFragment.textStatus.setText(message);
                                 Log.d("UpdatedCost", "Обновленная строка: " + updatedCost);
                             } else {
                                 Log.e("UpdatedCost", "Число не найдено в строке: " + cost);
@@ -220,6 +223,9 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         Logger.d(context, TAG, "startAddCostCardUpdate: ");
         String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS);
         Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
+
+        FinishSeparateFragment.text_status.setText(R.string.recounting_order);
+
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
 
         wfpInvoice(MainActivity.order_id , addCost, uid);
@@ -231,6 +237,12 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             paymentByTokenWfp(FinishSeparateFragment.messageFondy, addCost, rectoken, MainActivity.order_id );
         }
 
+    }
+
+    @Override
+    public void onDismiss(@NonNull DialogInterface dialog) {
+        super.onDismiss(dialog);
+        FinishSeparateFragment.handlerStatus.postDelayed(FinishSeparateFragment.myTaskStatus, 10000);
     }
 
     @SuppressLint("Range")
@@ -332,8 +344,10 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             FinishSeparateFragment.btn_open.setVisibility(View.VISIBLE);
 
 
-            FinishSeparateFragment.textCostMessage.setText(updatedCost);
 
+            FinishSeparateFragment.textCostMessage.setText(updatedCost);
+            String message =  context.getString(R.string.ex_st_0);
+            FinishSeparateFragment.textStatus.setText(message);
             Log.d("UpdatedCost", "Обновленная строка: " + updatedCost);
 
         } else {

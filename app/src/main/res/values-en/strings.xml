@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.785</string>
-    <string name="version">Version: 1.785</string>
+    <string name="version_code">1.786</string>
+    <string name="version">Version: 1.786</string>
 
     <string name="app_name">Taxi Dostavka</string>
 
@@ -42,7 +42,7 @@
     <string name="gps_ok">Geopositioning is enabled</string>
     <string name="cancel_button">No thanks</string>
     <string name="gps_on">Enable</string>
-    <string name="gps_info">To improve the performance of the application, enable Google geolocation on your device</string>
+    <string name="gps_info">To improve the program, allow access to your geolocation on the device</string>
     <string name="gps_on_button">turn on gps</string>
     <string name="wellcome">Create a route or choose a favorite.</string>
     <string name="verify_phone">Verify phone</string>
@@ -359,8 +359,8 @@
     <string name="tarif">Tariff:</string>
     <string name="tar">Tariff</string>
     <string name="double_order_error">Duplicate order. You cannot create a similar order until a car has been found for the previous order.</string>
-    <string name="user_cards">Your cards for paying for travel:</string>
-    <string name="error_payment_card">Error processing payment. Choose a card for a friend or order a trip in cash.</string>
+    <string name="user_cards">Your cards for paying for trips:</string>
+    <string name="error_payment_card">Error processing payment. Please choose another card or book a ride with cash.</string>
     <string name="nal_payment_btn">For cash</string>
     <string name="new_card_btn">New card</string>
     <string name="chois_card_btn">Selected card</string>
@@ -483,4 +483,7 @@
     <string name="close">Close</string>
     <string name="ok_add_cost">Confirm</string>
     <string name="add_cost_btn">I want it faster</string>
+    <string name="addCostBonusMessage">For a faster car search, order in cash or pay for the trip by card</string>
+    <string name="recounting_order">Order recalculation in progress</string>
+    <string name="ex_st_finished">Your trip is over. Thank you for using our services. We look forward to seeing you next time.</string>
 </resources>

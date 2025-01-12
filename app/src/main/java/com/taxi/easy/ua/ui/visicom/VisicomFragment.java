@@ -84,6 +84,7 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGeoFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
+import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.data.DataArr;
@@ -433,6 +434,7 @@ public class VisicomFragment extends Fragment {
         text_view_cost.setVisibility(visible);
         btn_plus.setVisibility(visible);
         btnOrder.setVisibility(visible);
+
         schedule.setVisibility(visible);
 
         shed_down.setVisibility(visible);
@@ -535,22 +537,19 @@ public class VisicomFragment extends Fragment {
         List<String> list = new ArrayList<>();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(table, null, null, null, null, null, null);
-        if (c != null) {
-            if (c.moveToFirst()) {
-                String str;
-                do {
-                    str = "";
-                    for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+        if (c.moveToFirst()) {
+            String str;
+            do {
+                str = "";
+                for (String cn : c.getColumnNames()) {
+                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
+                    list.add(c.getString(c.getColumnIndex(cn)));
 
-                    }
+                }
 
-                } while (c.moveToNext());
-            }
+            } while (c.moveToNext());
         }
         database.close();
-        assert c != null;
         c.close();
         return list;
     }
@@ -1680,7 +1679,6 @@ public class VisicomFragment extends Fragment {
 
         LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         gpsbut.setOnClickListener(v -> {
-
             if (locationManager != null) {
                 if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                     if (loadPermissionRequestCount() >= 3 && !MainActivity.location_update) {
@@ -1758,7 +1756,8 @@ public class VisicomFragment extends Fragment {
                 MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
-
+            schedule.setVisibility(View.VISIBLE);
+            shed_down.setVisibility(View.VISIBLE);
 
         });
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
@@ -1918,6 +1917,9 @@ public class VisicomFragment extends Fragment {
 
     private void firstLocation() {
         progressBar.setVisibility(View.VISIBLE);
+        schedule.setVisibility(View.VISIBLE);
+        shed_down.setVisibility(View.VISIBLE);
+
         Toast.makeText(requireContext(), context.getString(R.string.search), Toast.LENGTH_SHORT).show();
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context);
@@ -1984,6 +1986,8 @@ public class VisicomFragment extends Fragment {
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 }
             });
+            schedule.setVisibility(View.VISIBLE);
+            shed_down.setVisibility(View.VISIBLE);
         });
         locationCallback = new LocationCallback() {
 
@@ -2001,6 +2005,7 @@ public class VisicomFragment extends Fragment {
 
                     double latitude = firstLocation.getLatitude();
                     double longitude = firstLocation.getLongitude();
+
 
 
                     List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
@@ -2040,7 +2045,7 @@ public class VisicomFragment extends Fragment {
                                         city = context.getString(R.string.foreign_countries);
                                         break;
                                 }
-                                FromAdressString = context.getString(R.string.startPoint) + ", " + context.getString(R.string.city_loc) + " " + city;
+                                FromAdressString = context.getString(R.string.startPoint);
                             }
 
                             updateMyPosition(latitude, longitude, FromAdressString, context);
@@ -2162,6 +2167,9 @@ public class VisicomFragment extends Fragment {
                                 }
                             });
 
+                            CityFinder cityFinder = new CityFinder(context, latitude, longitude , FromAdressString);
+                            cityFinder.findCity(latitude, longitude);
+
                             try {
                                 visicomCost();
                             } catch (MalformedURLException e) {
@@ -2172,6 +2180,8 @@ public class VisicomFragment extends Fragment {
                             Logger.d(context, TAG, "Ошибка при выполнении запроса");
                         }
                     });
+
+
                 }
             }
 
@@ -2354,6 +2364,9 @@ public class VisicomFragment extends Fragment {
 
                                     btn_clear_from_text.setVisibility(View.GONE);
                                     constr2.setVisibility(View.VISIBLE);
+
+                                    schedule.setVisibility(View.VISIBLE);
+                                    shed_down.setVisibility(View.VISIBLE);
                                 }
                                 costSearchMarkersLocalTariffs(context);
                             }

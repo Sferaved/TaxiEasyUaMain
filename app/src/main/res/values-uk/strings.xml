@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.785</string>
-    <string name="version">Версія: 1.785</string>
+    <string name="version_code">1.786</string>
+    <string name="version">Версія: 1.786</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -41,7 +41,7 @@
     <string name="gps_ok">Визначення геопозиції включено</string>
     <string name="cancel_button">Ні, дякую</string>
     <string name="gps_on">Увімкнути</string>
-    <string name="gps_info">Щоб покращити роботу програми, увімкніть на пристрої геолокацію Google</string>
+    <string name="gps_info">Щоб покращити роботу програми, дозвольте доступ на пристрої до Вашої геолокації</string>
     <string name="gps_on_button">включить gps</string>
     <string name="wellcome">Сформуйте маршрут або виберіть улюблений.</string>
     <string name="verify_phone">Перевірка телефону</string>
@@ -87,7 +87,7 @@
     <string name="to_adress_message">Куди їдемо?</string>
     <string name="coastMarkersMessage">"Вартість подорожі по маршруту "</string>
     <string name="please_phone_message">Додаток передає номер Вашого мобільного телефону для включення функції замовлення таксі. Натиснувши кнопку Зберегти Ви підтверджуєте згоду на передачу номера телефону диспетчеру для пошуку автомобіля та збереження його для наступних замовлень.</string>
-    <string name="check_message">Чекайте, йде підключення.</string>
+    <string name="check_message">Зачекайте, йде підключення.</string>
     <string name="find_of_map">Спробуйте знайти на карті</string>
     <string name="end_point_marker">Місце призначення</string>
     <string name="error_firebase_start">Помилка перевірки. Наберіть оператора через "ДОПОМОГУ"</string>
@@ -263,7 +263,7 @@
     <string name="return_pay">Повернення замовлення.</string>
     <string name="return_pay_error">Помилка повернення платежу.</string>
     <string name="btn_pay_return">Повернути оплату</string>
-    <string name="check_pay_return">Чекайте на повернення платежу</string>
+    <string name="check_pay_return">Зачекайте на повернення платежу</string>
     <string name="btn_return">Повернутись до додатку</string>
     <string name="fondy_back">Для замовлення поїздки після успішної оплати або для вибору іншого способу платежу - натисніть на своєму телефоні кнопку \"Повернутись\" (стрілочка \"Назад\").</string>
     <string name="fondy_back_ver">Після успішної перевірки - натисніть на своєму телефоні кнопку \"Повернутись\" (стрілочка \"Назад\").</string>
@@ -332,7 +332,7 @@
     <string name="author_about">Про автора</string>
     <string name="foreign_countries">Інше</string>
     <string name="order_in">"заказ в "</string>
-    <string name="checking">Чекайте, йде перевірка даних.</string>
+    <string name="checking">Зачекайте, йде перевірка даних.</string>
     <string name="time_out_text">Скасування поїздки по таймауту оплати. Спробуйте ще.</string>
     <string name="pay_cancel">Поїздку скасовано через відсутність успішної оплати протягом відведеного таймінгу. Спробуйте ще.</string>
     <string name="ex_st_canceled">Заказ скасовано. Спробуйте ще.</string>
@@ -363,7 +363,7 @@
     <string name="tar">Тариф</string>
     <string name="double_order_error">Дублювання замовлення. Ви не можете створювати подібне замовлення, поки не знайшлася машина на попереднє замовлення.</string>
     <string name="user_cards">Ваші картки для оплати подорожей:</string>
-    <string name="error_payment_card">Помилка обробки платежу. Виберіть другу картку або замовте подорож за готівку.</string>
+    <string name="error_payment_card">Помилка обробки платежу. Виберіть іншу карту або замовте подорож за готівку.</string>
     <string name="nal_payment_btn">За готівку</string>
     <string name="new_card_btn">Нова карта</string>
     <string name="chois_card_btn">Вибраною карткою</string>
@@ -393,11 +393,11 @@
     <string name="order_continue">Продовжити перегляд</string>
     <string name="anr_message">Вибачте, довелося трохи зачекати</string>
     <string name="change_tarrif">Виберіть інший тариф</string>
-    <string name="checkout_status">Чекайте, йде перевірка статусу замовлення...</string>
-    <string name="check_order_mes">Чекайте на реєстрацію замовлення...</string>
+    <string name="checkout_status">Зачекайте, йде перевірка статусу замовлення...</string>
+    <string name="check_order_mes">Зачекайте на реєстрацію замовлення...</string>
     <string name="sent_cancel_message">Запит на скасування замовлення надіслано</string>
     <string name="aplay_card_message">Вашу картку прийн585858585858585858585858585858ято та відправлено на перевірку. Скоро вона стане доступною для оплати подорожей.</string>
-    <string name="status_checkout_message">Запитано оновлення статусу. Чекайте або уточніть оператора</string>
+    <string name="status_checkout_message">Запитано оновлення статусу. Зачекайте або уточніть оператора</string>
     <string name="update_finish_mes">Оновлення завершено. Програма буде перезапущена.</string>
     <string name="udate_cancel">Оновити список</string>
     <string name="order_to_cancel">Замовлення в роботі</string>
@@ -467,7 +467,7 @@
     <string name="black_list">Помилка замовлення</string>
     <string name="finish_info">Замовлення знято</string>
     <string name="no_options">У Вашому замовленні немає додаткових опцій</string>
-    <string name="check_cost_message">Чекайте, йде розрахунок вартості поїздки...</string>
+    <string name="check_cost_message">Зачекайте, йде розрахунок вартості поїздки...</string>
     <string name="android_version">Версія Андроїда:</string>
     <string name="device">Пристрій:</string>
     <string name="time_car_found">Время поиска машины подошло к концу</string>
@@ -486,4 +486,8 @@
     <string name="close">Закрити</string>
     <string name="ok_add_cost">Підтвердити</string>
     <string name="add_cost_btn">Хочу швидше</string>
+    <string name="addCostBonusMessage">Для швидшого пошуку авто замовте за готівку або з оплатою поїздки карткою</string>
+    <string name="recounting_order">Відбувається перерахунок замовлення</string>
+    <string name="ex_st_finished">Ваша подорож завершена. Дякуємо, що скористалися нашими послугами. Чекаємо на Вас наступного разу.</string>
+
 </resources>

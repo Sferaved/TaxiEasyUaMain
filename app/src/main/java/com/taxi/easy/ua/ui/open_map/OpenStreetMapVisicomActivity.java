@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.ui.open_map;
 
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.getContext;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.Manifest;
@@ -52,6 +53,7 @@ import com.taxi.easy.ua.ui.open_map.api.ApiResponse;
 import com.taxi.easy.ua.ui.open_map.api.ApiService;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 
@@ -86,8 +88,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     private static final String TAG = "OpenStreetMapVisicomActivity";
     public static IMapController mapController;
-//    private static final String BASE_URL = "https://m.easy-order-taxi.site/";
-    private static final String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+
     private static ApiService apiService;
 
     public String[] arrayStreet;
@@ -376,12 +377,13 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
             startLat = startPoint.getLatitude();
             startLan = startPoint.getLongitude();
-            if(m != null) {
+
+             if(m != null) {
                 map.getOverlays().remove(m);
                 map.invalidate();
                 m = null;
             }
-
+            String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
 
             Retrofit retrofit = new Retrofit.Builder()
                     .baseUrl(BASE_URL)
@@ -428,6 +430,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                     marker = null;
                 }
 
+                String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
 
 
                 Retrofit retrofit = new Retrofit.Builder()
@@ -545,7 +548,8 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                                 updateRoutMarker(settings, map.getContext());
                                 updateMyPosition(startLat, startLan, FromAdressString, map.getContext());
 
-
+                                CityFinder cityFinder = new CityFinder(getContext(), latitude, longitude , FromAdressString);
+                                cityFinder.findCity(latitude, longitude);
 
 
                             }
@@ -760,6 +764,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                     }
                     Locale locale = Locale.getDefault();
                     String language = locale.getLanguage(); // Получаем язык устройства
+                    String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
 
                     String urlFrom = BASE_URL + "/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
 
@@ -987,6 +992,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         String city = listCity.get(1);
         String api = listCity.get(2);
+        String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
 
         String url = BASE_URL + "/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
