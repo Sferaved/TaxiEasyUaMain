@@ -5,6 +5,7 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.ContentValues;
@@ -27,6 +28,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -57,6 +59,7 @@ import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
 import com.google.android.play.core.install.model.AppUpdateType;
 import com.google.android.play.core.install.model.UpdateAvailability;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -898,11 +901,14 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
         if (item.getItemId() == R.id.action_exit) {
+
+            FirebaseApp.getInstance().setDataCollectionDefaultEnabled(false);
             deleteOldLogFile();
-            System.gc();
+//            System.gc();
 
             finishAffinity(); // Закрывает все активити
             System.exit(0);
+
         }
 
         if (item.getItemId() == R.id.gps) {
@@ -983,40 +989,43 @@ public class MainActivity extends AppCompatActivity {
     public void updateApp() {
         // Устанавливаем флаг обновления
         appUpdater = new AppUpdater();
+        if (isUpdateInProgress) {
+            Logger.d(this, TAG, "Update process already in progress.");
+            return;
+        }
         isUpdateInProgress = true;
         Logger.d(this, TAG, "Starting app update process");
+
         sharedPreferencesHelperMain.saveValue("visible_shed", "ok");
-        // Проверка наличия обновлений
-        checkForUpdate(this);
 
-        // Устанавливаем слушателя для завершения обновления
+        // Выполнение проверки обновлений в фоне
+        new Thread(() -> checkForUpdate(this)).start();
+
+        // Устанавливаем слушателя
+        if (appUpdater != null) {
+            appUpdater.unregisterListener();
+        }
+        assert appUpdater != null;
         appUpdater.setOnUpdateListener(() -> {
-            // Обновление завершено
             Toast.makeText(this, R.string.update_finish_mes, Toast.LENGTH_SHORT).show();
-
-            // Перезапуск приложения после небольшой задержки
-            new Handler(Looper.getMainLooper()).postDelayed(this::restartApplication, 1000);
-
-            // Сброс флага обновления
+            new Handler(Looper.getMainLooper()).postDelayed(this::restartApplication, 3000);
             isUpdateInProgress = false;
         });
 
         // Регистрация слушателя
         appUpdater.registerListener();
 
-        // Таймаут на случай зависания обновления
+        // Тайм-аут
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             if (isUpdateInProgress) {
-                // Если обновление не завершилось за 10 минут
-                Logger.e(this, TAG, "Update process timed out");
+                Logger.e(this, TAG, "Update process timed out.");
                 Toast.makeText(this, R.string.update_timeout, Toast.LENGTH_LONG).show();
-
-                // Остановка обновления (если это поддерживается в вашем API)
-                stopUpdate();  // Пример: прекращение обновления (в зависимости от используемого механизма)
+                stopUpdate();
                 isUpdateInProgress = false;
             }
         }, 10 * 60 * 1000); // 10 минут
     }
+
 
     private void stopUpdate() {
         // Проверка и остановка обновления (если поддерживается в API)
@@ -1105,31 +1114,51 @@ public class MainActivity extends AppCompatActivity {
 
     private void restartApplication() {
         try {
-            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-            int pendingIntentId = 123456;
-            PendingIntent pendingIntent = PendingIntent.getActivity(
-                    this,
-                    pendingIntentId,
-                    intent,
-                    PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE
-            );
+            FirebaseApp.getInstance().setDataCollectionDefaultEnabled(false);
 
-            AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-            if (alarmManager != null) {
-                alarmManager.set(AlarmManager.RTC, System.currentTimeMillis() + 1000, pendingIntent); // Задержка 1 секунда
-                Logger.d(this, TAG, "Application restart scheduled.");
-            } else {
-                Logger.e(this, TAG, "AlarmManager is not available!");
-            }
+            // Переместим код перезапуска в фоновый поток
+            new Thread(() -> {
+                try {
+                    Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                    int pendingIntentId = 123456;
+                    PendingIntent pendingIntent = PendingIntent.getActivity(
+                            this,
+                            pendingIntentId,
+                            intent,
+                            PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                    );
 
-            // Завершение текущего процесса приложения
-            System.exit(0); // Завершение текущего процесса
+                    AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                    if (alarmManager != null) {
+                        // Задержка перезапуска
+                        alarmManager.set(AlarmManager.RTC, System.currentTimeMillis() + 10000, pendingIntent);
+                        Logger.d(this, TAG, "Application restart scheduled with delay of 10 seconds.");
+                    } else {
+                        Logger.e(this, TAG, "AlarmManager is not available!");
+                        Toast.makeText(this, "Unable to restart the app.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    // Завершаем все активности на главном потоке
+                    runOnUiThread(() -> {
+                        ActivityCompat.finishAffinity(this); // Завершаем все активности
+                        System.exit(0); // Завершаем процесс
+                    });
+
+                } catch (Exception e) {
+                    Logger.e(this, TAG, "Error during app restart: " + e.getMessage());
+                    FirebaseCrashlytics.getInstance().recordException(e);
+                    Toast.makeText(this, R.string.restart_error, Toast.LENGTH_LONG).show();
+                }
+            }).start(); // запускаем в фоновом потоке
         } catch (Exception e) {
             Logger.e(this, TAG, "Error during app restart: " + e.getMessage());
             FirebaseCrashlytics.getInstance().recordException(e);
             Toast.makeText(this, R.string.restart_error, Toast.LENGTH_LONG).show();
         }
     }
+
+
 
 
 
