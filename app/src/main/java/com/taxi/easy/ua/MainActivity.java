@@ -5,7 +5,6 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.ContentValues;
@@ -28,7 +27,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -52,44 +50,36 @@ import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract;
 import com.firebase.ui.auth.IdpResponse;
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
 import com.google.android.play.core.install.model.AppUpdateType;
 import com.google.android.play.core.install.model.UpdateAvailability;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
-import com.taxi.easy.ua.cities.api.CityApiClient;
-import com.taxi.easy.ua.cities.api.CityApiTestClient;
-import com.taxi.easy.ua.cities.api.CityLastAddressResponse;
-import com.taxi.easy.ua.cities.api.CityResponse;
-import com.taxi.easy.ua.cities.api.CityResponseMerchantFondy;
-import com.taxi.easy.ua.cities.api.CityService;
 import com.taxi.easy.ua.cities.check.CityCheckActivity;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
 import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.clear.AppDataUtils;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.home.HomeFragment;
+import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiClientMapbox;
+import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiResponseMapbox;
 import com.taxi.easy.ua.ui.settings.SettingsActivity;
+import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.ui.visicom.visicom_search.key_visicom.ApiResponse;
+import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
+import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
+import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetCityFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
-import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiClientMapbox;
-import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiResponseMapbox;
-import com.taxi.easy.ua.ui.visicom.visicom_search.key_visicom.ApiResponse;
-import com.taxi.easy.ua.ui.visicom.VisicomFragment;
-import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
-import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
-
-import com.taxi.easy.ua.utils.LocaleHelper;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
-
 import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.fcm.token_send.ApiServiceToken;
 import com.taxi.easy.ua.utils.fcm.token_send.RetrofitClientToken;
@@ -101,7 +91,6 @@ import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
 import com.taxi.easy.ua.utils.user.save_server.ApiServiceUser;
 import com.taxi.easy.ua.utils.user.save_server.UserResponse;
-import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 
 import org.json.JSONException;
 
@@ -901,14 +890,12 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
         if (item.getItemId() == R.id.action_exit) {
-
             FirebaseApp.getInstance().setDataCollectionDefaultEnabled(false);
             deleteOldLogFile();
 //            System.gc();
 
             finishAffinity(); // Закрывает все активити
             System.exit(0);
-
         }
 
         if (item.getItemId() == R.id.gps) {
@@ -1025,7 +1012,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }, 10 * 60 * 1000); // 10 минут
     }
-
 
     private void stopUpdate() {
         // Проверка и остановка обновления (если поддерживается в API)
@@ -1157,8 +1143,6 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.restart_error, Toast.LENGTH_LONG).show();
         }
     }
-
-
 
 
 

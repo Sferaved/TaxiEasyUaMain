@@ -391,7 +391,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     FinishSeparateFragment.textCost.setVisibility(View.VISIBLE);
                     FinishSeparateFragment.textCostMessage.setVisibility(View.VISIBLE);
                     FinishSeparateFragment.carProgressBar.setVisibility(View.VISIBLE);
-                    FinishSeparateFragment.progressBar.setVisibility(View.VISIBLE);
+//                    FinishSeparateFragment.progressBar.setVisibility(View.VISIBLE);
                     FinishSeparateFragment.progressSteps.setVisibility(View.VISIBLE);
 
                     FinishSeparateFragment.btn_options.setVisibility(View.VISIBLE);
@@ -435,7 +435,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
-        FinishSeparateFragment.progressBar.setVisibility(View.GONE);
+//        FinishSeparateFragment.progressBar.setVisibility(View.GONE);
         dismiss();
     }
 

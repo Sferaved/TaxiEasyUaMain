@@ -31,7 +31,6 @@ import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
@@ -151,8 +150,8 @@ public class FinishSeparateFragment extends Fragment {
     public static Handler handler, handlerBonusBtn,  handlerStatus;
     public static Runnable myTaskStatus;
 
-    @SuppressLint("StaticFieldLeak")
-    public static ProgressBar progressBar;
+//    @SuppressLint("StaticFieldLeak")
+//    public static ProgressBar progressBar;
     @SuppressLint("StaticFieldLeak")
     public static  String email;
     @SuppressLint("StaticFieldLeak")
@@ -215,7 +214,7 @@ public class FinishSeparateFragment extends Fragment {
             }
         });
 
-        progressBar = root.findViewById(R.id.progress_bar);
+//        progressBar = root.findViewById(R.id.progress_bar);
 
         baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
         // Получаем доступ к кружочкам
@@ -266,10 +265,11 @@ public class FinishSeparateFragment extends Fragment {
         flexible_tariff_name = receivedMap.get("flexible_tariff_name");
 
         required_time = receivedMap.get("required_time");
+        if (required_time == null || required_time.isEmpty()) {
+            need_20_add = true;
+        }
         Logger.d(context, TAG, "required_time: " + required_time);
-
         Logger.d(context, TAG, "need_20_add: " + need_20_add);
-
 
         comment_info = receivedMap.get("comment_info");
         extra_charge_codes = receivedMap.get("extra_charge_codes");
@@ -397,7 +397,7 @@ public class FinishSeparateFragment extends Fragment {
 
             textCost.setVisibility(View.GONE);
             textCostMessage.setVisibility(View.GONE);
-            progressBar.setVisibility(View.GONE);
+//            progressBar.setVisibility(View.GONE);
             progressSteps.setVisibility(View.GONE);
 
 
@@ -412,7 +412,7 @@ public class FinishSeparateFragment extends Fragment {
             MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(messageInfo);
             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
-
+//
             if(connected()){
                 if(!uid_Double.equals(" ")) {
                     cancelOrderDouble();
@@ -429,7 +429,7 @@ public class FinishSeparateFragment extends Fragment {
                     thread.interrupt();
                 }
             } else {
-                progressBar.setVisibility(View.INVISIBLE);
+//                progressBar.setVisibility(View.INVISIBLE);
                 text_status.setText(R.string.verify_internet);
 
             }
@@ -640,7 +640,7 @@ public class FinishSeparateFragment extends Fragment {
                 handlerAddcost.removeCallbacks(showDialogAddcost);
             }
             getUrlToPaymentWfp(amount, MainActivity.order_id);
-            getStatusWfp(MainActivity.order_id);
+            getStatusWfp(MainActivity.order_id, "0");
         } else {
             paymentByTokenWfp(messageFondy, amount, rectoken, MainActivity.order_id);
         }
@@ -750,7 +750,7 @@ public class FinishSeparateFragment extends Fragment {
         
         
         
-        progressBar.setVisibility(View.GONE);
+//        progressBar.setVisibility(View.GONE);
     }
 
     private void paymentByTokenWfp(
@@ -794,7 +794,7 @@ public class FinishSeparateFragment extends Fragment {
                     if (purchaseResponse != null) {
                         // Обработка ответа
                         Logger.d(context, TAG, "onResponse:purchaseResponse " + purchaseResponse);
-                        getStatusWfp(order_id);
+                        getStatusWfp(order_id, amount);
                     } else {
                         // Ошибка при парсинге ответа
                         Logger.d(context, TAG, "Ошибка при парсинге ответа");
@@ -826,7 +826,7 @@ public class FinishSeparateFragment extends Fragment {
 
     }
 
-    private void getStatusWfp(String orderReferens) {
+    private void getStatusWfp(String orderReferens, String amount_20) {
         Logger.d(context, TAG, "getStatusWfp: ");
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         String city = stringList.get(1);
@@ -862,21 +862,22 @@ public class FinishSeparateFragment extends Fragment {
                     assert statusResponse != null;
                     String orderStatus = statusResponse.getTransactionStatus();
                     Logger.d(context, TAG, "Transaction Status: " + orderStatus);
+                    if(amount_20.equals("20")) {
+                        switch (orderStatus) {
+                            case "Approved":
+                            case "WaitingAuthComplete":
 
-                    switch (orderStatus) {
-                        case "Approved":
-                        case "WaitingAuthComplete":
-                            if(order_id != null) {
                                 newOrderCardPayAdd20(order_id);
-                            }
 
-                            break;
-                        default:
-                            MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                            callOrderIdMemory(MainActivity.order_id, uid, pay_method);
-                            MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
-                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
+                                break;
+                            default:
+                                MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+                                callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+                                MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
+                                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+
+                        }
                     }
                 } else {
                     getReversWfp(city);
@@ -1336,7 +1337,7 @@ public class FinishSeparateFragment extends Fragment {
                 Logger.d(context, TAG, "Received signature error: " + error);
             }
         });
-         progressBar.setVisibility(View.GONE);
+//         progressBar.setVisibility(View.GONE);
     }
 
 
@@ -1576,7 +1577,7 @@ public class FinishSeparateFragment extends Fragment {
                 text_status.setText(R.string.verify_internet);
             }
         });
-        progressBar.setVisibility(View.GONE);
+//        progressBar.setVisibility(View.GONE);
         statusOrderWithDifferentValue(uid);
     }
     private void cancelOrderDouble() {
@@ -1607,7 +1608,7 @@ public class FinishSeparateFragment extends Fragment {
 //                text_status.setText(R.string.verify_internet);
             }
         });
-        progressBar.setVisibility(View.GONE);
+//        progressBar.setVisibility(View.GONE);
         handlerStatus.postDelayed(myTaskStatus, delayMillisStatus);
     }
 
@@ -1760,7 +1761,7 @@ public class FinishSeparateFragment extends Fragment {
                                                 textCost.setVisibility(View.VISIBLE);
                                                 textCostMessage.setVisibility(View.VISIBLE);
                                                 carProgressBar.setVisibility(View.VISIBLE);
-                                                progressBar.setVisibility(View.VISIBLE);
+//                                                progressBar.setVisibility(View.VISIBLE);
                                                 progressSteps.setVisibility(View.VISIBLE);
                                                 btn_options.setVisibility(View.VISIBLE);
                                                 btn_open.setVisibility(View.VISIBLE);
@@ -1781,52 +1782,7 @@ public class FinishSeparateFragment extends Fragment {
                                     }
 
                                     break;
-//                                case "Canceled":
-//                                    text_status.clearAnimation();
-//                                    btn_cancel_order.setVisibility(View.GONE);
-//                                    btn_reset_status.setVisibility(View.GONE);
-//                                    btn_open.setVisibility(View.GONE);
-//                                    btn_options.setVisibility(View.GONE);
-//                                    canceled = true;
-//                                    if (handler != null) {
-//                                        handler.removeCallbacks(myRunnable);
-//                                    }
-//                                    if (handlerBonusBtn != null) {
-//                                        handlerBonusBtn.removeCallbacks(runnableBonusBtn);
-//                                    }
-//
-//
-//                                    if (handlerAddcost != null) {
-//                                        handlerAddcost.removeCallbacks(showDialogAddcost);
-//                                    }
-//                                    if (handlerCheckTask != null) {
-//                                        handlerCheckTask.removeCallbacks(checkTask);
-//                                    }
-//                                    Logger.d(context, TAG, "statusOrderWithDifferentValue canceled: " + canceled);
-//                                    if (cancel_btn_click) {
-//                                        message = context.getString(R.string.ex_st_canceled);
-//                                        stopCycle();
-//                                    } else {
-//                                        if (pay_method.equals("fondy_payment") || pay_method.equals("mono_payment") || pay_method.equals("wfp_payment")) {
-//                                            Logger.d(context, TAG, "statusOrderWithDifferentValue canceled: " + uid);
-//                                            message = context.getString(R.string.pay_cancel);
-//                                            textCost.setVisibility(View.GONE);
-//                                            textCostMessage.setVisibility(View.GONE);
-//                                            carProgressBar.setVisibility(View.GONE);
-//                                            progressSteps.setVisibility(View.GONE);
-//                                            btn_again.setVisibility(View.VISIBLE);
-//                                        } else {
-//                                            message = context.getString(R.string.ex_st_canceled);
-//                                            textCost.setVisibility(View.GONE);
-//                                            textCostMessage.setVisibility(View.GONE);
-//                                            carProgressBar.setVisibility(View.GONE);
-//                                            progressSteps.setVisibility(View.GONE);
-//                                            btn_again.setVisibility(View.VISIBLE);
-//                                        }
-//                                    }
-//
-//                                    text_status.setText(message);
-//                                    break;
+
                                 case "CarFound":
                                     text_status.clearAnimation();
                                     textCost.setVisibility(View.VISIBLE);
@@ -1873,7 +1829,7 @@ public class FinishSeparateFragment extends Fragment {
 
                                         countdownTextView.setVisibility(View.VISIBLE);
 
-                                        progressBar.setVisibility(View.GONE);
+//                                        progressBar.setVisibility(View.GONE);
                                         message = messageBuilder.toString();
                                     } else {
                                         message = context.getString(R.string.ex_st_canceled);
@@ -1915,7 +1871,7 @@ public class FinishSeparateFragment extends Fragment {
                                             textCarMessage.setText(orderCarInfo);
                                         }
 
-                                        progressBar.setVisibility(View.GONE);
+//                                        progressBar.setVisibility(View.GONE);
                                         message = messageBuilder.toString();
                                     } else {
                                         message = context.getString(R.string.ex_st_canceled);
@@ -1944,7 +1900,7 @@ public class FinishSeparateFragment extends Fragment {
             public void onFailure(@NonNull Call<OrderResponse> call, @NonNull Throwable t) {
             }
         });
-        progressBar.setVisibility(View.GONE);
+//        progressBar.setVisibility(View.GONE);
     }
 
     void drivercarposition (String value, String city, String api) {
@@ -2108,7 +2064,9 @@ public class FinishSeparateFragment extends Fragment {
 
         @SuppressLint("SimpleDateFormat")
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
-        if (required_time == null || required_time.isEmpty()) {
+
+        Logger.e(context, TAG, "required_time +++" + required_time);
+        if (required_time.equals("01.01.1970 00:00") || required_time.isEmpty()) {
             need_20_add = true;
         } else {
             // Регулярное выражение для проверки формата даты "dd.MM.yyyy HH:mm"
@@ -2169,11 +2127,11 @@ public class FinishSeparateFragment extends Fragment {
         }
         Logger.e(context, TAG, "status pay_method" + pay_method);
         Logger.e(context, TAG, "status need_20_add" + need_20_add);
-
+        handlerAddcost = new Handler();
         if ("nal_payment".equals(pay_method) || "wfp_payment".equals(pay_method) && need_20_add) {
             Logger.e(context, TAG, "status pay_method" + pay_method);
             Logger.e(context, TAG, "status need_20_add" + need_20_add);
-            handlerAddcost = new Handler();
+
            // Запускаем выполнение через 1 минуты (60 000 миллисекунд)
             handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
         }
@@ -2183,7 +2141,9 @@ public class FinishSeparateFragment extends Fragment {
                 if ("nal_payment".equals(pay_method) || "wfp_payment".equals(pay_method)) {
 
                     // Запускаем выполнение через 1 минуты (60 000 миллисекунд)
-                    handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
+                    if (handlerAddcost != null) {
+                        handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
+                    }
 
                     String text = textCostMessage.getText().toString();
                     Logger.d(getActivity(), TAG, "textCostMessage.getText().toString() " + text);
@@ -2344,7 +2304,7 @@ public class FinishSeparateFragment extends Fragment {
                                 textCost.setVisibility(View.VISIBLE);
                                 textCostMessage.setVisibility(View.VISIBLE);
                                 carProgressBar.setVisibility(View.VISIBLE);
-                                progressBar.setVisibility(View.VISIBLE);
+//                                progressBar.setVisibility(View.VISIBLE);
                                 progressSteps.setVisibility(View.VISIBLE);
 
                                 btn_options.setVisibility(View.VISIBLE);
@@ -2439,7 +2399,7 @@ public class FinishSeparateFragment extends Fragment {
         textCost.setVisibility(View.VISIBLE);
         textCostMessage.setVisibility(View.VISIBLE);
         carProgressBar.setVisibility(View.VISIBLE);
-        progressBar.setVisibility(View.VISIBLE);
+//        progressBar.setVisibility(View.VISIBLE);
         progressSteps.setVisibility(View.VISIBLE);
         btn_options.setVisibility(View.VISIBLE);
         btn_open.setVisibility(View.VISIBLE);
@@ -2452,6 +2412,8 @@ public class FinishSeparateFragment extends Fragment {
                     assert status != null;
                     String responseStatus = status.getResponse();
                     Logger.d(context, TAG, "startAddCostUpdate wfp_payment status: " + responseStatus);
+
+
                 } else {
                     // Обработка неуспешного ответа
                     text_status.setText(R.string.verify_internet);

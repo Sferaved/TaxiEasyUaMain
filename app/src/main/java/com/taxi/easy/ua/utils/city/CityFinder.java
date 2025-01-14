@@ -106,8 +106,7 @@ public class CityFinder {
                 cityResult = "Cherkasy Oblast";
                 break;
             case "city_odessa":
-//                cityResult = "OdessaTest";
-                cityResult = "Odessa";
+                cityResult = "OdessaTest";
                 break;
             case "city_zaporizhzhia":
                 cityResult = "Zaporizhzhia";

@@ -181,9 +181,9 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                                 FinishSeparateFragment.textCost.setVisibility(View.VISIBLE);
                                 FinishSeparateFragment.textCostMessage.setVisibility(View.VISIBLE);
                                 FinishSeparateFragment.carProgressBar.setVisibility(View.VISIBLE);
-                                FinishSeparateFragment.progressBar.setVisibility(View.VISIBLE);
+//                                FinishSeparateFragment.progressBar.setVisibility(View.VISIBLE);
                                 FinishSeparateFragment.progressSteps.setVisibility(View.VISIBLE);
-                                FinishSeparateFragment.progressBar.setVisibility(View.GONE);
+//                                FinishSeparateFragment.progressBar.setVisibility(View.GONE);
 
                                 FinishSeparateFragment.btn_options.setVisibility(View.VISIBLE);
                                 FinishSeparateFragment.btn_open.setVisibility(View.VISIBLE);
@@ -336,9 +336,9 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             FinishSeparateFragment.textCost.setVisibility(View.VISIBLE);
             FinishSeparateFragment.textCostMessage.setVisibility(View.VISIBLE);
             FinishSeparateFragment.carProgressBar.setVisibility(View.VISIBLE);
-            FinishSeparateFragment.progressBar.setVisibility(View.VISIBLE);
+//            FinishSeparateFragment.progressBar.setVisibility(View.VISIBLE);
             FinishSeparateFragment.progressSteps.setVisibility(View.VISIBLE);
-            FinishSeparateFragment.progressBar.setVisibility(View.GONE);
+//            FinishSeparateFragment.progressBar.setVisibility(View.GONE);
 
             FinishSeparateFragment.btn_options.setVisibility(View.VISIBLE);
             FinishSeparateFragment.btn_open.setVisibility(View.VISIBLE);
