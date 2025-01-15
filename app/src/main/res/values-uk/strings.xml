@@ -38,6 +38,7 @@
     <string name="open_maps">Замовити по мапе</string>
     <string name="driver">Робота водієм (реклама)</string>
     <string name="send_email">Поділитися</string>
+
     <string name="gps_ok">Визначення геопозиції включено</string>
     <string name="cancel_button">Ні, дякую</string>
     <string name="gps_on">Увімкнути</string>
