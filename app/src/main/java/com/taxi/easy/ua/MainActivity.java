@@ -6,6 +6,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlarmManager;
+import android.app.Application;
 import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Context;
@@ -165,7 +166,6 @@ public class MainActivity extends AppCompatActivity {
 
     private List<RouteResponse> routeList;
 
-    private boolean gps_upd;
     VisicomFragment visicomFragment;
     public static SharedPreferences sharedPreferences;
     public static SharedPreferences sharedPreferencesCount;
@@ -183,7 +183,6 @@ public class MainActivity extends AppCompatActivity {
     public static NavController navController;
     private FirebaseUserManager userManager;
 
-    private String cityMenu;
     private String city;
     private String newTitle;
     public static List<Call<?>> activeCalls = new ArrayList<>();
@@ -267,36 +266,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (MalformedURLException | JSONException | InterruptedException e) {
             FirebaseCrashlytics.getInstance().recordException(e);
         }
-
-       // Устанавливаем Action Bar, если он доступен
-       if (getSupportActionBar() != null) {
-           // Устанавливаем пользовательский макет в качестве заголовка Action Bar
-           getSupportActionBar().setDisplayShowCustomEnabled(true);
-           getSupportActionBar().setDisplayShowTitleEnabled(false); // Отключаем стандартный заголовок
-           getSupportActionBar().setCustomView(R.layout.custom_action_bar_title);
-
-           // Доступ к TextView в пользовательском заголовке
-           View customView = getSupportActionBar().getCustomView();
-           TextView titleTextView = customView.findViewById(R.id.action_bar_title);
-
-           setCityAppbar();
-
-           titleTextView.setText(newTitle);
-           // Установка обработчика нажатий
-           titleTextView.setOnClickListener(v -> {
-               Logger.d(this, TAG, " Установка обработчика нажатий" + NetworkUtils.isNetworkAvailable(getApplicationContext()));
-               if (NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-                   // Ваш код при нажатии на заголовок
-                   MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, MainActivity.this);
-                   bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-               } else {
-                   MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                   bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-               }
-
-           });
-       }
-
     }
     private void applyLocale(String localeCode) {
         Locale locale = new Locale(localeCode);
@@ -311,6 +280,7 @@ public class MainActivity extends AppCompatActivity {
     {
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         city = stringList.get(1);
+        String cityMenu;
         switch (city){
             case "Kyiv City":
                 cityMenu = getString(R.string.city_kyiv);
@@ -399,6 +369,41 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
+        String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", "uk");
+        Logger.i(this, "locale", localeCode);
+        // Установка локали
+        applyLocale(localeCode);
+
+        // Устанавливаем Action Bar, если он доступен
+        if (getSupportActionBar() != null) {
+            // Устанавливаем пользовательский макет в качестве заголовка Action Bar
+            getSupportActionBar().setDisplayShowCustomEnabled(true);
+            getSupportActionBar().setDisplayShowTitleEnabled(false); // Отключаем стандартный заголовок
+            getSupportActionBar().setCustomView(R.layout.custom_action_bar_title);
+
+            // Доступ к TextView в пользовательском заголовке
+            View customView = getSupportActionBar().getCustomView();
+            TextView titleTextView = customView.findViewById(R.id.action_bar_title);
+
+            setCityAppbar();
+
+            titleTextView.setText(newTitle);
+            // Установка обработчика нажатий
+            titleTextView.setOnClickListener(v -> {
+                Logger.d(this, TAG, " Установка обработчика нажатий" + NetworkUtils.isNetworkAvailable(getApplicationContext()));
+                if (NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+                    // Ваш код при нажатии на заголовок
+                    MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, MainActivity.this);
+                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                } else {
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                }
+
+            });
+        }
+
         if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
             // Ваш код при нажатии на заголовок
 
@@ -416,6 +421,7 @@ public class MainActivity extends AppCompatActivity {
 //        }
             baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
+            boolean gps_upd;
             if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
                 gps_upd = getIntent().getBooleanExtra("gps_upd", true);
@@ -1304,20 +1310,18 @@ public class MainActivity extends AppCompatActivity {
     public List<String> logCursor(String table) {
         List<String> list = new ArrayList<>();
         SQLiteDatabase db = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor c = db.query(table, null, null, null, null, null, null);
-        if (c != null) {
-            if (c.moveToFirst()) {
-                String str;
-                do {
-                    str = "";
-                    for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+        @SuppressLint("Recycle") Cursor c = db.query(table, null, null, null, null, null, null);
+        if (c.moveToFirst()) {
+            String str;
+            do {
+                str = "";
+                for (String cn : c.getColumnNames()) {
+                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
+                    list.add(c.getString(c.getColumnIndex(cn)));
 
-                    }
+                }
 
-                } while (c.moveToNext());
-            }
+            } while (c.moveToNext());
         }
         db.close();
         return list;

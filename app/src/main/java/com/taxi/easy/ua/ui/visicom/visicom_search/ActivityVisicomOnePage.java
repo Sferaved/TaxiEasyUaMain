@@ -151,477 +151,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_visicom_address_layout);
 
-        start = getIntent().getStringExtra("start");
-        end = getIntent().getStringExtra("end");
-        client = new OkHttpClient();
-        List<String> stringList = logCursor(MainActivity.CITY_INFO);
 
-        if(MainActivity.apiKey == null) {
-            visicomKey();
-        }
-        if(MainActivity.apiKeyMapBox == null) {
-            mapboxKey();
-        }
-        sharedPreferencesHelper = new SharedPreferencesHelper(this);
-        countryState = (String) sharedPreferencesHelperMain.getValue("countryState", "**");
-
-        switch (LocaleHelper.getLocale()) {
-            case "ru":
-                switch (stringList.get(1)) {
-                    case "Kyiv City":
-                        citySearch = "Киев";
-                        kyivRegionArr = KyivRegionRu.city();
-                        break;
-                    case "Dnipropetrovsk Oblast":
-                        citySearch = "Днепр";
-                        break;
-                    case "Odessa":
-                    case "OdessaTest":
-                        citySearch = "Одесса";
-                        break;
-                    case "Zaporizhzhia":
-                        citySearch = "Запорожье";
-                        break;
-                    case "Cherkasy Oblast":
-                        citySearch = "Черкассы";
-                        break;
-                    case "Ivano_frankivsk":
-                        citySearch = "Ивано-Франковск";
-                        break;
-                    case "Vinnytsia":
-                        citySearch = "Винница";
-                        break;
-                    case "Poltava":
-                        citySearch = "Полтава";
-                        break;
-                    case "Sumy":
-                        citySearch = "Сумы";
-                        break;
-                    case "Kharkiv":
-                        citySearch = "Харьков";
-                        break;
-                    case "Chernihiv":
-                        citySearch = "Чернигов";
-                        break;
-                    case "Rivne":
-                        citySearch = "Ровно";
-                        break;
-                    case "Ternopil":
-                        citySearch = "Тернополь";
-                        break;
-                    case "Khmelnytskyi":
-                        citySearch = "Хмельницкий";
-                        break;
-                    case "Zakarpattya":
-                        citySearch = "Ужгород";
-                        break;
-                    case "Zhytomyr":
-                        citySearch = "Житомир";
-                        break;
-                    case "Kropyvnytskyi":
-                        citySearch = "Кропивницкий";
-                        break;
-                    case "Mykolaiv":
-                        citySearch = "Николаев";
-                        break;
-                    case "Сhernivtsi":
-                        citySearch = "Черновцы";
-                        break;
-                    case "Lutsk":
-                        citySearch = "Луцк";
-                        break;
-                    default:
-                        citySearch = "FC";
-                        break;
-                }
-                break;
-            case "en":
-                switch (stringList.get(1)) {
-                    case "Kyiv City":
-                        citySearch = "Kyiv";
-                        kyivRegionArr = KyivRegionRu.city();
-                        break;
-                    case "Dnipropetrovsk Oblast":
-                        citySearch = "Dnipro";
-                        break;
-                    case "Odessa":
-                    case "OdessaTest":
-                        citySearch = "Odessa";
-                        break;
-                    case "Zaporizhzhia":
-                        citySearch = "Zaporizhzhia";
-                        break;
-                    case "Cherkasy Oblast":
-                        citySearch = "Cherkasy";
-                        break;
-                    case "Ivano_frankivsk":
-                        citySearch = "Ivano-";
-                        break;
-                    case "Vinnytsia":
-                        citySearch = "Vinnytsia";
-                        break;
-                    case "Poltava":
-                        citySearch = "Poltava";
-                        break;
-                    case "Sumy":
-                        citySearch = "Sumy";
-                        break;
-                    case "Kharkiv":
-                        citySearch = "Kharkiv";
-                        break;
-                    case "Chernihiv":
-                        citySearch = "Chernihiv";
-                        break;
-                    case "Rivne":
-                        citySearch = "Rivne";
-                        break;
-                    case "Ternopil":
-                        citySearch = "Ternopil";
-                        break;
-                    case "Khmelnytskyi":
-                        citySearch = "Khmelnytskyi";
-                        break;
-                    case "Zakarpattya":
-                        citySearch = "Zakarpattya";
-                        break;
-                    case "Zhytomyr":
-                        citySearch = "Zhytomyr";
-                        break;
-                    case "Kropyvnytskyi":
-                        citySearch = "Kropyvnytskyi";
-                        break;
-                    case "Mykolaiv":
-                        citySearch = "Mykolaiv";
-                        break;
-                    case "Сhernivtsi":
-                        citySearch = "Сhernivtsi";
-                        break;
-                    case "Lutsk":
-                        citySearch = "Lutsk";
-                        break;
-                    default:
-                        citySearch = "FC";
-                        break;
-                }
-                break;
-            default:
-                switch (stringList.get(1)) {
-                    case "Kyiv City":
-                        citySearch = "Київ";
-                        kyivRegionArr = KyivRegion.city();
-                        break;
-                    case "Dnipropetrovsk Oblast":
-                        citySearch = "Дніпро";
-                        break;
-                    case "Odessa":
-                    case "OdessaTest":
-                        citySearch = "Одеса";
-                        break;
-                    case "Zaporizhzhia":
-                        citySearch = "Запоріжжя";
-                        break;
-                    case "Cherkasy Oblast":
-                        citySearch = "Черкаси";
-                        break;
-                    case "Ivano_frankivsk":
-                        citySearch = "Івано-Франківськ";
-                        break;
-                    case "Vinnytsia":
-                        citySearch = "Вінниця";
-                        break;
-                    case "Poltava":
-                        citySearch = "Полтава";
-                        break;
-                    case "Sumy":
-                        citySearch = "Суми";
-                        break;
-                    case "Kharkiv":
-                        citySearch = "Харків";
-                        break;
-                    case "Chernihiv":
-                        citySearch = "Чернігів";
-                        break;
-                    case "Rivne":
-                        citySearch = "Рівне";
-                        break;
-                    case "Ternopil":
-                        citySearch = "Тернопіль";
-                        break;
-                    case "Khmelnytskyi":
-                        citySearch = "Хмельницький";
-                        break;
-                    case "Zakarpattya":
-                        citySearch = "Ужгород";
-                        break;
-                    case "Zhytomyr":
-                        citySearch = "Житомир";
-                        break;
-                    case "Kropyvnytskyi":
-                        citySearch = "Кропивницький";
-                        break;
-                    case "Mykolaiv":
-                        citySearch = "Миколаїв";
-                        break;
-                    case "Сhernivtsi":
-                        citySearch = "Чернівці";
-                        break;
-                    case "Lutsk":
-                        citySearch = "Луцьк";
-                        break;
-                    default:
-                        citySearch = "FC";
-                        break;
-                }
-        }
-
-        textGeoError = findViewById(R.id.textGeoError);
-        text_toError = findViewById(R.id.text_toError);
-
-
-        addressListView = findViewById(R.id.listAddress);
-        progressBar = findViewById(R.id.progress_bar_visicom);
-
-        btn_no = findViewById(R.id.btn_no);
-
-        btn_ok = findViewById(R.id.btn_ok);
-
-        btn_ok.setVisibility(View.INVISIBLE);
-
-        btn_no.setOnClickListener(v -> {
-            progressBar.setVisibility(View.VISIBLE);
-            // Получаем доступ к InputMethodManager
-            InputMethodManager immHide = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            // Пытаемся скрыть клавиатуру
-            immHide.hideSoftInputFromWindow(v.getWindowToken(), 0);
-            if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-
-                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-                VisicomFragment.btn_clear_from_text.setText(getString(R.string.try_again));
-                VisicomFragment.btn_clear_from_text.setVisibility(View.VISIBLE);
-                VisicomFragment.btn_clear_from_text.setOnClickListener(v1 -> startActivity(new Intent(getApplicationContext(), MainActivity.class)));
-                VisicomFragment.geoText.setVisibility(View.INVISIBLE);
-                progressBar.setVisibility(View.INVISIBLE);
-
-                btn_clear_from.setVisibility(View.INVISIBLE);
-                btn_clear_to.setVisibility(View.INVISIBLE);
-            }
-            VisicomFragment.btnVisible(View.INVISIBLE);
-            finish();
-
-        });
-
-        fromEditAddress = findViewById(R.id.textGeo);
-
-        int inputType = fromEditAddress.getInputType() | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS;
-        fromEditAddress.setInputType(inputType);
-
-
-        toEditAddress = findViewById(R.id.text_to);
-        inputType = toEditAddress.getInputType() | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS;
-        toEditAddress.setInputType(inputType);
-
-        addressesList = new ArrayList<>();
-        addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
-        addressListView.setAdapter(addressAdapter);
-        scrollButtonUp = findViewById(R.id.scrollButtonUp);
-        scrollButtonDown = findViewById(R.id.scrollButtonDown);
-
-        scrollSetVisibility();
-        btn_clear_from = findViewById(R.id.btn_clear_from);
-        btn_clear_from.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                scrollButtonUp.setVisibility(View.GONE);
-                scrollButtonDown.setVisibility(View.GONE);
-                addresses = new ArrayList<>();
-                coordinatesList = new ArrayList<>();
-
-                addressesList = new ArrayList<>();
-                addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
-                
-                addressListView.setAdapter(addressAdapter);
-
-
-                fromEditAddress.setText("");
-                btn_clear_from.setVisibility(View.INVISIBLE);
-                textGeoError.setVisibility(View.GONE);
-
-                fromEditAddress.requestFocus();
-                KeyboardUtils.showKeyboard(getApplicationContext(), fromEditAddress);
-            }
-        });
-        btn_clear_to = findViewById(R.id.btn_clear_to);
-        btn_clear_to.setOnClickListener(v -> {
-            scrollButtonUp.setVisibility(View.GONE);
-            scrollButtonDown.setVisibility(View.GONE);
-
-            addresses = new ArrayList<>();
-            coordinatesList = new ArrayList<>();
-            addressesList = new ArrayList<>();
-            addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
-
-
-            addressListView.setAdapter(addressAdapter);
-
-            toEditAddress.setText("");
-            btn_clear_to.setVisibility(View.INVISIBLE);
-            text_toError.setVisibility(View.GONE);
-            toEditAddress.requestFocus();
-            KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
-
-        });
-
-        verifyRoutStart = true;
-        verifyRoutFinish = true;
-        btn_change = findViewById(R.id.change);
-        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-
-
-        btn_change.setOnClickListener(v -> {
-            if (locationManager != null) {
-                if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-
-                    if(loadPermissionRequestCount() >= 3  && !location_update) {
-                        MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment(getString(R.string.location_on));
-                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-                    } else {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                                // Обработка отсутствия необходимых разрешений
-                                checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                            }
-                        } else {
-                            // Для версий Android ниже 10
-                            if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                                    || ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                                // Обработка отсутствия необходимых разрешений
-                                checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                                checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                            }
-                        }
-                    }
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                            // Обработка отсутствия необходимых разрешений
-                           location_update = true;
-                        }
-                    } else location_update = ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                            || ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-
-
-                    Logger.d(getApplicationContext(), TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
-                    // GPS включен, выполните ваш код здесь
-                    if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-                        Toast.makeText(getApplicationContext(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
-                    } else  if(location_update) {
-                            String searchText = getString(R.string.search_text) + "...";
-
-                            progressBar.setVisibility(View.VISIBLE);
-                            Toast.makeText(ActivityVisicomOnePage.this, searchText, Toast.LENGTH_SHORT).show();
-                            firstLocation();
-                        }
-                    } else {
-                    MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-                }
-
-                } else {
-                    // GPS выключен, выполните необходимые действия
-                    // Например, показать диалоговое окно с предупреждением о включении GPS
-                    MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-                }
-            });
-
-        if(start.equals("ok")) {
-            oldAddresses("start");
-            toEditAddress.setVisibility(View.GONE);
-            btn_clear_to.setVisibility(View.GONE);
-            text_toError.setVisibility(View.GONE);
-            findViewById(R.id.textwhere).setVisibility(View.GONE);
-            findViewById(R.id.num2).setVisibility(View.GONE);
-        }
-        if(end.equals("ok")) {
-            oldAddresses("finish");
-            findViewById(R.id.textfrom).setVisibility(View.GONE);
-            findViewById(R.id.num1).setVisibility(View.GONE);
-            fromEditAddress.setVisibility(View.GONE);
-            btn_clear_from.setVisibility(View.GONE);
-
-            textGeoError.setVisibility(View.GONE);
-            btn_change.setText(getString(R.string.on_city_tv));
-            btn_change.setOnClickListener(v -> {
-
-                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                Cursor cursor = database.rawQuery(query, null);
-
-                cursor.moveToFirst();
-
-                // Получите значения полей из первой записи
-
-
-                @SuppressLint("Range") double startLat = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                @SuppressLint("Range") double startLan = cursor.getDouble(cursor.getColumnIndex("startLan"));
-                @SuppressLint("Range") String start = cursor.getString(cursor.getColumnIndex("start"));
-                cursor.close();
-                database.close();
-                List<String> settings = new ArrayList<>();
-                settings.add(String.valueOf(startLat));
-                settings.add(String.valueOf(startLan));
-                settings.add(String.valueOf(startLat));
-                settings.add(String.valueOf(startLan));
-                settings.add(start);
-                settings.add(getString(R.string.on_city_tv));
-
-                updateRoutMarker(settings);
-                extraExit = true;
-                btn_ok.performClick();
-            });
-        }
-        btnOnMap = findViewById(R.id.btn_on_map);
-        btnOnMap.setOnClickListener(v -> {
-            Intent intent = new Intent(getApplicationContext(), OpenStreetMapVisicomActivity.class);
-
-            intent.putExtra("startMarker", start);
-            intent.putExtra("finishMarker", end);
-
-            startActivity(intent);
-            finish();
-        });
-        btn_ok.setOnClickListener(v -> {
-            sharedPreferencesHelper.saveValue("gps_upd_address", false);
-            Logger.d(this, TAG, "sharedPreferencesHelper.getValue(\"gps_upd\", false)" +sharedPreferencesHelper.getValue("gps_upd", false));
-
-            startActivity(new Intent(this, MainActivity.class));
-        });
-
-        scrollButtonDown.setOnClickListener(v -> {
-            int nextVisiblePosition = addressListView.getLastVisiblePosition() + 1;
-            addressListView.smoothScrollToPosition(nextVisiblePosition);
-        });
-
-        scrollButtonUp.setOnClickListener(v -> {
-            int offset = -1; // или другое значение, чтобы указать направление прокрутки
-            addressListView.smoothScrollByOffset(offset);
-        });
-
-        layoutParams = addressListView.getLayoutParams();
-        layoutParams.height = desiredHeight;
-        addressListView.setLayoutParams(layoutParams);
-
-        btnCallAdmin = findViewById(R.id.btnCallAdmin);
-        btnCallAdmin.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(Intent.ACTION_DIAL);
-                List<String> stringList = logCursor(MainActivity.CITY_INFO);
-                String phone = stringList.get(3);
-                intent.setData(Uri.parse(phone));
-                startActivity(intent);
-            }
-        });
     }
 
     private void scrollSetVisibility() {
@@ -921,6 +451,480 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
         if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
             startActivity(new Intent(this, MainActivity.class));
         }
+        start = getIntent().getStringExtra("start");
+        end = getIntent().getStringExtra("end");
+        client = new OkHttpClient();
+        List<String> stringList = logCursor(MainActivity.CITY_INFO);
+
+        if(MainActivity.apiKey == null) {
+            visicomKey();
+        }
+        if(MainActivity.apiKeyMapBox == null) {
+            mapboxKey();
+        }
+        sharedPreferencesHelper = new SharedPreferencesHelper(this);
+        countryState = (String) sharedPreferencesHelperMain.getValue("countryState", "**");
+
+        switch (LocaleHelper.getLocale()) {
+            case "ru":
+                switch (stringList.get(1)) {
+                    case "Kyiv City":
+                        citySearch = "Киев";
+                        kyivRegionArr = KyivRegionRu.city();
+                        break;
+                    case "Dnipropetrovsk Oblast":
+                        citySearch = "Днепр";
+                        break;
+                    case "Odessa":
+                    case "OdessaTest":
+                        citySearch = "Одесса";
+                        break;
+                    case "Zaporizhzhia":
+                        citySearch = "Запорожье";
+                        break;
+                    case "Cherkasy Oblast":
+                        citySearch = "Черкассы";
+                        break;
+                    case "Ivano_frankivsk":
+                        citySearch = "Ивано-Франковск";
+                        break;
+                    case "Vinnytsia":
+                        citySearch = "Винница";
+                        break;
+                    case "Poltava":
+                        citySearch = "Полтава";
+                        break;
+                    case "Sumy":
+                        citySearch = "Сумы";
+                        break;
+                    case "Kharkiv":
+                        citySearch = "Харьков";
+                        break;
+                    case "Chernihiv":
+                        citySearch = "Чернигов";
+                        break;
+                    case "Rivne":
+                        citySearch = "Ровно";
+                        break;
+                    case "Ternopil":
+                        citySearch = "Тернополь";
+                        break;
+                    case "Khmelnytskyi":
+                        citySearch = "Хмельницкий";
+                        break;
+                    case "Zakarpattya":
+                        citySearch = "Ужгород";
+                        break;
+                    case "Zhytomyr":
+                        citySearch = "Житомир";
+                        break;
+                    case "Kropyvnytskyi":
+                        citySearch = "Кропивницкий";
+                        break;
+                    case "Mykolaiv":
+                        citySearch = "Николаев";
+                        break;
+                    case "Сhernivtsi":
+                        citySearch = "Черновцы";
+                        break;
+                    case "Lutsk":
+                        citySearch = "Луцк";
+                        break;
+                    default:
+                        citySearch = "FC";
+                        break;
+                }
+                break;
+            case "en":
+                switch (stringList.get(1)) {
+                    case "Kyiv City":
+                        citySearch = "Kyiv";
+                        kyivRegionArr = KyivRegionRu.city();
+                        break;
+                    case "Dnipropetrovsk Oblast":
+                        citySearch = "Dnipro";
+                        break;
+                    case "Odessa":
+                    case "OdessaTest":
+                        citySearch = "Odessa";
+                        break;
+                    case "Zaporizhzhia":
+                        citySearch = "Zaporizhzhia";
+                        break;
+                    case "Cherkasy Oblast":
+                        citySearch = "Cherkasy";
+                        break;
+                    case "Ivano_frankivsk":
+                        citySearch = "Ivano-";
+                        break;
+                    case "Vinnytsia":
+                        citySearch = "Vinnytsia";
+                        break;
+                    case "Poltava":
+                        citySearch = "Poltava";
+                        break;
+                    case "Sumy":
+                        citySearch = "Sumy";
+                        break;
+                    case "Kharkiv":
+                        citySearch = "Kharkiv";
+                        break;
+                    case "Chernihiv":
+                        citySearch = "Chernihiv";
+                        break;
+                    case "Rivne":
+                        citySearch = "Rivne";
+                        break;
+                    case "Ternopil":
+                        citySearch = "Ternopil";
+                        break;
+                    case "Khmelnytskyi":
+                        citySearch = "Khmelnytskyi";
+                        break;
+                    case "Zakarpattya":
+                        citySearch = "Zakarpattya";
+                        break;
+                    case "Zhytomyr":
+                        citySearch = "Zhytomyr";
+                        break;
+                    case "Kropyvnytskyi":
+                        citySearch = "Kropyvnytskyi";
+                        break;
+                    case "Mykolaiv":
+                        citySearch = "Mykolaiv";
+                        break;
+                    case "Сhernivtsi":
+                        citySearch = "Сhernivtsi";
+                        break;
+                    case "Lutsk":
+                        citySearch = "Lutsk";
+                        break;
+                    default:
+                        citySearch = "FC";
+                        break;
+                }
+                break;
+            default:
+                switch (stringList.get(1)) {
+                    case "Kyiv City":
+                        citySearch = "Київ";
+                        kyivRegionArr = KyivRegion.city();
+                        break;
+                    case "Dnipropetrovsk Oblast":
+                        citySearch = "Дніпро";
+                        break;
+                    case "Odessa":
+                    case "OdessaTest":
+                        citySearch = "Одеса";
+                        break;
+                    case "Zaporizhzhia":
+                        citySearch = "Запоріжжя";
+                        break;
+                    case "Cherkasy Oblast":
+                        citySearch = "Черкаси";
+                        break;
+                    case "Ivano_frankivsk":
+                        citySearch = "Івано-Франківськ";
+                        break;
+                    case "Vinnytsia":
+                        citySearch = "Вінниця";
+                        break;
+                    case "Poltava":
+                        citySearch = "Полтава";
+                        break;
+                    case "Sumy":
+                        citySearch = "Суми";
+                        break;
+                    case "Kharkiv":
+                        citySearch = "Харків";
+                        break;
+                    case "Chernihiv":
+                        citySearch = "Чернігів";
+                        break;
+                    case "Rivne":
+                        citySearch = "Рівне";
+                        break;
+                    case "Ternopil":
+                        citySearch = "Тернопіль";
+                        break;
+                    case "Khmelnytskyi":
+                        citySearch = "Хмельницький";
+                        break;
+                    case "Zakarpattya":
+                        citySearch = "Ужгород";
+                        break;
+                    case "Zhytomyr":
+                        citySearch = "Житомир";
+                        break;
+                    case "Kropyvnytskyi":
+                        citySearch = "Кропивницький";
+                        break;
+                    case "Mykolaiv":
+                        citySearch = "Миколаїв";
+                        break;
+                    case "Сhernivtsi":
+                        citySearch = "Чернівці";
+                        break;
+                    case "Lutsk":
+                        citySearch = "Луцьк";
+                        break;
+                    default:
+                        citySearch = "FC";
+                        break;
+                }
+        }
+
+        textGeoError = findViewById(R.id.textGeoError);
+        text_toError = findViewById(R.id.text_toError);
+
+
+        addressListView = findViewById(R.id.listAddress);
+        progressBar = findViewById(R.id.progress_bar_visicom);
+
+        btn_no = findViewById(R.id.btn_no);
+
+        btn_ok = findViewById(R.id.btn_ok);
+
+        btn_ok.setVisibility(View.INVISIBLE);
+
+        btn_no.setOnClickListener(v -> {
+            progressBar.setVisibility(View.VISIBLE);
+            // Получаем доступ к InputMethodManager
+            InputMethodManager immHide = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            // Пытаемся скрыть клавиатуру
+            immHide.hideSoftInputFromWindow(v.getWindowToken(), 0);
+            if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+
+                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+                VisicomFragment.btn_clear_from_text.setText(getString(R.string.try_again));
+                VisicomFragment.btn_clear_from_text.setVisibility(View.VISIBLE);
+                VisicomFragment.btn_clear_from_text.setOnClickListener(v1 -> startActivity(new Intent(getApplicationContext(), MainActivity.class)));
+                VisicomFragment.geoText.setVisibility(View.INVISIBLE);
+                progressBar.setVisibility(View.INVISIBLE);
+
+                btn_clear_from.setVisibility(View.INVISIBLE);
+                btn_clear_to.setVisibility(View.INVISIBLE);
+            }
+            VisicomFragment.btnVisible(View.INVISIBLE);
+            finish();
+
+        });
+
+        fromEditAddress = findViewById(R.id.textGeo);
+
+        int inputType = fromEditAddress.getInputType() | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS;
+        fromEditAddress.setInputType(inputType);
+
+
+        toEditAddress = findViewById(R.id.text_to);
+        inputType = toEditAddress.getInputType() | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS;
+        toEditAddress.setInputType(inputType);
+
+        addressesList = new ArrayList<>();
+        addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
+        addressListView.setAdapter(addressAdapter);
+        scrollButtonUp = findViewById(R.id.scrollButtonUp);
+        scrollButtonDown = findViewById(R.id.scrollButtonDown);
+
+        scrollSetVisibility();
+        btn_clear_from = findViewById(R.id.btn_clear_from);
+        btn_clear_from.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                scrollButtonUp.setVisibility(View.GONE);
+                scrollButtonDown.setVisibility(View.GONE);
+                addresses = new ArrayList<>();
+                coordinatesList = new ArrayList<>();
+
+                addressesList = new ArrayList<>();
+                addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
+
+                addressListView.setAdapter(addressAdapter);
+
+
+                fromEditAddress.setText("");
+                btn_clear_from.setVisibility(View.INVISIBLE);
+                textGeoError.setVisibility(View.GONE);
+
+                fromEditAddress.requestFocus();
+                KeyboardUtils.showKeyboard(getApplicationContext(), fromEditAddress);
+            }
+        });
+        btn_clear_to = findViewById(R.id.btn_clear_to);
+        btn_clear_to.setOnClickListener(v -> {
+            scrollButtonUp.setVisibility(View.GONE);
+            scrollButtonDown.setVisibility(View.GONE);
+
+            addresses = new ArrayList<>();
+            coordinatesList = new ArrayList<>();
+            addressesList = new ArrayList<>();
+            addressAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.custom_list_item, addressesList);
+
+
+            addressListView.setAdapter(addressAdapter);
+
+            toEditAddress.setText("");
+            btn_clear_to.setVisibility(View.INVISIBLE);
+            text_toError.setVisibility(View.GONE);
+            toEditAddress.requestFocus();
+            KeyboardUtils.showKeyboard(getApplicationContext(), toEditAddress);
+
+        });
+
+        verifyRoutStart = true;
+        verifyRoutFinish = true;
+        btn_change = findViewById(R.id.change);
+
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        btn_change.setOnClickListener(v -> {
+            if (locationManager != null) {
+                if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+
+                    if(loadPermissionRequestCount() >= 3  && !location_update) {
+                        MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment(getString(R.string.location_on));
+                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                    } else {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                // Обработка отсутствия необходимых разрешений
+                                checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                            }
+                        } else {
+                            // Для версий Android ниже 10
+                            if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                                    || ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                // Обработка отсутствия необходимых разрешений
+                                checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                                checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                            }
+                        }
+                    }
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                            // Обработка отсутствия необходимых разрешений
+                            location_update = true;
+                        }
+                    } else location_update = ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                            || ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+
+
+                    Logger.d(getApplicationContext(), TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
+                    // GPS включен, выполните ваш код здесь
+                    if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+                        Toast.makeText(getApplicationContext(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
+                    } else  if(location_update) {
+                        String searchText = getString(R.string.search_text) + "...";
+
+                        progressBar.setVisibility(View.VISIBLE);
+                        Toast.makeText(ActivityVisicomOnePage.this, searchText, Toast.LENGTH_SHORT).show();
+                        firstLocation();
+                    }
+                } else {
+                    MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
+                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                }
+
+            } else {
+                // GPS выключен, выполните необходимые действия
+                // Например, показать диалоговое окно с предупреждением о включении GPS
+                MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
+                bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+            }
+        });
+
+        if(start.equals("ok")) {
+            oldAddresses("start");
+            toEditAddress.setVisibility(View.GONE);
+            btn_clear_to.setVisibility(View.GONE);
+            text_toError.setVisibility(View.GONE);
+            findViewById(R.id.textwhere).setVisibility(View.GONE);
+            findViewById(R.id.num2).setVisibility(View.GONE);
+        }
+        if(end.equals("ok")) {
+            oldAddresses("finish");
+            findViewById(R.id.textfrom).setVisibility(View.GONE);
+            findViewById(R.id.num1).setVisibility(View.GONE);
+            fromEditAddress.setVisibility(View.GONE);
+            btn_clear_from.setVisibility(View.GONE);
+
+            textGeoError.setVisibility(View.GONE);
+            btn_change.setText(getString(R.string.on_city_tv));
+            btn_change.setOnClickListener(v -> {
+
+                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                Cursor cursor = database.rawQuery(query, null);
+
+                cursor.moveToFirst();
+
+                // Получите значения полей из первой записи
+
+
+                @SuppressLint("Range") double startLat = cursor.getDouble(cursor.getColumnIndex("startLat"));
+                @SuppressLint("Range") double startLan = cursor.getDouble(cursor.getColumnIndex("startLan"));
+                @SuppressLint("Range") String start = cursor.getString(cursor.getColumnIndex("start"));
+                cursor.close();
+                database.close();
+                List<String> settings = new ArrayList<>();
+                settings.add(String.valueOf(startLat));
+                settings.add(String.valueOf(startLan));
+                settings.add(String.valueOf(startLat));
+                settings.add(String.valueOf(startLan));
+                settings.add(start);
+                settings.add(getString(R.string.on_city_tv));
+
+                updateRoutMarker(settings);
+                extraExit = true;
+                btn_ok.performClick();
+            });
+        }
+        btnOnMap = findViewById(R.id.btn_on_map);
+        btnOnMap.setOnClickListener(v -> {
+            Intent intent = new Intent(getApplicationContext(), OpenStreetMapVisicomActivity.class);
+
+            intent.putExtra("startMarker", start);
+            intent.putExtra("finishMarker", end);
+
+            startActivity(intent);
+            finish();
+        });
+        btn_ok.setOnClickListener(v -> {
+            sharedPreferencesHelper.saveValue("gps_upd_address", false);
+            Logger.d(this, TAG, "sharedPreferencesHelper.getValue(\"gps_upd\", false)" +sharedPreferencesHelper.getValue("gps_upd", false));
+
+            startActivity(new Intent(this, MainActivity.class));
+        });
+
+        scrollButtonDown.setOnClickListener(v -> {
+            int nextVisiblePosition = addressListView.getLastVisiblePosition() + 1;
+            addressListView.smoothScrollToPosition(nextVisiblePosition);
+        });
+
+        scrollButtonUp.setOnClickListener(v -> {
+            int offset = -1; // или другое значение, чтобы указать направление прокрутки
+            addressListView.smoothScrollByOffset(offset);
+        });
+
+        layoutParams = addressListView.getLayoutParams();
+        layoutParams.height = desiredHeight;
+        addressListView.setLayoutParams(layoutParams);
+
+        btnCallAdmin = findViewById(R.id.btnCallAdmin);
+        btnCallAdmin.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Intent.ACTION_DIAL);
+                List<String> stringList = logCursor(MainActivity.CITY_INFO);
+                String phone = stringList.get(3);
+                intent.setData(Uri.parse(phone));
+                startActivity(intent);
+            }
+        });
+
+
+
         location_update = false;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
