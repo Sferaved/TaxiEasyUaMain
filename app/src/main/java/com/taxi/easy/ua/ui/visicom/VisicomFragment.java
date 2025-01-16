@@ -4,7 +4,7 @@ package com.taxi.easy.ua.ui.visicom;
 import static android.content.Context.MODE_PRIVATE;
 import static com.taxi.easy.ua.MainActivity.activeCalls;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
-import static com.taxi.easy.ua.utils.notify.NotificationHelper.checkForUpdate;
+
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -12,6 +12,7 @@ import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -67,6 +68,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
+import com.google.android.play.core.install.model.AppUpdateType;
 import com.google.android.play.core.install.model.UpdateAvailability;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
@@ -197,6 +199,7 @@ public class VisicomFragment extends Fragment {
     private Animation blinkAnimation;
 //    private final String baseUrl = "https://m.easy-order-taxi.site";
     private static String baseUrl;
+    private final int MY_REQUEST_CODE = 1234;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -380,20 +383,61 @@ public class VisicomFragment extends Fragment {
         // Установка слушателя для обновления состояния установки
         appUpdater.setOnUpdateListener(() -> {
             // Показать пользователю сообщение о завершении обновления
-            Toast.makeText(requireActivity(), R.string.update_finish_mes, Toast.LENGTH_SHORT).show();
+//            Toast.makeText(context, R.string.update_finish_mes, Toast.LENGTH_SHORT).show();
 
             // Перезапуск приложения для применения обновлений
-            restartApplication(requireActivity());
+            restartApplication(context);
         });
 
         // Регистрация слушателя
         appUpdater.registerListener();
 
         // Проверка наличия обновлений
-        checkForUpdate(requireActivity());
+        checkForUpdate(context);
     }
 
+    private void checkForUpdate(Context context) {
+        AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(context);
+        Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
 
+        appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
+            Logger.d(context, TAG, "Update availability: " + appUpdateInfo.updateAvailability());
+            Logger.d(context, TAG, "Update priority: " + appUpdateInfo.updatePriority());
+            Logger.d(context, TAG, "Client version staleness days: " + appUpdateInfo.clientVersionStalenessDays());
+
+            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
+                Logger.d(context, TAG, "Available updates found");
+
+                try {
+                    appUpdateManager.startUpdateFlowForResult(
+                            appUpdateInfo,
+                            AppUpdateType.IMMEDIATE,
+                            (Activity) context,
+                            MY_REQUEST_CODE);
+
+                } catch (IntentSender.SendIntentException e) {
+                    Logger.e(context, TAG, "Failed to start update flow: " + e.getMessage());
+                    FirebaseCrashlytics.getInstance().recordException(e);
+                    // Попытка запуска гибкого обновления
+                    try {
+                        appUpdateManager.startUpdateFlowForResult(
+                                appUpdateInfo,
+                                AppUpdateType.FLEXIBLE,
+                                (Activity) context,
+                                MY_REQUEST_CODE
+                        );
+                    } catch (IntentSender.SendIntentException ex) {
+                        Logger.e(context, TAG, "Failed to start flexible update: " + ex.getMessage());
+                        FirebaseCrashlytics.getInstance().recordException(ex);
+                        Toast.makeText(context, R.string.update_error, Toast.LENGTH_LONG).show();
+                    }
+                }
+            }
+        }).addOnFailureListener(e -> {
+            Logger.e(context, TAG, "Failed to check for updates: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
+        });
+    }
     public static void addCheck(Context context) {
 
         int newCheck = 0;
@@ -2633,104 +2677,6 @@ public class VisicomFragment extends Fragment {
             databaseHelperUid.clearTableCancel();
         }
     }
-
-//    private void showAddCostDoubleDialog(String addType) {
-//
-//            MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext());
-//            LayoutInflater inflater = requireActivity().getLayoutInflater();
-//            int  dialogViewInt = R.layout.dialog_add_cost;
-//            switch(addType) {
-//                case "60":
-//                    dialogViewInt = R.layout.dialog_add_60_cost;
-//                    break;
-//                case "45":
-//                    break;
-//            }
-//            View dialogView = inflater.inflate(dialogViewInt, null);
-//
-//
-//            String title = getString(R.string.double_order);
-//            String message = getString(R.string.add_cost_fin_60);
-//            String numberIndexString = "";
-//
-//            switch(addType) {
-//                case "60":
-//                    title = getString(R.string.double_order);
-//
-//                    Button minus = dialogView.findViewById(R.id.btn_minus);
-//                    Button plus = dialogView.findViewById(R.id.btn_plus);
-//                    EditText discinp = dialogView.findViewById(R.id.discinp);
-//
-//                    minus.setOnClickListener(v -> {
-//                        String addCost = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(5);
-//                        int addCostInt = Integer.parseInt(addCost);
-//                        if(addCostInt >= 5) {
-//                            addCostInt -=5;
-//                            updateAddCost(String.valueOf(addCostInt));
-//                            discinp.setText(String.valueOf(addCostInt + 60));
-//                        }
-//
-//                    });
-//
-//                    plus.setOnClickListener(v -> {
-//                        String addCost = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(5);
-//                        int addCostInt = Integer.parseInt(addCost);
-//                        addCostInt +=5;
-//                        updateAddCost(String.valueOf(addCostInt));
-//                        discinp.setText(String.valueOf(addCostInt + 60));
-//                    });
-//
-//                    message = getString(R.string.add_cost_fin_60);
-//                    numberIndexString = message;
-//                    break;
-//                case "45":
-//                    title = getString(R.string.black_list);
-//                    message = getString(R.string.add_cost_fin_45);
-//                    numberIndexString = "45";
-//                    blockUserBlackList();
-//                    break;
-//            }
-//            TextView titleView = dialogView.findViewById(R.id.dialogTitle);
-//            titleView.setText(title);
-//
-//            TextView messageView = dialogView.findViewById(R.id.dialogMessage);
-//
-//            SpannableStringBuilder spannable = new SpannableStringBuilder(message);
-//
-//            int numberIndex = message.indexOf(numberIndexString);
-//            int length = numberIndexString.length();
-//            spannable.setSpan(new StyleSpan(Typeface.BOLD), numberIndex, numberIndex + length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-//            messageView.setText(spannable);
-//
-//            builder.setView(dialogView)
-//                    .setCancelable(false)
-//                    .setPositiveButton(R.string.ok_button, (dialog, which) -> {
-//                        dialog.dismiss();
-//
-//                        switch (addType) {
-//                            case "60":
-//                                createDoubleOrder();
-//                                break;
-//                            case "45":
-//                                createBlackList();
-//                                break;
-//                        }
-//
-//                    })
-//                    .setNegativeButton(R.string.cancel_button, (dialog, which) -> {
-//                        switch (addType) {
-//                            case "60":
-//                                sharedPreferencesHelperMain.saveValue("doubleOrderPref", false);
-//                                break;
-//                            case "45":
-//                                break;
-//                        }
-//
-//                        dialog.dismiss();
-//                    })
-//                    .show();
-//
-//    }
 
     private void showAddCostDoubleDialog(String addType) {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext());

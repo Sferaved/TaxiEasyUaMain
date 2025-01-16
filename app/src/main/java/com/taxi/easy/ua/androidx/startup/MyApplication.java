@@ -5,8 +5,6 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
-import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -20,7 +18,6 @@ import com.github.anrwatchdog.ANRWatchDog;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 
 import java.io.File;

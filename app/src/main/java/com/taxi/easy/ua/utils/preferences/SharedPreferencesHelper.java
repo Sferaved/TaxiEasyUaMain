@@ -13,6 +13,11 @@ public class SharedPreferencesHelper {
         sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
+    public void saveValueAsync(String key, String value) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString(key, value);
+        editor.apply(); // Асинхронное сохранение
+    }
     // Метод для сохранения значения
     public void saveValue(String key, Object value) {
         SharedPreferences.Editor editor = sharedPreferences.edit();
