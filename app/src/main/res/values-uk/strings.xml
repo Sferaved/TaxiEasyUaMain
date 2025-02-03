@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.796</string>
-    <string name="version">Версія: 1.796</string>
+    <string name="version_code">1.797</string>
+    <string name="version">Версія: 1.797</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -38,7 +38,6 @@
     <string name="open_maps">Замовити по мапе</string>
     <string name="driver">Робота водієм (реклама)</string>
     <string name="send_email">Поділитися</string>
-
     <string name="gps_ok">Визначення геопозиції включено</string>
     <string name="cancel_button">Ні, дякую</string>
     <string name="gps_on">Увімкнути</string>
@@ -490,5 +489,8 @@
     <string name="addCostBonusMessage">Для швидшого пошуку авто замовте за готівку або з оплатою поїздки карткою</string>
     <string name="recounting_order">Відбувається перерахунок замовлення</string>
     <string name="ex_st_finished">Ваша подорож завершена. Дякуємо, що скористалися нашими послугами. Чекаємо на Вас наступного разу.</string>
+    <string name="pay_error_title">Помилка платежу</string>
+    <string name="try_again_pay">"Спробуйте знову номер рахунку на оплату: "</string>
+    <string name="no_cards_info">У вас немає підтверджених карток для оплати. Підтвердьте платіжну картку для оплати поїздок.</string>
 
 </resources>

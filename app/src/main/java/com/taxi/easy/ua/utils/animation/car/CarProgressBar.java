@@ -68,7 +68,7 @@ public class CarProgressBar extends RelativeLayout {
         });
     }
 
-    private void startAnimation() {
+    public void startAnimation() {
         int screenWidth = getWidth();
 
         // Create the animation

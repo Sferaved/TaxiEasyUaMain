@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
+
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -233,7 +234,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             getUrlToPaymentWfp(addCost, MainActivity.order_id );
             getStatusWfp(MainActivity.order_id, addCost);
         } else {
-            paymentByTokenWfp(FinishSeparateFragment.messageFondy, addCost, rectoken, MainActivity.order_id );
+            paymentByTokenWfp(FinishSeparateFragment.messageFondy, addCost, MainActivity.order_id );
         }
 
     }
@@ -364,6 +365,10 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         ApiService apiService = retrofit.create(ApiService.class);
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         String city = stringList.get(1);
+
+
+
+
         Call<Status> call = apiService.startAddCostCardBottomUpdate(
                 uid,
                 uid_Double,
@@ -524,7 +529,6 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
     private void paymentByTokenWfp(
             String orderDescription,
             String amount,
-            String rectoken,
             String order_id
     ) {
         String  baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
@@ -557,8 +561,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                 amount,
                 orderDescription,
                 email,
-                phoneNumber,
-                rectoken
+                phoneNumber
         );
         call.enqueue(new Callback<PurchaseResponse>() {
             @Override
@@ -576,9 +579,12 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                         switch (orderStatus) {
                             case "Approved":
                             case "WaitingAuthComplete":
+                                sharedPreferencesHelperMain.saveValue("pay_error", "**");
+
                                 newOrderCardPayAdd20(MainActivity.order_id, amount);
                                 break;
                             default:
+                                sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
                                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
                                 callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                                 MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
@@ -664,9 +670,11 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                     switch (orderStatus) {
                         case "Approved":
                         case "WaitingAuthComplete":
+                            sharedPreferencesHelperMain.saveValue("pay_error", "**");
                             newOrderCardPayAdd20(MainActivity.order_id, amount);
                             break;
                         default:
+                            sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
                             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
                             callOrderIdMemory(MainActivity.order_id, uid, pay_method);
                             MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);

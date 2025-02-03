@@ -17,9 +17,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -29,10 +27,8 @@ import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavOptions;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.google.firebase.crashlytics.FirebaseCrashlytics;
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
@@ -60,14 +56,10 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.web.MyWebViewClient;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -76,7 +68,6 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-import retrofit2.converter.scalars.ScalarsConverterFactory;
 
 public class CardFragment extends Fragment {
 
@@ -99,204 +90,52 @@ public class CardFragment extends Fragment {
     public static String table;
     String pay_method;
 
-    private boolean show_cards;
     Activity context;
     WebView webView;
     FragmentManager fragmentManager;
     private AppCompatButton btnCallAdmin;
-
+    View root;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentCardBinding.inflate(inflater, container, false);
-        View root = binding.getRoot();
-        fragmentManager = getParentFragmentManager();
-        webView = binding.webView;
-        context = requireActivity();
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-            
-            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true) 
-                        .build());
-        }
-        context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        btnCardLink  = binding.btnCardLink;
-        btnOrder = binding.btnOrder;
-        btnOrder.setOnClickListener(v -> {
-            // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту
-            SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
-            sharedPreferencesHelper.saveValue("gps_upd", true);
-            sharedPreferencesHelper.saveValue("gps_upd_address", true);
-            
-            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true) 
-                        .build());
-        });
+        root = binding.getRoot();
 
-        btnCallAdmin = binding.btnCallAdmin;
-        btnCallAdmin.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_DIAL);
-            String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
-            intent.setData(Uri.parse(phone));
-            startActivity(intent);
-        });
         return root;
     }
-    private void pay_system() {
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        @SuppressLint("Recycle")
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(interceptor)
-                .build();
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
-
-        String city = logCursor(MainActivity.CITY_INFO, context).get(1);
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-        Logger.d(context, TAG, "newUser: " + userEmail);
-
-        PayApi apiService = retrofit.create(PayApi.class);
-        Call<ResponsePaySystem> call = apiService.getPaySystem();
-        call.enqueue(new Callback<ResponsePaySystem>() {
-            @SuppressLint("Recycle")
-            @Override
-            public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
-                if (response.isSuccessful()) {
-                    // Обработка успешного ответа
-                    ResponsePaySystem responsePaySystem = response.body();
-                    assert responsePaySystem != null;
-                    String paymentCode = responsePaySystem.getPay_system();
-                    Cursor cursor;
-                    switch (paymentCode) {
-                        case "wfp":
-                            pay_method = "wfp_payment";
-                            getCardTokenWfp(city);
-                            cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_WFP_CARDS + " ORDER BY id DESC LIMIT 1", null);
-                            show_cards = cursor != null;
-                            break;
-                        case "fondy":
-                            pay_method = "fondy_payment";
-                            cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_FONDY_CARDS + " ORDER BY id DESC LIMIT 1", null);
-                            show_cards = cursor != null;
-                            break;
-                        case "mono":
-                            pay_method = "mono_payment";
-                            cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_MONO_CARDS + " ORDER BY id DESC LIMIT 1", null);
-                            show_cards = cursor != null;
-                            break;
-                    }
-                    Logger.d(context, TAG, "onResponse:show_cards " + show_cards);
-                    if (show_cards) {
-                        textCard.setVisibility(View.VISIBLE);
-                        listView.setVisibility(View.VISIBLE);
-                        progressBar.setVisibility(View.VISIBLE);
-                        networkChangeReceiver = new NetworkChangeReceiver();
-                        email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-                        btnCardLink.setOnClickListener(v -> {
-                            progressBar.setVisibility(View.VISIBLE);
-
-                            Logger.d(context, TAG, "onClick: " + pay_method);
-                            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-                                
-                                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                                    .setPopUpTo(R.id.nav_visicom, true)
-                                    .build());
-                            } else {
-                                MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getActivity());
-
-                                messageFondy = getString(R.string.fondy_message);
-
-                                switch (pay_method) {
-                                    case "wfp_payment":
-                                        MyBottomSheetCardVerificationWithOneUah bottomSheetDialogFragment = new MyBottomSheetCardVerificationWithOneUah();
-                                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-//                                        try {
-//                                            getUrlToPaymentWfp(MainActivity.order_id, messageFondy);
-//                                        } catch (UnsupportedEncodingException e) {
-//                                            FirebaseCrashlytics.getInstance().recordException(e);
-//                                            throw new RuntimeException(e);
-//                                        }
-                                        break;
-                                    case "fondy_payment":
-                                        try {
-                                            getUrlToPaymentFondy(MainActivity.order_id, messageFondy);
-                                        } catch (UnsupportedEncodingException e) {
-                                            FirebaseCrashlytics.getInstance().recordException(e);
-                                            throw new RuntimeException(e);
-                                        }
-                                        break;
-                                    case "mono_payment":
-                                        getUrlToPaymentMono(MainActivity.order_id, messageFondy);
-                                        break;
-                                }
-                                progressBar.setVisibility(View.GONE);
-
-                            }
-                        });
-                        Logger.d(context, TAG, "onResponse:pay_method "+pay_method);
-                        ArrayList<Map<String, String>> cardMaps = new ArrayList<>();
-                        switch (pay_method) {
-                            case "wfp_payment":
-                                cardMaps = getCardMapsFromDatabase(MainActivity.TABLE_WFP_CARDS);
-                                table = MainActivity.TABLE_WFP_CARDS;
-                                break;
-                            case "fondy_payment":
-                                cardMaps = getCardMapsFromDatabase(MainActivity.TABLE_FONDY_CARDS);
-                                table = MainActivity.TABLE_FONDY_CARDS;
-                                break;
-                            case "mono_payment":
-                                cardMaps = getCardMapsFromDatabase(MainActivity.TABLE_MONO_CARDS);
-                                table = MainActivity.TABLE_MONO_CARDS;
-                                break;
-                        }
-                        Logger.d(context, TAG, "onResponse:cardMaps " + cardMaps);
-                        if (!cardMaps.isEmpty()) {
-                            CustomCardAdapter listAdapter = new CustomCardAdapter(context, cardMaps, table, pay_method);
-                            listView.setAdapter(listAdapter);
-                            textCard.setVisibility(View.GONE);
-                            progressBar.setVisibility(View.GONE);
-                        } else {
-                            textCard.setVisibility(View.VISIBLE);
-                            listView.setVisibility(View.GONE);
-                            textCard.setText(R.string.no_cards);
-                            progressBar.setVisibility(View.GONE);
-                        }
+    private void cardViews() {
 
 
+        pay_method = "wfp_payment";
 
-                    } else {
-                        textCard.setVisibility(View.GONE);
-//            btnCardLink.setVisibility(View.GONE);
-                        MyBottomSheetErrorCardFragment bottomSheetDialogFragment = new MyBottomSheetErrorCardFragment(getString(R.string.city_no_cards));
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+        textCard.setVisibility(View.VISIBLE);
+        listView.setVisibility(View.VISIBLE);
+        progressBar.setVisibility(View.VISIBLE);
+        networkChangeReceiver = new NetworkChangeReceiver();
+        email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
 
-                    }
-                } else {
-                    if (isAdded()) { //
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                    }
+        Logger.d(context, TAG, "onResponse:pay_method "+pay_method);
+        ArrayList<Map<String, String>> cardMaps = getCardMapsFromDatabase(MainActivity.TABLE_WFP_CARDS);
+        table = MainActivity.TABLE_WFP_CARDS;
 
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
-                Logger.d(context, TAG, "onFailure :pay_system " + t);
-                FirebaseCrashlytics.getInstance().recordException(t);
-            }
-        });
+        Logger.d(context, TAG, "onResponse:cardMaps " + cardMaps);
+        if (!cardMaps.isEmpty()) {
+            CustomCardAdapter listAdapter = new CustomCardAdapter(context, cardMaps, table, pay_method);
+            listView.setAdapter(listAdapter);
+            textCard.setVisibility(View.GONE);
+            progressBar.setVisibility(View.GONE);
+        } else {
+            textCard.setVisibility(View.VISIBLE);
+            listView.setVisibility(View.GONE);
+            textCard.setText(R.string.no_cards);
+            progressBar.setVisibility(View.GONE);
+        }
     }
 
-    private  void getCardTokenWfp(String city) {
+    private  void getCardTokenWfp() {
+        String city = logCursor(MainActivity.CITY_INFO, context).get(1);
+        progressBar.setVisibility(View.VISIBLE);
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
@@ -315,7 +154,7 @@ public class CardFragment extends Fragment {
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
 
         // Выполните запрос
-        Call<CallbackResponseWfp> call = service.handleCallbackWfp(
+        Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
                 context.getString(R.string.application),
                 city,
                 userEmail,
@@ -330,15 +169,22 @@ public class CardFragment extends Fragment {
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
                         Logger.d(context, TAG, "onResponse: cards" + cards);
+                        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
+
+// Открываем или создаем базу данных
                         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
+
+// Используем правильное имя таблицы в запросе
+                        database.execSQL("DELETE FROM " + tableName + ";");
+
                         if (cards != null && !cards.isEmpty()) {
                             for (CardInfo cardInfo : cards) {
                                 String masked_card = cardInfo.getMasked_card(); // Маска карты
                                 String card_type = cardInfo.getCard_type(); // Тип карты
                                 String bank_name = cardInfo.getBank_name(); // Название банка
                                 String rectoken = cardInfo.getRectoken(); // Токен карты
-                                String merchant = cardInfo.getMerchant(); // Токен карты
+                                String merchant = cardInfo.getMerchant(); //
+                                String  active = cardInfo.getActive();
 
                                 Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
                                 ContentValues cv = new ContentValues();
@@ -347,28 +193,14 @@ public class CardFragment extends Fragment {
                                 cv.put("bank_name", bank_name);
                                 cv.put("rectoken", rectoken);
                                 cv.put("merchant", merchant);
-                                cv.put("rectoken_check", "0");
+                                cv.put("rectoken_check", active);
                                 database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
                             }
-                            Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_WFP_CARDS + " ORDER BY id DESC LIMIT 1", null);
-                            if (cursor != null && cursor.moveToFirst()) {
-                                // Получаем значение ID последней записи
-                                @SuppressLint("Range") int lastId = cursor.getInt(cursor.getColumnIndex("id"));
-                                cursor.close();
-
-                                // Обновляем строку с найденным ID
-                                ContentValues cv = new ContentValues();
-                                cv.put("rectoken_check", "1");
-                                database.update(MainActivity.TABLE_WFP_CARDS, cv, "id = ?", new String[] { String.valueOf(lastId) });
-                            }
-
-                            database.close();
                         }
                         database.close();
                     }
+                    cardViews();
 
-                } else {
-                    // Обработка случаев, когда ответ не 200 OK
                 }
             }
 
@@ -376,26 +208,99 @@ public class CardFragment extends Fragment {
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
                 Logger.d(context, TAG, "onResponse: failure " + t);
+                cardViews();
             }
         });
         progressBar.setVisibility(View.INVISIBLE);
+
     }
 
     @Override
     public void onResume() {
         super.onResume();
+
+        fragmentManager = getParentFragmentManager();
+        webView = binding.webView;
+        context = requireActivity();
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+
+            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_visicom, true)
+                    .build());
+        }
+        context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        btnCardLink  = binding.btnCardLink;
+        btnOrder = binding.btnOrder;
+        btnOrder.setOnClickListener(v -> {
+            // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту
+            SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
+            sharedPreferencesHelper.saveValue("gps_upd", true);
+            sharedPreferencesHelper.saveValue("gps_upd_address", true);
+
+            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_visicom, true)
+                    .build());
+        });
+
+        btnCallAdmin = binding.btnCallAdmin;
+        btnCallAdmin.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
+            intent.setData(Uri.parse(phone));
+            startActivity(intent);
+        });
+        SwipeRefreshLayout swipeRefreshLayout = root.findViewById(R.id.swipeRefreshLayout);
+        TextView svButton = root.findViewById(R.id.sv_button);
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            // Скрываем TextView (⬇️) сразу после появления индикатора свайпа
+            svButton.setVisibility(View.GONE);
+
+            // Выполняем необходимое действие (например, запуск новой активности)
+            MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_card, true)
+                    .build());
+            // Эмулируем окончание обновления с задержкой
+            swipeRefreshLayout.postDelayed(() -> {
+                // Отключаем индикатор загрузки
+                swipeRefreshLayout.setRefreshing(false);
+
+                // Показываем TextView (⬇️) снова после завершения обновления
+                svButton.setVisibility(View.VISIBLE);
+            }, 500); // Задержка 500 мс
+        });
+
+
+
+
         progressBar = binding.progressBar;
         progressBar.setVisibility(View.VISIBLE);
-        pay_system();
         textCard = binding.textCard;
         listView = binding.listView;
         if(textCard.getVisibility() == View.VISIBLE) {
             btnCardLink.setVisibility(View.VISIBLE);
             listView.setVisibility(View.GONE);
         }
+        btnCardLink.setOnClickListener(v -> {
+            progressBar.setVisibility(View.VISIBLE);
 
+            Logger.d(context, TAG, "onClick: " + pay_method);
+            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true)
+                        .build());
+            } else {
+                MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getActivity());
 
+                messageFondy = getString(R.string.fondy_message);
 
+                MyBottomSheetCardVerificationWithOneUah bottomSheetDialogFragment = new MyBottomSheetCardVerificationWithOneUah();
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                progressBar.setVisibility(View.GONE);
+            }
+        });
+
+        getCardTokenWfp();
 
     }
 
@@ -426,354 +331,12 @@ public class CardFragment extends Fragment {
         return cardMaps;
     }
 
-
-    private void getUrlToPaymentMono(String orderId, String messageFondy) {
-    }
-    private void getReversMono(
-            String invoiceId,
-            String extRef,
-            int amount
-    ) {
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://api.monobank.ua/api/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        MonoApi monoApi = retrofit.create(MonoApi.class);
-
-        RequestCancelMono paymentRequest = new RequestCancelMono(
-                invoiceId,
-                extRef,
-                amount
-        );
-        Logger.d(context, TAG, "getRevers: " + paymentRequest);
-
-        String token = getResources().getString(R.string.mono_key_storage); // Получение токена из ресурсов
-        Call<ResponseCancelMono> call = monoApi.invoiceCancel(token, paymentRequest);
-
-        call.enqueue(new Callback<ResponseCancelMono>() {
-            @Override
-            public void onResponse(@NonNull Call<ResponseCancelMono> call, @NonNull Response<ResponseCancelMono> response) {
-
-                if (response.isSuccessful()) {
-                    ResponseCancelMono apiResponse = response.body();
-                    Logger.d(context, TAG, "JSON Response: " + new Gson().toJson(apiResponse));
-                    if (apiResponse != null) {
-                        String responseData = apiResponse.getStatus();
-                        Logger.d(context, TAG, "onResponse: " + responseData);
-                        // Обработка успешного ответа
-
-                        switch (responseData) {
-                            case "processing":
-                                Logger.d(context, TAG, "onResponse: " + "заява на скасування знаходиться в обробці");
-                                break;
-                            case "success":
-                                Logger.d(context, TAG, "onResponse: " + "заяву на скасування виконано успішно");
-                                break;
-                            case "failure":
-                                Logger.d(context, TAG, "onResponse: " + "неуспішне скасування");
-                                Logger.d(context, TAG, "onResponse: ErrCode: " + apiResponse.getErrCode());
-                                Logger.d(context, TAG, "onResponse: ErrText: " + apiResponse.getErrText());
-                                break;
-                        }
-
-                    }
-                } else {
-                    // Обработка ошибки запроса
-                    Logger.d(context, TAG, "onResponse: Ошибка запроса, код " + response.code());
-                    try {
-                        assert response.errorBody() != null;
-                        String errorBody = response.errorBody().string();
-                        Logger.d(context, TAG, "onResponse: Тело ошибки: " + errorBody);
-                    } catch (IOException e) {
-                        FirebaseCrashlytics.getInstance().recordException(e);
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<ResponseCancelMono> call, Throwable t) {
-                // Обработка ошибки сети или другие ошибки
-                Logger.d(context, TAG, "onFailure: Ошибка сети: " + t.getMessage());
-            }
-        });
-
-    }
-    private void paySystem(final PaySystemCallback callback) {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        PayApi apiService = retrofit.create(PayApi.class);
-        Call<ResponsePaySystem> call = apiService.getPaySystem();
-        call.enqueue(new Callback<ResponsePaySystem>() {
-            @Override
-            public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
-                if (response.isSuccessful()) {
-                    // Обработка успешного ответа
-                    ResponsePaySystem responsePaySystem = response.body();
-                    assert responsePaySystem != null;
-                    String paymentCode = responsePaySystem.getPay_system();
-
-                    String paymentCodeNew = "wfp_payment"; // Изначально устанавливаем значение
-
-                    switch (paymentCode) {
-                        case "wfp":
-                            paymentCodeNew = "wfp_payment";
-                            break;
-                        case "fondy":
-                            paymentCodeNew = "fondy_payment";
-                            break;
-                        case "mono":
-                            paymentCodeNew = "mono_payment";
-                            break;
-                    }
-
-                    // Вызываем обработчик, передавая полученное значение
-                    if (getActivity() != null) {
-                        // Fragment is attached to an activity, it's safe to call onPaySystemResult
-                        callback.onPaySystemResult(paymentCodeNew);
-                    }
-                } else {
-                    // Обработка ошибки
-                    callback.onPaySystemFailure(getString(R.string.verify_internet));
-                }
-                progressBar.setVisibility(View.GONE);
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
-                // Проверяем, что фрагмент присоединен к контексту
-                if (isAdded()) {
-                    // Обработка ошибки
-                    callback.onPaySystemFailure(getString(R.string.verify_internet));
-                }
-                progressBar.setVisibility(View.GONE);
-            }
-
-        });
-    }
-
     // Интерфейс для обработки результата и ошибки
     public interface PaySystemCallback {
         void onPaySystemResult(String paymentCode);
         void onPaySystemFailure(String errorMessage);
     }
 
-
-
-    @SuppressLint("SetJavaScriptEnabled")
-    private void getUrlToPaymentWfp(String order_id, String orderDescription) throws UnsupportedEncodingException {
-// Настраиваем Retrofit
-        HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
-        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
-        OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
-        httpClient.addInterceptor(logging);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-        Retrofit retrofit = new Retrofit.Builder()
-//                .baseUrl("https://m.easy-order-taxi.site/")
-                .baseUrl(baseUrl + "/")
-                .addConverterFactory(ScalarsConverterFactory.create())
-                .client(httpClient.build())
-                .build();
-
-        VerifyService service = retrofit.create(VerifyService.class);
-        List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
-        String city = stringList.get(1);
-
-        stringList = logCursor(MainActivity.TABLE_USER_INFO, context);
-        String userEmail = stringList.get(3);
-        String phone_number = stringList.get(2);
-
-           Call<String> call = service.verify(
-                getString(R.string.application),
-                city,
-                order_id,
-                userEmail,
-                phone_number,
-                LocaleHelper.getLocale()
-        );
-        btnCardLink.setVisibility(View.GONE);
-        btnOrder.setVisibility(View.GONE);
-        btnCallAdmin.setVisibility(View.GONE);
-        textCard.setVisibility(View.GONE);
-
-        WebSettings webSettings = webView.getSettings();
-        webSettings.setJavaScriptEnabled(true); // Включаем поддержку JavaScript
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                // Скрыть прогресс бар или что-то подобное
-            }
-        });
-        call.enqueue(new Callback<String>() {
-            @Override
-            public void onResponse(@NonNull Call<String> call, @NonNull Response<String> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    // Отобразить HTML в WebView
-                     btnCardLink.setVisibility(View.GONE);
-                     btnOrder.setVisibility(View.GONE);
-                     btnCallAdmin.setVisibility(View.GONE);
-                     displayHtmlContent(response.body());
-                } else {
-                    Logger.d(context, TAG, "Response was not successful or body was null");
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<String> call, @NonNull Throwable t) {
-                Logger.d(context, TAG, "IOException"  + t);
-            }
-        });
-
-        progressBar.setVisibility(View.INVISIBLE);
-    }
-
-    private void displayHtmlContent(String htmlContent) {
-        String baseUrl = "https://secure.wayforpay.com/"; // Замените на ваш базовый URL
-        btnCardLink.setVisibility(View.GONE);
-        webView.setVisibility(View.VISIBLE);
-
-        // Присваиваем WebViewClient для отслеживания URL
-        webView.setWebViewClient(new MyWebViewClient(context, MainActivity.navController));
-
-        // Загружаем HTML-контент в WebView
-        webView.loadDataWithBaseURL(baseUrl, htmlContent, "text/html", "UTF-8", null);
-    }
-
-    private void getUrlToPaymentFondy(String order_id, String orderDescription) throws UnsupportedEncodingException {
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://pay.fondy.eu/api/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        PaymentApi paymentApi = retrofit.create(PaymentApi.class);
-        List<String>  arrayList = logCursor(MainActivity.CITY_INFO, context);
-        String MERCHANT_ID = arrayList.get(6);
-
-        Map<String, String> params = new TreeMap<>();
-        params.put("order_id", order_id);
-        params.put("order_desc", orderDescription);
-        params.put("currency", "UAH");
-        params.put("amount", amount);
-        params.put("preauth", "Y");
-        params.put("required_rectoken", "Y");
-        params.put("merchant_id", MERCHANT_ID);
-        params.put("sender_email", email);
-        params.put("server_callback_url", baseUrl + "/server-callback");
-
-        Logger.d(context, TAG, "getStatusFondy: " + params);
-        SignatureClient signatureClient = new SignatureClient();
-// Передаем экземпляр SignatureCallback в метод generateSignature
-
-        StringBuilder paramsBuilder = new StringBuilder();
-        for (Map.Entry<String, String> entry : params.entrySet()) {
-            if (paramsBuilder.length() > 0) {
-                paramsBuilder.append("&");
-            }
-            paramsBuilder.append(URLEncoder.encode(entry.getKey(), "UTF-8"))
-                    .append("=")
-                    .append(URLEncoder.encode(entry.getValue(), "UTF-8"));
-        }
-        String queryString = paramsBuilder.toString();
-
-
-        signatureClient.generateSignature(queryString, new SignatureClient.SignatureCallback() {
-            @Override
-            public void onSuccess(SignatureResponse response) {
-                // Обработка успешного ответа
-                String digest = response.getDigest();
-                Logger.d(context, TAG, "Received signature digest: " + digest);
-
-                RequestData paymentRequest = new RequestData(
-                        order_id,
-                        orderDescription,
-                        amount,
-                        MERCHANT_ID,
-                        digest,
-                        email
-                );
-
-
-                StatusRequestPay statusRequest = new StatusRequestPay(paymentRequest);
-                Logger.d(context, TAG, "getUrlToPaymentFondy: " + statusRequest);
-
-                Call<ApiResponsePay<SuccessResponseDataPay>> call = paymentApi.makePayment(statusRequest);
-
-                call.enqueue(new Callback<ApiResponsePay<SuccessResponseDataPay>>() {
-
-                    @Override
-                    public void onResponse(@NonNull Call<ApiResponsePay<SuccessResponseDataPay>> call, Response<ApiResponsePay<SuccessResponseDataPay>> response) {
-                        Logger.d(context, TAG, "onResponse: 1111" + response.code());
-                        if (response.isSuccessful()) {
-                            ApiResponsePay<SuccessResponseDataPay> apiResponse = response.body();
-
-                            Logger.d(context, TAG, "onResponse: " +  new Gson().toJson(apiResponse));
-                            try {
-                                SuccessResponseDataPay responseBody = response.body().getResponse();
-
-                                // Теперь у вас есть объект ResponseBodyRev для обработки
-                                if (responseBody != null) {
-                                    String responseStatus = responseBody.getResponseStatus();
-                                    String checkoutUrl = responseBody.getCheckoutUrl();
-                                    if ("success".equals(responseStatus)) {
-                                        // Обработка успешного ответа
-
-                                        MyBottomSheetCardVerification bottomSheetDialogFragment = new MyBottomSheetCardVerification(checkoutUrl, amount);
-                                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-
-
-                                    } else if ("failure".equals(responseStatus)) {
-                                        // Обработка ответа об ошибке
-                                        String errorResponseMessage = responseBody.getErrorMessage();
-                                        String errorResponseCode = responseBody.getErrorCode();
-                                        Logger.d(context, TAG, "onResponse: errorResponseMessage " + errorResponseMessage);
-                                        Logger.d(context, TAG, "onResponse: errorResponseCode" + errorResponseCode);
-                                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.pay_failure));
-                                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                                        // Отобразить сообщение об ошибке пользователю
-                                    } else {
-                                        // Обработка других возможных статусов ответа
-                                    }
-                                } else {
-                                    // Обработка пустого тела ответа
-                                }
-                            } catch (JsonSyntaxException e) {
-                                // Возникла ошибка при разборе JSON, возможно, сервер вернул неправильный формат ответа
-                                FirebaseCrashlytics.getInstance().recordException(e);
-                            }
-                        } else {
-                            // Обработка ошибки
-                            Logger.d(context, TAG, "onFailure: " + response.code());
-                        }
-                        progressBar.setVisibility(View.GONE);
-                     }
-
-                    @Override
-                    public void onFailure(@NonNull Call<ApiResponsePay<SuccessResponseDataPay>> call, @NonNull Throwable t) {
-                        progressBar.setVisibility(View.GONE);
-                        Logger.d(context, TAG, "onFailure1111: " + t);
-                    }
-
-
-                });
-            }
-
-
-            @Override
-            public void onError(String error) {
-                // Обработка ошибки
-
-                Logger.d(context, TAG, "Received signature error: " + error);
-            }
-        });
-
-        progressBar.setVisibility(View.INVISIBLE);
-    }
 
     @SuppressLint("Range")
     public List<String> logCursor(String table, Context context) {

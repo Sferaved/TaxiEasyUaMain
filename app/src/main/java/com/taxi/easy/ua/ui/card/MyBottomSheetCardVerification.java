@@ -189,9 +189,11 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                         switch (orderStatus) {
                             case "Approved":
                             case "WaitingAuthComplete":
+                                sharedPreferencesHelperMain.saveValue("pay_error", "**");
                                 getCardTokenWfp(city);
                                 break;
                             default:
+                                sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
                                 getReversWfp(city);
                                 if (isAdded()) { // Проверка, что фрагмент привязан к активности перед отображением диалогового окна
                                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.pending));
@@ -234,6 +236,11 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
     }
 
     private void getCardTokenWfp(String city) {
+        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.execSQL("DELETE FROM " + tableName + ";");
+        database.close();
+
         Logger.d(context, TAG, "getCardTokenWfp: ");
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);

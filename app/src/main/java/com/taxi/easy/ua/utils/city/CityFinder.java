@@ -501,6 +501,12 @@ public class CityFinder {
     }
 
     private void getCardTokenWfp(String city) {
+        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.execSQL("DELETE FROM " + tableName + ";");
+        database.close();
+
+
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");

@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.796</string>
-    <string name="version">Версия: 1.796</string>
+    <string name="version_code">1.797</string>
+    <string name="version">Версия: 1.797</string>
 
     <string name="app_name">Такси Доставка</string>
 
@@ -488,4 +488,7 @@
     <string name="addCostBonusMessage">Для более быстрого поиска авто закажите за наличные или с оплатой поездки картой</string>
     <string name="recounting_order">Происходит перерасчет заказа</string>
     <string name="ex_st_finished">Ваша поездка завершена. Спасибо что воспользовались нашими услугами. Ждем Вас в следующий раз.</string>
+    <string name="pay_error_title">Ошибка платежа</string>
+    <string name="try_again_pay">"Попробуйте снова, номер счета на оплату: "</string>
+    <string name="no_cards_info">У вас нет проверенных карт для оплаты. Подтвердите свою платежную карту для оплаты поездок.</string>
 </resources>

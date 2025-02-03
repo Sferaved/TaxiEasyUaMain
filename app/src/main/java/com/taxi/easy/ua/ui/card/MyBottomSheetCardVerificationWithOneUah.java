@@ -6,7 +6,6 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Resources;
@@ -307,11 +306,12 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
                         switch (orderStatus) {
                             case "Approved":
                             case "WaitingAuthComplete":
-                                getCardTokenWfp(city);
-
+                                sharedPreferencesHelperMain.saveValue("pay_error", "**");
+                                getReversWfp(city);
+                                dismiss();
                                 break;
                             default:
-                                dismiss();
+                                sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
                         }
                         // Другие данные можно также получить из statusResponse
                     } else {
@@ -330,94 +330,6 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
             }
         });
 
-    }
-
-    private void getCardTokenWfp(String city) {
-
-        Logger.d(context, TAG, "getCardTokenWfp: ");
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(interceptor)
-                .build();
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
-
-        // Создайте сервис
-        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
-        Logger.d(context, TAG, "getCardTokenWfp: ");
-        // Выполните запрос
-        Call<CallbackResponseWfp> call = service.handleCallbackWfp(
-                context.getString(R.string.application),
-                city,
-                email,
-                "wfp"
-        );
-        call.enqueue(new Callback<CallbackResponseWfp>() {
-            @Override
-            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
-                Logger.d(context, TAG, "onResponse: " + response.body());
-                if (response.isSuccessful()) {
-                    CallbackResponseWfp callbackResponse = response.body();
-                    if (callbackResponse != null) {
-                        List<CardInfo> cards = callbackResponse.getCards();
-                        Logger.d(context, TAG, "onResponse: cards" + cards);
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
-                        if (cards != null && !cards.isEmpty()) {
-                            for (CardInfo cardInfo : cards) {
-                                String masked_card = cardInfo.getMasked_card(); // Маска карты
-                                String card_type = cardInfo.getCard_type(); // Тип карты
-                                String bank_name = cardInfo.getBank_name(); // Название банка
-                                String rectoken = cardInfo.getRectoken(); // Токен карты
-                                String merchant = cardInfo.getMerchant(); // Токен карты
-
-                                Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
-                                ContentValues cv = new ContentValues();
-                                cv.put("masked_card", masked_card);
-                                cv.put("card_type", card_type);
-                                cv.put("bank_name", bank_name);
-                                cv.put("rectoken", rectoken);
-                                cv.put("merchant", merchant);
-                                cv.put("rectoken_check", "0");
-                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
-                            }
-                            Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_WFP_CARDS + " ORDER BY id DESC LIMIT 1", null);
-                            if (cursor != null && cursor.moveToFirst()) {
-                                // Получаем значение ID последней записи
-                                @SuppressLint("Range") int lastId = cursor.getInt(cursor.getColumnIndex("id"));
-                                cursor.close();
-
-                                // Обновляем строку с найденным ID
-                                ContentValues cv = new ContentValues();
-                                cv.put("rectoken_check", "1");
-                                database.update(MainActivity.TABLE_WFP_CARDS, cv, "id = ?", new String[] { String.valueOf(lastId) });
-                            }
-
-                            database.close();
-                        }
-                    }
-
-                } else {
-                      MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                      bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                }
-                getReversWfp(city);
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
-                // Обработка ошибки запроса
-                Logger.d(context, TAG, "onResponse: failure " + t);
-                getReversWfp(city);
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-            }
-        });
     }
 
     private void getReversWfp(String city) {
@@ -459,8 +371,13 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         super.onDismiss(dialog);
         Logger.d(context, TAG, "onDismiss:");
         MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder()
-                .setPopUpTo(R.id.nav_visicom, true)
+                .setPopUpTo(R.id.nav_card, true)
                 .build());
+    }
+
+    private void onDismissMy() {
+        Logger.d(context, TAG, "onDismiss:");
+        MainActivity.navController.navigate(R.id.nav_card);
     }
 
     @SuppressLint("Range")
@@ -468,19 +385,17 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         List<String> list = new ArrayList<>();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         @SuppressLint("Recycle") Cursor c = database.query(table, null, null, null, null, null, null);
-        if (c != null) {
-            if (c.moveToFirst()) {
-                String str;
-                do {
-                    str = "";
-                    for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+        if (c.moveToFirst()) {
+            String str;
+            do {
+                str = "";
+                for (String cn : c.getColumnNames()) {
+                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
+                    list.add(c.getString(c.getColumnIndex(cn)));
 
-                    }
+                }
 
-                } while (c.moveToNext());
-            }
+            } while (c.moveToNext());
         }
         database.close();
         return list;

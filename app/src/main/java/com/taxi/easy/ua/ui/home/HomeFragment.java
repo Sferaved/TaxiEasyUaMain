@@ -3,6 +3,8 @@ package com.taxi.easy.ua.ui.home;
 
 import static android.content.Context.MODE_PRIVATE;
 import static android.graphics.Color.RED;
+import static android.view.View.INVISIBLE;
+import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.navController;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 import static com.taxi.easy.ua.R.string.address_error_message;
@@ -76,6 +78,7 @@ import com.taxi.easy.ua.cities.Zaporizhzhia.Zaporizhzhia;
 import com.taxi.easy.ua.databinding.FragmentHomeBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
+import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.home.room.AppDatabase;
 import com.taxi.easy.ua.ui.home.room.RouteCost;
 import com.taxi.easy.ua.ui.home.room.RouteCostDao;
@@ -83,10 +86,13 @@ import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
+import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
+import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
 import com.taxi.easy.ua.utils.blacklist.BlacklistManager;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetDialogFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGeoFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
@@ -96,6 +102,7 @@ import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 
@@ -376,7 +383,7 @@ public class HomeFragment extends Fragment {
             @SuppressLint("UseRequireInsteadOfGet")
             @Override
             public void onClick(View v) {
-                btnVisible(View.VISIBLE);
+                btnVisible(VISIBLE);
                 if(connected()) {
                     List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
                     List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
@@ -397,7 +404,7 @@ public class HomeFragment extends Fragment {
                             }
                             break;
                     }
-                    progressBar.setVisibility(View.VISIBLE);
+                    progressBar.setVisibility(VISIBLE);
 
 
                         Logger.d(context, TAG, "onClick: pay_method" + pay_method);
@@ -497,7 +504,7 @@ public class HomeFragment extends Fragment {
 
         constr2 = binding.constr2;
 
-        constr2.setVisibility(View.INVISIBLE);
+        constr2.setVisibility(INVISIBLE);
         setBtnBonusName(context);
         return root;
     }
@@ -534,17 +541,17 @@ public class HomeFragment extends Fragment {
         }
 
         schedule.setOnClickListener(v -> {
-            btnVisible(View.INVISIBLE);
+            btnVisible(INVISIBLE);
             MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         });
 
         shed_down.setOnClickListener(v -> {
-            btnVisible(View.INVISIBLE);
+            btnVisible(INVISIBLE);
             MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         });
-        constr2.setVisibility(View.VISIBLE);
+        constr2.setVisibility(VISIBLE);
         addCheck(context);
     }
     private void orderFinished() {
@@ -575,7 +582,7 @@ public class HomeFragment extends Fragment {
             blinkAnimation = AnimationUtils.loadAnimation(context, R.anim.blink_animation);
             textStatusCar.startAnimation(blinkAnimation);
 
-            constraintLayoutHomeFinish.setVisibility(View.VISIBLE);ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
+            constraintLayoutHomeFinish.setVisibility(VISIBLE);ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
 //            // Пример строки URL с параметрами
             Logger.d(context, TAG, "orderFinished: "  + baseUrl + urlOrder);
@@ -591,7 +598,12 @@ public class HomeFragment extends Fragment {
                     assert orderWeb != null;
 
                     if (!orderWeb.equals("0")) {
+                        String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS);
+                        Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
 
+                        if (!rectoken.isEmpty()) {
+                            getStatusWfp();
+                        }
                         String from_name = sendUrlMap.get("routefrom");
                         String to_name = sendUrlMap.get("routeto");
 
@@ -641,7 +653,7 @@ public class HomeFragment extends Fragment {
 
                     } else {
                         constraintLayoutHomeFinish.setVisibility(View.GONE);
-                        constraintLayoutHomeMain.setVisibility(View.VISIBLE);
+                        constraintLayoutHomeMain.setVisibility(VISIBLE);
                         assert message != null;
                         String addType ="60";
                         if (message.equals("ErrorMessage")) {
@@ -680,17 +692,82 @@ public class HomeFragment extends Fragment {
 
                             }
                         }
-                        btnVisible(View.VISIBLE);
+                        btnVisible(VISIBLE);
                     }
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
-                    btnVisible(View.VISIBLE);
+                    btnVisible(VISIBLE);
                     FirebaseCrashlytics.getInstance().recordException(t);
                 }
             });
         }
+    }
+
+    private void getStatusWfp() {
+
+        Logger.d(context, TAG, "getStatusWfp: ");
+
+        String orderReferens = MainActivity.order_id;
+
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
+        String city = stringList.get(1);
+
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(interceptor)
+                .build();
+
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+
+        StatusService service = retrofit.create(StatusService.class);
+
+        Call<StatusResponse> call = service.checkStatus(
+                context.getString(R.string.application),
+                city,
+                orderReferens
+        );
+
+        String messageFondy = context.getString(R.string.fondy_message);
+
+        String amount = text_view_cost.getText().toString().trim();
+
+        call.enqueue(new Callback<StatusResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<StatusResponse> call, @NonNull Response<StatusResponse> response) {
+
+                if (response.isSuccessful()) {
+                    StatusResponse statusResponse = response.body();
+                    assert statusResponse != null;
+                    String orderStatus = statusResponse.getTransactionStatus();
+                    Logger.d(context, TAG, "Transaction Status: " + orderStatus);
+                    switch (orderStatus) {
+                        case "Approved":
+                        case "WaitingAuthComplete":
+                            sharedPreferencesHelperMain.saveValue("pay_error", "**");
+                            break;
+                        default:
+                            NotificationHelper.sendPaymentErrorNotification(context, context.getString(R.string.pay_error_title), context.getString(R.string.try_again_pay) + MainActivity.order_id);
+                            sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
+                            MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, context);
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
+            }
+        });
+
     }
 
     private void changePayMethodToNal() {
@@ -726,7 +803,7 @@ public class HomeFragment extends Fragment {
 
         Button cancelButton = dialogView.findViewById(R.id.dialog_cancel_button);
         cancelButton.setOnClickListener(v -> {
-            btnVisible(View.VISIBLE);
+            btnVisible(VISIBLE);
             alertDialog.dismiss();
         });
 
@@ -815,7 +892,7 @@ public class HomeFragment extends Fragment {
             Logger.d(context, TAG, "order: settings" + settings);
             updateRoutHome(settings);
         }
-        urlOrder = getTaxiUrlSearch( "orderSearch", context);
+        urlOrder = getTaxiUrlSearch( "orderSearchWfpInvoice", context);
         return true;
     }
     private void updateAddCost(String addCost) {
@@ -873,8 +950,8 @@ public class HomeFragment extends Fragment {
         btn_clear.setVisibility(visible);
         btn_order.setVisibility(visible);
 
-        if (visible == View.INVISIBLE) {
-            progressBar.setVisibility(View.VISIBLE);
+        if (visible == INVISIBLE) {
+            progressBar.setVisibility(VISIBLE);
         } else {
             progressBar.setVisibility(View.GONE);
         }
@@ -915,7 +992,7 @@ public class HomeFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
-        constraintLayoutHomeMain.setVisibility(View.VISIBLE);
+        constraintLayoutHomeMain.setVisibility(VISIBLE);
         constraintLayoutHomeFinish.setVisibility(View.GONE);
 
         databaseHelper = new DatabaseHelper(context);
@@ -958,7 +1035,7 @@ public class HomeFragment extends Fragment {
                 swipeRefreshLayout.setRefreshing(false);
 
                 // Показываем TextView (⬇️) снова после завершения обновления
-                svButton.setVisibility(View.VISIBLE);
+                svButton.setVisibility(VISIBLE);
             }, 500); // Задержка 500 мс
         });
 
@@ -968,7 +1045,7 @@ public class HomeFragment extends Fragment {
                 // Фокус установлен на TextView, очищаем его
                 textViewTo.setText("");
                 to_number.setText("");
-                to_number.setVisibility(View.INVISIBLE);
+                to_number.setVisibility(INVISIBLE);
             }
         });
         List<String> stringListRoutHome = logCursor(MainActivity.ROUT_HOME, context);
@@ -1008,6 +1085,7 @@ public class HomeFragment extends Fragment {
 
     @SuppressLint("Range")
     private void rout() {
+        progressBar.setVisibility(VISIBLE);
         textViewFrom.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @SuppressLint("ResourceAsColor")
             @Override
@@ -1057,7 +1135,7 @@ public class HomeFragment extends Fragment {
                             break;
                         }
                         case "1":
-                            from_number.setVisibility(View.VISIBLE);
+                            from_number.setVisibility(VISIBLE);
                             from_number.requestFocus();
                             numberFlagFrom = "1";
                             from_number.setText("1");
@@ -1066,7 +1144,7 @@ public class HomeFragment extends Fragment {
                             break;
                         case "0":
                             from_number.setText(" ");
-                            from_number.setVisibility(View.INVISIBLE);
+                            from_number.setVisibility(INVISIBLE);
                             numberFlagFrom = "0";
                             cost();
                             break;
@@ -1140,7 +1218,7 @@ public class HomeFragment extends Fragment {
                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                         break;
                     case "1":
-                        to_number.setVisibility(View.VISIBLE);
+                        to_number.setVisibility(VISIBLE);
                         to_number.requestFocus();
                         numberFlagTo = "1";
                         to_number.setText("1");
@@ -1149,7 +1227,7 @@ public class HomeFragment extends Fragment {
                         break;
                     case "0":
                         to_number.setText(" ");
-                        to_number.setVisibility(View.INVISIBLE);
+                        to_number.setVisibility(INVISIBLE);
                         numberFlagTo = "0";
                         cost();
                         break;
@@ -1176,11 +1254,12 @@ public class HomeFragment extends Fragment {
     }
     @SuppressLint("ResourceAsColor")
     private void cost() {
-        constr2.setVisibility(View.INVISIBLE);
-        textViewTo.setVisibility(View.VISIBLE);
-        binding.textwhere.setVisibility(View.VISIBLE);
-        binding.num2.setVisibility(View.VISIBLE);
-        btn_clear.setVisibility(View.VISIBLE);
+
+        constr2.setVisibility(INVISIBLE);
+        textViewTo.setVisibility(VISIBLE);
+        binding.textwhere.setVisibility(VISIBLE);
+        binding.num2.setVisibility(VISIBLE);
+        btn_clear.setVisibility(VISIBLE);
         from = textViewFrom.getText().toString();
 
         if (numberFlagFrom.equals("1") && from_number.getText().toString().equals(" ")) {
@@ -1249,6 +1328,7 @@ public class HomeFragment extends Fragment {
 
     @SuppressLint("SetTextI18n")
     private void handleCostResponse(Map<String, String> response) {
+        progressBar.setVisibility(INVISIBLE);
         String message = response.get("Message");
         String orderCostStr = response.get("order_cost");
 
@@ -1269,12 +1349,12 @@ public class HomeFragment extends Fragment {
         if (!orderCost.equals("0")) {
             scheduleUpdate();
 
-            text_view_cost.setVisibility(View.VISIBLE);
-            btn_minus.setVisibility(View.VISIBLE);
-            btn_plus.setVisibility(View.VISIBLE);
-            buttonAddServices.setVisibility(View.VISIBLE);
-            buttonBonus.setVisibility(View.VISIBLE);
-            btn_order.setVisibility(View.VISIBLE);
+            text_view_cost.setVisibility(VISIBLE);
+            btn_minus.setVisibility(VISIBLE);
+            btn_plus.setVisibility(VISIBLE);
+            buttonAddServices.setVisibility(VISIBLE);
+            buttonBonus.setVisibility(VISIBLE);
+            btn_order.setVisibility(VISIBLE);
 
             String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
             long discountInt = Integer.parseInt(discountText);
@@ -1401,7 +1481,7 @@ public class HomeFragment extends Fragment {
 
     @SuppressLint({"SetTextI18n", "StaticFieldLeak"})
     private void costRoutHome(final List<String> stringListRoutHome) {
-        progressBar.setVisibility(View.VISIBLE);
+        progressBar.setVisibility(VISIBLE);
 
       new AsyncTask<Integer, Void, RouteCost>() {
             @Override
@@ -1428,33 +1508,33 @@ public class HomeFragment extends Fragment {
 //                    text_view_cost.setText(retrievedRouteCost.text_view_cost);
 //                    updateAddCost(retrievedRouteCost.addCost);
 
-                    textViewTo.setVisibility(View.VISIBLE);
-                    binding.textwhere.setVisibility(View.VISIBLE);
-                    binding.num2.setVisibility(View.VISIBLE);
+                    textViewTo.setVisibility(VISIBLE);
+                    binding.textwhere.setVisibility(VISIBLE);
+                    binding.num2.setVisibility(VISIBLE);
 
-                    text_view_cost.setVisibility(View.VISIBLE);
-                    btn_minus.setVisibility(View.VISIBLE);
-                    btn_plus.setVisibility(View.VISIBLE);
-                    buttonAddServices.setVisibility(View.VISIBLE);
-                    buttonBonus.setVisibility(View.VISIBLE);
-                    btn_clear.setVisibility(View.VISIBLE);
+                    text_view_cost.setVisibility(VISIBLE);
+                    btn_minus.setVisibility(VISIBLE);
+                    btn_plus.setVisibility(VISIBLE);
+                    buttonAddServices.setVisibility(VISIBLE);
+                    buttonBonus.setVisibility(VISIBLE);
+                    btn_clear.setVisibility(VISIBLE);
                     Logger.d(context, TAG, "onPostExecute: from_number.getText().toString()" + from_number.getText().toString());
                     if (!from_number.getText().toString().equals(" ")) {
-                        from_number.setVisibility(View.VISIBLE);
+                        from_number.setVisibility(VISIBLE);
                     }
                     Logger.d(context, TAG, "onPostExecute: retrievedRouteCost.toNumber/" + retrievedRouteCost.toNumber +"/");
 
                     if (!retrievedRouteCost.from.equals(retrievedRouteCost.to)) {
-                        textViewTo.setVisibility(View.VISIBLE);
-                        binding.textwhere.setVisibility(View.VISIBLE);
-                        binding.num2.setVisibility(View.VISIBLE);
+                        textViewTo.setVisibility(VISIBLE);
+                        binding.textwhere.setVisibility(VISIBLE);
+                        binding.num2.setVisibility(VISIBLE);
                         to_number.setText(" ");
 
                     }
                     if (!to_number.getText().toString().equals(" ")) {
-                        to_number.setVisibility(View.VISIBLE);
+                        to_number.setVisibility(VISIBLE);
                     } else {
-                        to_number.setVisibility(View.INVISIBLE);
+                        to_number.setVisibility(INVISIBLE);
                     }
 
                     List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
@@ -1462,7 +1542,7 @@ public class HomeFragment extends Fragment {
                     Logger.d(context, TAG, "onPostExecute: addCostforMin" + addCostforMin);
                     MIN_COST_VALUE = (long) ((Long.parseLong(retrievedRouteCost.text_view_cost) - addCostforMin) * 0.6);
                     Logger.d(context, TAG, "onPostExecute: MIN_COST_VALUE" + MIN_COST_VALUE);
-                    btn_order.setVisibility(View.VISIBLE);
+                    btn_order.setVisibility(VISIBLE);
                 }
                 updateAddCost("0");
                 updateUIFromList(stringListRoutHome);
@@ -1476,34 +1556,34 @@ public class HomeFragment extends Fragment {
         textViewFrom.setText(stringListRoutHome.get(1));
 
         if (!stringListRoutHome.get(2).equals(" ")) {
-            from_number.setVisibility(View.VISIBLE);
+            from_number.setVisibility(VISIBLE);
             from_number.setText(stringListRoutHome.get(2));
         }
         if (!stringListRoutHome.get(4).equals(" ")) {
             to_number.setText(stringListRoutHome.get(4));
-            to_number.setVisibility(View.VISIBLE);
+            to_number.setVisibility(VISIBLE);
         }
         if (!stringListRoutHome.get(1).equals(stringListRoutHome.get(3))) {
             textViewTo.setText(stringListRoutHome.get(3));
-            textViewTo.setVisibility(View.VISIBLE);
-            binding.textwhere.setVisibility(View.VISIBLE);
-            binding.num2.setVisibility(View.VISIBLE);
+            textViewTo.setVisibility(VISIBLE);
+            binding.textwhere.setVisibility(VISIBLE);
+            binding.num2.setVisibility(VISIBLE);
         } else {
-            to_number.setVisibility(View.INVISIBLE);
+            to_number.setVisibility(INVISIBLE);
         }
 
-        textViewTo.setVisibility(View.VISIBLE);
-        binding.textwhere.setVisibility(View.VISIBLE);
-        binding.num2.setVisibility(View.VISIBLE);
+        textViewTo.setVisibility(VISIBLE);
+        binding.textwhere.setVisibility(VISIBLE);
+        binding.num2.setVisibility(VISIBLE);
 
-        text_view_cost.setVisibility(View.VISIBLE);
-        btn_minus.setVisibility(View.VISIBLE);
-        btn_plus.setVisibility(View.VISIBLE);
-        buttonAddServices.setVisibility(View.VISIBLE);
-        buttonBonus.setVisibility(View.VISIBLE);
-        btn_clear.setVisibility(View.VISIBLE);
+        text_view_cost.setVisibility(VISIBLE);
+        btn_minus.setVisibility(VISIBLE);
+        btn_plus.setVisibility(VISIBLE);
+        buttonAddServices.setVisibility(VISIBLE);
+        buttonBonus.setVisibility(VISIBLE);
+        btn_clear.setVisibility(VISIBLE);
 
-        btn_order.setVisibility(View.VISIBLE);
+        btn_order.setVisibility(VISIBLE);
 
         String urlCost;
         String message;
@@ -1533,7 +1613,7 @@ public class HomeFragment extends Fragment {
                     String addType ="60";
                     if (orderCost.equals("0")) {
                         constraintLayoutHomeFinish.setVisibility(View.GONE);
-                        constraintLayoutHomeMain.setVisibility(View.VISIBLE);
+                        constraintLayoutHomeMain.setVisibility(VISIBLE);
                         assert message != null;
                         if (message.contains("Дублирование")) {
                             sharedPreferencesHelperMain.saveValue("doubleOrderPref", true);
@@ -1572,13 +1652,13 @@ public class HomeFragment extends Fragment {
                         }
                     } else  {
                         scheduleUpdate();
-                        text_view_cost.setVisibility(View.VISIBLE);
-                        btn_minus.setVisibility(View.VISIBLE);
-                        btn_plus.setVisibility(View.VISIBLE);
-                        buttonAddServices.setVisibility(View.VISIBLE);
-                        buttonBonus.setVisibility(View.VISIBLE);
-                        btn_order.setVisibility(View.VISIBLE);
-                        btn_clear.setVisibility(View.VISIBLE);
+                        text_view_cost.setVisibility(VISIBLE);
+                        btn_minus.setVisibility(VISIBLE);
+                        btn_plus.setVisibility(VISIBLE);
+                        buttonAddServices.setVisibility(VISIBLE);
+                        buttonBonus.setVisibility(VISIBLE);
+                        btn_order.setVisibility(VISIBLE);
+                        btn_clear.setVisibility(VISIBLE);
 
 
                         long discountInt = Integer.parseInt(discountText);
@@ -1744,21 +1824,21 @@ public class HomeFragment extends Fragment {
         updateAddCost("0");
 
         paymentType();
-        text_view_cost.setVisibility(View.INVISIBLE);
-        btn_minus.setVisibility(View.INVISIBLE);
-        btn_plus.setVisibility(View.INVISIBLE);
-        buttonAddServices.setVisibility(View.INVISIBLE);
-        buttonBonus.setVisibility(View.INVISIBLE);
+        text_view_cost.setVisibility(INVISIBLE);
+        btn_minus.setVisibility(INVISIBLE);
+        btn_plus.setVisibility(INVISIBLE);
+        buttonAddServices.setVisibility(INVISIBLE);
+        buttonBonus.setVisibility(INVISIBLE);
         textViewFrom.setText("");
         from_number.setText("");
-        from_number.setVisibility(View.INVISIBLE);
+        from_number.setVisibility(INVISIBLE);
         textViewTo.setText("");
-        textViewTo.setVisibility(View.INVISIBLE);
-        btn_clear.setVisibility(View.INVISIBLE);
-        binding.textTo.setVisibility(View.INVISIBLE);
-        binding.num2.setVisibility(View.INVISIBLE);
-        binding.textwhere.setVisibility(View.INVISIBLE);
-        to_number.setVisibility(View.INVISIBLE);
+        textViewTo.setVisibility(INVISIBLE);
+        btn_clear.setVisibility(INVISIBLE);
+        binding.textTo.setVisibility(INVISIBLE);
+        binding.num2.setVisibility(INVISIBLE);
+        binding.textwhere.setVisibility(INVISIBLE);
+        to_number.setVisibility(INVISIBLE);
     }
 
 
@@ -1847,7 +1927,18 @@ public class HomeFragment extends Fragment {
         }
 
 
-        if(urlAPI.equals("orderSearch")) {
+        if(urlAPI.equals("orderSearchWfpInvoice")) {
+            String wfpInvoice = "*";
+            if(payment_type.equals("wfp_payment")) {
+                String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS);
+                Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
+
+                if (!rectoken.isEmpty()) {
+                    MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+                    wfpInvoice = MainActivity.order_id;
+                }
+            }
+
             phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
             Logger.d(context, TAG, "black_list_yes: addCost11111" + black_list_yes);
 
@@ -1866,7 +1957,7 @@ public class HomeFragment extends Fragment {
                 sharedPreferencesHelperMain.saveValue("doubleOrderPrefHome", false);
             }
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + paramsUserArr + "/" + addCost + "/" + time + "/" + comment + "/" + date;
+                    + paramsUserArr + "/" + addCost + "/" + time + "/" + comment + "/" + date + "/" + wfpInvoice;
 
             ContentValues cv = new ContentValues();
 
@@ -1918,6 +2009,55 @@ public class HomeFragment extends Fragment {
         database.close();
 
         return url;
+    }
+    @SuppressLint("Range")
+    private String getCheckRectoken(String table) {
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+
+        String[] columns = {"rectoken"}; // Указываем нужное поле
+        String selection = "rectoken_check = ?";
+        String[] selectionArgs = {"1"};
+        String result = "";
+
+        Cursor cursor = database.query(table, columns, selection, selectionArgs, null, null, null);
+
+        if (cursor.moveToFirst()) {
+            do {
+                result = cursor.getString(cursor.getColumnIndex("rectoken"));
+                Logger.d(context, TAG, "Found rectoken with rectoken_check = 1" + ": " + result);
+                return result;
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+
+        database.close();
+
+        logTableContent(table);
+
+        return result;
+    }
+
+    private void logTableContent(String table) {
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+
+        String[] columns = {"rectoken_check", "merchant", "rectoken"}; // Укажите все необходимые поля
+        String selection = null;
+        String[] selectionArgs = null;
+
+        Cursor cursor = database.query(table, columns, selection, selectionArgs, null, null, null);
+
+        if (cursor.moveToFirst()) {
+            do {
+                @SuppressLint("Range") String rectokenCheck = cursor.getString(cursor.getColumnIndex("rectoken_check"));
+                @SuppressLint("Range") String merchant = cursor.getString(cursor.getColumnIndex("merchant"));
+                @SuppressLint("Range") String rectoken = cursor.getString(cursor.getColumnIndex("rectoken"));
+
+                Logger.d(context, TAG, "rectoken_check: " + rectokenCheck + ", merchant: " + merchant + ", rectoken: " + rectoken);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+
+        database.close();
     }
 
     private void changePayMethodMax(String textCost, String paymentType) {

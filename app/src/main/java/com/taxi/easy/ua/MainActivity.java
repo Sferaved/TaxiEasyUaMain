@@ -361,7 +361,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
+        sharedPreferencesHelperMain.saveValue("pay_error", "**");
         String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", "uk");
         Logger.i(this, "locale", localeCode);
         // Установка локали
@@ -1252,7 +1252,7 @@ public class MainActivity extends AppCompatActivity {
                 List<String> stringList = logCursor(MainActivity.CITY_INFO);
                 String city = stringList.get(1);
                 if(city != null) {
-                    getCardTokenWfp(city,"wfp", userEmail);
+                    getCardTokenWfp(city);
                 }
             });
             wfpCardThread.start();
@@ -1263,11 +1263,17 @@ public class MainActivity extends AppCompatActivity {
             sendTokenThread.start();
         }
     }
+    private  void getCardTokenWfp(String city) {
 
-    private  void getCardTokenWfp(String city, String pay_system, String email) {
+        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
+        SQLiteDatabase database = MainActivity.this.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.execSQL("DELETE FROM " + tableName + ";");
+        database.close();
+
+
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(interceptor)
                 .build();
@@ -1280,73 +1286,145 @@ public class MainActivity extends AppCompatActivity {
         // Создайте сервис
         CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
         Logger.d(this, TAG, "getCardTokenWfp: ");
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
+
         // Выполните запрос
-        Call<CallbackResponseWfp> call = service.handleCallbackWfp(
+        Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
                 getString(R.string.application),
                 city,
-                email,
-                pay_system
+                userEmail,
+                "wfp"
         );
         call.enqueue(new Callback<CallbackResponseWfp>() {
             @Override
             public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
-                Logger.d(getApplicationContext(), TAG, "onResponse: " + response.body());
+                Logger.d(MainActivity.this, TAG, "onResponse: " + response.body());
                 if (response.isSuccessful()) {
                     CallbackResponseWfp callbackResponse = response.body();
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
-                        Logger.d(getApplicationContext(), TAG, "onResponse: cards" + cards);
-                        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
+                        Logger.d(MainActivity.this, TAG, "onResponse: cards" + cards);
+
+                        SQLiteDatabase database = MainActivity.this.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+
                         if (cards != null && !cards.isEmpty()) {
                             for (CardInfo cardInfo : cards) {
                                 String masked_card = cardInfo.getMasked_card(); // Маска карты
                                 String card_type = cardInfo.getCard_type(); // Тип карты
                                 String bank_name = cardInfo.getBank_name(); // Название банка
                                 String rectoken = cardInfo.getRectoken(); // Токен карты
-                                String merchant = cardInfo.getMerchant(); // Токен карты
+                                String merchant = cardInfo.getMerchant(); //
+                                String  active = cardInfo.getActive();
 
-                                Logger.d(getApplicationContext(), TAG, "onResponse: card_token: " + rectoken);
+                                Logger.d(MainActivity.this, TAG, "onResponse: card_token: " + rectoken);
                                 ContentValues cv = new ContentValues();
                                 cv.put("masked_card", masked_card);
                                 cv.put("card_type", card_type);
                                 cv.put("bank_name", bank_name);
                                 cv.put("rectoken", rectoken);
                                 cv.put("merchant", merchant);
-                                cv.put("rectoken_check", "0");
+                                cv.put("rectoken_check", active);
                                 database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
                             }
-                            Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_WFP_CARDS + " ORDER BY id DESC LIMIT 1", null);
-                            if (cursor != null && cursor.moveToFirst()) {
-                                // Получаем значение ID последней записи
-                                @SuppressLint("Range") int lastId = cursor.getInt(cursor.getColumnIndex("id"));
-                                cursor.close();
-
-                                // Обновляем строку с найденным ID
-                                ContentValues cv = new ContentValues();
-                                cv.put("rectoken_check", "1");
-                                database.update(MainActivity.TABLE_WFP_CARDS, cv, "id = ?", new String[] { String.valueOf(lastId) });
-                            }
-
-                            database.close();
                         }
                         database.close();
                     }
 
                 } else {
                     // Обработка случаев, когда ответ не 200 OK
-                    Logger.d(getApplicationContext(), TAG, "onResponse: getCardTokenWfp error ");
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
-                Logger.d(getApplicationContext(), TAG, "onResponse:getCardTokenWfp onFailure" + t);
-                FirebaseCrashlytics.getInstance().recordException(t);
+                Logger.d(MainActivity.this, TAG, "onResponse: failure " + t);
             }
         });
     }
+//    private  void getCardTokenWfp(String city, String pay_system, String email) {
+//        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+//        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+//        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+//        OkHttpClient client = new OkHttpClient.Builder()
+//                .addInterceptor(interceptor)
+//                .build();
+//        Retrofit retrofit = new Retrofit.Builder()
+//                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
+//                .addConverterFactory(GsonConverterFactory.create())
+//                .client(client)
+//                .build();
+//
+//        // Создайте сервис
+//        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
+//        Logger.d(this, TAG, "getCardTokenWfp: ");
+//        // Выполните запрос
+//        Call<CallbackResponseWfp> call = service.handleCallbackWfp(
+//                getString(R.string.application),
+//                city,
+//                email,
+//                pay_system
+//        );
+//        call.enqueue(new Callback<CallbackResponseWfp>() {
+//            @Override
+//            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
+//                Logger.d(getApplicationContext(), TAG, "onResponse: " + response.body());
+//                if (response.isSuccessful()) {
+//                    CallbackResponseWfp callbackResponse = response.body();
+//                    if (callbackResponse != null) {
+//                        List<CardInfo> cards = callbackResponse.getCards();
+//                        Logger.d(getApplicationContext(), TAG, "onResponse: cards" + cards);
+//                        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//                        database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
+//                        if (cards != null && !cards.isEmpty()) {
+//                            for (CardInfo cardInfo : cards) {
+//                                String masked_card = cardInfo.getMasked_card(); // Маска карты
+//                                String card_type = cardInfo.getCard_type(); // Тип карты
+//                                String bank_name = cardInfo.getBank_name(); // Название банка
+//                                String rectoken = cardInfo.getRectoken(); // Токен карты
+//                                String merchant = cardInfo.getMerchant(); // Токен карты
+//
+//                                Logger.d(getApplicationContext(), TAG, "onResponse: card_token: " + rectoken);
+//                                ContentValues cv = new ContentValues();
+//                                cv.put("masked_card", masked_card);
+//                                cv.put("card_type", card_type);
+//                                cv.put("bank_name", bank_name);
+//                                cv.put("rectoken", rectoken);
+//                                cv.put("merchant", merchant);
+//                                cv.put("rectoken_check", "0");
+//                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
+//                            }
+//                            Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_WFP_CARDS + " ORDER BY id DESC LIMIT 1", null);
+//                            if (cursor != null && cursor.moveToFirst()) {
+//                                // Получаем значение ID последней записи
+//                                @SuppressLint("Range") int lastId = cursor.getInt(cursor.getColumnIndex("id"));
+//                                cursor.close();
+//
+//                                // Обновляем строку с найденным ID
+//                                ContentValues cv = new ContentValues();
+//                                cv.put("rectoken_check", "1");
+//                                database.update(MainActivity.TABLE_WFP_CARDS, cv, "id = ?", new String[] { String.valueOf(lastId) });
+//                            }
+//
+//                            database.close();
+//                        }
+//                        database.close();
+//                    }
+//
+//                } else {
+//                    // Обработка случаев, когда ответ не 200 OK
+//                    Logger.d(getApplicationContext(), TAG, "onResponse: getCardTokenWfp error ");
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
+//                // Обработка ошибки запроса
+//                Logger.d(getApplicationContext(), TAG, "onResponse:getCardTokenWfp onFailure" + t);
+//                FirebaseCrashlytics.getInstance().recordException(t);
+//            }
+//        });
+//    }
     private void startFireBase() {
         Toast.makeText(this, R.string.account_verify, Toast.LENGTH_SHORT).show();
         startSignInInBackground();
@@ -1379,56 +1457,130 @@ public class MainActivity extends AppCompatActivity {
 
             new FirebaseAuthUIActivityResultContract(),
             result -> {
-                try {
-                    onSignInResult(result, getSupportFragmentManager());
-                } catch (MalformedURLException | JSONException | InterruptedException e) {
-                    FirebaseCrashlytics.getInstance().recordException(e);
-                    Logger.d(this, TAG, "onCreate:" + new RuntimeException(e));
-                }
+                onSignInResult(result, getSupportFragmentManager());
             }
     );
 
 
-    private void onSignInResult(FirebaseAuthUIAuthenticationResult result, FragmentManager fm) throws MalformedURLException, JSONException, InterruptedException {
+//    private void onSignInResult(FirebaseAuthUIAuthenticationResult result, FragmentManager fm) throws MalformedURLException, JSONException, InterruptedException {
+//        ContentValues cv = new ContentValues();
+//        Logger.d(this, TAG, "onSignInResult: ");
+//        try {
+//            Logger.d(this, TAG, "onSignInResult: result.getResultCode() " + result.getResultCode());
+//            if (result.getResultCode() == RESULT_OK) {
+//                // Successfully signed in
+//                    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+//
+//                    assert user != null;
+//                    settingsNewUser(user.getEmail());
+//
+//                    String countryState = (String) sharedPreferencesHelperMain.getValue("countryState", "**");
+//                    Logger.d(this, TAG, "countryState " + result.getResultCode());
+//                    if(countryState.equals("**")) {
+//                        Intent intent = new Intent(this, CityCheckActivity.class);
+//                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+//                        startActivity(intent);
+//                    }
+//
+//
+////                lastAddressUser();
+//
+//          } else {
+//                IdpResponse response = result.getIdpResponse();
+//                if (response == null) {
+//                    Logger.d(this, TAG, "Sign-in canceled by user.");
+//                } else {
+//                    Logger.d(this, TAG, "Sign-in error: " + response.getError().getMessage());
+//                    FirebaseCrashlytics.getInstance().recordException(response.getError());
+//                }
+//
+//                VisicomFragment.progressBar.setVisibility(View.GONE);
+//                cv.put("verifyOrder", "0");
+//                SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//                database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+//                database.close();
+//                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+//            }
+//        } catch (Exception e) {
+//            FirebaseCrashlytics.getInstance().recordException(e);
+//            Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
+//            VisicomFragment.progressBar.setVisibility(View.GONE);
+//            cv.put("verifyOrder", "0");
+//            SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//            database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+//            database.close();
+//            VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+//        }
+//    }
+    private void onSignInResult(FirebaseAuthUIAuthenticationResult result, FragmentManager fm) {
         ContentValues cv = new ContentValues();
         Logger.d(this, TAG, "onSignInResult: ");
+
+        // Попробуем выполнить вход
         try {
-            Logger.d(this, TAG, "onSignInResult: result.getResultCode() " + result.getResultCode());
-            if (result.getResultCode() == RESULT_OK) {
-                // Successfully signed in
+            int resultCode = result.getResultCode();
+            Logger.d(this, TAG, "onSignInResult: result.getResultCode() " + resultCode);
+
+            if (resultCode == RESULT_OK) {
+                // Успешный вход
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
-                assert user != null;
-                settingsNewUser(user.getEmail());
+                if (user != null) {
+                    settingsNewUser(user.getEmail());
 
-                startActivity(new Intent(this, CityCheckActivity.class));
+                    String countryState = (String) sharedPreferencesHelperMain.getValue("countryState", "**");
+                    Logger.d(this, TAG, "countryState: " + countryState);
 
-//                lastAddressUser();
-
-          } else {
-                IdpResponse response = result.getIdpResponse();
-                if (response == null) {
-                    Logger.d(this, TAG, "Sign-in canceled by user.");
-                } else {
-                    Logger.d(this, TAG, "Sign-in error: " + response.getError().getMessage());
-                    FirebaseCrashlytics.getInstance().recordException(response.getError());
+                    if (countryState.equals("**")) {
+                        // Запускаем CityCheckActivity, если состояние страны не задано
+                        Intent intent = new Intent(this, CityCheckActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                        startActivity(intent);
+                    }
                 }
-
-                VisicomFragment.progressBar.setVisibility(View.GONE);
-                cv.put("verifyOrder", "0");
-                SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-                database.close();
-                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+            } else {
+                handleSignInFailure(result);
             }
         } catch (Exception e) {
-            FirebaseCrashlytics.getInstance().recordException(e);
-            Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
-            VisicomFragment.progressBar.setVisibility(View.GONE);
-            cv.put("verifyOrder", "0");
-            SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            handleException(e, cv);
+        } finally {
+            // Убедимся, что индикатор прогресса скрыт и данные обновлены в базе
+            hideProgressBarAndUpdateDatabase(cv);
+        }
+    }
+
+    // Метод обработки ошибок при входе
+    private void handleSignInFailure(FirebaseAuthUIAuthenticationResult result) {
+        IdpResponse response = result.getIdpResponse();
+        if (response == null) {
+            Logger.d(this, TAG, "Sign-in canceled by user.");
+        } else {
+            Logger.d(this, TAG, "Sign-in error: " + response.getError().getMessage());
+            FirebaseCrashlytics.getInstance().recordException(response.getError());
+        }
+    }
+
+    // Метод для обработки исключений
+    private void handleException(Exception e, ContentValues cv) {
+        FirebaseCrashlytics.getInstance().recordException(e);
+        Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
+        hideProgressBarAndUpdateDatabase(cv);
+    }
+
+    // Метод для скрытия индикатора прогресса и обновления базы данных
+    private void hideProgressBarAndUpdateDatabase(ContentValues cv) {
+        VisicomFragment.progressBar.setVisibility(View.GONE);
+        cv.put("verifyOrder", "0");
+        SQLiteDatabase database = null;
+        try {
+            database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-            database.close();
+        } catch (Exception e) {
+            Logger.e(this, TAG, "Database update error");
+        } finally {
+            if (database != null) {
+                database.close();
+            }
             VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
         }
     }

@@ -123,6 +123,21 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
 
                     dismiss();
                 });
+            } else if (errorMessage.equals(getString(R.string.no_cards_info))){
+                 textViewInfo.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        Intent intent = new Intent(getActivity(), MainActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                    }
+                 });
+                btn_ok.setText(getString(R.string.link_card));
+                btn_ok.setOnClickListener(v -> {
+                        navController.navigate(R.id.nav_card, null, new NavOptions.Builder().build());
+                    dismiss();
+
+                });
             } else {
                 btn_ok.setOnClickListener(v -> dismiss());
             }

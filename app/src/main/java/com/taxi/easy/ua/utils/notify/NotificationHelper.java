@@ -16,6 +16,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
+import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.utils.log.Logger;
 
@@ -131,6 +132,26 @@ public class NotificationHelper {
     private static int generateUniqueNotificationId() {
         // Generate a unique ID based on the current time
         return (int) System.currentTimeMillis();
+    }
+
+
+    public static void sendPaymentErrorNotification(Context context, String title, String message) {
+        NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+        NotificationChannel channel = new NotificationChannel("payment_error", "Ошибки оплаты", NotificationManager.IMPORTANCE_HIGH);
+        notificationManager.createNotificationChannel(channel);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "payment_error")
+                .setSmallIcon(R.drawable.ic_error)  // Замените на вашу иконку ошибки
+                .setContentTitle(title)
+                .setContentText(message)
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(PendingIntent.getActivity(
+                        context, 0, new Intent(context, MainActivity.class),
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+
+        notificationManager.notify(2, builder.build());
     }
 
 //    public static void showNotificationUpdate(Context context) {

@@ -182,26 +182,37 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             pos = position;
             Log.d(TAG, "onItemClick: pos " + pos);
             if (pos == 2) {
-                if(userPayPermissions[0].equals("0")) {
-                    adapter.setItemEnabled(2, false);
-                } else {
-                    paySystem(new CardFragment.PaySystemCallback() {
-                        @Override
-                        public void onPaySystemResult(String paymentCode) {
-                            Log.d(TAG, "onPaySystemResult: paymentCode" + paymentCode);
-                            // Здесь вы можете использовать полученное значение paymentCode
-                            try {
-                                paymentType(paymentCode, context);
-                            } catch (MalformedURLException | UnsupportedEncodingException e) {
-                                FirebaseCrashlytics.getInstance().recordException(e);
-                                throw new RuntimeException(e);
-                            }
-                        }
+                String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS, context);
+                Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
+                if (rectoken.isEmpty()) {
 
-                        @Override
-                        public void onPaySystemFailure(String errorMessage) {
-                        }
-                    });
+
+                    String message = context.getString(R.string.no_cards_info);
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                    bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
+                    dismiss();
+                } else {
+                    if(userPayPermissions[0].equals("0")) {
+                        adapter.setItemEnabled(2, false);
+                    } else {
+                        paySystem(new CardFragment.PaySystemCallback() {
+                            @Override
+                            public void onPaySystemResult(String paymentCode) {
+                                Log.d(TAG, "onPaySystemResult: paymentCode" + paymentCode);
+                                // Здесь вы можете использовать полученное значение paymentCode
+                                try {
+                                    paymentType(paymentCode, context);
+                                } catch (MalformedURLException | UnsupportedEncodingException e) {
+                                    FirebaseCrashlytics.getInstance().recordException(e);
+                                    throw new RuntimeException(e);
+                                }
+                            }
+
+                            @Override
+                            public void onPaySystemFailure(String errorMessage) {
+                            }
+                        });
+                    }
                 }
 
             } else {
@@ -370,17 +381,60 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             case "card_payment":
             case "mono_payment":
             case "wfp_payment":
-
-                if(userPayPermissions[1].equals("0")) {
-                    adapter.setItemEnabled(2, false);
+                String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS, context);
+                Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
+                if (rectoken.isEmpty()) {
+                    pos = 0;
+                    listView.setItemChecked(0, true);
+                    try {
+                        paymentType("nal_payment", context);
+                    } catch (MalformedURLException | UnsupportedEncodingException e) {
+                        throw new RuntimeException(e);
+                    }
+                    String message = context.getString(R.string.no_cards_info);
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                    bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
+                    dismiss();
                 } else  {
-                    listView.setItemChecked(2, true);
-                    pos = 2;
+                    if(userPayPermissions[1].equals("0")) {
+                        adapter.setItemEnabled(2, false);
+                    } else  {
+                        listView.setItemChecked(2, true);
+                        pos = 2;
+                    }
                 }
+
 
                 break;
         }
    }
+
+    @SuppressLint("Range")
+    private static String getCheckRectoken(String table, Context context) {
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+
+        String[] columns = {"rectoken"}; // Указываем нужное поле
+        String selection = "rectoken_check = ?";
+        String[] selectionArgs = {"1"};
+        String result = "";
+
+        Cursor cursor = database.query(table, columns, selection, selectionArgs, null, null, null);
+
+        if (cursor.moveToFirst()) {
+            do {
+                result = cursor.getString(cursor.getColumnIndex("rectoken"));
+                Logger.d(context, TAG, "Found rectoken with rectoken_check = 1" + ": " + result);
+                return result;
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+
+        database.close();
+
+        return result;
+    }
+
+
     private void paySystem(final CardFragment.PaySystemCallback callback) {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
@@ -702,20 +756,20 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         String time = stringList.get(1);
         String date = stringList.get(3);
 
-
-        TariffInfo tariffInfo = new TariffInfo(context);
-        tariffInfo.fetchOrderCostDetails(
-                originLatitude,
-                originLongitude,
-                toLatitude,
-                toLongitude,
-                user,
-                time,
-                date,
-                result,
-                city,
-                context.getString(R.string.application)
-        );
+//
+//        TariffInfo tariffInfo = new TariffInfo(context);
+//        tariffInfo.fetchOrderCostDetails(
+//                originLatitude,
+//                originLongitude,
+//                toLatitude,
+//                toLongitude,
+//                user,
+//                time,
+//                date,
+//                result,
+//                city,
+//                context.getString(R.string.application)
+//        );
     }
 
      

@@ -6,6 +6,7 @@ public class CardInfo {
     private String bank_name;
     private String rectoken;
     private String merchant;
+    private String active;
 
     public String getMerchant() {
         return merchant;
@@ -25,7 +26,9 @@ public class CardInfo {
     public String getRectoken() {
         return rectoken;
     }
-
+    public String getActive() {
+        return active;
+    }
     @Override
     public String toString() {
         return "CardInfo{" +
@@ -35,4 +38,6 @@ public class CardInfo {
                 ", rectoken='" + rectoken + '\'' +
                 '}';
     }
+
+
 }

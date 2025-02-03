@@ -56,17 +56,16 @@
             </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
             <ProgressBar
-            android:id="@+id/progress_bar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+                android:id="@+id/progress_bar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
 
-            android:layout_marginTop="100dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.501"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.498"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-        <androidx.appcompat.widget.AppCompatButton
+            <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn1"
 
             android:layout_width="202dp"
@@ -209,7 +208,7 @@
                 app:layout_constraintStart_toStartOf="@+id/textGeo"
                 app:layout_constraintTop_toTopOf="@+id/gpsbut" />
 
-        <androidx.appcompat.widget.AppCompatButton
+            <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/change"
             android:layout_width="200sp"
             android:layout_height="wrap_content"
@@ -589,23 +588,18 @@
             tools:ignore="RtlHardcoded" />
 
 
-        <ProgressBar
-            android:visibility="gone"
+        <com.taxi.easy.ua.utils.animation.car.CarProgressBar
             android:id="@+id/carProgressBar"
             android:layout_width="match_parent"
             android:layout_height="30dp"
             android:layout_gravity="center"
             android:layout_marginTop="20dp"
-            style="?android:attr/progressBarStyleHorizontal"
-
+            android:visibility="invisible"
+            app:carImage="@drawable/button_image_button2"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/text_cost_message"
-            android:progress="50"
-            android:max="100"
-            android:progressTint="@color/colorAccent"
-        />
+            app:layout_constraintTop_toBottomOf="@+id/text_cost_message" />
 
         <LinearLayout
             android:id="@+id/progressSteps"
@@ -634,7 +628,7 @@
                 android:id="@+id/step2"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
-                android:background="@drawable/circle_step_inactive" />
+                android:background="@drawable/circle_step_active" />
 
             <View
                 android:layout_width="76dp"

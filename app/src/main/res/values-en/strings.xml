@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.796</string>
-    <string name="version">Version: 1.796</string>
+    <string name="version_code">1.797</string>
+    <string name="version">Version: 1.797</string>
 
     <string name="app_name">Taxi Dostavka</string>
 
@@ -486,4 +486,7 @@
     <string name="addCostBonusMessage">For a faster car search, order in cash or pay for the trip by card</string>
     <string name="recounting_order">Order recalculation in progress</string>
     <string name="ex_st_finished">Your trip is over. Thank you for using our services. We look forward to seeing you next time.</string>
+    <string name="pay_error_title">Payment error</string>
+    <string name="try_again_pay">"Try again, invoice number: "</string>
+    <string name="no_cards_info">You have no verified cards for payment. Verify your payment card to pay for trips.</string>
 </resources>

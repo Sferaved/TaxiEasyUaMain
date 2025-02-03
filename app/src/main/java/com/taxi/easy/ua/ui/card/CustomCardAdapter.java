@@ -24,12 +24,18 @@ import androidx.annotation.NonNull;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.unlink.UnlinkApi;
+import com.taxi.easy.ua.ui.wfp.token.CallbackResponseSetActivCardWfp;
+import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
+import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -44,7 +50,6 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
     public static String table;
     public static String pay_method;
 
-//    private  String baseUrl = "https://m.easy-order-taxi.site";
     private  final String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
     public CustomCardAdapter(Context context, ArrayList<Map<String, String>> cardMaps, String table, String pay_method) {
         super(context, R.layout.cards_adapter_layout, cardMaps);
@@ -134,9 +139,9 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
 
                             deleteCardToken(rectoken);
                             break;
-                        case "fondy_payment":
-                            deleteCardToken(rectoken);
-                            break;
+//                        case "fondy_payment":
+//                            deleteCardToken(rectoken);
+//                            break;
 
                     }
                     database.close();
@@ -194,21 +199,101 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
 
         int position = -1; // Инициализируем позицию -1, чтобы обозначить, что строка не найдена
 
-        if (cursor != null) {
-            if (cursor.moveToFirst()) {
-                int idColumnIndex = cursor.getColumnIndex("id");
-                int id = cursor.getInt(idColumnIndex);
-                // Вычисляем позицию строки в списке
-                position = id - minId;
-            }
-            cursor.close();
+        if (cursor.moveToFirst()) {
+            int idColumnIndex = cursor.getColumnIndex("id");
+            int id = cursor.getInt(idColumnIndex);
+            // Вычисляем позицию строки в списке
+            position = id - minId;
         }
+        cursor.close();
         Logger.d(getContext(), TAG, "getCheckRectokenPosition: position" + position);
         database.close();
         return position;
     }
 
+    private  void getCardTokenWfp() {
+        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
+        SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.execSQL("DELETE FROM " + tableName + ";");
+        database.close();
 
+        String city = logCursor(MainActivity.CITY_INFO).get(1);
+
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(interceptor)
+                .build();
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+
+        // Создайте сервис
+        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
+        Logger.d(getContext(), TAG, "getCardTokenWfp: ");
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
+
+        // Выполните запрос
+        Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
+                getContext().getString(R.string.application),
+                city,
+                userEmail,
+                "wfp"
+        );
+        call.enqueue(new Callback<CallbackResponseWfp>() {
+            @Override
+            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
+                Logger.d(getContext(), TAG, "onResponse: " + response.body());
+                if (response.isSuccessful()) {
+                    CallbackResponseWfp callbackResponse = response.body();
+                    if (callbackResponse != null) {
+                        List<CardInfo> cards = callbackResponse.getCards();
+                        Logger.d(getContext(), TAG, "onResponse: cards" + cards);
+                        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
+
+// Открываем или создаем базу данных
+                        SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+
+// Используем правильное имя таблицы в запросе
+                        database.execSQL("DELETE FROM " + tableName + ";");
+
+                        if (cards != null && !cards.isEmpty()) {
+                            for (CardInfo cardInfo : cards) {
+                                String masked_card = cardInfo.getMasked_card(); // Маска карты
+                                String card_type = cardInfo.getCard_type(); // Тип карты
+                                String bank_name = cardInfo.getBank_name(); // Название банка
+                                String rectoken = cardInfo.getRectoken(); // Токен карты
+                                String merchant = cardInfo.getMerchant(); //
+                                String  active = cardInfo.getActive();
+
+                                Logger.d(getContext(), TAG, "onResponse: card_token: " + rectoken);
+                                ContentValues cv = new ContentValues();
+                                cv.put("masked_card", masked_card);
+                                cv.put("card_type", card_type);
+                                cv.put("bank_name", bank_name);
+                                cv.put("rectoken", rectoken);
+                                cv.put("merchant", merchant);
+                                cv.put("rectoken_check", active);
+                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
+                            }
+                        }
+                        database.close();
+                    }
+
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
+                // Обработка ошибки запроса
+                Logger.d(getContext(), TAG, "onResponse: failure " + t);
+            }
+        });
+
+    }
 
     private void updateRectokenCheck(String table, String rectoken) {
         SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -235,21 +320,88 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
         }
 
         database.close();
+
+        setActiveCardServer(rectoken);
+
     }
 
 
-    public void deleteCardToken(String rectoken) {
+    private  void setActiveCardServer(String id) {
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(interceptor)
+                .build();
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+
+        // Создайте сервис
+        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
+        Logger.d(getContext(), TAG, "setActiveCardServer: ");
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
+
+        List<String> stringList = logCursor(MainActivity.CITY_INFO);
+        String city = stringList.get(1);
+        String application = getContext().getString(R.string.application);
+
+        // Выполните запрос
+        Call<CallbackResponseSetActivCardWfp> call = service.setActiveCard(
+                userEmail,
+                id,
+                city,
+                application
+
+        );
+        call.enqueue(new Callback<CallbackResponseSetActivCardWfp>() {
+            @Override
+            public void onResponse(@NonNull Call<CallbackResponseSetActivCardWfp> call, @NonNull Response<CallbackResponseSetActivCardWfp> response) {
+                Logger.d(getContext(), TAG, "onResponse: " + response.body());
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<CallbackResponseSetActivCardWfp> call, @NonNull Throwable t) {
+                // Обработка ошибки запроса
+                Logger.d(getContext(), TAG, "onResponse: failure " + t);
+            }
+        });
+    }
+
+    @SuppressLint("Range")
+    public List<String> logCursor(String table) {
+        List<String> list = new ArrayList<>();
+        SQLiteDatabase db = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        @SuppressLint("Recycle") Cursor c = db.query(table, null, null, null, null, null, null);
+        if (c.moveToFirst()) {
+            String str;
+            do {
+                str = "";
+                for (String cn : c.getColumnNames()) {
+                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
+                    list.add(c.getString(c.getColumnIndex(cn)));
+
+                }
+
+            } while (c.moveToNext());
+        }
+        db.close();
+        return list;
+    }
+    public void deleteCardToken(String id) {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
         UnlinkApi apiService = retrofit.create(UnlinkApi.class);
-        Call<Void> call = apiService.deleteCardTokenFondy(rectoken);
+        Call<CallbackResponseSetActivCardWfp> call = apiService.deleteCardToken(id);
 
-        call.enqueue(new Callback<Void>() {
+        call.enqueue(new Callback<CallbackResponseSetActivCardWfp>() {
             @Override
-            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+            public void onResponse(@NonNull Call<CallbackResponseSetActivCardWfp> call, @NonNull Response<CallbackResponseSetActivCardWfp> response) {
                 if (response.isSuccessful()) {
                     // Обработка успешного ответа
 
@@ -257,15 +409,11 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
                     SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                     database.delete(MainActivity.TABLE_WFP_CARDS, "rectoken = ?", new String[]{rectoken});
                     database.close();
-                    reIndexCards();
-
-                } else {
-//                    Toast.makeText(getContext(), getContext().getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
-            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<CallbackResponseSetActivCardWfp> call, @NonNull Throwable t) {
                 Toast.makeText(getContext(), getContext().getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
             }
         });

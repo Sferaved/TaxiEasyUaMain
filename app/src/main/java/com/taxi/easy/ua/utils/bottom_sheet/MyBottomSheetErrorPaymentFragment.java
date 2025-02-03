@@ -32,6 +32,7 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.CustomCardAdapter;
 import com.taxi.easy.ua.ui.finish.ApiClient;
+import com.taxi.easy.ua.ui.finish.ApiService;
 import com.taxi.easy.ua.ui.finish.Status;
 import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureClient;
@@ -49,6 +50,8 @@ import com.taxi.easy.ua.ui.fondy.token_pay.RequestDataToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.StatusRequestToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.SuccessResponseDataToken;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
+import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
+import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceResponse;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceService;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseResponse;
@@ -155,7 +158,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             btn_ok.setVisibility(View.INVISIBLE);
             view.findViewById(R.id.progress_bar).setVisibility(View.VISIBLE);
             cancelOrderDoubleForNal();
-
+            sharedPreferencesHelperMain.saveValue("pay_error", "**");
 
         });
         textViewInfo = view.findViewById(R.id.textViewInfo);
@@ -175,10 +178,11 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                         FirebaseCrashlytics.getInstance().recordException(e);
                         throw new RuntimeException(e);
                     }
+                    sharedPreferencesHelperMain.saveValue("pay_error", "**");
                     break;
                 case "wfp_payment":
-                    rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS);
-                    paymentByTokenWfp(messageFondy, amount, rectoken);
+                    paymentByTokenWfp(messageFondy, amount);
+                    sharedPreferencesHelperMain.saveValue("pay_error", "**");
                     break;
             }
 
@@ -201,6 +205,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         btn_cancel = view.findViewById(R.id.btn_cancel_order);
         btn_cancel.setOnClickListener(v -> {
             cancelOrderDouble();
+            sharedPreferencesHelperMain.saveValue("pay_error", "**");
             dismiss();
         });
         listView = view.findViewById(R.id.listView);
@@ -245,6 +250,9 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         stringList = logCursor(MainActivity.TABLE_USER_INFO, context);
         String userEmail = stringList.get(3);
         String phone_number = stringList.get(2);
+
+        MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+        callOrderIdMemory(MainActivity.order_id, FinishSeparateFragment.uid, pay_method);
 
         Call<InvoiceResponse> call = service.createInvoice(
                 getString(R.string.application),
@@ -302,8 +310,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
     private void paymentByTokenWfp(
             String orderDescription,
-            String amount,
-            String rectoken
+            String amount
     ) {
         
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
@@ -323,6 +330,10 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
         String city = stringList.get(1);
 
+        MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+        callOrderIdMemory(MainActivity.order_id, FinishSeparateFragment.uid, pay_method);
+
+
         Call<PurchaseResponse> call = service.purchase(
                 getString(R.string.application),
                 city,
@@ -330,8 +341,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 amount,
                 orderDescription,
                 email,
-                FinishSeparateFragment.phoneNumber,
-                rectoken
+                FinishSeparateFragment.phoneNumber
         );
         call.enqueue(new Callback<PurchaseResponse>() {
             @Override
@@ -340,6 +350,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     PurchaseResponse purchaseResponse = response.body();
                     if (purchaseResponse != null) {
                         // Обработка ответа
+                        getStatusWfp(MainActivity.order_id);
                         Logger.d(context, TAG, "onResponse:purchaseResponse " + purchaseResponse);
                     } else {
                         // Ошибка при парсинге ответа
@@ -357,13 +368,98 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
             @Override
             public void onFailure(@NonNull Call<PurchaseResponse> call, @NonNull Throwable t) {
-                // Ошибка при выполнении запроса
-                Logger.d(context, TAG, "Ошибка при выполнении запроса");
+                // Логируем текст ошибки
+                Logger.d(context, TAG, "Ошибка при выполнении запроса: " + t.getMessage());
+
+                // Отменяем заказ
                 cancelOrderDouble();
+            }
+
+        });
+
+    }
+
+    private void getStatusWfp(String orderReferens) {
+        Logger.d(context, TAG, "getStatusWfp: ");
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
+        String city = stringList.get(1);
+
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(interceptor)
+                .build();
+
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+
+        StatusService service = retrofit.create(StatusService.class);
+
+        Call<StatusResponse> call = service.checkStatus(
+                context.getString(R.string.application),
+                city,
+                orderReferens
+        );
+
+        call.enqueue(new Callback<StatusResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<StatusResponse> call, @NonNull Response<StatusResponse> response) {
+
+                if (response.isSuccessful()) {
+                    StatusResponse statusResponse = response.body();
+                    assert statusResponse != null;
+                    String orderStatus = statusResponse.getTransactionStatus();
+                    Logger.d(context, TAG, "Transaction Status: " + orderStatus);
+                    switch (orderStatus) {
+                        case "Approved":
+                        case "WaitingAuthComplete":
+                            sharedPreferencesHelperMain.saveValue("pay_error", "**");
+                            break;
+                        default:
+                            sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
+                            MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
+
             }
         });
 
     }
+
+    public static void callOrderIdMemory(String orderId, String uid, String paySystem) {
+        String baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        ApiService apiService = retrofit.create(ApiService.class);
+        Call<Void> call = apiService.orderIdMemory(orderId, uid, paySystem);
+
+        call.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                // Обработка ошибки
+                FirebaseCrashlytics.getInstance().recordException(t);
+            }
+        });
+    }
+
 
     public void orderFinished(String page) throws MalformedURLException {
         String urlOrder = getTaxiUrlSearchMarkers(page, context);
