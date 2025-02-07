@@ -89,7 +89,6 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
 
-
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.ParseException;
@@ -598,6 +597,7 @@ public class FinishSeparateFragment extends Fragment {
     private void startCycle() {
         if (!isTaskRunning && !isTaskCancelled) {
             handlerStatus.postDelayed(myTaskStatus, delayMillisStatus);
+            delayMillisStatus = 10 * 1000;
         }
     }
 
@@ -808,6 +808,7 @@ public class FinishSeparateFragment extends Fragment {
                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, context);
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 }
+
             }
 
             @Override
@@ -864,8 +865,6 @@ public class FinishSeparateFragment extends Fragment {
                             case "WaitingAuthComplete":
                                 sharedPreferencesHelperMain.saveValue("pay_error", "**");
                                 newOrderCardPayAdd20(order_id);
-
-
                                 break;
                             default:
                                 sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
@@ -2388,6 +2387,7 @@ public class FinishSeparateFragment extends Fragment {
 
         wfpInvoice(MainActivity.order_id , "20", uid);
         text_status.setText(R.string.recounting_order);
+        stopCycle();
         if (rectoken.isEmpty()) {
             getUrlToPaymentWfp("20", MainActivity.order_id );
         } else {
@@ -2438,11 +2438,10 @@ public class FinishSeparateFragment extends Fragment {
         textCost.setVisibility(View.VISIBLE);
         textCostMessage.setVisibility(View.VISIBLE);
         carProgressBar.setVisibility(View.VISIBLE);
-//        progressBar.setVisibility(View.VISIBLE);
         progressSteps.setVisibility(View.VISIBLE);
         btn_options.setVisibility(View.VISIBLE);
         btn_open.setVisibility(View.VISIBLE);
-
+        delayMillisStatus = 20 * 1000;
         call.enqueue(new Callback<Status>() {
             @Override
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
@@ -2457,12 +2456,14 @@ public class FinishSeparateFragment extends Fragment {
                     // Обработка неуспешного ответа
                     text_status.setText(R.string.verify_internet);
                 }
+
+                startCycle();
             }
 
             @Override
             public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
                 // Обработайте ошибку при выполнении запроса
-
+                startCycle();
                 FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
@@ -2540,6 +2541,11 @@ public class FinishSeparateFragment extends Fragment {
             if (services.get(i + 1).equals("1")) {
                 newCheck++;
             }
+        }
+        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
+        String tarif = stringListInfo.get(2);
+        if (!tarif.equals(" ")) {
+            newCheck++;
         }
         String mes = context.getString(R.string.add_services);
         if (newCheck != 0) {

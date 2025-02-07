@@ -6,6 +6,7 @@ import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.activeCalls;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -76,6 +77,7 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentVisicomBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
+import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
@@ -102,6 +104,8 @@ import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
+import com.taxi.easy.ua.utils.tariff.DatabaseHelperTariffs;
+import com.taxi.easy.ua.utils.tariff.TariffInfo;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 
@@ -442,7 +446,8 @@ public class VisicomFragment extends Fragment {
         });
     }
     public static void addCheck(Context context) {
-
+        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
+        String tarif = stringListInfo.get(2);
         int newCheck = 0;
         List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
         for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
@@ -450,10 +455,16 @@ public class VisicomFragment extends Fragment {
                 newCheck++;
             }
         }
+        if (!tarif.equals(" ")) {
+            newCheck++;
+        }
+
         String mes = context.getString(R.string.add_services);
         if (newCheck != 0) {
             mes = context.getString(R.string.add_services) + " (" + newCheck + ")";
         }
+
+
         btnAdd.setText(mes);
 
     }
@@ -1037,6 +1048,30 @@ public class VisicomFragment extends Fragment {
     public static void readTariffInfo(Context context) {
         // Создаем экземпляр класса для работы с базой данных
 
+        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
+        String tarif = stringListInfo.get(2);
+        switch (tarif) {
+            case "Базовый":
+                frame_1.setBackgroundResource(R.drawable.input);
+                frame_2.setBackgroundResource(R.drawable.buttons);
+                frame_3.setBackgroundResource(R.drawable.buttons);
+                break;
+            case "Универсал":
+                    frame_1.setBackgroundResource(R.drawable.buttons);
+                    frame_2.setBackgroundResource(R.drawable.input);
+                    frame_3.setBackgroundResource(R.drawable.buttons);
+                    break;
+            case "Микроавтобус":
+                    frame_1.setBackgroundResource(R.drawable.buttons);
+                    frame_2.setBackgroundResource(R.drawable.buttons);
+                    frame_3.setBackgroundResource(R.drawable.input);
+                    break;
+            default:
+                frame_1.setBackgroundResource(R.drawable.buttons);
+                frame_2.setBackgroundResource(R.drawable.buttons);
+                frame_3.setBackgroundResource(R.drawable.buttons);
+        }
+
         btn1.setOnClickListener(v -> {
             progressBar.setVisibility(VISIBLE);
 
@@ -1058,6 +1093,8 @@ public class VisicomFragment extends Fragment {
             frame_1.setBackgroundResource(R.drawable.input);
             frame_2.setBackgroundResource(R.drawable.buttons);
             frame_3.setBackgroundResource(R.drawable.buttons);
+
+            addCheck(context);
 
         });
 
@@ -1083,6 +1120,7 @@ public class VisicomFragment extends Fragment {
                 frame_1.setBackgroundResource(R.drawable.buttons);
                 frame_2.setBackgroundResource(R.drawable.input);
                 frame_3.setBackgroundResource(R.drawable.buttons);
+                addCheck(context);
             }
         });
 
@@ -1109,6 +1147,8 @@ public class VisicomFragment extends Fragment {
                 frame_1.setBackgroundResource(R.drawable.buttons);
                 frame_2.setBackgroundResource(R.drawable.buttons);
                 frame_3.setBackgroundResource(R.drawable.input);
+
+                addCheck(context);
             }
         });
 
@@ -2584,7 +2624,14 @@ public class VisicomFragment extends Fragment {
                                 }
 
                                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                                if (fragmentManager != null && !fragmentManager.isStateSaved()) {
+                                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                                } else {
+                                    assert fragmentManager != null;
+                                    fragmentManager.beginTransaction()
+                                            .add(bottomSheetDialogFragment, bottomSheetDialogFragment.getTag())
+                                            .commitAllowingStateLoss();
+                                }
 
 
                             } else {

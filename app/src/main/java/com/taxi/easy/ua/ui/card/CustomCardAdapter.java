@@ -20,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.navigation.NavOptions;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
@@ -409,6 +410,8 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
                     SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                     database.delete(MainActivity.TABLE_WFP_CARDS, "rectoken = ?", new String[]{rectoken});
                     database.close();
+                    MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder().build());
+
                 }
             }
 

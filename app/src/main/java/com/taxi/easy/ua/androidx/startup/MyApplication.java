@@ -1,6 +1,5 @@
 package com.taxi.easy.ua.androidx.startup;
 
-
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
@@ -28,6 +27,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class MyApplication extends Application {
 
@@ -39,12 +41,12 @@ public class MyApplication extends Application {
 
     public static SharedPreferencesHelper sharedPreferencesHelperMain;
 
+    private ThreadPoolExecutor threadPoolExecutor;
+
     @Override
     public void onCreate() {
         super.onCreate();
         sharedPreferencesHelperMain = new SharedPreferencesHelper(this);
-
-
         instance = this;
 
         // Установка глобального обработчика исключений
@@ -54,6 +56,17 @@ public class MyApplication extends Application {
         setupANRWatchDog();
         setDefaultOrientation();
         registerActivityLifecycleCallbacks();
+        initializeThreadPoolExecutor();
+    }
+
+    private void initializeThreadPoolExecutor() {
+        // Настройка ThreadPoolExecutor
+        threadPoolExecutor = new ThreadPoolExecutor(
+                4,  // минимальное количество потоков
+                8,  // максимальное количество потоков
+                1, TimeUnit.MINUTES, // время ожидания новых задач
+                new LinkedBlockingQueue<>() // очередь для задач
+        );
     }
 
     private void setDefaultOrientation() {
@@ -67,15 +80,12 @@ public class MyApplication extends Application {
 
     // Для получения текущей активити (необходимый метод, чтобы использовать его в setDefaultOrientation)
     private Activity getCurrentActivity() {
-        // Этот метод нужно реализовать для отслеживания текущей активити
-        // Можно использовать ActivityLifecycleCallbacks для этого
         return currentActivity;
     }
 
     public static Context getContext() {
         return instance.getApplicationContext();
     }
-
 
     private void initializeFirebaseAndCrashlytics() {
         // Initialize Firebase
@@ -112,28 +122,23 @@ public class MyApplication extends Application {
             }
 
             @Override
-            public void onActivityStarted(@NonNull Activity activity) {
-            }
+            public void onActivityStarted(@NonNull Activity activity) {}
 
             @Override
             public void onActivityResumed(@NonNull Activity activity) {
-                // App is in foreground
                 isAppInForeground = true;
             }
 
             @Override
             public void onActivityPaused(@NonNull Activity activity) {
-                // App went to background
                 isAppInForeground = false;
             }
 
             @Override
-            public void onActivityStopped(@NonNull Activity activity) {
-            }
+            public void onActivityStopped(@NonNull Activity activity) {}
 
             @Override
-            public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {
-            }
+            public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {}
 
             @Override
             public void onActivityDestroyed(@NonNull Activity activity) {
@@ -144,35 +149,26 @@ public class MyApplication extends Application {
         });
     }
 
-    /**
-     * Method to check if the application is currently in the foreground.
-     *
-     * @return true if the application is in the foreground; false otherwise.
-     */
     public boolean isAppInForeground() {
         return isAppInForeground;
     }
 
-    /**
-     * Handler for uncaught exceptions in the application.
-     */
+    // Новый обработчик необработанных исключений для записи логов и Firebase Crashlytics
     private static class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
         @Override
         public void uncaughtException(@NonNull Thread thread, @NonNull Throwable throwable) {
-            // Handle uncaught exceptions here
+            // Логирование исключений
             Log.e("MyExceptionHandler", "Uncaught Exception occurred: " + throwable.getMessage(), throwable);
 
-            // Log the exception to Firebase Crashlytics
+            // Запись ошибки в Firebase Crashlytics
             FirebaseCrashlytics.getInstance().recordException(throwable);
 
-            // Optionally, restart the application or perform other cleanup actions
-            // Note: Restarting the application from here is not recommended in production
+            // Возможная перезагрузка или очистка данных
         }
     }
 
     private class MyUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
-        public MyUncaughtExceptionHandler(MyApplication myApplication) {
-        }
+        public MyUncaughtExceptionHandler(MyApplication myApplication) {}
 
         @Override
         public void uncaughtException(Thread t, Throwable e) {
@@ -210,4 +206,10 @@ public class MyApplication extends Application {
         return Environment.MEDIA_MOUNTED.equals(state);
     }
 
+    // Пример использования ThreadPoolExecutor для асинхронных задач
+    public void executeBackgroundTask(Runnable task) {
+        if (threadPoolExecutor != null) {
+            threadPoolExecutor.execute(task);
+        }
+    }
 }
