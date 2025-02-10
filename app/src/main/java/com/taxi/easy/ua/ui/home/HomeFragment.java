@@ -5,7 +5,6 @@ import static android.content.Context.MODE_PRIVATE;
 import static android.graphics.Color.RED;
 import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
-import static com.taxi.easy.ua.MainActivity.navController;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 import static com.taxi.easy.ua.R.string.address_error_message;
 
@@ -69,12 +68,12 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.cities.Cherkasy.Cherkasy;
-import com.taxi.easy.ua.cities.Dnipro.DniproCity;
-import com.taxi.easy.ua.cities.Kyiv.KyivCity;
-import com.taxi.easy.ua.cities.Odessa.Odessa;
-import com.taxi.easy.ua.cities.Odessa.OdessaTest;
-import com.taxi.easy.ua.cities.Zaporizhzhia.Zaporizhzhia;
+import com.taxi.easy.ua.ui.home.cities.Cherkasy.Cherkasy;
+import com.taxi.easy.ua.ui.home.cities.Dnipro.DniproCity;
+import com.taxi.easy.ua.ui.home.cities.Kyiv.KyivCity;
+import com.taxi.easy.ua.ui.home.cities.Odessa.Odessa;
+import com.taxi.easy.ua.ui.home.cities.Odessa.OdessaTest;
+import com.taxi.easy.ua.ui.home.cities.Zaporizhzhia.Zaporizhzhia;
 import com.taxi.easy.ua.databinding.FragmentHomeBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
@@ -82,19 +81,18 @@ import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.home.room.AppDatabase;
 import com.taxi.easy.ua.ui.home.room.RouteCost;
 import com.taxi.easy.ua.ui.home.room.RouteCostDao;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
+import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
 import com.taxi.easy.ua.utils.blacklist.BlacklistManager;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetDialogFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGeoFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
@@ -104,14 +102,18 @@ import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
+import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 
 import org.json.JSONException;
 
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -160,6 +162,7 @@ public class HomeFragment extends Fragment {
     public static int routeIdToCheck = 123;
     private boolean finiched;
     private AlertDialog alertDialog;
+    private CarProgressBar carProgressBar;
     private final int LOCATION_PERMISSION_REQUEST_CODE = 123;
     public static String[] arrayServiceCode() {
         return new String[]{
@@ -213,6 +216,11 @@ public class HomeFragment extends Fragment {
         View root = binding.getRoot();
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
+        // Включаем блокировку кнопки "Назад" Применяем блокировку кнопки "Назад"
+        BackPressBlocker backPressBlocker = new BackPressBlocker();
+        backPressBlocker.setBackButtonBlocked(true);
+        backPressBlocker.blockBackButtonWithCallback(this);
+
         constraintLayoutHomeMain = root.findViewById(R.id.homeMain);
         constraintLayoutHomeFinish = root.findViewById(R.id.homeFinish);
         constraintLayoutHomeFinish.setVisibility(View.GONE);
@@ -220,6 +228,7 @@ public class HomeFragment extends Fragment {
         text_full_message = root.findViewById(R.id.text_full_message);
         textCostMessage = root.findViewById(R.id.text_cost_message);
         textStatusCar = root.findViewById(R.id.text_status);
+        carProgressBar = root.findViewById(R.id.carProgressBar);
 
         context = requireActivity();
         fragmentManager = getParentFragmentManager();
@@ -577,12 +586,36 @@ public class HomeFragment extends Fragment {
             messageResult = getString(R.string.check_cost_message);
             textCostMessage.setText(messageResult);
 
-            textStatusCar.setText(R.string.order_reg);
+            textStatusCar.setText(R.string.ex_st_0);
 
             blinkAnimation = AnimationUtils.loadAnimation(context, R.anim.blink_animation);
             textStatusCar.startAnimation(blinkAnimation);
 
-            constraintLayoutHomeFinish.setVisibility(VISIBLE);ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
+
+            String pay_method_message = "";
+            switch (pay_method) {
+                case "bonus_payment":
+                    pay_method_message += " " + context.getString(R.string.pay_method_message_bonus);
+                    break;
+                case "card_payment":
+                case "fondy_payment":
+                case "mono_payment":
+                case "wfp_payment":
+                    pay_method_message += " " + context.getString(R.string.pay_method_message_card);
+                    break;
+                default:
+                    pay_method_message += " " + context.getString(R.string.pay_method_message_nal);
+            }
+
+
+            String messagePayment = text_view_cost.getText().toString() + " " + context.getString(R.string.UAH) + " " + pay_method_message;
+
+            textCostMessage.setText(messagePayment);
+            carProgressBar.resumeAnimation();
+            constraintLayoutHomeFinish.setVisibility(VISIBLE);
+
+
+            ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
 //            // Пример строки URL с параметрами
             Logger.d(context, TAG, "orderFinished: "  + baseUrl + urlOrder);
@@ -609,13 +642,23 @@ public class HomeFragment extends Fragment {
 
                         assert from_name != null;
 
+                        String required_time = sendUrlMap.get("required_time");
+                        Logger.d(context, TAG, "orderFinished: required_time " + required_time);
+                        if (required_time != null && !required_time.contains("1970-01-01")) {
+                                required_time = context.getString(R.string.time_order) + " " + required_time + ".";
+                        } else {
+                            required_time = "";
+                        }
+
                         if (from_name.equals(to_name)) {
                             messageResult =
-                                    from_name + ", " + from_number.getText() + " " + getString(R.string.to_message) + getString(R.string.on_city);
+                                    from_name + ", " + from_number.getText() + " " + getString(R.string.to_message) + getString(R.string.on_city) +
+                                            required_time;
                         } else {
                             messageResult =
                                     from_name + ", " + from_number.getText() + " " + getString(R.string.to_message) +
-                                    to_name + ", " + to_number.getText() + ".";
+                                    to_name + ", " + to_number.getText() + "." +
+                                            required_time;
                         }
                         Logger.d(context, TAG, "order: sendUrlMap.get(\"from_lat\")" + sendUrlMap.get("from_lat"));
                         Logger.d(context, TAG, "order: sendUrlMap.get(\"lat\")" + sendUrlMap.get("lat"));
@@ -2388,16 +2431,32 @@ public class HomeFragment extends Fragment {
             if (auto == null) {
                 auto = "??";
             }
-            if(required_time != null && !required_time.contains("01.01.1970")) {
-                required_time = " " + getString(R.string.time_order) + required_time;
-            } else {
-                required_time = "";
+
+            String required_time_text = "";
+            if (required_time != null && !required_time.contains("1970-01-01")) {
+                try {
+
+                    @SuppressLint("SimpleDateFormat")
+                    SimpleDateFormat outputFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+
+                    // Преобразуем строку required_time в Date
+                    Date date = outputFormat.parse(required_time);
+
+                    // Преобразуем Date в строку нужного формата
+                    assert date != null;
+                    required_time_text = context.getString(R.string.time_order) + " " + outputFormat.format(date) + ".";
+
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                    required_time_text = ""; // Если ошибка парсинга, задаём пустое значение
+                }
             }
+
             if (routeFrom.equals(routeTo)) {
                 routeInfo = routeFrom + " " + routefromnumber
                         + getString(R.string.close_resone_to)
                         + getString(R.string.on_city)
-                        + required_time  + "#"
+                        + required_time_text  + "#"
                         + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)  + "#"
                         + getString(R.string.auto_info) + " " + auto + "#"
                         + getString(R.string.close_resone_time)
@@ -2406,7 +2465,7 @@ public class HomeFragment extends Fragment {
             } else {
                 routeInfo = routeFrom + " " + routefromnumber
                         + getString(R.string.close_resone_to) + routeTo + " " + routeTonumber + "."
-                        + required_time + "#"
+                        + required_time_text + "#"
                         + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)  + "#"
                         + getString(R.string.auto_info) + " " + auto + "#"
                         + getString(R.string.close_resone_time) + createdAt  + "#"

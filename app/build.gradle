@@ -13,11 +13,11 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 35
-        versionCode 1798
-        versionName '1.798'
-        multiDexEnabled true
+        versionCode 1799
+        versionName '1.799'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
+        multiDexEnabled true
 // порядок элементов списка не имеет значения
     }
 
@@ -28,11 +28,14 @@ android {
         }
     }
     java {
-        sourceCompatibility = JavaVersion.VERSION_23
-        targetCompatibility = JavaVersion.VERSION_23
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
-
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21 // Убедитесь, что используется JDK 21 или выше
+        targetCompatibility JavaVersion.VERSION_21 // Или используйте VERSION_23, если у вас JDK 23
+    }
     buildFeatures {
         dataBinding = true
         viewBinding = true
@@ -58,7 +61,9 @@ dependencies {
     implementation 'com.google.firebase:firebase-crashlytics'
     implementation 'com.google.firebase:firebase-messaging'
     implementation 'com.google.firebase:firebase-firestore-ktx'
-    implementation 'com.google.firebase:firebase-auth' // для Firebase UI
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.android.datatransport:transport-runtime:4.0.0'
+
 
     // Retrofit и OkHttp
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'

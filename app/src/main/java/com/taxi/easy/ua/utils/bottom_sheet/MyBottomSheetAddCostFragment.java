@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
+
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -35,7 +36,7 @@ import com.taxi.easy.ua.ui.wfp.invoice.InvoiceResponse;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceService;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseResponse;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseService;
-import com.taxi.easy.ua.utils.LocaleHelper;
+import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
@@ -379,7 +380,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         Logger.d(context, TAG, "URL запроса wfp_payment: " + url);
 
 
-        call.enqueue(new Callback<Status>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
                 if (response.isSuccessful()) {
@@ -387,7 +388,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                     assert status != null;
                     String responseStatus = status.getResponse();
                     Logger.d(context, TAG, "startAddCostUpdate wfp_payment status: " + responseStatus);
-                    if(!responseStatus.equals("200")) {
+                    if (!responseStatus.equals("200")) {
                         // Обработка неуспешного ответа
                         FinishSeparateFragment.text_status.setText(R.string.verify_internet);
                     }
@@ -560,7 +561,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                 email,
                 phoneNumber
         );
-        call.enqueue(new Callback<PurchaseResponse>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<PurchaseResponse> call, @NonNull Response<PurchaseResponse> response) {
                 if (response.isSuccessful()) {

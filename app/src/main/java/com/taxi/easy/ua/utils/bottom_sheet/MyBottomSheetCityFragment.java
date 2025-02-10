@@ -31,19 +31,16 @@ import androidx.fragment.app.FragmentManager;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.cities.api.CityApiClient;
-import com.taxi.easy.ua.cities.api.CityApiTestClient;
-import com.taxi.easy.ua.cities.api.CityLastAddressResponse;
-import com.taxi.easy.ua.cities.api.CityResponse;
-import com.taxi.easy.ua.cities.api.CityResponseMerchantFondy;
-import com.taxi.easy.ua.cities.api.CityService;
+import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
+import com.taxi.easy.ua.ui.home.cities.api.CityLastAddressResponse;
+import com.taxi.easy.ua.ui.home.cities.api.CityResponse;
+import com.taxi.easy.ua.ui.home.cities.api.CityResponseMerchantFondy;
+import com.taxi.easy.ua.ui.home.cities.api.CityService;
 import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
-import com.taxi.easy.ua.ui.payment_system.PayApi;
-import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
@@ -53,7 +50,6 @@ import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
-import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -311,6 +307,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         listView.setItemChecked(positionFirst, true);
 
         int positionFirstOld = positionFirst;
+
         listView.setOnItemClickListener((parent, view1, position, id) -> {
             positionFirst = position;
             switch (cityCode[positionFirst]){
@@ -472,8 +469,6 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
             pay_system(cityCodeNew);
 
-
-//                updateMyPosition(cityCode[positionFirst]);
             lastAddressUser(cityCode[positionFirst]);
 
         });
@@ -486,9 +481,8 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
     private void getCardTokenWfp(String city) {
 
-        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        database.execSQL("DELETE FROM " + tableName + ";");
+        database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
         database.close();
 
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
@@ -510,7 +504,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         Logger.d(context, TAG, "getCardTokenWfp: ");
         String email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         // Выполните запрос
-        Call<CallbackResponseWfp> call = service.handleCallbackWfp(
+        Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
                 context.getString(R.string.application),
                 city,
                 email,
@@ -526,7 +520,6 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                         List<CardInfo> cards = callbackResponse.getCards();
                         Logger.d(context, TAG, "onResponse: cards" + cards);
                         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
                         if (cards != null && !cards.isEmpty()) {
                             for (CardInfo cardInfo : cards) {
                                 String masked_card = cardInfo.getMasked_card(); // Маска карты
@@ -560,9 +553,6 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                             database.close();
                         }
                     }
-
-                } else {
-                    // Обработка случаев, когда ответ не 200 OK
                 }
             }
 
@@ -575,71 +565,75 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         });
     }
 
-    private void pay_system(String cityCodeNew) {
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
+    private void pay_system(String city) {
 
-        PayApi apiService = retrofit.create(PayApi.class);
-        Call<ResponsePaySystem> call = apiService.getPaySystem();
-        call.enqueue(new Callback<ResponsePaySystem>() {
-            @Override
-            public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
-                if (response.isSuccessful()) {
-                    // Обработка успешного ответа
-                    ResponsePaySystem responsePaySystem = response.body();
-                    assert responsePaySystem != null;
-                    String paymentCode = responsePaySystem.getPay_system();
+        cityMaxPay(city);
+        getCardTokenWfp(city);
 
-                    switch (paymentCode) {
-                        case "wfp":
-                            pay_method = "wfp_payment";
-                            cityMaxPay(cityCodeNew);
-                            Logger.d(context, TAG, "2");
-                            getCardTokenWfp(city);
-                            break;
-                        case "fondy":
-                            pay_method = "fondy_payment";
-                            cityMaxPay(cityCodeNew);
-                            Logger.d(context, TAG, "3");
-                            merchantFondy(cityCodeNew, context);
-                            break;
-                        case "mono":
-                            pay_method = "mono_payment";
-                            break;
-                    }
-                    if(isAdded()){
-                        ContentValues cv = new ContentValues();
-                        cv.put("payment_type", pay_method);
-                        // обновляем по id
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                                new String[] { "1" });
-                        database.close();
-
-                    }
-
-
-                } else {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
-
-                    Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
-
-                if (isAdded()) {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                }
-            }
-        });
+//        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+//        Retrofit retrofit = new Retrofit.Builder()
+//                .baseUrl(baseUrl)
+//                .addConverterFactory(GsonConverterFactory.create())
+//                .build();
+//
+//        PayApi apiService = retrofit.create(PayApi.class);
+//        Call<ResponsePaySystem> call = apiService.getPaySystem();
+//        call.enqueue(new Callback<ResponsePaySystem>() {
+//            @Override
+//            public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
+//                if (response.isSuccessful()) {
+//                    // Обработка успешного ответа
+//                    ResponsePaySystem responsePaySystem = response.body();
+//                    assert responsePaySystem != null;
+//                    String paymentCode = responsePaySystem.getPay_system();
+//
+//                    switch (paymentCode) {
+//                        case "wfp":
+//                            pay_method = "wfp_payment";
+//                            cityMaxPay(cityCodeNew);
+//                            Logger.d(context, TAG, "2");
+//                            getCardTokenWfp(city);
+//                            break;
+//                        case "fondy":
+//                            pay_method = "fondy_payment";
+//                            cityMaxPay(cityCodeNew);
+//                            Logger.d(context, TAG, "3");
+//                            merchantFondy(cityCodeNew, context);
+//                            break;
+//                        case "mono":
+//                            pay_method = "mono_payment";
+//                            break;
+//                    }
+//                    if(isAdded()){
+//                        ContentValues cv = new ContentValues();
+//                        cv.put("payment_type", pay_method);
+//                        // обновляем по id
+//                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//                        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+//                                new String[] { "1" });
+//                        database.close();
+//
+//                    }
+//
+//
+//                } else {
+//                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
+//                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+//
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
+//
+//                    Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
+//
+//                if (isAdded()) {
+//                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
+//                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+//                }
+//            }
+//        });
     }
 
     private void updateMyPosition(String city) {
@@ -1600,81 +1594,52 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
 
         Logger.d(context, TAG, "lastAddressUser: cityString" + cityString);
-        switch (cityString){
-//            case "Dnipropetrovsk Oblast":
-//            case "Odessa":
-//            case "Zaporizhzhia":
-//            case "Cherkasy Oblast":
-//            case "Kyiv City":
-//            case "Lviv":
-//            case "Ivano_frankivsk":
-//            case "Vinnytsia":
-//            case "Poltava":
-//            case "Sumy":
-//            case "Kharkiv":
-//            case "Chernihiv":
-//            case "Rivne":
-//            case "Ternopil":
-//            case "Khmelnytskyi":
-//            case "Zakarpattya":
-//            case "Zhytomyr":
-//            case "Kropyvnytskyi":
-//            case "Mykolaiv":
-//            case "Сhernivtsi":
-//            case "Lutsk":
-//                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-//                break;
-            case "OdessaTest":
-                sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
-
-                break;
-            default:
-
-
-                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+        if (cityString.equals("OdessaTest")) {
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
+        } else {
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
         }
         Logger.d(context, TAG, "lastAddressUser: baseUrl" + sharedPreferencesHelperMain.getValue("baseUrl", ""));
         CityService cityService= CityApiClient.getClient().create(CityService.class);
 
         Call<CityLastAddressResponse> call = cityService.lastAddressUser(email, cityString, context.getString(R.string.application));
+        resetRoutHome();
+        resetRoutMarker();
+        Logger.d(context, TAG, "Запрос: " + call.request().url());
 
-        call.enqueue(new Callback<CityLastAddressResponse>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<CityLastAddressResponse> call, @NonNull Response<CityLastAddressResponse> response) {
                 if (response.isSuccessful()) {
                     CityLastAddressResponse cityResponse = response.body();
-                    Logger.d(context, TAG, "onResponse: cityResponse" + cityResponse);
-                    if (cityResponse != null) {
-
-                        resetRoutHome();
-                        resetRoutMarker();
-
-                        String routefrom = cityResponse.getRoutefrom();
-                        String startLat = cityResponse.getStartLat();
-                        String startLan = cityResponse.getStartLan();
+                    assert cityResponse != null;
+                    Logger.d(context, TAG, "onResponse: cityResponse" + cityResponse.toString());
+                    String routefrom = cityResponse.getRoutefrom();
+                    String startLat = cityResponse.getStartLat();
+                    String startLan = cityResponse.getStartLan();
 
 
-                        Logger.d(context, TAG, "lastAddressUser: routefrom" + routefrom);
-                        Logger.d(context, TAG, "lastAddressUser: startLat" + startLat);
-                        Logger.d(context, TAG, "lastAddressUser: startLan" + startLan);
-                        if(routefrom.equals("*") || startLat.equals("0.0") || startLan.equals("0.0")) {
-                            updateMyPosition(cityString);
-                        } else {
-                             updateMyLatsPosition(routefrom, startLat, startLan, cityString);
-                        }
-
+                    Logger.d(context, TAG, "lastAddressUser: routefrom" + routefrom);
+                    Logger.d(context, TAG, "lastAddressUser: startLat" + startLat);
+                    Logger.d(context, TAG, "lastAddressUser: startLan" + startLan);
+                    if (startLat.equals("0.0") || startLat.equals("0")) {
+                        updateMyPosition(cityString);
+                    } else {
+                        updateMyLatsPosition(routefrom, startLat, startLan, cityString);
                     }
+
                 } else {
                     Logger.d(context, TAG, "Failed. Error code: " + response.code());
                 }
             }
 
             @Override
-            public void onFailure(Call<CityLastAddressResponse> call, Throwable t) {
+            public void onFailure(@NonNull Call<CityLastAddressResponse> call, Throwable t) {
                 Logger.d(getContext(), TAG, "Failed. Error message: " + t.getMessage());
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
             }
         });
+        VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
     }
 }
 

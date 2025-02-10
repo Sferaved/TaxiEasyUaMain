@@ -98,10 +98,10 @@
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar"
             tools:ignore="Instantiatable" />
 
-        <activity android:name=".cities.check.CityCheckActivity" />
+        <activity android:name="com.taxi.easy.ua.ui.home.cities.check.CityCheckActivity" />
 
         <activity android:name=".ui.settings.SettingsActivity" />
-        <receiver android:name=".NetworkChangeReceiver" />
+        <receiver android:name="com.taxi.easy.ua.utils.connect.NetworkChangeReceiver" />
 
         <provider
             android:name=".androidx.startup.InitializationProvider"

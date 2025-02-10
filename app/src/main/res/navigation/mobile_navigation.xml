@@ -16,7 +16,7 @@
         tools:layout="@layout/fragment_home" />
     <fragment
         android:id="@+id/nav_cancel"
-        android:name="com.taxi.easy.ua.ui.to_cancel.CancelFragment"
+        android:name="com.taxi.easy.ua.ui.active_order.CancelFragment"
         android:label="@string/order_to_cancel"
         tools:layout="@layout/fragment_cancel" />
 <!--    <fragment-->

@@ -30,19 +30,17 @@ import androidx.navigation.NavOptions;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
-import com.taxi.easy.ua.NetworkChangeReceiver;
+import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentUidBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
-import com.taxi.easy.ua.ui.to_cancel.CustomArrayCancelAdapter;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.db.RouteInfo;
 import com.taxi.easy.ua.utils.log.Logger;
-import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 
 import java.util.ArrayList;
 import java.util.Arrays;

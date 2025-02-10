@@ -369,7 +369,7 @@ public class AccountFragment extends Fragment {
             if(auto == null) {
                 auto = "??";
             }
-            if(required_time != null && !required_time.contains("01.01.1970")) {
+            if(required_time != null && !required_time.contains("1970-01-01")) {
                 required_time = " " + getString(R.string.time_order) + required_time;
             } else {
                 required_time = "";

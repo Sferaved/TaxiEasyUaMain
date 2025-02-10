@@ -473,7 +473,7 @@
                 tools:ignore="RtlHardcoded" />
 
 
-            <ProgressBar
+            <com.taxi.easy.ua.utils.animation.car.CarProgressBar
                 android:visibility="gone"
                 android:id="@+id/carProgressBar"
                 android:layout_width="match_parent"
@@ -518,7 +518,7 @@
                     android:id="@+id/step2"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:background="@drawable/circle_step_inactive" />
+                    android:background="@drawable/circle_step_active" />
 
                 <View
                     android:layout_width="76dp"

@@ -504,7 +504,7 @@ public class GalleryFragment extends Fragment {
                     String pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
                     String pay_method_message = getString(R.string.pay_method_message_main);
                     String required_time = sendUrlMap.get("required_time");
-                    if(required_time != null && !required_time.contains("01.01.1970")) {
+                    if(required_time != null && !required_time.contains("1970-01-01")) {
                         required_time = " " + context.getString(R.string.time_order) + required_time + ". ";
                     } else {
                         required_time = "";

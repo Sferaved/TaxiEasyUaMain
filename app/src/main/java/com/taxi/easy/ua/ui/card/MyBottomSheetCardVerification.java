@@ -258,7 +258,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
         CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
         Logger.d(context, TAG, "getCardTokenWfp: ");
         // Выполните запрос
-        Call<CallbackResponseWfp> call = service.handleCallbackWfp(
+        Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
                 context.getString(R.string.application),
                 city,
                 email,

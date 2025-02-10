@@ -43,9 +43,7 @@ import com.taxi.easy.ua.ui.wfp.invoice.InvoiceResponse;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceService;
 import com.taxi.easy.ua.ui.wfp.revers.ReversResponse;
 import com.taxi.easy.ua.ui.wfp.revers.ReversService;
-import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
-import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
-import com.taxi.easy.ua.utils.LocaleHelper;
+import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 

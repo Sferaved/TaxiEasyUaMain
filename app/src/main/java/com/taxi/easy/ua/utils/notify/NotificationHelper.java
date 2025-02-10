@@ -138,21 +138,26 @@ public class NotificationHelper {
     public static void sendPaymentErrorNotification(Context context, String title, String message) {
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
-        NotificationChannel channel = new NotificationChannel("payment_error", "Ошибки оплаты", NotificationManager.IMPORTANCE_HIGH);
+        NotificationChannel channel = new NotificationChannel("payment_error", context.getString(R.string.paymentErrMes), NotificationManager.IMPORTANCE_HIGH);
         notificationManager.createNotificationChannel(channel);
 
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK); // Уничтожаем старую активность и создаём новую
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "payment_error")
-                .setSmallIcon(R.drawable.ic_error)  // Замените на вашу иконку ошибки
+                .setSmallIcon(R.drawable.ic_error)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setContentIntent(PendingIntent.getActivity(
-                        context, 0, new Intent(context, MainActivity.class),
-                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+                .setContentIntent(pendingIntent);
 
         notificationManager.notify(2, builder.build());
     }
+
 
 //    public static void showNotificationUpdate(Context context) {
 //        String title = context.getString(R.string.new_version);

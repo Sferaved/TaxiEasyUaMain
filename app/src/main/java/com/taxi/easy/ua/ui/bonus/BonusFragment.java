@@ -29,7 +29,7 @@ import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 
 import com.taxi.easy.ua.MainActivity;
-import com.taxi.easy.ua.NetworkChangeReceiver;
+import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentBonusBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;

@@ -31,10 +31,10 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.cities.api.CityApiClient;
-import com.taxi.easy.ua.cities.api.CityResponse;
-import com.taxi.easy.ua.cities.api.CityResponseMerchantFondy;
-import com.taxi.easy.ua.cities.api.CityService;
+import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
+import com.taxi.easy.ua.ui.home.cities.api.CityResponse;
+import com.taxi.easy.ua.ui.home.cities.api.CityResponseMerchantFondy;
+import com.taxi.easy.ua.ui.home.cities.api.CityService;
 import com.taxi.easy.ua.ui.card.CardFragment;
 import com.taxi.easy.ua.ui.gallery.GalleryFragment;
 import com.taxi.easy.ua.ui.home.CustomArrayAdapter;
@@ -46,7 +46,6 @@ import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
-import com.taxi.easy.ua.utils.tariff.TariffInfo;
 
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -178,7 +177,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         listView.setOnItemClickListener((parent, view1, position, id) -> {
             progressBar.setVisibility(View.VISIBLE);
             btn_ok.setVisibility(View.GONE);
-            textView.setText("");
+
             pos = position;
             Log.d(TAG, "onItemClick: pos " + pos);
             if (pos == 2) {

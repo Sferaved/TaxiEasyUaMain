@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.798</string>
-    <string name="version">Версія: 1.798</string>
+    <string name="version_code">1.799</string>
+    <string name="version">Версія: 1.799</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -458,7 +458,7 @@
     <string name="upd_available_promt">Доступна нова версія додатка. Хочете оновити зараз?</string>
     <string name="upd_available_ok">Оновити</string>
     <string name="upd_available_cancel">Відміна</string>
-    <string name="add_cost_fin">Хочете швидше?</string>
+    <string name="add_cost_fin">Бажаєте швидше?</string>
     <string name="add_cost_fin_20">Натисніть кнопку \'Ок\', щоб підняти вартість подорожі на 20 грн</string>
     <string name="add_cost_fin_60">Ви вже замовляли такий маршрут. Додати та замовити заново?</string>
     <string name="double_order">Повторне замовлення</string>
@@ -485,12 +485,14 @@
     <string name="save_btn">Зберегти</string>
     <string name="close">Закрити</string>
     <string name="ok_add_cost">Підтвердити</string>
-    <string name="add_cost_btn">Хочу швидше</string>
+    <string name="add_cost_btn">Бажаю швидше</string>
     <string name="addCostBonusMessage">Для швидшого пошуку авто замовте за готівку або з оплатою поїздки карткою</string>
     <string name="recounting_order">Відбувається перерахунок замовлення</string>
     <string name="ex_st_finished">Ваша подорож завершена. Дякуємо, що скористалися нашими послугами. Чекаємо на Вас наступного разу.</string>
     <string name="pay_error_title">Помилка платежу</string>
     <string name="try_again_pay">"Спробуйте знову номер рахунку на оплату: "</string>
     <string name="no_cards_info">У вас немає підтверджених карток для оплати. Підтвердьте платіжну картку для оплати поїздок.</string>
+    <string name="verify_address">Перевірте правильність введення адреси</string>
+    <string name="paymentErrMes">Помилка платежу</string>
 
 </resources>

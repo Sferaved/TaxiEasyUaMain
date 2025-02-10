@@ -5,6 +5,8 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -23,6 +25,7 @@ import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -57,7 +60,10 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
-import com.taxi.easy.ua.cities.check.CityCheckActivity;
+import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
+import com.taxi.easy.ua.ui.home.cities.api.CityResponse;
+import com.taxi.easy.ua.ui.home.cities.api.CityService;
+import com.taxi.easy.ua.ui.home.cities.check.CityCheckActivity;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
 import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.clear.AppDataUtils;
@@ -67,11 +73,12 @@ import com.taxi.easy.ua.ui.settings.SettingsActivity;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
-import com.taxi.easy.ua.utils.LocaleHelper;
+import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetCityFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
+import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.fcm.token_send.ApiServiceToken;
@@ -111,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
     public static String order_id;
     public static String invoiceId;
 
-    public static final String DB_NAME = "data_05022025_0";
+    public static final String DB_NAME = "data_09022025_9";
 
     /**
      * Table section
@@ -406,11 +413,7 @@ public class MainActivity extends AppCompatActivity {
             visicomKeyFromFb();
             mapboxKeyFromFb ();
             newUser();
-//        if (!sharedPreferencesHelperMain.getValue("CityCheckActivity", "**").equals("run")) {
-//            startActivity(new Intent(this, CityCheckActivity.class));
-//        } else if (NetworkUtils.isNetworkAvailable(this)) {
-//
-//        }
+
             baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
             boolean gps_upd;
@@ -550,7 +553,7 @@ public class MainActivity extends AppCompatActivity {
         cursorDb = database.query(CITY_INFO, null, null, null, null, null, null);
         if (cursorDb.getCount() == 0) {
             List<String> settings = new ArrayList<>();
-            settings.add(""); //1
+            settings.add("Kyiv City"); //1
             settings.add(api); //2
             settings.add(Kyiv_City_phone); //3
             settings.add("5000"); //4
@@ -559,7 +562,7 @@ public class MainActivity extends AppCompatActivity {
             settings.add(""); //7
             insertCity(settings);
 
-//            cityMaxPay("Kyiv City");
+            cityMaxPay("Kyiv City");
 //            merchantFondy("Kyiv City");
             if (MainActivity.navVisicomMenuItem != null) {
                 // Новый текст элемента меню
@@ -646,6 +649,52 @@ public class MainActivity extends AppCompatActivity {
 //            newUser();
 //        }
 
+    }
+
+    private void cityMaxPay(String city) {
+
+
+        CityService cityService = CityApiClient.getClient().create(CityService.class);
+
+        // Замените "your_city" на фактическое название города
+        Call<CityResponse> call = cityService.getMaxPayValues(city, getString(R.string.application));
+
+        call.enqueue(new Callback<CityResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<CityResponse> call, @NonNull Response<CityResponse> response) {
+                if (response.isSuccessful()) {
+                    CityResponse cityResponse = response.body();
+                    if (cityResponse != null) {
+                        int cardMaxPay = cityResponse.getCardMaxPay();
+                        int bonusMaxPay = cityResponse.getBonusMaxPay();
+                        String black_list = cityResponse.getBlack_list();
+
+                        ContentValues cv = new ContentValues();
+                        cv.put("card_max_pay", cardMaxPay);
+                        cv.put("bonus_max_pay", bonusMaxPay);
+                        sharedPreferencesHelperMain.saveValue("black_list", black_list);
+                        Logger.d(getApplication(), TAG, "black_list 2" + black_list);
+                        SQLiteDatabase database = getApplication().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        database.update(MainActivity.CITY_INFO, cv, "id = ?",
+                                new String[]{"1"});
+
+                        database.close();
+
+
+
+
+                        // Добавьте здесь код для обработки полученных значений
+                    }
+                } else {
+                    Logger.d(getApplication(), TAG, "Failed. Error code: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<CityResponse> call, @NonNull Throwable t) {
+                Logger.d(getApplication(), TAG, "Failed. Error message: " + t.getMessage());
+            }
+        });
     }
 
     public void insertPushDate(Context context) {
@@ -1043,9 +1092,20 @@ public class MainActivity extends AppCompatActivity {
 
     private static void restartApplication(Context context) {
         Intent intent = new Intent(context, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        context.startActivity(intent);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager != null) {
+            alarmManager.set(AlarmManager.RTC, System.currentTimeMillis() + 500, pendingIntent);
+        }
+
+        // Завершаем процесс
+        android.os.Process.killProcess(android.os.Process.myPid());
+        System.exit(0);
     }
+
 
 
     @Override
@@ -1227,8 +1287,6 @@ public class MainActivity extends AppCompatActivity {
         String userEmail = logCursor(TABLE_USER_INFO).get(3);
         Logger.d(this, TAG, "newUser: " + userEmail);
 
-//        new Thread(this::mapboxKey).start();
-//        new Thread(this::visicomKey).start();
         new Thread(() -> insertPushDate(getApplicationContext())).start();
 
         Logger.d(this, TAG, "CityCheckActivity: " + sharedPreferencesHelperMain.getValue("CityCheckActivity", "**"));
@@ -1461,57 +1519,6 @@ public class MainActivity extends AppCompatActivity {
             }
     );
 
-
-//    private void onSignInResult(FirebaseAuthUIAuthenticationResult result, FragmentManager fm) throws MalformedURLException, JSONException, InterruptedException {
-//        ContentValues cv = new ContentValues();
-//        Logger.d(this, TAG, "onSignInResult: ");
-//        try {
-//            Logger.d(this, TAG, "onSignInResult: result.getResultCode() " + result.getResultCode());
-//            if (result.getResultCode() == RESULT_OK) {
-//                // Successfully signed in
-//                    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-//
-//                    assert user != null;
-//                    settingsNewUser(user.getEmail());
-//
-//                    String countryState = (String) sharedPreferencesHelperMain.getValue("countryState", "**");
-//                    Logger.d(this, TAG, "countryState " + result.getResultCode());
-//                    if(countryState.equals("**")) {
-//                        Intent intent = new Intent(this, CityCheckActivity.class);
-//                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-//                        startActivity(intent);
-//                    }
-//
-//
-////                lastAddressUser();
-//
-//          } else {
-//                IdpResponse response = result.getIdpResponse();
-//                if (response == null) {
-//                    Logger.d(this, TAG, "Sign-in canceled by user.");
-//                } else {
-//                    Logger.d(this, TAG, "Sign-in error: " + response.getError().getMessage());
-//                    FirebaseCrashlytics.getInstance().recordException(response.getError());
-//                }
-//
-//                VisicomFragment.progressBar.setVisibility(View.GONE);
-//                cv.put("verifyOrder", "0");
-//                SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-//                database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-//                database.close();
-//                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-//            }
-//        } catch (Exception e) {
-//            FirebaseCrashlytics.getInstance().recordException(e);
-//            Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
-//            VisicomFragment.progressBar.setVisibility(View.GONE);
-//            cv.put("verifyOrder", "0");
-//            SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-//            database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-//            database.close();
-//            VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-//        }
-//    }
     private void onSignInResult(FirebaseAuthUIAuthenticationResult result, FragmentManager fm) {
         ContentValues cv = new ContentValues();
         Logger.d(this, TAG, "onSignInResult: ");
@@ -1528,10 +1535,10 @@ public class MainActivity extends AppCompatActivity {
                 if (user != null) {
                     settingsNewUser(user.getEmail());
 
-                    String countryState = (String) sharedPreferencesHelperMain.getValue("countryState", "**");
-                    Logger.d(this, TAG, "countryState: " + countryState);
+                    String sityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
+                    Logger.d(this, TAG, "CityCheckActivity: " + sityCheckActivity);
 
-                    if (countryState.equals("**")) {
+                    if (sityCheckActivity.equals("**")) {
                         // Запускаем CityCheckActivity, если состояние страны не задано
                         Intent intent = new Intent(this, CityCheckActivity.class);
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -1563,6 +1570,9 @@ public class MainActivity extends AppCompatActivity {
     // Метод для обработки исключений
     private void handleException(Exception e, ContentValues cv) {
         FirebaseCrashlytics.getInstance().recordException(e);
+
+        Log.e("MyApp", "Ошибка: ", e);
+
         Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
         hideProgressBarAndUpdateDatabase(cv);
     }
@@ -1769,12 +1779,12 @@ public class MainActivity extends AppCompatActivity {
         database.beginTransaction();
         try {
             statement.clearBindings();
-            statement.bindDouble(2, 0);
-            statement.bindDouble(3, 0);
-            statement.bindDouble(4, 0);
-            statement.bindDouble(5, 0);
-            statement.bindString(6, "");
-            statement.bindString(7, "");
+            statement.bindDouble(2, 50.451107);
+            statement.bindDouble(3, 30.524907);
+            statement.bindDouble(4, 50.451107);
+            statement.bindDouble(5, 30.524907);
+            statement.bindString(6, getString(R.string.pos_k));
+            statement.bindString(7, getString(R.string.pos_k));
 
 
             statement.execute();

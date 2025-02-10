@@ -2,7 +2,7 @@ package com.taxi.easy.ua.ui.visicom.visicom_search;
 
 import android.util.Log;
 
-import com.taxi.easy.ua.utils.LocaleHelper;
+import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
