@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -31,6 +30,7 @@ import com.google.gson.JsonSyntaxException;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.CustomCardAdapter;
+import com.taxi.easy.ua.ui.card.MyBottomSheetCardPayment;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.ApiService;
 import com.taxi.easy.ua.ui.finish.Status;
@@ -38,7 +38,6 @@ import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureClient;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureResponse;
 import com.taxi.easy.ua.ui.fondy.payment.ApiResponsePay;
-import com.taxi.easy.ua.ui.card.MyBottomSheetCardPayment;
 import com.taxi.easy.ua.ui.fondy.payment.PaymentApi;
 import com.taxi.easy.ua.ui.fondy.payment.RequestData;
 import com.taxi.easy.ua.ui.fondy.payment.StatusRequestPay;

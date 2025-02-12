@@ -212,7 +212,7 @@ public class VisicomFragment extends Fragment {
     private static String baseUrl;
     private final int MY_REQUEST_CODE = 1234;
     private CarProgressBar carProgressBar;
-    TextView svButton;
+    static TextView svButton;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -2654,6 +2654,11 @@ public class VisicomFragment extends Fragment {
         progressBar.setVisibility(View.INVISIBLE);
         if (cityCheckActivity.equals("run")) {
             if (originLatitude != 0.0 && toLan != 0.0) {
+
+                gpsbut.setVisibility(View.VISIBLE);
+                svButton.setVisibility(View.VISIBLE);
+                btnCallAdmin.setVisibility(View.VISIBLE);
+
                 textfrom.setVisibility(VISIBLE);
                 num1.setVisibility(VISIBLE);
                 textwhere.setVisibility(VISIBLE);

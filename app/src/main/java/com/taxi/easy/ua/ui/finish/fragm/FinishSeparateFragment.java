@@ -152,8 +152,7 @@ public class FinishSeparateFragment extends Fragment {
     public static Handler handler, handlerBonusBtn,  handlerStatus;
     public static Runnable myTaskStatus;
 
-//    @SuppressLint("StaticFieldLeak")
-//    public static ProgressBar progressBar;
+
     @SuppressLint("StaticFieldLeak")
     public static  String email;
     @SuppressLint("StaticFieldLeak")
@@ -1626,6 +1625,8 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     public void statusOrderWithDifferentValue(String value) throws ParseException {
+
+        Logger.d(context, "Pusher", "statusOrderWithDifferentValue: " + value);
 
         isTenMinutesRemainingFunction();
 

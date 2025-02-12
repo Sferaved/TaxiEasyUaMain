@@ -25,7 +25,6 @@ import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -88,6 +87,7 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
+import com.taxi.easy.ua.utils.pusher.PusherManager;
 import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
 import com.taxi.easy.ua.utils.user.save_server.ApiServiceUser;
 import com.taxi.easy.ua.utils.user.save_server.UserResponse;
@@ -188,6 +188,7 @@ public class MainActivity extends AppCompatActivity {
     public static NavigationView navigationView;
 
     String baseUrl;
+    private PusherManager pusherManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -202,6 +203,10 @@ public class MainActivity extends AppCompatActivity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(binding.getRoot());
 
+        // Инициализация и подключение к Pusher
+        pusherManager = new PusherManager(getString(R.string.application));
+        pusherManager.connect();
+        pusherManager.subscribeToChannel();
 
         deleteOldLogFile();
         Logger.i(this, TAG, "MainActivity started");
@@ -1570,9 +1575,6 @@ public class MainActivity extends AppCompatActivity {
     // Метод для обработки исключений
     private void handleException(Exception e, ContentValues cv) {
         FirebaseCrashlytics.getInstance().recordException(e);
-
-        Log.e("MyApp", "Ошибка: ", e);
-
         Toast.makeText(this, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
         hideProgressBarAndUpdateDatabase(cv);
     }
