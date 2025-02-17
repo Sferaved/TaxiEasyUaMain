@@ -10,8 +10,13 @@ import androidx.annotation.NonNull;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -114,6 +119,95 @@ public class ToJSONParserRetrofit {
                 callback.onResponse(null, Response.success(costMap));
             }
         });
+    }
+
+    private volatile boolean eventReceived = false;
+    private Call<JsonResponse> activeCall;
+
+    public void sendURLChannel(String urlString, final Callback<Map<String, String>> callback) {
+        Log.d("API_CALL", "Запуск запроса URL: " + urlString);
+
+        // Запускаем HTTP-запрос в отдельном потоке
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.submit(() -> {
+            Call<JsonResponse> call = apiService.getData(urlString);
+            activeCall = call;
+
+            call.enqueue(new Callback<JsonResponse>() {
+                @Override
+                public void onResponse(@NonNull Call<JsonResponse> call, @NonNull Response<JsonResponse> response) {
+                    if (eventReceived) {
+                        Log.d("API_CALL", "HTTP-ответ отменен, так как событие уже получено.");
+                        return;
+                    }
+                    Map<String, String> costMap = new HashMap<>();
+                    if (response.isSuccessful() && response.body() != null) {
+                        JsonResponse json = response.body();
+                        if (!"0".equals(json.getOrderCost())) {
+                            costMap.put("from_lat", json.getFromLat());
+                            costMap.put("from_lng", json.getFromLng());
+                            costMap.put("lat", json.getLat());
+                            costMap.put("lng", json.getLng());
+                            costMap.put("dispatching_order_uid", json.getDispatchingOrderUid());
+                            costMap.put("order_cost", json.getOrderCost());
+                            costMap.put("currency", json.getCurrency());
+                            costMap.put("routefrom", json.getRouteFrom());
+                            costMap.put("routefromnumber", json.getRouteFromNumber());
+                            costMap.put("routeto", json.getRouteTo());
+                            costMap.put("to_number", json.getToNumber());
+                            costMap.put("required_time", json.getRequired_time());
+                            costMap.put("flexible_tariff_name", json.getFlexible_tariff_name());
+                            costMap.put("comment_info", json.getComment_info());
+                            costMap.put("extra_charge_codes", json.getExtra_charge_codes());
+
+                            if (json.getDoubleOrder() != null) {
+                                costMap.put("doubleOrder", json.getDoubleOrder());
+                            }
+                            if (json.getDispatchingOrderUidDouble() != null) {
+                                costMap.put("dispatching_order_uid_Double", json.getDispatchingOrderUidDouble());
+                            } else {
+                                costMap.put("dispatching_order_uid_Double", " ");
+                            }
+
+                            Log.d("API_CALL", "HTTP-ответ получен успешно: " + costMap);
+                            callback.onResponse(null, Response.success(costMap));
+                        } else {
+                            costMap.put("order_cost", "0");
+                            costMap.put("message", json.getMessage());
+                            callback.onResponse(null, Response.success(costMap));
+                        }
+                    } else {
+                        callback.onResponse(null, Response.success(Collections.singletonMap("message", "Ошибка запроса")));
+                    }
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<JsonResponse> call, @NonNull Throwable t) {
+                    if (!eventReceived) {
+                        callback.onResponse(null, Response.success(Collections.singletonMap("message", "Ошибка соединения")));
+                    }
+                }
+            });
+        });
+
+        // Ожидаем событие
+        new Thread(() -> {
+            while (!eventReceived) {
+                if (VisicomFragment.sendUrlMap != null && !VisicomFragment.sendUrlMap.isEmpty()) {
+                    eventReceived = true;
+                    if (activeCall != null && !activeCall.isExecuted()) {
+                        activeCall.cancel(); // Прерываем запрос
+                        Log.d("API_CALL", "HTTP-запрос прерван из-за события.");
+                    }
+                    callback.onResponse(null, Response.success(VisicomFragment.sendUrlMap));
+                }
+                try {
+                    Thread.sleep(100); // Ожидание события с минимальной задержкой
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }).start();
     }
 
 }

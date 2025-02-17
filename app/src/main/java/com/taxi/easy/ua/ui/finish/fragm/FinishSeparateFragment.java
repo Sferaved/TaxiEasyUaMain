@@ -39,6 +39,7 @@ import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavOptions;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -129,7 +130,7 @@ public class FinishSeparateFragment extends Fragment {
 
     public static String baseUrl;
     Map<String, String> receivedMap;
-    public static String uid;
+
     Thread thread;
     public static String pay_method;
 
@@ -193,7 +194,11 @@ public class FinishSeparateFragment extends Fragment {
     private boolean isTaskRunning = false;
     private boolean isTaskCancelled = false;
 
+    private ExecutionStatusViewModel viewModel;
 
+    private Handler handlerBtnCancel = new Handler();
+    private Runnable hideCancelRunnable;
+    private boolean isTimerRunning = false;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -208,6 +213,16 @@ public class FinishSeparateFragment extends Fragment {
         backPressBlocker.blockBackButtonWithCallback(this);
 
         fragmentManager = getParentFragmentManager();
+
+        viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
+
+        // Подписка на изменения переменной executionStatusCancel
+        viewModel.getExecutionStatusCancel().observe(getViewLifecycleOwner(), status -> {
+            if (status != null) {
+                handleCancelButtonVisibility(status);
+            }
+        });
+
 
         context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
@@ -294,7 +309,9 @@ public class FinishSeparateFragment extends Fragment {
         textCarMessage = root.findViewById(R.id.text_status_car);
         textCarMessage.setVisibility(View.GONE);
 
-        uid = arguments.getString("UID_key");
+        MainActivity.uid = arguments.getString("UID_key");
+        Logger.d(context, TAG, "MainActivity.uid: " + MainActivity.uid);
+
         uid_Double = receivedMap.get("dispatching_order_uid_Double");
 
 
@@ -305,7 +322,7 @@ public class FinishSeparateFragment extends Fragment {
         btn_reset_status = root.findViewById(R.id.btn_reset_status);
 
         try {
-            statusOrderWithDifferentValue(uid);
+            statusOrderWithDifferentValue();
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
@@ -355,7 +372,7 @@ public class FinishSeparateFragment extends Fragment {
                 // Ваш код
                 isTaskRunning = true;
                 try {
-                    statusOrderWithDifferentValue(uid);
+                    statusOrderWithDifferentValue();
                 } catch (ParseException e) {
                     throw new RuntimeException(e);
                 }
@@ -422,7 +439,7 @@ public class FinishSeparateFragment extends Fragment {
 
                 } else{
                     try {
-                        cancelOrder(uid);
+                        cancelOrder(MainActivity.uid);
                     } catch (ParseException e) {
                         throw new RuntimeException(e);
                     }
@@ -521,6 +538,45 @@ public class FinishSeparateFragment extends Fragment {
         return root;
     }
 
+
+
+    private void handleCancelButtonVisibility(String status) {
+        switch (status) {
+            case "CarFound":
+            case "Running":
+            case "Executed":
+                if (!isTimerRunning) {
+                    isTimerRunning = true;
+                    hideCancelRunnable = () -> {
+                        btn_cancel_order.setVisibility(View.GONE);
+                    };
+                    handlerBtnCancel.postDelayed(hideCancelRunnable, 60 * 1000); // 60 секунд
+                }
+                break;
+
+            case "WaitingCarSearch":
+            case "SearchesForCar":
+                // Снимаем запрет, показываем кнопку и сбрасываем таймер
+                if (isTimerRunning) {
+                    handlerBtnCancel.removeCallbacks(hideCancelRunnable);
+                    isTimerRunning = false;
+                }
+                btn_cancel_order.setVisibility(View.VISIBLE);
+                break;
+            case "Canceled":
+                // При статусе "Canceled" скрываем кнопку отмены и показываем кнопку "btn_again"
+                btn_cancel_order.setVisibility(View.GONE);
+                btn_again.setVisibility(View.VISIBLE);
+                break;
+            default:
+                // Для остальных статусов показываем кнопку на 5 минут
+                btn_cancel_order.setVisibility(View.VISIBLE);
+                handlerBtnCancel.postDelayed(() -> btn_cancel_order.setVisibility(View.GONE), 5 * 60 * 1000);
+                break;
+        }
+    }
+
+
     private boolean verifyOrder(Context context) {
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor cursor = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
@@ -571,7 +627,9 @@ public class FinishSeparateFragment extends Fragment {
             // Анимация исчезновения кнопок
             btn_open.setTextColor(colorPressed);
             btn_reset_status.animate().alpha(0f).setDuration(300).withEndAction(() -> btn_reset_status.setVisibility(View.GONE));
-            btn_cancel_order.animate().alpha(0f).setDuration(300).withEndAction(() -> btn_cancel_order.setVisibility(View.GONE));
+//            if(btn_cancel_order.getVisibility() == View.VISIBLE) {
+//                btn_cancel_order.animate().alpha(0f).setDuration(300).withEndAction(() -> btn_cancel_order.setVisibility(View.GONE));
+//            }
             btn_again.animate().alpha(0f).setDuration(300).withEndAction(() -> btn_again.setVisibility(View.GONE));
         } else {
             // Анимация появления кнопок
@@ -582,9 +640,9 @@ public class FinishSeparateFragment extends Fragment {
             btn_reset_status.animate().alpha(1f).setDuration(300);
 
 
-            btn_cancel_order.setVisibility(View.VISIBLE);
-            btn_cancel_order.setAlpha(0f);
-            btn_cancel_order.animate().alpha(1f).setDuration(300);
+//            btn_cancel_order.setVisibility(View.VISIBLE);
+//            btn_cancel_order.setAlpha(0f);
+//            btn_cancel_order.animate().alpha(1f).setDuration(300);
 
 
             btn_again.setVisibility(View.VISIBLE);
@@ -647,7 +705,7 @@ public class FinishSeparateFragment extends Fragment {
 
             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
             Logger.d(context, TAG, "payWfp: MainActivity.order_id " + MainActivity.order_id);
-            callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+            callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
 
             getUrlToPaymentWfp(amount, MainActivity.order_id);
             getStatusWfp(MainActivity.order_id, "0");
@@ -718,7 +776,7 @@ public class FinishSeparateFragment extends Fragment {
                             MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
                                     checkoutUrl,
                                     amount,
-                                    uid,
+                                    MainActivity.uid,
                                     uid_Double,
                                     context,
                                     order_id
@@ -944,7 +1002,7 @@ public class FinishSeparateFragment extends Fragment {
                     Logger.d(context, TAG, "Request failed: " + response.code());
                     Logger.d(context, TAG,"Response body is null");
                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                    callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+                    callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, context);
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
@@ -988,7 +1046,7 @@ public class FinishSeparateFragment extends Fragment {
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-        callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+        callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
         PaymentApiToken paymentApi = retrofit.create(PaymentApiToken.class);
         List<String>  arrayList = logCursor(MainActivity.CITY_INFO);
         String MERCHANT_ID = arrayList.get(6);
@@ -1077,7 +1135,7 @@ public class FinishSeparateFragment extends Fragment {
 
 //                                Toast.makeText(context, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                                        callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+                                        callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
                                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, context);
                                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
@@ -1085,7 +1143,7 @@ public class FinishSeparateFragment extends Fragment {
                                 } else {
 //                            Toast.makeText(context, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                                    callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+                                    callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
                                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, context);
                                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
@@ -1097,7 +1155,7 @@ public class FinishSeparateFragment extends Fragment {
                                 Logger.d(context, TAG, "Error parsing JSON response: " + e.getMessage());
 //                        Toast.makeText(context, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                                callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+                                callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
                                 MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, context);
                                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 //                        getUrlToPaymentFondy(messageFondy, amount);
@@ -1107,7 +1165,7 @@ public class FinishSeparateFragment extends Fragment {
                             Logger.d(context, TAG, "onFailure: " + response.code());
 //                    Toast.makeText(context, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
                             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                            callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+                            callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
                             MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, context);
                             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 //                    getUrlToPaymentFondy(messageFondy, amount);
@@ -1121,7 +1179,7 @@ public class FinishSeparateFragment extends Fragment {
 //                Toast.makeText(context, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
 
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                        callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+                        callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, context);
                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 //                getUrlToPaymentFondy(messageFondy, amount);
@@ -1280,7 +1338,7 @@ public class FinishSeparateFragment extends Fragment {
                                         MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
                                                 checkoutUrl,
                                                 amount,
-                                                uid,
+                                                MainActivity.uid,
                                                 uid_Double,
                                                 context,
                                                 MainActivity.order_id
@@ -1289,7 +1347,7 @@ public class FinishSeparateFragment extends Fragment {
 
                                     } else {
                                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                                        callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+                                        callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
                                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, context);
                                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
@@ -1298,7 +1356,7 @@ public class FinishSeparateFragment extends Fragment {
                                     // Обработка пустого тела ответа
 
                                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                                    callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+                                    callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
                                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, context);
                                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
@@ -1309,7 +1367,7 @@ public class FinishSeparateFragment extends Fragment {
                                 FirebaseCrashlytics.getInstance().recordException(e);
 
                                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                                callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+                                callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
                                 MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, context);
                                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
@@ -1319,7 +1377,7 @@ public class FinishSeparateFragment extends Fragment {
                             Logger.d(context, TAG, "onFailure: " + response.code());
 
                             MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                            callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+                            callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
                             MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, context);
                             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                         }
@@ -1330,7 +1388,7 @@ public class FinishSeparateFragment extends Fragment {
                     public void onFailure(@NonNull Call<ApiResponsePay<SuccessResponseDataPay>> call, Throwable t) {
                         Logger.d(context, TAG, "onFailure1111: " + t);
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                        callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+                        callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("fondy_payment", messageFondy, amount, context);
                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
@@ -1384,7 +1442,7 @@ public class FinishSeparateFragment extends Fragment {
                         MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
                                 pageUrl,
                                 amount,
-                                uid,
+                                MainActivity.uid,
                                 uid_Double,
                                 context,
                                 MainActivity.order_id
@@ -1427,7 +1485,7 @@ public class FinishSeparateFragment extends Fragment {
 
     private void fetchBonus() {
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-        String url = baseUrl + "bonusBalance/recordsBloke/" + uid + "/" +  context.getString(R.string.application);
+        String url = baseUrl + "bonusBalance/recordsBloke/" + MainActivity.uid + "/" +  context.getString(R.string.application);
         Call<BonusResponse> call = ApiClient.getApiService().getBonus(url);
         Logger.d(context, TAG, "fetchBonus: " + url);
         call.enqueue(new Callback<BonusResponse>() {
@@ -1566,11 +1624,11 @@ public class FinishSeparateFragment extends Fragment {
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
                 if (response.isSuccessful()) {
 
-                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                        MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_visicom, true)
-                                .build());
-                    }, 5000); // 10 секунд = 10000 миллисекунд
+//                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+//                        MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+//                                .setPopUpTo(R.id.nav_visicom, true)
+//                                .build());
+//                    }, 5000); // 10 секунд = 10000 миллисекунд
                 } else {
                     // Обработка неуспешного ответа
                     text_status.setText(R.string.verify_internet);
@@ -1586,7 +1644,7 @@ public class FinishSeparateFragment extends Fragment {
             }
         });
 //        progressBar.setVisibility(View.GONE);
-        statusOrderWithDifferentValue(uid);
+        statusOrderWithDifferentValue();
     }
     private void cancelOrderDouble() {
         if (handlerAddcost != null) {
@@ -1597,7 +1655,7 @@ public class FinishSeparateFragment extends Fragment {
         String city = listCity.get(1);
         String api = listCity.get(2);
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") +"/";
-        String url = baseUrl + api + "/android/webordersCancelDouble/" + uid+ "/" + uid_Double + "/" + pay_method + "/" + city  + "/" +  context.getString(R.string.application);
+        String url = baseUrl + api + "/android/webordersCancelDouble/" + MainActivity.uid + "/" + uid_Double + "/" + pay_method + "/" + city  + "/" +  context.getString(R.string.application);
 
         Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
         Logger.d(context, TAG, "cancelOrderDouble: " + url);
@@ -1605,11 +1663,11 @@ public class FinishSeparateFragment extends Fragment {
         call.enqueue(new Callback<Status>() {
             @Override
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
-                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                        MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_visicom, true)
-                                .build());
-                    }, 5000); // 10 секунд = 10000 миллисекунд
+//                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
+//                        MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+//                                .setPopUpTo(R.id.nav_visicom, true)
+//                                .build());
+//                    }, 5000); // 10 секунд = 10000 миллисекунд
             }
 
             @Override
@@ -1624,8 +1682,8 @@ public class FinishSeparateFragment extends Fragment {
         handlerStatus.postDelayed(myTaskStatus, delayMillisStatus);
     }
 
-    public void statusOrderWithDifferentValue(String value) throws ParseException {
-
+    public void statusOrderWithDifferentValue() throws ParseException {
+        String value = MainActivity.uid;
         Logger.d(context, "Pusher", "statusOrderWithDifferentValue: " + value);
 
         isTenMinutesRemainingFunction();
@@ -1640,7 +1698,7 @@ public class FinishSeparateFragment extends Fragment {
         Logger.d(context, TAG, "/android/historyUIDStatus/: " + url);
 
         // Выполняем запрос асинхронно
-        call.enqueue(new Callback<OrderResponse>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<OrderResponse> call, @NonNull Response<OrderResponse> response) {
                 if (response.isSuccessful()) {
@@ -1651,6 +1709,10 @@ public class FinishSeparateFragment extends Fragment {
                     // например:
                     assert orderResponse != null;
                     String executionStatus = orderResponse.getExecutionStatus();
+
+                    viewModel.setExecutionStatusCancel(executionStatus);
+
+
                     String orderCarInfo = orderResponse.getOrderCarInfo();
                     String driverPhone = orderResponse.getDriverPhone();
                     String requiredTime = orderResponse.getRequiredTime();
@@ -1687,7 +1749,7 @@ public class FinishSeparateFragment extends Fragment {
                             message = context.getString(R.string.ex_st_finished);
                             text_status.setText(message);
                             text_status.clearAnimation();
-                            btn_cancel_order.setVisibility(View.GONE);
+
                             btn_reset_status.setVisibility(View.GONE);
                             btn_open.setVisibility(View.GONE);
                             btn_options.setVisibility(View.GONE);
@@ -1702,9 +1764,9 @@ public class FinishSeparateFragment extends Fragment {
 
                             break;
                         case 1:
-                            if(!executionStatus.equals("Executed")) {
+                            if (!executionStatus.equals("Executed")) {
                                 text_status.clearAnimation();
-                                btn_cancel_order.setVisibility(View.GONE);
+//                                btn_cancel_order.setVisibility(View.GONE);
                                 btn_reset_status.setVisibility(View.GONE);
                                 btn_open.setVisibility(View.GONE);
                                 btn_options.setVisibility(View.GONE);
@@ -1729,7 +1791,7 @@ public class FinishSeparateFragment extends Fragment {
                                     stopCycle();
                                 } else {
                                     if (pay_method.equals("fondy_payment") || pay_method.equals("mono_payment") || pay_method.equals("wfp_payment")) {
-                                        Logger.d(context, TAG, "statusOrderWithDifferentValue canceled: " + uid);
+                                        Logger.d(context, TAG, "statusOrderWithDifferentValue canceled: " + MainActivity.uid);
                                         message = context.getString(R.string.pay_cancel);
                                         stopCycle();
                                     } else {
@@ -1771,7 +1833,7 @@ public class FinishSeparateFragment extends Fragment {
                                             handlerCheckTask.removeCallbacks(checkTask);
                                         }
                                         btn_reset_status.setVisibility(View.GONE);
-                                        btn_cancel_order.setVisibility(View.GONE);
+//                                        btn_cancel_order.setVisibility(View.GONE);
                                         carProgressBar.setVisibility(View.GONE);
                                         message = context.getString(R.string.checkout_status);
                                         text_status.setText(message);
@@ -1812,7 +1874,7 @@ public class FinishSeparateFragment extends Fragment {
                                         handlerAddcost.removeCallbacks(showDialogAddcost);
                                     }
                                     text_status.clearAnimation();
-                                    btn_cancel_order.setVisibility(View.GONE);
+//                                    btn_cancel_order.setVisibility(View.GONE);
                                     if (closeReason == -1) {
                                         // Гекоординаты водителя по АПИ
                                         drivercarposition(value, city, api);
@@ -1867,7 +1929,7 @@ public class FinishSeparateFragment extends Fragment {
                                         handlerCheckTask.removeCallbacks(checkTask);
                                     }
                                     text_status.clearAnimation();
-                                    btn_cancel_order.setVisibility(View.GONE);
+//                                    btn_cancel_order.setVisibility(View.GONE);
                                     carProgressBar.setVisibility(View.GONE);
                                     countdownTextView.setVisibility(View.GONE);
                                     updateProgress(4);
@@ -1901,7 +1963,7 @@ public class FinishSeparateFragment extends Fragment {
                                     break;
                                 case "Executed":
                                     text_status.clearAnimation();
-                                    btn_cancel_order.setVisibility(View.GONE);
+//                                    btn_cancel_order.setVisibility(View.GONE);
                                     btn_reset_status.setVisibility(View.GONE);
                                     btn_open.setVisibility(View.GONE);
                                     btn_options.setVisibility(View.GONE);
@@ -1937,7 +1999,7 @@ public class FinishSeparateFragment extends Fragment {
                                     }
                                     textCost.setVisibility(View.VISIBLE);
                                     textCostMessage.setVisibility(View.VISIBLE);
-                                    btn_cancel_order.setVisibility(View.VISIBLE);
+//                                    btn_cancel_order.setVisibility(View.VISIBLE);
                                     carProgressBar.setVisibility(View.VISIBLE);
                                     delayMillisStatus = 30 * 1000;
                                     message = context.getString(R.string.status_checkout_message);
@@ -2060,7 +2122,7 @@ public class FinishSeparateFragment extends Fragment {
         super.onResume();
 
         if(sharedPreferencesHelperMain.getValue("pay_error", "**").equals("pay_error")) {
-            callOrderIdMemory(MainActivity.order_id, uid, pay_method);
+            callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
             MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         }
@@ -2125,41 +2187,48 @@ public class FinishSeparateFragment extends Fragment {
 
 
         Logger.e(context, TAG, "required_time +++" + required_time);
-        if (required_time.contains("1970-01-01") || required_time.isEmpty()) {
+        if(required_time.contains("01.01.1970") || required_time.contains("1970-01-01") || required_time.isEmpty()) {
             need_20_add = true;
         } else {
             // Регулярное выражение для проверки формата даты "dd.MM.yyyy HH:mm"
+
             handlerCheckTask = new Handler(Looper.getMainLooper());
+
             checkTask = new Runnable() {
                 @Override
                 public void run() {
-                    if (!required_time.isEmpty()) {
-                        required_time = TimeUtils.convertAndSubtractMinutes(required_time);
+                    if (!required_time.isEmpty() ) {
+                        if(!required_time.contains("01.01.1970") && !required_time.contains("1970-01-01")) {
+                            required_time = TimeUtils.convertAndSubtractMinutes(required_time);
 
-                        Logger.e(context, TAG, "required_time " + required_time);
+                            Logger.e(context, TAG, "required_time " + required_time);
 
-                        @SuppressLint("SimpleDateFormat")
-                        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
+                            @SuppressLint("SimpleDateFormat")
+                            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
 
-                        try {
-                            Date requiredDate = inputFormat.parse(required_time);
-                            Date currentDate = new Date(); // Текущее время
+                            try {
+                                Date requiredDate = inputFormat.parse(required_time);
+                                Date currentDate = new Date(); // Текущее время
 
-                            // Разница в миллисекундах
-                            long diffInMillis = requiredDate.getTime() - currentDate.getTime();
+                                // Разница в миллисекундах
+                                long diffInMillis = requiredDate.getTime() - currentDate.getTime();
 
-                            // Конвертируем в минуты
-                            long diffInMinutes = TimeUnit.MILLISECONDS.toMinutes(diffInMillis);
+                                // Конвертируем в минуты
+                                long diffInMinutes = TimeUnit.MILLISECONDS.toMinutes(diffInMillis);
 
-                            if (diffInMinutes > 0 && diffInMinutes <= 30) {
-                                need_20_add = true; // Время ещё не наступило и в пределах 30 минут
-                            } else if (diffInMinutes > 30){
-                                need_20_add = false; // Время либо наступило, либо за пределами 30 минут
+                                if (diffInMinutes > 0 && diffInMinutes <= 30) {
+                                    need_20_add = true; // Время ещё не наступило и в пределах 30 минут
+                                } else if (diffInMinutes > 30){
+                                    need_20_add = false; // Время либо наступило, либо за пределами 30 минут
+                                }
+
+                            } catch (ParseException e) {
+                                e.printStackTrace();
                             }
-
-                        } catch (ParseException e) {
-                            e.printStackTrace();
+                        } else {
+                            need_20_add = true; // Формат даты некорректен
                         }
+
                     } else {
                         need_20_add = true; // Формат даты некорректен
                     }
@@ -2205,7 +2274,7 @@ public class FinishSeparateFragment extends Fragment {
                         stopCycle();
                         MyBottomSheetAddCostFragment bottomSheetDialogFragment = new MyBottomSheetAddCostFragment(
                                 matcher.group(1),
-                                uid,
+                                MainActivity.uid,
                                 uid_Double,
                                 pay_method,
                                 context,
@@ -2314,20 +2383,39 @@ public class FinishSeparateFragment extends Fragment {
             ApiService apiService = retrofit.create(ApiService.class);
 
             Pattern pattern = Pattern.compile("(\\d+)");
-            Matcher matcher = pattern.matcher(textCostMessage.getText().toString());
+            Matcher matcher = pattern.matcher(cost);
             if (matcher.find()) {
-                Logger.d(context, TAG, "amount_to_add: " + matcher.group(1));
+                // Преобразуем найденное число в целое, добавляем 20
+                int originalNumber = Integer.parseInt(Objects.requireNonNull(matcher.group(1)));
+                int updatedNumber = originalNumber + 20;
+
+                // Заменяем старое значение на новое
+                String updatedCost = matcher.replaceFirst(String.valueOf(updatedNumber));
+                textCost.setVisibility(View.VISIBLE);
+                textCostMessage.setVisibility(View.VISIBLE);
+                carProgressBar.setVisibility(View.VISIBLE);
+//                                progressBar.setVisibility(View.VISIBLE);
+                progressSteps.setVisibility(View.VISIBLE);
+
+                btn_options.setVisibility(View.VISIBLE);
+                btn_open.setVisibility(View.VISIBLE);
+
+
+                textCostMessage.setText(updatedCost);
+                Log.d("UpdatedCost", "Обновленная строка: " + updatedCost);
             } else {
-                Logger.d(context, TAG, "No numeric value found in the text.");
+                Log.e("UpdatedCost", "Число не найдено в строке: " + cost);
             }
+
             Call<Status> call = apiService.startAddCostWithAddBottomUpdate(
-                    uid,
-                    matcher.group(1)
+                    MainActivity.uid,
+                    "20"
             );
 
             String url = call.request().url().toString();
             Logger.d(context, TAG, "URL запроса nal_payment: " + url);
-            text_status.setText(R.string.recounting_order);
+
+
             call.enqueue(new Callback<Status>() {
                 @Override
                 public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
@@ -2336,35 +2424,7 @@ public class FinishSeparateFragment extends Fragment {
                         assert status != null;
                         String responseStatus = status.getResponse();
                         Logger.d(context, TAG, "startAddCostUpdate  nal_payment: " + responseStatus);
-                        if(responseStatus.equals("200")) {
-
-
-                            Pattern pattern = Pattern.compile("(\\d+)");
-                            Matcher matcher = pattern.matcher(textCostMessage.getText().toString());
-
-                            if (matcher.find()) {
-                                // Преобразуем найденное число в целое, добавляем 20
-                                int originalNumber = Integer.parseInt(Objects.requireNonNull(matcher.group(1)));
-                                int updatedNumber = originalNumber + 20;
-
-                                // Заменяем старое значение на новое
-                                String updatedCost = matcher.replaceFirst(String.valueOf(updatedNumber));
-                                textCost.setVisibility(View.VISIBLE);
-                                textCostMessage.setVisibility(View.VISIBLE);
-                                carProgressBar.setVisibility(View.VISIBLE);
-//                                progressBar.setVisibility(View.VISIBLE);
-                                progressSteps.setVisibility(View.VISIBLE);
-
-                                btn_options.setVisibility(View.VISIBLE);
-                                btn_open.setVisibility(View.VISIBLE);
-
-
-                                textCostMessage.setText(updatedCost);
-                                Log.d("UpdatedCost", "Обновленная строка: " + updatedCost);
-                            } else {
-                                Log.e("UpdatedCost", "Число не найдено в строке: " + cost);
-                            }
-                        } else {
+                        if(!responseStatus.equals("200")) {
                             // Обработка неуспешного ответа
                             text_status.setText(R.string.verify_internet);
                         }
@@ -2395,7 +2455,7 @@ public class FinishSeparateFragment extends Fragment {
         Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
 
-        wfpInvoice(MainActivity.order_id , "20", uid);
+        wfpInvoice(MainActivity.order_id , "20", MainActivity.uid);
         text_status.setText(R.string.recounting_order);
         stopCycle();
         if (rectoken.isEmpty()) {
@@ -2417,7 +2477,7 @@ public class FinishSeparateFragment extends Fragment {
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         String city = stringList.get(1);
         Call<Status> call = apiService.startAddCostCardBottomUpdate(
-                uid,
+                MainActivity.uid,
                 uid_Double,
                 pay_method,
                 order_id,
@@ -2536,7 +2596,7 @@ public class FinishSeparateFragment extends Fragment {
                         cancelOrderDouble();
                     } else{
                         try {
-                            cancelOrder(uid);
+                            cancelOrder(MainActivity.uid);
                         } catch (ParseException e) {
                             throw new RuntimeException(e);
                         }

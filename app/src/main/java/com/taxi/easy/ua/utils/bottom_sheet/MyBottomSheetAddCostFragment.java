@@ -150,13 +150,39 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
             ApiService apiService = retrofit.create(ApiService.class);
 
-            Call<Status> call = apiService.startAddCostBottomUpdate(
+            Call<Status> call = apiService.startAddCostWithAddBottomUpdate(
                     uid,
                     addCost
             );
             String url = call.request().url().toString();
             Logger.d(context, TAG, "URL запроса nal_payment: " + url);
-            FinishSeparateFragment.text_status.setText(R.string.recounting_order);
+            Pattern pattern = Pattern.compile("(\\d+)");
+            Matcher matcher = pattern.matcher(FinishSeparateFragment.textCostMessage.getText().toString());
+
+            if (matcher.find()) {
+                // Преобразуем найденное число в целое, добавляем 20
+                int originalNumber = Integer.parseInt(Objects.requireNonNull(matcher.group(1)));
+                int updatedNumber = originalNumber + Integer.parseInt(addCost);
+
+                // Заменяем старое значение на новое
+                String updatedCost = matcher.replaceFirst(String.valueOf(updatedNumber));
+                FinishSeparateFragment.textCost.setVisibility(View.VISIBLE);
+                FinishSeparateFragment.textCostMessage.setVisibility(View.VISIBLE);
+                FinishSeparateFragment.carProgressBar.setVisibility(View.VISIBLE);
+//                                FinishSeparateFragment.progressBar.setVisibility(View.VISIBLE);
+                FinishSeparateFragment.progressSteps.setVisibility(View.VISIBLE);
+//                                FinishSeparateFragment.progressBar.setVisibility(View.GONE);
+
+                FinishSeparateFragment.btn_options.setVisibility(View.VISIBLE);
+                FinishSeparateFragment.btn_open.setVisibility(View.VISIBLE);
+
+                FinishSeparateFragment.textCostMessage.setText(updatedCost);
+                String message =  context.getString(R.string.ex_st_0);
+                FinishSeparateFragment.text_status.setText(message);
+                Log.d("UpdatedCost", "Обновленная строка: " + updatedCost);
+            } else {
+                Log.e("UpdatedCost", "Число не найдено в строке: " + cost);
+            }
 
             call.enqueue(new Callback<Status>() {
                 @Override
@@ -168,33 +194,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                         Logger.d(context, TAG, "startAddCostUpdate  nal_payment: " + responseStatus);
                         if(responseStatus.equals("200")) {
 
-                            Pattern pattern = Pattern.compile("(\\d+)");
-                            Matcher matcher = pattern.matcher(FinishSeparateFragment.textCostMessage.getText().toString());
 
-                            if (matcher.find()) {
-                                // Преобразуем найденное число в целое, добавляем 20
-                                int originalNumber = Integer.parseInt(Objects.requireNonNull(matcher.group(1)));
-                                int updatedNumber = originalNumber + Integer.parseInt(addCost);
-
-                                // Заменяем старое значение на новое
-                                String updatedCost = matcher.replaceFirst(String.valueOf(updatedNumber));
-                                FinishSeparateFragment.textCost.setVisibility(View.VISIBLE);
-                                FinishSeparateFragment.textCostMessage.setVisibility(View.VISIBLE);
-                                FinishSeparateFragment.carProgressBar.setVisibility(View.VISIBLE);
-//                                FinishSeparateFragment.progressBar.setVisibility(View.VISIBLE);
-                                FinishSeparateFragment.progressSteps.setVisibility(View.VISIBLE);
-//                                FinishSeparateFragment.progressBar.setVisibility(View.GONE);
-
-                                FinishSeparateFragment.btn_options.setVisibility(View.VISIBLE);
-                                FinishSeparateFragment.btn_open.setVisibility(View.VISIBLE);
-
-                                FinishSeparateFragment.textCostMessage.setText(updatedCost);
-                                String message =  context.getString(R.string.ex_st_0);
-                                FinishSeparateFragment.text_status.setText(message);
-                                Log.d("UpdatedCost", "Обновленная строка: " + updatedCost);
-                            } else {
-                                Log.e("UpdatedCost", "Число не найдено в строке: " + cost);
-                            }
                         } else {
                             // Обработка неуспешного ответа
                             FinishSeparateFragment.text_status.setText(R.string.verify_internet);

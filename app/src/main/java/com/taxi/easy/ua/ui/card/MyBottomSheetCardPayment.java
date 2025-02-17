@@ -505,7 +505,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                                 default:
                                     sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
                                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                                    callOrderIdMemory(MainActivity.order_id, FinishSeparateFragment.uid, pay_method);
+                                    callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
 
                                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
                                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -515,14 +515,14 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                     } else {
                         Logger.d(getActivity(), TAG, "Response body is null");
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                        callOrderIdMemory(MainActivity.order_id, FinishSeparateFragment.uid, pay_method);
+                        callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
 
                         MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
                 } else {
                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                    callOrderIdMemory(MainActivity.order_id, FinishSeparateFragment.uid, pay_method);
+                    callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
 
                     MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -534,7 +534,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                callOrderIdMemory(MainActivity.order_id, FinishSeparateFragment.uid, pay_method);
+                callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
 
                 MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());

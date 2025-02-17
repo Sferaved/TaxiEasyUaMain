@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
+
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -30,7 +31,6 @@ import com.google.gson.JsonSyntaxException;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.CustomCardAdapter;
-import com.taxi.easy.ua.ui.card.MyBottomSheetCardPayment;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.ApiService;
 import com.taxi.easy.ua.ui.finish.Status;
@@ -38,6 +38,7 @@ import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureClient;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureResponse;
 import com.taxi.easy.ua.ui.fondy.payment.ApiResponsePay;
+import com.taxi.easy.ua.ui.card.MyBottomSheetCardPayment;
 import com.taxi.easy.ua.ui.fondy.payment.PaymentApi;
 import com.taxi.easy.ua.ui.fondy.payment.RequestData;
 import com.taxi.easy.ua.ui.fondy.payment.StatusRequestPay;
@@ -251,7 +252,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         String phone_number = stringList.get(2);
 
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-        callOrderIdMemory(MainActivity.order_id, FinishSeparateFragment.uid, pay_method);
+        callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
 
         Call<InvoiceResponse> call = service.createInvoice(
                 getString(R.string.application),
@@ -278,7 +279,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                             MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
                                     checkoutUrl,
                                     amount,
-                                    FinishSeparateFragment.uid,
+                                    MainActivity.uid,
                                     FinishSeparateFragment.uid_Double,
                                     context,
                                     MainActivity.order_id
@@ -330,7 +331,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         String city = stringList.get(1);
 
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-        callOrderIdMemory(MainActivity.order_id, FinishSeparateFragment.uid, pay_method);
+        callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
 
 
         Call<PurchaseResponse> call = service.purchase(
@@ -494,7 +495,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
 
                     FinishSeparateFragment.textCostMessage.setText(messagePayment);
-                    FinishSeparateFragment.uid = sendUrlMap.get("dispatching_order_uid");
+                    MainActivity.uid = sendUrlMap.get("dispatching_order_uid");
                     FinishSeparateFragment.uid_Double = " ";
 
                     pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
@@ -666,7 +667,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(requireActivity());
-        FinishSeparateFragment.callOrderIdMemory(MainActivity.order_id, FinishSeparateFragment.uid, pay_method);
+        FinishSeparateFragment.callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
 
         PaymentApiToken paymentApi = retrofit.create(PaymentApiToken.class);
 
@@ -836,7 +837,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                                 MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
                                         checkoutUrl,
                                         amount,
-                                        FinishSeparateFragment.uid,
+                                        MainActivity.uid,
                                         FinishSeparateFragment.uid_Double,
                                         context,
                                         MainActivity.order_id
@@ -889,7 +890,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         String city = listCity.get(1);
         String api = listCity.get(2);
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";;
-        String url = baseUrl  + api + "/android/webordersCancelDouble/" + FinishSeparateFragment.uid+ "/" + FinishSeparateFragment.uid_Double + "/" + pay_method + "/" + city  + "/" + context.getString(R.string.application);
+        String url = baseUrl  + api + "/android/webordersCancelDouble/" + MainActivity.uid+ "/" + FinishSeparateFragment.uid_Double + "/" + pay_method + "/" + city  + "/" + context.getString(R.string.application);
 
         Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
         Logger.d(context, TAG, "cancelOrderDouble: " + url);
@@ -932,7 +933,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         String city = listCity.get(1);
         String api = listCity.get(2);
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";;
-        String url = baseUrl  + api + "/android/webordersCancelDouble/" + FinishSeparateFragment.uid+ "/" + FinishSeparateFragment.uid_Double + "/" + pay_method + "/" + city  + "/" + context.getString(R.string.application);
+        String url = baseUrl  + api + "/android/webordersCancelDouble/" + MainActivity.uid+ "/" + FinishSeparateFragment.uid_Double + "/" + pay_method + "/" + city  + "/" + context.getString(R.string.application);
 
         Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
         Logger.d(context, TAG, "cancelOrderDouble: " + url);
@@ -977,7 +978,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     @Override
     public void onResume() {
         super.onResume();
-
+        MainActivity.uid= "";
         String table;
         switch (pay_method) {
             case "wfp_payment":

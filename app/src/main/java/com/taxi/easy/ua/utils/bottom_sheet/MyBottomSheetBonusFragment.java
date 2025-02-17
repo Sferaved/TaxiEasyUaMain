@@ -515,7 +515,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                         long firstCost = Long.parseLong(orderCost);
                         discount = firstCost * discountInt / 100;
 
-
                         firstCost = firstCost + discount;
 //                        updateAddCost(String.valueOf(discount));
 
@@ -563,6 +562,9 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 //                                updateAddCost(String.valueOf(discount));
 
                                 VisicomFragment.firstCostForMin = firstCost;
+                                VisicomFragment.startCost = firstCost;
+                                Log.d(TAG, "onResponse:VisicomFragment.startCost " + VisicomFragment.startCost);
+
                                 costUpdate = String.valueOf(firstCost);
                                 Log.d(TAG, "onResponse:costUpdate " + costUpdate);
                                 textView.setText(costUpdate);

@@ -141,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String TABLE_LAST_PUSH = "tableLastPush";
     public static Cursor cursorDb;
     public static boolean firstStart;
+    public static String uid;
     private AppBarConfiguration mAppBarConfiguration;
     private NetworkChangeReceiver networkChangeReceiver;
     /**
@@ -203,10 +204,7 @@ public class MainActivity extends AppCompatActivity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(binding.getRoot());
 
-        // Инициализация и подключение к Pusher
-        pusherManager = new PusherManager(getString(R.string.application));
-        pusherManager.connect();
-        pusherManager.subscribeToChannel();
+
 
         deleteOldLogFile();
         Logger.i(this, TAG, "MainActivity started");
@@ -1096,6 +1094,20 @@ public class MainActivity extends AppCompatActivity {
 
 
     private static void restartApplication(Context context) {
+        // Получаем текущую версию Android
+        int sdkVersion = Build.VERSION.SDK_INT;
+
+        // Если версия Android >= 13 (API 33 и выше)
+        if (sdkVersion >= Build.VERSION_CODES.TIRAMISU) {
+            // Для Android 13 и выше используем AlarmManager для отложенного запуска
+            restartWithAlarmManager(context);
+        } else {
+            // Для более старых версий просто перезапускаем активность
+            restartActivity(context);
+        }
+    }
+
+    private static void restartWithAlarmManager(Context context) {
         Intent intent = new Intent(context, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE
@@ -1110,6 +1122,15 @@ public class MainActivity extends AppCompatActivity {
         android.os.Process.killProcess(android.os.Process.myPid());
         System.exit(0);
     }
+
+    private static void restartActivity(Context context) {
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
+        android.os.Process.killProcess(android.os.Process.myPid());
+        System.exit(0);
+    }
+
 
 
 
@@ -1304,6 +1325,11 @@ public class MainActivity extends AppCompatActivity {
             startFireBase();
         } else {
             firstStart = false;
+
+            // Инициализация и подключение к Pusher
+            pusherManager = new PusherManager(getString(R.string.application), userEmail);
+            pusherManager.connect();
+            pusherManager.subscribeToChannel();
 
             new Thread(this::versionFromMarket).start();
             new Thread(this::userPhoneFromFb).start();

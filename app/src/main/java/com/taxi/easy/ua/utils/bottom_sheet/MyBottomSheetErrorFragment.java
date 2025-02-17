@@ -24,20 +24,26 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
+import androidx.core.content.FileProvider;
 import androidx.navigation.NavDestination;
 import androidx.navigation.NavOptions;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
 import com.taxi.easy.ua.ui.home.cities.api.CityResponse;
 import com.taxi.easy.ua.ui.home.cities.api.CityService;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.helpers.TelegramUtils;
 import com.taxi.easy.ua.utils.log.Logger;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -113,7 +119,19 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                 });
             } else if(errorMessage.equals(getString(R.string.server_error_connected))) {
                 textViewInfo.setOnClickListener(v -> dismiss());
-                btn_ok.setOnClickListener(v -> dismiss());
+                btn_ok.setText(getString(R.string.send_email_admin));
+                btn_ok.setOnClickListener(v -> {
+                    sendEmailAdmin (errorMessage);
+                    dismiss();
+                });
+
+
+                String logFilePath = requireActivity().getExternalFilesDir(null) + "/app_log.txt"; // Путь к лог-файлу
+                TelegramUtils.sendErrorToTelegram(generateEmailBody(errorMessage), logFilePath);
+//                TelegramUtils.sendLogFileToTelegram(logFilePath);
+
+
+
             } else if (errorMessage.equals(getString(R.string.order_to_cancel_true))){
                 textViewInfo.setOnClickListener(v -> dismiss());
                 btn_ok.setText(getString(R.string.order_to_cancel_review));
@@ -484,5 +502,95 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         c.close();
         return list;
     }
+
+    @SuppressLint("IntentReset")
+    private void sendEmailAdmin (String errorMessage) {
+
+        String subject = getString(R.string.SA_subject) + generateRandomString(10);
+
+        String body = generateEmailBody(errorMessage);
+
+
+        String[] TO = {"taxi.easy.ua@gmail.com"};
+
+        File logFile = new File(requireActivity().getExternalFilesDir(null), "app_log.txt");
+
+        Intent emailIntent = new Intent(Intent.ACTION_SEND);
+        emailIntent.setType("message/rfc822");
+        emailIntent.putExtra(Intent.EXTRA_EMAIL, TO);
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, subject);
+        emailIntent.putExtra(Intent.EXTRA_TEXT, body);
+        if (logFile.exists()) {
+            Uri uri = FileProvider.getUriForFile(requireActivity(), requireActivity().getPackageName() + ".fileprovider", logFile);
+            emailIntent.putExtra(Intent.EXTRA_STREAM, uri);
+            emailIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        } else {
+            Logger.e(requireActivity(), "MyBottomSheetErrorFragment", "Log file does not exist");
+        }
+        try {
+            startActivity(Intent.createChooser(emailIntent, subject));
+        } catch (android.content.ActivityNotFoundException e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
+
+
+    }
+
+    public String generateEmailBody(String errorMessage) {
+
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+        List<String> userList = logCursor(MainActivity.TABLE_USER_INFO, requireActivity());
+
+
+        // Определение города
+
+        String city;
+        switch (stringList.get(1)) {
+            case "Dnipropetrovsk Oblast":
+                city = getString(R.string.Dnipro_city);
+                break;
+            case "Zaporizhzhia":
+                city = getString(R.string.Zaporizhzhia);
+                break;
+            case "Cherkasy Oblast":
+                city = getString(R.string.Cherkasy);
+                break;
+            case "Odessa":
+                city = getString(R.string.Odessa);
+                break;
+            case "OdessaTest":
+                city = getString(R.string.OdessaTest);
+                break;
+            default:
+                city = getString(R.string.Kyiv_city);
+                break;
+        }
+
+        // Формирование тела сообщения
+
+        return errorMessage + "\n"+
+                getString(R.string.SA_info_pas) + "\n" +
+                getString(R.string.SA_info_city) + " " + city + "\n" +
+                getString(R.string.SA_pas_text) + " " + getString(R.string.version) + "\n" +
+                getString(R.string.SA_user_text) + " " + userList.get(4) + "\n" +
+                getString(R.string.SA_email) + " " + userList.get(3) + "\n" +
+                getString(R.string.SA_phone_text) + " " + userList.get(2) + "\n" + "\n";
+    }
+
+
+    private String generateRandomString(int length) {
+        String characters = "012345678901234567890123456789";
+        StringBuilder randomString = new StringBuilder();
+
+        Random random = new Random();
+        for (int i = 0; i < length; i++) {
+            int randomIndex = random.nextInt(characters.length());
+            char randomChar = characters.charAt(randomIndex);
+            randomString.append(randomChar);
+        }
+
+        return randomString.toString();
+    }
+
 }
 

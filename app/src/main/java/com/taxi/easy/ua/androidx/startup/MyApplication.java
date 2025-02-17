@@ -5,7 +5,6 @@ import android.app.Application;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -17,7 +16,9 @@ import com.github.anrwatchdog.ANRWatchDog;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.helpers.TelegramUtils;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
+import com.taxi.easy.ua.utils.time_ut.IdleTimeoutManager;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -42,6 +43,7 @@ public class MyApplication extends Application {
     public static SharedPreferencesHelper sharedPreferencesHelperMain;
 
     private ThreadPoolExecutor threadPoolExecutor;
+    private IdleTimeoutManager idleTimeoutManager;
 
     @Override
     public void onCreate() {
@@ -119,6 +121,7 @@ public class MyApplication extends Application {
             @Override
             public void onActivityCreated(@NonNull Activity activity, Bundle savedInstanceState) {
                 currentActivity = activity;
+                idleTimeoutManager = new IdleTimeoutManager(activity);
             }
 
             @Override
@@ -127,6 +130,9 @@ public class MyApplication extends Application {
             @Override
             public void onActivityResumed(@NonNull Activity activity) {
                 isAppInForeground = true;
+                if (idleTimeoutManager != null) {
+                    idleTimeoutManager.resetTimer();
+                }
             }
 
             @Override
@@ -168,21 +174,33 @@ public class MyApplication extends Application {
     }
 
     private class MyUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
-        public MyUncaughtExceptionHandler(MyApplication myApplication) {}
+
+        public MyUncaughtExceptionHandler(MyApplication myApplication) {
+        }
 
         @Override
-        public void uncaughtException(Thread t, Throwable e) {
+        public void uncaughtException(Thread t, @NonNull Throwable e) {
+            // Запись лога
             writeLog(Log.getStackTraceString(e));
-            System.exit(1); // Перезапуск приложения или завершение работы
+
+            // Сообщение об ошибке
+            String errorMessage = "Uncaught exception in thread " + t.getName() + ": " + e.getMessage();
+
+            // Отправка ошибки в Telegram
+
+            String logFilePath = getExternalFilesDir(null) + "/app_log.txt"; // Путь к лог-файлу
+            TelegramUtils.sendErrorToTelegram(errorMessage, logFilePath);
+            // Перезапуск приложения или завершение работы
+            System.exit(1); // Завершаем приложение
         }
     }
+
 
     public void writeLog(String log) {
         if (isExternalStorageWritable()) {
             File logFile = new File(getExternalFilesDir(null), LOG_FILE_NAME);
-            try {
-                FileOutputStream fos = new FileOutputStream(logFile, true);
-                OutputStreamWriter osw = new OutputStreamWriter(fos);
+            try (FileOutputStream fos = new FileOutputStream(logFile, true);
+                 OutputStreamWriter osw = new OutputStreamWriter(fos)) {
 
                 // Установка украинского времени
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
@@ -190,8 +208,7 @@ public class MyApplication extends Application {
 
                 osw.write(sdf.format(new Date()) + " - " + log);
                 osw.write("\n");
-                osw.close();
-                fos.close();
+
                 Log.d(TAG, "Log written to " + logFile.getAbsolutePath());
             } catch (IOException e) {
                 Log.e("MyAppLogger", "Failed to write log", e);
@@ -201,9 +218,10 @@ public class MyApplication extends Application {
         }
     }
 
+    // Метод для проверки доступности внешнего хранилища
     private boolean isExternalStorageWritable() {
-        String state = Environment.getExternalStorageState();
-        return Environment.MEDIA_MOUNTED.equals(state);
+        String state = android.os.Environment.getExternalStorageState();
+        return android.os.Environment.MEDIA_MOUNTED.equals(state);
     }
 
     // Пример использования ThreadPoolExecutor для асинхронных задач

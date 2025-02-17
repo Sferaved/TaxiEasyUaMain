@@ -358,6 +358,8 @@ public class HomeFragment extends Fragment {
                 cost -= 5;
                 addCost -= 5;
             if (cost >= MIN_COST_VALUE) {
+                addCost += 5;
+                cost += 5;
                 updateAddCost(String.valueOf(addCost));
                 text_view_cost.setText(String.valueOf(cost));
             }

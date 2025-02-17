@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.800</string>
-    <string name="version">Версия: 1.800</string>
+    <string name="version_code">1.801</string>
+    <string name="version">Версия: 1.801</string>
 
     <string name="app_name">Такси Доставка</string>
 
@@ -205,7 +205,7 @@
     <string name="no_bonus">У Вас нет доступных бонусов</string>
     <string name="btn_bonus">Способ оплаты</string>
     <string name="nopayment_type">Недостаточно бонусов. Оплата наличными.</string>
-    <string name="nal_payment">Наличными деньгами</string>
+    <string name="nal_payment">Наличными</string>
     <string name="bonus_payment">Бонусы</string>
     <string name="def_status">Уточните у диспетчера</string>
     <string name="block_mes">Заблокировано</string>

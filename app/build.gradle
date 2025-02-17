@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 35
-        versionCode 1800
-        versionName '1.800'
+        versionCode 1801
+        versionName '1.801'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled true
@@ -52,7 +52,7 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
     implementation 'androidx.datastore:datastore-preferences-core-jvm:1.1.2'
     implementation 'com.github.anrwatchdog:anrwatchdog:1.4.0'
-    implementation 'androidx.databinding:databinding-runtime:8.8.0'
+    implementation 'androidx.databinding:databinding-runtime:8.8.1'
 
 
     // Firebase зависимости (с использованием BOM)
@@ -91,8 +91,8 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.2.0'
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.8.7'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7'
-    implementation 'androidx.navigation:navigation-fragment:2.8.6'
-    implementation 'androidx.navigation:navigation-ui:2.8.6'
+    implementation 'androidx.navigation:navigation-fragment:2.8.7'
+    implementation 'androidx.navigation:navigation-ui:2.8.7'
 
     // Firebase UI для аутентификации
     implementation 'com.firebaseui:firebase-ui-auth:7.2.0'
