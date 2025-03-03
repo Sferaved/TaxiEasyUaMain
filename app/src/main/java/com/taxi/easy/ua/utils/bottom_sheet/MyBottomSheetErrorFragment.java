@@ -172,25 +172,28 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
             } else {
                 btn_ok.setOnClickListener(v -> dismiss());
             }
-        } else if (errorMessage.equals(getString(R.string.verify_address))){
-                 textViewInfo.setOnClickListener(view1 -> {
-                     List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
-                     String city = stringList.get(1);
-                     updateMyPosition(city);
-                     restartApplication(requireActivity());
-                 });
-                btn_ok.setText(getString(R.string.ok_error));
-                btn_ok.setOnClickListener(v -> {
-                    List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
-                    String city = stringList.get(1);
-                    updateMyPosition(city);
-                    restartApplication(requireActivity());
-
-                });
         } else {
-            textViewInfo.setText(getString(R.string.error_message));
-            btn_ok.setText(getString(R.string.try_again));
-            btn_ok.setOnClickListener(v -> startActivity(new Intent(requireContext(), MainActivity.class)));
+            assert errorMessage != null;
+            if (errorMessage.equals(getString(R.string.verify_address))){
+                     textViewInfo.setOnClickListener(view1 -> {
+                         List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+                         String city = stringList.get(1);
+                         updateMyPosition(city);
+                         restartApplication(requireActivity());
+                     });
+                    btn_ok.setText(getString(R.string.ok_error));
+                    btn_ok.setOnClickListener(v -> {
+                        List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+                        String city = stringList.get(1);
+                        updateMyPosition(city);
+                        restartApplication(requireActivity());
+
+                    });
+            } else {
+                textViewInfo.setText(getString(R.string.error_message));
+                btn_ok.setText(getString(R.string.try_again));
+                btn_ok.setOnClickListener(v -> startActivity(new Intent(requireContext(), MainActivity.class)));
+            }
         }
 
         return view;
@@ -468,17 +471,10 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
     }
 
 
-
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {
         super.onDismiss(dialog);
-        NavDestination currentDestination = navController.getCurrentDestination();
 
-        if (currentDestination == null) {
-            navController.navigate(currentDestination.getId(), null, new NavOptions.Builder()
-                    .setPopUpTo(currentDestination.getId(), true)
-                    .build());
-        }
     }
 
     @SuppressLint("Range")

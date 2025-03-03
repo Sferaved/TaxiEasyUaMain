@@ -78,6 +78,16 @@ public class OrderResponse {
     @SerializedName("time_to_start_point")
     private String timeToStartPoint;
 
+    @SerializedName("action")
+    private String action;
+
+    public String getUid() {
+        return uid;
+    }
+
+    @SerializedName("uid")
+    private String uid;
+
     // Getters
     public boolean isChangeCostAllowed() {
         return changeCostAllowed;
@@ -275,6 +285,10 @@ public class OrderResponse {
 
     public void setPushType(int pushType) {
         this.pushType = pushType;
+    }
+
+    public String getAction() {
+        return action;
     }
 }
 

@@ -789,7 +789,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             ContentValues cv = new ContentValues();
 
             cv.put("time", "no_time");
-            cv.put("comment", "no_comment");
+//            cv.put("comment", "no_comment");
             cv.put("date", "no_date");
 
             // обновляем по id

@@ -9,6 +9,7 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Paint;
@@ -243,7 +244,12 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
 
         komenterinp = view.findViewById(R.id.komenterinp);
         discount = view.findViewById(R.id.discinp);
+        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
 
+        String comment = stringList.get(2);
+        if (!comment.equals("no_comment")) {
+            komenterinp.setText(comment);
+        }
 
         discount.setText(logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3));
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
@@ -351,6 +357,10 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                     new String[]{"1"});
             database.close();
         }
+        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
+        String comment = stringList.get(2);
+
+        Logger.d(context, TAG, "comment " + comment);
 
         String discountText = discount.getText().toString();
         if (!discountText.isEmpty()) {
@@ -374,6 +384,12 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             FirebaseCrashlytics.getInstance().recordException(e);
             throw new RuntimeException(e);
         }
+
+    }
+
+    @Override
+    public void onDismiss(@NonNull DialogInterface dialog) {
+        super.onDismiss(dialog);
 
     }
 
@@ -553,7 +569,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         Logger.d(context, TAG, "orderFinished: "  + baseUrl + url);
         costSearchMarkersLocalTariffs(context);
 
-        parser.sendURL(url, new Callback<Map<String, String>>() {
+        parser.sendURL(url, new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
                 Map<String, String> sendUrl = response.body();
@@ -569,18 +585,25 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                     long firstCost = Long.parseLong(orderC);
 
 
+
                     long discountInt = Integer.parseInt(discountText);
                     long discount = firstCost * discountInt / 100;
 
                     updateAddCost(String.valueOf(discount));
 
                     String newCost = String.valueOf(firstCost + discount);
+                    VisicomFragment.startCost = firstCost + discount;
+                    VisicomFragment.finalCost = firstCost + discount;
+
+                    Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: startCost " + VisicomFragment.startCost);
+                    Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: finalCost " + VisicomFragment.finalCost);
+
                     if (texViewCost != null) {
                         texViewCost.setText(newCost);
                         VisicomFragment.btnVisible(View.VISIBLE);
                     }
 
-                } else  {
+                } else {
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
                     ContentValues cv = new ContentValues();
                     cv.put("tarif", " ");
@@ -589,7 +612,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                     assert context != null;
                     SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                     database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                            new String[] { "1" });
+                            new String[]{"1"});
                     database.close();
                     try {
                         changeCost();
@@ -755,6 +778,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         String comment = stringList.get(2);
         String date = stringList.get(3);
 
+        Logger.d(context, TAG, "getTaxiUrlSearchMarkers comment" + comment);
 
 
         List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
@@ -790,7 +814,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             ContentValues cv = new ContentValues();
 
             cv.put("time", "no_time");
-            cv.put("comment", "no_comment");
+//            cv.put("comment", "no_comment");
             cv.put("date", "no_date");
 
             // обновляем по id

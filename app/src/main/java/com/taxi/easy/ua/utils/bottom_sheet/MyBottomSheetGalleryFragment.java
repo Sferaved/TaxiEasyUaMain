@@ -226,6 +226,12 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
         komenterinp = view.findViewById(R.id.komenterinp);
         discount = view.findViewById(R.id.discinp);
 
+        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
+
+        String comment = stringList.get(2);
+        if (!comment.equals("no_comment")) {
+            komenterinp.setText(comment);
+        }
 
         discount.setText(logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3));
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);

@@ -609,7 +609,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             ContentValues cv = new ContentValues();
 
             cv.put("time", "no_time");
-            cv.put("comment", "no_comment");
+//            cv.put("comment", "no_comment");
             cv.put("date", "no_date");
 
             // обновляем по id
@@ -978,7 +978,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     @Override
     public void onResume() {
         super.onResume();
-        MainActivity.uid= "";
+//        MainActivity.uid= "";
         String table;
         switch (pay_method) {
             case "wfp_payment":

@@ -501,7 +501,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
 
             CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
-            parser.sendURL(urlCost, new Callback<Map<String, String>>() {
+            parser.sendURL(urlCost, new Callback<>() {
                 @Override
                 public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
                     Map<String, String> sendUrlMapCost = response.body();
@@ -518,16 +518,18 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                         firstCost = firstCost + discount;
 //                        updateAddCost(String.valueOf(discount));
 
+
                         HomeFragment.costFirstForMin = firstCost;
                         String costUpdate = String.valueOf(firstCost);
                         textView.setText(costUpdate);
-                    }  else {
+                    } else {
                         progressBar.setVisibility(View.INVISIBLE);
                         if (pos == 1 || pos == 2) {
                             changePayMethodToNal();
                         }
                     }
                 }
+
                 @Override
                 public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
                     Logger.d(getActivity(), TAG, " onFailure home" + t);
@@ -562,8 +564,12 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 //                                updateAddCost(String.valueOf(discount));
 
                                 VisicomFragment.firstCostForMin = firstCost;
+
                                 VisicomFragment.startCost = firstCost;
-                                Log.d(TAG, "onResponse:VisicomFragment.startCost " + VisicomFragment.startCost);
+                                VisicomFragment.finalCost = firstCost;
+
+                                Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: startCost " + VisicomFragment.startCost);
+                                Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: finalCost " + VisicomFragment.finalCost);
 
                                 costUpdate = String.valueOf(firstCost);
                                 Log.d(TAG, "onResponse:costUpdate " + costUpdate);
@@ -640,7 +646,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         }
         progressBar.setVisibility(View.GONE);
         btn_ok.setVisibility(View.VISIBLE);
-        costSearchMarkersLocalTariffs();
+//        costSearchMarkersLocalTariffs();
     }
     private AlertDialog alertDialog;
     private void changePayMethodToNal() {
@@ -746,34 +752,13 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             result = "no_extra_charge_codes";
         }
 
-        List<String> listCity = logCursor(MainActivity.CITY_INFO);
-        String city = listCity.get(1);
 
 
-        String user = displayName + "*" + userEmail  + "*" + payment_type;
-        database.close();
 
-        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO);
-        String time = stringList.get(1);
-        String date = stringList.get(3);
 
-//
-//        TariffInfo tariffInfo = new TariffInfo(context);
-//        tariffInfo.fetchOrderCostDetails(
-//                originLatitude,
-//                originLongitude,
-//                toLatitude,
-//                toLongitude,
-//                user,
-//                time,
-//                date,
-//                result,
-//                city,
-//                context.getString(R.string.application)
-//        );
     }
 
-     
+
     private String getTaxiUrlSearch(String urlAPI, Context context) throws UnsupportedEncodingException {
 
         List<String> stringListRout = logCursor(MainActivity.ROUT_HOME);

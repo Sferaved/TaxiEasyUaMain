@@ -11,6 +11,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -101,12 +102,26 @@ public class SettingsActivity extends AppCompatActivity {
             // Доступ к TextView в пользовательском заголовке
             View customView = getSupportActionBar().getCustomView();
             TextView titleTextView = customView.findViewById(R.id.action_bar_title);
+            ImageButton button1 = customView.findViewById(R.id.button1);
 
             setCityAppbar();
 
             titleTextView.setText(newTitle);
             // Установка обработчика нажатий
             titleTextView.setOnClickListener(v -> {
+                Logger.d(this, TAG, " Установка обработчика нажатий" + NetworkUtils.isNetworkAvailable(getApplicationContext()));
+                if (NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+                    // Ваш код при нажатии на заголовок
+                    MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, SettingsActivity.this);
+                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                } else {
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
+                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                }
+
+            });
+            // Установка обработчика нажатий
+            button1.setOnClickListener(v -> {
                 Logger.d(this, TAG, " Установка обработчика нажатий" + NetworkUtils.isNetworkAvailable(getApplicationContext()));
                 if (NetworkUtils.isNetworkAvailable(getApplicationContext())) {
                     // Ваш код при нажатии на заголовок

@@ -101,6 +101,14 @@
         <activity android:name="com.taxi.easy.ua.ui.home.cities.check.CityCheckActivity" />
 
         <activity android:name=".ui.settings.SettingsActivity" />
+
+        <activity
+            android:name="com.taxi.easy.ua.utils.clear.ClearTaskActivity"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:launchMode="singleTask" />
+
         <receiver android:name="com.taxi.easy.ua.utils.connect.NetworkChangeReceiver" />
 
         <provider

@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -31,16 +30,16 @@ import androidx.fragment.app.FragmentManager;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
-import com.taxi.easy.ua.ui.home.cities.api.CityLastAddressResponse;
-import com.taxi.easy.ua.ui.home.cities.api.CityResponse;
-import com.taxi.easy.ua.ui.home.cities.api.CityResponseMerchantFondy;
-import com.taxi.easy.ua.ui.home.cities.api.CityService;
 import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
+import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
+import com.taxi.easy.ua.ui.home.cities.api.CityLastAddressResponse;
+import com.taxi.easy.ua.ui.home.cities.api.CityResponse;
+import com.taxi.easy.ua.ui.home.cities.api.CityResponseMerchantFondy;
+import com.taxi.easy.ua.ui.home.cities.api.CityService;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;

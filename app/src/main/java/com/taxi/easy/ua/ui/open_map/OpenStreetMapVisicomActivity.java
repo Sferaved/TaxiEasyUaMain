@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
@@ -123,6 +124,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     private static Drawable scaledDrawable;
     private static String startPointNoText;
     private static String endPointNoText;
+    private static Marker previousMarker;
 
     public static String[] arrayServiceCode() {
         return new String[]{
@@ -229,6 +231,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private void switchToRegion() {
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO, this);
@@ -245,11 +248,12 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
             @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
             @SuppressLint("Range") double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
-            @SuppressLint("Range") String start = cursor.getString(cursor.getColumnIndex("start"));
+//            @SuppressLint("Range") String start = cursor.getString(cursor.getColumnIndex("start"));
 
             cursor.close();
             database.close();
-            FromAdressString = start;
+//            FromAdressString = start;
+            setStartPoint(originLatitude, originLongitude);
             startPoint = new GeoPoint(originLatitude,originLongitude);
 
         }
@@ -340,17 +344,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         return locationRequest;
     }
 
-    private void requestLocationPermission() {
-        if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                Manifest.permission.ACCESS_FINE_LOCATION)) {
-            // Показываем объяснение пользователю, почему мы запрашиваем разрешение
-            // Можно использовать диалоговое окно или другой пользовательский интерфейс
-        } else {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    REQUEST_LOCATION_PERMISSION);
-        }
-    }
+
    private boolean  switchState() {
         LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         boolean gps_enabled = false;
@@ -383,36 +377,15 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                 map.invalidate();
                 m = null;
             }
-            String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+//            String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+//
+//            Retrofit retrofit = new Retrofit.Builder()
+//                    .baseUrl(BASE_URL)
+//                    .addConverterFactory(GsonConverterFactory.create())
+//                    .build();
+//
+//            Logger.d(map.getContext(), TAG, "Request URL: " + retrofit.baseUrl());
 
-            Retrofit retrofit = new Retrofit.Builder()
-                    .baseUrl(BASE_URL)
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build();
-
-            Logger.d(map.getContext(), TAG, "Request URL: " + retrofit.baseUrl());
-
-            HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
-                @Override
-                public void log(String message) {
-                    // Log the URL
-                    Logger.d(map.getContext(), TAG, message);
-                }
-            });
-
-            loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-            OkHttpClient client = new OkHttpClient.Builder()
-                    .addInterceptor(loggingInterceptor)
-                    .build();
-
-            retrofit = new Retrofit.Builder()
-                    .baseUrl(BASE_URL)
-                    .client(client)  // Set the client with logging interceptor
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build();
-
-            apiService = retrofit.create(ApiService.class);
 
             makeApiCall(startLat, startLan);
         }
@@ -430,37 +403,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                     marker = null;
                 }
 
-                String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
 
-
-                Retrofit retrofit = new Retrofit.Builder()
-                        .baseUrl(BASE_URL)
-                        .addConverterFactory(GsonConverterFactory.create())
-                        .build();
-
-                Logger.d(map.getContext(), TAG, "Request URL: " + retrofit.baseUrl());
-
-                HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
-                    @Override
-                    public void log(String message) {
-                        // Log the URL
-                        Logger.d(map.getContext(), TAG, message);
-                    }
-                });
-
-                loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-                OkHttpClient client = new OkHttpClient.Builder()
-                        .addInterceptor(loggingInterceptor)
-                        .build();
-
-                retrofit = new Retrofit.Builder()
-                        .baseUrl(BASE_URL)
-                        .client(client)  // Set the client with logging interceptor
-                        .addConverterFactory(GsonConverterFactory.create())
-                        .build();
-
-                apiService = retrofit.create(ApiService.class);
 
                 makeApiCall(finishLat, finishLan);
 
@@ -468,15 +411,59 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
             }
         }
+
     }
 
-    public static void makeApiCall(double latitude, double longitude) {
-        Locale locale = Locale.getDefault();
-        String language = locale.getLanguage(); // Получаем язык устройства
+    private void apiServiceActivate() {
+        String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        Logger.d(map.getContext(), TAG, "Request URL: " + retrofit.baseUrl());
+
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
+            @Override
+            public void log(String message) {
+                // Log the URL
+                Logger.d(map.getContext(), TAG, message);
+            }
+        });
+
+        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(loggingInterceptor)
+                .build();
+
+        retrofit = new Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .client(client)  // Set the client with logging interceptor
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        apiService = retrofit.create(ApiService.class);
+    }
+    public static void setStartPoint(double latitude, double longitude) {
+
+
+        String language = (String) sharedPreferencesHelperMain.getValue("locale", "uk");
+        Locale locale = new Locale(language);
+        Locale.setDefault(locale);
+
+        Resources resources = getContext().getResources();
+        android.content.res.Configuration config = resources.getConfiguration();
+        config.setLocale(locale);
+        resources.updateConfiguration(config, resources.getDisplayMetrics());
+        Logger.d(getContext(), TAG, "language currentLocale " + language);
+
         Call<ApiResponse> call = apiService.reverseAddressLocal(latitude, longitude, language);
         m = new Marker(map);
 
-        call.enqueue(new Callback<ApiResponse>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
                 if (response.isSuccessful()) {
@@ -484,11 +471,11 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                     if (apiResponse != null) {
                         String result = apiResponse.getResult();
                         if (map != null && map.getRepository() != null) {
-                            if (startMarker.equals("ok")) {
-                                if (!result.equals("404")) {
+
+                                if (!result.equals("Точка на карте")) {
                                     FromAdressString = result;
                                 } else {
-                                    FromAdressString = startPointNoText;
+                                    FromAdressString = getContext().getString(R.string.startPoint);
                                 }
 
                                 m.setPosition(startPoint);
@@ -507,12 +494,88 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                                 m.showInfoWindow();
 
                                 map.getOverlays().add(m);
+                                previousMarker = m;
+                                map.getController().setCenter(startPoint);
+                                double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, fab.getContext()).get(4));
+                                mapController.setZoom(newZoomLevel);
+
+                                map.invalidate();
+
+
+                        }
+                    }
+                } else {
+                    // Обработка неуспешного запроса
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
+                // Обработка ошибок
+            }
+        });
+    }
+
+    public static void makeApiCall(double latitude, double longitude) {
+
+
+        String language = (String) sharedPreferencesHelperMain.getValue("locale", "uk");
+        Locale locale = new Locale(language);
+        Locale.setDefault(locale);
+
+        Resources resources = getContext().getResources();
+        android.content.res.Configuration config = resources.getConfiguration();
+        config.setLocale(locale);
+        resources.updateConfiguration(config, resources.getDisplayMetrics());
+        Logger.d(getContext(), TAG, "language currentLocale " + language);
+
+        Call<ApiResponse> call = apiService.reverseAddressLocal(latitude, longitude, language);
+        map.getOverlays().remove(m);
+        map.invalidate();
+
+        m = new Marker(map);
+
+        call.enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
+                if (response.isSuccessful()) {
+                    ApiResponse apiResponse = response.body();
+                    if (apiResponse != null) {
+                        String result = apiResponse.getResult();
+                        if (map != null && map.getRepository() != null) {
+                            if (startMarker.equals("ok")) {
+                                if (!result.equals("Точка на карте")) {
+                                    FromAdressString = result;
+                                } else {
+                                    FromAdressString = getContext().getString(R.string.startPoint);
+                                }
+
+
+                                if (previousMarker != null) {
+                                    map.getOverlays().remove(previousMarker);
+                                }
+
+                                m.setPosition(startPoint);
+                                m.setTextLabelBackgroundColor(Color.TRANSPARENT);
+                                m.setTextLabelForegroundColor(Color.RED);
+                                m.setTextLabelFontSize(40);
+                                m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+                                String unuString = new String(Character.toChars(0x1F449));
+
+                                m.setTitle("1." + unuString + FromAdressString);
+                                m.setIcon(scaledDrawable);
+                                m.showInfoWindow();
+
+                                // Сохраняем текущий маркер и добавляем его
+                                previousMarker = m;
+                                map.getOverlays().add(m);
 
                                 map.getController().setCenter(startPoint);
                                 double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, fab.getContext()).get(4));
                                 mapController.setZoom(newZoomLevel);
 
                                 map.invalidate();
+
                                 List<String> settings = new ArrayList<>();
 
                                 if (VisicomFragment.textViewTo.getText().toString().equals(map.getContext().getString(R.string.on_city_tv))) {
@@ -548,14 +611,16 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                                 updateRoutMarker(settings, map.getContext());
                                 updateMyPosition(startLat, startLan, FromAdressString, map.getContext());
 
-                                CityFinder cityFinder = new CityFinder(getContext(), latitude, longitude , FromAdressString);
+                                CityFinder cityFinder = new CityFinder(getContext(), latitude, longitude, FromAdressString);
                                 cityFinder.findCity(latitude, longitude);
 
 
                             }
                             if (finishMarker.equals("ok")) {
-                                if(!result.equals("Точка на карте")) {
+                                if (!result.equals("Точка на карте")) {
                                     ToAdressString = result;
+                                } else {
+                                    ToAdressString = getContext().getString(R.string.end_point_marker);
                                 }
 
 
@@ -597,7 +662,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                                 updateRoutMarker(settings, map.getContext());
                             }
                         }
-                      }
+                    }
                 } else {
                     // Обработка неуспешного запроса
                 }
@@ -618,7 +683,9 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         String application =  getString(R.string.application);
         new VerifyUserTask(getApplicationContext()).execute();
 
-        switchToRegion();
+        apiServiceActivate();
+
+
 
         gpsSwitch.setChecked(switchState());
         Logger.d(getApplicationContext(), TAG, "onResume: startMarker" + startMarker);
@@ -632,7 +699,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
             markerOverlay = new MarkerOverlayVisicom(OpenStreetMapVisicomActivity.this, "finishMarker");
         }
         map.getOverlays().add(markerOverlay);
-
+        switchToRegion();
         if(getFromTablePositionInfo(this, "startLat" ) != 0 ){
             startLat = getFromTablePositionInfo(this, "startLat" );
             startLan = getFromTablePositionInfo(this, "startLan" );
@@ -953,7 +1020,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
             ContentValues cv = new ContentValues();
 
             cv.put("time", "no_time");
-            cv.put("comment", "no_comment");
+//            cv.put("comment", "no_comment");
             cv.put("date", "no_date");
 
             // обновляем по id

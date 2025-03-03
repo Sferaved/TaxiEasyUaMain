@@ -1,11 +1,12 @@
 package com.taxi.easy.ua.ui.clear;
 
+import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.utils.log.Logger;
+
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
-
-import com.taxi.easy.ua.utils.log.Logger;
 
 import java.io.File;
 import java.io.IOException;

@@ -123,6 +123,9 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         btn_ok.setOnClickListener(v -> {
             Logger.d(getActivity(), TAG, "btn_ok: " + currentAddCost[0]);
             if(currentAddCost[0] > 0) {
+                // Выключить кнопку
+                FinishSeparateFragment.btn_cancel_order.setEnabled(false);
+                FinishSeparateFragment.btn_cancel_order.setClickable(false);
                 startAddCostUpdate(
                         uid,
                         String.valueOf(currentAddCost[0]),
@@ -192,10 +195,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                         assert status != null;
                         String responseStatus = status.getResponse();
                         Logger.d(context, TAG, "startAddCostUpdate  nal_payment: " + responseStatus);
-                        if(responseStatus.equals("200")) {
-
-
-                        } else {
+                        if(!responseStatus.equals("200")) {
                             // Обработка неуспешного ответа
                             FinishSeparateFragment.text_status.setText(R.string.verify_internet);
                         }
