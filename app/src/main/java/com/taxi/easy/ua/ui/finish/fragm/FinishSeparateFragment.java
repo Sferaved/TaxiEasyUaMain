@@ -2623,7 +2623,9 @@ public class FinishSeparateFragment extends Fragment {
     private static void isTenMinutesRemainingAction(LayoutInflater inflater, Context context) {
         isTenMinutesRemainingBlock = true;
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context);
-        
+        if (inflater == null) {
+            inflater = LayoutInflater.from(context); // Fallback if null
+        }
         View dialogView = inflater.inflate(R.layout.dialog_add_cost, null);
 
         // Настройка текста с выделенным числом
