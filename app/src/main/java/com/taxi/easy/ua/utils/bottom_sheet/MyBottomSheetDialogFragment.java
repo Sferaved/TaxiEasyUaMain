@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -36,7 +35,6 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.home.CustomListAdapter;
 import com.taxi.easy.ua.ui.home.HomeFragment;
-import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;

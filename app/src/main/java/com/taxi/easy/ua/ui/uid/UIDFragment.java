@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.ui.uid;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -30,12 +29,11 @@ import androidx.navigation.NavOptions;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
-import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentUidBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
@@ -276,8 +274,9 @@ public class UIDFragment extends Fragment {
                     }
                 } else {
                     if (isAdded()) {
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
                     }
 
                 }

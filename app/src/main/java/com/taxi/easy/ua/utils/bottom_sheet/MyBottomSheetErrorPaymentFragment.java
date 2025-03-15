@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -31,6 +30,7 @@ import com.google.gson.JsonSyntaxException;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.CustomCardAdapter;
+import com.taxi.easy.ua.ui.card.MyBottomSheetCardPayment;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.ApiService;
 import com.taxi.easy.ua.ui.finish.Status;
@@ -38,7 +38,6 @@ import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureClient;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureResponse;
 import com.taxi.easy.ua.ui.fondy.payment.ApiResponsePay;
-import com.taxi.easy.ua.ui.card.MyBottomSheetCardPayment;
 import com.taxi.easy.ua.ui.fondy.payment.PaymentApi;
 import com.taxi.easy.ua.ui.fondy.payment.RequestData;
 import com.taxi.easy.ua.ui.fondy.payment.StatusRequestPay;
@@ -50,8 +49,6 @@ import com.taxi.easy.ua.ui.fondy.token_pay.RequestDataToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.StatusRequestToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.SuccessResponseDataToken;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
-import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
-import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceResponse;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceService;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseResponse;
@@ -343,96 +340,18 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 email,
                 FinishSeparateFragment.phoneNumber
         );
-        call.enqueue(new Callback<PurchaseResponse>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<PurchaseResponse> call, @NonNull Response<PurchaseResponse> response) {
-                if (response.isSuccessful()) {
-                    PurchaseResponse purchaseResponse = response.body();
-                    if (purchaseResponse != null) {
-                        // Обработка ответа
-                        getStatusWfp(MainActivity.order_id);
-                        Logger.d(context, TAG, "onResponse:purchaseResponse " + purchaseResponse);
-                    } else {
-                        // Ошибка при парсинге ответа
-                        Logger.d(context, TAG, "Ошибка при парсинге ответа");
-                        MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                        cancelOrderDouble();
-                    }
-                } else {
-                    // Ошибка запроса
-                    Logger.d(context, TAG, "Ошибка запроса");
-                    MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                    cancelOrderDouble();
-                }
+
             }
 
             @Override
             public void onFailure(@NonNull Call<PurchaseResponse> call, @NonNull Throwable t) {
                 // Логируем текст ошибки
                 Logger.d(context, TAG, "Ошибка при выполнении запроса: " + t.getMessage());
-
-                // Отменяем заказ
-                cancelOrderDouble();
             }
 
-        });
-
-    }
-
-    private void getStatusWfp(String orderReferens) {
-        Logger.d(context, TAG, "getStatusWfp: ");
-        List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
-        String city = stringList.get(1);
-
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(interceptor)
-                .build();
-
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
-
-        StatusService service = retrofit.create(StatusService.class);
-
-        Call<StatusResponse> call = service.checkStatus(
-                context.getString(R.string.application),
-                city,
-                orderReferens
-        );
-
-        call.enqueue(new Callback<StatusResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<StatusResponse> call, @NonNull Response<StatusResponse> response) {
-
-                if (response.isSuccessful()) {
-                    StatusResponse statusResponse = response.body();
-                    assert statusResponse != null;
-                    String orderStatus = statusResponse.getTransactionStatus();
-                    Logger.d(context, TAG, "Transaction Status: " + orderStatus);
-                    switch (orderStatus) {
-                        case "Approved":
-                        case "WaitingAuthComplete":
-                            sharedPreferencesHelperMain.saveValue("pay_error", "**");
-                            break;
-                        default:
-                            sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
-                            MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
-                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
-
-            }
         });
 
     }
@@ -943,6 +862,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
                 if (response.isSuccessful()) {
                     Logger.d(context, TAG, "cancelOrderDouble response: " + response.toString());
+
                     paymentType();
                     try {
                         orderFinished(page);
@@ -1013,16 +933,14 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
         Cursor cursor = database.query(table, columns, selection, selectionArgs, null, null, null);
 
-        if (cursor != null) {
-            if (cursor.moveToFirst()) {
-                do {
-                    result = cursor.getString(cursor.getColumnIndex("rectoken"));
-                    Logger.d(context, TAG, "Found rectoken with rectoken_check = 1 " + ": " + result);
-                    return result;
-                } while (cursor.moveToNext());
-            }
-            cursor.close();
+        if (cursor.moveToFirst()) {
+            do {
+                result = cursor.getString(cursor.getColumnIndex("rectoken"));
+                Logger.d(context, TAG, "Found rectoken with rectoken_check = 1 " + ": " + result);
+                return result;
+            } while (cursor.moveToNext());
         }
+        cursor.close();
 
         database.close();
 
@@ -1034,6 +952,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         this.context = context; // Инициализация контекста
     }
     private void paymentType() {
+        MainActivity.paySystemStatus = "nal_payment";
         ContentValues cv = new ContentValues();
         cv.put("payment_type", "nal_payment");
         // обновляем по id

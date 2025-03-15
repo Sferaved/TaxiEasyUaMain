@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.ui.card;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -417,7 +416,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
 
             @Override
             public void onFailure(@NonNull Call<CallbackResponseSetActivCardWfp> call, @NonNull Throwable t) {
-                Toast.makeText(getContext(), getContext().getString(R.string.verify_internet), Toast.LENGTH_LONG).show();
+
             }
         });
     }

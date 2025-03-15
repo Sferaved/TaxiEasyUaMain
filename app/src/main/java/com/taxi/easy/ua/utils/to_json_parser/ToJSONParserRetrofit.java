@@ -3,21 +3,23 @@ package com.taxi.easy.ua.utils.to_json_parser;
 import static com.taxi.easy.ua.MainActivity.activeCalls;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
-
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.navigation.NavOptions;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
@@ -175,17 +177,20 @@ public class ToJSONParserRetrofit {
                             costMap.put("order_cost", "0");
                             costMap.put("message", json.getMessage());
                             callback.onResponse(null, Response.success(costMap));
+
                         }
                     } else {
-                        callback.onResponse(null, Response.success(Collections.singletonMap("message", "Ошибка запроса")));
+                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
                     }
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<JsonResponse> call, @NonNull Throwable t) {
-                    if (!eventReceived) {
-                        callback.onResponse(null, Response.success(Collections.singletonMap("message", "Ошибка соединения")));
-                    }
+                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_restart, true)
+                            .build());
                 }
             });
         });
@@ -204,6 +209,9 @@ public class ToJSONParserRetrofit {
                 try {
                     Thread.sleep(100); // Ожидание события с минимальной задержкой
                 } catch (InterruptedException e) {
+                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_restart, true)
+                            .build());
                     Thread.currentThread().interrupt();
                 }
             }

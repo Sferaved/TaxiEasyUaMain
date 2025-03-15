@@ -42,6 +42,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.navigation.NavOptions;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -53,7 +54,7 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.home.cities.Kyiv.KyivRegion;
 import com.taxi.easy.ua.ui.home.cities.Kyiv.KyivRegionRu;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
+import com.taxi.easy.ua.ui.keyboard.KeyboardUtils;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapVisicomActivity;
 import com.taxi.easy.ua.ui.open_map.mapbox.Feature;
@@ -65,11 +66,11 @@ import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiClientMapbox;
 import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiResponseMapbox;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.visicom.visicom_search.key_visicom.ApiResponse;
-import com.taxi.easy.ua.ui.keyboard.KeyboardUtils;
-import com.taxi.easy.ua.utils.helpers.LocaleHelper;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.connect.ConnectionSpeedTester;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 
@@ -242,7 +243,9 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                             // GPS включен, выполните ваш код здесь
                             if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-                                Toast.makeText(getApplicationContext(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
+                                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                        .setPopUpTo(R.id.nav_restart, true)
+                                        .build());
                             } else {
 
                                 if (location_update) {
@@ -449,7 +452,9 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-            startActivity(new Intent(this, MainActivity.class));
+            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_restart, true)
+                    .build());
         }
         start = getIntent().getStringExtra("start");
         end = getIntent().getStringExtra("end");
@@ -694,16 +699,9 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             // Пытаемся скрыть клавиатуру
             immHide.hideSoftInputFromWindow(v.getWindowToken(), 0);
             if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-
-                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-                VisicomFragment.btn_clear_from_text.setText(getString(R.string.try_again));
-                VisicomFragment.btn_clear_from_text.setVisibility(View.VISIBLE);
-                VisicomFragment.btn_clear_from_text.setOnClickListener(v1 -> startActivity(new Intent(getApplicationContext(), MainActivity.class)));
-                VisicomFragment.geoText.setVisibility(View.INVISIBLE);
-                progressBar.setVisibility(View.INVISIBLE);
-
-                btn_clear_from.setVisibility(View.INVISIBLE);
-                btn_clear_to.setVisibility(View.INVISIBLE);
+                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_restart, true)
+                        .build());
             }
             VisicomFragment.btnVisible(View.INVISIBLE);
             finish();
@@ -813,7 +811,9 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                     Logger.d(getApplicationContext(), TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
                     // GPS включен, выполните ваш код здесь
                     if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-                        Toast.makeText(getApplicationContext(), getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
+                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
                     } else  if(location_update) {
                         String searchText = getString(R.string.search_text) + "...";
 

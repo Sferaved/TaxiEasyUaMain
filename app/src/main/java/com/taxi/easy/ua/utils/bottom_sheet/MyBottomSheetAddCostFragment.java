@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -30,8 +29,6 @@ import com.taxi.easy.ua.ui.finish.ApiService;
 import com.taxi.easy.ua.ui.finish.Status;
 import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
-import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
-import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceResponse;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceService;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseResponse;
@@ -230,10 +227,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
         wfpInvoice(MainActivity.order_id , addCost, uid);
 
-        if (rectoken.isEmpty()) {
-            getUrlToPaymentWfp(addCost, MainActivity.order_id );
-            getStatusWfp(MainActivity.order_id, addCost);
-        } else {
+        if (!rectoken.isEmpty()) {
             paymentByTokenWfp(FinishSeparateFragment.messageFondy, addCost, MainActivity.order_id );
         }
 
@@ -323,6 +317,8 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
     ) {
 
         Pattern pattern = Pattern.compile("(\\d+)");
+
+        Log.e("newOrderCardPayAdd20", "textCostMessage: " + FinishSeparateFragment.textCostMessage.getText().toString());
         Matcher matcher = pattern.matcher( FinishSeparateFragment.textCostMessage.getText().toString());
 
         if (matcher.find()) {
@@ -442,7 +438,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                 phone_number
         );
 
-        call.enqueue(new Callback<InvoiceResponse>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<InvoiceResponse> call, @NonNull Response<InvoiceResponse> response) {
                 Logger.d(context, TAG, "onResponse: 1111" + response.code());
@@ -453,7 +449,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                     if (invoiceResponse != null) {
                         String checkoutUrl = invoiceResponse.getInvoiceUrl();
                         Logger.d(context, TAG, "onResponse: Invoice URL: " + checkoutUrl);
-                        if(checkoutUrl != null) {
+                        if (checkoutUrl != null) {
 
                             MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
                                     checkoutUrl,
@@ -465,63 +461,17 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                             );
                             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
-                        } else {
-                            Logger.d(context, TAG,"Response body is null");
-                            MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                            callOrderIdMemory(MainActivity.order_id, uid, pay_method);
-                            MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
-                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                         }
-                    } else {
-                        Logger.d(context, TAG,"Response body is null");
-                        MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                        callOrderIdMemory(MainActivity.order_id, uid, pay_method);
-                        MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
-                } else {
-                    Logger.d(context, TAG, "Request failed: " + response.code());
-                    MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                    callOrderIdMemory(MainActivity.order_id, uid, pay_method);
-                    MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<InvoiceResponse> call, @NonNull Throwable t) {
                 Logger.d(context, TAG, "Request failed: " + t.getMessage());
-                MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                callOrderIdMemory(MainActivity.order_id, uid, pay_method);
-                MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
 
-
-    }
-
-    public static void callOrderIdMemory(String orderId, String uid, String paySystem) {
-        String  baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        ApiService apiService = retrofit.create(ApiService.class);
-        Call<Void> call = apiService.orderIdMemory(orderId, uid, paySystem);
-
-        call.enqueue(new Callback<Void>() {
-            @Override
-            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
-                // Обработка ошибки
-                FirebaseCrashlytics.getInstance().recordException(t);
-            }
-        });
     }
 
     private void paymentByTokenWfp(
@@ -565,45 +515,35 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             @Override
             public void onResponse(@NonNull Call<PurchaseResponse> call, @NonNull Response<PurchaseResponse> response) {
                 if (response.isSuccessful()) {
-                    PurchaseResponse purchaseResponse = response.body();
-                    if (purchaseResponse != null) {
-                        // Обработка ответа
-                        Logger.d(context, TAG, "onResponse:purchaseResponse " + purchaseResponse.toString());
-
-                        String orderStatus = purchaseResponse.getTransactionStatus();
-
-                        Logger.d(context, TAG, "Transaction Status: " + orderStatus);
-
-                        switch (orderStatus) {
-                            case "Approved":
-                            case "WaitingAuthComplete":
-                                sharedPreferencesHelperMain.saveValue("pay_error", "**");
-                                newOrderCardPayAdd20(amount);
-                                break;
-                            default:
-                                sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
-                                MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                                callOrderIdMemory(MainActivity.order_id, uid, pay_method);
-                                MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
-                                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-
-                        }
-//                        getStatusWfp(order_id, amount);
-                    } else {
-                        // Ошибка при парсинге ответа
-                        Logger.d(context, TAG, "Ошибка при парсинге ответа");
-                        MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                        callOrderIdMemory(order_id, uid, pay_method);
-                        MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    PurchaseResponse statusResponse = response.body();
+                    if (statusResponse == null) {
+                        Logger.e(context, TAG, "onResponse: StatusResponse is null");
+                        return;
                     }
+
+                    String orderStatus = statusResponse.getTransactionStatus();
+                    Logger.d(context, TAG, "1 Transaction Status: " + orderStatus);
+
+                    String  messageFondy = context.getString(R.string.fondy_message);
+                    switch (orderStatus) {
+                        case "Approved":
+                        case "WaitingAuthComplete":
+                            Logger.d(context, TAG, "onResponse: Positive status received: " + orderStatus);
+                            sharedPreferencesHelperMain.saveValue("pay_error", "**");
+                            newOrderCardPayAdd20(amount);
+                            break;
+                        case "Declined":
+                            MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment =
+                                    new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, context);
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                            Logger.d(context, TAG, "onResponse: Showing error bottom sheet for declined transaction");
+                        default:
+                            Logger.d(context, TAG, "onResponse: Unexpected status: " + orderStatus);
+                    }
+
+
                 } else {
-                    // Ошибка запроса
-                    Logger.d(context, TAG, "Ошибка запроса");
-                    MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                    callOrderIdMemory(MainActivity.order_id, uid, pay_method);
-                    MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    Logger.e(context, TAG, "onResponse: Unsuccessful response, code=" + response.code());
                 }
             }
 
@@ -611,86 +551,11 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             public void onFailure(@NonNull Call<PurchaseResponse> call, @NonNull Throwable t) {
                 // Ошибка при выполнении запроса
                 Logger.d(context, TAG, "Ошибка при выполнении запроса");
-                MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                callOrderIdMemory(MainActivity.order_id, uid, pay_method);
-                MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
 
     }
 
-    private void getStatusWfp(
-            String orderReferens,
-            String amount
-    ) {
-        Logger.d(context, TAG, "getStatusWfp: ");
-
-        String  baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-
-
-        List<String> stringList = logCursor(MainActivity.CITY_INFO);
-        String city = stringList.get(1);
-
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(interceptor)
-                .build();
-
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
-
-        StatusService service = retrofit.create(StatusService.class);
-
-        Call<StatusResponse> call = service.checkStatus(
-                context.getString(R.string.application),
-                city,
-                orderReferens
-        );
-
-        call.enqueue(new Callback<StatusResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<StatusResponse> call, @NonNull Response<StatusResponse> response) {
-
-                if (response.isSuccessful()) {
-                    StatusResponse statusResponse = response.body();
-                    assert statusResponse != null;
-                    String orderStatus = statusResponse.getTransactionStatus();
-                    Logger.d(context, TAG, "Transaction Status: " + orderStatus);
-
-                    switch (orderStatus) {
-                        case "Approved":
-                        case "WaitingAuthComplete":
-                            sharedPreferencesHelperMain.saveValue("pay_error", "**");
-                            newOrderCardPayAdd20(amount);
-                            break;
-                        default:
-                            sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
-                            MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                            callOrderIdMemory(MainActivity.order_id, uid, pay_method);
-                            MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
-                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
-                MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                callOrderIdMemory(MainActivity.order_id, uid, pay_method);
-                MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-            }
-        });
-
-    }
 
     @SuppressLint("Range")
     private List<String> logCursor(String table) {

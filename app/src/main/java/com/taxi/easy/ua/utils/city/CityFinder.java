@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.utils.city;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -17,9 +16,9 @@ import androidx.annotation.NonNull;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
 import com.taxi.easy.ua.ui.home.cities.api.CityService;
-import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
@@ -592,7 +591,9 @@ public class CityFinder {
     private void cityMaxPay(String city) {
 
 
-        CityService cityService = CityApiClient.getClient().create(CityService.class);
+        String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        CityApiClient cityApiClient = new CityApiClient(BASE_URL);
+        CityService cityService = cityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
         Call<com.taxi.easy.ua.ui.home.cities.api.CityResponse> call = cityService.getMaxPayValues(city, context.getString(R.string.application));

@@ -131,20 +131,6 @@
                 app:layout_constraintTop_toBottomOf="@+id/textfrom"
                 tools:ignore="MissingConstraints" />
 
-            <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_clear_from_text"
-            android:layout_width="200sp"
-            android:layout_height="48sp"
-
-            android:layout_marginTop="24dp"
-            android:background="@drawable/buttons"
-            android:scaleType="centerInside"
-            android:textColor="@color/white"
-            android:visibility="invisible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.497"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textfrom" />
 
 
 

@@ -4,7 +4,6 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -16,19 +15,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
+import androidx.fragment.app.FragmentManager;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
-import com.taxi.easy.ua.ui.home.cities.api.CityApiTestClient;
 import com.taxi.easy.ua.ui.home.cities.api.CityLastAddressResponse;
 import com.taxi.easy.ua.ui.home.cities.api.CityResponse;
-import com.taxi.easy.ua.ui.home.cities.api.CityResponseMerchantFondy;
 import com.taxi.easy.ua.ui.home.cities.api.CityService;
-import com.taxi.easy.ua.ui.card.CardInfo;
-import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
-import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
@@ -42,8 +38,6 @@ import java.util.List;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 
 public class CityCheckActivity extends AppCompatActivity {
@@ -76,7 +70,7 @@ public class CityCheckActivity extends AppCompatActivity {
 
     String city;
     private String cityMenu;
-
+    FragmentManager fragmentManager;
 
     /**
      * Phone section
@@ -98,6 +92,9 @@ public class CityCheckActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.city_activity_layout);
+
+        fragmentManager = getSupportFragmentManager();
+
         sharedPreferencesHelper = new SharedPreferencesHelper(this);
         sharedPreferencesHelperMain.saveValue("visible_shed", "ok");
 
@@ -614,12 +611,15 @@ public class CityCheckActivity extends AppCompatActivity {
     private void cityMaxPay(String city) {
 
 
-        CityService cityService = CityApiClient.getClient().create(CityService.class);
+        String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+
+        CityApiClient cityApiClient = new CityApiClient(BASE_URL);
+        CityService cityService = cityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
         Call<CityResponse> call = cityService.getMaxPayValues(city, getString(R.string.application));
 
-        call.enqueue(new Callback<CityResponse>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<CityResponse> call, @NonNull Response<CityResponse> response) {
                 if (response.isSuccessful()) {
@@ -641,218 +641,42 @@ public class CityCheckActivity extends AppCompatActivity {
                         database.close();
 
 
-
-
                         // Добавьте здесь код для обработки полученных значений
                     }
                 } else {
                     Logger.d(getApplicationContext(), TAG, "Failed. Error code: " + response.code());
+
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<CityResponse> call, @NonNull Throwable t) {
                 Logger.d(getApplicationContext(), TAG, "Failed. Error message: " + t.getMessage());
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
     }
 
-    private void merchantFondy(String city, Context context) {
-
-
-        CityService cityService = CityApiClient.getClient().create(CityService.class);
-
-        // Замените "your_city" на фактическое название города
-        Call<CityResponseMerchantFondy> call = cityService.getMerchantFondy(city);
-
-        call.enqueue(new Callback<CityResponseMerchantFondy>() {
-            @Override
-            public void onResponse(@NonNull Call<CityResponseMerchantFondy> call, @NonNull Response<CityResponseMerchantFondy> response) {
-                if (response.isSuccessful()) {
-                    CityResponseMerchantFondy cityResponse = response.body();
-                    Logger.d(getApplicationContext(), TAG, "onResponse: cityResponse" + cityResponse);
-                    if (cityResponse != null) {
-                        String merchant_fondy = cityResponse.getMerchantFondy();
-                        String fondy_key_storage = cityResponse.getFondyKeyStorage();
-
-                        ContentValues cv = new ContentValues();
-                        cv.put("merchant_fondy", merchant_fondy);
-                        cv.put("fondy_key_storage", fondy_key_storage);
-
-
-                            SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                            database.update(MainActivity.CITY_INFO, cv, "id = ?",
-                                    new String[]{"1"});
-
-                            database.close();
-
-
-
-                        Logger.d(getApplicationContext(), TAG, "onResponse: merchant_fondy" + merchant_fondy);
-                        Logger.d(getApplicationContext(), TAG, "onResponse: fondy_key_storage" + fondy_key_storage);
-
-                        if(merchant_fondy != null) {
-                            getCardToken(getApplicationContext(), merchant_fondy);
-                        }
-
-
-                        // Добавьте здесь код для обработки полученных значений
-                    }
-                } else {
-                    Logger.d(getApplicationContext(), TAG, "Failed. Error code: " + response.code());
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<CityResponseMerchantFondy> call, @NonNull Throwable t) {
-                Logger.d(getApplicationContext(), TAG, "Failed. Error message: " + t.getMessage());
-            }
-        });
-    }
-    private void getCardToken(Context context, String merchant_fondy) {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site") // Замените на фактический URL вашего сервера
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        String baseUrl = retrofit.baseUrl().toString();
-
-        Logger.d(getApplicationContext(), TAG, "Base URL: " + baseUrl);
-        // Создайте сервис
-        CallbackService service = retrofit.create(CallbackService.class);
-
-        Logger.d(getApplicationContext(), TAG, "getCardTokenFondy: ");
-
-        List<String> arrayList = logCursor(MainActivity.TABLE_USER_INFO);
-        String email = arrayList.get(3);
-
-            // Выполните запрос
-            Call<CallbackResponse> call = service.handleCallback(email, "fondy", merchant_fondy);
-            String requestUrl = call.request().toString();
-            Logger.d(getApplicationContext(), TAG, "Request URL: " + requestUrl);
-
-            call.enqueue(new Callback<CallbackResponse>() {
-                @Override
-                public void onResponse(@NonNull Call<CallbackResponse> call, @NonNull Response<CallbackResponse> response) {
-                    Logger.d(getApplicationContext(), TAG, "onResponse: " + response.body());
-                    if (response.isSuccessful()) {
-                        CallbackResponse callbackResponse = response.body();
-                        if (callbackResponse != null) {
-                            List<CardInfo> cards = callbackResponse.getCards();
-                            Logger.d(getApplicationContext(), TAG, "onResponse: cards" + cards);
-                            SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                            // Очистка таблицы
-                            database.delete(MainActivity.TABLE_FONDY_CARDS, "1", null);
-                            if (cards != null && !cards.isEmpty()) {
-                                for (CardInfo cardInfo : cards) {
-                                    ContentValues cv = new ContentValues();
-                                    String masked_card = cardInfo.getMasked_card(); // Маска карты
-                                    String card_type = cardInfo.getCard_type(); // Тип карты
-                                    String bank_name = cardInfo.getBank_name(); // Название банка
-                                    String rectoken = cardInfo.getRectoken(); // Токен карты
-                                    String merchantId = cardInfo.getMerchant(); // Токен карты
-
-                                    Logger.d(getApplicationContext(), TAG, "onResponse: card_token: " + rectoken);
-
-                                    cv.put("masked_card", masked_card);
-                                    cv.put("card_type", card_type);
-                                    cv.put("bank_name", bank_name);
-                                    cv.put("rectoken", rectoken);
-                                    cv.put("merchant", merchantId);
-                                    cv.put("rectoken_check", "-1");
-                                    database.insert(MainActivity.TABLE_FONDY_CARDS, null, cv);
-                                }
-                                // Выбираем минимальное значение ID из таблицы
-                                Cursor cursor = database.rawQuery("SELECT MIN(id) FROM " + MainActivity.TABLE_FONDY_CARDS, null);
-                                if (cursor != null && cursor.moveToFirst()) {
-                                    // Получаем минимальное значение ID
-                                    int minId = cursor.getInt(0);
-                                    cursor.close();
-
-                                    // Обновляем строку с минимальным ID
-                                    ContentValues cv = new ContentValues();
-                                    cv.put("rectoken_check", "1");
-                                    database.update(MainActivity.TABLE_FONDY_CARDS, cv, "id = ?", new String[] { String.valueOf(minId) });
-                                }
-                                database.close();
-
-                            }
-                        }
-
-                    } else {
-                        // Обработка случаев, когда ответ не 200 OK
-                    }
-                }
-
-                @Override
-                public void onFailure(@NonNull Call<CallbackResponse> call, @NonNull Throwable t) {
-                    // Обработка ошибки запроса
-                    Logger.d(getApplicationContext(), TAG, "Failed. Error message: " + t.getMessage());
-                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-                }
-            });
-
-
-
-    }
-    public void resetRoutHome() {
-        ContentValues cv = new ContentValues();
-
-        cv.put("from_street", " ");
-        cv.put("from_number", " ");
-        cv.put("to_street", " ");
-        cv.put("to_number", " ");
-
-        // обновляем по id
-        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        database.update(MainActivity.ROUT_HOME, cv, "id = ?",
-                new String[]{"1"});
-        database.close();
-    }
-    private void resetRoutMarker() {
-        List<String> settings = new ArrayList<>();
-
-            settings.add("0");
-            settings.add("0");
-            settings.add("0");
-            settings.add("0");
-            settings.add("");
-            settings.add("");
-
-        ContentValues cv = new ContentValues();
-
-        cv.put("startLat", Double.parseDouble(settings.get(0)));
-        cv.put("startLan", Double.parseDouble(settings.get(1)));
-        cv.put("to_lat", Double.parseDouble(settings.get(2)));
-        cv.put("to_lng", Double.parseDouble(settings.get(3)));
-        cv.put("start", settings.get(4));
-        cv.put("finish", settings.get(5));
-
-        // обновляем по id
-        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
-                new String[]{"1"});
-        database.close();
-
-    }
 
     @SuppressLint("Range")
     public List<String> logCursor(String table) {
         List<String> list = new ArrayList<>();
         SQLiteDatabase db = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = db.query(table, null, null, null, null, null, null);
-        if (c != null) {
-            if (c.moveToFirst()) {
-                String str;
-                do {
-                    str = "";
-                    for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+        if (c.moveToFirst()) {
+            String str;
+            do {
+                str = "";
+                for (String cn : c.getColumnNames()) {
+                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
+                    list.add(c.getString(c.getColumnIndex(cn)));
 
-                    }
+                }
 
-                } while (c.moveToNext());
-            }
+            } while (c.moveToNext());
         }
         assert c != null;
         c.close();
@@ -929,20 +753,17 @@ public class CityCheckActivity extends AppCompatActivity {
     private void lastAddressUser(String cityString) {
 
         String email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
-        CityService cityService;
 
         Logger.d(this, TAG, "lastAddressUser: cityString" + cityString);
-        switch (cityString){
-            case "OdessaTest":
-                cityService = CityApiTestClient.getClient().create(CityService.class);
-                break;
-            default:
-                cityService = CityApiClient.getClient().create(CityService.class);
-        }
+
+        String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+
+        CityApiClient cityApiClient = new CityApiClient(BASE_URL);
+        CityService cityService = cityApiClient.getClient().create(CityService.class);
 
         Call<CityLastAddressResponse> call = cityService.lastAddressUser(email, cityString, this.getString(R.string.application));
 
-        call.enqueue(new Callback<CityLastAddressResponse>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<CityLastAddressResponse> call, @NonNull Response<CityLastAddressResponse> response) {
                 if (response.isSuccessful()) {
@@ -974,6 +795,8 @@ public class CityCheckActivity extends AppCompatActivity {
             public void onFailure(@NonNull Call<CityLastAddressResponse> call, Throwable t) {
                 Logger.d(getApplicationContext(), TAG, "Failed. Error message: " + t.getMessage());
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
     }

@@ -21,7 +21,6 @@ import androidx.appcompat.widget.AppCompatButton;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.utils.connect.NetworkUtils;
 
 import java.util.ArrayList;
 import java.util.List;

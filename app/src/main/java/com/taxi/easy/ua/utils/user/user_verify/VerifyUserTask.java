@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.utils.user.user_verify;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -30,42 +29,48 @@ public class VerifyUserTask {
     private static final String TAG = "VerifyUserTask";
     @SuppressLint("StaticFieldLeak")
     private final Context context;
-    private final SQLiteDatabase database;
 
     public VerifyUserTask(Context context) {
         this.context = context;
-        this.database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
     }
 
     public void execute() {
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, this.context).get(3);
+        Logger.d(context, TAG, "execute() started");
 
-//        String url = "https://m.easy-order-taxi.site/android/verifyBlackListUser/" + userEmail + "/" + context.getString(R.string.application);
-        String url = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/android/verifyBlackListUser/" + userEmail + "/" + context.getString(R.string.application);
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, this.context).get(3);
+        Logger.d(context, TAG, "Fetched user email: " + userEmail);
+
+        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        Logger.d(context, TAG, "Base URL: " + baseUrl);
+
+        String url = baseUrl + "/android/verifyBlackListUser/" + userEmail + "/" + context.getString(R.string.application);
+        Logger.d(context, TAG, "Constructed URL: " + url);
+
         CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
 
         try {
-            parser.sendURL(url, new Callback<Map<String, String>>() {
+            parser.sendURL(url, new Callback<>() {
                 @Override
                 public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                    Logger.d(context, TAG, "HTTP Response received: " + response.code());
+
                     if (response.isSuccessful() && response.body() != null) {
+                        Logger.d(context, TAG, "Response body: " + response.body().toString());
                         Map<String, String> sendUrlMap = response.body();
                         onPostExecute(sendUrlMap);
-                    } else {
-                        onPostExecute(null);
                     }
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
                     Logger.e(context, TAG, "Failed to fetch data: " + t.getMessage());
-                    onPostExecute(null);
                 }
             });
         } catch (MalformedURLException e) {
-            Logger.e(context, TAG,"MalformedURLException: " + e.getMessage());
+            Logger.e(context, TAG, "MalformedURLException: " + e.getMessage());
         }
     }
+
 
     protected void onPostExecute(Map<String, String> sendUrlMap) {
         if (sendUrlMap == null) {
@@ -76,13 +81,21 @@ public class VerifyUserTask {
         String message = sendUrlMap.get("Message");
         ContentValues cv = new ContentValues();
 
+
+
         if (message != null && message.equals("В черном списке")) {
             cv.put("verifyOrder", "0");
-        } else {
-            cv.put("verifyOrder", "1");
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+            database.close();
         }
-        database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-        database.close();
+
+        if (message != null && !message.equals("В черном списке")) {
+            cv.put("verifyOrder", "1");
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+            database.close();
+        }
     }
 
     @SuppressLint("Range")
@@ -90,16 +103,14 @@ public class VerifyUserTask {
         List<String> list = new ArrayList<>();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(table, null, null, null, null, null, null);
-        if (c != null) {
-            if (c.moveToFirst()) {
-                do {
-                    for (String cn : c.getColumnNames()) {
-                        list.add(c.getString(c.getColumnIndex(cn)));
-                    }
-                } while (c.moveToNext());
-            }
-            c.close();
+        if (c.moveToFirst()) {
+            do {
+                for (String cn : c.getColumnNames()) {
+                    list.add(c.getString(c.getColumnIndex(cn)));
+                }
+            } while (c.moveToNext());
         }
+        c.close();
         database.close();
         return list;
     }

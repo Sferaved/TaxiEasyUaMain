@@ -34,6 +34,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
+import androidx.navigation.NavOptions;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -43,10 +44,9 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
-import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
+import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
@@ -406,8 +406,9 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                             map.invalidate();
                         } catch (MalformedURLException | InterruptedException |
                                  JSONException e) {
-                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                    .setPopUpTo(R.id.nav_restart, true)
+                                    .build());
                         }
 
                     }
@@ -473,8 +474,9 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                         map.invalidate();
                     } catch (MalformedURLException | InterruptedException |
                              JSONException e) {
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
                     }
 
                 }

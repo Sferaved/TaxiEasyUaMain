@@ -1,8 +1,6 @@
 package com.taxi.easy.ua.ui.bonus;
 
 import static android.content.Context.MODE_PRIVATE;
-
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -29,12 +27,11 @@ import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 
 import com.taxi.easy.ua.MainActivity;
-import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentBonusBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.BonusResponse;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
@@ -71,9 +68,9 @@ public class BonusFragment extends Fragment {
         fragmentManager = getParentFragmentManager();
         MainActivity.navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
         if (!NetworkUtils.isNetworkAvailable(context)) {
-            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true) 
-                        .build());
+            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_restart, true)
+                    .build());
         }
         text0 =  binding.text0;
         networkChangeReceiver = new NetworkChangeReceiver();
@@ -124,6 +121,12 @@ public class BonusFragment extends Fragment {
 
         btnOrder = binding.btnOrder;
         btnOrder.setOnClickListener(v -> {
+            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+
+                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_restart, true)
+                        .build());
+            }
             // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту
             SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
             sharedPreferencesHelper.saveValue("gps_upd", true);
@@ -170,8 +173,9 @@ public class BonusFragment extends Fragment {
 
                     Logger.d(context, TAG, "onResponse: " + bonus);
                 } else {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_restart, true)
+                            .build());
                 }
                 btnOrder.setVisibility(View.VISIBLE);
             }

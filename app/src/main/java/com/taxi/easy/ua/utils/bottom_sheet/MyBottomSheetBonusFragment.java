@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 import static com.taxi.easy.ua.ui.visicom.VisicomFragment.setBtnBonusName;
 
@@ -31,14 +30,14 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
-import com.taxi.easy.ua.ui.home.cities.api.CityResponse;
-import com.taxi.easy.ua.ui.home.cities.api.CityResponseMerchantFondy;
-import com.taxi.easy.ua.ui.home.cities.api.CityService;
 import com.taxi.easy.ua.ui.card.CardFragment;
 import com.taxi.easy.ua.ui.gallery.GalleryFragment;
 import com.taxi.easy.ua.ui.home.CustomArrayAdapter;
 import com.taxi.easy.ua.ui.home.HomeFragment;
+import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
+import com.taxi.easy.ua.ui.home.cities.api.CityResponse;
+import com.taxi.easy.ua.ui.home.cities.api.CityResponseMerchantFondy;
+import com.taxi.easy.ua.ui.home.cities.api.CityService;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
@@ -184,8 +183,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS, context);
                 Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
                 if (rectoken.isEmpty()) {
-
-
                     String message = context.getString(R.string.no_cards_info);
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
                     bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
@@ -230,7 +227,9 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     private void cityMaxPay(String $city) {
 
 
-        CityService cityService = CityApiClient.getClient().create(CityService.class);
+        String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        CityApiClient cityApiClient = new CityApiClient(BASE_URL);
+        CityService cityService = cityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
         Call<CityResponse> call = cityService.getMaxPayValues($city, getString(R.string.application));
@@ -268,7 +267,9 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     private void merchantFondy(String city, Context context) {
 
 
-        CityService cityService = CityApiClient.getClient().create(CityService.class);
+        String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        CityApiClient cityApiClient = new CityApiClient(BASE_URL);
+        CityService cityService = cityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
         Call<CityResponseMerchantFondy> call = cityService.getMerchantFondy(city);
@@ -489,7 +490,12 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {
         super.onDismiss(dialog);
-        setBtnBonusName(context);
+        if (rout != null && rout.equals("home")) {
+            HomeFragment.setBtnBonusName(context);
+        }
+        if (rout != null && rout.equals("visicom")) {
+            VisicomFragment.setBtnBonusName(context);
+        }
         UserPermissions.getPermissions(email, context);
         VisicomFragment.btnVisible(View.VISIBLE);
     }
@@ -646,7 +652,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         }
         progressBar.setVisibility(View.GONE);
         btn_ok.setVisibility(View.VISIBLE);
-//        costSearchMarkersLocalTariffs();
+
     }
     private AlertDialog alertDialog;
     private void changePayMethodToNal() {
@@ -696,67 +702,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         alertDialog.show();
     }
 
-    @SuppressLint("Range")
-    public void costSearchMarkersLocalTariffs() {
-
-        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor = database.rawQuery(query, null);
-
-        cursor.moveToFirst();
-
-        // Получите значения полей из первой записи
-
-        double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-        double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
-        double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-        double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-
-
-        cursor.close();
-
-        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
-
-        String payment_type = stringListInfo.get(4);
-
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
-        String displayName = logCursor(MainActivity.TABLE_USER_INFO).get(4);
-
-
-
-        // Building the url to the web service
-        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO);
-        List<String> servicesChecked = new ArrayList<>();
-        String result;
-        boolean servicesVer = false;
-        for (int i = 1; i < services.size()-1 ; i++) {
-            if(services.get(i).equals("1")) {
-                servicesVer = true;
-                break;
-            }
-        }
-        if(servicesVer) {
-            for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
-                if(services.get(i+1).equals("1")) {
-                    servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
-                }
-            }
-            for (int i = 0; i < servicesChecked.size(); i++) {
-                if(servicesChecked.get(i).equals("CHECK_OUT")) {
-                    servicesChecked.set(i, "CHECK");
-                }
-            }
-            result = String.join("*", servicesChecked);
-            Logger.d(context, TAG, "getTaxiUrlSearchGeo result:" + result + "/");
-        } else {
-            result = "no_extra_charge_codes";
-        }
-
-
-
-
-
-    }
 
 
     private String getTaxiUrlSearch(String urlAPI, Context context) throws UnsupportedEncodingException {

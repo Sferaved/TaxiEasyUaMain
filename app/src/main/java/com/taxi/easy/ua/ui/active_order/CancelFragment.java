@@ -27,12 +27,11 @@ import androidx.navigation.NavOptions;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
-import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentCancelBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
@@ -81,6 +80,7 @@ public class CancelFragment extends Fragment {
     public CancelFragment() {
     }
 
+    @SuppressLint("SourceLockedOrientationActivity")
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentCancelBinding.inflate(inflater, container, false);
@@ -118,9 +118,9 @@ public class CancelFragment extends Fragment {
         upd_but = binding.updBut;
         upd_but.setOnClickListener(v -> {
             if (!NetworkUtils.isNetworkAvailable(context)) {
-                
-                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true) 
+
+                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_restart, true)
                         .build());
             }
         });
@@ -202,8 +202,9 @@ public class CancelFragment extends Fragment {
                         textUid.setText(R.string.no_routs);
                     }
                 } else {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_restart, true)
+                            .build());
 
                 }
             }

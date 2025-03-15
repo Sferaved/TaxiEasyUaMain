@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.803</string>
-    <string name="version">Версия: 1.803</string>
+    <string name="version_code">1.804</string>
+    <string name="version">Версия: 1.804</string>
 
     <string name="app_name">Такси Доставка</string>
 
@@ -81,7 +81,7 @@
     <string name="good_day">Мои приветствия. Нашел великолепное приложение для поездок на такси. \n \n Советую попробовать по ссылке в официальном магазине Google: \n\n https://play.google.com/store/apps/details?id=com.taxi.easy.ua \n\n Хорошего дня. \n Еще увидимся.</string>
     <string name="share">Посоветовать другу приложение...</string>
     <string name="no_email_agent">Почтовый клиент не установлен.</string>
-    <string name="check_position">Подождите, происходит определение Вашего местоположения...</string>
+    <string name="check_position">ПодоОжидайте, происходит определение Вашего местоположения...</string>
     <string name="my_adresses">Избранные</string>
     <string name="make_order_message">Совершите хотя бы одну поездку</string>
     <string name="to_adress_message">Куда едем?</string>
@@ -334,7 +334,7 @@
     <string name="order_in">"заказ в "</string>
     <string name="checking">Ожидайте, идет проверка данных.</string>
     <string name="time_out_text">Отмена поездки по таймауту оплаты.</string>
-    <string name="pay_cancel">Поездка отменена из-за отсутствия удачной оплаты в течение отведенного тайминга. Попробуйте еще.</string>
+    <string name="pay_cancel">Поездка отменена из-за отсутствия успешной  оплаты в течении отведенного тайминга. Попробуйте еще.</string>
     <string name="ex_st_canceled">Заказ отменен. Попробуйте еще.</string>
     <string name="search">Поиск адреса...</string>
     <string name="account_verify">Происходит проверка регистрации...</string>
@@ -471,8 +471,7 @@
     <string name="android_version">Версия Андроида:</string>
     <string name="device">Устройство:</string>
     <string name="time_car_found">Время поиска машины подошло к концу</string>
-    <string name="cancel_car_found_time">Нажмите кнопку Ок для отмены текущего заказа и перехода к новому заказу</string>
-    <string name="alfa_test">(Альфа-тестирование)</string>
+    <string name="cancel_car_found_time">Нажмите кнопку Ок для отмены текущего заказа и перехода к новому заказу</string> <string name="alfa_test">(Альфа-тестирование)</string>
     <string name="update_timeout">Процесс обновления занял слишком много времени. Попробуйте позже.</string>
     <string name="update_error">Ошибка проверки обновлений. Проверьте подключение к интернету.</string>
     <string name="update_successful">Обновление прошло успешно!</string>

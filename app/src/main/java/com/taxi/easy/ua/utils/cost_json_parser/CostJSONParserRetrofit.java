@@ -49,7 +49,7 @@ public class CostJSONParserRetrofit {
     public void sendURL(String urlString, final Callback<Map<String, String>> callback) throws MalformedURLException {
         Call<Map<String, String>> call = apiService.getData(urlString);
 
-        call.enqueue(new Callback<Map<String, String>>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
                 Map<String, String> costMap = new HashMap<>();

@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.ui.card;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -44,7 +43,6 @@ import com.taxi.easy.ua.ui.wfp.invoice.InvoiceService;
 import com.taxi.easy.ua.ui.wfp.revers.ReversResponse;
 import com.taxi.easy.ua.ui.wfp.revers.ReversService;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
@@ -323,8 +321,9 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
             @Override
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
                 Logger.d(context, TAG, "Request failed:6"+ t.getMessage());
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_restart, true)
+                        .build());
             }
         });
 

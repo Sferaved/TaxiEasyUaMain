@@ -1,9 +1,8 @@
 package com.taxi.easy.ua.ui.account;
 
 import static android.content.Context.MODE_PRIVATE;
-
-import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 import static com.taxi.easy.ua.R.string.format_phone;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
@@ -36,8 +35,9 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentAccountBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.keyboard.KeyboardUtils;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -189,6 +189,12 @@ public class AccountFragment extends Fragment {
 
         btnOrder = binding.btnOrder;
         btnOrder.setOnClickListener(v -> {
+            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+
+                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_restart, true)
+                        .build());
+            }
             SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
             sharedPreferencesHelper.saveValue("gps_upd", true);
             sharedPreferencesHelper.saveValue("gps_upd_address", true);
@@ -272,8 +278,9 @@ public class AccountFragment extends Fragment {
 
                     }
                 } else {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_restart, true)
+                            .build());
 
                 }
             }

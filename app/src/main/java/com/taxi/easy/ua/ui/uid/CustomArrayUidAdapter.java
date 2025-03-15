@@ -20,8 +20,6 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.db.RouteInfo;
-import com.taxi.easy.ua.utils.db.RouteInfoCancel;
-import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 
 import java.util.ArrayList;

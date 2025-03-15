@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.ui.card;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -39,19 +38,15 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.finish.ApiService;
-
 import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureClient;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureResponse;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
-import com.taxi.easy.ua.ui.payment_system.PayApi;
-import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
@@ -533,11 +528,6 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
-                MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
-
-                MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 Logger.d(context, TAG, "Request failed:"+ t.getMessage());
             }
         });

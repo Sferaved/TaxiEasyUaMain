@@ -16,12 +16,11 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.navigation.NavOptions;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetCityFragment;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.log.Logger;
 
@@ -115,8 +114,9 @@ public class SettingsActivity extends AppCompatActivity {
                     MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, SettingsActivity.this);
                     bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 } else {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_restart, true)
+                            .build());
                 }
 
             });
@@ -128,8 +128,9 @@ public class SettingsActivity extends AppCompatActivity {
                     MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, SettingsActivity.this);
                     bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 } else {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_restart, true)
+                            .build());
                 }
 
             });

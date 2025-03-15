@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.ui.card;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -47,7 +46,6 @@ import com.taxi.easy.ua.ui.fondy.status.FondyApiService;
 import com.taxi.easy.ua.ui.fondy.status.StatusRequest;
 import com.taxi.easy.ua.ui.fondy.status.StatusRequestBody;
 import com.taxi.easy.ua.ui.fondy.status.SuccessfulResponseData;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.ui.mono.MonoApi;
 import com.taxi.easy.ua.ui.mono.cancel.RequestCancelMono;
 import com.taxi.easy.ua.ui.mono.cancel.ResponseCancelMono;
@@ -60,6 +58,7 @@ import com.taxi.easy.ua.ui.wfp.revers.ReversResponse;
 import com.taxi.easy.ua.ui.wfp.revers.ReversService;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.io.IOException;
@@ -207,16 +206,18 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                         Logger.d(context, TAG, "Response body is null");
                         getReversWfp(city);
                         if (isAdded()) { //
-                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                    .setPopUpTo(R.id.nav_restart, true)
+                                    .build());
                         }
 
                     }
                 } else {
                     getReversWfp(city);
                     if (isAdded()) { //
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
                     }
                     Logger.d(context, TAG, "Request failed:");
                 }
@@ -226,8 +227,9 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
                 getReversWfp(city);
                 if (isAdded()) { //
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_restart, true)
+                            .build());
                 }
                 Logger.d(context, TAG, "Request failed:"+ t.getMessage());
             }
@@ -315,8 +317,9 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                             .build());
                 } else {
                     if (isAdded()) {
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
                     }
 
 
@@ -328,8 +331,9 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
                 getReversWfp(city);
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_restart, true)
+                        .build());
 
                 Logger.d(context, TAG, "onResponse: failure " + t);
             }
@@ -368,15 +372,17 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                         // Другие данные можно также получить из statusResponse
                     } else {
                         Logger.d(context, TAG, "Response body is null");
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
 
                     }
                 } else {
                     Logger.d(context, TAG, "Request failed: " + response.code());
                     if (isAdded()) { //
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
                     }
 
                 }
@@ -387,8 +393,9 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<ReversResponse> call, @NonNull Throwable t) {
                 if (isAdded()) { //
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_restart, true)
+                            .build());
                     dismiss();
                 }
                 Logger.d(context, TAG, "Request failed: " + t.getMessage());
@@ -450,8 +457,9 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                     Logger.d(context, TAG, "onResponse: Ошибка запроса, код " + response.code());
 
                     if (isAdded()) { //
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
                     }
                 }
 
@@ -462,8 +470,9 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                 // Обработка ошибки сети или другие ошибки
                 Logger.d(context, TAG, "onFailure: Ошибка сети: " + t.getMessage());
 
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_restart, true)
+                        .build());
             }
         });
 
@@ -704,8 +713,9 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                     Logger.d(context, TAG, "onResponse: Ошибка запроса, код " + response.code());
 
                     if (isAdded()) { //
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
                     }
                 }
             }
@@ -715,8 +725,9 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                 // Обработка ошибки сети или другие ошибки
                 Logger.d(context, TAG, "onFailure: Ошибка сети: " + t.getMessage());
 
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_restart, true)
+                        .build());
             }
         });
 
@@ -926,8 +937,9 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
 
                 } else {
                     if (isAdded()) { //
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
                     }
 
                 }
@@ -936,8 +948,9 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
                 if (isAdded()) { //
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_restart, true)
+                            .build());
                 }
             }
         });

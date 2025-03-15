@@ -26,6 +26,7 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class PusherManager {
     private static final String PUSHER_APP_KEY = "a10fb0bff91153d35f36"; // Ваш ключ
@@ -102,6 +103,7 @@ public class PusherManager {
                 // Переключаемся на главный поток для обновления UI и переменной
                 new Handler(Looper.getMainLooper()).post(() -> {
                     MainActivity.uid = orderUid;
+
                     MainActivity.paySystemStatus = paySystemStatus;
 
                     if (FinishSeparateFragment.btn_cancel_order != null ) {
@@ -124,27 +126,33 @@ public class PusherManager {
 
             try {
                 JSONObject eventData = new JSONObject(event.getData());
+                String uid = eventData.getString("uid");
                 String transactionStatus = eventData.getString("transactionStatus");
+                Log.i("Pusher", "Parsed uid: " + uid);
+                Log.i("Pusher", "Parsed Main uid: " + MainActivity.uid);
                 Log.i("Pusher", "Parsed transactionStatus: " + transactionStatus);
 
-                // Проверка на null перед переключением на главный поток
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    Log.d("Pusher", "Updating UI with status: " + transactionStatus);
+                if(Objects.equals(MainActivity.uid, uid)) {
+                    // Проверка на null перед переключением на главный поток
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        Log.d("Pusher", "Updating UI with status: " + transactionStatus);
 
-                    // Установка начального статуса транзакции
-                    viewModel.setTransactionStatus(transactionStatus);
-                    Log.i("Transaction", "Initial transaction status set: " + transactionStatus);
+                        // Установка начального статуса транзакции
+                        viewModel.setTransactionStatus(transactionStatus);
+                        Log.i("Transaction", "Initial transaction status set: " + transactionStatus);
 
-                    // Проверка UI элемента перед взаимодействием
-                    if (FinishSeparateFragment.btn_cancel_order != null) {
-                        FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
-                        FinishSeparateFragment.btn_cancel_order.setEnabled(true);
-                        FinishSeparateFragment.btn_cancel_order.setClickable(true);
-                        Log.d("Pusher", "Cancel button enabled successfully");
-                    } else {
-                        Log.e("Pusher", "btn_cancel_order is null when updating status: " + transactionStatus);
-                    }
-                });
+                        // Проверка UI элемента перед взаимодействием
+                        if (FinishSeparateFragment.btn_cancel_order != null) {
+                            FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
+                            FinishSeparateFragment.btn_cancel_order.setEnabled(true);
+                            FinishSeparateFragment.btn_cancel_order.setClickable(true);
+                            Log.d("Pusher", "Cancel button enabled successfully");
+                        } else {
+                            Log.e("Pusher", "btn_cancel_order is null when updating status: " + transactionStatus);
+                        }
+                    });
+                }
+
 
             } catch (JSONException e) {
                 Log.e("Pusher", "JSON Parsing error for event: " + event.getData(), e);

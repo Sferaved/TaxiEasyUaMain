@@ -34,10 +34,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
+import androidx.navigation.NavDestination;
+import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
@@ -56,25 +59,21 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import com.taxi.easy.ua.databinding.ActivityMainBinding;
+import com.taxi.easy.ua.ui.card.CardInfo;
+import com.taxi.easy.ua.ui.clear.AppDataUtils;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
 import com.taxi.easy.ua.ui.finish.fragm.ExecutionStatusViewModel;
-import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
+import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
 import com.taxi.easy.ua.ui.home.cities.api.CityResponse;
 import com.taxi.easy.ua.ui.home.cities.api.CityService;
 import com.taxi.easy.ua.ui.home.cities.check.CityCheckActivity;
-import com.taxi.easy.ua.databinding.ActivityMainBinding;
-import com.taxi.easy.ua.ui.card.CardInfo;
-import com.taxi.easy.ua.ui.clear.AppDataUtils;
-import com.taxi.easy.ua.ui.finish.RouteResponse;
-import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.settings.SettingsActivity;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
-import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetCityFragment;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
@@ -82,6 +81,7 @@ import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.fcm.token_send.ApiServiceToken;
 import com.taxi.easy.ua.utils.fcm.token_send.RetrofitClientToken;
+import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
@@ -91,6 +91,7 @@ import com.taxi.easy.ua.utils.pusher.PusherManager;
 import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
 import com.taxi.easy.ua.utils.user.save_server.ApiServiceUser;
 import com.taxi.easy.ua.utils.user.save_server.UserResponse;
+import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 
 import org.json.JSONException;
 
@@ -169,9 +170,6 @@ public class MainActivity extends AppCompatActivity {
     public static String apiKey;
 
 
-
-    private List<RouteResponse> routeList;
-
     VisicomFragment visicomFragment;
     public static SharedPreferences sharedPreferences;
     public static SharedPreferences sharedPreferencesCount;
@@ -199,82 +197,100 @@ public class MainActivity extends AppCompatActivity {
     public static ExecutionStatusViewModel viewModel;
     public static OrderResponse orderResponse;
     public static  String action;
+    @SuppressLint("SourceLockedOrientationActivity")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
-
+        // Установка локали перед вызовом super.onCreate()
         String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", "uk");
         Logger.i(this, "locale Main", localeCode);
         applyLocale(localeCode);
+
         super.onCreate(savedInstanceState);
 
+        // Инициализация View Binding
         ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(binding.getRoot());
 
+        // Инициализация ViewModel
         viewModel = new ViewModelProvider(this).get(ExecutionStatusViewModel.class);
 
+        // Логирование и очистка старых логов
         deleteOldLogFile();
         Logger.i(this, TAG, "MainActivity started");
-
         Logger.i(this, TAG, getString(R.string.application));
         Logger.i(this, TAG, getString(R.string.version));
 
+        // Логирование информации об устройстве
         String model = Build.MODEL;
         String androidVersion = Build.VERSION.RELEASE;
         int sdkVersion = Build.VERSION.SDK_INT;
-
         Logger.i(this, TAG, "device: " + model);
         Logger.i(this, TAG, "android_version: " + androidVersion);
         Logger.i(this, TAG, "Build.VERSION.SDK_INT: " + sdkVersion);
 
-
+        // Установка Toolbar
         setSupportActionBar(binding.appBarMain.toolbar);
 
+        // Инициализация SharedPreferences
         sharedPreferencesHelperMain = new SharedPreferencesHelper(this);
+        sharedPreferences = getSharedPreferences(PERMISSIONS_PREF_NAME, Context.MODE_PRIVATE);
+        sharedPreferencesCount = getSharedPreferences(PERMISSION_REQUEST_COUNT_KEY, Context.MODE_PRIVATE);
 
-
-
-
+        // Настройка Navigation
         DrawerLayout drawer = binding.drawerLayout;
         navigationView = binding.navView;
-            // Passing each menu ID as a set of Ids because each
-            // menu should be considered as top level destinations.
+        navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
+
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-              R.id.nav_visicom, R.id.nav_home, R.id.nav_cancel,
-//                R.id.nav_gallery,
-              R.id.nav_about, R.id.nav_uid, R.id.nav_bonus, R.id.nav_card,
-              R.id.nav_account, R.id.nav_author, R.id.nav_finish_separate
-        )
-             .setOpenableLayout(drawer)
-             .build();
+                R.id.nav_visicom, R.id.nav_home, R.id.nav_cancel,
+                R.id.nav_about, R.id.nav_uid, R.id.nav_bonus, R.id.nav_card,
+                R.id.nav_account, R.id.nav_author, R.id.nav_finish_separate,
+                R.id.nav_restart)
+                .setOpenableLayout(drawer)
+                .build();
+
+        // Связывание Navigation с UI
+        NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
+        NavigationUI.setupWithNavController(navigationView, navController);
+
+        // Инициализация меню и элементов
         navMenu = navigationView.getMenu();
         navVisicomMenuItem = navMenu.findItem(R.id.nav_visicom);
 
+        // Явная обработка нажатий в NavigationView для предотвращения самопроизвольных переходов
+        navigationView.setNavigationItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+            NavDestination currentDestination = navController.getCurrentDestination();
+            if (currentDestination != null && currentDestination.getId() != itemId) {
+                navController.popBackStack(); // Очистить стек
+                navController.navigate(itemId);
+            }
+            drawer.closeDrawer(GravityCompat.START);
+            return true;
+        });
 
-
-        navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
-        NavigationUI.setupWithNavController(navigationView, navController);
+        // Инициализация ресивера для отслеживания сети
         networkChangeReceiver = new NetworkChangeReceiver();
 
-        sharedPreferences = getSharedPreferences(MainActivity.PERMISSIONS_PREF_NAME, Context.MODE_PRIVATE);
-        sharedPreferencesCount = getSharedPreferences(MainActivity.PERMISSION_REQUEST_COUNT_KEY, Context.MODE_PRIVATE);
-// Обработка отсутствия необходимых разрешений
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                // Обработка отсутствия необходимых разрешений
-                MainActivity.location_update = true;
-            }
-        } else MainActivity.location_update = ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                || ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-       // Проверка обновления
+        // Проверка разрешений на доступ к местоположению
+        MainActivity.location_update = checkLocationPermission();
 
-
+        // Инициализация базы данных с обработкой исключений
         try {
             initDB();
         } catch (MalformedURLException | JSONException | InterruptedException e) {
             FirebaseCrashlytics.getInstance().recordException(e);
+        }
+    }
+
+    // Вспомогательный метод для проверки разрешений
+    private boolean checkLocationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        } else {
+            return ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                    ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
         }
     }
     private void applyLocale(String localeCode) {
@@ -381,6 +397,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
+        new VerifyUserTask(this).execute();
         sharedPreferencesHelperMain.saveValue("pay_error", "**");
 
         MainActivity.action = null;
@@ -417,8 +435,9 @@ public class MainActivity extends AppCompatActivity {
                     MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, MainActivity.this);
                     bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 } else {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_restart, true)
+                            .build());
                 }
             });
 
@@ -430,8 +449,9 @@ public class MainActivity extends AppCompatActivity {
                     MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, MainActivity.this);
                     bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 } else {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_restart, true)
+                            .build());
                 }
 
             });
@@ -440,8 +460,9 @@ public class MainActivity extends AppCompatActivity {
         if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
             // Ваш код при нажатии на заголовок
 
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.verify_internet));
-            bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_restart, true)
+                    .build());
 
         } else  {
             visicomKeyFromFb();
@@ -596,7 +617,7 @@ public class MainActivity extends AppCompatActivity {
             settings.add(""); //7
             insertCity(settings);
 
-            cityMaxPay("Kyiv City");
+            cityMaxPay();
 //            merchantFondy("Kyiv City");
             if (MainActivity.navVisicomMenuItem != null) {
                 // Новый текст элемента меню
@@ -685,13 +706,15 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void cityMaxPay(String city) {
+    private void cityMaxPay() {
 
+        String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
 
-        CityService cityService = CityApiClient.getClient().create(CityService.class);
+        CityApiClient cityApiClient = new CityApiClient(BASE_URL);
+        CityService cityService = cityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
-        Call<CityResponse> call = cityService.getMaxPayValues(city, getString(R.string.application));
+        Call<CityResponse> call = cityService.getMaxPayValues("Kyiv City", getString(R.string.application));
 
         call.enqueue(new Callback<CityResponse>() {
             @Override
@@ -1032,16 +1055,12 @@ public class MainActivity extends AppCompatActivity {
                 appUpdater = new AppUpdater(MainActivity.this);
                 appUpdater.startUpdate();
 
-            } else {
-                Toast.makeText(this, R.string.verify_internet, Toast.LENGTH_SHORT).show();
             }
         }
         if (item.getItemId() == R.id.nav_driver) {
             if (NetworkUtils.isNetworkAvailable(this)) {
                 Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.taxieasyua.job"));
                 startActivity(browserIntent);
-            } else {
-                Toast.makeText(this, R.string.verify_internet, Toast.LENGTH_SHORT).show();
             }
         }
 
@@ -1050,8 +1069,6 @@ public class MainActivity extends AppCompatActivity {
             if (NetworkUtils.isNetworkAvailable(this)) {
                 Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.taxi.easy.ua"));
                 startActivity(browserIntent);
-            } else {
-                Toast.makeText(this, R.string.verify_internet, Toast.LENGTH_SHORT).show();
             }
 
         }

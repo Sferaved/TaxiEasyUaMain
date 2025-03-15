@@ -1,7 +1,5 @@
 package com.taxi.easy.ua.utils.notify;
 
-import static com.taxi.easy.ua.ui.visicom.VisicomFragment.ubt_btn;
-
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -18,7 +16,6 @@ import androidx.core.app.NotificationManagerCompat;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.utils.log.Logger;
 
 
 public class NotificationHelper {

@@ -76,19 +76,15 @@ import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentVisicomBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
-import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.visicom.visicom_search.ActivityVisicomOnePage;
-import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
-import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
 import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
 import com.taxi.easy.ua.utils.blacklist.BlacklistManager;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGeoFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
@@ -102,7 +98,6 @@ import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
-import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
@@ -134,7 +129,7 @@ public class VisicomFragment extends Fragment {
     public static ProgressBar progressBar;
     private FragmentVisicomBinding binding;
     private static final String TAG = "VisicomFragment";
-    private static final int REQUEST_LOCATION_PERMISSION = 1;
+ 
 
     @SuppressLint("StaticFieldLeak")
     public static AppCompatButton btn_minus, btn_plus, btnOrder, buttonBonus, gpsbut, btnCallAdmin, btnCallAdminFin;
@@ -161,7 +156,7 @@ public class VisicomFragment extends Fragment {
     public static long MIN_COST_VALUE;
     public static long firstCostForMin;
     @SuppressLint("StaticFieldLeak")
-    public static AppCompatButton btnAdd, btn_clear_from_text, ubt_btn;
+    public static AppCompatButton btnAdd, ubt_btn;
     @SuppressLint("StaticFieldLeak")
     static ImageButton btn1;
     @SuppressLint("StaticFieldLeak")
@@ -231,6 +226,7 @@ public class VisicomFragment extends Fragment {
         constraintLayoutVisicomFinish = root.findViewById(R.id.visicomFinish);
 
         constraintLayoutVisicomFinish.setVisibility(View.GONE);
+
 
         text_full_message = root.findViewById(R.id.text_full_message);
         textCostMessage = root.findViewById(R.id.text_cost_message);
@@ -376,7 +372,7 @@ public class VisicomFragment extends Fragment {
 
 
     public void showUpdateDialog() {
-        new MaterialAlertDialogBuilder(requireContext())
+        new MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.upd_available)
                 .setMessage(R.string.upd_available_promt)
                 .setCancelable(false) // Запрет закрытия диалога при нажатии вне его
@@ -424,7 +420,7 @@ public class VisicomFragment extends Fragment {
 
 
     public static void btnVisible(int visible) {
-        btn_clear_from_text.setVisibility(View.INVISIBLE);
+        
         if (visible == View.INVISIBLE) {
             progressBar.setVisibility(VISIBLE);
         } else {
@@ -450,30 +446,6 @@ public class VisicomFragment extends Fragment {
         super.onPause();
         if (alertDialog != null && alertDialog.isShowing()) {
             alertDialog.dismiss();
-        }
-        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-
-            progressBar.setVisibility(View.GONE);
-
-            btn_clear_from_text.setText(context.getString(R.string.try_again));
-            btn_clear_from_text.setVisibility(VISIBLE);
-            btn_clear_from_text.setOnClickListener(v -> {
-                startActivity(new Intent(context, MainActivity.class));
-            });
-            binding.textGeo.setVisibility(View.INVISIBLE);
-            progressBar.setVisibility(View.GONE);
-
-            textwhere.setVisibility(View.INVISIBLE);
-            num2.setVisibility(View.INVISIBLE);
-            textViewTo.setVisibility(View.INVISIBLE);
-
-            btnAdd.setVisibility(View.INVISIBLE);
-
-            buttonBonus.setVisibility(View.INVISIBLE);
-            btn_minus.setVisibility(View.INVISIBLE);
-            text_view_cost.setVisibility(View.INVISIBLE);
-            btn_plus.setVisibility(View.INVISIBLE);
-            btnOrder.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -635,7 +607,8 @@ public class VisicomFragment extends Fragment {
 
         boolean black_list_yes = verifyOrder(context);
 
-        if(!black_list_yes) {
+        Logger.d(context, TAG, "black_list_yes 1 " + black_list_yes);
+        if(black_list_yes) {
             payment_type = "wfp_payment";
             ContentValues cv = new ContentValues();
             cv.put("payment_type", payment_type);
@@ -688,7 +661,8 @@ public class VisicomFragment extends Fragment {
             String lastCharacter;
 
             String paramsUserArr = displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail + "*" + payment_type;
-            if(!black_list_yes) {
+
+            if(black_list_yes) {
                 lastCharacter = phoneNumber.substring(phoneNumber.length() - 1); // Получаем последний знак
                 phoneNumber = phoneNumber.substring(0, phoneNumber.length() - 1); // Часть без последнего знака
                 phoneNumber = phoneNumber.replace(" ", ""); // удаляем пробелы
@@ -785,14 +759,6 @@ public class VisicomFragment extends Fragment {
         return result;
     }
 
-    private static void setNalPaymentNoCards(Context context) {
-        String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS, context);
-        Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
-
-        if (rectoken.isEmpty()) {
-             paymentType(context);
-        }
-    }
     private static String addCostBlackList(String addcost) {
 
         int cost = Integer.parseInt(addcost); // Преобразуем строку в целое число
@@ -985,16 +951,25 @@ public class VisicomFragment extends Fragment {
 
                     @Override
                     public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
-                        Map<String, String> sendUrlMap = response.body();
+                        if (response.isSuccessful()) {
+                            Map<String, String> sendUrlMap = response.body();
 
-                        assert sendUrlMap != null;
-                        handleOrderFinished(sendUrlMap, pay_method, context);
+                            assert sendUrlMap != null;
+                            handleOrderFinished(sendUrlMap, pay_method, context);
+                        } else {
+                            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                    .setPopUpTo(R.id.nav_restart, true)
+                                    .build());
+                        }
+
                     }
 
                     @Override
                     public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
-                        btnVisible(VISIBLE);
                         FirebaseCrashlytics.getInstance().recordException(t);
+                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
                     }
                 });
             }
@@ -1012,15 +987,6 @@ public class VisicomFragment extends Fragment {
         boolean visicomBackPressed = (boolean) sharedPreferencesHelperMain.getValue("VisicomBackPressed", false);
 
         if (!"0".equals(orderWeb)) {
-            if (pay_method.equals("wfp_payment")) {
-                String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS, context);
-                Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
-
-                if (!rectoken.isEmpty()) {
-                    getStatusWfp();
-                }
-            }
-
             String to_name;
             if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
                 to_name = context.getString(R.string.on_city_tv);
@@ -1307,15 +1273,16 @@ public class VisicomFragment extends Fragment {
     }
 
     private static boolean verifyOrder(Context context) {
+
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor cursor = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
 
-        boolean verify = true;
+        boolean verify = false;
         if (cursor.getCount() == 1) {
 
             if (logCursor(MainActivity.TABLE_USER_INFO, context).get(1).equals("0")) {
-                verify = false;
-                Log.d("TAG", "verifyOrder:verify " + verify);
+                verify = true;
+                Log.d(TAG, "verifyOrder:verify " + verify);
             }
             cursor.close();
         }
@@ -1382,74 +1349,6 @@ public class VisicomFragment extends Fragment {
         alertDialog.show();
     }
 
-    private void getStatusWfp() {
-
-        Logger.d(context, TAG, "getStatusWfp: ");
-
-        String orderReferens = MainActivity.order_id;
-
-        List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
-        String city = stringList.get(1);
-
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(interceptor)
-                .build();
-
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
-
-        StatusService service = retrofit.create(StatusService.class);
-
-        Call<StatusResponse> call = service.checkStatus(
-                context.getString(R.string.application),
-                city,
-                orderReferens
-        );
-
-        String messageFondy = context.getString(R.string.fondy_message);
-
-        String amount = text_view_cost.getText().toString().trim();
-
-        call.enqueue(new Callback<StatusResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<StatusResponse> call, @NonNull Response<StatusResponse> response) {
-
-                if (response.isSuccessful()) {
-                    StatusResponse statusResponse = response.body();
-                    assert statusResponse != null;
-                    String orderStatus = statusResponse.getTransactionStatus();
-                    Logger.d(context, TAG, "Transaction Status: " + orderStatus);
-                    switch (orderStatus) {
-                        case "Approved":
-                        case "WaitingAuthComplete":
-                            sharedPreferencesHelperMain.saveValue("pay_error", "**");
-                            break;
-                        default:
-                            NotificationHelper.sendPaymentErrorNotification(context, context.getString(R.string.pay_error_title), context.getString(R.string.try_again_pay) + MainActivity.order_id);
-                            sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
-                            if (!fragmentManager.isStateSaved()) {
-                                MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment =
-                                        new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, context);
-                                bottomSheetDialogFragment.show(fragmentManager, "bottom_sheet_error");
-                            }
-
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
-            }
-        });
-
-    }
     private void changePayMethodToNal(String message) {
         // Инфлейтим макет для кастомного диалога
         LayoutInflater inflater = LayoutInflater.from(context);
@@ -1508,6 +1407,7 @@ public class VisicomFragment extends Fragment {
     public void onResume() {
         super.onResume();
         Logger.d(context, TAG, "onResume 1" );
+        new VerifyUserTask(context).execute();
 
         VisicomFragment.sendUrlMap = null;
         MainActivity.uid = null;
@@ -1515,12 +1415,12 @@ public class VisicomFragment extends Fragment {
 
         MainActivity.orderResponse = null;
         viewModel.updateOrderResponse(null);
-
+        viewModel.setTransactionStatus(null);
 
         textfrom = binding.textfrom;
 
         constraintLayoutVisicomMain.setVisibility(View.GONE);
-        binding.btnClearFromText.setVisibility(View.GONE);
+ 
         binding.svButton.setVisibility(View.GONE);
         binding.btnCallAdmin.setVisibility(View.GONE);
 
@@ -1537,17 +1437,9 @@ public class VisicomFragment extends Fragment {
 
         if (!NetworkUtils.isNetworkAvailable(context)) {
             // Ваш код при нажатии на заголовок
-            gpsbut.setVisibility(View.INVISIBLE);
-            binding.num1.setVisibility(View.INVISIBLE);
-            binding.textfrom.setVisibility(View.INVISIBLE);
-            schedule.setVisibility(View.INVISIBLE);
-            shed_down.setVisibility(View.INVISIBLE);
-            binding.textwhere.setVisibility(VISIBLE);
-            progressBar.setVisibility(VISIBLE);
-
-            binding.btnClearFromText.setVisibility(View.GONE);
-            binding.svButton.setVisibility(View.GONE);
-            binding.btnCallAdmin.setVisibility(View.GONE);
+            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_restart, true)
+                    .build());
 
         }
 
@@ -1562,8 +1454,7 @@ public class VisicomFragment extends Fragment {
             binding.textfrom.setVisibility(View.INVISIBLE);
 
             binding.textwhere.setVisibility(View.INVISIBLE);
-
-            binding.btnClearFromText.setVisibility(View.INVISIBLE);
+ 
             binding.svButton.setVisibility(View.INVISIBLE);
             binding.btnCallAdmin.setVisibility(View.INVISIBLE);
 
@@ -1585,7 +1476,7 @@ public class VisicomFragment extends Fragment {
                 schedule.setVisibility(VISIBLE);
                 shed_down.setVisibility(VISIBLE);
 
-                binding.btnClearFromText.setVisibility(View.INVISIBLE);
+ 
                 binding.svButton.setVisibility(View.VISIBLE);
                 binding.btnCallAdmin.setVisibility(View.VISIBLE);
 
@@ -1600,8 +1491,8 @@ public class VisicomFragment extends Fragment {
                 binding.textwhere.setVisibility(VISIBLE);
                 progressBar.setVisibility(VISIBLE);
 
-                btn_clear_from_text.setVisibility(View.INVISIBLE);
-                binding.btnClearFromText.setVisibility(View.INVISIBLE);
+              
+       
                 binding.svButton.setVisibility(View.GONE);
                 binding.btnCallAdmin.setVisibility(View.GONE);
 
@@ -1616,7 +1507,7 @@ public class VisicomFragment extends Fragment {
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         new Thread(this::fetchRoutesCancel).start();
 
-        new VerifyUserTask(context).execute();
+
 
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         String city = listCity.get(1);
@@ -1681,19 +1572,9 @@ public class VisicomFragment extends Fragment {
             startActivity(intent);
         });
 
-        btn_clear_from_text = binding.btnClearFromText;
+       
 
-        btn_clear_from_text.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getContext(), ActivityVisicomOnePage.class);
-                intent.putExtra("start", "ok");
-                intent.putExtra("end", "no");
-                startActivity(intent);
-
-            }
-        });
-
+         
 
         text_view_cost = binding.textViewCost;
 
@@ -1792,6 +1673,12 @@ public class VisicomFragment extends Fragment {
 
         });
         btnOrder.setOnClickListener(v -> {
+            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+
+                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_restart, true)
+                        .build());
+            }
             linearLayout.setVisibility(View.GONE);
             btnVisible(View.INVISIBLE);
             List<String> stringList1 = logCursor(MainActivity.CITY_INFO, context);
@@ -1913,7 +1800,9 @@ public class VisicomFragment extends Fragment {
 
                     // GPS включен, выполните ваш код здесь
                     if (!NetworkUtils.isNetworkAvailable(context)) {
-                        Toast.makeText(context, context.getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
+                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
                     } else if (isAdded() && isVisible() && MainActivity.location_update) {
                         List<String> settings = new ArrayList<>();
 
@@ -1977,10 +1866,7 @@ public class VisicomFragment extends Fragment {
 
         if (NetworkUtils.isNetworkAvailable(context)) {
             if (geoText.getText().toString().isEmpty()) {
-//                btn_clear_from_text.setVisibility(VISIBLE);
-                String unuString = new String(Character.toChars(0x1F449));
-                unuString += " " + context.getString(R.string.search_text);
-                btn_clear_from_text.setText(unuString);
+         
                 binding.textfrom.setVisibility(View.INVISIBLE);
                 num1.setVisibility(View.INVISIBLE);
                 binding.textwhere.setVisibility(View.INVISIBLE);
@@ -2001,7 +1887,7 @@ public class VisicomFragment extends Fragment {
 
                     } catch (MalformedURLException e) {
                         FirebaseCrashlytics.getInstance().recordException(e);
-                        btn_clear_from_text.setVisibility(View.INVISIBLE);
+                        
                         textfrom.setVisibility(VISIBLE);
                         num1.setVisibility(VISIBLE);
                         geoText.setVisibility(VISIBLE);
@@ -2044,7 +1930,7 @@ public class VisicomFragment extends Fragment {
 
                         } catch (MalformedURLException e) {
                             FirebaseCrashlytics.getInstance().recordException(e);
-                            btn_clear_from_text.setVisibility(View.INVISIBLE);
+                            
                             textfrom.setVisibility(VISIBLE);
                             num1.setVisibility(VISIBLE);
                             geoText.setVisibility(VISIBLE);
@@ -2068,7 +1954,7 @@ public class VisicomFragment extends Fragment {
                     FirebaseCrashlytics.getInstance().recordException(e);
                     Logger.d(context, TAG, "onResume: 7");
 
-                    btn_clear_from_text.setVisibility(View.INVISIBLE);
+                    
                     textfrom.setVisibility(VISIBLE);
                     num1.setVisibility(VISIBLE);
                     geoText.setVisibility(VISIBLE);
@@ -2090,11 +1976,6 @@ public class VisicomFragment extends Fragment {
             progressBar.setVisibility(View.GONE);
 
 
-            btn_clear_from_text.setText(context.getString(R.string.try_again));
-            btn_clear_from_text.setVisibility(VISIBLE);
-            btn_clear_from_text.setOnClickListener(v -> {
-                startActivity(new Intent(context, MainActivity.class));
-            });
         }
 
         scheduleUpdate();
@@ -2147,7 +2028,9 @@ public class VisicomFragment extends Fragment {
                     if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                         // GPS включен, выполните ваш код здесь
                         if (!NetworkUtils.isNetworkAvailable(context)) {
-                            Toast.makeText(context, context.getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
+                            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                    .setPopUpTo(R.id.nav_restart, true)
+                                    .build());
                         } else if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                                 || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                             checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
@@ -2327,7 +2210,9 @@ public class VisicomFragment extends Fragment {
                                     if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                                         // GPS включен, выполните ваш код здесь
                                         if (!NetworkUtils.isNetworkAvailable(context)) {
-                                            Toast.makeText(context, context.getString(R.string.verify_internet), Toast.LENGTH_SHORT).show();
+                                            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                                    .setPopUpTo(R.id.nav_restart, true)
+                                                    .build());
                                         } else if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                                                 || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                                             checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
@@ -2467,7 +2352,7 @@ public class VisicomFragment extends Fragment {
 
         progressBar.setVisibility(VISIBLE);
         constr2.setVisibility(View.INVISIBLE);
-        btn_clear_from_text.setVisibility(View.INVISIBLE);
+        
 
 
         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
@@ -2494,6 +2379,11 @@ public class VisicomFragment extends Fragment {
                 num2.setVisibility(VISIBLE);
                 textViewTo.setVisibility(VISIBLE);
 
+                boolean black_list_yes = verifyOrder(context);
+
+                String black_list_city = sharedPreferencesHelperMain.getValue("black_list", "cache").toString();
+                Log.d("black_list_city", "black_list_city 1 " + black_list_city);
+
                 Handler handler = new Handler(Looper.getMainLooper());
                 new Thread(() -> {
                     @SuppressLint("Range") String start = cursor.getString(cursor.getColumnIndex("start"));
@@ -2505,8 +2395,7 @@ public class VisicomFragment extends Fragment {
                     String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
 
                     Logger.d(context, TAG, "visicomCost: " + urlCost);
-                    boolean black_list_yes = verifyOrder(context);
-                    String black_list_city = sharedPreferencesHelperMain.getValue("black_list", "cache").toString();
+
 
                     CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
                     try {
@@ -2530,7 +2419,7 @@ public class VisicomFragment extends Fragment {
 
                                     Log.d("black_list_city", "black_list_city." + black_list_city);
 
-                                    if (!black_list_yes) {
+                                    if(black_list_yes) {
                                         if (black_list_city.equals("cards only")) {
                                             orderCost = addCostBlackList(sendUrlMapCost.get("order_cost"));
                                         }
@@ -2633,7 +2522,7 @@ public class VisicomFragment extends Fragment {
             btn_plus.setVisibility(VISIBLE);
             btnOrder.setVisibility(VISIBLE);
 
-            btn_clear_from_text.setVisibility(View.GONE);
+
             constr2.setVisibility(VISIBLE);
 
             schedule.setVisibility(VISIBLE);
@@ -3073,8 +2962,9 @@ public class VisicomFragment extends Fragment {
             @Override
             public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
                 if (isAdded()) { //
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_restart, true)
+                            .build());
                 }
             }
         });

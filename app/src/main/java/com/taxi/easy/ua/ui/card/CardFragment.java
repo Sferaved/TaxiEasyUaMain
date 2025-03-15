@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.ui.card;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -30,12 +29,12 @@ import androidx.navigation.NavOptions;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.taxi.easy.ua.MainActivity;
-import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentCardBinding;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
+import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
@@ -144,7 +143,7 @@ public class CardFragment extends Fragment {
                 userEmail,
                 "wfp"
         );
-        call.enqueue(new Callback<CallbackResponseWfp>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
                 Logger.d(context, TAG, "onResponse: " + response.body());
@@ -168,7 +167,7 @@ public class CardFragment extends Fragment {
                                 String bank_name = cardInfo.getBank_name(); // Название банка
                                 String rectoken = cardInfo.getRectoken(); // Токен карты
                                 String merchant = cardInfo.getMerchant(); //
-                                String  active = cardInfo.getActive();
+                                String active = cardInfo.getActive();
 
                                 Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
                                 ContentValues cv = new ContentValues();
@@ -217,6 +216,12 @@ public class CardFragment extends Fragment {
         btnCardLink  = binding.btnCardLink;
         btnOrder = binding.btnOrder;
         btnOrder.setOnClickListener(v -> {
+            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+
+                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_restart, true)
+                        .build());
+            }
             // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту
             SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
             sharedPreferencesHelper.saveValue("gps_upd", true);

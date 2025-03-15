@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.ui.gallery;
 
 import static android.content.Context.MODE_PRIVATE;
-
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -39,11 +38,11 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentGalleryBinding;
+import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetDialogFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGalleryFragment;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -110,10 +109,10 @@ public class GalleryFragment extends Fragment {
         context = requireActivity();
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         if (!NetworkUtils.isNetworkAvailable(context)) {
-            
-            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true) 
-                        .build());
+
+            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_restart, true)
+                    .build());
         }
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
@@ -436,10 +435,10 @@ public class GalleryFragment extends Fragment {
     @SuppressLint("ResourceAsColor")
     private boolean orderRout() {
         if (!NetworkUtils.isNetworkAvailable(context)) {
-            
-            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true) 
-                        .build());
+
+            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_restart, true)
+                    .build());
             return false;
         } else {
             if (!verifyOrder(context)) {
@@ -663,10 +662,10 @@ public class GalleryFragment extends Fragment {
 
     private void dialogFromToOneRout(Map <String, String> rout) throws MalformedURLException, InterruptedException, JSONException {
         if (!NetworkUtils.isNetworkAvailable(context)) {
-            
-            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true) 
-                        .build());
+
+            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_restart, true)
+                    .build());
         } else  {
             Logger.d(getActivity(), TAG, "dialogFromToOneRout: " + rout.toString());
             from_lat =  Double.valueOf(rout.get("from_lat"));

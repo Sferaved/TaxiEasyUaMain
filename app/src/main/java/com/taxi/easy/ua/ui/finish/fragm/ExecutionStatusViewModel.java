@@ -13,7 +13,8 @@ public class ExecutionStatusViewModel extends ViewModel {
     private final MutableLiveData<String> transactionStatus = new MutableLiveData<>();
     private final MutableLiveData<String> canceledStatus = new MutableLiveData<>();
     private final MutableLiveData<OrderResponse> orderResponse = new MutableLiveData<>();
-
+    private final MutableLiveData<Boolean> _isTenMinutesRemaining = new MutableLiveData<>();
+    public final LiveData<Boolean> isTenMinutesRemaining = _isTenMinutesRemaining;
 
     //
     public LiveData<String> getTransactionStatus() {
@@ -43,5 +44,25 @@ public class ExecutionStatusViewModel extends ViewModel {
     public void clearOrderResponse() {
         orderResponse.setValue(null); // Сбрасываем в null
     }
+
+    public void setIsTenMinutesRemaining(boolean value) {
+        _isTenMinutesRemaining.setValue(value);
+    }
+
+    // Метод установки значения с учётом выполнения на главном потоке
+    public void setIsTenMinutesRemainingFromBackground(boolean value) {
+        _isTenMinutesRemaining.postValue(value); // Для вызовов из фонового потока
+    }
+
+    // Метод чтения значения (getter)
+    public Boolean getIsTenMinutesRemaining() {
+        return _isTenMinutesRemaining.getValue();
+    }
+
+    // Метод чтения через LiveData для наблюдения
+    public LiveData<Boolean> observeIsTenMinutesRemaining() {
+        return isTenMinutesRemaining;
+    }
+
 
 }
