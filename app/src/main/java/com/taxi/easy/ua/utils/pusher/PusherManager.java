@@ -358,32 +358,36 @@ public class PusherManager {
 
                 // Теперь распарсим результат в объект OrderResponse
                 MainActivity.orderResponse = gson.fromJson(jsonString, OrderResponse.class);
-                String uid = MainActivity.orderResponse.getUid();
-                String action = MainActivity.orderResponse.getAction();
 
-                Log.i("Pusher orderResponseEvent", "Received orderResponseEvent: " + MainActivity.orderResponse.getExecutionStatus());
-                Log.i("Pusher uid", "Received uid: " + uid);
-                Log.i("Pusher action", "Received action: " + action);
+                if(MainActivity.orderResponse != null) {
+                    String uid = MainActivity.orderResponse.getUid();
+                    String action = MainActivity.orderResponse.getAction();
 
-                // Проверка, что uid существует и не null
-                if (uid == null) {
-                    Log.w("Pusher", "UID is null in orderResponse: " + jsonString);
-                } else if (MainActivity.uid != null && MainActivity.uid.equals(uid)) {
-                    new Handler(Looper.getMainLooper()).post(() -> {
-                        Log.d("Pusher orderResponseEvent", "Updating UI with orderResponse");
+                    Log.i("Pusher orderResponseEvent", "Received orderResponseEvent: " + MainActivity.orderResponse.getExecutionStatus());
+                    Log.i("Pusher uid", "Received uid: " + uid);
+                    Log.i("Pusher action", "Received action: " + action);
 
-                        viewModel.updateOrderResponse(MainActivity.orderResponse);
-                        if (FinishSeparateFragment.btn_cancel_order != null) {
-                            FinishSeparateFragment.btn_cancel_order.setVisibility(View.VISIBLE);
-                            FinishSeparateFragment.btn_cancel_order.setEnabled(true);
-                            FinishSeparateFragment.btn_cancel_order.setClickable(true);
-                        } else {
-                            Log.e("Pusher", "btn_cancel_order is null!");
-                        }
-                    });
-                } else {
-                    Log.d("Pusher", "UIDs do not match or MainActivity.uid is null. MainActivity.uid: " + MainActivity.uid + ", Response uid: " + uid);
+                    // Проверка, что uid существует и не null
+                    if (uid == null) {
+                        Log.w("Pusher", "UID is null in orderResponse: " + jsonString);
+                    } else if (MainActivity.uid != null && MainActivity.uid.equals(uid)) {
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            Log.d("Pusher orderResponseEvent", "Updating UI with orderResponse");
+
+                            viewModel.updateOrderResponse(MainActivity.orderResponse);
+                            if (FinishSeparateFragment.btn_cancel_order != null) {
+                                FinishSeparateFragment.btn_cancel_order.setVisibility(View.VISIBLE);
+                                FinishSeparateFragment.btn_cancel_order.setEnabled(true);
+                                FinishSeparateFragment.btn_cancel_order.setClickable(true);
+                            } else {
+                                Log.e("Pusher", "btn_cancel_order is null!");
+                            }
+                        });
+                    } else {
+                        Log.d("Pusher", "UIDs do not match or MainActivity.uid is null. MainActivity.uid: " + MainActivity.uid + ", Response uid: " + uid);
+                    }
                 }
+
 
             } catch (JsonSyntaxException e) {
                 Log.e("Pusher", "JSON Parsing error for event: " + event.getData(), e);
