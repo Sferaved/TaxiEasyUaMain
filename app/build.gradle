@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 35
-        versionCode 1804
-        versionName '1.804'
+        versionCode 1805
+        versionName '1.805'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled true
@@ -39,6 +39,7 @@ android {
     buildFeatures {
         dataBinding = true
         viewBinding = true
+        buildConfig = true
     }
 }
 
@@ -83,7 +84,7 @@ dependencies {
 
     implementation 'com.google.android.gms:play-services-wallet:19.4.0'
     implementation 'com.google.android.gms:play-services-location:21.3.0'
-    implementation 'com.google.android.gms:play-services-base:18.5.0'
+    implementation 'com.google.android.gms:play-services-base:18.6.0'
 
     // Parse SDK (для работы с Parse сервером)
     implementation "com.github.parse-community.Parse-SDK-Android:parse:4.2.0"
@@ -93,8 +94,8 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.8.7'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7'
-    implementation 'androidx.navigation:navigation-fragment:2.8.7'
-    implementation 'androidx.navigation:navigation-ui:2.8.7'
+    implementation 'androidx.navigation:navigation-fragment:2.8.9'
+    implementation 'androidx.navigation:navigation-ui:2.8.9'
 
     // Firebase UI для аутентификации
     implementation 'com.firebaseui:firebase-ui-auth:7.2.0'
@@ -117,6 +118,8 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+    testImplementation 'com.squareup.okhttp3:mockwebserver:4.11.0'
+
 
     //Pusher
     implementation 'com.pusher:pusher-java-client:2.4.2'

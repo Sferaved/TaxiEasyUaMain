@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.804</string>
-    <string name="version">Версія: 1.804</string>
+    <string name="version_code">1.805</string>
+    <string name="version">Версія: 1.805</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -494,5 +494,12 @@
     <string name="no_cards_info">У вас немає підтверджених карток для оплати. Підтвердьте платіжну картку для оплати поїздок.</string>
     <string name="verify_address">Перевірте правильність введення адреси</string>
     <string name="paymentErrMes">Помилка платежу</string>
-
+    <string name="low_memory_0">"Пристрій відчуває нестачу пам\'яті! Вільна пам\'ять: "</string>
+    <string name="low_memory_1">" байт. Стан нестачі пам\'яті: "</string>
+    <string name="low_memory_2">Звіт про пам\'ять: \n</string>
+    <string name="low_memory_3">"Доступна пам\'ять: "</string>
+    <string name="low_memory_4">"Поріг нестачі пам\'яті: "</string>
+    <string name="low_memory_5">"Стан нестачі пам\'яті: "</string>
+    <string name="low_memory_6">" байт\n"</string>
+    <string name="low_connect">Слабке інтернет з\'єднання</string>
 </resources>

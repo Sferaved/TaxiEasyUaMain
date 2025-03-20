@@ -63,7 +63,7 @@ import com.taxi.easy.ua.databinding.ActivityMainBinding;
 import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.clear.AppDataUtils;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
-import com.taxi.easy.ua.ui.finish.fragm.ExecutionStatusViewModel;
+import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
 import com.taxi.easy.ua.ui.home.cities.api.CityResponse;
@@ -104,6 +104,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import okhttp3.OkHttpClient;
@@ -197,6 +198,9 @@ public class MainActivity extends AppCompatActivity {
     public static ExecutionStatusViewModel viewModel;
     public static OrderResponse orderResponse;
     public static  String action;
+    public static int currentNavDestination = -1; // ID текущего экрана
+
+
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -241,6 +245,10 @@ public class MainActivity extends AppCompatActivity {
         DrawerLayout drawer = binding.drawerLayout;
         navigationView = binding.navView;
         navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
+        // Добавляем слушатель изменения направления
+        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+            currentNavDestination = destination.getId(); // Обновляем текущий экран
+        });
 
         mAppBarConfiguration = new AppBarConfiguration.Builder(
                 R.id.nav_visicom, R.id.nav_home, R.id.nav_cancel,
@@ -1259,6 +1267,7 @@ public class MainActivity extends AppCompatActivity {
         return list;
     }
 
+
     public void newUser() {
         String userEmail = logCursor(TABLE_USER_INFO).get(3);
         Logger.d(this, TAG, "newUser: " + userEmail);
@@ -1315,6 +1324,9 @@ public class MainActivity extends AppCompatActivity {
 
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(interceptor)
+                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
+                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
+                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
                 .build();
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
@@ -1525,6 +1537,9 @@ public class MainActivity extends AppCompatActivity {
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                         startActivity(intent);
                     }
+                    pusherManager = new PusherManager(getString(R.string.application), user.getEmail());
+                    pusherManager.connect();
+                    pusherManager.subscribeToChannel();
                 }
             } else {
                 handleSignInFailure(result);

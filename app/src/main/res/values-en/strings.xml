@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.804</string>
-    <string name="version">Version: 1.804</string>
+    <string name="version_code">1.805</string>
+    <string name="version">Version: 1.805</string>
 
     <string name="app_name">Taxi Dostavka</string>
 
@@ -491,4 +491,12 @@
     <string name="no_cards_info">You have no verified cards for payment. Verify your payment card to pay for trips.</string>
     <string name="verify_address">Please check if you entered the address correctly</string>
     <string name="paymentErrMes">Payment Error</string>
+    <string name="low_memory_0">"The device is running low on memory! Free memory: "</string>
+    <string name="low_memory_1">" bytes. Low memory status: "</string>
+    <string name="low_memory_2">Memory Report: \n</string>
+    <string name="low_memory_3">"Available Memory: "</string>
+    <string name="low_memory_4">"Out of Memory Threshold: "</string>
+    <string name="low_memory_5">"Out of Memory State: "</string>
+    <string name="low_memory_6">" bytes\n"</string>
+    <string name="low_connect">Weak internet connection</string>
 </resources>

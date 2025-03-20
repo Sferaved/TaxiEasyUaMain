@@ -542,27 +542,14 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
 
         // Определение города
 
-        String city;
-        switch (stringList.get(1)) {
-            case "Dnipropetrovsk Oblast":
-                city = getString(R.string.Dnipro_city);
-                break;
-            case "Zaporizhzhia":
-                city = getString(R.string.Zaporizhzhia);
-                break;
-            case "Cherkasy Oblast":
-                city = getString(R.string.Cherkasy);
-                break;
-            case "Odessa":
-                city = getString(R.string.Odessa);
-                break;
-            case "OdessaTest":
-                city = getString(R.string.OdessaTest);
-                break;
-            default:
-                city = getString(R.string.Kyiv_city);
-                break;
-        }
+        String city = switch (stringList.get(1)) {
+            case "Dnipropetrovsk Oblast" -> getString(R.string.Dnipro_city);
+            case "Zaporizhzhia" -> getString(R.string.Zaporizhzhia);
+            case "Cherkasy Oblast" -> getString(R.string.Cherkasy);
+            case "Odessa" -> getString(R.string.Odessa);
+            case "OdessaTest" -> getString(R.string.OdessaTest);
+            default -> getString(R.string.Kyiv_city);
+        };
 
         // Формирование тела сообщения
 

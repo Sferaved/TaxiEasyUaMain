@@ -54,11 +54,6 @@ public interface ApiService {
             @Path("cost") String cost
     );
 
-    @GET("android/startAddCostBottomUpdate/{uid}/{addCost}")
-    Call<Status> startAddCostBottomUpdate(
-            @Path("uid") String uid,
-            @Path("addCost") String addCost
-    );
     @GET("android/startAddCostCardBottomUpdate/{uid}/{uid_Double}/{pay_method}/{order_id}/{city}/{addCost}")
     Call<Status> startAddCostCardBottomUpdate(
             @Path("uid") String uid,
@@ -69,28 +64,7 @@ public interface ApiService {
             @Path("addCost") String addCost
     );
 
-    @GET("android/startAddCostCardUpdate/{uid}/{uid_Double}/{pay_method}/{order_id}/{city}")
-    Call<Status> startAddCostCardUpdate(
-            @Path("uid") String uid,
-            @Path("uid_Double") String uid_Double,
-            @Path("pay_method") String pay_method,
-            @Path("order_id") String order_id,
-            @Path("city") String city
-
-    );
-
-    @GET("apiTest/android/searchOrderToDelete/{originLatitude}/{originLongitude}/{toLatitude}/{toLongitude}/{email}/{start}/{finish}/{payment_type}/{city}/{application}/")
-    Call<Void> searchOrderToDelete(
-            @Path("originLatitude") String originLatitude,
-            @Path("originLongitude") String originLongitude,
-            @Path("toLatitude") String toLatitude,
-            @Path("toLongitude") String toLongitude,
-            @Path("email") String email,
-            @Path("start") String start,
-            @Path("finish") String finish,
-            @Path("payment_type") String payment_type,
-            @Path("city") String city,
-            @Path("application") String application
-    );
+    @GET("api/check")
+    Call<Status> check();
 }
 

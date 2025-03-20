@@ -1,8 +1,11 @@
 package com.taxi.easy.ua.androidx.startup;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.Handler;
@@ -11,12 +14,16 @@ import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.navigation.NavOptions;
 
 import com.github.anrwatchdog.ANRWatchDog;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.helpers.TelegramUtils;
+import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.time_ut.IdleTimeoutManager;
 
@@ -37,13 +44,18 @@ public class MyApplication extends Application {
     private boolean isAppInForeground = false;
     private final String TAG = "MyApplication";
     private static final String LOG_FILE_NAME = "app_log.txt";
+    @SuppressLint("StaticFieldLeak")
     private static MyApplication instance;
+    @SuppressLint("StaticFieldLeak")
     private static Activity currentActivity = null;
 
     public static SharedPreferencesHelper sharedPreferencesHelperMain;
 
     private ThreadPoolExecutor threadPoolExecutor;
     private IdleTimeoutManager idleTimeoutManager;
+    private long backgroundStartTime = 0;
+    private long lastMemoryWarningTime = 0;
+    private long lastInternetWarningTime = 0;
 
     @Override
     public void onCreate() {
@@ -71,6 +83,7 @@ public class MyApplication extends Application {
         );
     }
 
+    @SuppressLint("SourceLockedOrientationActivity")
     private void setDefaultOrientation() {
         // Установка ориентации экрана в портретный режим
         // Это может не сработать для всех активити
@@ -108,7 +121,7 @@ public class MyApplication extends Application {
                 Toast.makeText(getApplicationContext(), R.string.anr_message, Toast.LENGTH_LONG).show();
             });
             // Log the error
-            Log.d(TAG, "ANR occurred: " + error.toString());
+            Logger.e(getApplicationContext(),TAG, "ANR occurred: " + error.toString());
 
             // Log the ANR event to Firebase Crashlytics
             FirebaseCrashlytics.getInstance().recordException(error);
@@ -125,26 +138,54 @@ public class MyApplication extends Application {
             }
 
             @Override
-            public void onActivityStarted(@NonNull Activity activity) {}
+            public void onActivityStarted(@NonNull Activity activity) {
+            }
 
             @Override
             public void onActivityResumed(@NonNull Activity activity) {
+                startMemoryMonitoring();
+                if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+                    if (MainActivity.currentNavDestination != R.id.nav_restart) {
+                        MainActivity.currentNavDestination = R.id.nav_restart; // Устанавливаем текущий экран
+                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
+                    }
+                    return;
+                }
+
+
+                // Проверка длительного времени в фоне
+//                if (backgroundStartTime > 0) {
+//                    long timeInBackground = System.currentTimeMillis() - backgroundStartTime;
+//                    if (timeInBackground > 30 * 60 * 1000) { // 30 минут
+//                        restartApplication(activity);
+//                        backgroundStartTime = 0;
+//                        return;
+//                    }
+//                }
                 isAppInForeground = true;
                 if (idleTimeoutManager != null) {
                     idleTimeoutManager.resetTimer();
                 }
             }
 
+
             @Override
             public void onActivityPaused(@NonNull Activity activity) {
                 isAppInForeground = false;
+//                backgroundStartTime = System.currentTimeMillis();
+                stopMemoryMonitoring(); // Останавливаем мониторинг при паузе
+                currentActivity = null;
             }
 
             @Override
-            public void onActivityStopped(@NonNull Activity activity) {}
+            public void onActivityStopped(@NonNull Activity activity) {
+            }
 
             @Override
-            public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {}
+            public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {
+            }
 
             @Override
             public void onActivityDestroyed(@NonNull Activity activity) {
@@ -153,6 +194,96 @@ public class MyApplication extends Application {
                 }
             }
         });
+    }
+
+    private final Handler memoryCheckHandler = new Handler();
+    private final Runnable memoryCheckRunnable = new Runnable() {
+        @Override
+        public void run() {
+            // Выполняем проверку памяти
+            if (currentActivity != null) {
+                checkMemoryUsage(currentActivity);
+            }
+            // Повторяем выполнение через 5 секунд (5000 миллисекунд)
+            memoryCheckHandler.postDelayed(this, 5000);
+        }
+    };
+
+    // Запуск мониторинга
+    public void startMemoryMonitoring() {
+        memoryCheckHandler.post(memoryCheckRunnable);
+    }
+
+    // Остановка мониторинга
+    public void stopMemoryMonitoring() {
+        memoryCheckHandler.removeCallbacks(memoryCheckRunnable);
+    }
+
+
+
+    private void checkMemoryUsage(Activity activity) {
+        ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
+        ActivityManager activityManager = (ActivityManager) activity.getSystemService(Context.ACTIVITY_SERVICE);
+        activityManager.getMemoryInfo(memoryInfo);
+
+        if (memoryInfo.lowMemory) {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastMemoryWarningTime > 60 * 1000) { // Уведомление раз в 60 секунд
+                // Отобразите уведомление пользователю
+
+                String message = getString(R.string.low_memory_0) + memoryInfo.availMem + getString(R.string.low_memory_1) + memoryInfo.lowMemory;
+                Toast.makeText(activity, message, Toast.LENGTH_LONG).show();
+
+                lastMemoryWarningTime = currentTime;
+
+            }
+
+
+        }
+
+
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastInternetWarningTime > 30 * 1000) { // Уведомление раз в 30 секунд
+            NetworkUtils.isInternetStable(new NetworkUtils.ApiCallback() {
+                @Override
+                public void onSuccess(boolean isStable) {
+                    if (isStable) {
+                        Logger.d(activity,"NetworkCheck", "Internet is stable.");
+                    } else {
+                        activity.runOnUiThread(() ->
+                                Toast.makeText(activity, R.string.low_connect, Toast.LENGTH_SHORT).show()
+                        );
+                        Logger.d(activity,"NetworkCheck", "Internet is unstable.");
+                    }
+
+                    // Запуск Toast в основном потоке
+
+
+                    lastInternetWarningTime = currentTime;
+                }
+
+                @Override
+                public void onFailure(Throwable t) {
+                    Logger.e(activity,"NetworkCheck", "Error checking internet stability." + t);
+                }
+            });
+
+        }
+
+
+        Logger.d(activity,"MemoryMonitor", "Свободная память: " + memoryInfo.availMem + " байт");
+        Logger.d(activity,"MemoryMonitor", "Состояние нехватки памяти: " + memoryInfo.lowMemory);
+    }
+
+    private void restartApplication(Activity activity) {
+        Intent intent = activity.getBaseContext().getPackageManager()
+                .getLaunchIntentForPackage(activity.getBaseContext().getPackageName());
+        if (intent != null) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            activity.startActivity(intent);
+            activity.finish(); // Завершаем текущую активность
+            Runtime.getRuntime().exit(0); // Полный выход
+        }
     }
 
     public boolean isAppInForeground() {
@@ -164,7 +295,7 @@ public class MyApplication extends Application {
         @Override
         public void uncaughtException(@NonNull Thread thread, @NonNull Throwable throwable) {
             // Логирование исключений
-            Log.e("MyExceptionHandler", "Uncaught Exception occurred: " + throwable.getMessage(), throwable);
+            Logger.d(currentActivity,"MyExceptionHandler", "Uncaught Exception occurred: " + throwable.getMessage() + throwable);
 
             // Запись ошибки в Firebase Crashlytics
             FirebaseCrashlytics.getInstance().recordException(throwable);
@@ -209,12 +340,12 @@ public class MyApplication extends Application {
                 osw.write(sdf.format(new Date()) + " - " + log);
                 osw.write("\n");
 
-                Log.d(TAG, "Log written to " + logFile.getAbsolutePath());
+                Logger.e(getApplicationContext(),TAG, "Log written to " + logFile.getAbsolutePath());
             } catch (IOException e) {
-                Log.e("MyAppLogger", "Failed to write log", e);
+                Logger.d(getApplicationContext(),"MyAppLogger", "Failed to write log" + e);
             }
         } else {
-            Log.e("MyAppLogger", "External storage is not writable");
+            Logger.d(getApplicationContext(),"MyAppLogger", "External storage is not writable");
         }
     }
 

@@ -24,21 +24,18 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.card.MyBottomSheetCardPayment;
 import com.taxi.easy.ua.ui.finish.ApiService;
 import com.taxi.easy.ua.ui.finish.Status;
 import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
-import com.taxi.easy.ua.ui.wfp.invoice.InvoiceResponse;
-import com.taxi.easy.ua.ui.wfp.invoice.InvoiceService;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseResponse;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseService;
-import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -156,35 +153,9 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             );
             String url = call.request().url().toString();
             Logger.d(context, TAG, "URL запроса nal_payment: " + url);
-            Pattern pattern = Pattern.compile("(\\d+)");
-            Matcher matcher = pattern.matcher(FinishSeparateFragment.textCostMessage.getText().toString());
 
-            if (matcher.find()) {
-                // Преобразуем найденное число в целое, добавляем 20
-                int originalNumber = Integer.parseInt(Objects.requireNonNull(matcher.group(1)));
-                int updatedNumber = originalNumber + Integer.parseInt(addCost);
 
-                // Заменяем старое значение на новое
-                String updatedCost = matcher.replaceFirst(String.valueOf(updatedNumber));
-                FinishSeparateFragment.textCost.setVisibility(View.VISIBLE);
-                FinishSeparateFragment.textCostMessage.setVisibility(View.VISIBLE);
-                FinishSeparateFragment.carProgressBar.setVisibility(View.VISIBLE);
-//                                FinishSeparateFragment.progressBar.setVisibility(View.VISIBLE);
-                FinishSeparateFragment.progressSteps.setVisibility(View.VISIBLE);
-//                                FinishSeparateFragment.progressBar.setVisibility(View.GONE);
-
-                FinishSeparateFragment.btn_options.setVisibility(View.VISIBLE);
-                FinishSeparateFragment.btn_open.setVisibility(View.VISIBLE);
-
-                FinishSeparateFragment.textCostMessage.setText(updatedCost);
-                String message =  context.getString(R.string.ex_st_0);
-                FinishSeparateFragment.text_status.setText(message);
-                Log.d("UpdatedCost", "Обновленная строка: " + updatedCost);
-            } else {
-                Log.e("UpdatedCost", "Число не найдено в строке: " + cost);
-            }
-
-            call.enqueue(new Callback<Status>() {
+            call.enqueue(new Callback<>() {
                 @Override
                 public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
                     if (response.isSuccessful()) {
@@ -192,9 +163,37 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                         assert status != null;
                         String responseStatus = status.getResponse();
                         Logger.d(context, TAG, "startAddCostUpdate  nal_payment: " + responseStatus);
-                        if(!responseStatus.equals("200")) {
+                        if (!responseStatus.equals("200")) {
                             // Обработка неуспешного ответа
-                            FinishSeparateFragment.text_status.setText(R.string.verify_internet);
+                            FinishSeparateFragment.text_status.setText(responseStatus);
+                        } else {
+                            Pattern pattern = Pattern.compile("(\\d+)");
+                            Matcher matcher = pattern.matcher(FinishSeparateFragment.textCostMessage.getText().toString());
+
+                            if (matcher.find()) {
+                                // Преобразуем найденное число в целое, добавляем 20
+                                int originalNumber = Integer.parseInt(Objects.requireNonNull(matcher.group(1)));
+                                int updatedNumber = originalNumber + Integer.parseInt(addCost);
+
+                                // Заменяем старое значение на новое
+                                String updatedCost = matcher.replaceFirst(String.valueOf(updatedNumber));
+                                FinishSeparateFragment.textCost.setVisibility(View.VISIBLE);
+                                FinishSeparateFragment.textCostMessage.setVisibility(View.VISIBLE);
+                                FinishSeparateFragment.carProgressBar.setVisibility(View.VISIBLE);
+//                                FinishSeparateFragment.progressBar.setVisibility(View.VISIBLE);
+                                FinishSeparateFragment.progressSteps.setVisibility(View.VISIBLE);
+//                                FinishSeparateFragment.progressBar.setVisibility(View.GONE);
+
+                                FinishSeparateFragment.btn_options.setVisibility(View.VISIBLE);
+                                FinishSeparateFragment.btn_open.setVisibility(View.VISIBLE);
+
+                                FinishSeparateFragment.textCostMessage.setText(updatedCost);
+                                String message =  context.getString(R.string.ex_st_0);
+                                FinishSeparateFragment.text_status.setText(message);
+                                Log.d("UpdatedCost", "Обновленная строка: " + updatedCost);
+                            } else {
+                                Log.e("UpdatedCost", "Число не найдено в строке: " + cost);
+                            }
                         }
 
                     } else {
@@ -226,9 +225,9 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
 
         wfpInvoice(MainActivity.order_id , addCost, uid);
-
+        String messageFondy = context.getString(R.string.fondy_message);
         if (!rectoken.isEmpty()) {
-            paymentByTokenWfp(FinishSeparateFragment.messageFondy, addCost, MainActivity.order_id );
+            paymentByTokenWfp(messageFondy, addCost, MainActivity.order_id );
         }
 
     }
@@ -300,7 +299,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         ApiService apiService = retrofit.create(ApiService.class);
         Call<Void> call = apiService.wfpInvoice(orderId, amount, uid);
 
-        call.enqueue(new Callback<Void>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
             }
@@ -386,7 +385,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                     Logger.d(context, TAG, "startAddCostUpdate wfp_payment status: " + responseStatus);
                     if (!responseStatus.equals("200")) {
                         // Обработка неуспешного ответа
-                        FinishSeparateFragment.text_status.setText(R.string.verify_internet);
+                        FinishSeparateFragment.text_status.setText(responseStatus);
                     }
                 } else {
                     // Обработка неуспешного ответа
@@ -403,77 +402,6 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
     }
 
-    private void getUrlToPaymentWfp(String amount, String order_id) {
-        String  baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(interceptor)
-                .build();
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
-
-        InvoiceService service = retrofit.create(InvoiceService.class);
-        List<String> stringList = logCursor(MainActivity.CITY_INFO);
-        String city = stringList.get(1);
-
-        stringList = logCursor(MainActivity.TABLE_USER_INFO);
-        String userEmail = stringList.get(3);
-        String phone_number = stringList.get(2);
-
-        Call<InvoiceResponse> call = service.createInvoice(
-                context.getString(R.string.application),
-                city,
-                order_id,
-                Integer.parseInt(amount),
-                LocaleHelper.getLocale(),
-                FinishSeparateFragment.messageFondy,
-                userEmail,
-                phone_number
-        );
-
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<InvoiceResponse> call, @NonNull Response<InvoiceResponse> response) {
-                Logger.d(context, TAG, "onResponse: 1111" + response.code());
-
-                if (response.isSuccessful()) {
-                    InvoiceResponse invoiceResponse = response.body();
-
-                    if (invoiceResponse != null) {
-                        String checkoutUrl = invoiceResponse.getInvoiceUrl();
-                        Logger.d(context, TAG, "onResponse: Invoice URL: " + checkoutUrl);
-                        if (checkoutUrl != null) {
-
-                            MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
-                                    checkoutUrl,
-                                    amount,
-                                    uid,
-                                    uid_Double,
-                                    context,
-                                    order_id
-                            );
-                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<InvoiceResponse> call, @NonNull Throwable t) {
-                Logger.d(context, TAG, "Request failed: " + t.getMessage());
-            }
-        });
-
-    }
-
     private void paymentByTokenWfp(
             String orderDescription,
             String amount,
@@ -486,6 +414,9 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(interceptor)
+                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
+                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
+                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()
@@ -524,7 +455,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                     String orderStatus = statusResponse.getTransactionStatus();
                     Logger.d(context, TAG, "1 Transaction Status: " + orderStatus);
 
-                    String  messageFondy = context.getString(R.string.fondy_message);
+
                     switch (orderStatus) {
                         case "Approved":
                         case "WaitingAuthComplete":
@@ -532,12 +463,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                             sharedPreferencesHelperMain.saveValue("pay_error", "**");
                             newOrderCardPayAdd20(amount);
                             break;
-                        case "Declined":
-                            MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment =
-                                    new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, context);
-                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                            Logger.d(context, TAG, "onResponse: Showing error bottom sheet for declined transaction");
-                        default:
+                       default:
                             Logger.d(context, TAG, "onResponse: Unexpected status: " + orderStatus);
                     }
 
@@ -575,7 +501,6 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             } while (c.moveToNext());
         }
         database.close();
-        assert c != null;
         c.close();
         return list;
     }

@@ -2,6 +2,7 @@ package com.taxi.easy.ua.ui.uid;
 
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -145,12 +146,12 @@ public class CustomArrayUidAdapter extends ArrayAdapter<String> {
             settings.add(routeInfo.getFinish());
 
             updateRoutMarker(settings);
-
+            sharedPreferencesHelperMain.saveValue("gps_upd", false);
             MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)
                     .build());
-            SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
-            sharedPreferencesHelper.saveValue("gps_upd", false);
+
+
 
         });
 

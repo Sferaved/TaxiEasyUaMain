@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.804</string>
-    <string name="version">Версия: 1.804</string>
+    <string name="version_code">1.805</string>
+    <string name="version">Версия: 1.805</string>
 
     <string name="app_name">Такси Доставка</string>
 
@@ -493,4 +493,12 @@
     <string name="no_cards_info">У вас нет проверенных карт для оплаты. Подтвердите свою платежную карту для оплаты поездок.</string>
     <string name="verify_address">Проверьте правильность ввода адреса</string>
     <string name="paymentErrMes">Ошибка платежа</string>
+    <string name="low_memory_0">"Устройство испытывает нехватку памяти! Свободная память: "</string>
+    <string name="low_memory_1">" байт. Состояние нехватки памяти: "</string>
+    <string name="low_memory_2">Отчет о памяти: \n</string>
+    <string name="low_memory_3">"Доступная память: "</string>
+    <string name="low_memory_4">"Порог нехватки памяти: "</string>
+    <string name="low_memory_5">"Состояние нехватки памяти: "</string>
+    <string name="low_memory_6">" байт\n"</string>
+    <string name="low_connect">Слабое интернет соединение</string>
 </resources>

@@ -38,7 +38,6 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.finish.ApiService;
-import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureClient;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureResponse;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
@@ -53,6 +52,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -82,6 +82,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
     private static String messageCarFoundOrderdriverPhone;
     private static String messageCarFoundRequiredTime;
     private static String def_status;
+    private static String messageFondy;
     private String order_id;
     private String invoiceId;
     private static String city;
@@ -134,7 +135,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
         def_status = context.getString(R.string.def_status);
         application = context.getString(R.string.application);
         comment = context.getString(R.string.fondy_revers_message) + context.getString(R.string.fondy_message);
-
+        messageFondy =  context.getString(R.string.fondy_message);
         List<String> listCity = logCursor(MainActivity.CITY_INFO, requireActivity());
         city = listCity.get(1);
         api = listCity.get(2);
@@ -460,6 +461,9 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                     return chain.proceed(request);
                 })
                 .addInterceptor(interceptor) // Ваш существующий перехватчик
+                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
+                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
+                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
                 .build();
 
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
@@ -502,7 +506,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
                                     callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
 
-                                    MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
+                                    MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, context);
                                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                                     dismiss();
                             }
@@ -512,14 +516,14 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
                         callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
 
-                        MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
+                        MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, context);
                         bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
                 } else {
                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
                     callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
 
-                    MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", FinishSeparateFragment.messageFondy, amount, context);
+                    MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, context);
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     Logger.d(getActivity(), TAG, "Request failed:");
 
@@ -567,6 +571,9 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(interceptor)
+                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
+                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
+                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
                 .build();
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl) // Замените на фактический URL вашего сервера

@@ -13,6 +13,7 @@ import com.google.gson.JsonSyntaxException;
 import com.pusher.client.Pusher;
 import com.pusher.client.PusherOptions;
 import com.pusher.client.channel.Channel;
+import com.pusher.client.channel.SubscriptionEventListener;
 import com.pusher.client.connection.ConnectionEventListener;
 import com.pusher.client.connection.ConnectionState;
 import com.pusher.client.connection.ConnectionStateChange;
@@ -25,8 +26,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public class PusherManager {
     private static final String PUSHER_APP_KEY = "a10fb0bff91153d35f36"; // Ваш ключ
@@ -38,16 +41,19 @@ public class PusherManager {
     private final String eventTransactionStatus;
     private final String eventCanceled;
     private final String orderResponseEvent;
-    private final String eventStartExecution;
+//    private final String eventStartExecution;
     private static Pusher pusher = null;
     private boolean isSubscribed = false;
+    Channel channel;
+
+    private final Set<String> boundEvents = new HashSet<>();
     public PusherManager(String eventSuffix, String userEmail) {
         this.eventUid = "order-status-updated-" + eventSuffix + "-" + userEmail;
         this.eventOrder = "order-" + eventSuffix + "-" + userEmail;
         this.eventTransactionStatus = "transactionStatus-" + eventSuffix + "-" + userEmail;
         this.eventCanceled = "eventCanceled-" + eventSuffix + "-" + userEmail;
         this.orderResponseEvent = "orderResponseEvent-" + eventSuffix + "-" + userEmail;
-        this.eventStartExecution = "orderStartExecution-" + eventSuffix + "-" + userEmail;
+//        this.eventStartExecution = "orderStartExecution-" + eventSuffix + "-" + userEmail;
 
         PusherOptions options = new PusherOptions();
         options.setCluster(PUSHER_CLUSTER);
@@ -55,30 +61,95 @@ public class PusherManager {
         pusher = new Pusher(PUSHER_APP_KEY, options);
     }
 
-    // Подключение к Pusher
+    // Подключение к Pusher с улучшенным логированием и обработкой ошибок
+    private final boolean isShuttingDown = false; // Флаг завершения работы приложения
+
     public void connect() {
+        if (pusher == null) {
+            Log.e("Pusher", "Pusher instance is not initialized!");
+            return;
+        }
+
         pusher.connect(new ConnectionEventListener() {
             @Override
             public void onConnectionStateChange(ConnectionStateChange change) {
                 Log.i("Pusher", "State changed from " + change.getPreviousState() + " to " + change.getCurrentState());
+
+                // Обработка успешного подключения
                 if (change.getCurrentState() == ConnectionState.CONNECTED) {
                     Log.i("Pusher", "Successfully connected to Pusher");
+                }
+
+                // Логика повторного подключения
+                if (change.getCurrentState() == ConnectionState.DISCONNECTED) {
+                    Log.w("Pusher", "Disconnected from Pusher. Attempting reconnection...");
+
+                    // Предотвращаем попытки подключения во время завершения приложения
+                    if (!isShuttingDown) {
+                        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                            try {
+                                Log.i("Pusher", "Attempting reconnection...");
+                                pusher.connect(new ConnectionEventListener() {
+                                    @Override
+                                    public void onConnectionStateChange(ConnectionStateChange innerChange) {
+                                        Log.i("Pusher", "Reconnect: State changed from " +
+                                                innerChange.getPreviousState() + " to " +
+                                                innerChange.getCurrentState());
+                                    }
+
+                                    @Override
+                                    public void onError(String message, String code, Exception e) {
+                                        Log.e("Pusher", "Reconnect error: " + message + " (Code: " + code + ")", e);
+                                    }
+                                }, ConnectionState.ALL);
+
+                            } catch (Exception e) {
+                                Log.e("Pusher", "Reconnect attempt failed: ", e);
+                            }
+                        }, 5000); // Задержка перед попыткой повторного подключения
+                    } else {
+                        Log.w("Pusher", "Reconnect skipped: Application is shutting down");
+                    }
                 }
             }
 
             @Override
             public void onError(String message, String code, Exception e) {
                 Log.e("Pusher", "Error connecting: " + message + " (Code: " + code + ")", e);
+                if (e != null) {
+                    e.printStackTrace();
+                }
             }
         }, ConnectionState.ALL);
     }
 
+
+
+
+
+    // Приватный метод для проверки, привязано ли событие
+    private boolean isEventBound(String eventName) {
+        return boundEvents.contains(eventName);
+    }
+
+    // Метод для биндинга события с проверкой на дублирование
+    public void bindEvent(String eventName, SubscriptionEventListener listener) {
+        if (!isEventBound(eventName)) {
+            channel.bind(eventName, listener);
+            boundEvents.add(eventName);
+        }
+    }
+
+
     // Подписка на канал и событие
+
+
     public void subscribeToChannel() {
         if (isSubscribed) return; // Предотвращает повторную подписку
         isSubscribed = true;
 
-        Channel channel = pusher.subscribe(CHANNEL_NAME);
+
+        channel = pusher.subscribe(CHANNEL_NAME);
         Log.i("Pusher", "Subscribing to channel: " + CHANNEL_NAME);
         Log.i("Pusher", "Subscribing to event: " + eventUid);
         Log.i("Pusher", "Subscribing to eventOrder: " + eventOrder);
@@ -87,7 +158,8 @@ public class PusherManager {
         Log.i("Pusher", "Subscribing to orderResponseEvent: " + orderResponseEvent);
 
         // Обработка события получения номера заказа после регистрации на сервере и определения нал/безнал для выбора способа опроса статусов
-        channel.bind(eventUid, event -> {
+//        channel.bind(eventUid, event -> {
+        bindEvent(eventUid, event -> {
             Log.i("Pusher", "Received event: " + event.toString());
             try {
                 JSONObject eventData = new JSONObject(event.getData());
@@ -120,8 +192,44 @@ public class PusherManager {
             }
         });
 
+        bindEvent(eventTransactionStatus, event -> {
+            Log.i("Pusher", "Received event: " + event.toString());
+
+            try {
+                JSONObject eventData = new JSONObject(event.getData());
+                String uid = eventData.getString("uid");
+                String transactionStatus = eventData.getString("transactionStatus");
+                Log.i("Pusher", "Parsed uid: " + uid);
+                Log.i("Pusher", "Parsed Main uid: " + MainActivity.uid);
+                Log.i("Pusher", "Parsed transactionStatus: " + transactionStatus);
+
+                if (Objects.equals(MainActivity.uid, uid)) {
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        Log.d("Pusher", "Updating UI with status: " + transactionStatus);
+                        viewModel.setTransactionStatus(transactionStatus);
+
+                        if (FinishSeparateFragment.btn_cancel_order != null) {
+                            FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
+                            FinishSeparateFragment.btn_cancel_order.setEnabled(true);
+                            FinishSeparateFragment.btn_cancel_order.setClickable(true);
+                            Log.d("Pusher", "Cancel button enabled successfully");
+                        } else {
+                            Log.e("Pusher", "btn_cancel_order is null when updating status: " + transactionStatus);
+                        }
+                    });
+                }
+            } catch (JSONException e) {
+                Log.e("Pusher", "JSON Parsing error for event: " + event.getData(), e);
+            } catch (Exception e) {
+                Log.e("Pusher", "Unexpected error processing Pusher event", e);
+            }
+        });
+
+
+
         //Получение статуса холда
-        channel.bind(eventTransactionStatus, event -> {
+//        channel.bind(eventTransactionStatus, event -> {
+        bindEvent(eventTransactionStatus, event -> {
             Log.i("Pusher", "Received event: " + event.toString());
 
             try {
@@ -163,38 +271,40 @@ public class PusherManager {
 
 
         //Получение статуса холда
-        channel.bind(eventStartExecution, event -> {
-            Log.i("Pusher", "Received event: " + event.toString());
-
-            try {
-                JSONObject eventData = new JSONObject(event.getData());
-                String eventStartExecution = eventData.getString("eventStartExecution");
-                Log.i("Pusher", "Parsed transactionStatus: " + eventStartExecution);
-
-                // Проверка на null перед переключением на главный поток
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    Log.d("Pusher", "Updating UI with status: " + eventStartExecution);
-
-                    // Проверка UI элемента перед взаимодействием
-                    if (FinishSeparateFragment.btn_cancel_order != null) {
-                        FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
-                        FinishSeparateFragment.btn_cancel_order.setEnabled(true);
-                        FinishSeparateFragment.btn_cancel_order.setClickable(true);
-                        Log.d("Pusher", "Cancel button enabled successfully");
-                    } else {
-                        Log.e("Pusher", "btn_cancel_order is null when updating status: " + eventStartExecution);
-                    }
-                });
-
-            } catch (JSONException e) {
-                Log.e("Pusher", "JSON Parsing error for event: " + event.getData(), e);
-            } catch (Exception e) {
-                Log.e("Pusher", "Unexpected error processing Pusher event", e);
-            }
-        });
+//        channel.bind(eventStartExecution, event -> {
+//        bindEvent(eventStartExecution, event -> {
+//            Log.i("Pusher", "Received event: " + event.toString());
+//
+//            try {
+//                JSONObject eventData = new JSONObject(event.getData());
+//                String eventStartExecution = eventData.getString("eventStartExecution");
+//                Log.i("Pusher", "Parsed transactionStatus: " + eventStartExecution);
+//
+//                // Проверка на null перед переключением на главный поток
+//                new Handler(Looper.getMainLooper()).post(() -> {
+//                    Log.d("Pusher", "Updating UI with status: " + eventStartExecution);
+//
+//                    // Проверка UI элемента перед взаимодействием
+//                    if (FinishSeparateFragment.btn_cancel_order != null) {
+//                        FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
+//                        FinishSeparateFragment.btn_cancel_order.setEnabled(true);
+//                        FinishSeparateFragment.btn_cancel_order.setClickable(true);
+//                        Log.d("Pusher", "Cancel button enabled successfully");
+//                    } else {
+//                        Log.e("Pusher", "btn_cancel_order is null when updating status: " + eventStartExecution);
+//                    }
+//                });
+//
+//            } catch (JSONException e) {
+//                Log.e("Pusher", "JSON Parsing error for event: " + event.getData(), e);
+//            } catch (Exception e) {
+//                Log.e("Pusher", "Unexpected error processing Pusher event", e);
+//            }
+//        });
 
         // Получение статуса отмены заказа с сервера
-        channel.bind(eventCanceled, event -> {
+//        channel.bind(eventCanceled, event -> {
+        bindEvent(eventCanceled, event -> {
             Log.i("Pusher", "Received event: " + event.toString());
 
             try {
@@ -236,7 +346,8 @@ public class PusherManager {
 
 
         //Получение заказа из вилки с действием для отображения на фнинишной
-        channel.bind(orderResponseEvent, event -> {
+//        channel.bind(orderResponseEvent, event -> {
+        bindEvent(orderResponseEvent, event -> {
             Log.i("Pusher orderResponseEvent", "Received orderResponseEvent: " + event.toString());
 
             try {
@@ -283,7 +394,8 @@ public class PusherManager {
         });
 
         // Получение заказа с сервера после регистрации
-        channel.bind(eventOrder, event -> {
+//        channel.bind(eventOrder, event -> {
+        bindEvent(eventOrder, event -> {
             Log.i("Pusher", "Received eventOrder: " + event.toString());
             try {
                 // Преобразуем данные события в JSONObject
@@ -331,7 +443,6 @@ public class PusherManager {
         });
 
     }
-
 
     // Отключение
     public void disconnect() {

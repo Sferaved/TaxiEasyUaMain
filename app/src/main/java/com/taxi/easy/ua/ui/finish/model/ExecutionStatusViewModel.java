@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.finish.fragm;
+package com.taxi.easy.ua.ui.finish.model;
 
 import android.util.Log;
 
@@ -10,17 +10,23 @@ import com.taxi.easy.ua.ui.finish.OrderResponse;
 
 public class ExecutionStatusViewModel extends ViewModel {
 
-    private final MutableLiveData<String> transactionStatus = new MutableLiveData<>();
+
     private final MutableLiveData<String> canceledStatus = new MutableLiveData<>();
     private final MutableLiveData<OrderResponse> orderResponse = new MutableLiveData<>();
     private final MutableLiveData<Boolean> _isTenMinutesRemaining = new MutableLiveData<>();
     public final LiveData<Boolean> isTenMinutesRemaining = _isTenMinutesRemaining;
 
     //
+    private final SingleLiveEvent<String> transactionStatus = new SingleLiveEvent<>();
+
     public LiveData<String> getTransactionStatus() {
         return transactionStatus;
     }
-    public void setTransactionStatus(String TransactionStatus) {transactionStatus.postValue(TransactionStatus); }
+
+    public void setTransactionStatus(String status) {
+        transactionStatus.postValue(status);
+    }
+
 
 
     //Проверка отмены по оплате

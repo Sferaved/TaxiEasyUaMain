@@ -2,6 +2,8 @@ package com.taxi.easy.ua.ui.home.cities.api;
 
 
 
+import java.util.concurrent.TimeUnit;
+
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
@@ -20,6 +22,9 @@ public class CityApiTestClient {
 
             OkHttpClient client = new OkHttpClient.Builder()
                     .addInterceptor(loggingInterceptor)
+                    .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
+                    .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
+                    .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
                     .build();
 
             // Create Retrofit instance with the OkHttpClient

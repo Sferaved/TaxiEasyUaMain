@@ -79,10 +79,13 @@ public class FromJSONParserRetrofit {
             String baseUrl = getBaseUrl(urlString);
 
             // Создание экземпляра OkHttpClient с таймаутом
+
             OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                    .readTimeout(60, TimeUnit.SECONDS)
-                    .connectTimeout(60, TimeUnit.SECONDS)
+                    .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
+                    .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
+                    .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
                     .build();
+
 
             // Создание экземпляра Retrofit
             Retrofit retrofit = new Retrofit.Builder()
