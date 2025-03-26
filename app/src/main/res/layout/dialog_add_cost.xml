@@ -20,12 +20,12 @@
         android:paddingBottom="16dp"/>
 
     <!-- Сообщение с выделенным числом -->
-    <TextView
-        android:id="@+id/dialogMessage"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="@color/colorDefault"
-        android:textAppearance="?attr/textAppearanceBody1"
-        android:gravity="center" />
+<!--    <TextView-->
+<!--        android:id="@+id/dialogMessage"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:textColor="@color/colorDefault"-->
+<!--        android:textAppearance="?attr/textAppearanceBody1"-->
+<!--        android:gravity="center" />-->
 
 </LinearLayout>

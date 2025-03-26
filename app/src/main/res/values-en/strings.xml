@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.806</string>
-    <string name="version">Version: 1.806</string>
+    <string name="version_code">1.807</string>
+    <string name="version">Version: 1.807</string>
 
     <string name="app_name">Taxi Dostavka</string>
 
@@ -499,4 +499,5 @@
     <string name="low_memory_5">"Out of Memory State: "</string>
     <string name="low_memory_6">" bytes\n"</string>
     <string name="low_connect">Weak internet connection</string>
+    <string name="add_cost_сancel">Do you want to cancel your order?</string>
 </resources>

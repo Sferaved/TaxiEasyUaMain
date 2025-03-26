@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.806</string>
-    <string name="version">Версия: 1.806</string>
+    <string name="version_code">1.807</string>
+    <string name="version">Версия: 1.807</string>
 
     <string name="app_name">Такси Доставка</string>
 
@@ -502,4 +502,5 @@
     <string name="low_memory_5">"Состояние нехватки памяти: "</string>
     <string name="low_memory_6">" байт\n"</string>
     <string name="low_connect">Слабое интернет соединение</string>
+    <string name="add_cost_сancel">Хотите отменить заказ?</string>
 </resources>

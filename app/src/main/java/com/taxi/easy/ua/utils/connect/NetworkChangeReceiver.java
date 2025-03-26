@@ -16,7 +16,7 @@ import java.util.Objects;
 
 public class NetworkChangeReceiver extends BroadcastReceiver {
     private static long lastNavigationTime = 0;
-    private static final long DEBOUNCE_DELAY = 1000; // 1 секунда задержки
+    private static final long DEBOUNCE_DELAY = 10000; // 10 секунда задержки
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -29,7 +29,7 @@ public class NetworkChangeReceiver extends BroadcastReceiver {
         // Проверяем, прошло ли достаточно времени с последней навигации
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastNavigationTime < DEBOUNCE_DELAY) {
-            return; // Игнорируем повторные вызовы в течение 1 секунды
+            return; // Игнорируем повторные вызовы в течение 10 секунд
         }
 
         // Проверяем текущий пункт назначения, чтобы избежать повторной навигации
@@ -44,9 +44,10 @@ public class NetworkChangeReceiver extends BroadcastReceiver {
                         .build());
                 lastNavigationTime = currentTime;
             }
-        } else {
+        }
+        else {
             // Сеть восстановлена
-            if (currentDestination != R.id.nav_visicom) {
+            if (currentDestination == R.id.nav_restart) {
                 navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_visicom, true)
                         .build());
