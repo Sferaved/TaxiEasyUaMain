@@ -203,43 +203,6 @@ public class PusherManager {
                 Log.i("Pusher", "Parsed Main uid: " + MainActivity.uid);
                 Log.i("Pusher", "Parsed transactionStatus: " + transactionStatus);
 
-                if (Objects.equals(MainActivity.uid, uid)) {
-                    new Handler(Looper.getMainLooper()).post(() -> {
-                        Log.d("Pusher", "Updating UI with status: " + transactionStatus);
-                        viewModel.setTransactionStatus(transactionStatus);
-
-                        if (FinishSeparateFragment.btn_cancel_order != null) {
-                            FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
-                            FinishSeparateFragment.btn_cancel_order.setEnabled(true);
-                            FinishSeparateFragment.btn_cancel_order.setClickable(true);
-                            Log.d("Pusher", "Cancel button enabled successfully");
-                        } else {
-                            Log.e("Pusher", "btn_cancel_order is null when updating status: " + transactionStatus);
-                        }
-                    });
-                }
-            } catch (JSONException e) {
-                Log.e("Pusher", "JSON Parsing error for event: " + event.getData(), e);
-            } catch (Exception e) {
-                Log.e("Pusher", "Unexpected error processing Pusher event", e);
-            }
-        });
-
-
-
-        //Получение статуса холда
-//        channel.bind(eventTransactionStatus, event -> {
-        bindEvent(eventTransactionStatus, event -> {
-            Log.i("Pusher", "Received event: " + event.toString());
-
-            try {
-                JSONObject eventData = new JSONObject(event.getData());
-                String uid = eventData.getString("uid");
-                String transactionStatus = eventData.getString("transactionStatus");
-                Log.i("Pusher", "Parsed uid: " + uid);
-                Log.i("Pusher", "Parsed Main uid: " + MainActivity.uid);
-                Log.i("Pusher", "Parsed transactionStatus: " + transactionStatus);
-
                 if(Objects.equals(MainActivity.uid, uid)) {
                     // Проверка на null перед переключением на главный поток
                     new Handler(Looper.getMainLooper()).post(() -> {

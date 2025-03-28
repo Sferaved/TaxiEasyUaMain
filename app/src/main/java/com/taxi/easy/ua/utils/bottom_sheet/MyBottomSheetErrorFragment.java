@@ -544,10 +544,26 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
 
         String city = switch (stringList.get(1)) {
             case "Dnipropetrovsk Oblast" -> getString(R.string.Dnipro_city);
-            case "Zaporizhzhia" -> getString(R.string.Zaporizhzhia);
-            case "Cherkasy Oblast" -> getString(R.string.Cherkasy);
-            case "Odessa" -> getString(R.string.Odessa);
             case "OdessaTest" -> getString(R.string.OdessaTest);
+            case "Odessa" ->  getString(R.string.city_odessa);
+            case "Zaporizhzhia" ->  getString(R.string.city_zaporizhzhia);
+            case "Cherkasy Oblast" ->  getString(R.string.city_cherkassy);
+            case "Lviv" -> getString(R.string.city_lviv);
+            case "Ivano_frankivsk" ->  getString(R.string.city_ivano_frankivsk);
+            case "Vinnytsia" -> getString(R.string.city_vinnytsia);
+            case "Poltava" ->  getString(R.string.city_poltava);
+            case "Sumy" ->  getString(R.string.city_sumy);
+            case "Kharkiv" ->  getString(R.string.city_kharkiv);
+            case "Chernihiv" -> getString(R.string.city_chernihiv);
+            case "Rivne" -> getString(R.string.city_rivne);
+            case "Ternopil" -> getString(R.string.city_ternopil);
+            case "Khmelnytskyi" -> getString(R.string.city_khmelnytskyi);
+            case "Zakarpattya" -> getString(R.string.city_zakarpattya);
+            case "Zhytomyr" -> getString(R.string.city_zhytomyr);
+            case "Kropyvnytskyi" -> getString(R.string.city_kropyvnytskyi);
+            case "Mykolaiv" -> getString(R.string.city_mykolaiv);
+            case "Сhernivtsi" -> getString(R.string.city_chernivtsi);
+            case "Lutsk" ->  getString(R.string.city_lutsk);
             default -> getString(R.string.Kyiv_city);
         };
 
@@ -558,8 +574,8 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                 getString(R.string.SA_info_city) + " " + city + "\n" +
                 getString(R.string.SA_pas_text) + " " + getString(R.string.version) + "\n" +
                 getString(R.string.SA_user_text) + " " + userList.get(4) + "\n" +
-                getString(R.string.SA_email) + " " + userList.get(3) + "\n" +
-                getString(R.string.SA_phone_text) + " " + userList.get(2) + "\n" + "\n";
+                getString(R.string.SA_email) + " " + userList.get(3) + "\n";
+//                + getString(R.string.SA_phone_text) + " " + userList.get(2) + "\n" + "\n";
     }
 
 

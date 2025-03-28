@@ -101,14 +101,14 @@ public class AppDataUtils {
         // Запуск нового потока для перезапуска приложения после очистки
         new Handler().postDelayed(() -> {
             // Перезапуск приложения
-            restartApplication(context);
+//            restartApplication(context);
 
             // Запуск экрана удаления приложения
             Intent uninstallIntent = new Intent(Intent.ACTION_DELETE);
             uninstallIntent.setData(Uri.parse("package:" + context.getPackageName()));
             uninstallIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(uninstallIntent);
-            clearAppData(context);
+//            clearAppData(context);
         }, 1000); // Задержка в 1 секунду для завершения очистки данных
     }
 

@@ -26,82 +26,6 @@ public class TelegramUtils {
     // Логирование на всех этапах работы с сетью
     private static final String TAG = "TelegramUtils";
 
-
-
-    // Метод для отправки сообщения об ошибке в Telegram
-//    public static void sendErrorToTelegram(String errorMessage, String logFilePath) {
-//        // Чтение содержимого лог-файла
-//        StringBuilder logContent = new StringBuilder();
-//        File logFile = new File(logFilePath);
-//
-//        if (!logFile.exists()) {
-//            Log.e(TAG, "Log file does not exist: " + logFilePath);
-//            return;
-//        }
-//
-//        if (!logFile.canRead()) {
-//            Log.e(TAG, "Log file cannot be read: " + logFilePath);
-//            return;
-//        }
-//
-//        Log.d(TAG, "Preparing to send log file: " + logFile.getName());
-//
-//        // Чтение содержимого файла
-//        try (BufferedReader reader = new BufferedReader(new FileReader(logFile))) {
-//            String line;
-//            while ((line = reader.readLine()) != null) {
-//                logContent.append(line).append("\n");
-//            }
-//        } catch (IOException e) {
-//            Log.e(TAG, "Error reading log file: " + e.getMessage());
-//            return;
-//        }
-//
-//        // Объединяем текст ошибки с содержимым лога
-//        String message = errorMessage + "\n\nLog File Content:\n" + logContent.toString();
-//
-//        Log.d(TAG, "Preparing to send error message with log file content");
-//
-//        // Создаем клиент с тайм-аутами
-//        OkHttpClient client = new OkHttpClient.Builder()
-//                .connectTimeout(30, TimeUnit.SECONDS)
-//                .writeTimeout(30, TimeUnit.SECONDS)
-//                .readTimeout(30, TimeUnit.SECONDS)
-//                .build();
-//
-//        // Создаем Retrofit с кастомным клиентом
-//        Retrofit retrofit = new Retrofit.Builder()
-//                .baseUrl(BASE_URL + TOKEN + "/")
-//                .client(client)
-//                .addConverterFactory(GsonConverterFactory.create())
-//                .build();
-//
-//        TelegramApiService apiService = retrofit.create(TelegramApiService.class);
-//
-//        // Отправка сообщения через Telegram API
-//        Call<Void> call = apiService.sendMessage(CHAT_ID, message);
-//
-//        call.enqueue(new retrofit2.Callback<Void>() {
-//            @Override
-//            public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
-//                Log.d(TAG, "Response received. Code: " + response.code());
-//
-//                if (response.isSuccessful()) {
-//                    Log.d(TAG, "Error message sent successfully!");
-//                } else {
-//                    Log.e(TAG, "Failed to send error message. Response Code: " + response.code());
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
-//                Log.e(TAG, "Failed to send error message: " + t.getMessage());
-//                t.printStackTrace();
-//            }
-//        });
-//    }
-
-
     // Метод для отправки сообщения об ошибке и лог-файла в Telegram
     public static void sendErrorToTelegram(String errorMessage, String logFilePath) {
         // Логирование начала работы метода
@@ -159,7 +83,7 @@ public class TelegramUtils {
 
         Log.d(TAG, "Sending request to Telegram API...");
 
-        call.enqueue(new Callback<Void>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                 Log.d(TAG, "Response received. Code: " + response.code());

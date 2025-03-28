@@ -62,7 +62,8 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetFinishOptionFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.utils.data.DataArr;
-import com.taxi.easy.ua.utils.helpers.TelegramUtils;
+import com.taxi.easy.ua.utils.hold.APIHoldService;
+import com.taxi.easy.ua.utils.hold.HoldResponse;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.time_ut.TimeUtils;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
@@ -168,7 +169,6 @@ public class FinishSeparateFragment extends Fragment {
     private Observer<Boolean> observer;
 
     @SuppressLint("SourceLockedOrientationActivity")
-    @SuppressWarnings("unchecked")
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
 
@@ -352,9 +352,7 @@ public class FinishSeparateFragment extends Fragment {
             }
         };
 
-        btn_cancel_order.setOnClickListener(v -> {
-            showCancelDialog();
-        });
+
 
         btn_again = root.findViewById(R.id.btn_again);
         btn_again.setOnClickListener(v -> {
@@ -525,35 +523,6 @@ public class FinishSeparateFragment extends Fragment {
         }
     }
 
-
-    public String generateEmailBody(String errorMessage) {
-
-        List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
-        List<String> userList = logCursor(MainActivity.TABLE_USER_INFO, requireActivity());
-
-
-        // Определение города
-
-        String city = switch (stringList.get(1)) {
-            case "Dnipropetrovsk Oblast" -> getString(R.string.Dnipro_city);
-            case "Zaporizhzhia" -> getString(R.string.Zaporizhzhia);
-            case "Cherkasy Oblast" -> getString(R.string.Cherkasy);
-            case "Odessa" -> getString(R.string.Odessa);
-            case "OdessaTest" -> getString(R.string.OdessaTest);
-            default -> getString(R.string.Kyiv_city);
-        };
-
-        // Формирование тела сообщения
-
-        return errorMessage + "\n"+
-                getString(R.string.SA_info_pas) + "\n" +
-                getString(R.string.SA_info_city) + " " + city + "\n" +
-                getString(R.string.SA_pas_text) + " " + getString(R.string.version) + "\n" +
-                getString(R.string.SA_user_text) + " " + userList.get(4) + "\n" +
-                getString(R.string.SA_email) + " " + userList.get(3) + "\n" +
-                getString(R.string.SA_phone_text) + " " + userList.get(2) + "\n" + "\n";
-    }
-
     @Override
     public void onDestroyView() {
         super.onDestroyView();
@@ -569,23 +538,11 @@ public class FinishSeparateFragment extends Fragment {
         viewModel.getTransactionStatus().removeObservers(getViewLifecycleOwner());
         viewModel.getOrderResponse().removeObservers(getViewLifecycleOwner());
         viewModel.isTenMinutesRemaining.removeObservers(getViewLifecycleOwner());
-        String logFilePath = requireActivity().getExternalFilesDir(null) + "/app_log.txt"; // Путь к лог-файлу
-
-        String errorMessage ="onDestroyView";
-        TelegramUtils.sendErrorToTelegram(generateEmailBody(errorMessage), logFilePath);
-
-
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
-        String logFilePath = requireActivity().getExternalFilesDir(null) + "/app_log.txt"; // Путь к лог-файлу
-
-        String errorMessage ="onDetach";
-        TelegramUtils.sendErrorToTelegram(generateEmailBody(errorMessage), logFilePath);
-
-
     }
 
 
@@ -918,78 +875,82 @@ public class FinishSeparateFragment extends Fragment {
 
 
     private void orderComplete() {
-        // Выполнено
-        stopCycle();
+        new Handler(Looper.getMainLooper()).post(() -> {
+            // Выполнено
+            stopCycle();
 
-        String message = context.getString(R.string.ex_st_finished);
-        text_status.setText(message);
-        text_status.clearAnimation();
+            String message = context.getString(R.string.ex_st_finished);
+            text_status.setText(message);
+            text_status.clearAnimation();
 
-        // Скрываем элементы
+            // Скрываем элементы
 
-        setVisibility(
-                GONE,
-                btn_reset_status,
-                btn_open,
-                btn_options,
-                textCost,
-                textCostMessage,
-                carProgressBar,
-                progressSteps,
-                textStatusCar,
-                textCarMessage
-        );
+            setVisibility(
+                    GONE,
+                    btn_reset_status,
+                    btn_open,
+                    btn_options,
+                    textCost,
+                    textCostMessage,
+                    carProgressBar,
+                    progressSteps,
+                    textStatusCar,
+                    textCarMessage
+            );
 
-        // Показываем кнопку "Повторить"
-        if (btn_again.getVisibility() != View.VISIBLE || btn_again.getVisibility() != GONE) {
-            btn_again.setVisibility(View.VISIBLE);
-        }
+            // Показываем кнопку "Повторить"
+            if (btn_again.getVisibility() != View.VISIBLE || btn_again.getVisibility() != GONE) {
+                btn_again.setVisibility(View.VISIBLE);
+            }
 
-        if (btn_cancel_order.getVisibility() == View.VISIBLE) {
-            btn_cancel_order.setVisibility(GONE);
-        }
-        // Отменяем все обработчики
-        canceled = true;
+            if (btn_cancel_order.getVisibility() == View.VISIBLE) {
+                btn_cancel_order.setVisibility(GONE);
+            }
+            // Отменяем все обработчики
+            canceled = true;
 
-        cancelAllHandlers(context);
+            cancelAllHandlers(context);
 
-        Logger.d(context, TAG, "orderComplete " + canceled);
+            Logger.d(context, TAG, "orderComplete " + canceled);
 
-        stopCycle();
+            stopCycle();
+        });
     }
 
 
     private void carSearch() {
-        Logger.d(context, TAG, "carSearch() started");
-        if (btn_cancel_order.getVisibility() != View.VISIBLE) {
-            btn_cancel_order.setVisibility(VISIBLE);
+        new Handler(Looper.getMainLooper()).post(() -> {
+            Logger.d(context, TAG, "carSearch() started");
+            if (btn_cancel_order.getVisibility() != View.VISIBLE) {
+                btn_cancel_order.setVisibility(VISIBLE);
+            }
+
+            if (cancel_btn_click) {
+                Logger.d(context, TAG, "Order cancellation detected, stopping search...");
+                cancelAllHandlers(context);
+                setVisibility(GONE, btn_reset_status, carProgressBar);
+                text_status.setText(context.getString(R.string.checkout_status));
+                return;
+            }
+
+        if (need_20_add && handlerAddcost != null && showDialogAddcost != null) {
+            Logger.d(context, TAG, "Triggering add cost delay: " + timeCheckOutAddCost);
+            handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost);
+            setVisibility(View.VISIBLE, textCost, textCostMessage, carProgressBar, progressSteps, btn_options, btn_open);
         }
 
-        if (cancel_btn_click) {
-            Logger.d(context, TAG, "Order cancellation detected, stopping search...");
-            cancelAllHandlers(context);
-            setVisibility(GONE, btn_reset_status, carProgressBar);
-            text_status.setText(context.getString(R.string.checkout_status));
-            return;
-        }
+            Logger.d(context, TAG, "Updating status and UI for car search");
+            text_status.setText(context.getString(R.string.ex_st_0));
+            carProgressBar.setVisibility(View.VISIBLE);
+            text_status.startAnimation(blinkAnimation);
+            updateProgress(2);
+            countdownTextView.setVisibility(GONE);
+            delayMillisStatus = 5 * 1000;
 
-//        if (need_20_add && handlerAddcost != null && showDialogAddcost != null) {
-//            Logger.d(context, TAG, "Triggering add cost delay: " + timeCheckOutAddCost);
-//            handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost);
-//            setVisibility(View.VISIBLE, textCost, textCostMessage, carProgressBar, progressSteps, btn_options, btn_open);
-//        }
-
-        Logger.d(context, TAG, "Updating status and UI for car search");
-        text_status.setText(context.getString(R.string.ex_st_0));
-//        carProgressBar.setVisibility(View.VISIBLE);
-//        text_status.startAnimation(blinkAnimation);
-//        updateProgress(2);
-//        countdownTextView.setVisibility(GONE);
-//        delayMillisStatus = 5 * 1000;
-//
-//        setVisibility(GONE, textStatusCar, textCarMessage);
-//        setVisibility(VISIBLE, carProgressBar);
-        Logger.d(context, TAG, "carSearch() completed");
+            setVisibility(GONE, textStatusCar, textCarMessage);
+            setVisibility(VISIBLE, carProgressBar);
+            Logger.d(context, TAG, "carSearch() completed");
+        });
     }
 
     // Вспомогательный метод для отмены всех обработчиков
@@ -1027,102 +988,107 @@ public class FinishSeparateFragment extends Fragment {
             String time_to_start_point,
             String orderCarInfo
     ) {
-        text_status.clearAnimation();
-        setVisibility(View.VISIBLE, textCost, textCostMessage);
+        new Handler(Looper.getMainLooper()).post(() -> {
+            text_status.clearAnimation();
+            setVisibility(View.VISIBLE, textCost, textCostMessage);
 
-        if (handlerAddcost != null) {
-            handlerAddcost.removeCallbacks(showDialogAddcost);
-        }
+            if (handlerAddcost != null) {
+                handlerAddcost.removeCallbacks(showDialogAddcost);
+            }
 
-        if (btn_cancel_order.getVisibility() == View.VISIBLE) {
-            btn_cancel_order.setVisibility(GONE);
-        }
+            if (btn_cancel_order.getVisibility() == View.VISIBLE) {
+                btn_cancel_order.setVisibility(GONE);
+            }
 
-        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
-        String city = listCity.get(1);
-        String api = listCity.get(2);
+            List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
+            String city = listCity.get(1);
+            String api = listCity.get(2);
 
-        if (closeReason == -1) {
-            // Геокоординаты водителя по API
-            drivercarposition(MainActivity.uid, city, api, context);
-        } else {
-            calculateTimeToStart(MainActivity.uid, api, context);
-        }
-
-        updateProgress(3);
-
-        if (!cancel_btn_click) {
-            delayMillisStatus = 5000;
-            StringBuilder messageBuilder = new StringBuilder(context.getString(R.string.ex_st_2));
-
-            if (!TextUtils.isEmpty(driverPhone)) {
-                Logger.d(context, TAG, "onResponse: driverPhone " + driverPhone);
-                btn_reset_status.setText(context.getString(R.string.phone_driver));
-                btn_reset_status.setOnClickListener(v -> {
-                    Intent intent = new Intent(Intent.ACTION_DIAL);
-                    intent.setData(Uri.parse("tel:" + driverPhone));
-                    context.startActivity(intent);
-                });
-                btn_reset_status.setVisibility(View.VISIBLE);
+            if (closeReason == -1) {
+                // Геокоординаты водителя по API
+                drivercarposition(MainActivity.uid, city, api, context);
             } else {
-                btn_reset_status.setVisibility(GONE);
+                calculateTimeToStart(MainActivity.uid, api, context);
             }
 
-            if (!TextUtils.isEmpty(time_to_start_point)) {
-                messageBuilder.append(context.getString(R.string.ex_st_5))
-                        .append(formatDate2(time_to_start_point));
-            }
+            updateProgress(3);
 
-            if (!TextUtils.isEmpty(orderCarInfo)) {
-                setVisibility(View.VISIBLE, textStatusCar, textCarMessage);
-                textCarMessage.setText(orderCarInfo);
+            if (!cancel_btn_click) {
+                delayMillisStatus = 5000;
+                StringBuilder messageBuilder = new StringBuilder(context.getString(R.string.ex_st_2));
+
+                if (!TextUtils.isEmpty(driverPhone)) {
+                    Logger.d(context, TAG, "onResponse: driverPhone " + driverPhone);
+                    btn_reset_status.setText(context.getString(R.string.phone_driver));
+                    btn_reset_status.setOnClickListener(v -> {
+                        Intent intent = new Intent(Intent.ACTION_DIAL);
+                        intent.setData(Uri.parse("tel:" + driverPhone));
+                        context.startActivity(intent);
+                    });
+                    btn_reset_status.setVisibility(View.VISIBLE);
+                } else {
+                    btn_reset_status.setVisibility(GONE);
+                }
+
+                if (!TextUtils.isEmpty(time_to_start_point)) {
+                    messageBuilder.append(context.getString(R.string.ex_st_5))
+                            .append(formatDate2(time_to_start_point));
+                }
+
+                if (!TextUtils.isEmpty(orderCarInfo)) {
+                    setVisibility(View.VISIBLE, textStatusCar, textCarMessage);
+                    textCarMessage.setText(orderCarInfo);
+                } else {
+                    setVisibility(GONE, textStatusCar, textCarMessage);
+                }
+
+                countdownTextView.setVisibility(View.VISIBLE);
+                text_status.setText(messageBuilder.toString());
+
             } else {
-                setVisibility(GONE, textStatusCar, textCarMessage);
+                text_status.setText(context.getString(R.string.ex_st_canceled));
             }
-
-            countdownTextView.setVisibility(View.VISIBLE);
-            text_status.setText(messageBuilder.toString());
-
-        } else {
-            text_status.setText(context.getString(R.string.ex_st_canceled));
-        }
+        });
     }
 
     private void orderCanceled(String message) {
-        text_status.clearAnimation();
-        canceled = true;
-        MainActivity.action = null;
+        new Handler(Looper.getMainLooper()).post(() -> {
+            text_status.setText(R.string.recounting_order);
 
-        // Скрываем ненужные элементы
-        setVisibility(GONE, btn_reset_status, btn_open, btn_options, btn_cancel_order,
-                textStatusCar, textCarMessage, textCost,
-                textCostMessage, carProgressBar, progressSteps);
+            text_status.clearAnimation();
+            canceled = true;
+            MainActivity.action = null;
 
-        // Останавливаем все обработчики
-        if (handler != null) {
-            handler.removeCallbacks(myRunnable);
-        }
-        if (handlerBonusBtn != null) {
-            handlerBonusBtn.removeCallbacks(runnableBonusBtn);
-        }
-        if (handlerAddcost != null) {
-            handlerAddcost.removeCallbacks(showDialogAddcost);
-        }
-        if (handlerCheckTask != null) {
-            handlerCheckTask.removeCallbacks(checkTask);
-        }
+            // Скрываем ненужные элементы
+            setVisibility(GONE, btn_reset_status, btn_open, btn_options, btn_cancel_order,
+                    textStatusCar, textCarMessage, textCost,
+                    textCostMessage, carProgressBar, progressSteps);
+
+            // Останавливаем все обработчики
+            if (handler != null) {
+                handler.removeCallbacks(myRunnable);
+            }
+            if (handlerBonusBtn != null) {
+                handlerBonusBtn.removeCallbacks(runnableBonusBtn);
+            }
+            if (handlerAddcost != null) {
+                handlerAddcost.removeCallbacks(showDialogAddcost);
+            }
+            if (handlerCheckTask != null) {
+                handlerCheckTask.removeCallbacks(checkTask);
+            }
 
 
-        Logger.d(context, TAG, "orderCanceled " + canceled);
+            Logger.d(context, TAG, "orderCanceled " + canceled);
 
 
-        stopCycle();
+            stopCycle();
 
-        text_status.setText(message);
-        if (btn_again.getVisibility() != View.VISIBLE || btn_again.getVisibility() != GONE) {
-            btn_again.setVisibility(View.VISIBLE);
-        }
-
+            text_status.setText(message);
+            if (btn_again.getVisibility() != View.VISIBLE || btn_again.getVisibility() != GONE) {
+                btn_again.setVisibility(View.VISIBLE);
+            }
+        });
     }
 
 
@@ -1323,9 +1289,6 @@ public class FinishSeparateFragment extends Fragment {
         cancel_btn_click = false;
         // Наблюдение за статусом транзакции
 
-
-
-
         if(!paySystemStatus.equals("nal_payment")) {
 
             viewModel.getTransactionStatus().observe(getViewLifecycleOwner(), status -> {
@@ -1383,7 +1346,9 @@ public class FinishSeparateFragment extends Fragment {
         timeUtils.startTimer();
 
         viewModelReviewer();
-
+        btn_cancel_order.setOnClickListener(v -> {
+            showCancelDialog();
+        });
 
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
         if(pay_method.equals("nal_payment")) {
@@ -1519,7 +1484,7 @@ public class FinishSeparateFragment extends Fragment {
 
         btn_reset_status.setOnClickListener( view -> {
 
-                if ("nal_payment".equals(pay_method) || "wfp_payment".equals(pay_method)) {
+                if ("nal_payment".equals(pay_method)) {
 
                     // Запускаем выполнение через 1 минуты (60 000 миллисекунд)
                     if (handlerAddcost != null) {
@@ -1547,6 +1512,11 @@ public class FinishSeparateFragment extends Fragment {
                     } else {
                         Logger.d(context, TAG, "No numeric value found in the text.");
                     }
+                }  else if ("wfp_payment".equals(pay_method)) {
+
+                     verifyOldHold();
+
+
                 } else if ("bonus_payment".equals(pay_method)) {
 
                     String message = context.getString(R.string.addCostBonusMessage);
@@ -1556,6 +1526,94 @@ public class FinishSeparateFragment extends Fragment {
 
                 }
             });
+    }
+
+    private void verifyOldHold() {
+
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        // Создание клиента OkHttpClient с подключенным логгером
+        OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+        httpClient.addInterceptor(loggingInterceptor);
+        httpClient.connectTimeout(60, TimeUnit.SECONDS); // Тайм-аут для соединения
+        httpClient.readTimeout(60, TimeUnit.SECONDS);    // Тайм-аут для чтения
+        httpClient.writeTimeout(60, TimeUnit.SECONDS);   // Тайм-аут для записи
+
+        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(httpClient.build()) // Подключение клиента OkHttpClient с логгером
+                .build();
+
+
+            APIHoldService apiService = retrofit.create(APIHoldService.class);
+            Call<HoldResponse> call = apiService.verifyHold(MainActivity.uid);
+
+            call.enqueue(new Callback<>() {
+                @Override
+                public void onResponse(@NonNull Call<HoldResponse> call, @NonNull Response<HoldResponse> response) {
+                    if (response.isSuccessful()) {
+                        HoldResponse holdResponse = response.body();
+                        assert holdResponse != null;
+                        String result = holdResponse.getResult();
+                        Logger.d(context, TAG, "verifyOldHold  result: " + result);
+                        if (result.equals("hold")) {
+                            // Обработка неуспешного ответа
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                // Запускаем выполнение через 1 минуты (60 000 миллисекунд)
+                                if (handlerAddcost != null) {
+                                    handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost);
+                                }
+
+                                String text = textCostMessage.getText().toString();
+                                Logger.d(getActivity(), TAG, "textCostMessage.getText().toString() " + text);
+
+                                Pattern pattern = Pattern.compile("(\\d+)");
+                                Matcher matcher = pattern.matcher(text);
+
+                                if (matcher.find()) {
+                                    Logger.d(context, TAG, "amount_to_add: " + matcher.group(1));
+                                    stopCycle();
+                                    MyBottomSheetAddCostFragment bottomSheetDialogFragment = new MyBottomSheetAddCostFragment(
+                                            matcher.group(1),
+                                            MainActivity.uid,
+                                            uid_Double,
+                                            pay_method,
+                                            context,
+                                            fragmentManager
+                                    );
+                                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                                } else {
+                                    Logger.d(context, TAG, "No numeric value found in the text.");
+                                }
+                            });
+
+                        } else {
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                text_status.setText(R.string.recounting_order);
+                            });
+
+                        }
+
+                    } else {
+                        // Обработка неуспешного ответа
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            text_status.setText(R.string.recounting_order);
+                        });
+                    }
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<HoldResponse> call, @NonNull Throwable t) {
+                    FirebaseCrashlytics.getInstance().recordException(t);
+                }
+            });
+
+
+
     }
 
     private void showAddCostDialog(int timeCheckout) {
@@ -1588,40 +1646,43 @@ public class FinishSeparateFragment extends Fragment {
                 .setCancelable(false)
                 .setPositiveButton(R.string.ok_button, (dialog, which) -> {
                     // Действие для кнопки "OK"
-
-                    if (FinishSeparateFragment.btn_cancel_order != null) {
-                        FinishSeparateFragment.btn_cancel_order.setEnabled(false);
-                        FinishSeparateFragment.btn_cancel_order.setClickable(false);
-                    } else {
-                        Log.e("Pusher", "btn_cancel_order is null!");
+                    if ("wfp_payment".equals(pay_method)) {
+                        verifyOldHold();
                     }
-                    // Перезапускаем задачу
-                    if (handlerAddcost != null) {
-                        handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
+                    if ("nal_payment".equals(pay_method)) {
+                        if (FinishSeparateFragment.btn_cancel_order != null) {
+                            FinishSeparateFragment.btn_cancel_order.setEnabled(false);
+                            FinishSeparateFragment.btn_cancel_order.setClickable(false);
+                        } else {
+                            Log.e("Pusher", "btn_cancel_order is null!");
+                        }
+                        // Перезапускаем задачу
+                        if (handlerAddcost != null) {
+                            handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
+                        }
+                        dialog.dismiss();
+                        String text = textCostMessage.getText().toString();
+                        Logger.d(getActivity(), TAG, "textCostMessage.getText().toString() " + text);
+
+                        Pattern pattern = Pattern.compile("(\\d+)");
+                        Matcher matcher = pattern.matcher(text);
+
+                        if (matcher.find()) {
+                            Logger.d(context, TAG, "amount_to_add: " + matcher.group(1));
+                            stopCycle();
+                            MyBottomSheetAddCostFragment bottomSheetDialogFragment = new MyBottomSheetAddCostFragment(
+                                    matcher.group(1),
+                                    MainActivity.uid,
+                                    uid_Double,
+                                    pay_method,
+                                    context,
+                                    fragmentManager
+                            );
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        } else {
+                            Logger.d(context, TAG, "No numeric value found in the text.");
+                        }
                     }
-                    dialog.dismiss();
-                    String text = textCostMessage.getText().toString();
-                    Logger.d(getActivity(), TAG, "textCostMessage.getText().toString() " + text);
-
-                    Pattern pattern = Pattern.compile("(\\d+)");
-                    Matcher matcher = pattern.matcher(text);
-
-                    if (matcher.find()) {
-                        Logger.d(context, TAG, "amount_to_add: " + matcher.group(1));
-                        stopCycle();
-                        MyBottomSheetAddCostFragment bottomSheetDialogFragment = new MyBottomSheetAddCostFragment(
-                                matcher.group(1),
-                                MainActivity.uid,
-                                uid_Double,
-                                pay_method,
-                                context,
-                                fragmentManager
-                        );
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                    } else {
-                        Logger.d(context, TAG, "No numeric value found in the text.");
-                    }
-
 //                    startAddCostUpdate();
 
                 })
