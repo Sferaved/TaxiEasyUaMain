@@ -17,13 +17,18 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.taxi.easy.ua.databinding.FragmentAuthorBinding;
+import com.uxcam.UXCam;
 
 public class AuthorFragment extends Fragment {
 
     private @NonNull FragmentAuthorBinding binding;
+    private static final String TAG = "AuthorFragment";
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         AuthorViewModel authorViewModel =
                 new ViewModelProvider(this).get(AuthorViewModel.class);
 

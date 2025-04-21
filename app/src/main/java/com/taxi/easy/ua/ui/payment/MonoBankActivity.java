@@ -74,7 +74,7 @@ public class MonoBankActivity extends AppCompatActivity {
         call.enqueue(new Callback<List<Transaction>>() {
             @Override
             public void onResponse(Call<List<Transaction>> call, Response<List<Transaction>> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     List<Transaction> surfaceControlTransactions = response.body();
                     List<Transaction> transactions = new ArrayList<>();
 
@@ -134,7 +134,7 @@ public class MonoBankActivity extends AppCompatActivity {
         call.enqueue(new Callback<ClientInfo>() {
             @Override
             public void onResponse(Call<ClientInfo> call, Response<ClientInfo> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     ClientInfo clientInfo = response.body();
                     if (clientInfo != null) {
                         // Обработка данных о клиенте, счетах и копилках

@@ -25,7 +25,7 @@ public class BlacklistManager {
         call.enqueue(new Callback<Void>() {
             @Override
             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     Log.d(TAG, "Email added to blacklist successfully.");
                 } else {
                     Log.d(TAG, "Failed to add email to blacklist. Response code: " + response.code());

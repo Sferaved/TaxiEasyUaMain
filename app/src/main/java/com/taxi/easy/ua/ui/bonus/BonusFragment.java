@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.ui.bonus;
 
 import static android.content.Context.MODE_PRIVATE;
+import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -31,10 +32,11 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentBonusBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.BonusResponse;
-import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
+import com.taxi.easy.ua.utils.auth.FirebaseConsentManager;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
+import com.uxcam.UXCam;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,21 +50,24 @@ public class BonusFragment extends Fragment {
 
     private static final String TAG = "BonusFragment";
     private FragmentBonusBinding binding;
-    private AppCompatButton btnBonus, btnOrder;
+    private AppCompatButton btnBonus, btnOrder, in_but;
     private TextView textView;
-    private NetworkChangeReceiver networkChangeReceiver;
     private ProgressBar progressBar;
     private TextView text0;
 
     Activity context;
     FragmentManager fragmentManager;
     private AppCompatButton btnCallAdmin;
+    View root;
 
     @SuppressLint("SourceLockedOrientationActivity")
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         binding = FragmentBonusBinding.inflate(inflater, container, false);
-        View root = binding.getRoot();
+        root = binding.getRoot();
         context = requireActivity();
         context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         fragmentManager = getParentFragmentManager();
@@ -73,7 +78,7 @@ public class BonusFragment extends Fragment {
                     .build());
         }
         text0 =  binding.text0;
-        networkChangeReceiver = new NetworkChangeReceiver();
+
         progressBar = binding.progressBar;
 
         btnCallAdmin = binding.btnCallAdmin;
@@ -83,6 +88,27 @@ public class BonusFragment extends Fragment {
             intent.setData(Uri.parse(phone));
             startActivity(intent);
         });
+
+        in_but = binding.btnInAccount;
+        in_but.setOnClickListener(v -> {
+            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            ContentValues cv = new ContentValues();
+            cv.put("email", "email");
+            cv.put("verifyOrder", "1");
+            // обновляем по id
+            database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
+                    new String[] { "1" });
+            database.close();
+
+            Intent intent = new Intent(getActivity(), MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+
+        });
+        btnBonus  = binding.btnBonus;
+        btnOrder = binding.btnOrder;
+        googleVerifyAccount();
+
         return root;
     }
 
@@ -98,7 +124,7 @@ public class BonusFragment extends Fragment {
         } else {
             textView.setText(getString(R.string.my_bonus) + bonus);
         }
-        btnBonus  = binding.btnBonus;
+
         btnBonus.setOnClickListener(v -> {
             if (!NetworkUtils.isNetworkAvailable(requireContext())) {
 
@@ -119,7 +145,7 @@ public class BonusFragment extends Fragment {
         });
 
 
-        btnOrder = binding.btnOrder;
+
         btnOrder.setOnClickListener(v -> {
             if (!NetworkUtils.isNetworkAvailable(requireContext())) {
 
@@ -154,7 +180,7 @@ public class BonusFragment extends Fragment {
             public void onResponse(@NonNull Call<BonusResponse> call, @NonNull Response<BonusResponse> response) {
 
                 BonusResponse bonusResponse = Objects.requireNonNull(response).body();
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     progressBar.setVisibility(View.INVISIBLE);
                     assert bonusResponse != null;
                     String bonus = String.valueOf(bonusResponse.getBonus());
@@ -217,4 +243,34 @@ public class BonusFragment extends Fragment {
         super.onDestroyView();
         binding = null;
     }
+
+    private void googleVerifyAccount() {
+        FirebaseConsentManager consentManager = new FirebaseConsentManager(requireActivity());
+
+        consentManager.checkUserConsent(new FirebaseConsentManager.ConsentCallback() {
+            @Override
+            public void onConsentValid() {
+                Logger.d(context, TAG, "Согласие пользователя действительное.");
+                visibility (View.VISIBLE);
+            }
+
+            @Override
+            public void onConsentInvalid() {
+                Logger.d(context, TAG, "Согласие пользователя НЕ действительное.");
+                visibility (View.INVISIBLE);
+            }
+        });
+    }
+    @SuppressLint("SetTextI18n")
+    private void visibility (int visible) {
+        if (visible == View.INVISIBLE) {
+            in_but.setVisibility(VISIBLE);
+            text0.setText(R.string.in_google_bonus);
+        } else {
+            in_but.setVisibility(View.GONE);
+            text0.setText(R.string.bonus_text_0);
+        }
+        btnBonus.setVisibility(visible);
+    }
+
 }

@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.808</string>
-    <string name="version">Версія: 1.808</string>
+    <string name="version_code">1.809</string>
+    <string name="version">Версія: 1.809</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -153,7 +153,7 @@
     <string name="change_message">"Зміна бази адрес. "</string>
     <string name="server_error_connected">Сервер не прийняв запит. Наберіть оператора через "ДОПОМОГУ"</string>
     <string name="GDPR">GDPR</string>
-    <string name="ok_GDPR">Погодитись</string>
+    <string name="ok_GDPR">Погодитись  -> </string>
     <string name="Dnipro_city">Дніпро</string>
     <string name="city_change">Виберіть місто</string>
     <string name="Zaporizhzhia">Запоріжжя</string>
@@ -409,7 +409,7 @@
     <string name="pos_f">DW631 47, 00-514 Warszawa, Poland\t</string>
     <string name="check_city">Виберіть службу таксі у вашому місті</string>
     <string name="upd_account">Зберегти зміни</string>
-    <string name="del_account">Видалити обліковий запис</string>
+    <string name="del_account">Видалити акаунт</string>
     <string name="account_menu">Акаунт</string>
     <string name="email_upd">Зміни недоступні</string>
     <string name="info_upd">Інформацію оновлено</string>
@@ -502,5 +502,15 @@
     <string name="low_memory_5">"Стан нестачі пам\'яті: "</string>
     <string name="low_memory_6">" байт\n"</string>
     <string name="low_connect">Слабке інтернет з\'єднання</string>
-    <string name="add_cost_сancel">Бажаєте скасувати замовлення?</string>
+    <string name="add_cost_cancel">Бажаєте скасувати замовлення?</string>
+    <string name="google_verify_mes">Для продовження роботи програми необхідно надати доступ до вашого Google облікового запису. Це дозволить нам забезпечити коректну роботу функцій та персоналізований досвід. Будь ласка, увійдіть до облікового запису Google і надайте необхідні дозволи.</string>
+    <string name="out_account">Ви вийшли із системи</string>
+    <string name="account">Ви увійшли до системи</string>
+    <string name="in_account">Увійти до акаунту</string>
+    <string name="out_account_btn">Вийти з акаунту</string>
+    <string name="in_google_bonus">Для отримання бонусів увійдіть до Google облікового запису</string>
+    <string name="cancel_btn_enable">Скасування замовлення тимчасово недоступне</string>
+    <string name="cancel_error">Сталася помилка скасування замовлення. Зв\'яжіться з оператором.</string>
+    <string name="del_acc_mes">Всі Ваші персональні дані та налаштування будуть видалені з додатку та наших серверів. Додаток буде закрит.</string>
+    <string name="err_del_phone_fb">Помилка видалення облікового запису. Зверніться до оператора.</string>
 </resources>

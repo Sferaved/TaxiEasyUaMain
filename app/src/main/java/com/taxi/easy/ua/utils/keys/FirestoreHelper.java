@@ -3,6 +3,9 @@ package com.taxi.easy.ua.utils.keys;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+
 public class FirestoreHelper {
     private final FirebaseFirestore firestore;
 
@@ -19,7 +22,11 @@ public class FirestoreHelper {
                     if (documentSnapshot.exists() && documentSnapshot.contains("v_key")) {
                         String vKey = documentSnapshot.getString("v_key");
                         if (listener != null) {
-                            listener.onSuccess(vKey);
+                            try {
+                                listener.onSuccess(vKey);
+                            } catch (GeneralSecurityException | IOException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     } else {
                         if (listener != null) {
@@ -58,9 +65,38 @@ public class FirestoreHelper {
                 });
     }
 
+
+    public void getUixCamKey(OnVisicomKeyFetchedListener listener) {
+        // Ссылка на коллекцию и документ
+        DocumentReference docRef = firestore.collection("keys").document("uixcam_key");
+
+        docRef.get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists() && documentSnapshot.contains("u_key")) {
+                        String uKey = documentSnapshot.getString("u_key");
+                        if (listener != null) {
+                            try {
+                                listener.onSuccess(uKey);
+                            } catch (GeneralSecurityException | IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    } else {
+                        if (listener != null) {
+                            listener.onFailure(new Exception("Поле u_key не найдено в документе или документ отсутствует."));
+                        }
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (listener != null) {
+                        listener.onFailure(e);
+                    }
+                });
+    }
+
     // Интерфейс для передачи результатов через callback
     public interface OnVisicomKeyFetchedListener {
-        void onSuccess(String vKey);
+        void onSuccess(String vKey) throws GeneralSecurityException, IOException;
         void onFailure(Exception e);
     }
 

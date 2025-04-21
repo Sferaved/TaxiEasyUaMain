@@ -14,17 +14,22 @@ import androidx.appcompat.widget.AppCompatButton;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.uxcam.UXCam;
 
 
 public class MyBottomSheetMapFragment extends BottomSheetDialogFragment {
 
     AppCompatButton btn_ok, btn_no;
 
+    private static final String TAG = "MyBottomSheetMapFragment";
 
     @SuppressLint("MissingInflatedId")
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         View view = inflater.inflate(R.layout.map_layout, container, false);
 
 

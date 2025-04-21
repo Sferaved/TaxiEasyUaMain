@@ -39,6 +39,7 @@ import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.db.RouteInfo;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.uxcam.UXCam;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,18 +71,21 @@ public class UIDFragment extends Fragment {
     private AppCompatButton btnCallAdmin;
     private ImageButton scrollButtonDown, scrollButtonUp;
     private TextView textUid;
-    private String email;
-    private FragmentManager fragmentManager;
+
     private int desiredHeight;
     Context context;
     View root;
 
+    @SuppressLint("SourceLockedOrientationActivity")
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         binding = FragmentUidBinding.inflate(inflater, container, false);
         root = binding.getRoot();
 
-        fragmentManager = getParentFragmentManager();
+        FragmentManager fragmentManager = getParentFragmentManager();
 
         context = requireActivity();
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
@@ -242,13 +246,13 @@ public class UIDFragment extends Fragment {
         Call<List<RouteResponse>> call = ApiClient.getApiService().getRoutes(url);
         Logger.d (context, TAG, "fetchRoutes: " + url);
 
-        call.enqueue(new Callback<List<RouteResponse>>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<List<RouteResponse>> call, @NonNull Response<List<RouteResponse>> response) {
                 progressBar.setVisibility(View.GONE);
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     List<RouteResponse> routes = response.body();
-                    Logger.d (context, TAG, "onResponse: " + routes);
+                    Logger.d(context, TAG, "onResponse: " + routes);
                     if (routes != null && !routes.isEmpty()) {
                         boolean hasRouteWithAsterisk = false;
                         for (RouteResponse route : routes) {
@@ -263,7 +267,7 @@ public class UIDFragment extends Fragment {
                             processRouteList();
                             textUid.setVisibility(View.VISIBLE);
                             textUid.setText(R.string.uid_menu);
-                        }  else {
+                        } else {
                             textUid.setVisibility(View.VISIBLE);
                             textUid.setText(R.string.no_routs);
                         }

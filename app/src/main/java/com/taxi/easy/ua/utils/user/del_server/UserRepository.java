@@ -9,7 +9,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class UserRepository {
-    private ApiService apiService;
+    private final ApiService apiService;
     private final String TAG = "UserRepository";
 
     public UserRepository() {
@@ -18,18 +18,18 @@ public class UserRepository {
 
     public void destroyEmail(String email) {
         Call<ServerResponse> call = apiService.destroyEmail(email);
-        call.enqueue(new Callback<ServerResponse>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<ServerResponse> call, @NonNull Response<ServerResponse> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     ServerResponse serverResponse = response.body();
                     if (serverResponse != null) {
                         if (serverResponse.getMessage() != null) {
                             // Успешный ответ
-                            Log.d(TAG,"Success: " + serverResponse.getMessage());
+                            Log.d(TAG, "Success: " + serverResponse.getMessage());
                         } else {
                             // Ошибка на сервере
-                            Log.d(TAG,"Error: " + serverResponse.getError());
+                            Log.d(TAG, "Error: " + serverResponse.getError());
                         }
                     }
                 } else {
@@ -38,9 +38,8 @@ public class UserRepository {
             }
 
             @Override
-            public void onFailure(Call<ServerResponse> call, Throwable t) {
-                t.printStackTrace();
-                Log.d(TAG,"Failure: " + t.getMessage());
+            public void onFailure(@NonNull Call<ServerResponse> call, @NonNull Throwable t) {
+                Log.d(TAG, "Failure: " + t.getMessage());
             }
         });
     }

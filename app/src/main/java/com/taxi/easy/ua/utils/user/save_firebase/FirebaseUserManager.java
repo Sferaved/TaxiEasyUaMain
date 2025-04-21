@@ -2,6 +2,8 @@ package com.taxi.easy.ua.utils.user.save_firebase;
 
 import android.util.Log;
 
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
@@ -40,6 +42,7 @@ public class FirebaseUserManager {
         } else {
             Log.e(TAG, "No current user available to save phone");
         }
+
     }
 
     // Метод для получения номера телефона пользователя по userId
@@ -85,5 +88,63 @@ public class FirebaseUserManager {
             Log.e(TAG, "No current user available to delete phone");
         }
     }
+
+
+
+    /**
+     * Удаляет данные пользователя из Firestore (документ users/{userId}).
+     * @return Task<Void>, который завершается успешно, если данные удалены или документ не существует, или с ошибкой в случае сбоя.
+     */
+    public Task<Void> deleteUserData() {
+        Log.d(TAG, "deleteUserData(): Начало выполнения");
+
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser != null) {
+            String userId = currentUser.getUid();
+            Log.i(TAG, "deleteUserData(): Пользователь аутентифицирован, UID: " + userId);
+
+            // Проверяем токен перед операцией
+            return currentUser.getIdToken(true).continueWithTask(tokenTask -> {
+                if (tokenTask.isSuccessful()) {
+                    Log.d(TAG, "deleteUserData(): Токен успешно обновлен для UID: " + userId);
+                } else {
+                    Log.e(TAG, "deleteUserData(): Ошибка обновления токена: " + tokenTask.getException().getMessage(), tokenTask.getException());
+                    throw tokenTask.getException();
+                }
+
+                DocumentReference userDocRef = firestore.collection("users").document(userId);
+                Log.d(TAG, "deleteUserData(): Создана ссылка на документ: users/" + userId);
+
+                // Прямое удаление без проверки существования
+                Log.i(TAG, "deleteUserData(): Прямое удаление документа users/" + userId);
+                return userDocRef.delete();
+            }).addOnSuccessListener(aVoid -> {
+                Log.i(TAG, "deleteUserData(): Успешно удален документ users/" + userId);
+            }).addOnFailureListener(e -> {
+                Log.e(TAG, "deleteUserData(): Ошибка удаления документа users/" + userId + ": " + e.getMessage(), e);
+                if (e instanceof com.google.firebase.firestore.FirebaseFirestoreException) {
+                    com.google.firebase.firestore.FirebaseFirestoreException firestoreException =
+                            (com.google.firebase.firestore.FirebaseFirestoreException) e;
+                    Log.e(TAG, "deleteUserData(): Код ошибки Firestore: " + firestoreException.getCode());
+                    if (firestoreException.getCode() == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                        Log.e(TAG, "deleteUserData(): Причина: Недостаточно прав, несмотря на правила Firestore");
+                    } else if (firestoreException.getCode() == com.google.firebase.firestore.FirebaseFirestoreException.Code.UNAVAILABLE) {
+                        Log.e(TAG, "deleteUserData(): Причина: Служба Firestore недоступна, проверьте сеть");
+                    }
+                }
+            }).addOnCompleteListener(task -> {
+                Log.d(TAG, "deleteUserData(): Операция для users/" + userId + " завершена с состоянием: " + (task.isSuccessful() ? "успех" : "ошибка"));
+                if (!task.isSuccessful() && task.getException() != null) {
+                    Log.e(TAG, "deleteUserData(): Подробности ошибки: " + task.getException().getMessage(), task.getException());
+                }
+            });
+        } else {
+            Log.e(TAG, "deleteUserData(): Пользователь не аутентифицирован, невозможно удалить данные");
+            return Tasks.forException(new Exception("Пользователь не аутентифицирован"));
+        }
+    }
+
+
+
 
 }

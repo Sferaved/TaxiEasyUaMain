@@ -28,6 +28,7 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.finish.fragm.CustomListFinishAdapter;
 import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.uxcam.UXCam;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +48,9 @@ public class MyBottomSheetFinishOptionFragment extends BottomSheetDialogFragment
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         View view = inflater.inflate(R.layout.settings_finish_layout, container, false);
 
         context = requireActivity();
@@ -225,7 +229,7 @@ public class MyBottomSheetFinishOptionFragment extends BottomSheetDialogFragment
 
         Logger.d(context, TAG, "commentInfo:" + commentInfo);
 
-        if(!options) {
+        if(!options || commentInfo.equals("no_comment")) {
 
             komenterinp.setVisibility(View.VISIBLE);
             komenterinp.setText(R.string.no_options);

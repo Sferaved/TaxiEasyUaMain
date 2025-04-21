@@ -16,6 +16,8 @@ public interface ApiService {
     @GET
     Call<OrderResponse> statusOrder(@Url String url);
     @GET
+    Call<OrderResponse> getOrderStatusMessageResultPush(@Url String url);
+    @GET
     Call<Void> drivercarposition(@Url String url);
 
     @GET

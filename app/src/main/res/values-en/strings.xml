@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.808</string>
-    <string name="version">Version: 1.808</string>
+    <string name="version_code">1.809</string>
+    <string name="version">Version: 1.809</string>
 
     <string name="app_name">Taxi Dostavka</string>
 
@@ -152,7 +152,7 @@
     <string name="change_message">"Change of address base. "</string>
     <string name="server_error_connected">The server did not accept the request. Dial the operator via "HELP"</string>
     <string name="GDPR">GDPR</string>
-    <string name="ok_GDPR">Agree</string>
+    <string name="ok_GDPR">Agree  -> </string>
     <string name="Dnipro_city">Dnipro</string>
     <string name="city_change">Select a city</string>
     <string name="Zaporizhzhia">Zaporizhzhia</string>
@@ -499,5 +499,15 @@
     <string name="low_memory_5">"Out of Memory State: "</string>
     <string name="low_memory_6">" bytes\n"</string>
     <string name="low_connect">Weak internet connection</string>
-    <string name="add_cost_сancel">Do you want to cancel your order?</string>
+    <string name="add_cost_cancel">Do you want to cancel your order?</string>
+    <string name="google_verify_mes">To continue using the app, you need to grant access to your Google account. This will allow us to ensure the correct functioning of the features and a personalized experience. Please sign in to your Google account and grant the necessary permissions.</string>
+    <string name="out_account">You are signed out</string>
+    <string name="account">You are logged in</string>
+    <string name="in_account">Sign in to your account</string>
+    <string name="out_account_btn">Sign out of your account</string>
+    <string name="in_google_bonus">To receive bonuses, log in to your Google account</string>
+    <string name="cancel_btn_enable">Order cancellation is temporarily unavailable</string>
+    <string name="cancel_error">An error occurred while canceling your order. Please contact the operator.</string>
+    <string name="del_acc_mes">All your personal data and settings will be deleted from the application and from our servers. The application will be closed.</string>
+    <string name="err_del_phone_fb">Error deleting account. Contact your operator.</string>
 </resources>

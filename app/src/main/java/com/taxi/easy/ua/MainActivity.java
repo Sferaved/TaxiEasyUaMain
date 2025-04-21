@@ -21,6 +21,7 @@ import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -61,14 +62,14 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
 import com.taxi.easy.ua.ui.card.CardInfo;
+import com.taxi.easy.ua.ui.cities.api.CityApiClient;
+import com.taxi.easy.ua.ui.cities.api.CityResponse;
+import com.taxi.easy.ua.ui.cities.api.CityService;
+import com.taxi.easy.ua.ui.cities.check.CityCheckActivity;
 import com.taxi.easy.ua.ui.clear.AppDataUtils;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
 import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.ui.home.HomeFragment;
-import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
-import com.taxi.easy.ua.ui.home.cities.api.CityResponse;
-import com.taxi.easy.ua.ui.home.cities.api.CityService;
-import com.taxi.easy.ua.ui.home.cities.check.CityCheckActivity;
 import com.taxi.easy.ua.ui.settings.SettingsActivity;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
@@ -88,10 +89,13 @@ import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.pusher.PusherManager;
+import com.taxi.easy.ua.utils.user.del_server.ApiUserService;
+import com.taxi.easy.ua.utils.user.del_server.CallbackUser;
+import com.taxi.easy.ua.utils.user.del_server.RetrofitClient;
+import com.taxi.easy.ua.utils.user.del_server.UserFindResponse;
 import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
 import com.taxi.easy.ua.utils.user.save_server.ApiServiceUser;
 import com.taxi.easy.ua.utils.user.save_server.UserResponse;
-import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 
 import org.json.JSONException;
 
@@ -104,6 +108,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -205,9 +211,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Установка локали перед вызовом super.onCreate()
-        String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", "uk");
-        Logger.i(this, "locale Main", localeCode);
-        applyLocale(localeCode);
 
         super.onCreate(savedInstanceState);
 
@@ -216,11 +219,10 @@ public class MainActivity extends AppCompatActivity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(binding.getRoot());
 
-        // Инициализация ViewModel
-        viewModel = new ViewModelProvider(this).get(ExecutionStatusViewModel.class);
+
 
         // Логирование и очистка старых логов
-        deleteOldLogFile();
+//        deleteOldLogFile();
         Logger.i(this, TAG, "MainActivity started");
         Logger.i(this, TAG, getString(R.string.application));
         Logger.i(this, TAG, getString(R.string.version));
@@ -405,20 +407,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
-        new VerifyUserTask(this).execute();
+        VisicomFragment.constraintLayoutVisicomMain.setVisibility(View.GONE);
+//        new VerifyUserTask(this).execute();
         sharedPreferencesHelperMain.saveValue("pay_error", "**");
 
         MainActivity.action = null;
         viewModel = new ViewModelProvider(this).get(ExecutionStatusViewModel.class);
 
+//        viewModel.updateOrderResponse(null);
+//        viewModel.setTransactionStatus(null);
+//        viewModel.setCanceledStatus(null);
 
-
-
-        String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", "uk");
-        Logger.i(this, "locale", localeCode);
-        // Установка локали
-        applyLocale(localeCode);
 
         // Устанавливаем Action Bar, если он доступен
         if (getSupportActionBar() != null) {
@@ -727,7 +726,7 @@ public class MainActivity extends AppCompatActivity {
         call.enqueue(new Callback<CityResponse>() {
             @Override
             public void onResponse(@NonNull Call<CityResponse> call, @NonNull Response<CityResponse> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     CityResponse cityResponse = response.body();
                     if (cityResponse != null) {
                         int cardMaxPay = cityResponse.getCardMaxPay();
@@ -904,7 +903,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             statement.clearBindings();
             statement.bindString(2, "0");
-            statement.bindString(3, "+380");
+            statement.bindString(3, "+38");
             statement.bindString(4, "email");
             statement.bindString(5, "username");
             statement.bindString(6, "0");
@@ -1081,7 +1080,7 @@ public class MainActivity extends AppCompatActivity {
 
         }
         if (item.getItemId() == R.id.uninstal_app) {
-            AppDataUtils.clearDataAndUninstall(this);
+            AppDataUtils.delApp(this);
 
         }
         return false;
@@ -1269,54 +1268,132 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void newUser() {
+        new Thread(() -> insertPushDate(getApplicationContext())).start();
+
         String userEmail = logCursor(TABLE_USER_INFO).get(3);
         Logger.d(this, TAG, "newUser: " + userEmail);
 
-        new Thread(() -> insertPushDate(getApplicationContext())).start();
+        findUserFromServer(userEmail, findUser -> {
+            // Use the boolean result here
+            Log.d(TAG, "User exists: " + findUser);
+            Logger.d(MainActivity.this, TAG, "CityCheckActivity: " + sharedPreferencesHelperMain.getValue("CityCheckActivity", "**"));
 
-        Logger.d(this, TAG, "CityCheckActivity: " + sharedPreferencesHelperMain.getValue("CityCheckActivity", "**"));
+            if(userEmail.equals("email") || !findUser) {
+                firstStart = true;
 
-        if(userEmail.equals("email")) {
-            firstStart = true;
+                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+                Toast.makeText(MainActivity.this, R.string.checking, Toast.LENGTH_SHORT).show();
+                startFireBase();
+            } else {
+                String sityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
+                Logger.d(this, TAG, "CityCheckActivity: " + sityCheckActivity);
 
-            VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-            Toast.makeText(this, R.string.checking, Toast.LENGTH_SHORT).show();
-            startFireBase();
-        } else {
-            firstStart = false;
-
-            // Инициализация и подключение к Pusher
-            pusherManager = new PusherManager(getString(R.string.application), userEmail);
-            pusherManager.connect();
-            pusherManager.subscribeToChannel();
-
-            new Thread(this::versionFromMarket).start();
-            new Thread(this::userPhoneFromFb).start();
-            new Thread(() -> updatePushDate(getApplicationContext())).start();
-
-            UserPermissions.getPermissions(userEmail, getApplicationContext());
-
-            Thread wfpCardThread = new Thread(() -> {
-                List<String> stringList = logCursor(MainActivity.CITY_INFO);
-                String city = stringList.get(1);
-                if(city != null) {
-                    getCardTokenWfp(city);
+                if (sityCheckActivity.equals("**")) {
+                    // Запускаем CityCheckActivity, если состояние страны не задано
+                    Intent intent = new Intent(this, CityCheckActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    startActivity(intent);
                 }
-            });
-            wfpCardThread.start();
+                firstStart = false;
 
-            Thread sendTokenThread = new Thread(() -> {
-                sendToken(userEmail);
-            });
-            sendTokenThread.start();
-        }
+                // Инициализация и подключение к Pusher
+                pusherManager = new PusherManager(getString(R.string.application), userEmail, MainActivity.this);
+                pusherManager.connect();
+                pusherManager.subscribeToChannel();
+
+                // Создаем пул потоков для выполнения задач
+                ExecutorService executor = Executors.newFixedThreadPool(5);
+
+                // Запускаем задачи в пуле потоков
+                executor.execute(() -> {
+                    try {
+                        versionFromMarket(); // Предполагается, что метод void и без параметров
+                    } catch (Exception e) {
+                        Log.e(TAG, "Ошибка в versionFromMarket: " + e.getMessage());
+                    }
+                });
+
+                executor.execute(() -> {
+                    try {
+                        userPhoneFromFb(); // Предполагается, что метод void и без параметров
+                    } catch (Exception e) {
+                        Log.e(TAG, "Ошибка в userPhoneFromFb: " + e.getMessage());
+                    }
+                });
+                executor.execute(() -> updatePushDate(getApplicationContext()));
+
+                executor.execute(() -> {
+                    List<String> stringList = logCursor(MainActivity.CITY_INFO);
+                    String city = stringList.get(1);
+                    if (city != null) {
+                        getCardTokenWfp(city);
+                    }
+                });
+
+                executor.execute(() -> sendToken(userEmail));
+
+                // Закрываем пул после выполнения задач
+                executor.shutdown();
+
+                UserPermissions.getPermissions(userEmail, getApplicationContext());
+
+                Thread wfpCardThread = new Thread(() -> {
+                    List<String> stringList = logCursor(MainActivity.CITY_INFO);
+                    String city = stringList.get(1);
+                    if(city != null) {
+                        getCardTokenWfp(city);
+                    }
+                });
+                wfpCardThread.start();
+
+                Thread sendTokenThread = new Thread(() -> {
+                    sendToken(userEmail);
+                });
+                sendTokenThread.start();
+            }
+        });
+
+
+
     }
+
+    public void findUserFromServer(String userEmail, CallbackUser<Boolean> resultCallback) {
+        ApiUserService apiService = RetrofitClient.getRetrofitInstance().create(ApiUserService.class);
+
+        Call<UserFindResponse> call = apiService.findUser(userEmail);
+
+        call.enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<UserFindResponse> call, @NonNull Response<UserFindResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    UserFindResponse serverResponse = response.body();
+                    if (serverResponse != null && serverResponse.getCheckUser() != null) {
+                        // Возвращаем значение checkUser через callback
+                        resultCallback.onResult(serverResponse.getCheckUser());
+                        Log.d(TAG, "Успех: Пользователь найден = " + serverResponse.getCheckUser());
+                    } else {
+                        // Обработка пустого или некорректного ответа
+                        resultCallback.onResult(false);
+                        Log.d(TAG, "Ошибка: Некорректный ответ от сервера");
+                    }
+                } else {
+                    // Обработка HTTP-ошибки
+                    resultCallback.onResult(false);
+                    Log.d(TAG, "Запрос не удался, код: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<UserFindResponse> call, @NonNull Throwable t) {
+                resultCallback.onResult(false);
+                Log.d(TAG, "Ошибка: " + t.getMessage());
+            }
+        });
+    }
+
     private  void getCardTokenWfp(String city) {
 
-        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
-        SQLiteDatabase database = MainActivity.this.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        database.execSQL("DELETE FROM " + tableName + ";");
-        database.close();
+
 
 
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
@@ -1346,17 +1423,19 @@ public class MainActivity extends AppCompatActivity {
                 userEmail,
                 "wfp"
         );
-        call.enqueue(new Callback<CallbackResponseWfp>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
                 Logger.d(MainActivity.this, TAG, "onResponse: " + response.body());
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     CallbackResponseWfp callbackResponse = response.body();
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
                         Logger.d(MainActivity.this, TAG, "onResponse: cards" + cards);
 
                         SQLiteDatabase database = MainActivity.this.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
+                        database.execSQL("DELETE FROM " + tableName + ";");
 
                         if (cards != null && !cards.isEmpty()) {
                             for (CardInfo cardInfo : cards) {
@@ -1365,7 +1444,7 @@ public class MainActivity extends AppCompatActivity {
                                 String bank_name = cardInfo.getBank_name(); // Название банка
                                 String rectoken = cardInfo.getRectoken(); // Токен карты
                                 String merchant = cardInfo.getMerchant(); //
-                                String  active = cardInfo.getActive();
+                                String active = cardInfo.getActive();
 
                                 Logger.d(MainActivity.this, TAG, "onResponse: card_token: " + rectoken);
                                 ContentValues cv = new ContentValues();
@@ -1420,7 +1499,7 @@ public class MainActivity extends AppCompatActivity {
 //            @Override
 //            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
 //                Logger.d(getApplicationContext(), TAG, "onResponse: " + response.body());
-//                if (response.isSuccessful()) {
+//                if (response.isSuccessful() && response.body() != null) {
 //                    CallbackResponseWfp callbackResponse = response.body();
 //                    if (callbackResponse != null) {
 //                        List<CardInfo> cards = callbackResponse.getCards();
@@ -1537,7 +1616,7 @@ public class MainActivity extends AppCompatActivity {
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                         startActivity(intent);
                     }
-                    pusherManager = new PusherManager(getString(R.string.application), user.getEmail());
+                    pusherManager = new PusherManager(getString(R.string.application), user.getEmail(), this);
                     pusherManager.connect();
                     pusherManager.subscribeToChannel();
                 }
@@ -1548,7 +1627,7 @@ public class MainActivity extends AppCompatActivity {
             handleException(e, cv);
         } finally {
             // Убедимся, что индикатор прогресса скрыт и данные обновлены в базе
-            hideProgressBarAndUpdateDatabase(cv);
+//            hideProgressBarAndUpdateDatabase(cv);
         }
     }
 
@@ -1666,10 +1745,10 @@ public class MainActivity extends AppCompatActivity {
         Call<UserResponse> call = apiService.addUserNoName(email, context.getString(R.string.application));
 
         // Асинхронный вызов
-        call.enqueue(new Callback<UserResponse>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<UserResponse> call, @NonNull Response<UserResponse> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     UserResponse userResponse = response.body();
                     if (userResponse != null) {
                         updateRecordsUserInfo("username", userResponse.getUserName(), context);
@@ -1883,7 +1962,7 @@ public class MainActivity extends AppCompatActivity {
             call.enqueue(new Callback<Void>() {
                 @Override
                 public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
-                    if (response.isSuccessful()) {
+                    if (response.isSuccessful() && response.body() != null) {
                         Logger.d(getApplicationContext(),TAG, "Токен " + token + "успешно отправлен на сервер");
                     } else {
                         Logger.e(getApplicationContext(),TAG, "Ошибка отправки токена на сервер: " + response.code());
@@ -1934,5 +2013,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+    @Override
+    protected void onPause() {
+        super.onPause();
 
+
+    }
 }

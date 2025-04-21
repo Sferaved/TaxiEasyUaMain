@@ -455,23 +455,24 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     public static void setStartPoint(double latitude, double longitude) {
 
 
-        String language = (String) sharedPreferencesHelperMain.getValue("locale", "uk");
-        Locale locale = new Locale(language);
+        String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
+
+        Locale locale = new Locale(localeCode.split("_")[0]);
         Locale.setDefault(locale);
 
         Resources resources = getContext().getResources();
         android.content.res.Configuration config = resources.getConfiguration();
         config.setLocale(locale);
         resources.updateConfiguration(config, resources.getDisplayMetrics());
-        Logger.d(getContext(), TAG, "language currentLocale " + language);
+        Logger.d(getContext(), TAG, "language currentLocale " + localeCode);
 
-        Call<ApiResponse> call = apiService.reverseAddressLocal(latitude, longitude, language);
+        Call<ApiResponse> call = apiService.reverseAddressLocal(latitude, longitude, localeCode);
         m = new Marker(map);
 
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     ApiResponse apiResponse = response.body();
                     if (apiResponse != null) {
                         String result = apiResponse.getResult();
@@ -524,17 +525,17 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     public static void makeApiCall(double latitude, double longitude) {
 
 
-        String language = (String) sharedPreferencesHelperMain.getValue("locale", "uk");
-        Locale locale = new Locale(language);
+        String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
+        Locale locale = new Locale(localeCode.split("_")[0]);
         Locale.setDefault(locale);
 
         Resources resources = getContext().getResources();
         android.content.res.Configuration config = resources.getConfiguration();
         config.setLocale(locale);
         resources.updateConfiguration(config, resources.getDisplayMetrics());
-        Logger.d(getContext(), TAG, "language currentLocale " + language);
+        Logger.d(getContext(), TAG, "language currentLocale " + localeCode);
 
-        Call<ApiResponse> call = apiService.reverseAddressLocal(latitude, longitude, language);
+        Call<ApiResponse> call = apiService.reverseAddressLocal(latitude, longitude, localeCode);
         map.getOverlays().remove(m);
         map.invalidate();
 
@@ -543,7 +544,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     ApiResponse apiResponse = response.body();
                     if (apiResponse != null) {
                         String result = apiResponse.getResult();

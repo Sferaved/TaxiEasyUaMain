@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
+import static android.view.View.GONE;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -9,6 +10,8 @@ import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -32,6 +35,7 @@ import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseResponse;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseService;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.uxcam.UXCam;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,6 +82,9 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         View view = inflater.inflate(R.layout.add_cost_bottom_layout, container, false);
 
         btn_ok = view.findViewById(R.id.btn_ok);
@@ -123,8 +130,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                 FinishSeparateFragment.btn_cancel_order.setClickable(false);
                 startAddCostUpdate(
                         uid,
-                        String.valueOf(currentAddCost[0]),
-                        cost
+                        String.valueOf(currentAddCost[0])
                 );
             }
 
@@ -132,15 +138,61 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         });
 
     }
+    public interface ApiCallback {
+        void onSuccess(String updatedCost, String statusMessage);
+        void onFailure(String errorMessage);
+    }
+
     private void startAddCostUpdate(
             String uid,
-            String addCost,
-            String cost
+            String addCost
     ) {
 
         String  baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-
+        FinishSeparateFragment.text_status.setText(context.getString(R.string.recounting_order));
         if ("nal_payment".equals(pay_method)) {
+
+// Реализуем ApiCallback для обработки успешных и неуспешных ответов
+            ApiCallback callback = new ApiCallback() {
+                @Override
+                public void onSuccess(String updatedCost, String statusMessage) {
+                    // Обработайте успешный ответ, например, обновите UI
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                            // Обновление UI с результатом
+                            FinishSeparateFragment.textCost.setVisibility(View.VISIBLE);
+                            FinishSeparateFragment.textCostMessage.setVisibility(View.VISIBLE);
+                            FinishSeparateFragment.carProgressBar.setVisibility(View.VISIBLE);
+                            FinishSeparateFragment.progressSteps.setVisibility(View.VISIBLE);
+                            FinishSeparateFragment.btn_options.setVisibility(View.VISIBLE);
+                            FinishSeparateFragment.btn_open.setVisibility(View.VISIBLE);
+
+                            FinishSeparateFragment.textCostMessage.setText(updatedCost);
+                            FinishSeparateFragment.text_status.setText(statusMessage);
+                            Log.d("UpdatedCost", "Обновленная строка: " + updatedCost);
+                    });
+
+                }
+
+                @Override
+                public void onFailure(String errorMessage) {
+                    // Обработайте ошибку, например, покажите сообщение об ошибке
+                   new Handler(Looper.getMainLooper()).post(() -> {
+                            FinishSeparateFragment.text_status.setText(errorMessage);
+                   });
+                }
+
+            };
+
+// Теперь вызовите метод startAddCostWithUpdate с нужными параметрами
+            startAddCostWithUpdate(uid, addCost, pay_method, baseUrl, callback);
+
+        }
+        if ("wfp_payment".equals(pay_method)) {
+            startAddCostCardUpdate(addCost);
+        }
+    }
+    public void startAddCostWithUpdate(String uid, String addCost, String payMethod, String baseUrl, final ApiCallback callback) {
+
             Retrofit retrofit = new Retrofit.Builder()
                     .baseUrl(baseUrl) // Замените BASE_URL на ваш базовый URL сервера
                     .addConverterFactory(GsonConverterFactory.create())
@@ -148,71 +200,70 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
             ApiService apiService = retrofit.create(ApiService.class);
 
-            Call<Status> call = apiService.startAddCostWithAddBottomUpdate(
-                    uid,
-                    addCost
-            );
+            Call<Status> call = apiService.startAddCostWithAddBottomUpdate(uid, addCost);
             String url = call.request().url().toString();
             Logger.d(context, TAG, "URL запроса nal_payment: " + url);
 
-
-            call.enqueue(new Callback<>() {
+            // Выполняем асинхронный запрос
+            call.enqueue(new Callback<Status>() {
                 @Override
                 public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
-                    if (response.isSuccessful()) {
+                    if (response.isSuccessful() && response.body() != null) {
                         Status status = response.body();
                         assert status != null;
                         String responseStatus = status.getResponse();
-                        Logger.d(context, TAG, "startAddCostUpdate  nal_payment: " + responseStatus);
-                        if (!responseStatus.equals("200")) {
-                            // Обработка неуспешного ответа
-                            FinishSeparateFragment.text_status.setText(responseStatus);
-                        } else {
-                            Pattern pattern = Pattern.compile("(\\d+)");
-                            Matcher matcher = pattern.matcher(FinishSeparateFragment.textCostMessage.getText().toString());
+                        Logger.d(context, TAG, "startAddCostUpdate nal_payment: " + responseStatus);
 
-                            if (matcher.find()) {
-                                // Преобразуем найденное число в целое, добавляем 20
-                                int originalNumber = Integer.parseInt(Objects.requireNonNull(matcher.group(1)));
-                                int updatedNumber = originalNumber + Integer.parseInt(addCost);
-
-                                // Заменяем старое значение на новое
-                                String updatedCost = matcher.replaceFirst(String.valueOf(updatedNumber));
-                                FinishSeparateFragment.textCost.setVisibility(View.VISIBLE);
-                                FinishSeparateFragment.textCostMessage.setVisibility(View.VISIBLE);
-                                FinishSeparateFragment.carProgressBar.setVisibility(View.VISIBLE);
-//                                FinishSeparateFragment.progressBar.setVisibility(View.VISIBLE);
-                                FinishSeparateFragment.progressSteps.setVisibility(View.VISIBLE);
-//                                FinishSeparateFragment.progressBar.setVisibility(View.GONE);
-
-                                FinishSeparateFragment.btn_options.setVisibility(View.VISIBLE);
-                                FinishSeparateFragment.btn_open.setVisibility(View.VISIBLE);
-
-                                FinishSeparateFragment.textCostMessage.setText(updatedCost);
-                                String message =  context.getString(R.string.ex_st_0);
-                                FinishSeparateFragment.text_status.setText(message);
-                                Log.d("UpdatedCost", "Обновленная строка: " + updatedCost);
-                            } else {
-                                Log.e("UpdatedCost", "Число не найдено в строке: " + cost);
+                        if (!"200".equals(responseStatus)) {
+                            // Неуспешный ответ, передаем ошибку в callback
+                            if (callback != null) {
+                                callback.onFailure(responseStatus);
                             }
+                        } else {
+                            // Успешный ответ, обновляем стоимость и передаем результат в callback
+                            handleSuccessfulResponse(addCost, callback);
                         }
-
                     } else {
-                        // Обработка неуспешного ответа
-                        FinishSeparateFragment.text_status.setText(R.string.verify_internet);
+                        // Обработка ошибки при запросе
+                        if (callback != null) {
+                            callback.onFailure(context.getString(R.string.verify_internet));
+                        }
                     }
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
-                    // Обработайте ошибку при выполнении запроса
-
+                    // Обработать ошибку выполнения запроса
                     FirebaseCrashlytics.getInstance().recordException(t);
+                    if (callback != null) {
+                        callback.onFailure(t.getMessage());
+                    }
                 }
             });
-        }
-        if ("wfp_payment".equals(pay_method)) {
-            startAddCostCardUpdate(addCost);
+
+    }
+
+    private void handleSuccessfulResponse(String addCost, ApiCallback callback) {
+        // Преобразуем найденное число в целое, добавляем 20
+        Pattern pattern = Pattern.compile("(\\d+)");
+        Matcher matcher = pattern.matcher(FinishSeparateFragment.textCostMessage.getText().toString());
+
+        if (matcher.find()) {
+            int originalNumber = Integer.parseInt(Objects.requireNonNull(matcher.group(1)));
+            int updatedNumber = originalNumber + Integer.parseInt(addCost);
+
+            // Заменяем старое значение на новое
+            String updatedCost = matcher.replaceFirst(String.valueOf(updatedNumber));
+
+            // Передаем обновленный результат в callback
+            if (callback != null) {
+                callback.onSuccess(updatedCost, context.getString(R.string.ex_st_0));
+            }
+        } else {
+            Log.e("UpdatedCost", "Число не найдено в строке.");
+            if (callback != null) {
+                callback.onFailure("Число не найдено в строке.");
+            }
         }
     }
 
@@ -316,6 +367,8 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             String addCost
     ) {
 
+        FinishSeparateFragment.btn_cancel_order.setVisibility(GONE);
+
         Pattern pattern = Pattern.compile("(\\d+)");
 
         Log.e("newOrderCardPayAdd20", "textCostMessage: " + FinishSeparateFragment.textCostMessage.getText().toString());
@@ -379,7 +432,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     Status status = response.body();
                     assert status != null;
                     String responseStatus = status.getResponse();
@@ -446,7 +499,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<PurchaseResponse> call, @NonNull Response<PurchaseResponse> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     PurchaseResponse statusResponse = response.body();
                     if (statusResponse == null) {
                         Logger.e(context, TAG, "onResponse: StatusResponse is null");
@@ -462,7 +515,9 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                         case "WaitingAuthComplete":
                             Logger.d(context, TAG, "onResponse: Positive status received: " + orderStatus);
                             sharedPreferencesHelperMain.saveValue("pay_error", "**");
-                            newOrderCardPayAdd20(amount);
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                newOrderCardPayAdd20(amount);
+                            });
                             break;
                        default:
                            Toast.makeText(context, context.getString(R.string.pay_failure_mes), Toast.LENGTH_SHORT).show();

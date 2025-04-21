@@ -21,6 +21,7 @@ import androidx.appcompat.widget.AppCompatButton;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.uxcam.UXCam;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +31,7 @@ public class MyBottomSheetMessageMapFragment extends BottomSheetDialogFragment {
     TextView textViewInfo;
     AppCompatButton btn_help, btn_ok;
     String message;
+    private static final String TAG = "MyBottomSheetMessageMapFragment";
 
     public MyBottomSheetMessageMapFragment(String message) {
         this.message = message;
@@ -40,6 +42,9 @@ public class MyBottomSheetMessageMapFragment extends BottomSheetDialogFragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         View view = inflater.inflate(R.layout.message_map_layout, container, false);
 
         btn_help = view.findViewById(R.id.btn_help);

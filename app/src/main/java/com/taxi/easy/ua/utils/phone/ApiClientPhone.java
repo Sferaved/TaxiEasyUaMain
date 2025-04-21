@@ -29,7 +29,7 @@ public class ApiClientPhone {
         call.enqueue(new Callback<UserPhoneResponse>() {
             @Override
             public void onResponse(Call<UserPhoneResponse> call, Response<UserPhoneResponse> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     UserPhoneResponse userPhoneResponse = response.body();
                     if (userPhoneResponse != null) {
                         listener.onSuccess(userPhoneResponse.getPhone());

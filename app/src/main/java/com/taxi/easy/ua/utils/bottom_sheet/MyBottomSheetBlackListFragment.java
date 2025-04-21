@@ -21,6 +21,7 @@ import androidx.appcompat.widget.AppCompatButton;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.uxcam.UXCam;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +31,7 @@ public class MyBottomSheetBlackListFragment extends BottomSheetDialogFragment {
     TextView textViewCost;
     AppCompatButton btn_help;
     String cost;
+    private static final String TAG = "MyBottomSheetBlackListFragment";
 
     public MyBottomSheetBlackListFragment(String cost) {
         this.cost = cost;
@@ -39,6 +41,9 @@ public class MyBottomSheetBlackListFragment extends BottomSheetDialogFragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         View view = inflater.inflate(R.layout.black_list_layout, container, false);
 
         btn_help = view.findViewById(R.id.btn_help);

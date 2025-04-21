@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.808</string>
-    <string name="version">Версия: 1.808</string>
+    <string name="version_code">1.809</string>
+    <string name="version">Версия: 1.809</string>
 
     <string name="app_name">Такси Доставка</string>
 
@@ -153,7 +153,7 @@
     <string name="change_message">"Изменение базы адресов."</string>
     <string name="server_error_connected">Сервер не принял запрос. Наберите оператора через "ПОМОЩЬ"</string>
     <string name="GDPR">GDPR</string>
-    <string name="ok_GDPR">Согласиться</string>
+    <string name="ok_GDPR">Согласиться -> </string>
     <string name="Dnipro_city">Днепр</string>
     <string name="city_change">Выберите город</string>
     <string name="Zaporizhzhia">Запорожье</string>
@@ -502,5 +502,15 @@
     <string name="low_memory_5">"Состояние нехватки памяти: "</string>
     <string name="low_memory_6">" байт\n"</string>
     <string name="low_connect">Слабое интернет соединение</string>
-    <string name="add_cost_сancel">Хотите отменить заказ?</string>
+    <string name="add_cost_cancel">Хотите отменить заказ?</string>
+    <string name="google_verify_mes">Для продолжения работы приложения необходимо предоставить доступ к вашему Google аккаунту. Это позволит нам обеспечить корректную работу функций и персонализированный опыт. Пожалуйста, войдите в аккаунт Google и предоставьте необходимые разрешения.</string>
+    <string name="out_account">Вы вышли из системы</string>
+    <string name="account">Вы вошли в систему</string>
+    <string name="in_account">Войти в аккаунт</string>
+    <string name="out_account_btn">Выйти из аккаунта</string>
+    <string name="in_google_bonus">Для получения бонусов войдите в Google аккаунт</string>
+    <string name="cancel_btn_enable">Отмена заказа временно недоступна</string>
+    <string name="cancel_error">Произошла ошибка отмены заказа. Свяжитесь с оператором.</string>
+    <string name="del_acc_mes">Все Ваши персоналные данные и настройки будут удалены с приложения и с наших серверов. Приложение будт закрыто.</string>
+    <string name="err_del_phone_fb">Ошибка удаления аккаунта. Обратитесь к оператору.</string>
 </resources>

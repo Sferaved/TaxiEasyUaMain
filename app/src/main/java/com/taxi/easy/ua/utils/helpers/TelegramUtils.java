@@ -88,7 +88,7 @@ public class TelegramUtils {
             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                 Log.d(TAG, "Response received. Code: " + response.code());
 
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     Log.d(TAG, "Error message and log file sent successfully!");
                 } else {
                     Log.e(TAG, "Failed to send error message. Response Code: " + response.code());

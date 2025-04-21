@@ -102,7 +102,7 @@ public class ErrorPayActivity extends AppCompatActivity {
             @Override
             public void onResponse(@NonNull Call<ApiResponseRev<SuccessResponseDataRevers>> call, @NonNull Response<ApiResponseRev<SuccessResponseDataRevers>> response) {
 
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     // Обработка успешного ответа
                     ApiResponseRev<SuccessResponseDataRevers> apiResponse = response.body();
                     Logger.d(getApplicationContext(), TAG, "JSON Response: " + new Gson().toJson(apiResponse));

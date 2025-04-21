@@ -17,8 +17,8 @@ import androidx.annotation.NonNull;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.CardInfo;
-import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
-import com.taxi.easy.ua.ui.home.cities.api.CityService;
+import com.taxi.easy.ua.ui.cities.api.CityApiClient;
+import com.taxi.easy.ua.ui.cities.api.CityService;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
@@ -455,7 +455,7 @@ public class CityFinder {
         call.enqueue(new Callback<ResponsePaySystem>() {
             @Override
             public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     // Обработка успешного ответа
                     ResponsePaySystem responsePaySystem = response.body();
                     assert responsePaySystem != null;
@@ -539,7 +539,7 @@ public class CityFinder {
             @Override
             public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
                 Logger.d(context, TAG, "onResponse: " + response.body());
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     CallbackResponseWfp callbackResponse = response.body();
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
@@ -600,13 +600,13 @@ public class CityFinder {
         CityService cityService = cityApiClient.getClient().create(CityService.class);
 
         // Замените "your_city" на фактическое название города
-        Call<com.taxi.easy.ua.ui.home.cities.api.CityResponse> call = cityService.getMaxPayValues(city, context.getString(R.string.application));
+        Call<com.taxi.easy.ua.ui.cities.api.CityResponse> call = cityService.getMaxPayValues(city, context.getString(R.string.application));
 
-        call.enqueue(new Callback<com.taxi.easy.ua.ui.home.cities.api.CityResponse>() {
+        call.enqueue(new Callback<com.taxi.easy.ua.ui.cities.api.CityResponse>() {
             @Override
-            public void onResponse(@NonNull Call<com.taxi.easy.ua.ui.home.cities.api.CityResponse> call, @NonNull Response<com.taxi.easy.ua.ui.home.cities.api.CityResponse> response) {
-                if (response.isSuccessful()) {
-                    com.taxi.easy.ua.ui.home.cities.api.CityResponse cityResponse = response.body();
+            public void onResponse(@NonNull Call<com.taxi.easy.ua.ui.cities.api.CityResponse> call, @NonNull Response<com.taxi.easy.ua.ui.cities.api.CityResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    com.taxi.easy.ua.ui.cities.api.CityResponse cityResponse = response.body();
                     if (cityResponse != null) {
                         int cardMaxPay = cityResponse.getCardMaxPay();
                         int bonusMaxPay = cityResponse.getBonusMaxPay();
@@ -630,7 +630,7 @@ public class CityFinder {
             }
 
             @Override
-            public void onFailure(@NonNull Call<com.taxi.easy.ua.ui.home.cities.api.CityResponse> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<com.taxi.easy.ua.ui.cities.api.CityResponse> call, @NonNull Throwable t) {
                 Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
             }
         });
@@ -646,7 +646,7 @@ public class CityFinder {
         call.enqueue(new Callback<CountryResponse>() {
             @Override
             public void onResponse(@NonNull Call<CountryResponse> call, @NonNull Response<CountryResponse> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     CountryResponse countryResponse = response.body();
                     assert countryResponse != null;
                     Logger.d(context, TAG, "onResponse:countryResponse.getCountry(); " + countryResponse.getCountry());

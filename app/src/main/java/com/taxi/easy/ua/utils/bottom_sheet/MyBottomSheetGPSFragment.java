@@ -21,6 +21,7 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.uxcam.UXCam;
 
 
 public class MyBottomSheetGPSFragment extends BottomSheetDialogFragment {
@@ -41,6 +42,9 @@ public class MyBottomSheetGPSFragment extends BottomSheetDialogFragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         View view = inflater.inflate(R.layout.gps_layout, container, false);
 
         if (errorMessage != null && errorMessage.equals(getString(R.string.location_on))) {

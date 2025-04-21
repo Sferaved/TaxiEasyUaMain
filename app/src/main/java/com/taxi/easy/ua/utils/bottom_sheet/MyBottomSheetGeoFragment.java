@@ -42,6 +42,7 @@ import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.tariff.TariffInfo;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
+import com.uxcam.UXCam;
 
 import java.lang.reflect.Field;
 import java.net.MalformedURLException;
@@ -92,6 +93,9 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         View view = inflater.inflate(R.layout.settings_layout, container, false);
         listView = view.findViewById(R.id.list);
         

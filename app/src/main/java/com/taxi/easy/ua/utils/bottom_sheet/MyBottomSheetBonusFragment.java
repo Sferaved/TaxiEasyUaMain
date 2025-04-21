@@ -13,6 +13,8 @@ import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,13 +33,13 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.CardFragment;
+import com.taxi.easy.ua.ui.cities.api.CityApiClient;
+import com.taxi.easy.ua.ui.cities.api.CityResponse;
+import com.taxi.easy.ua.ui.cities.api.CityResponseMerchantFondy;
+import com.taxi.easy.ua.ui.cities.api.CityService;
 import com.taxi.easy.ua.ui.gallery.GalleryFragment;
 import com.taxi.easy.ua.ui.home.CustomArrayAdapter;
 import com.taxi.easy.ua.ui.home.HomeFragment;
-import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
-import com.taxi.easy.ua.ui.home.cities.api.CityResponse;
-import com.taxi.easy.ua.ui.home.cities.api.CityResponseMerchantFondy;
-import com.taxi.easy.ua.ui.home.cities.api.CityService;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
@@ -45,6 +47,7 @@ import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
+import com.uxcam.UXCam;
 
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -79,6 +82,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     private static String email;
     String city;
     Activity context;
+    int fistItem, finishItem;
 
     public MyBottomSheetBonusFragment() {
     }
@@ -100,8 +104,12 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         View view = inflater.inflate(R.layout.bonus_list_layout, container, false);
         context = requireActivity();
+
         try {
             database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         } catch (Exception e) {
@@ -178,6 +186,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             btn_ok.setVisibility(View.GONE);
 
             pos = position;
+            finishItem = pos;
             Log.d(TAG, "onItemClick: pos " + pos);
             if (pos == 2) {
                 String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS, context);
@@ -234,10 +243,10 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         // Замените "your_city" на фактическое название города
         Call<CityResponse> call = cityService.getMaxPayValues($city, getString(R.string.application));
 
-        call.enqueue(new Callback<CityResponse>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<CityResponse> call, @NonNull Response<CityResponse> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     CityResponse cityResponse = response.body();
                     if (cityResponse != null) {
                         int cardMaxPay = cityResponse.getCardMaxPay();
@@ -250,7 +259,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                         sharedPreferencesHelperMain.saveValue("black_list", black_list);
 
                         database.update(MainActivity.CITY_INFO, cv, "id = ?",
-                                    new String[]{"1"});
+                                new String[]{"1"});
 
                     }
                 } else {
@@ -277,7 +286,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         call.enqueue(new Callback<CityResponseMerchantFondy>() {
             @Override
             public void onResponse(@NonNull Call<CityResponseMerchantFondy> call, @NonNull Response<CityResponseMerchantFondy> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     CityResponseMerchantFondy cityResponse = response.body();
                     Log.d(TAG, "onResponse: cityResponse" + cityResponse);
                     if (cityResponse != null) {
@@ -407,6 +416,8 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
                 break;
         }
+        fistItem = pos;
+        finishItem = pos;
    }
 
     @SuppressLint("Range")
@@ -446,7 +457,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         call.enqueue(new Callback<ResponsePaySystem>() {
             @Override
             public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     // Обработка успешного ответа
                     ResponsePaySystem responsePaySystem = response.body();
                     assert responsePaySystem != null;
@@ -497,12 +508,19 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             VisicomFragment.setBtnBonusName(context);
         }
         UserPermissions.getPermissions(email, context);
-        VisicomFragment.btnVisible(View.VISIBLE);
+        if(fistItem == finishItem) {
+            try {
+                reCount();
+            } catch (UnsupportedEncodingException | MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public void reCount() throws UnsupportedEncodingException, MalformedURLException {
         Log.d(TAG, "onDismiss: rout " + rout);
         if (rout != null && rout.equals("home")) {
+            textView.setText("");
             String urlCost = getTaxiUrlSearch("costSearch", context);
             String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
 
@@ -515,25 +533,30 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     String orderCost = sendUrlMapCost.get("order_cost");
 
                     assert orderCost != null;
-                    if (!orderCost.equals("0")) {
-                        long discountInt = Integer.parseInt(discountText);
-                        long discount;
-                        long firstCost = Long.parseLong(orderCost);
-                        discount = firstCost * discountInt / 100;
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        if (!orderCost.equals("0")) {
+                            long discountInt = Integer.parseInt(discountText);
+                            long discount;
+                            long firstCost = Long.parseLong(orderCost);
+                            discount = firstCost * discountInt / 100;
 
-                        firstCost = firstCost + discount;
-//                        updateAddCost(String.valueOf(discount));
+                            firstCost = firstCost + discount;
+                            //                        updateAddCost(String.valueOf(discount));
 
 
-                        HomeFragment.costFirstForMin = firstCost;
-                        String costUpdate = String.valueOf(firstCost);
-                        textView.setText(costUpdate);
-                    } else {
-                        progressBar.setVisibility(View.INVISIBLE);
-                        if (pos == 1 || pos == 2) {
-                            changePayMethodToNal();
+                            HomeFragment.costFirstForMin = firstCost;
+                            String costUpdate = String.valueOf(firstCost);
+                            textView.setText(costUpdate);
+                            HomeFragment.btnVisible(View.VISIBLE);
+                        } else {
+                            progressBar.setVisibility(View.INVISIBLE);
+                            if (pos == 1 || pos == 2) {
+                                changePayMethodToNal();
+                            }
                         }
-                    }
+                    });
+
+
                 }
 
                 @Override
@@ -580,6 +603,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                                 costUpdate = String.valueOf(firstCost);
                                 Log.d(TAG, "onResponse:costUpdate " + costUpdate);
                                 textView.setText(costUpdate);
+                                VisicomFragment.btnVisible(View.VISIBLE);
                             } else {
                                 progressBar.setVisibility(View.INVISIBLE);
                                 if (pos == 1 || pos == 2) {

@@ -23,14 +23,20 @@ import androidx.lifecycle.ViewModelProvider;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentAboutBinding;
+import com.uxcam.UXCam;
 
 public class AboutFragment extends Fragment {
 
     private FragmentAboutBinding binding;
     private int desiredHeight;
 
+    String TAG = "AboutFragment";
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         AboutViewModel aboutViewModel =
                 new ViewModelProvider(this).get(AboutViewModel.class);
 

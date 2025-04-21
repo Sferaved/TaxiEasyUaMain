@@ -7,6 +7,10 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.taxi.easy.ua.ui.finish.OrderResponse;
+import com.taxi.easy.ua.utils.pusher.events.CanceledStatusEvent;
+import com.taxi.easy.ua.utils.pusher.events.OrderResponseEvent;
+
+import org.greenrobot.eventbus.EventBus;
 
 public class ExecutionStatusViewModel extends ViewModel {
 
@@ -31,7 +35,12 @@ public class ExecutionStatusViewModel extends ViewModel {
 
     //Проверка отмены по оплате
     public LiveData<String> getCanceledStatus() {return canceledStatus;}
-    public void setCanceledStatus(String canceled) {canceledStatus.postValue(canceled);}
+    public void setCanceledStatus(String canceled) {
+        Log.e("Pusher eventCanceled", "setCanceledStatus:" + canceled);
+        canceledStatus.postValue(canceled);
+        EventBus.getDefault().post(new CanceledStatusEvent(canceled));
+
+    }
 
     //Опрос вилки
     public LiveData<OrderResponse> getOrderResponse() {return orderResponse;}
@@ -45,7 +54,9 @@ public class ExecutionStatusViewModel extends ViewModel {
         Log.i("ViewModel", "Updating order response: " + response.getDispatchingOrderUid());
 
         // Обновляем LiveData
-        orderResponse.postValue(response);
+        orderResponse.postValue(response); // Затем установка значения
+        Log.i("ViewModel", "Updating order response: " + response.getDispatchingOrderUid());
+        EventBus.getDefault().post(new OrderResponseEvent(response)); // Публикация события
     }
     public void clearOrderResponse() {
         orderResponse.setValue(null); // Сбрасываем в null

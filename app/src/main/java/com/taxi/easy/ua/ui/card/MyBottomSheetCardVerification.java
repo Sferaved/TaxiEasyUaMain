@@ -60,6 +60,7 @@ import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.uxcam.UXCam;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -103,6 +104,9 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         View view = inflater.inflate(R.layout.activity_fondy_payment, container, false);
         fragmentManager = getParentFragmentManager();
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
@@ -184,7 +188,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             @Override
             public void onResponse(@NonNull Call<StatusResponse> call, @NonNull Response<StatusResponse> response) {
 
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     StatusResponse statusResponse = response.body();
                     if (statusResponse != null) {
                         String orderStatus = statusResponse.getTransactionStatus();
@@ -278,7 +282,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
 
                 Logger.d(context, TAG, "onResponse: " + response.body());
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     CallbackResponseWfp callbackResponse = response.body();
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
@@ -375,7 +379,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
         call.enqueue(new Callback<ReversResponse>() {
             @Override
             public void onResponse(@NonNull Call<ReversResponse> call, @NonNull Response<ReversResponse> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     ReversResponse statusResponse = response.body();
                     if (statusResponse != null) {
                         Logger.d(context, TAG, "Transaction Status: " + statusResponse.getTransactionStatus());
@@ -446,7 +450,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             @SuppressLint("NewApi")
             @Override
             public void onResponse(@NonNull Call<ApiResponse<SuccessfulResponseData>> call, @NonNull Response<ApiResponse<SuccessfulResponseData>> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     ApiResponse<SuccessfulResponseData> apiResponse = response.body();
                     Logger.d(context, TAG, "JSON Response: " + new Gson().toJson(apiResponse));
                     if (apiResponse != null) {
@@ -502,7 +506,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             @Override
             public void onResponse(@NonNull Call<CallbackResponse> call, @NonNull Response<CallbackResponse> response) {
                 Logger.d(context, TAG, "onResponse: " + response.body());
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     CallbackResponse callbackResponse = response.body();
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
@@ -583,7 +587,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             @Override
             public void onResponse(Call<ApiResponseRev<SuccessResponseDataRevers>> call, Response<ApiResponseRev<SuccessResponseDataRevers>> response) {
 
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     ApiResponseRev<SuccessResponseDataRevers> apiResponse = response.body();
                     Logger.d(context, TAG, "JSON Response: " + new Gson().toJson(apiResponse));
                     if (apiResponse != null) {
@@ -593,7 +597,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                             // Обработка успешного ответа
                             Logger.d(context, TAG, "onResponse: " + responseData);
 //                            if (isAdded()) { // Проверяем, что фрагмент присоединен к активности
-                                if (response.isSuccessful()) {
+                                if (response.isSuccessful() && response.body() != null) {
                                     if(isAdded()) {
                                         Toast.makeText(context, context.getString(R.string.link_card_succesfuly), Toast.LENGTH_SHORT).show();
                                     }
@@ -706,7 +710,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             @SuppressLint("NewApi")
             @Override
             public void onResponse(@NonNull Call<ResponseStatusMono> call, @NonNull Response<ResponseStatusMono> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     ResponseStatusMono apiResponse = response.body();
                     Logger.d(context, TAG, "JSON Response: " + new Gson().toJson(apiResponse));
                     if (apiResponse != null) {
@@ -769,7 +773,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             @Override
             public void onResponse(@NonNull Call<ResponseCancelMono> call, @NonNull Response<ResponseCancelMono> response) {
 
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     ResponseCancelMono apiResponse = response.body();
                     Logger.d(context, TAG, "JSON Response: " + new Gson().toJson(apiResponse));
                     if (apiResponse != null) {
@@ -845,7 +849,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
         call.enqueue(new Callback<ResponsePaySystem>() {
             @Override
             public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     // Обработка успешного ответа
                     ResponsePaySystem responsePaySystem = response.body();
                     assert responsePaySystem != null;

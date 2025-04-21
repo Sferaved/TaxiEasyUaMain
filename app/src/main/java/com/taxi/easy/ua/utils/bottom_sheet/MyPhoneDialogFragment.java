@@ -28,18 +28,19 @@ import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.app.ActivityCompat;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.redmadrobot.inputmask.MaskedTextChangedListener;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
+import com.uxcam.UXCam;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
-
 
 public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
 
@@ -64,6 +65,9 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         View view = inflater.inflate(R.layout.phone_verify_layout, container, false);
         phoneNumber = view.findViewById(R.id.phoneNumber);
         button = view.findViewById(R.id.ok_button);
@@ -102,6 +106,14 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
             }
         });
 
+        MaskedTextChangedListener listener = new MaskedTextChangedListener(
+                "+38 [000] [000] [00] [00]",
+                phoneNumber,
+                null
+        );
+
+        phoneNumber.addTextChangedListener(listener);
+        phoneNumber.setOnFocusChangeListener(listener);
 
         return view;
     }
@@ -215,7 +227,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
     private void phoneFull (Context context) {
         String phone = logCursor(MainActivity.TABLE_USER_INFO).get(2);
         phoneNumber.setText(phone);
-        if (phone.equals("+380") || phone.isEmpty()) {
+        if (phone.equals("+38") || phone.isEmpty()) {
             getPhoneNumber(context);
         }
     }

@@ -30,7 +30,7 @@ public class ConnectionSpeedTester {
             @Override
             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                 Log.d("TAG_VIS_ADDR", "onResponse: "+ response);
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
 
                     long endTime = System.currentTimeMillis();
                     long duration = endTime - startTime;

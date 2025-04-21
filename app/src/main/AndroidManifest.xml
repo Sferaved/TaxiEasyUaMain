@@ -16,6 +16,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"
@@ -39,7 +40,7 @@
 
     <application
         android:name=".androidx.startup.MyApplication"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher_round"
@@ -98,7 +99,7 @@
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar"
             tools:ignore="Instantiatable" />
 
-        <activity android:name="com.taxi.easy.ua.ui.home.cities.check.CityCheckActivity" />
+        <activity android:name="com.taxi.easy.ua.ui.cities.check.CityCheckActivity" />
 
         <activity android:name=".ui.settings.SettingsActivity" />
 
@@ -136,7 +137,15 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-
+        <receiver
+            android:name=".utils.download.AppUpdateReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

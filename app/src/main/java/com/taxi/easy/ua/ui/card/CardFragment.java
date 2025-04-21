@@ -34,11 +34,13 @@ import com.taxi.easy.ua.databinding.FragmentCardBinding;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
-import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
+import com.uxcam.UXCam;
 
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,14 +60,13 @@ public class CardFragment extends Fragment {
     private FragmentCardBinding binding;
     public static AppCompatButton btnCardLink, btnOrder;
 
-    private NetworkChangeReceiver networkChangeReceiver;
     private String baseUrl;
-    private String messageFondy;
+
     @SuppressLint("StaticFieldLeak")
     public static ProgressBar progressBar;
-    private final String TAG = "TAG_CARD";
+    private final String TAG = "CardFragment";
     String email;
-    String amount = "100";
+
     @SuppressLint("StaticFieldLeak")
     public static TextView textCard;
 
@@ -77,18 +78,20 @@ public class CardFragment extends Fragment {
     Activity context;
     WebView webView;
     FragmentManager fragmentManager;
-    private AppCompatButton btnCallAdmin;
     View root;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         binding = FragmentCardBinding.inflate(inflater, container, false);
         root = binding.getRoot();
 
         return root;
     }
 
-    private void cardViews() {
+    private void cardViews() throws MalformedURLException, UnsupportedEncodingException {
 
 
         pay_method = "wfp_payment";
@@ -96,11 +99,11 @@ public class CardFragment extends Fragment {
         textCard.setVisibility(View.VISIBLE);
         listView.setVisibility(View.VISIBLE);
         progressBar.setVisibility(View.VISIBLE);
-        networkChangeReceiver = new NetworkChangeReceiver();
+
         email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
 
         Logger.d(context, TAG, "onResponse:pay_method "+pay_method);
-        ArrayList<Map<String, String>> cardMaps = getCardMapsFromDatabase(MainActivity.TABLE_WFP_CARDS);
+        ArrayList<Map<String, String>> cardMaps = getCardMapsFromDatabase();
         table = MainActivity.TABLE_WFP_CARDS;
 
         Logger.d(context, TAG, "onResponse:cardMaps " + cardMaps);
@@ -113,10 +116,21 @@ public class CardFragment extends Fragment {
             textCard.setVisibility(View.VISIBLE);
             listView.setVisibility(View.GONE);
             textCard.setText(R.string.no_cards);
+            paymentNal(context);
             progressBar.setVisibility(View.GONE);
         }
     }
 
+    private void paymentNal(Context context) {
+        ContentValues cv = new ContentValues();
+        cv.put("payment_type", "nal_payment");
+        // обновляем по id
+
+        SQLiteDatabase db = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        db.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                new String[] { "1" });
+        db.close();
+    }
     private  void getCardTokenWfp() {
         String city = logCursor(MainActivity.CITY_INFO, context).get(1);
         progressBar.setVisibility(View.VISIBLE);
@@ -151,17 +165,17 @@ public class CardFragment extends Fragment {
             @Override
             public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
                 Logger.d(context, TAG, "onResponse: " + response.body());
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     CallbackResponseWfp callbackResponse = response.body();
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
                         Logger.d(context, TAG, "onResponse: cards" + cards);
                         String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
 
-// Открываем или создаем базу данных
+
                         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
-// Используем правильное имя таблицы в запросе
+
                         database.execSQL("DELETE FROM " + tableName + ";");
 
                         if (cards != null && !cards.isEmpty()) {
@@ -186,8 +200,11 @@ public class CardFragment extends Fragment {
                         }
                         database.close();
                     }
-                    cardViews();
-
+                    try {
+                        cardViews();
+                    } catch (MalformedURLException | UnsupportedEncodingException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
 
@@ -195,13 +212,12 @@ public class CardFragment extends Fragment {
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
                 Logger.d(context, TAG, "onResponse: failure " + t);
-                cardViews();
             }
         });
         progressBar.setVisibility(View.INVISIBLE);
-
     }
 
+    @SuppressLint("SourceLockedOrientationActivity")
     @Override
     public void onResume() {
         super.onResume();
@@ -236,7 +252,7 @@ public class CardFragment extends Fragment {
                     .build());
         });
 
-        btnCallAdmin = binding.btnCallAdmin;
+        AppCompatButton btnCallAdmin = binding.btnCallAdmin;
         btnCallAdmin.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_DIAL);
             String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
@@ -248,11 +264,11 @@ public class CardFragment extends Fragment {
         swipeRefreshLayout.setOnRefreshListener(() -> {
             // Скрываем TextView (⬇️) сразу после появления индикатора свайпа
             svButton.setVisibility(View.GONE);
-
-            // Выполняем необходимое действие (например, запуск новой активности)
-            MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_card, true)
-                    .build());
+            getCardTokenWfp();
+//            // Выполняем необходимое действие (например, запуск новой активности)
+//            MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder()
+//                    .setPopUpTo(R.id.nav_card, true)
+//                    .build());
             // Эмулируем окончание обновления с задержкой
             swipeRefreshLayout.postDelayed(() -> {
                 // Отключаем индикатор загрузки
@@ -285,24 +301,26 @@ public class CardFragment extends Fragment {
             } else {
                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getActivity());
 
-                messageFondy = getString(R.string.fondy_message);
-
                 MyBottomSheetCardVerificationWithOneUah bottomSheetDialogFragment = new MyBottomSheetCardVerificationWithOneUah();
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 progressBar.setVisibility(View.GONE);
             }
         });
-
-        getCardTokenWfp();
+        try {
+            cardViews();
+        } catch (MalformedURLException | UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+//        getCardTokenWfp();
 
     }
 
     @SuppressLint("Range")
-    private ArrayList<Map<String, String>> getCardMapsFromDatabase(String table) {
+    private ArrayList<Map<String, String>> getCardMapsFromDatabase() {
         ArrayList<Map<String, String>> cardMaps = new ArrayList<>();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         // Выполните запрос к таблице TABLE_FONDY_CARDS и получите данные
-        Cursor cursor = database.query(table, null, null, null, null, null, null);
+        Cursor cursor = database.query(MainActivity.TABLE_WFP_CARDS, null, null, null, null, null, null);
         Logger.d(context, TAG, "getCardMapsFromDatabase: card count: " + cursor.getCount());
 
         if (cursor.moveToFirst()) {
@@ -336,20 +354,19 @@ public class CardFragment extends Fragment {
         List<String> list = new ArrayList<>();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(table, null, null, null, null, null, null);
-        if (c != null) {
-            if (c.moveToFirst()) {
-                String str;
-                do {
-                    str = "";
-                    for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+        if (c.moveToFirst()) {
+            String str;
+            do {
+                str = "";
+                for (String cn : c.getColumnNames()) {
+                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
+                    list.add(c.getString(c.getColumnIndex(cn)));
 
-                    }
+                }
 
-                } while (c.moveToNext());
-            }
+            } while (c.moveToNext());
         }
+        c.close();
         database.close();
         return list;
     }

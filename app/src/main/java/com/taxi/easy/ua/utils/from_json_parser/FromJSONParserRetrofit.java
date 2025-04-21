@@ -102,7 +102,7 @@ public class FromJSONParserRetrofit {
 
             try {
                 retrofit2.Response<ApiResponse> response = call.execute();
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     ApiResponse apiResponse = response.body();
                     if (apiResponse != null) {
                         if (!"0".equals(apiResponse.getOrderCost())) {

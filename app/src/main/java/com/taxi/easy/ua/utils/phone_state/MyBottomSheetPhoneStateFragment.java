@@ -24,6 +24,7 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.uxcam.UXCam;
 
 public class MyBottomSheetPhoneStateFragment extends BottomSheetDialogFragment {
 
@@ -35,6 +36,9 @@ public class MyBottomSheetPhoneStateFragment extends BottomSheetDialogFragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         View view = inflater.inflate(R.layout.gps_layout, container, false);
 
         text_message= view.findViewById(R.id.text_message);

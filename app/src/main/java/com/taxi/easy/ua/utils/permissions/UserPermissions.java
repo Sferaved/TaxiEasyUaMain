@@ -33,7 +33,7 @@ public class UserPermissions {
         call.enqueue(new Callback<PermissionsResponse>() {
             @Override
             public void onResponse(@NonNull Call<PermissionsResponse> call, @NonNull Response<PermissionsResponse> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     PermissionsResponse permissionsResponse = response.body();
                     if (permissionsResponse != null) {
                         Log.d(TAG, "Bonus Pay: " + permissionsResponse.getBonusPay());

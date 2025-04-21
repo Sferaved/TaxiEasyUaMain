@@ -236,7 +236,7 @@ public class CustomArrayCancelAdapter extends ArrayAdapter<String> {
 
                 // Преобразуем Date в строку нужного формата
                 assert date != null;
-                required_time = context.getString(R.string.time_order)  + " " +  outputFormat.format(date)  + ".";
+                required_time = " " + context.getString(R.string.time_order)  + " " +  outputFormat.format(date)  + ".";
 
             } catch (ParseException e) {
                 e.printStackTrace();

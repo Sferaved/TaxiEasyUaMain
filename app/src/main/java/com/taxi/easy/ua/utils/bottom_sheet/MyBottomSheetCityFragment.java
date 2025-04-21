@@ -31,15 +31,15 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.CardInfo;
+import com.taxi.easy.ua.ui.cities.api.CityApiClient;
+import com.taxi.easy.ua.ui.cities.api.CityLastAddressResponse;
+import com.taxi.easy.ua.ui.cities.api.CityResponse;
+import com.taxi.easy.ua.ui.cities.api.CityResponseMerchantFondy;
+import com.taxi.easy.ua.ui.cities.api.CityService;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
-import com.taxi.easy.ua.ui.home.cities.api.CityApiClient;
-import com.taxi.easy.ua.ui.home.cities.api.CityLastAddressResponse;
-import com.taxi.easy.ua.ui.home.cities.api.CityResponse;
-import com.taxi.easy.ua.ui.home.cities.api.CityResponseMerchantFondy;
-import com.taxi.easy.ua.ui.home.cities.api.CityService;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
@@ -49,6 +49,7 @@ import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.uxcam.UXCam;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -136,6 +137,9 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     @Override
 
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         View view = inflater.inflate(R.layout.cities_list_layout, container, false);
 
         fragmentManager = getParentFragmentManager();
@@ -517,7 +521,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             @Override
             public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
                 Logger.d(context, TAG, "onResponse: " + response.body());
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     CallbackResponseWfp callbackResponse = response.body();
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
@@ -1020,7 +1024,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<List<RouteResponse>> call, @NonNull Response<List<RouteResponse>> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     List<RouteResponse> routes = response.body();
                     Logger.d(context, TAG, "onResponse: " + routes);
                     if (routes != null && !routes.isEmpty()) {
@@ -1239,7 +1243,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<CityResponse> call, @NonNull Response<CityResponse> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     CityResponse cityResponse = response.body();
                     if (cityResponse != null) {
                         int cardMaxPay = cityResponse.getCardMaxPay();
@@ -1291,7 +1295,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<CityResponseMerchantFondy> call, @NonNull Response<CityResponseMerchantFondy> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     CityResponseMerchantFondy cityResponse = response.body();
                     Logger.d(context, TAG, "onResponse: cityResponse" + cityResponse);
                     if (cityResponse != null) {
@@ -1360,7 +1364,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 @Override
                 public void onResponse(@NonNull Call<CallbackResponse> call, @NonNull Response<CallbackResponse> response) {
                     Logger.d(context, TAG, "onResponse: " + response.body());
-                    if (response.isSuccessful()) {
+                    if (response.isSuccessful() && response.body() != null) {
                         CallbackResponse callbackResponse = response.body();
                         if (callbackResponse != null) {
                             List<CardInfo> cards = callbackResponse.getCards();
@@ -1498,7 +1502,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<CountryResponse> call, @NonNull Response<CountryResponse> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     CountryResponse countryResponse = response.body();
                     assert countryResponse != null;
                     Logger.d(context, TAG, "onResponse:countryResponse.getCountry(); " + countryResponse.getCountry());
@@ -1577,7 +1581,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<CityLastAddressResponse> call, @NonNull Response<CityLastAddressResponse> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     CityLastAddressResponse cityResponse = response.body();
                     assert cityResponse != null;
                     Logger.d(context, TAG, "onResponse: cityResponse" + cityResponse.toString());

@@ -5,6 +5,7 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Resources;
@@ -42,8 +43,11 @@ import com.taxi.easy.ua.ui.wfp.invoice.InvoiceResponse;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceService;
 import com.taxi.easy.ua.ui.wfp.revers.ReversResponse;
 import com.taxi.easy.ua.ui.wfp.revers.ReversService;
+import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
+import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.uxcam.UXCam;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,6 +79,9 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         View view = inflater.inflate(R.layout.activity_fondy_payment, container, false);
         context = requireActivity();
         webView = view.findViewById(R.id.webView);
@@ -210,7 +217,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
             public void onResponse(@NonNull Call<InvoiceResponse> call, @NonNull Response<InvoiceResponse> response) {
                 Logger.d(context, TAG, "onResponse: 1111" + response.code());
 
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     InvoiceResponse invoiceResponse = response.body();
 
                     if (invoiceResponse != null) {
@@ -296,11 +303,11 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
                 order_id
         );
 
-        call.enqueue(new Callback<StatusResponse>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<StatusResponse> call, @NonNull Response<StatusResponse> response) {
 
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     StatusResponse statusResponse = response.body();
                     if (statusResponse != null) {
                         String orderStatus = statusResponse.getTransactionStatus();
@@ -311,7 +318,11 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
                             case "WaitingAuthComplete":
                                 sharedPreferencesHelperMain.saveValue("pay_error", "**");
                                 getReversWfp(city);
-                                dismiss();
+//                                dismiss();
+                                getCardTokenWfp();
+//                                MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder()
+//                                        .setPopUpTo(R.id.nav_card, true)
+//                                        .build());
                                 break;
                             default:
                                 sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
@@ -319,7 +330,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
                         // Другие данные можно также получить из statusResponse
                     } else {
                         Logger.d(context, TAG, "Response body is null");
-                      }
+                    }
                 } else {
                     Logger.d(context, TAG, "Request failed:5");
                 }
@@ -327,7 +338,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
 
             @Override
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
-                Logger.d(context, TAG, "Request failed:6"+ t.getMessage());
+                Logger.d(context, TAG, "Request failed:6" + t.getMessage());
                 MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_restart, true)
                         .build());
@@ -335,7 +346,93 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         });
 
     }
+    private  void getCardTokenWfp() {
+        String city = logCursor(MainActivity.CITY_INFO, context).get(1);
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(interceptor)
+                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
+                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
+                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
+                .build();
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+
+        // Создайте сервис
+        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
+        Logger.d(context, TAG, "getCardTokenWfp: ");
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+
+        // Выполните запрос
+        Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
+                context.getString(R.string.application),
+                city,
+                userEmail,
+                "wfp"
+        );
+        call.enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
+                Logger.d(context, TAG, "onResponse: " + response.body());
+                if (response.isSuccessful() && response.body() != null) {
+                    CallbackResponseWfp callbackResponse = response.body();
+                    if (callbackResponse != null) {
+                        List<CardInfo> cards = callbackResponse.getCards();
+                        Logger.d(context, TAG, "onResponse: cards" + cards);
+                        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
+
+
+                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+
+
+                        database.execSQL("DELETE FROM " + tableName + ";");
+
+                        if (cards != null && !cards.isEmpty()) {
+                            for (CardInfo cardInfo : cards) {
+                                String masked_card = cardInfo.getMasked_card(); // Маска карты
+                                String card_type = cardInfo.getCard_type(); // Тип карты
+                                String bank_name = cardInfo.getBank_name(); // Название банка
+                                String rectoken = cardInfo.getRectoken(); // Токен карты
+                                String merchant = cardInfo.getMerchant(); //
+                                String active = cardInfo.getActive();
+
+                                Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
+                                ContentValues cv = new ContentValues();
+                                cv.put("masked_card", masked_card);
+                                cv.put("card_type", card_type);
+                                cv.put("bank_name", bank_name);
+                                cv.put("rectoken", rectoken);
+                                cv.put("merchant", merchant);
+                                cv.put("rectoken_check", active);
+                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
+                            }
+                        }
+                        database.close();
+                        MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_card, true)
+                            .build());
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
+                // Обработка ошибки запроса
+                Logger.d(context, TAG, "onResponse: failure " + t);
+            }
+        });
+
+        // Выполняем необходимое действие (например, запуск новой активности)
+//        MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder()
+//                .setPopUpTo(R.id.nav_card, true)
+//                .build());
+
+    }
     private void getReversWfp(String city) {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
@@ -361,7 +458,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
                 order_id,
                 amount
         );
-        call.enqueue(new Callback<ReversResponse>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<ReversResponse> call, @NonNull Response<ReversResponse> response) {
             }
@@ -380,11 +477,6 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder()
                 .setPopUpTo(R.id.nav_card, true)
                 .build());
-    }
-
-    private void onDismissMy() {
-        Logger.d(context, TAG, "onDismiss:");
-        MainActivity.navController.navigate(R.id.nav_card);
     }
 
     @SuppressLint("Range")

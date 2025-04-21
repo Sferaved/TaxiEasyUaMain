@@ -38,6 +38,7 @@ import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.uxcam.UXCam;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
@@ -78,6 +79,9 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         View view = inflater.inflate(R.layout.settings_layout, container, false);
 
         context = requireActivity();

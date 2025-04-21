@@ -82,6 +82,7 @@ import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.visicom.visicom_search.ActivityVisicomOnePage;
 import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
+import com.taxi.easy.ua.utils.auth.FirebaseConsentManager;
 import com.taxi.easy.ua.utils.blacklist.BlacklistManager;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
@@ -101,6 +102,7 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
+import com.uxcam.UXCam;
 
 import java.net.MalformedURLException;
 import java.text.ParseException;
@@ -198,7 +200,7 @@ public class VisicomFragment extends Fragment {
     DatabaseHelper databaseHelper;
     DatabaseHelperUid databaseHelperUid;
     public static Map<String, String> sendUrlMap;
-    ConstraintLayout constraintLayoutVisicomMain, constraintLayoutVisicomFinish;
+    public static ConstraintLayout constraintLayoutVisicomMain, constraintLayoutVisicomFinish;
     @SuppressLint("StaticFieldLeak")
     public static TextView text_full_message, textCostMessage, textStatusCar;
 
@@ -215,6 +217,9 @@ public class VisicomFragment extends Fragment {
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         binding = FragmentVisicomBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
@@ -427,6 +432,8 @@ public class VisicomFragment extends Fragment {
         } else {
             progressBar.setVisibility(View.GONE);
         }
+
+
         linearLayout.setVisibility(visible);
 
         btnAdd.setVisibility(visible);
@@ -952,7 +959,7 @@ public class VisicomFragment extends Fragment {
 
                     @Override
                     public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
-                        if (response.isSuccessful()) {
+                        if (response.isSuccessful() && response.body() != null) {
                             Map<String, String> sendUrlMap = response.body();
 
                             assert sendUrlMap != null;
@@ -1053,7 +1060,7 @@ public class VisicomFragment extends Fragment {
                     }
 
                     if (date != null) {
-                        required_time = context.getString(R.string.time_order) + " " + outputFormat.format(date) + ".";
+                        required_time = " " + context.getString(R.string.time_order) + " " + outputFormat.format(date) + ".";
                     } else {
                         required_time = "";
                     }
@@ -1329,14 +1336,10 @@ public class VisicomFragment extends Fragment {
                     break;
             }
 
-            try {
-                if (orderRout()) {
-                    orderFinished();
-                }
-            } catch (MalformedURLException e) {
-                FirebaseCrashlytics.getInstance().recordException(e);
-                throw new RuntimeException(e);
+            if (orderRout()) {
+                googleVerifyAccount();
             }
+
             progressBar.setVisibility(View.GONE);
             alertDialog.dismiss();
         });
@@ -1369,14 +1372,10 @@ public class VisicomFragment extends Fragment {
             progressBar.setVisibility(VISIBLE);
             paymentType(context);
 
-            try {
-                if (orderRout()) {
-                    orderFinished();
-                }
-            } catch (MalformedURLException e) {
-                FirebaseCrashlytics.getInstance().recordException(e);
-                throw new RuntimeException(e);
+            if (orderRout()) {
+                googleVerifyAccount();
             }
+
             progressBar.setVisibility(View.GONE);
             alertDialog.dismiss();
         });
@@ -1417,6 +1416,7 @@ public class VisicomFragment extends Fragment {
         MainActivity.orderResponse = null;
         viewModel.updateOrderResponse(null);
         viewModel.setTransactionStatus(null);
+        viewModel.setCanceledStatus("no_canceled");
 
         textfrom = binding.textfrom;
 
@@ -1721,12 +1721,7 @@ public class VisicomFragment extends Fragment {
                         changePayMethodMax(text_view_cost.getText().toString(), pay_method);
                     } else {
                         if (orderRout()) {
-                            try {
-                                orderFinished();
-                            } catch (MalformedURLException e) {
-                                FirebaseCrashlytics.getInstance().recordException(e);
-                                throw new RuntimeException(e);
-                            }
+                            googleVerifyAccount();
                         }
                     }
                     break;
@@ -1738,23 +1733,13 @@ public class VisicomFragment extends Fragment {
                         changePayMethodMax(text_view_cost.getText().toString(), pay_method);
                     } else {
                         if (orderRout()) {
-                            try {
-                                orderFinished();
-                            } catch (MalformedURLException e) {
-                                FirebaseCrashlytics.getInstance().recordException(e);
-                                throw new RuntimeException(e);
-                            }
+                            googleVerifyAccount();
                         }
                     }
                     break;
                 default:
                     if (orderRout()) {
-                        try {
-                            orderFinished();
-                        } catch (MalformedURLException e) {
-                            FirebaseCrashlytics.getInstance().recordException(e);
-                            throw new RuntimeException(e);
-                        }
+                        googleVerifyAccount();
                     }
 
             }
@@ -2599,7 +2584,7 @@ public class VisicomFragment extends Fragment {
             call.enqueue(new Callback<List<RouteResponseCancel>>() {
                 @Override
                 public void onResponse(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Response<List<RouteResponseCancel>> response) {
-                    if (response.isSuccessful()) {
+                    if (response.isSuccessful() && response.body() != null) {
                         List<RouteResponseCancel> routes = response.body();
                         assert routes != null;
                         Logger.d(context, TAG, "onResponse: " + routes.toString());
@@ -2915,7 +2900,7 @@ public class VisicomFragment extends Fragment {
         call.enqueue(new Callback<ResponsePaySystem>() {
             @Override
             public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     // Обработка успешного ответа
                     ResponsePaySystem responsePaySystem = response.body();
                     assert responsePaySystem != null;
@@ -2946,11 +2931,8 @@ public class VisicomFragment extends Fragment {
                         database.close();
 
                         orderRout();
-                        try {
-                            orderFinished();
-                        } catch (MalformedURLException e) {
-                            throw new RuntimeException(e);
-                        }
+
+                        googleVerifyAccount();
                     }
 
 
@@ -2987,12 +2969,34 @@ public class VisicomFragment extends Fragment {
         updateAddCost(addCost, context);
 
         orderRout();
-        try {
-            orderFinished();
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
+
+        googleVerifyAccount();
 
     }
 
+    private void googleVerifyAccount() {
+        FirebaseConsentManager consentManager = new FirebaseConsentManager(context);
+
+        consentManager.checkUserConsent(new FirebaseConsentManager.ConsentCallback() {
+            @Override
+            public void onConsentValid() {
+                Logger.d(context, TAG, "Согласие пользователя действительное.");
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    try {
+                        orderFinished();
+                    } catch (MalformedURLException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+            @Override
+            public void onConsentInvalid() {
+                Logger.d(context, TAG, "Согласие пользователя НЕ действительное.");
+                String message = getString(R.string.google_verify_mes);
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+            }
+        });
+    }
 }

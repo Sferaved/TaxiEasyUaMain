@@ -11,14 +11,19 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.taxi.easy.ua.databinding.FragmentSlideshowBinding;
+import com.uxcam.UXCam;
 
 
 public class SlideshowFragment extends Fragment {
 
+    private static final String TAG = "SlideshowFragment";
     private FragmentSlideshowBinding binding;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+
+        UXCam.tagScreenName(TAG);
+
         SlideshowViewModel slideshowViewModel =
                 new ViewModelProvider(this).get(SlideshowViewModel.class);
 

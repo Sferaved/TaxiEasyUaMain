@@ -7,6 +7,8 @@ import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -23,14 +25,19 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.helpers.TelegramUtils;
+import com.taxi.easy.ua.utils.keys.FirestoreHelper;
+import com.taxi.easy.ua.utils.keys.SecurePrefs;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.time_ut.IdleTimeoutManager;
+import com.uxcam.UXCam;
+import com.uxcam.datamodel.UXConfig;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -53,15 +60,24 @@ public class MyApplication extends Application {
 
     private ThreadPoolExecutor threadPoolExecutor;
     private IdleTimeoutManager idleTimeoutManager;
-    private long backgroundStartTime = 0;
+
     private long lastMemoryWarningTime = 0;
     private long lastInternetWarningTime = 0;
+    private boolean isUXCamInitialized = false;
+    private static final int MAX_RETRY_ATTEMPTS = 2; // Максимум попыток загрузки ключа
+
 
     @Override
     public void onCreate() {
         super.onCreate();
+
+        fetchUXCamKey(1);
+
         sharedPreferencesHelperMain = new SharedPreferencesHelper(this);
+
         instance = this;
+
+        applyLocale();
 
         // Установка глобального обработчика исключений
         Thread.setDefaultUncaughtExceptionHandler(new MyUncaughtExceptionHandler(this));
@@ -72,6 +88,122 @@ public class MyApplication extends Application {
         registerActivityLifecycleCallbacks();
         initializeThreadPoolExecutor();
     }
+
+
+
+    private void fetchUXCamKey(int attempt) {
+        if (attempt >= MAX_RETRY_ATTEMPTS) {
+            Logger.e(this, TAG, "Max retry attempts reached for fetching UXCam key");
+            return;
+        }
+
+        try {
+            String apiKey = SecurePrefs.getKey(this);
+            Context context = getApplicationContext();
+
+            if (apiKey != null && !isUXCamInitialized) {
+                Logger.d(this, TAG, "Using cached UXCam key");
+                UXConfig config = new UXConfig.Builder(apiKey)
+                        .enableAutomaticScreenNameTagging(true)
+                        .enableImprovedScreenCapture(true)
+                        .build();
+
+                UXCam.startWithConfiguration(config);
+
+                // Проверяем успешность инициализации через тестовое событие
+                try {
+                    UXCam.logEvent("TestUXCamInit");
+                    Logger.d(this, TAG, "Test event logged, assuming UXCam initialized");
+                    isUXCamInitialized = true;
+                } catch (Exception e) {
+                    Logger.e(this, TAG, "Failed to log test event, cached key may be invalid: " + e.getMessage());
+                    // Ключ, вероятно, неверный, пробуем загрузить новый
+                    fetchUXCamKeyFromFirestore(context, attempt + 1);
+                }
+            } else {
+                fetchUXCamKeyFromFirestore(context, attempt);
+            }
+        } catch (GeneralSecurityException | IOException e) {
+            Logger.e(this, TAG, "Error accessing SecurePrefs: " + e.getMessage());
+            fetchUXCamKeyFromFirestore(getApplicationContext(), attempt + 1);
+        }
+    }
+
+    private void fetchUXCamKeyFromFirestore(Context context, int attempt) {
+        FirestoreHelper firestoreHelper = new FirestoreHelper();
+        firestoreHelper.getUixCamKey(new FirestoreHelper.OnVisicomKeyFetchedListener() {
+            @Override
+            public void onSuccess(String uKey) {
+                if (uKey == null || uKey.isEmpty()) {
+                    Logger.e(context, TAG, "Received invalid UXCam key");
+                    fetchUXCamKey(attempt + 1); // Пробуем ещё раз
+                    return;
+                }
+
+                try {
+                    SecurePrefs.saveKey(context, uKey);
+                    Logger.d(context, TAG, "UXCam key saved successfully");
+
+                    if (!isUXCamInitialized) {
+                        UXConfig config = new UXConfig.Builder(uKey)
+                                .enableAutomaticScreenNameTagging(true)
+                                .enableImprovedScreenCapture(true)
+                                .build();
+
+                        UXCam.startWithConfiguration(config);
+
+                        // Проверяем успешность инициализации
+                        try {
+                            UXCam.logEvent("TestUXCamInit");
+                            Logger.d(context, TAG, "Test event logged, UXCam initialized with new key");
+                            isUXCamInitialized = true;
+                        } catch (Exception e) {
+                            Logger.e(context, TAG, "Failed to log test event with new key: " + e.getMessage());
+                            fetchUXCamKey(attempt + 1); // Пробуем ещё раз
+                        }
+                    }
+                } catch (GeneralSecurityException | IOException e) {
+                    Logger.e(context, TAG, "Error initializing UXCam or saving key: " + e.getMessage());
+                    fetchUXCamKey(attempt + 1);
+                } catch (Exception e) {
+                    Logger.e(context, TAG, "Unexpected error: " + e.getMessage());
+                    fetchUXCamKey(attempt + 1);
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Logger.e(context, TAG, "Failed to fetch UXCam key: " + e.getMessage());
+                try {
+                    String cachedKey = SecurePrefs.getKey(context);
+                    if (cachedKey != null && !isUXCamInitialized) {
+                        Logger.d(context, TAG, "Using cached UXCam key after Firestore failure");
+                        UXConfig config = new UXConfig.Builder(cachedKey)
+                                .enableAutomaticScreenNameTagging(true)
+                                .enableImprovedScreenCapture(true)
+                                .build();
+
+                        UXCam.startWithConfiguration(config);
+
+                        try {
+                            UXCam.logEvent("TestUXCamInit");
+                            Logger.d(context, TAG, "Test event logged, UXCam initialized with cached key");
+                            isUXCamInitialized = true;
+                        } catch (Exception ex) {
+                            Logger.e(context, TAG, "Failed to log test event with cached key: " + ex.getMessage());
+                            fetchUXCamKey(attempt + 1);
+                        }
+                    } else {
+                        fetchUXCamKey(attempt + 1);
+                    }
+                } catch (GeneralSecurityException | IOException ex) {
+                    Logger.e(context, TAG, "Error using cached key: " + ex.getMessage());
+                    fetchUXCamKey(attempt + 1);
+                }
+            }
+        });
+    }
+
 
     private void initializeThreadPoolExecutor() {
         // Настройка ThreadPoolExecutor
@@ -273,6 +405,20 @@ public class MyApplication extends Application {
 
         Logger.d(activity,"MemoryMonitor", "Свободная память: " + memoryInfo.availMem + " байт");
         Logger.d(activity,"MemoryMonitor", "Состояние нехватки памяти: " + memoryInfo.lowMemory);
+    }
+
+
+    private void applyLocale() {
+        Log.d(TAG, "applyLocale: " + Locale.getDefault().toString());
+        String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
+        Locale locale = new Locale(localeCode.split("_")[0]);
+
+        Locale.setDefault(locale);
+
+        Resources resources = getResources();
+        Configuration config = resources.getConfiguration();
+        config.setLocale(locale);
+        resources.updateConfiguration(config, resources.getDisplayMetrics());
     }
 
     private void restartApplication(Activity activity) {

@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 35
-        versionCode 1808
-        versionName '1.808'
+        versionCode 1809
+        versionName '1.809'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled true
@@ -33,6 +33,7 @@ android {
     }
 
     compileOptions {
+        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_21 // Убедитесь, что используется JDK 21 или выше
         targetCompatibility JavaVersion.VERSION_21 // Или используйте VERSION_23, если у вас JDK 23
     }
@@ -46,7 +47,7 @@ android {
 dependencies {
     // Основные зависимости
     implementation 'androidx.multidex:multidex:2.0.1'
-    implementation 'androidx.core:core:1.15.0'
+    implementation 'androidx.core:core:1.16.0'
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
@@ -57,7 +58,7 @@ dependencies {
 
 
     // Firebase зависимости (с использованием BOM)
-    implementation platform('com.google.firebase:firebase-bom:33.11.0')
+    implementation platform('com.google.firebase:firebase-bom:33.12.0')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-crashlytics'
     implementation 'com.google.firebase:firebase-messaging'
@@ -84,7 +85,8 @@ dependencies {
 
     implementation 'com.google.android.gms:play-services-wallet:19.4.0'
     implementation 'com.google.android.gms:play-services-location:21.3.0'
-    implementation 'com.google.android.gms:play-services-base:18.6.0'
+    implementation 'com.google.android.gms:play-services-base:18.7.0'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 
     // Parse SDK (для работы с Parse сервером)
     implementation "com.github.parse-community.Parse-SDK-Android:parse:4.2.0"
@@ -108,8 +110,8 @@ dependencies {
     implementation 'com.squareup.picasso:picasso:2.71828'
 
     // Room для работы с локальной базой данных
-    implementation "androidx.room:room-runtime:2.6.1"
-    annotationProcessor "androidx.room:room-compiler:2.6.1"
+    implementation "androidx.room:room-runtime:2.7.0"
+    annotationProcessor "androidx.room:room-compiler:2.7.0"
 
     // Стартовые зависимости
     implementation 'androidx.startup:startup-runtime:1.2.0'
@@ -123,4 +125,16 @@ dependencies {
 
     //Pusher
     implementation 'com.pusher:pusher-java-client:2.4.2'
+
+    //Mask Edit
+    implementation 'com.redmadrobot:input-mask-android:7.2.4'
+
+    //EventBus
+    implementation 'org.greenrobot:eventbus:3.3.1'
+
+    // тепловой след
+    implementation 'com.uxcam:uxcam:3.6.39'
+
+    //security
+    implementation "androidx.security:security-crypto:1.1.0-alpha07" // Или последняя версия
 }

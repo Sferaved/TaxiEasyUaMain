@@ -251,7 +251,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             @Override
             public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
                 Logger.d(getContext(), TAG, "onResponse: " + response.body());
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     CallbackResponseWfp callbackResponse = response.body();
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
@@ -409,7 +409,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
         call.enqueue(new Callback<CallbackResponseSetActivCardWfp>() {
             @Override
             public void onResponse(@NonNull Call<CallbackResponseSetActivCardWfp> call, @NonNull Response<CallbackResponseSetActivCardWfp> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     // Обработка успешного ответа
 
                     Toast.makeText(getContext(), getContext().getString(R.string.un_link_token), Toast.LENGTH_LONG).show();

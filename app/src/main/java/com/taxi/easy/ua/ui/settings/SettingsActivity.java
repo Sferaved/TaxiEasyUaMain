@@ -51,7 +51,7 @@ public class SettingsActivity extends AppCompatActivity {
 
 
         // Получение текущего языка из SharedPreferences
-        String currentLocale = (String) sharedPreferencesHelperMain.getValue("locale", "uk");
+        String currentLocale = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
         Logger.i(this, "locale currentLocale", String.valueOf(currentLocale));
         // Установка текущего языка в Spinner
 
@@ -86,9 +86,10 @@ public class SettingsActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", "uk");
+        String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
         Logger.i(this, "locale", localeCode);
         // Установка локали
+        Locale locale = new Locale(localeCode.split("_")[0]);
         applyLocale(localeCode);
 
         // Устанавливаем Action Bar, если он доступен
