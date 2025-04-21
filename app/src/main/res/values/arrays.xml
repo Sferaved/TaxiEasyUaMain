@@ -5,7 +5,7 @@
         <item>@string/language_ru</item>
         <item>@string/language_uk</item>
     </string-array>
-    <string name="language_en">английский</string>
+    <string name="language_en">english</string>
     <string name="language_ru">русский</string>
-    <string name="language_uk">украинский</string>
+    <string name="language_uk">українська</string>
 </resources>
