@@ -979,20 +979,22 @@ public class HomeFragment extends Fragment {
         }
     }
     public static void btnVisible(int visible) {
-        text_view_cost.setVisibility(visible);
-        btn_clear.setVisibility(visible);
-        btn_minus.setVisibility(visible);
-        btn_plus.setVisibility(visible);
-        buttonAddServices.setVisibility(visible);
-        buttonBonus.setVisibility(visible);
-        btn_clear.setVisibility(visible);
-        btn_order.setVisibility(visible);
-        if (visible == View.INVISIBLE) {
-            progressBar.setVisibility(VISIBLE);
-        } else {
-            progressBar.setVisibility(View.GONE);
-        }
 
+        if (text_view_cost != null) {
+            text_view_cost.setVisibility(visible);
+            btn_clear.setVisibility(visible);
+            btn_minus.setVisibility(visible);
+            btn_plus.setVisibility(visible);
+            buttonAddServices.setVisibility(visible);
+            buttonBonus.setVisibility(visible);
+            btn_clear.setVisibility(visible);
+            btn_order.setVisibility(visible);
+            if (visible == View.INVISIBLE) {
+                progressBar.setVisibility(VISIBLE);
+            } else {
+                progressBar.setVisibility(View.GONE);
+            }
+        }
     }
 
     // Метод для сохранения количества запросов разрешений в SharedPreferences

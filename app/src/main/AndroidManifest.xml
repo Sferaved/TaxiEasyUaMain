@@ -63,7 +63,7 @@
             android:name="androidx.room.RoomDatabase.VERSION"
             android:value="3" />
         <activity
-            android:name=".ui.account.ExitActivity"
+            android:name=".ui.exit.ExitActivity"
             android:screenOrientation="portrait"
             android:exported="false"
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar" />
@@ -109,6 +109,8 @@
             android:excludeFromRecents="true"
             android:theme="@android:style/Theme.NoDisplay"
             android:launchMode="singleTask" />
+
+        <activity android:name="com.taxi.easy.ua.ui.exit.AnrActivity" />
 
         <receiver android:name="com.taxi.easy.ua.utils.connect.NetworkChangeReceiver" />
 

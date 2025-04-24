@@ -35,6 +35,8 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.cities.api.CityApiClient;
 import com.taxi.easy.ua.ui.cities.api.CityResponse;
 import com.taxi.easy.ua.ui.cities.api.CityService;
+import com.taxi.easy.ua.ui.home.HomeFragment;
+import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.helpers.TelegramUtils;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -163,7 +165,9 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
             } else if (errorMessage.equals(getString(R.string.no_cards_info))){
                  textViewInfo.setOnClickListener(view2 -> {
                      dismiss();
-                     navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder().build());
+//                     navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder().build());
+                     VisicomFragment.btnVisible(View.VISIBLE);
+                     HomeFragment.btnVisible(View.VISIBLE);
                  });
                 btn_ok.setText(getString(R.string.link_card));
                 btn_ok.setOnClickListener(v -> {

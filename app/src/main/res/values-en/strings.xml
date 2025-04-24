@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.810</string>
-    <string name="version">Version: 1.810</string>
+    <string name="version_code">1.811</string>
+    <string name="version">Version: 1.811</string>
 
     <string name="app_name">Taxi Dostavka</string>
 
@@ -510,4 +510,5 @@
     <string name="cancel_error">An error occurred while canceling your order. Please contact the operator.</string>
     <string name="del_acc_mes">All your personal data and settings will be deleted from the application and from our servers. The application will be closed.</string>
     <string name="err_del_phone_fb">Error deleting account. Contact your operator.</string>
+    <string name="anr_mes">Oops... Something went wrong 😓. Try again or later 🔄</string>
 </resources>

@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.account;
+package com.taxi.easy.ua.ui.exit;
 
 
 import android.annotation.SuppressLint;

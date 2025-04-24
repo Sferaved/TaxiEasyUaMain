@@ -1,97 +1,154 @@
 package com.taxi.easy.ua.utils.keys;
 
+import android.content.Context;
+import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.ui.exit.AnrActivity;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 
+
 public class FirestoreHelper {
     private final FirebaseFirestore firestore;
+    private final Context context;
+    ListenerRegistration listenerVisicomKey;
+    ListenerRegistration listenerMapboxKey;
+    ListenerRegistration listenerUixCamKey;
 
-    public FirestoreHelper() {
-        firestore = FirebaseFirestore.getInstance();
+    public FirestoreHelper(Context context) {
+        this.firestore = FirebaseFirestore.getInstance();
+        this.context = context;
     }
-
     public void getVisicomKey(OnVisicomKeyFetchedListener listener) {
-        // Ссылка на коллекцию и документ
         DocumentReference docRef = firestore.collection("keys").document("visicom_key");
 
-        docRef.get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists() && documentSnapshot.contains("v_key")) {
-                        String vKey = documentSnapshot.getString("v_key");
-                        if (listener != null) {
-                            try {
-                                listener.onSuccess(vKey);
-                            } catch (GeneralSecurityException | IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    } else {
-                        if (listener != null) {
-                            listener.onFailure(new Exception("Поле v_key не найдено в документе или документ отсутствует."));
-                        }
+        listenerVisicomKey = docRef.addSnapshotListener((documentSnapshot, e) -> {
+            if (e != null) {
+                if (listener != null) {
+                    listener.onFailure(e);
+                }
+                return;
+            }
+
+            if (documentSnapshot != null && documentSnapshot.exists() && documentSnapshot.contains("v_key")) {
+                String vKey = documentSnapshot.getString("v_key");
+                if (listener != null) {
+                    try {
+                        listener.onSuccess(vKey);
+                    } catch (GeneralSecurityException | IOException ex) {
+                        listener.onFailure(new RuntimeException(ex));
                     }
-                })
-                .addOnFailureListener(e -> {
-                    if (listener != null) {
-                        listener.onFailure(e);
-                    }
-                });
+                }
+            } else {
+                if (listener != null) {
+                    listener.onFailure(new Exception("Поле v_key не найдено в документе или документ отсутствует."));
+                }
+            }
+        });
     }
 
     public void getMapboxKey(OnMapboxKeyFetchedListener listener) {
-        // Ссылка на коллекцию и документ
         DocumentReference docRef = firestore.collection("keys").document("mapbox_key");
 
-        docRef.get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists() && documentSnapshot.contains("m_key")) {
-                        String vKey = documentSnapshot.getString("m_key");
-                        if (listener != null) {
-                            listener.onSuccess(vKey);
-                        }
-                    } else {
-                        if (listener != null) {
-                            listener.onFailure(new Exception("Поле m_key не найдено в документе или документ отсутствует."));
-                        }
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    if (listener != null) {
-                        listener.onFailure(e);
-                    }
-                });
+        listenerMapboxKey = docRef.addSnapshotListener((documentSnapshot, e) -> {
+            if (e != null) {
+                if (listener != null) {
+                    listener.onFailure(e);
+                }
+                return;
+            }
+
+            if (documentSnapshot != null && documentSnapshot.exists() && documentSnapshot.contains("m_key")) {
+                String mKey = documentSnapshot.getString("m_key");
+                if (listener != null) {
+                    listener.onSuccess(mKey);
+                }
+            } else {
+                if (listener != null) {
+                    listener.onFailure(new Exception("Поле m_key не найдено в документе или документ отсутствует."));
+                }
+            }
+        });
     }
 
 
     public void getUixCamKey(OnVisicomKeyFetchedListener listener) {
-        // Ссылка на коллекцию и документ
         DocumentReference docRef = firestore.collection("keys").document("uixcam_key");
 
-        docRef.get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists() && documentSnapshot.contains("u_key")) {
-                        String uKey = documentSnapshot.getString("u_key");
-                        if (listener != null) {
-                            try {
-                                listener.onSuccess(uKey);
-                            } catch (GeneralSecurityException | IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    } else {
-                        if (listener != null) {
-                            listener.onFailure(new Exception("Поле u_key не найдено в документе или документ отсутствует."));
-                        }
+        listenerUixCamKey = docRef.addSnapshotListener((documentSnapshot, e) -> {
+            if (e != null) {
+                if (listener != null) {
+                    listener.onFailure(e);
+                }
+                return;
+            }
+
+            if (documentSnapshot != null && documentSnapshot.exists() && documentSnapshot.contains("u_key")) {
+                String uKey = documentSnapshot.getString("u_key");
+                if (listener != null) {
+                    try {
+                        listener.onSuccess(uKey);
+                    } catch (GeneralSecurityException | IOException ex) {
+                        listener.onFailure(new RuntimeException(ex));
                     }
-                })
-                .addOnFailureListener(e -> {
-                    if (listener != null) {
-                        listener.onFailure(e);
+                }
+            } else {
+                if (listener != null) {
+                    listener.onFailure(new Exception("Поле u_key не найдено в документе или документ отсутствует."));
+                }
+            }
+        });
+    }
+
+
+    public void listenForResponseChanges() {
+        firestore.collection("settings")
+                .document("active")
+                .addSnapshotListener((documentSnapshot, error) -> {
+                    if (error != null) {
+                        Log.e("FirestoreHelper", "Listen failed: ", error);
+                        return;
+                    }
+
+                    if (documentSnapshot != null && documentSnapshot.exists()) {
+                        Boolean respons = documentSnapshot.getBoolean("respons");
+                        if (respons != null && !respons) {
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                Intent intent = new Intent(context, AnrActivity.class);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                context.startActivity(intent);
+                            });
+                        } else if (respons != null) {
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                Intent intent = new Intent(context, MainActivity.class);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                context.startActivity(intent);
+                            });
+                        }
                     }
                 });
+    }
+    public void stopListening() {
+        if (listenerVisicomKey != null) {
+            listenerVisicomKey.remove();
+            listenerVisicomKey = null;
+        }
+        if (listenerMapboxKey != null) {
+            listenerMapboxKey.remove();
+            listenerMapboxKey = null;
+        }
+        if (listenerUixCamKey != null) {
+            listenerUixCamKey.remove();
+            listenerUixCamKey = null;
+        }
     }
 
     // Интерфейс для передачи результатов через callback

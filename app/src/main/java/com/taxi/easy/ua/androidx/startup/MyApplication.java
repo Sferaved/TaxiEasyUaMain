@@ -23,8 +23,8 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.exit.AnrActivity;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
-import com.taxi.easy.ua.utils.helpers.TelegramUtils;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.keys.SecurePrefs;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -33,15 +33,9 @@ import com.taxi.easy.ua.utils.time_ut.IdleTimeoutManager;
 import com.uxcam.UXCam;
 import com.uxcam.datamodel.UXConfig;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.security.GeneralSecurityException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Locale;
-import java.util.TimeZone;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -65,28 +59,38 @@ public class MyApplication extends Application {
     private long lastInternetWarningTime = 0;
     private boolean isUXCamInitialized = false;
     private static final int MAX_RETRY_ATTEMPTS = 2; // Максимум попыток загрузки ключа
-
+    FirestoreHelper firestoreHelper;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
-        fetchUXCamKey(1);
+        Thread.setDefaultUncaughtExceptionHandler(new MyExceptionHandler());
+        setupANRWatchDog();
 
-        sharedPreferencesHelperMain = new SharedPreferencesHelper(this);
+        try {
+
+            firestoreHelper = new FirestoreHelper(this);
+            firestoreHelper.listenForResponseChanges();
+
+            sharedPreferencesHelperMain = new SharedPreferencesHelper(this);
+
+            initializeFirebaseAndCrashlytics();
+            fetchUXCamKey(1);
+            applyLocale();
+            setDefaultOrientation();
+            registerActivityLifecycleCallbacks();
+            initializeThreadPoolExecutor();
+
+            visicomKeyFromFb();
+            mapboxKeyFromFb ();
+
+        } catch (Exception e) {
+            Logger.e(this, TAG, "Initialization failed: " + e.toString());
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
 
         instance = this;
-
-        applyLocale();
-
-        // Установка глобального обработчика исключений
-        Thread.setDefaultUncaughtExceptionHandler(new MyUncaughtExceptionHandler(this));
-
-        initializeFirebaseAndCrashlytics();
-        setupANRWatchDog();
-        setDefaultOrientation();
-        registerActivityLifecycleCallbacks();
-        initializeThreadPoolExecutor();
     }
 
 
@@ -130,7 +134,7 @@ public class MyApplication extends Application {
     }
 
     private void fetchUXCamKeyFromFirestore(Context context, int attempt) {
-        FirestoreHelper firestoreHelper = new FirestoreHelper();
+
         firestoreHelper.getUixCamKey(new FirestoreHelper.OnVisicomKeyFetchedListener() {
             @Override
             public void onSuccess(String uKey) {
@@ -243,21 +247,18 @@ public class MyApplication extends Application {
     }
 
     private void setupANRWatchDog() {
-        // Set default uncaught exception handler
-        Thread.setDefaultUncaughtExceptionHandler(new MyExceptionHandler());
-
-        // Configure ANRWatchDog for ANR detection
-        new ANRWatchDog().setANRListener(error -> {
-            // Use Handler to show Toast on the main thread
-            new Handler(Looper.getMainLooper()).post(() -> {
-                Toast.makeText(getApplicationContext(), R.string.anr_message, Toast.LENGTH_LONG).show();
-            });
-            // Log the error
-            Logger.e(getApplicationContext(),TAG, "ANR occurred: " + error.toString());
-
-            // Log the ANR event to Firebase Crashlytics
-            FirebaseCrashlytics.getInstance().recordException(error);
-        }).start();
+        new ANRWatchDog(4000)
+                .setANRListener(error -> {
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        Toast.makeText(getApplicationContext(), R.string.anr_message, Toast.LENGTH_LONG).show();
+                        Intent intent = new Intent(getApplicationContext(), AnrActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                    });
+                    Logger.e(getApplicationContext(), TAG, "ANR occurred: " + error.toString());
+                    FirebaseCrashlytics.getInstance().recordException(error);
+                })
+                .start();
     }
 
     private void registerActivityLifecycleCallbacks() {
@@ -321,6 +322,7 @@ public class MyApplication extends Application {
 
             @Override
             public void onActivityDestroyed(@NonNull Activity activity) {
+                firestoreHelper.stopListening();
                 if (currentActivity == activity) {
                     currentActivity = null;
                 }
@@ -421,90 +423,68 @@ public class MyApplication extends Application {
         resources.updateConfiguration(config, resources.getDisplayMetrics());
     }
 
-    private void restartApplication(Activity activity) {
-        Intent intent = activity.getBaseContext().getPackageManager()
-                .getLaunchIntentForPackage(activity.getBaseContext().getPackageName());
-        if (intent != null) {
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-            activity.startActivity(intent);
-            activity.finish(); // Завершаем текущую активность
-            Runtime.getRuntime().exit(0); // Полный выход
-        }
-    }
-
-    public boolean isAppInForeground() {
-        return isAppInForeground;
-    }
-
     // Новый обработчик необработанных исключений для записи логов и Firebase Crashlytics
-    private static class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
+    private class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
+        private final Thread.UncaughtExceptionHandler defaultHandler;
+
+        public MyExceptionHandler() {
+            defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
+        }
+
         @Override
         public void uncaughtException(@NonNull Thread thread, @NonNull Throwable throwable) {
-            // Логирование исключений
-            Logger.d(currentActivity,"MyExceptionHandler", "Uncaught Exception occurred: " + throwable.getMessage() + throwable);
-
-            // Запись ошибки в Firebase Crashlytics
+            String message = throwable.getMessage() != null ? throwable.getMessage() : "No message";
+            Logger.e(instance, "MyExceptionHandler", "Uncaught Exception: " + message + ", " + throwable.toString());
             FirebaseCrashlytics.getInstance().recordException(throwable);
 
-            // Возможная перезагрузка или очистка данных
-        }
-    }
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                Intent intent = new Intent(instance, AnrActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                System.exit(1); // Завершение процесса
+            }, 500);
 
-    private class MyUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
-
-        public MyUncaughtExceptionHandler(MyApplication myApplication) {
-        }
-
-        @Override
-        public void uncaughtException(Thread t, @NonNull Throwable e) {
-            // Запись лога
-            writeLog(Log.getStackTraceString(e));
-
-            // Сообщение об ошибке
-            String errorMessage = "Uncaught exception in thread " + t.getName() + ": " + e.getMessage();
-
-            // Отправка ошибки в Telegram
-
-            String logFilePath = getExternalFilesDir(null) + "/app_log.txt"; // Путь к лог-файлу
-            TelegramUtils.sendErrorToTelegram(errorMessage, logFilePath);
-            // Перезапуск приложения или завершение работы
-            System.exit(1); // Завершаем приложение
-        }
-    }
-
-
-    public void writeLog(String log) {
-        if (isExternalStorageWritable()) {
-            File logFile = new File(getExternalFilesDir(null), LOG_FILE_NAME);
-            try (FileOutputStream fos = new FileOutputStream(logFile, true);
-                 OutputStreamWriter osw = new OutputStreamWriter(fos)) {
-
-                // Установка украинского времени
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-                sdf.setTimeZone(TimeZone.getTimeZone("Europe/Kiev"));
-
-                osw.write(sdf.format(new Date()) + " - " + log);
-                osw.write("\n");
-
-                Logger.e(getApplicationContext(),TAG, "Log written to " + logFile.getAbsolutePath());
-            } catch (IOException e) {
-                Logger.d(getApplicationContext(),"MyAppLogger", "Failed to write log" + e);
+            if (defaultHandler != null) {
+                defaultHandler.uncaughtException(thread, throwable);
             }
-        } else {
-            Logger.d(getApplicationContext(),"MyAppLogger", "External storage is not writable");
         }
     }
+    private void visicomKeyFromFb()
+    {
 
-    // Метод для проверки доступности внешнего хранилища
-    private boolean isExternalStorageWritable() {
-        String state = android.os.Environment.getExternalStorageState();
-        return android.os.Environment.MEDIA_MOUNTED.equals(state);
+        firestoreHelper.getVisicomKey(new FirestoreHelper.OnVisicomKeyFetchedListener() {
+            @Override
+            public void onSuccess(String vKey) {
+                // Обработка успешного получения ключа
+                MainActivity.apiKey = vKey;
+                Logger.d(getApplicationContext(),TAG, "Visicom Key: " + vKey);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                // Обработка ошибок
+                Logger.e(getApplicationContext(),TAG, "Ошибка: " + e.getMessage());
+            }
+        });
+
     }
 
-    // Пример использования ThreadPoolExecutor для асинхронных задач
-    public void executeBackgroundTask(Runnable task) {
-        if (threadPoolExecutor != null) {
-            threadPoolExecutor.execute(task);
-        }
+    private void mapboxKeyFromFb()
+    {
+        firestoreHelper.getMapboxKey(new FirestoreHelper.OnMapboxKeyFetchedListener() {
+            @Override
+            public void onSuccess(String mKey) {
+                // Обработка успешного получения ключа
+                MainActivity.apiKeyMapBox = mKey;
+                Logger.d(getApplicationContext(),TAG, "Mapbox Key: " + MainActivity.apiKeyMapBox);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                // Обработка ошибок
+                Logger.e(getApplicationContext(),TAG, "Ошибка: " + e.getMessage());
+            }
+        });
+
     }
 }

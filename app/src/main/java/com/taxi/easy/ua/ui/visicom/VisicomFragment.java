@@ -426,27 +426,28 @@ public class VisicomFragment extends Fragment {
 
 
     public static void btnVisible(int visible) {
-        
-        if (visible == View.INVISIBLE) {
-            progressBar.setVisibility(VISIBLE);
-        } else {
-            progressBar.setVisibility(View.GONE);
+        if (text_view_cost != null) {
+            if (visible == View.INVISIBLE) {
+                progressBar.setVisibility(VISIBLE);
+            } else {
+                progressBar.setVisibility(View.GONE);
+            }
+
+
+            linearLayout.setVisibility(visible);
+
+            btnAdd.setVisibility(visible);
+
+            buttonBonus.setVisibility(visible);
+            btn_minus.setVisibility(visible);
+            text_view_cost.setVisibility(visible);
+            btn_plus.setVisibility(visible);
+            btnOrder.setVisibility(visible);
+
+            schedule.setVisibility(visible);
+
+            shed_down.setVisibility(visible);
         }
-
-
-        linearLayout.setVisibility(visible);
-
-        btnAdd.setVisibility(visible);
-
-        buttonBonus.setVisibility(visible);
-        btn_minus.setVisibility(visible);
-        text_view_cost.setVisibility(visible);
-        btn_plus.setVisibility(visible);
-        btnOrder.setVisibility(visible);
-
-        schedule.setVisibility(visible);
-
-        shed_down.setVisibility(visible);
     }
 
     @Override
