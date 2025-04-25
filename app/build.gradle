@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 35
-        versionCode 1811
-        versionName '1.811'
+        versionCode 1812
+        versionName '1.812'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled true
@@ -52,13 +52,13 @@ dependencies {
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
-    implementation 'androidx.datastore:datastore-preferences-core-jvm:1.1.4'
+    implementation 'androidx.datastore:datastore-preferences:1.1.5'
     implementation 'com.github.anrwatchdog:anrwatchdog:1.4.0'
-    implementation 'androidx.databinding:databinding-runtime:8.9.1'
+    implementation 'androidx.databinding:databinding-runtime:8.9.2'
 
 
     // Firebase зависимости (с использованием BOM)
-    implementation platform('com.google.firebase:firebase-bom:33.12.0')
+    implementation platform('com.google.firebase:firebase-bom:33.13.0')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-crashlytics'
     implementation 'com.google.firebase:firebase-messaging'
@@ -110,8 +110,8 @@ dependencies {
     implementation 'com.squareup.picasso:picasso:2.71828'
 
     // Room для работы с локальной базой данных
-    implementation "androidx.room:room-runtime:2.7.0"
-    annotationProcessor "androidx.room:room-compiler:2.7.0"
+    implementation "androidx.room:room-runtime:2.7.1"
+    annotationProcessor "androidx.room:room-compiler:2.7.1"
 
     // Стартовые зависимости
     implementation 'androidx.startup:startup-runtime:1.2.0'
@@ -138,3 +138,4 @@ dependencies {
     //security
     implementation "androidx.security:security-crypto:1.1.0-alpha07" // Или последняя версия
 }
+

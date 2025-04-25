@@ -1,5 +1,6 @@
 package com.taxi.easy.ua.utils.keys;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
@@ -10,6 +11,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.ui.exit.AnrActivity;
 
 import java.io.IOException;
@@ -127,11 +129,25 @@ public class FirestoreHelper {
                                 context.startActivity(intent);
                             });
                         } else if (respons != null) {
-                            new Handler(Looper.getMainLooper()).post(() -> {
-                                Intent intent = new Intent(context, MainActivity.class);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                context.startActivity(intent);
-                            });
+                            Activity activity = MyApplication.getCurrentActivity();
+                            if (activity != null) {
+                                Log.d("MyAppDebug", "Текущая активность: " + activity.getClass().getSimpleName());
+
+                                if (activity instanceof AnrActivity) {
+                                    Log.d("MyAppDebug", "Активность — AnrActivity. Выполняем переход.");
+
+                                    new Handler(Looper.getMainLooper()).post(() -> {
+                                        Intent intent = new Intent(activity, MainActivity.class);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                        activity.startActivity(intent);
+                                    });
+                                } else {
+                                    Log.d("MyAppDebug", "Текущая активность не AnrActivity. Переход не выполняется.");
+                                }
+                            } else {
+                                Log.w("MyAppDebug", "Не удалось получить текущую активность (null).");
+                            }
+
                         }
                     }
                 });

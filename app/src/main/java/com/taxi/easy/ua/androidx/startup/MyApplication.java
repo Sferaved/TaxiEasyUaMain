@@ -86,7 +86,7 @@ public class MyApplication extends Application {
             mapboxKeyFromFb ();
 
         } catch (Exception e) {
-            Logger.e(this, TAG, "Initialization failed: " + e.toString());
+            Logger.e(this, TAG, "Initialization failed: " + e);
             FirebaseCrashlytics.getInstance().recordException(e);
         }
 
@@ -230,7 +230,7 @@ public class MyApplication extends Application {
     }
 
     // Для получения текущей активити (необходимый метод, чтобы использовать его в setDefaultOrientation)
-    private Activity getCurrentActivity() {
+    public static Activity getCurrentActivity() {
         return currentActivity;
     }
 

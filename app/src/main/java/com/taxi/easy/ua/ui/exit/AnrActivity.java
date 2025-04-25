@@ -83,7 +83,6 @@ public class AnrActivity extends AppCompatActivity {
 
             } while (c.moveToNext());
         }
-        assert c != null;
         c.close();
         db.close();
         return list;
