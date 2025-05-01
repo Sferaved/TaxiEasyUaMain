@@ -6,13 +6,13 @@ import android.app.ActivityManager;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
-import android.content.res.Configuration;
-import android.content.res.Resources;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -35,7 +35,6 @@ import com.uxcam.datamodel.UXConfig;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.Locale;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -65,22 +64,25 @@ public class MyApplication extends Application {
     public void onCreate() {
         super.onCreate();
 
-        Thread.setDefaultUncaughtExceptionHandler(new MyExceptionHandler());
-        setupANRWatchDog();
-
         try {
+
+            initializeFirebaseAndCrashlytics();
+            setDefaultOrientation();
+
+            sharedPreferencesHelperMain = new SharedPreferencesHelper(this);
 
             firestoreHelper = new FirestoreHelper(this);
             firestoreHelper.listenForResponseChanges();
 
-            sharedPreferencesHelperMain = new SharedPreferencesHelper(this);
 
-            initializeFirebaseAndCrashlytics();
-            fetchUXCamKey(1);
-            applyLocale();
-            setDefaultOrientation();
+
             registerActivityLifecycleCallbacks();
-            initializeThreadPoolExecutor();
+
+            Thread.setDefaultUncaughtExceptionHandler(new MyExceptionHandler());
+            setupANRWatchDog();
+
+            fetchUXCamKey(1);
+//            initializeThreadPoolExecutor();
 
             visicomKeyFromFb();
             mapboxKeyFromFb ();
@@ -247,6 +249,31 @@ public class MyApplication extends Application {
     }
 
     private void setupANRWatchDog() {
+        // Проверяем, было ли обновление приложения
+        SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+        String savedVersion = prefs.getString("app_version", "");
+        String currentVersion;
+
+        try {
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            currentVersion = packageInfo.versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            currentVersion = "";
+            Logger.e(getApplicationContext(), TAG, "Failed to get package info: " + e.getMessage());
+        }
+
+        // Если версия изменилась, сохраняем новую и откладываем запуск ANRWatchDog
+        if (!currentVersion.equals(savedVersion)) {
+            prefs.edit().putString("app_version", currentVersion).apply();
+            // Откладываем запуск ANRWatchDog на 10 секунд
+            new Handler(Looper.getMainLooper()).postDelayed(this::startANRWatchDog, 10_000);
+        } else {
+            // Если обновления не было, запускаем сразу
+            startANRWatchDog();
+        }
+    }
+
+    private void startANRWatchDog() {
         new ANRWatchDog(4000)
                 .setANRListener(error -> {
                     new Handler(Looper.getMainLooper()).post(() -> {
@@ -407,20 +434,6 @@ public class MyApplication extends Application {
 
         Logger.d(activity,"MemoryMonitor", "Свободная память: " + memoryInfo.availMem + " байт");
         Logger.d(activity,"MemoryMonitor", "Состояние нехватки памяти: " + memoryInfo.lowMemory);
-    }
-
-
-    private void applyLocale() {
-        Log.d(TAG, "applyLocale: " + Locale.getDefault().toString());
-        String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
-        Locale locale = new Locale(localeCode.split("_")[0]);
-
-        Locale.setDefault(locale);
-
-        Resources resources = getResources();
-        Configuration config = resources.getConfiguration();
-        config.setLocale(locale);
-        resources.updateConfiguration(config, resources.getDisplayMetrics());
     }
 
     // Новый обработчик необработанных исключений для записи логов и Firebase Crashlytics

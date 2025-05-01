@@ -79,6 +79,7 @@ import com.taxi.easy.ua.ui.cities.Kyiv.KyivCity;
 import com.taxi.easy.ua.ui.cities.Odessa.Odessa;
 import com.taxi.easy.ua.ui.cities.Odessa.OdessaTest;
 import com.taxi.easy.ua.ui.cities.Zaporizhzhia.Zaporizhzhia;
+import com.taxi.easy.ua.ui.exit.AnrActivity;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
@@ -1036,10 +1037,6 @@ public class HomeFragment extends Fragment {
         MainActivity.uid = null;
         MainActivity.action = null;
 
-//        MainActivity.orderResponse = null;
-//        viewModel.updateOrderResponse(null);
-//        viewModel.setTransactionStatus(null);
-//        viewModel.setCanceledStatus(null);
 
         constraintLayoutHomeMain.setVisibility(VISIBLE);
         constraintLayoutHomeFinish.setVisibility(GONE);
@@ -1167,8 +1164,9 @@ public class HomeFragment extends Fragment {
                         sendUrlMapCost = ResultSONParser.sendURL(url);
                     } catch (MalformedURLException | InterruptedException | JSONException e) {
                         FirebaseCrashlytics.getInstance().recordException(e);
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_firebase_start));
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        Intent intent = new Intent(context, AnrActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        context.startActivity(intent);
                     }
                     assert sendUrlMapCost != null;
                     String orderCost = (String) sendUrlMapCost.get("message");
@@ -1199,6 +1197,9 @@ public class HomeFragment extends Fragment {
                             cost();
                             break;
                         default:
+                            Intent intent = new Intent(context, AnrActivity.class);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            context.startActivity(intent);
                             Logger.d(context, TAG, "onItemClick: " + new IllegalStateException("Unexpected value: " + Objects.requireNonNull(orderCost)));
                     }
                     progressBar.setVisibility(GONE);
@@ -1561,20 +1562,7 @@ public class HomeFragment extends Fragment {
                     from_number.setText(retrievedRouteCost.fromNumber);
                     textViewTo.setText(retrievedRouteCost.to);
                     to_number.setText(retrievedRouteCost.toNumber);
-//                    text_view_cost.setVisibility(View.INVISIBLE);
-//                    text_view_cost.setText(retrievedRouteCost.text_view_cost);
-//                    updateAddCost(retrievedRouteCost.addCost);
 
-//                    textViewTo.setVisibility(VISIBLE);
-//                    binding.textwhere.setVisibility(VISIBLE);
-//                    binding.num2.setVisibility(VISIBLE);
-//
-//                    text_view_cost.setVisibility(VISIBLE);
-//                    btn_minus.setVisibility(VISIBLE);
-//                    btn_plus.setVisibility(VISIBLE);
-//                    buttonAddServices.setVisibility(VISIBLE);
-//                    buttonBonus.setVisibility(VISIBLE);
-//                    btn_clear.setVisibility(VISIBLE);
                     Logger.d(context, TAG, "onPostExecute: from_number.getText().toString()" + from_number.getText().toString());
                     if (!from_number.getText().toString().equals(" ")) {
                         from_number.setVisibility(VISIBLE);
@@ -1601,6 +1589,10 @@ public class HomeFragment extends Fragment {
                     Logger.d(context, TAG, "onPostExecute: MIN_COST_VALUE" + MIN_COST_VALUE);
 //                    btn_order.setVisibility(VISIBLE);
                     btnVisible(VISIBLE);
+                } else {
+                    Intent intent = new Intent(context, AnrActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    context.startActivity(intent);
                 }
                 updateAddCost("0");
                 updateUIFromList(stringListRoutHome);

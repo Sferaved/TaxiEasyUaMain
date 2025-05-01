@@ -74,6 +74,7 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentVisicomBinding;
+import com.taxi.easy.ua.ui.exit.AnrActivity;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
@@ -2413,26 +2414,28 @@ public class VisicomFragment extends Fragment {
                                     }
 
 
-                                    String orderMessage = sendUrlMapCost.get("Message");
+//                                    String orderMessage = sendUrlMapCost.get("Message");
 
                                     assert orderCost != null;
                                     if (orderCost.equals("0")) {
-
-                                        String message = context.getString(R.string.error_message);
-                                        assert orderMessage != null;
-                                        if (orderMessage.equals("ErrorMessage")) {
-                                            message = context.getString(R.string.server_error_connected);
-                                        }
-
-                                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                                        if (fragmentManager != null && !fragmentManager.isStateSaved()) {
-                                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                                        } else {
-                                            assert fragmentManager != null;
-                                            fragmentManager.beginTransaction()
-                                                    .add(bottomSheetDialogFragment, bottomSheetDialogFragment.getTag())
-                                                    .commitAllowingStateLoss();
-                                        }
+                                        Intent intent = new Intent(context, AnrActivity.class);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                        context.startActivity(intent);
+//                                        String message = context.getString(R.string.error_message);
+//                                        assert orderMessage != null;
+//                                        if (orderMessage.equals("ErrorMessage")) {
+//                                            message = context.getString(R.string.server_error_connected);
+//                                        }
+//
+//                                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+//                                        if (fragmentManager != null && !fragmentManager.isStateSaved()) {
+//                                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+//                                        } else {
+//                                            assert fragmentManager != null;
+//                                            fragmentManager.beginTransaction()
+//                                                    .add(bottomSheetDialogFragment, bottomSheetDialogFragment.getTag())
+//                                                    .commitAllowingStateLoss();
+//                                        }
 
 
                                     } else {
@@ -2456,17 +2459,21 @@ public class VisicomFragment extends Fragment {
                     }
                 }).start();
             } else {
-                String message = context.getString(R.string.verify_address);
-
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                if (fragmentManager != null && !fragmentManager.isStateSaved()) {
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                } else {
-                    assert fragmentManager != null;
-                    fragmentManager.beginTransaction()
-                            .add(bottomSheetDialogFragment, bottomSheetDialogFragment.getTag())
-                            .commitAllowingStateLoss();
-                }
+                sharedPreferencesHelperMain.saveValue("CityCheckActivity", "**");
+                Intent intent = new Intent(context, AnrActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                context.startActivity(intent);
+//                String message = context.getString(R.string.verify_address);
+//
+//                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+//                if (fragmentManager != null && !fragmentManager.isStateSaved()) {
+//                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+//                } else {
+//                    assert fragmentManager != null;
+//                    fragmentManager.beginTransaction()
+//                            .add(bottomSheetDialogFragment, bottomSheetDialogFragment.getTag())
+//                            .commitAllowingStateLoss();
+//                }
 
             }
         }

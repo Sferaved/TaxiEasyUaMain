@@ -210,6 +210,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Установка локали перед вызовом super.onCreate()
+        applyLocale();
         super.onCreate(savedInstanceState);
 //
 //
@@ -1975,4 +1976,30 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
+
+    private void applyLocale() {
+        Log.d(TAG, "applyLocale: " + Locale.getDefault().toString());
+
+        Locale previousLocale = new Locale(Locale.getDefault().toString().split("_")[0]);
+        Log.d(TAG, "applyLocale:  previousLocale " + previousLocale);
+
+        String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
+        Log.d(TAG, "applyLocale sharedPreferencesHelperMain: " + localeCode);
+
+        Locale locale = new Locale(localeCode);
+
+        Log.d(TAG, "applyLocale locale: " + locale);
+
+        if (!locale.equals(previousLocale)) {
+
+            Locale.setDefault(locale);
+
+            Resources resources = getResources();
+            Configuration config = resources.getConfiguration();
+            config.setLocale(locale);
+            resources.updateConfiguration(config, resources.getDisplayMetrics());
+         }
+
+    }
+
 }

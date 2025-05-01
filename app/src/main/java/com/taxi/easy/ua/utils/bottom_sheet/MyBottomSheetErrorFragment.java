@@ -228,50 +228,6 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         return view;
     }
 
-    /**
-     * Очистка данных приложения.
-     * @param context Контекст приложения.
-     */
-    public static void clearAppData(Context context) {
-        // Очистка SharedPreferences
-        clearAllSharedPreferences(context);
-
-//        // Очистка базы данных
-//        try {
-//            for (String database : context.databaseList()) {
-//                context.deleteDatabase(database);
-//                Logger.d(context, TAG, "clear databases ");
-//            }
-//        } catch (Exception e) {
-//            Logger.d(context, TAG, "Failed to clear databases: " + e.getMessage());
-//        }
-//
-//        // Очистка кэша
-//        try {
-//            Runtime.getRuntime().exec("pm clear " + context.getPackageName());
-//            Logger.d(context, TAG, "pm clear");
-//        } catch (IOException e) {
-//            Logger.d(context, TAG, "Failed to clear app cache: " + e.getMessage());
-//        }
-    }
-
-    private static void clearAllSharedPreferences(Context context) {
-        File sharedPrefsDir = new File(context.getApplicationInfo().dataDir + "/shared_prefs");
-        if (sharedPrefsDir.exists() && sharedPrefsDir.isDirectory()) {
-            File[] files = sharedPrefsDir.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    if (file.getName().endsWith(".xml")) {
-                        boolean isDeleted = file.delete();
-                        if (!isDeleted) {
-                            Logger.d(context, TAG, "Failed to delete SharedPreferences file: " + file.getName());
-                        }
-                    }
-                    Logger.d(context, TAG, "clearAllSharedPreferences" +file.getName());
-                }
-            }
-        }
-    }
     private void restartApplication(Context context) {
         Intent intent = new Intent(context, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(
