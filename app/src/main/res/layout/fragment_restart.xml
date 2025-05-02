@@ -17,7 +17,7 @@
         android:gravity="center"
         android:text="@string/verify_internet"
         android:textColor="@color/white"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintBottom_toTopOf="@+id/btn_clear_from_text"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.495"
@@ -27,7 +27,7 @@
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_clear_from_text"
         android:layout_width="200sp"
-        android:layout_height="48sp"
+        android:layout_height="48dp"
 
         android:background="@drawable/buttons"
         android:scaleType="centerInside"
@@ -43,7 +43,7 @@
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_help"
         android:layout_width="197sp"
-        android:layout_height="45sp"
+        android:layout_height="@dimen/button_height"
 
         android:layout_marginTop="8dp"
         android:background="@drawable/buttons"

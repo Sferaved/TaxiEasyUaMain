@@ -57,7 +57,7 @@
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_ok"
         android:layout_width="197sp"
-        android:layout_height="45sp"
+        android:layout_height="@dimen/button_height"
         android:layout_margin="16dp"
         android:background="@drawable/buttons"
         android:backgroundTint="@color/colorAccent"

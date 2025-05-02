@@ -199,8 +199,9 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnBonus"
-        android:layout_width="293sp"
-        android:layout_height="45sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
+        android:layout_height="@dimen/button_height"
         android:layout_marginTop="8dp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
@@ -215,8 +216,9 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btnOrder"
-                android:layout_width="293sp"
-                android:layout_height="45sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
+                android:layout_height="@dimen/button_height"
 
                 android:layout_marginTop="16dp"
                 android:background="@drawable/buttons"
@@ -232,8 +234,9 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btnCallAdmin"
-                android:layout_width="293sp"
-                android:layout_height="45sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
+                android:layout_height="@dimen/button_height"
                 android:layout_marginTop="12sp"
                 android:background="@drawable/buttons"
                 android:fontFamily="@font/regular"
@@ -248,8 +251,9 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_in_account"
-                android:layout_width="293sp"
-                android:layout_height="45sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
+                android:layout_height="@dimen/button_height"
 
                 android:background="@drawable/buttons"
                 android:fontFamily="@font/regular"

@@ -16,7 +16,7 @@
         android:gravity="start|center_vertical"
         android:text="@string/device"
         android:textColor="@color/white"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -30,7 +30,7 @@
         android:gravity="start|center_vertical"
         android:text="model"
         android:textColor="@color/white"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintStart_toEndOf="@+id/text_model_1"
         app:layout_constraintStart_toStartOf="@+id/text_androidVersion"
         app:layout_constraintTop_toTopOf="@id/text_model_1" />
@@ -45,7 +45,7 @@
         android:gravity="start|center_vertical"
         android:text="@string/android_version"
         android:textColor="@color/white"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/text_model" />
 
@@ -59,7 +59,7 @@
         android:gravity="start|center_vertical"
         android:text="10"
         android:textColor="@color/white"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintStart_toEndOf="@+id/text_androidVersion_1"
         app:layout_constraintTop_toTopOf="@id/text_androidVersion_1" />
 
@@ -79,17 +79,18 @@
 
     <EditText
         android:id="@+id/userName"
-        android:layout_width="293dp"
+        android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
         android:background="@drawable/input"
         android:ems="10"
 
         android:fontFamily="@font/light"
-        android:minHeight="48sp"
+        android:minHeight="@dimen/textView_minHeight"
         android:textColor="@color/white"
         android:textColorHint="#ABD9D9D9"
-        android:textSize="18sp"
+        android:textSize="@dimen/textView_textSize"
 
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
@@ -112,7 +113,8 @@
 
     <EditText
         android:id="@+id/phoneNumber"
-        android:layout_width="293dp"
+        android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
         android:layout_marginTop="8dp"
@@ -127,10 +129,10 @@
         android:inputType="phone"
 
 
-        android:minHeight="48sp"
+        android:minHeight="@dimen/textView_minHeight"
         android:textColor="@color/white"
         android:textColorHint="#ABD9D9D9"
-        android:textSize="18sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.525"
         app:layout_constraintStart_toStartOf="parent"
@@ -152,7 +154,8 @@
 
     <TextView
         android:id="@+id/email"
-        android:layout_width="293dp"
+        android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
         android:layout_marginTop="8dp"
@@ -160,11 +163,11 @@
 
         android:ems="10"
         android:fontFamily="@font/light"
-        android:minHeight="48sp"
+        android:minHeight="@dimen/textView_minHeight"
         android:textColor="@color/white"
         android:textColorHint="#ABD9D9D9"
 
-        android:textSize="18sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.525"
         app:layout_constraintStart_toStartOf="parent"
@@ -173,7 +176,8 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/upd_but"
-        android:layout_width="293sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:background="@drawable/buttons"
@@ -181,7 +185,7 @@
         android:text="@string/upd_account"
         android:textAlignment="center"
         android:textColor="@color/colorAccent"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -221,8 +225,9 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnOrder"
-        android:layout_width="293sp"
-        android:layout_height="45sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
+        android:layout_height="@dimen/button_height"
 
         android:layout_marginTop="12dp"
         android:background="@drawable/buttons"
@@ -237,8 +242,9 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnCallAdmin"
-        android:layout_width="293sp"
-        android:layout_height="45sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
+        android:layout_height="@dimen/button_height"
         android:layout_marginTop="12dp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
@@ -262,7 +268,7 @@
         android:minHeight="30sp"
         android:textAlignment="center"
         android:textColor="#D9D9D9"
-        android:textSize="18sp"
+        android:textSize="@dimen/textView_textSize"
 
 
         android:visibility="gone"
@@ -287,8 +293,9 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_in_account"
-        android:layout_width="293sp"
-        android:layout_height="45sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
+        android:layout_height="@dimen/button_height"
 
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"

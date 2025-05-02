@@ -16,7 +16,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_1"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:background="@drawable/buttons"
@@ -30,7 +31,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_2"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -43,7 +45,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_3"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -56,7 +59,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_4"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -69,7 +73,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_5"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -82,7 +87,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_6"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -95,7 +101,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_7"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -110,7 +117,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_8"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -123,7 +131,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_9"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -136,7 +145,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_10"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -149,7 +159,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_11"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -162,7 +173,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_12"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -175,7 +187,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_13"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -188,7 +201,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_14"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -201,7 +215,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_15"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -214,7 +229,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_16"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -227,7 +243,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_17"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -240,7 +257,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_18"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -253,7 +271,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_19"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -266,7 +285,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_20"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -278,7 +298,8 @@
                 app:layout_constraintTop_toBottomOf="@+id/btn_city_19" />
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_21"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -290,7 +311,8 @@
                 app:layout_constraintTop_toBottomOf="@+id/btn_city_20" />
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_22"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -303,7 +325,8 @@
 
            <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_city_23"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -316,7 +339,8 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_exit"
-                android:layout_width="293sp"
+               android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="8dp"

@@ -67,4 +67,10 @@
         android:label="@string/your_order"
         tools:layout="@layout/fragment_restart" />
 
+    <fragment
+        android:id="@+id/nav_search"
+        android:name="com.taxi.easy.ua.ui.visicom.visicom_search.VisicomSearchFragment"
+        android:label="@string/search_address"
+        tools:layout="@layout/fragment_visicom_search" />
+
 </navigation>

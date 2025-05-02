@@ -15,7 +15,7 @@
         android:layout_margin="@dimen/activity_vertical_margin"
         android:ems="10"
         android:fontFamily="@font/light"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"

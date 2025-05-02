@@ -40,8 +40,9 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnSum"
-        android:layout_width="293sp"
-        android:layout_height="45sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
+        android:layout_height="@dimen/button_height"
         android:layout_marginTop="8sp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
@@ -56,8 +57,9 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnPay"
-        android:layout_width="293sp"
-        android:layout_height="45sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
+        android:layout_height="@dimen/button_height"
         android:layout_marginTop="8sp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
@@ -72,8 +74,9 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnOrder"
-        android:layout_width="293sp"
-        android:layout_height="45sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
+        android:layout_height="@dimen/button_height"
         android:layout_marginTop="8sp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"

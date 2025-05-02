@@ -266,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
                 R.id.nav_visicom, R.id.nav_home, R.id.nav_cancel,
                 R.id.nav_about, R.id.nav_uid, R.id.nav_bonus, R.id.nav_card,
                 R.id.nav_account, R.id.nav_author, R.id.nav_finish_separate,
-                R.id.nav_restart)
+                R.id.nav_restart, R.id.nav_search)
                 .setOpenableLayout(drawer)
                 .build();
 
@@ -1203,7 +1203,7 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-        } catch(Exception ex) {}
+        } catch(Exception ignored) {}
 
         Logger.d(this, TAG, "onOptionsItemSelected gps_enabled: " + gps_enabled);
         Logger.d(this, TAG, "onOptionsItemSelected network_enabled: " + network_enabled);

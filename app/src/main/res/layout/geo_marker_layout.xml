@@ -17,7 +17,7 @@
         android:layout_marginEnd="4sp"
         android:text="1"
         android:textColor="#D9D9D9"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintEnd_toStartOf="@+id/textGeo"
         app:layout_constraintTop_toBottomOf="@+id/textfrom" />
 
@@ -32,7 +32,7 @@
         android:fontFamily="@font/light"
 
         android:textColor="@color/white"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textfrom"
@@ -58,7 +58,7 @@
         android:text="2"
         android:textColor="#D9D9D9"
         android:layout_marginEnd="4sp"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintEnd_toStartOf="@+id/text_to"
         app:layout_constraintTop_toBottomOf="@+id/textwhere"
         tools:ignore="MissingConstraints" />
@@ -76,7 +76,7 @@
 
         android:textColor="@color/white"
         android:textColorHint="#ABD9D9D9"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toEndOf="@+id/num2"
@@ -107,13 +107,14 @@
 
         android:text="@string/to_text"
         android:textColor="#9DA0A8"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintStart_toStartOf="@+id/num2"
         app:layout_constraintTop_toBottomOf="@+id/textGeo" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnAdd"
-        android:layout_width="293sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
         android:layout_height="wrap_content"
 
         android:layout_marginTop="8dp"
@@ -129,7 +130,8 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnBonus"
-        android:layout_width="293sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
         android:layout_height="wrap_content"
 
         android:layout_marginTop="8dp"
@@ -145,7 +147,8 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/change"
-        android:layout_width="293sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:background="@drawable/buttons"
@@ -206,8 +209,9 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnOrder"
-        android:layout_width="293sp"
-        android:layout_height="45sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
+        android:layout_height="@dimen/button_height"
         android:layout_marginTop="12sp"
         android:layout_marginBottom="12sp"
         android:background="@drawable/buttons"
@@ -220,7 +224,7 @@
 
         android:textAlignment="center"
         android:textColor="@color/colorAccent"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

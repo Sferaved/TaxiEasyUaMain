@@ -15,7 +15,7 @@
         android:gravity="center"
         android:text="@string/error_payment_card"
         android:textColor="@color/white"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.496"
         app:layout_constraintStart_toStartOf="parent"
@@ -41,7 +41,7 @@
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_help"
         android:layout_width="197sp"
-        android:layout_height="45sp"
+        android:layout_height="@dimen/button_height"
 
         android:layout_margin="12dp"
         android:background="@drawable/buttons"
@@ -67,7 +67,7 @@
         android:text="@string/user_cards"
         android:textAlignment="center"
         android:textColor="#D9D9D9"
-        android:textSize="18sp"
+        android:textSize="@dimen/textView_textSize"
         android:visibility="visible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
@@ -77,7 +77,7 @@
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_ok"
         android:layout_width="197sp"
-        android:layout_height="45sp"
+        android:layout_height="@dimen/button_height"
 
         android:layout_marginTop="8dp"
         android:background="@drawable/buttons"
@@ -105,7 +105,7 @@
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_cancel_order"
         android:layout_width="197sp"
-        android:layout_height="45sp"
+        android:layout_height="@dimen/button_height"
 
         android:layout_marginTop="8dp"
         android:background="@drawable/error"
@@ -122,7 +122,7 @@
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_add_card"
         android:layout_width="197sp"
-        android:layout_height="45sp"
+        android:layout_height="@dimen/button_height"
 
         android:layout_marginTop="8dp"
         android:background="@drawable/buttons"
@@ -139,7 +139,7 @@
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_card"
         android:layout_width="197sp"
-        android:layout_height="45sp"
+        android:layout_height="@dimen/button_height"
         android:layout_marginTop="8dp"
         android:background="@drawable/buttons"
         android:backgroundTint="@color/wallet_bright_foreground_disabled_holo_light"

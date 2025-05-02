@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:padding="16dp"
     android:textColor="@color/black"
-    android:textSize="16sp"
+    android:textSize="@dimen/textView_textSize"
     android:gravity="center_vertical"
     android:background="?android:attr/selectableItemBackground"
     android:ellipsize="end"

@@ -25,7 +25,8 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_ok"
-        android:layout_width="293sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
         android:layout_height="wrap_content"
 
         android:layout_marginTop="100dp"
@@ -41,7 +42,8 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_enter"
-        android:layout_width="293sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
         android:layout_height="wrap_content"
 
         android:layout_marginTop="12dp"
@@ -57,7 +59,8 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnCallAdmin"
-        android:layout_width="293sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
         android:layout_height="wrap_content"
 
         android:layout_marginTop="12dp"
@@ -73,7 +76,8 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_exit"
-        android:layout_width="293sp"
+       android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
 

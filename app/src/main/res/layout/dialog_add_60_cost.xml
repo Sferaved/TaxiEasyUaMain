@@ -52,7 +52,7 @@
         android:textAlignment="center"
         android:textAllCaps="true"
         android:textColor="#D9D9D9"
-        android:textSize="18sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"

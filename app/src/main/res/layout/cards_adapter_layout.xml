@@ -9,8 +9,8 @@
 
     <ImageView
         android:id="@+id/cardImage"
-        android:layout_width="48sp"
-        android:layout_height="48sp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_marginStart="4sp"
         android:contentDescription="Card Type Image"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -35,7 +35,7 @@
         android:gravity="center_vertical"
         android:text="Card Type"
         android:textColor="@color/colorAccent"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintStart_toEndOf="@+id/cardImage"
         app:layout_constraintTop_toBottomOf="@+id/bankText" />
 
@@ -47,7 +47,7 @@
         android:gravity="center_vertical"
         android:text="Bank"
         android:textColor="@color/white"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintStart_toEndOf="@+id/checkBox"
         app:layout_constraintTop_toTopOf="parent" />
 

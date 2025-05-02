@@ -16,7 +16,7 @@
             android:layout_height="wrap_content"
             android:text="@string/language"
             android:textColor="@color/white"
-            android:textSize="18sp"
+            android:textSize="@dimen/textView_textSize"
             android:paddingBottom="8dp"/>
 
         <Spinner

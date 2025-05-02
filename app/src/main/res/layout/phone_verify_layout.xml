@@ -16,7 +16,7 @@
         android:text="@string/please_phone_message"
         android:background="@drawable/input"
         android:textColor="@color/white"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -30,7 +30,7 @@
         android:gravity="left|fill_horizontal"
         android:text="@string/GDPR"
         android:textColor="@color/white"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.526"
@@ -48,7 +48,7 @@
         android:gravity="left|fill_horizontal"
         android:text="@string/ok_GDPR"
         android:textColor="@color/white"
-        android:textSize="18sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView6"
         tools:ignore="MissingConstraints" />
@@ -69,7 +69,8 @@
 
     <EditText
         android:id="@+id/phoneNumber"
-        android:layout_width="293dp"
+        android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
         android:layout_marginTop="8dp"
@@ -84,10 +85,10 @@
         android:inputType="phone"
 
 
-        android:minHeight="48sp"
+        android:minHeight="@dimen/textView_minHeight"
         android:textColor="@color/white"
         android:textColorHint="#ABD9D9D9"
-        android:textSize="18sp"
+        android:textSize="@dimen/textView_textSize"
 
         android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"

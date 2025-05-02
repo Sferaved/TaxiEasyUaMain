@@ -17,7 +17,7 @@
 
         android:text="@string/serve"
         android:textColor="#D9D9D9"
-        android:textSize="18sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView4" />
 
@@ -31,7 +31,7 @@
 
         android:text="@string/disc_text"
         android:textColor="#D9D9D9"
-        android:textSize="18sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView" />
 
@@ -45,7 +45,7 @@
         android:text="%"
         android:textAlignment="center"
         android:textColor="#D9D9D9"
-        android:textSize="18sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintStart_toEndOf="@+id/discinp"
         app:layout_constraintTop_toBottomOf="@+id/tv_selected_time" />
 
@@ -77,7 +77,7 @@
         android:inputType="text"
         android:textAllCaps="true"
         android:textColor="#D9D9D9"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintEnd_toStartOf="@+id/tv_selected_date"
         app:layout_constraintHorizontal_bias="0.005"
         app:layout_constraintStart_toEndOf="@+id/textView"
@@ -96,7 +96,7 @@
         android:inputType="text"
         android:textAllCaps="true"
         android:textColor="#D9D9D9"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/list_tariff" />
 
@@ -108,7 +108,7 @@
         android:fontFamily="@font/light"
         android:text="@string/coment"
         android:textColor="#D9D9D9"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btn_minus" />
 
@@ -159,7 +159,7 @@
         android:textAlignment="center"
         android:textAllCaps="true"
         android:textColor="#D9D9D9"
-        android:textSize="16sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintStart_toEndOf="@+id/btn_minus"
         app:layout_constraintTop_toBottomOf="@+id/tv_selected_time" />
 
@@ -171,7 +171,7 @@
         android:fontFamily="@font/medium"
         android:text="@string/services"
         android:textColor="#D9D9D9"
-        android:textSize="18sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.501"
         app:layout_constraintStart_toStartOf="parent"
@@ -186,7 +186,7 @@
         android:fontFamily="@font/regular"
         android:text="@string/tar"
         android:textColor="#D9D9D9"
-        android:textSize="18sp"
+        android:textSize="@dimen/textView_textSize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
