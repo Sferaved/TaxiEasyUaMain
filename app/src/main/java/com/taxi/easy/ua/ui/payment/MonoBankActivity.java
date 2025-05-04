@@ -114,6 +114,7 @@ public class MonoBankActivity extends AppCompatActivity {
             public void onFailure(Call<List<Transaction>> call, Throwable t) {
                 // Обработка ошибки
                 Log.d("TAG", "response.body(): t " + t);
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
 
@@ -150,6 +151,7 @@ public class MonoBankActivity extends AppCompatActivity {
             public void onFailure(Call<ClientInfo> call, Throwable t) {
                 // Обработка ошибки
                 Log.d("TAG", "response.body(): t " + t);
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
     }

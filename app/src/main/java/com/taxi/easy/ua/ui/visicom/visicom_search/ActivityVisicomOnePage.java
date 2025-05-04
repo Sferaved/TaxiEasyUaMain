@@ -1158,6 +1158,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                 @Override
                 public void onFailure(@NonNull okhttp3.Call call, @NonNull IOException e) {
+                    FirebaseCrashlytics.getInstance().recordException(e);
                 }
             });
         } catch (Exception e) {
@@ -2543,6 +2544,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
                 // Обработка ошибки
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(getApplicationContext(),"visicomKey", "Failed to make API call" + t);
             }
         },getString(R.string.application)
@@ -2569,6 +2571,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<ApiResponseMapbox> call, @NonNull Throwable t) {
                 // Обработка ошибки
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(getApplicationContext(),"ApiResponseMapbox", "Failed to make API call" + t);
             }
         }, getString(R.string.application)

@@ -28,6 +28,7 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.FragmentManager;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.CardInfo;
@@ -569,6 +570,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.error_message));
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -1050,8 +1052,12 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<List<RouteResponse>> call, @NonNull Throwable t) {
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.error_message));
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                FirebaseCrashlytics.getInstance().recordException(t);
+                if(isAdded()) {
+                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.error_message));
+                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                }
+
             }
         });
     }
@@ -1275,6 +1281,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<CityResponse> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.error_message));
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -1333,6 +1340,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<CityResponseMerchantFondy> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.error_message));
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -1417,6 +1425,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
                 @Override
                 public void onFailure(@NonNull Call<CallbackResponse> call, @NonNull Throwable t) {
+                    FirebaseCrashlytics.getInstance().recordException(t);
                     Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.error_message));
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -1516,6 +1525,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<CountryResponse> call, @NonNull Throwable t) {
                 Logger.d(context, TAG, "Error: " + t.getMessage());
+                FirebaseCrashlytics.getInstance().recordException(t);
                 VisicomFragment.progressBar.setVisibility(View.GONE);
                 sharedPreferencesHelperMain.saveValue("countryState", "UA");
             }
@@ -1609,6 +1619,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<CityLastAddressResponse> call, Throwable t) {
                 Logger.d(getContext(), TAG, "Failed. Error message: " + t.getMessage());
+                FirebaseCrashlytics.getInstance().recordException(t);
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.error_message));
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());

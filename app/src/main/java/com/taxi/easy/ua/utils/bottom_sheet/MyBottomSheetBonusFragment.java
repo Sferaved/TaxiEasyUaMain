@@ -269,6 +269,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<CityResponse> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(getActivity(), TAG, "Failed. Error message: " + t.getMessage());
             }
         });
@@ -327,6 +328,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<CityResponseMerchantFondy> call, @NonNull Throwable t) {
                 Logger.d(getActivity(), TAG, "Failed. Error message: " + t.getMessage());
+                FirebaseCrashlytics.getInstance().recordException(t);
                 adapter.setItemEnabled(2, false);
             }
         });
@@ -493,6 +495,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
                 // Обработка ошибки
+                FirebaseCrashlytics.getInstance().recordException(t);
                 callback.onPaySystemFailure(getString(R.string.verify_internet));
             }
         });
@@ -561,6 +564,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
                 @Override
                 public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                    FirebaseCrashlytics.getInstance().recordException(t);
                     Logger.d(getActivity(), TAG, " onFailure home" + t);
                 }
             });
@@ -614,6 +618,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
                         @Override
                         public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                            FirebaseCrashlytics.getInstance().recordException(t);
                             Logger.d(getActivity(), TAG, " onFailure visicom" + t);
                         }
                     });
@@ -663,6 +668,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
                         @Override
                         public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                            FirebaseCrashlytics.getInstance().recordException(t);
                             Logger.d(getActivity(), TAG, " onFailure marker" + t);
                         }
                     });

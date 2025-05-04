@@ -34,6 +34,7 @@ import androidx.navigation.NavOptions;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
@@ -238,6 +239,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
 
             @Override
             public void onFailure(@NonNull Call<InvoiceResponse> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "Request failed:4 " + t.getMessage());
             }
         });
@@ -339,6 +341,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
             @Override
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
                 Logger.d(context, TAG, "Request failed:6" + t.getMessage());
+                FirebaseCrashlytics.getInstance().recordException(t);
                 MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_restart, true)
                         .build());
@@ -423,6 +426,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
             @Override
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "onResponse: failure " + t);
             }
         });
@@ -465,7 +469,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
 
             @Override
             public void onFailure(@NonNull Call<ReversResponse> call, @NonNull Throwable t) {
-
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
         dismiss();

@@ -518,6 +518,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
                 // Обработка ошибок
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
     }
@@ -677,6 +678,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
                 // Обработка ошибок
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
     }

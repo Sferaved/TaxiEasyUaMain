@@ -21,6 +21,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.navigation.NavOptions;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.unlink.UnlinkApi;
@@ -294,6 +295,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
                 Logger.d(getContext(), TAG, "onResponse: failure " + t);
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
 
@@ -373,6 +375,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             public void onFailure(@NonNull Call<CallbackResponseSetActivCardWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
                 Logger.d(getContext(), TAG, "onResponse: failure " + t);
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
     }
@@ -423,7 +426,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
 
             @Override
             public void onFailure(@NonNull Call<CallbackResponseSetActivCardWfp> call, @NonNull Throwable t) {
-
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
     }

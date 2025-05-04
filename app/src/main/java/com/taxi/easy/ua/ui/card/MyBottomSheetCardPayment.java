@@ -537,6 +537,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
                 Logger.d(context, TAG, "Request failed:"+ t.getMessage());
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
 
@@ -640,6 +641,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "onResponse: failure " + t);
             }
         });

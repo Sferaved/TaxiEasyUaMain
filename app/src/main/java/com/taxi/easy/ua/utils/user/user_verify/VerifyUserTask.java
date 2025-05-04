@@ -11,6 +11,7 @@ import android.database.sqlite.SQLiteDatabase;
 
 import androidx.annotation.NonNull;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
@@ -63,6 +64,7 @@ public class VerifyUserTask {
 
                 @Override
                 public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                    FirebaseCrashlytics.getInstance().recordException(t);
                     Logger.e(context, TAG, "Failed to fetch data: " + t.getMessage());
                 }
             });

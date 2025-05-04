@@ -176,6 +176,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                 @Override
                 public void onFailure(String errorMessage) {
                     // Обработайте ошибку, например, покажите сообщение об ошибке
+
                    new Handler(Looper.getMainLooper()).post(() -> {
                             FinishSeparateFragment.text_status.setText(errorMessage);
                    });
@@ -233,6 +234,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
                 @Override
                 public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
+                    FirebaseCrashlytics.getInstance().recordException(t);
                     // Обработать ошибку выполнения запроса
                     FirebaseCrashlytics.getInstance().recordException(t);
                     if (callback != null) {
@@ -533,6 +535,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<PurchaseResponse> call, @NonNull Throwable t) {
                 // Ошибка при выполнении запроса
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "Ошибка при выполнении запроса");
             }
         });

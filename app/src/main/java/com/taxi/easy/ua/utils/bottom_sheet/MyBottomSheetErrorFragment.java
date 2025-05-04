@@ -496,6 +496,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<CityResponse> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(requireActivity(), TAG, "Failed. Error message: " + t.getMessage());
             }
         });

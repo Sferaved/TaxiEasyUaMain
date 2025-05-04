@@ -10,9 +10,12 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -24,6 +27,7 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.exit.AnrActivity;
+import com.taxi.easy.ua.ui.settings.SettingsActivity;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.keys.SecurePrefs;
@@ -35,6 +39,7 @@ import com.uxcam.datamodel.UXConfig;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.Locale;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -63,6 +68,8 @@ public class MyApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        Locale currentLocale = getResources().getConfiguration().getLocales().get(0);
+        Log.d("LocaleDebug", "Current locale: " + currentLocale.toString());
 
         try {
 
@@ -70,7 +77,7 @@ public class MyApplication extends Application {
             setDefaultOrientation();
 
             sharedPreferencesHelperMain = new SharedPreferencesHelper(this);
-
+//            applyLocale();
             firestoreHelper = new FirestoreHelper(this);
             firestoreHelper.listenForResponseChanges();
 
@@ -95,7 +102,35 @@ public class MyApplication extends Application {
         instance = this;
     }
 
+    private void applyLocale() {
+        Log.d(TAG, "applyLocale: " + Locale.getDefault().toString());
 
+        Locale previousLocale = new Locale(Locale.getDefault().toString().split("_")[0]);
+        Log.d(TAG, "applyLocale:  previousLocale " + previousLocale);
+
+        String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
+        Log.d(TAG, "applyLocale sharedPreferencesHelperMain: " + localeCode);
+
+        Locale locale = new Locale(localeCode);
+
+        Log.d(TAG, "applyLocale locale: " + locale);
+
+        if (!locale.equals(previousLocale)) {
+
+            Locale.setDefault(locale);
+
+            Resources resources = getResources();
+            Configuration config = resources.getConfiguration();
+            config.setLocale(locale);
+            resources.updateConfiguration(config, resources.getDisplayMetrics());
+
+            // Перезапуск приложения для применения локали
+            Intent intent = new Intent(this, SettingsActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+        }
+
+    }
 
     private void fetchUXCamKey(int attempt) {
         if (attempt >= MAX_RETRY_ATTEMPTS) {
@@ -180,6 +215,7 @@ public class MyApplication extends Application {
             @Override
             public void onFailure(Exception e) {
                 Logger.e(context, TAG, "Failed to fetch UXCam key: " + e.getMessage());
+                FirebaseCrashlytics.getInstance().recordException(e);
                 try {
                     String cachedKey = SecurePrefs.getKey(context);
                     if (cachedKey != null && !isUXCamInitialized) {
@@ -425,6 +461,7 @@ public class MyApplication extends Application {
 
                 @Override
                 public void onFailure(Throwable t) {
+                    FirebaseCrashlytics.getInstance().recordException(t);
                     Logger.e(activity,"NetworkCheck", "Error checking internet stability." + t);
                 }
             });
@@ -476,6 +513,7 @@ public class MyApplication extends Application {
             @Override
             public void onFailure(Exception e) {
                 // Обработка ошибок
+                FirebaseCrashlytics.getInstance().recordException(e);
                 Logger.e(getApplicationContext(),TAG, "Ошибка: " + e.getMessage());
             }
         });
@@ -495,6 +533,7 @@ public class MyApplication extends Application {
             @Override
             public void onFailure(Exception e) {
                 // Обработка ошибок
+                FirebaseCrashlytics.getInstance().recordException(e);
                 Logger.e(getApplicationContext(),TAG, "Ошибка: " + e.getMessage());
             }
         });

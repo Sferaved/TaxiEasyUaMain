@@ -4,6 +4,8 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 
 import androidx.annotation.NonNull;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -47,7 +49,8 @@ public class SignatureClient {
             }
 
             @Override
-            public void onFailure(Call<SignatureResponse> call, Throwable t) {
+            public void onFailure(@NonNull Call<SignatureResponse> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
                 if (callback != null) {
                     callback.onError(t.getMessage());
                 }

@@ -233,6 +233,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
                 getReversWfp(city);
                 if (isAdded()) { //
                     MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
@@ -340,6 +341,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
                 // Обработка ошибки запроса
                 getReversWfp(city);
                 MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
@@ -406,6 +408,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<ReversResponse> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
                 if (isAdded()) { //
                     MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                             .setPopUpTo(R.id.nav_restart, true)
@@ -482,6 +485,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<ApiResponse<SuccessfulResponseData>> call, @NonNull Throwable t) {
                 // Обработка ошибки сети или другие ошибки
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "onFailure: Ошибка сети: " + t.getMessage());
 
                 MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
@@ -554,6 +558,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<CallbackResponse> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "onResponse: failure " + t);
             }
         });
@@ -636,6 +641,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             @Override
             public void onFailure(Call<ApiResponseRev<SuccessResponseDataRevers>> call, Throwable t) {
                 // Обработка ошибки сети или другие ошибки
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "onFailure: Ошибка сети: " + t.getMessage());
 
             }
@@ -738,7 +744,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             public void onFailure(@NonNull Call<ResponseStatusMono> call, @NonNull Throwable t) {
                 // Обработка ошибки сети или другие ошибки
                 Logger.d(context, TAG, "onFailure: Ошибка сети: " + t.getMessage());
-
+                FirebaseCrashlytics.getInstance().recordException(t);
                 MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_restart, true)
                         .build());
@@ -813,6 +819,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             @Override
             public void onFailure(@NonNull Call<ResponseCancelMono> call, Throwable t) {
                 // Обработка ошибки сети или другие ошибки
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "onFailure: Ошибка сети: " + t.getMessage());
             }
         });
@@ -961,6 +968,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
                 if (isAdded()) { //
                     MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                             .setPopUpTo(R.id.nav_restart, true)

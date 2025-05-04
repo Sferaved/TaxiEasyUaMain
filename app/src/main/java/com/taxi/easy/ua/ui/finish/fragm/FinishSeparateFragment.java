@@ -659,6 +659,7 @@ public class FinishSeparateFragment extends Fragment {
             public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
                 // Обработка ошибок сети или других ошибок
                 String errorMessage = t.getMessage();
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "onFailure: " + errorMessage);
                 text_status.setText(R.string.verify_internet);
             }
@@ -692,6 +693,7 @@ public class FinishSeparateFragment extends Fragment {
             public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
                 // Обработка ошибок сети или других ошибок
                 String errorMessage = t.getMessage();
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "onFailure: " + errorMessage);
             }
         });
@@ -757,31 +759,32 @@ public class FinishSeparateFragment extends Fragment {
                             }
                         }
 
-                        closeReasonReactNal(
+                        requireActivity().runOnUiThread(() -> closeReasonReactNal(
                                 closeReason,
                                 executionStatus,
                                 driverPhone,
                                 time_to_start_point,
                                 orderCarInfo
-                        );
+                        ));
                     } else {
                         int closeReason = -1;
                         String executionStatus = "*";
                         String driverPhone = "*";
                         String time_to_start_point = "*";
                         String orderCarInfo = "*";
-                        closeReasonReactNal(
+                        requireActivity().runOnUiThread(() -> closeReasonReactNal(
                                 closeReason,
                                 executionStatus,
                                 driverPhone,
                                 time_to_start_point,
                                 orderCarInfo
-                        );
+                        ));
                     }
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<OrderResponse> call, @NonNull Throwable t) {
+                    FirebaseCrashlytics.getInstance().recordException(t);
                     int closeReason = -1;
                     String executionStatus = "*";
                     String driverPhone = "*";
@@ -817,7 +820,7 @@ public class FinishSeparateFragment extends Fragment {
 
                 @Override
                 public void onFailure(@NonNull Call<OrderResponse> call, @NonNull Throwable t) {
-
+                    FirebaseCrashlytics.getInstance().recordException(t);
                 }
             });
         }
@@ -1040,6 +1043,7 @@ public class FinishSeparateFragment extends Fragment {
             stopCycle();
 
             text_status.setText(message);
+            btn_again.setVisibility(View.VISIBLE);
             if (btn_again.getVisibility() != View.VISIBLE || btn_again.getVisibility() != GONE) {
                 btn_again.setVisibility(View.VISIBLE);
             }
@@ -1819,7 +1823,7 @@ public class FinishSeparateFragment extends Fragment {
                             }
 
                         }
-                        cancel_30();
+//                        cancel_30();
                         dialog.dismiss();
 
 

@@ -28,6 +28,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavOptions;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentCardBinding;
@@ -212,6 +213,7 @@ public class CardFragment extends Fragment {
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
                 Logger.d(context, TAG, "onResponse: failure " + t);
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
         progressBar.setVisibility(View.INVISIBLE);

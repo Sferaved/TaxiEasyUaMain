@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.FragmentManager;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.cities.api.CityApiClient;
@@ -651,6 +652,7 @@ public class CityCheckActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(@NonNull Call<CityResponse> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(getApplicationContext(), TAG, "Failed. Error message: " + t.getMessage());
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -700,6 +702,7 @@ public class CityCheckActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<CountryResponse> call, @NonNull Throwable t) {
                 Logger.d(getApplicationContext(), TAG, "Error: " + t.getMessage());
+                FirebaseCrashlytics.getInstance().recordException(t);
                 VisicomFragment.progressBar.setVisibility(View.GONE);
                 sharedPreferencesHelperMain.saveValue("countryState", "UA");
             }
@@ -790,6 +793,7 @@ public class CityCheckActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<CityLastAddressResponse> call, Throwable t) {
                 Logger.d(getApplicationContext(), TAG, "Failed. Error message: " + t.getMessage());
+                FirebaseCrashlytics.getInstance().recordException(t);
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());

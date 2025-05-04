@@ -313,15 +313,7 @@ public class MainActivity extends AppCompatActivity {
                     ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
         }
     }
-    private void applyLocale(String localeCode) {
-        Locale locale = new Locale(localeCode);
-        Locale.setDefault(locale);
 
-        Resources resources = getResources();
-        Configuration config = resources.getConfiguration();
-        config.setLocale(locale);
-        resources.updateConfiguration(config, resources.getDisplayMetrics());
-    }
     private void setCityAppbar()
     {
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
@@ -417,7 +409,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        VisicomFragment.constraintLayoutVisicomMain.setVisibility(View.GONE);
+//        VisicomFragment.constraintLayoutVisicomMain.setVisibility(View.GONE);
 
         sharedPreferencesHelperMain.saveValue("pay_error", "**");
 
@@ -760,6 +752,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(@NonNull Call<CityResponse> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(getApplication(), TAG, "Failed. Error message: " + t.getMessage());
             }
         });
@@ -1390,6 +1383,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<UserFindResponse> call, @NonNull Throwable t) {
                 resultCallback.onResult(false);
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Log.d(TAG, "Ошибка: " + t.getMessage());
             }
         });
@@ -1473,6 +1467,7 @@ public class MainActivity extends AppCompatActivity {
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
                 Logger.d(MainActivity.this, TAG, "onResponse: failure " + t);
+                FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
     }
@@ -1929,6 +1924,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
                     Logger.e(getApplicationContext(),TAG, "Ошибка отправки токена на сервер: " + t);
+                    FirebaseCrashlytics.getInstance().recordException(t);
                 }
             });
         }
@@ -1980,7 +1976,8 @@ public class MainActivity extends AppCompatActivity {
     private void applyLocale() {
         Log.d(TAG, "applyLocale: " + Locale.getDefault().toString());
 
-        Locale previousLocale = new Locale(Locale.getDefault().toString().split("_")[0]);
+//        Locale previousLocale = new Locale(Locale.getDefault().toString().split("_")[0]);
+        Locale previousLocale = new Locale(Locale.getDefault().toString());
         Log.d(TAG, "applyLocale:  previousLocale " + previousLocale);
 
         String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
@@ -1990,14 +1987,18 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG, "applyLocale locale: " + locale);
 
+//        if (locale != previousLocale) {
         if (!locale.equals(previousLocale)) {
-
             Locale.setDefault(locale);
 
             Resources resources = getResources();
             Configuration config = resources.getConfiguration();
             config.setLocale(locale);
             resources.updateConfiguration(config, resources.getDisplayMetrics());
+            // Перезапуск приложения для применения локали
+//            Intent intent = new Intent(this, SettingsActivity.class);
+//            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+//            startActivity(intent);
          }
 
     }

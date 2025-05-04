@@ -27,6 +27,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentBonusBinding;
@@ -210,6 +211,7 @@ public class BonusFragment extends Fragment {
             public void onFailure(@NonNull Call<BonusResponse> call, @NonNull Throwable t) {
                 // Обработка ошибок сети или других ошибок
                 btnOrder.setVisibility(View.VISIBLE);
+                FirebaseCrashlytics.getInstance().recordException(t);
                 // Дополнительная обработка ошибки
             }
         });

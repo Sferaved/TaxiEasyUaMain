@@ -1077,7 +1077,7 @@ public class VisicomSearchFragment extends Fragment {
         try {
             String apiUrl = "https://api.visicom.ua/data-api/5.0/";
             String url = apiUrl  + LocaleHelper.getLocale() + "/geocode.json";
-
+            Logger.d(context, TAG, "performAddressSearch: LocaleHelper.getLocale() " + LocaleHelper.getLocale());
 
             if (point.equals("start")) {
                 verifyBuildingStart = false;
@@ -1109,7 +1109,7 @@ public class VisicomSearchFragment extends Fragment {
                         + ",poi_underground_railway_station"
                         + ",poi_hospital"
                         + ",adr_street"
-                        + "&l=20"
+//                        + "&l=10"
                         + "&text=" + modifiedText + "&key=" + MainActivity.apiKey;
 
             } else {
@@ -1121,7 +1121,8 @@ public class VisicomSearchFragment extends Fragment {
                 }
                 modifiedText = inputText.replaceAll("[\f\t]", " ");
                 url = url + "?categories=adr_address&text=" + modifiedText
-                        + "&l=20" + "&key=" + MainActivity.apiKey;
+//                        + "&l=15"
+                        + "&key=" + MainActivity.apiKey;
 
             }
 
@@ -1745,7 +1746,7 @@ public class VisicomSearchFragment extends Fragment {
 
                 }
                 addressListView.setVisibility(View.VISIBLE);
-                
+
                 addressListView.setAdapter(addressAdapter);
 
 
@@ -1847,7 +1848,7 @@ public class VisicomSearchFragment extends Fragment {
                             toEditAddress.setSelection(finishPoint.length());
                             btn_clear_to.setVisibility(View.INVISIBLE);
 
-                             
+
                             List<String> settings = new ArrayList<>();
 
                             VisicomFragment.textViewTo.setText(addressesList.get(position));

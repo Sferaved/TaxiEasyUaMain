@@ -2976,6 +2976,7 @@ public class VisicomFragment extends Fragment {
 
             @Override
             public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
                 if (isAdded()) { //
                     MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                             .setPopUpTo(R.id.nav_restart, true)

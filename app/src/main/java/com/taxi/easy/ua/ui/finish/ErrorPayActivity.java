@@ -172,6 +172,7 @@ public class ErrorPayActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<ApiResponseRev<SuccessResponseDataRevers>> call, Throwable t) {
                 // Обработка ошибки сети или другие ошибки
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(getApplicationContext(), TAG, "onFailure: Ошибка сети: " + t.getMessage());
                 startActivity(new Intent(getApplicationContext(), MainActivity.class));
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.return_pay_error));

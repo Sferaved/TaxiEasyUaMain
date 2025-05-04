@@ -14,6 +14,7 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.CardInfo;
@@ -91,6 +92,7 @@ public class CityFinder {
 
             @Override
             public void onFailure(@NonNull Call<CityResponse> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Log.e(TAG, "Error: " + t.getMessage(), t);
             }
         });
@@ -493,7 +495,7 @@ public class CityFinder {
 
             @Override
             public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
-
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
 
             }
@@ -586,6 +588,7 @@ public class CityFinder {
             @Override
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
                 // Обработка ошибки запроса
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
 
             }
@@ -631,6 +634,7 @@ public class CityFinder {
 
             @Override
             public void onFailure(@NonNull Call<com.taxi.easy.ua.ui.cities.api.CityResponse> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
             }
         });
@@ -660,6 +664,7 @@ public class CityFinder {
             @Override
             public void onFailure(@NonNull Call<CountryResponse> call, @NonNull Throwable t) {
                 Logger.d(context, TAG, "Error: " + t.getMessage());
+                FirebaseCrashlytics.getInstance().recordException(t);
                 VisicomFragment.progressBar.setVisibility(View.GONE);;
                 sharedPreferencesHelperMain.saveValue("countryState", "UA");
             }
