@@ -141,7 +141,7 @@
                 android:textColor="#D9D9D9"
                 android:textColorHint="#ABD9D9D9"
                 android:textSize="16dp"
-                app:layout_constraintStart_toStartOf="@+id/constr_2"
+                app:layout_constraintStart_toStartOf="@+id/btn_clear"
                 app:layout_constraintTop_toBottomOf="@+id/textfrom" />
 
             <EditText
@@ -165,8 +165,7 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btnOrder"
-               android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+                android:layout_width="0dp"
                 android:layout_height="@dimen/button_height"
                 android:layout_marginTop="16dp"
                 android:background="@drawable/buttons"
@@ -183,12 +182,12 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/text_view_cost" />
+                app:layout_constraintTop_toBottomOf="@+id/text_view_cost"
+                app:layout_constraintWidth_percent="@dimen/button_width" />
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btnGeo"
-               android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+                android:layout_width="0dp"
                 android:layout_height="@dimen/button_height"
                 android:layout_marginTop="8sp"
                 android:background="@drawable/buttons"
@@ -204,7 +203,8 @@
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/btnOrder" />
+                app:layout_constraintTop_toBottomOf="@+id/btnOrder"
+                app:layout_constraintWidth_percent="@dimen/button_width" />
 
             <TextView
                 android:id="@+id/num2"
@@ -242,7 +242,7 @@
                 android:textColorHint="#ABD9D9D9"
                 android:textSize="@dimen/textView_textSize"
                 android:visibility="invisible"
-                app:layout_constraintStart_toStartOf="@+id/constr_2"
+                app:layout_constraintStart_toStartOf="@+id/btn_clear"
                 app:layout_constraintTop_toBottomOf="@+id/textwhere" />
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -253,34 +253,9 @@
 
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintStart_toStartOf="@+id/btn_clear"
                 app:layout_constraintTop_toBottomOf="@+id/text_to">
 
-                <TextView
-                    android:id="@+id/schedule"
-                    android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
-                    android:layout_height="33dp"
-                    android:background="@drawable/input"
-                    android:ems="10"
-                    android:fontFamily="@font/light"
-                    android:textColor="@color/white"
-                    android:textColorHint="#ABD9D9D9"
-
-
-                    android:textSize="@dimen/textView_textSize"
-                    app:layout_constraintTop_toTopOf="parent"
-                    tools:ignore="MissingConstraints"
-                    tools:layout_editor_absoluteX="4dp" />
-
-                <ImageButton
-                    android:id="@+id/shed_down"
-                    android:layout_width="32dp"
-                    android:layout_height="30dp"
-                    android:background="@drawable/input"
-                    android:src="@drawable/down_arrow_white"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
 
@@ -322,7 +297,6 @@
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_clear"
                 android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
                 android:layout_height="@dimen/button_height"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/buttons"
@@ -333,8 +307,10 @@
                 android:textSize="@dimen/textView_textSize"
                 android:visibility="invisible"
                 app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.493"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/progress_bar" />
+                app:layout_constraintTop_toBottomOf="@+id/schedule"
+                app:layout_constraintWidth_percent="@dimen/button_width" />
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btnAdd"
@@ -368,8 +344,7 @@
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btnCallAdmin"
-               android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+                android:layout_width="0dp"
                 android:layout_height="@dimen/button_height"
                 android:layout_marginTop="12dp"
                 android:background="@drawable/buttons"
@@ -381,7 +356,8 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/btnOrder" />
+                app:layout_constraintTop_toBottomOf="@+id/btnOrder"
+                app:layout_constraintWidth_percent="@dimen/button_width" />
 
             <androidx.constraintlayout.widget.Guideline
                 android:id="@+id/guideline4"
@@ -389,6 +365,32 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 app:layout_constraintGuide_end="488sp" />
+
+            <ImageButton
+                android:id="@+id/shed_down"
+                android:layout_width="32dp"
+                android:layout_height="30dp"
+                android:background="@drawable/input"
+                android:src="@drawable/down_arrow_white"
+                app:layout_constraintEnd_toEndOf="@+id/schedule"
+                app:layout_constraintTop_toTopOf="@+id/schedule" />
+
+            <TextView
+                android:id="@+id/schedule"
+                android:layout_width="wrap_content"
+                android:layout_height="33dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/input"
+                android:ems="10"
+                android:fontFamily="@font/light"
+                android:textColor="@color/white"
+
+                android:textColorHint="#ABD9D9D9"
+                android:textSize="@dimen/textView_textSize"
+                app:layout_constraintStart_toStartOf="@+id/btn_clear"
+                app:layout_constraintTop_toBottomOf="@+id/text_to"
+                app:layout_constraintWidth_percent="@dimen/button_width"
+                tools:ignore="MissingConstraints" />
 
 
         </androidx.constraintlayout.widget.ConstraintLayout>

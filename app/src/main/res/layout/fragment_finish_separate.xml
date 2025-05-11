@@ -99,7 +99,7 @@
             android:layout_height="30dp"
             android:layout_gravity="center"
             android:layout_marginTop="20dp"
-            app:carImage="@drawable/button_image_button2"
+            app:carImage="@drawable/button_image_button2_old"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
@@ -269,7 +269,7 @@
             app:layout_constraintTop_toBottomOf="@+id/text_status_car" />
 
         <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_reset_status"
+            android:id="@+id/btn_add_cost"
            android:layout_width="0dp"
             app:layout_constraintWidth_percent="@dimen/button_width"
             android:layout_height="48dp"
@@ -300,7 +300,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.502"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_reset_status" />
+            app:layout_constraintTop_toBottomOf="@+id/btn_add_cost" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_again"

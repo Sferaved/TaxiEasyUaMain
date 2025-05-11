@@ -117,7 +117,7 @@ public class FinishSeparateFragment extends Fragment {
     String messageFondy;
     public static String uid_Double;
     @SuppressLint("StaticFieldLeak")
-    public static AppCompatButton btn_reset_status;
+    public static AppCompatButton btn_add_cost;
     @SuppressLint("StaticFieldLeak")
     public static AppCompatButton btn_cancel_order;
     @SuppressLint("StaticFieldLeak")
@@ -290,7 +290,7 @@ public class FinishSeparateFragment extends Fragment {
         text_status.startAnimation(blinkAnimation);
 
 
-        btn_reset_status = root.findViewById(R.id.btn_reset_status);
+        btn_add_cost = root.findViewById(R.id.btn_add_cost);
 
 
         btn_cancel_order = root.findViewById(R.id.btn_cancel_order);
@@ -360,6 +360,7 @@ public class FinishSeparateFragment extends Fragment {
         btn_again = root.findViewById(R.id.btn_again);
         btn_again.setOnClickListener(v -> {
             MainActivity.order_id = null;
+            sharedPreferencesHelperMain.saveValue("carFound", false);
             updateAddCost(String.valueOf(0));
             if (handlerStatus != null) {
                 handlerStatus.removeCallbacks(myTaskStatus);
@@ -490,19 +491,19 @@ public class FinishSeparateFragment extends Fragment {
         int colorPressed = ContextCompat.getColor(context, R.color.colorDefault); // Цвет текста при нажатии
         int colorDefault = ContextCompat.getColor(context, R.color.colorAccent); // Исходный цвет текста
 
-        if (btn_reset_status.getVisibility() == View.VISIBLE) {
+        if (btn_add_cost.getVisibility() == View.VISIBLE) {
             // Анимация исчезновения кнопок
             btn_open.setTextColor(colorPressed);
-            btn_reset_status.animate().alpha(0f).setDuration(300).withEndAction(() -> btn_reset_status.setVisibility(GONE));
+            btn_add_cost.animate().alpha(0f).setDuration(300).withEndAction(() -> btn_add_cost.setVisibility(GONE));
 
             btn_again.animate().alpha(0f).setDuration(300).withEndAction(() -> btn_again.setVisibility(GONE));
         } else {
             // Анимация появления кнопок
 
             btn_open.setTextColor(colorDefault);
-            btn_reset_status.setVisibility(View.VISIBLE);
-            btn_reset_status.setAlpha(0f);
-            btn_reset_status.animate().alpha(1f).setDuration(300);
+            btn_add_cost.setVisibility(View.VISIBLE);
+            btn_add_cost.setAlpha(0f);
+            btn_add_cost.animate().alpha(1f).setDuration(300);
 
             if (btn_again.getVisibility() != View.VISIBLE || btn_again.getVisibility() != GONE) {
                 btn_again.setVisibility(View.VISIBLE);
@@ -732,7 +733,6 @@ public class FinishSeparateFragment extends Fragment {
 
                         // Далее вы можете использовать полученные данные из orderResponse
                         // например:
-                        assert orderResponse != null;
                         String executionStatus = orderResponse.getExecutionStatus();
 
                         String orderCarInfo = orderResponse.getOrderCarInfo();
@@ -813,7 +813,6 @@ public class FinishSeparateFragment extends Fragment {
                     if (response.isSuccessful() && response.body() != null) {
                         // Получаем объект OrderResponse из успешного ответа
                         OrderResponse orderResponse = response.body();
-                        assert orderResponse != null;
                         updateUICardPayStatus(orderResponse);
                     }
                 }
@@ -829,6 +828,7 @@ public class FinishSeparateFragment extends Fragment {
 
 
     private void orderComplete() {
+        sharedPreferencesHelperMain.saveValue("carFound", true);
         new Handler(Looper.getMainLooper()).post(() -> {
             // Выполнено
             stopCycle();
@@ -841,7 +841,7 @@ public class FinishSeparateFragment extends Fragment {
 
             setVisibility(
                     GONE,
-                    btn_reset_status,
+                    btn_add_cost,
                     btn_open,
                     btn_options,
                     textCost,
@@ -873,6 +873,7 @@ public class FinishSeparateFragment extends Fragment {
 
 
     private void carSearch() {
+        sharedPreferencesHelperMain.saveValue("carFound", false);
         new Handler(Looper.getMainLooper()).post(() -> {
             Logger.d(context, TAG, "carSearch() started");
             if (btn_cancel_order.getVisibility() != View.VISIBLE) {
@@ -882,7 +883,7 @@ public class FinishSeparateFragment extends Fragment {
             if (cancel_btn_click) {
                 Logger.d(context, TAG, "Order cancellation detected, stopping search...");
                 cancelAllHandlers(context);
-                setVisibility(GONE, btn_reset_status, carProgressBar);
+                setVisibility(GONE, btn_add_cost, carProgressBar);
                 text_status.setText(context.getString(R.string.checkout_status));
                 return;
             }
@@ -943,15 +944,15 @@ public class FinishSeparateFragment extends Fragment {
             String orderCarInfo
     ) {
 
-
+        sharedPreferencesHelperMain.saveValue("carFound", true);
+        if (handlerAddcost != null) {
+            handlerAddcost.removeCallbacks(showDialogAddcost);
+        }
 
         new Handler(Looper.getMainLooper()).post(() -> {
             text_status.clearAnimation();
             setVisibility(View.VISIBLE, textCost, textCostMessage);
 
-            if (handlerAddcost != null) {
-                handlerAddcost.removeCallbacks(showDialogAddcost);
-            }
 
 //            if (btn_cancel_order.getVisibility() == View.VISIBLE) {
 //                btn_cancel_order.setVisibility(GONE);
@@ -976,15 +977,15 @@ public class FinishSeparateFragment extends Fragment {
 
                 if (!TextUtils.isEmpty(driverPhone)) {
                     Logger.d(context, TAG, "onResponse: driverPhone " + driverPhone);
-                    btn_reset_status.setText(context.getString(R.string.phone_driver));
-                    btn_reset_status.setOnClickListener(v -> {
+                    btn_add_cost.setText(context.getString(R.string.phone_driver));
+                    btn_add_cost.setOnClickListener(v -> {
                         Intent intent = new Intent(Intent.ACTION_DIAL);
                         intent.setData(Uri.parse("tel:" + driverPhone));
                         context.startActivity(intent);
                     });
-                    btn_reset_status.setVisibility(View.VISIBLE);
+                    btn_add_cost.setVisibility(View.VISIBLE);
                 } else {
-                    btn_reset_status.setVisibility(GONE);
+                    btn_add_cost.setVisibility(GONE);
                 }
 
                 if (!TextUtils.isEmpty(time_to_start_point)) {
@@ -1010,7 +1011,7 @@ public class FinishSeparateFragment extends Fragment {
 
     private void orderCanceled(String message) {
 //        new Handler(Looper.getMainLooper()).post(() -> {
-
+            sharedPreferencesHelperMain.saveValue("carFound", false);
             text_status.setText(R.string.recounting_order);
 
             text_status.clearAnimation();
@@ -1018,7 +1019,7 @@ public class FinishSeparateFragment extends Fragment {
             MainActivity.action = null;
 
             // Скрываем ненужные элементы
-            setVisibility(GONE, btn_reset_status, btn_open, btn_options, btn_cancel_order,
+            setVisibility(GONE, btn_add_cost, btn_open, btn_options, btn_cancel_order,
                     textStatusCar, textCarMessage, textCost,
                     textCostMessage, carProgressBar, progressSteps);
 
@@ -1080,7 +1081,7 @@ public class FinishSeparateFragment extends Fragment {
                 MainActivity.action = null;
 
                 // Скрываем ненужные элементы
-                setVisibility(GONE, btn_reset_status, btn_open, btn_options, btn_cancel_order,
+                setVisibility(GONE, btn_add_cost, btn_open, btn_options, btn_cancel_order,
                         textStatusCar, textCarMessage, textCost,
                         textCostMessage, carProgressBar, progressSteps);
 
@@ -1372,6 +1373,13 @@ public class FinishSeparateFragment extends Fragment {
                 if ("Declined".equals(status) && !declined_invoice.equals(MainActivity.order_id)) {
                     sharedPreferencesHelperMain.saveValue("declined_invoice", MainActivity.order_id);
                     handleTransactionStatusDeclined(status, context);
+                    if (FinishSeparateFragment.btn_cancel_order != null) {
+                        FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
+                        FinishSeparateFragment.btn_cancel_order.setEnabled(true);
+                        FinishSeparateFragment.btn_cancel_order.setClickable(true);
+                        Logger.d(context,"Pusher eventTransactionStatus", "Cancel button enabled successfully");
+                    }
+
                 }
             });
 
@@ -1502,78 +1510,80 @@ public class FinishSeparateFragment extends Fragment {
             showAddCostDialog(timeCheckout);
         };
 
-
-
-        Logger.e(context, TAG, "required_time +++" + required_time);
-        if(required_time.contains("01.01.1970") || required_time.contains("1970-01-01") || required_time.isEmpty()) {
-            need_20_add = true;
-        } else {
-            // Регулярное выражение для проверки формата даты "dd.MM.yyyy HH:mm"
-
-            handlerCheckTask = new Handler(Looper.getMainLooper());
-
-            checkTask = new Runnable() {
-                @Override
-                public void run() {
-                    if (!required_time.isEmpty() ) {
-                        if(!required_time.contains("01.01.1970") && !required_time.contains("1970-01-01")) {
-                            required_time = TimeUtils.convertAndSubtractMinutes(required_time);
-
-                            Logger.e(context, TAG, "required_time " + required_time);
-
-                            @SuppressLint("SimpleDateFormat")
-                            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
-
-                            try {
-                                Date requiredDate = inputFormat.parse(required_time);
-                                Date currentDate = new Date(); // Текущее время
-
-                                // Разница в миллисекундах
-                                assert requiredDate != null;
-                                long diffInMillis = requiredDate.getTime() - currentDate.getTime();
-
-                                // Конвертируем в минуты
-                                long diffInMinutes = TimeUnit.MILLISECONDS.toMinutes(diffInMillis);
-
-                                if (diffInMinutes > 0 && diffInMinutes <= 30) {
-                                    need_20_add = true; // Время ещё не наступило и в пределах 30 минут
-                                } else if (diffInMinutes > 30){
-                                    need_20_add = false; // Время либо наступило, либо за пределами 30 минут
+        boolean carfound = (boolean) sharedPreferencesHelperMain.getValue("carFound", false);
+        if(!carfound) {
+            Logger.e(context, TAG, "required_time +++" + required_time);
+            if(required_time.contains("01.01.1970") || required_time.contains("1970-01-01") || required_time.isEmpty()) {
+                need_20_add = true;
+            } else {
+                // Регулярное выражение для проверки формата даты "dd.MM.yyyy HH:mm"
+        
+                handlerCheckTask = new Handler(Looper.getMainLooper());
+        
+                checkTask = new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!required_time.isEmpty() ) {
+                            if(!required_time.contains("01.01.1970") && !required_time.contains("1970-01-01")) {
+                                required_time = TimeUtils.convertAndSubtractMinutes(required_time);
+        
+                                Logger.e(context, TAG, "required_time " + required_time);
+        
+                                @SuppressLint("SimpleDateFormat")
+                                SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
+        
+                                try {
+                                    Date requiredDate = inputFormat.parse(required_time);
+                                    Date currentDate = new Date(); // Текущее время
+        
+                                    // Разница в миллисекундах
+                                    assert requiredDate != null;
+                                    long diffInMillis = requiredDate.getTime() - currentDate.getTime();
+        
+                                    // Конвертируем в минуты
+                                    long diffInMinutes = TimeUnit.MILLISECONDS.toMinutes(diffInMillis);
+        
+                                    if (diffInMinutes > 0 && diffInMinutes <= 30) {
+                                        need_20_add = true; // Время ещё не наступило и в пределах 30 минут
+                                    } else if (diffInMinutes > 30){
+                                        need_20_add = false; // Время либо наступило, либо за пределами 30 минут
+                                    }
+        
+                                } catch (ParseException e) {
+                                    Logger.e(context, TAG, "requiredDate" +  e);
                                 }
-
-                            } catch (ParseException e) {
-                                Logger.e(context, TAG, "requiredDate" +  e);
+                            } else {
+                                need_20_add = true; // Формат даты некорректен
                             }
+        
                         } else {
                             need_20_add = true; // Формат даты некорректен
                         }
-
-                    } else {
-                        need_20_add = true; // Формат даты некорректен
+                        // Повторяем задачу через минуту, если окно активно
+                        handlerCheckTask.postDelayed(this, 60000); // 60000 миллисекунд = 1 минута
                     }
-                    // Повторяем задачу через минуту, если окно активно
-                    handlerCheckTask.postDelayed(this, 60000); // 60000 миллисекунд = 1 минута
+                };
+        
+                // Запускаем задачу проверки
+                handlerCheckTask.post(checkTask);
+            }
+            Logger.e(context, TAG, "status pay_method" + pay_method);
+            Logger.e(context, TAG, "status need_20_add" + need_20_add);
+            handlerAddcost = new Handler();
+            if (need_20_add) {
+                if ("nal_payment".equals(pay_method) || "wfp_payment".equals(pay_method)) {
+                    Logger.e(context, TAG, "status pay_method" + pay_method);
+                    Logger.e(context, TAG, "status need_20_add" + need_20_add);
+        
+                    // Запускаем выполнение через 1 минуты (60 000 миллисекунд)
+                    handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
                 }
-            };
-
-            // Запускаем задачу проверки
-            handlerCheckTask.post(checkTask);
-        }
-        Logger.e(context, TAG, "status pay_method" + pay_method);
-        Logger.e(context, TAG, "status need_20_add" + need_20_add);
-        handlerAddcost = new Handler();
-        if (need_20_add) {
-            if ("nal_payment".equals(pay_method) || "wfp_payment".equals(pay_method)) {
-                Logger.e(context, TAG, "status pay_method" + pay_method);
-                Logger.e(context, TAG, "status need_20_add" + need_20_add);
-
-                // Запускаем выполнение через 1 минуты (60 000 миллисекунд)
-                handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
             }
         }
+       
 
 
-        btn_reset_status.setOnClickListener( view -> {
+        btn_add_cost.setOnClickListener( view -> {
 
                 if ("nal_payment".equals(pay_method)) {
 
@@ -1648,7 +1658,6 @@ public class FinishSeparateFragment extends Fragment {
                 public void onResponse(@NonNull Call<HoldResponse> call, @NonNull Response<HoldResponse> response) {
                     if (response.isSuccessful() && response.body() != null) {
                         HoldResponse holdResponse = response.body();
-                        assert holdResponse != null;
                         String result = holdResponse.getResult();
                         Logger.d(context, TAG, "verifyOldHold  result: " + result);
                         if (result.equals("hold")) {
@@ -1964,6 +1973,7 @@ public class FinishSeparateFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
         logMemoryState();
+        sharedPreferencesHelperMain.saveValue("carFound", false);
     }
 
     private void logMemoryState() {

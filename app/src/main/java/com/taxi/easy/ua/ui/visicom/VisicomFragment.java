@@ -322,7 +322,7 @@ public class VisicomFragment extends Fragment {
 //                requireActivity().onBackPressed(); // Возвращаемся назад
             }
         });
-
+        sharedPreferencesHelperMain.saveValue("carFound", false);
         return root;
     }
 
@@ -378,6 +378,13 @@ public class VisicomFragment extends Fragment {
 
 
     public void showUpdateDialog() {
+        Activity activity = getActivity();
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) {
+            return;
+        }
+        if (!isAdded()) {
+            return; // Фрагмент не прикреплен
+        }
         new MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.upd_available)
                 .setMessage(R.string.upd_available_promt)
@@ -541,6 +548,10 @@ public class VisicomFragment extends Fragment {
         ContentValues cv = new ContentValues();
         Logger.d(context, TAG, "updateAddCost: addCost" + addCost);
         cv.put("addCost", addCost);
+        finalCost= startCost + Long.parseLong( addCost);
+        if(text_view_cost != null) {
+            text_view_cost.setText(String.valueOf( finalCost));
+        }
 
         // обновляем по id
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -647,7 +658,7 @@ public class VisicomFragment extends Fragment {
                     + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail + "*" + payment_type + "/"
                     + time + "/" + date;
         }
-        if (urlAPI.equals("orderSearchMarkersVisicomWfpInvoiceChannel")) {
+        if (urlAPI.equals("orderClientCost")) {
 
             Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: startCost " + startCost);
             Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: finalCost " + finalCost);
@@ -685,9 +696,10 @@ public class VisicomFragment extends Fragment {
                 paramsUserArr = displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail + "*" + payment_type + "*" + "doubleOrder";
                 sharedPreferencesHelperMain.saveValue("doubleOrderPref", false);
             }
+            String clientCost = text_view_cost.getText().toString();
 
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + paramsUserArr + "/" + addCost + "/"
+                    + clientCost  + "/" + paramsUserArr + "/" + addCost + "/"
                     + time + "/" + comment + "/" + date + "/" + start + "/" + finish + "/" + wfpInvoice;
 
 
@@ -903,7 +915,7 @@ public class VisicomFragment extends Fragment {
 
     @SuppressLint("ResourceAsColor")
     public static boolean orderRout() {
-        urlOrder = getTaxiUrlSearchMarkers("orderSearchMarkersVisicomWfpInvoiceChannel", MyApplication.getContext());
+        urlOrder = getTaxiUrlSearchMarkers("orderClientCost", MyApplication.getContext());
         Logger.d(MyApplication.getContext(), TAG, "order:  urlOrder " + urlOrder);
         return true;
     }
@@ -963,7 +975,6 @@ public class VisicomFragment extends Fragment {
                         if (response.isSuccessful() && response.body() != null) {
                             Map<String, String> sendUrlMap = response.body();
 
-                            assert sendUrlMap != null;
                             handleOrderFinished(sendUrlMap, pay_method, context);
                         } else {
                             MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
@@ -997,6 +1008,7 @@ public class VisicomFragment extends Fragment {
 
         if (!"0".equals(orderWeb)) {
             String to_name;
+//            orderWeb = text_view_cost.getText().toString();
             if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
                 to_name = context.getString(R.string.on_city_tv);
                 Logger.d(context, TAG, "orderFinished: to_name 1 " + to_name);
@@ -1052,7 +1064,7 @@ public class VisicomFragment extends Fragment {
                     Date date = null;
                     for (String format : formats) {
                         try {
-                            SimpleDateFormat inputFormat = new SimpleDateFormat(format);
+                            @SuppressLint("SimpleDateFormat") SimpleDateFormat inputFormat = new SimpleDateFormat(format);
                             inputFormat.setLenient(false);
                             date = inputFormat.parse(required_time);
                             if (date != null) break;
@@ -2884,7 +2896,7 @@ public class VisicomFragment extends Fragment {
                 });
 
         AlertDialog dialog = builder.create();
-        ViewGroup parent = (ViewGroup) dialog.findViewById(android.R.id.content);
+
 
         dialog.show();
 

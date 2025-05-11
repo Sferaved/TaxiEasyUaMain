@@ -10,13 +10,15 @@ public class BackPressBlocker {
     // Метод для блокировки кнопки "Назад" с помощью OnBackPressedCallback
     public void blockBackButtonWithCallback(Fragment fragment) {
         // Добавляем колбэк на обработку кнопки "Назад"
-        fragment.requireActivity().getOnBackPressedDispatcher().addCallback(fragment, new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                // Если кнопка заблокирована, не делаем ничего (блокируем)
-                // Не вызываем super.handleOnBackPressed(), чтобы предотвратить стандартное действие
-            }
-        });
+        fragment.requireActivity().getOnBackPressedDispatcher().addCallback(
+                fragment.getViewLifecycleOwner(), // Используем viewLifecycleOwner
+                new OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        // Кнопка "Назад" заблокирована, ничего не делаем
+                    }
+                }
+        );
     }
 
     // Метод для включения/выключения блокировки кнопки "Назад"

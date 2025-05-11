@@ -175,14 +175,14 @@ public class CancelFragment extends Fragment {
         String url = baseUrl + "/android/UIDStatusShowEmailCancelApp/" + value + "/" + city + "/" +  context.getString(R.string.application);
         Logger.d(context, TAG, "fetchRoutesCancel: " + url);
         Call<List<RouteResponseCancel>> call = ApiClient.getApiService().getRoutesCancel(url);
-        call.enqueue(new Callback<List<RouteResponseCancel>>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Response<List<RouteResponseCancel>> response) {
                 progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null) {
                     List<RouteResponseCancel> routes = response.body();
                     Logger.d(context, TAG, "onResponse: " + routes);
-                    if (routes != null && !routes.isEmpty()) {
+                    if (!routes.isEmpty()) {
                         boolean hasRouteWithAsterisk = false;
                         for (RouteResponseCancel route : routes) {
                             if ("*".equals(route.getRouteFrom())) {
@@ -196,7 +196,7 @@ public class CancelFragment extends Fragment {
                             processCancelList();
                             textUid.setVisibility(View.VISIBLE);
                             textUid.setText(R.string.order_to_cancel);
-                        }  else {
+                        } else {
                             textUid.setVisibility(View.VISIBLE);
                             textUid.setText(R.string.no_routs);
                         }

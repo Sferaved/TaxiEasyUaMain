@@ -149,78 +149,9 @@ public class UIDFragment extends Fragment {
             intent.setData(Uri.parse(phone));
             startActivity(intent);
         });
-
+        sharedPreferencesHelperMain.saveValue("carFound", false);
         return root;
     }
-
-
-//    @Override
-//    public void onCreateContextMenu(@NonNull ContextMenu menu, @NonNull View v, ContextMenu.ContextMenuInfo menuInfo) {
-//        super.onCreateContextMenu(menu, v, menuInfo);
-//        MenuInflater inflater = requireActivity().getMenuInflater();
-//        inflater.inflate(R.menu.context_menu, menu);
-//    }
-//
-//    @SuppressLint("NonConstantResourceId")
-//    @Override
-//    public boolean onContextItemSelected(@NonNull MenuItem item) {
-//        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-//        assert info != null;
-//        int position = info.position;
-//
-//        if (item.getItemId() == R.id.action_order) {
-//
-//            Log.d(TAG, "onContextItemSelected: " + array[position]);
-//
-//            routeInfo = databaseHelperUid.getRouteInfoById(position+1);
-//            if (routeInfo != null) {
-//                Log.d(TAG, "onContextItemSelected: " + routeInfo);
-//            } else {
-//                Log.d(TAG, "onContextItemSelected: RouteInfo not found for id: " + (position + 1));
-//            }
-//            List<String> settings = new ArrayList<>();
-//            settings.add(routeInfo.getStartLat());
-//            settings.add(routeInfo.getStartLan());
-//            settings.add(routeInfo.getToLat());
-//            settings.add(routeInfo.getToLng());
-//            settings.add(routeInfo.getStart());
-//            settings.add(routeInfo.getFinish());
-//
-//            updateRoutMarker(settings);
-//
-//            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-//                        .setPopUpTo(R.id.nav_visicom, true)
-//                        .build());
-//            SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
-//            sharedPreferencesHelper.saveValue("gps_upd", false);
-//            return true;
-//        } else if (item.getItemId() == R.id.action_exit) {
-//// Обработка действия "Delete"
-//
-//            return true;
-//        }   else {
-//            return super.onContextItemSelected(item);
-//        }
-//
-//    }
-//    private void updateRoutMarker(List<String> settings) {
-//        Log.d(TAG, "updateRoutMarker: " + settings.toString());
-//        ContentValues cv = new ContentValues();
-//
-//        cv.put("startLat", Double.parseDouble(settings.get(0)));
-//        cv.put("startLan", Double.parseDouble(settings.get(1)));
-//        cv.put("to_lat", Double.parseDouble(settings.get(2)));
-//        cv.put("to_lng", Double.parseDouble(settings.get(3)));
-//        cv.put("start", settings.get(4));
-//        cv.put("finish", settings.get(5));
-//        if(isAdded()) {
-//            // обновляем по id
-//            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-//            database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
-//                    new String[]{"1"});
-//            database.close();
-//        }
-//    }
 
     private void fetchRoutes() {
 
@@ -498,22 +429,20 @@ public class UIDFragment extends Fragment {
     public List<String> logCursor(String table, Context context) {
         List<String> list = new ArrayList<>();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor c = database.query(table, null, null, null, null, null, null);
-        if (c != null) {
-            if (c.moveToFirst()) {
-                String str;
-                do {
-                    str = "";
-                    for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+        @SuppressLint("Recycle") Cursor c = database.query(table, null, null, null, null, null, null);
+         if (c.moveToFirst()) {
+             String str;
+             do {
+                 str = "";
+                 for (String cn : c.getColumnNames()) {
+                     str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
+                     list.add(c.getString(c.getColumnIndex(cn)));
 
-                    }
+                 }
 
-                } while (c.moveToNext());
-            }
-        }
-        database.close();
+             } while (c.moveToNext());
+         }
+         database.close();
         return list;
     }
     @Override

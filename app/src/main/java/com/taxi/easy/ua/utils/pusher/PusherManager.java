@@ -1,12 +1,20 @@
 package com.taxi.easy.ua.utils.pusher;
 
+import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.viewModel;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+
+import androidx.navigation.NavOptions;
 
 import com.pusher.client.Pusher;
 import com.pusher.client.PusherOptions;
@@ -16,6 +24,7 @@ import com.pusher.client.connection.ConnectionEventListener;
 import com.pusher.client.connection.ConnectionState;
 import com.pusher.client.connection.ConnectionStateChange;
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -23,8 +32,10 @@ import com.taxi.easy.ua.utils.log.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -38,6 +49,7 @@ public class PusherManager {
     private final String eventOrder;
     private final String eventTransactionStatus;
     private final String eventCanceled;
+    private final String eventBlackUserStatus;
 //    private final String orderResponseEvent;
 //    private final String eventStartExecution;
     private static Pusher pusher = null;
@@ -51,6 +63,7 @@ public class PusherManager {
         this.eventOrder = "order-" + eventSuffix + "-" + userEmail;
         this.eventTransactionStatus = "transactionStatus-" + eventSuffix + "-" + userEmail;
         this.eventCanceled = "eventCanceled-" + eventSuffix + "-" + userEmail;
+        this.eventBlackUserStatus = "black-user-status--" + userEmail;
 //        this.orderResponseEvent = "orderResponseEvent-" + eventSuffix + "-" + userEmail;
         this.context = context;
 //        this.eventStartExecution = "orderStartExecution-" + eventSuffix + "-" + userEmail;
@@ -155,6 +168,7 @@ public class PusherManager {
         Logger.d(context,"Pusher", "Subscribing to eventOrder: " + eventOrder);
         Logger.d(context,"Pusher", "Subscribing to eventStatus: " + eventTransactionStatus);
         Logger.d(context,"Pusher", "Subscribing to eventCanceled: " + eventCanceled);
+        Logger.d(context,"Pusher", "Subscribing to eventBlackUserStatus: " + eventBlackUserStatus);
 //        Logger.d(context,"Pusher", "Subscribing to orderResponseEvent: " + orderResponseEvent);
 
         // Обработка события получения номера заказа после регистрации на сервере и определения нал/безнал для выбора способа опроса статусов
@@ -293,6 +307,40 @@ public class PusherManager {
 
         });
 
+        bindEvent(eventBlackUserStatus, event -> {
+            Logger.d(context,"Pusher eventBlackUserStatus", "Received event: " + event.toString());
+
+            try {
+                JSONObject eventData = new JSONObject(event.getData());
+                String active = eventData.getString("active");
+                String email = eventData.getString("email");
+
+                Logger.d(context,"Pusher eventBlackUserStatus", "canceled: " + active);
+                Logger.d(context,"Pusher eventBlackUserStatus", "email: " + email);
+
+                String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+                Logger.d(context,"Pusher eventCanceled", "userEmail: " + userEmail);
+
+                if (email.equals(userEmail)) {
+                    ContentValues cv = new ContentValues();
+                    cv.put("verifyOrder", active);
+                    SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+                    database.close();
+                }
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_visicom, true)
+                            .build());
+                });
+
+            } catch(JSONException e){
+                Logger.e(context,"Pusher eventBlackUserStatus", "JSON Parsing error for event: " + event.getData() +  e);
+            } catch(Exception e){
+                Logger.e(context,"Pusher eventBlackUserStatus", "Unexpected error processing Pusher event" +  e);
+            }
+
+        });
 
         //Получение заказа из вилки с действием для отображения на фнинишной
 //        channel.bind(orderResponseEvent, event -> {
@@ -399,7 +447,27 @@ public class PusherManager {
         });
 
     }
+    @SuppressLint("Range")
+    private static List<String> logCursor(String table, Context context) {
+        List<String> list = new ArrayList<>();
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor c = database.query(table, null, null, null, null, null, null);
+        if (c.moveToFirst()) {
+            String str;
+            do {
+                str = "";
+                for (String cn : c.getColumnNames()) {
+                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
+                    list.add(c.getString(c.getColumnIndex(cn)));
 
+                }
+
+            } while (c.moveToNext());
+        }
+        database.close();
+        c.close();
+        return list;
+    }
     // Отключение
     public void disconnect() {
         if (pusher != null) {

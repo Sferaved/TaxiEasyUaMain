@@ -13,7 +13,6 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -43,6 +42,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
@@ -57,6 +57,7 @@ import android.widget.Toast;
 
 import androidx.annotation.ColorRes;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
@@ -368,12 +369,12 @@ public class HomeFragment extends Fragment {
                 cost = Long.parseLong(text_view_cost.getText().toString());
                 cost -= 5;
                 addCost -= 5;
-            if (cost >= MIN_COST_VALUE) {
+            if (cost <= MIN_COST_VALUE) {
                 addCost += 5;
                 cost += 5;
-                updateAddCost(String.valueOf(addCost));
-                text_view_cost.setText(String.valueOf(cost));
             }
+            updateAddCost(String.valueOf(addCost));
+            text_view_cost.setText(String.valueOf(cost));
         });
 
         btn_plus.setOnClickListener(v -> {
@@ -551,24 +552,18 @@ public class HomeFragment extends Fragment {
 
         constr2.setVisibility(INVISIBLE);
         setBtnBonusName(context);
+        sharedPreferencesHelperMain.saveValue("carFound", false);
         return root;
     }
     public static void setBtnBonusName(Context context) {
         String btnBonusName;
         String pay_method =  logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
-        switch (pay_method) {
-            case "bonus_payment":
-                btnBonusName = context.getString(R.string.btn_bon);
-                break;
-            case "card_payment":
-            case "fondy_payment":
-            case "mono_payment":
-            case "wfp_payment":
-                btnBonusName = context.getString(R.string.btn_card);
-                break;
-            default:
-                btnBonusName = context.getString(R.string.btn_cache);
-        }
+        btnBonusName = switch (pay_method) {
+            case "bonus_payment" -> context.getString(R.string.btn_bon);
+            case "card_payment", "fondy_payment", "mono_payment", "wfp_payment" ->
+                    context.getString(R.string.btn_card);
+            default -> context.getString(R.string.btn_cache);
+        };
         buttonBonus.setText(btnBonusName);
     }
     private void scheduleUpdate() {
@@ -610,7 +605,7 @@ public class HomeFragment extends Fragment {
 
             String toRout = textViewTo.getText().toString();
             Logger.d(context, TAG, "orderFinished toRout: "  + toRout);
-            if(toRout.equals("")) {
+            if(toRout.isEmpty()) {
                 toRout =  getString(R.string.on_city);
             } else {
                 toRout = textViewTo.getText().toString() + ", " + to_number.getText().toString();
@@ -655,7 +650,7 @@ public class HomeFragment extends Fragment {
 
 //            // Пример строки URL с параметрами
             Logger.d(context, TAG, "orderFinished: "  + baseUrl + urlOrder);
-            parser.sendURL(urlOrder, new Callback<Map<String, String>>() {
+            parser.sendURL(urlOrder, new Callback<>() {
                 @Override
                 public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
                     Map<String, String> sendUrlMap = response.body();
@@ -670,13 +665,14 @@ public class HomeFragment extends Fragment {
 
                         String from_name = sendUrlMap.get("routefrom");
                         String to_name = sendUrlMap.get("routeto");
+//                        orderWeb = text_view_cost.getText().toString();
 
                         assert from_name != null;
 
                         String required_time = sendUrlMap.get("required_time");
                         Logger.d(context, TAG, "orderFinished: required_time " + required_time);
-                        if (required_time != null && !required_time.contains("1970-01-01")&& !required_time.contains("01.01.1970")) {
-                                required_time = " " + context.getString(R.string.time_order) + " " + required_time + ".";
+                        if (required_time != null && !required_time.contains("1970-01-01") && !required_time.contains("01.01.1970")) {
+                            required_time = " " + context.getString(R.string.time_order) + " " + required_time + ".";
                         } else {
                             required_time = "";
                         }
@@ -688,7 +684,7 @@ public class HomeFragment extends Fragment {
                         } else {
                             messageResult =
                                     from_name + ", " + from_number.getText() + " " + getString(R.string.to_message) +
-                                    to_name + ", " + to_number.getText() + "." +
+                                            to_name + ", " + to_number.getText() + "." +
                                             required_time;
                         }
                         Logger.d(context, TAG, "order: sendUrlMap.get(\"from_lat\")" + sendUrlMap.get("from_lat"));
@@ -760,7 +756,7 @@ public class HomeFragment extends Fragment {
                         constraintLayoutHomeFinish.setVisibility(GONE);
                         constraintLayoutHomeMain.setVisibility(VISIBLE);
                         assert message != null;
-                        String addType ="60";
+                        String addType = "60";
                         if (message.equals("ErrorMessage")) {
                             message = getString(R.string.server_error_connected);
                             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
@@ -769,18 +765,18 @@ public class HomeFragment extends Fragment {
                             sharedPreferencesHelperMain.saveValue("doubleOrderPrefHome", true);
                             showAddCostDoubleDialog(addType);
                         } else if (message.equals("cash") || message.equals("cards only")) {
-                                 if(message.equals("cards only")) {
+                            if (message.equals("cards only")) {
 
-                                    addType ="45";
-                                    showAddCostDoubleDialog(addType);
-                                } else {
-                                    message = context.getString(R.string.black_list_message);
-                                    if (!isStateSaved() && isAdded()) {
-                                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                                    }
+                                addType = "45";
+                                showAddCostDoubleDialog(addType);
+                            } else {
+                                message = context.getString(R.string.black_list_message);
+                                if (!isStateSaved() && isAdded()) {
+                                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                                 }
-                        }  else {
+                            }
+                        } else {
                             switch (pay_method) {
                                 case "bonus_payment":
                                 case "card_payment":
@@ -931,14 +927,18 @@ public class HomeFragment extends Fragment {
             Logger.d(context, TAG, "order: settings" + settings);
             updateRoutHome(settings);
         }
-        urlOrder = getTaxiUrlSearch( "orderSearchWfpInvoice", context);
+        urlOrder = getTaxiUrlSearch( "orderOldClientCost", context);
         return true;
     }
     private void updateAddCost(String addCost) {
         ContentValues cv = new ContentValues();
         Logger.d(context, TAG, "updateAddCost: addCost" + addCost);
         cv.put("addCost", addCost);
-
+        if(text_view_cost!= null && !text_view_cost.getText().toString().isEmpty()) {
+            String startCost = text_view_cost.getText().toString();
+            long finalCost= Long.parseLong(startCost) + Long.parseLong( addCost);
+            text_view_cost.setText(String.valueOf( finalCost));
+        }
         // обновляем по id
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
@@ -1661,6 +1661,7 @@ public class HomeFragment extends Fragment {
 
                     String message = sendUrlMapCost.get("Message");
                     String addType ="60";
+                    assert orderCost != null;
                     if (orderCost.equals("0")) {
                         constraintLayoutHomeFinish.setVisibility(GONE);
                         constraintLayoutHomeMain.setVisibility(VISIBLE);
@@ -1989,7 +1990,7 @@ public class HomeFragment extends Fragment {
         }
 
 
-        if(urlAPI.equals("orderSearchWfpInvoice")) {
+        if(urlAPI.equals("orderOldClientCost")) {
             String wfpInvoice = "*";
             if(payment_type.equals("wfp_payment")) {
                 String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS);
@@ -2018,8 +2019,9 @@ public class HomeFragment extends Fragment {
                 paramsUserArr = displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail + "*" + payment_type + "*" + "doubleOrder";
                 sharedPreferencesHelperMain.saveValue("doubleOrderPrefHome", false);
             }
+            String clientCost = text_view_cost.getText().toString();
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + paramsUserArr + "/" + addCost + "/" + time + "/" + comment + "/" + date + "/" + wfpInvoice;
+                    + clientCost  + "/" + paramsUserArr + "/" + addCost + "/" + time + "/" + comment + "/" + date + "/" + wfpInvoice;
 
             ContentValues cv = new ContentValues();
 
@@ -2606,8 +2608,29 @@ public class HomeFragment extends Fragment {
                     }
 
                 })
-                .setNegativeButton(R.string.cancel_button, (dialog, which) -> dialog.dismiss())
-                .show();
+                .setNegativeButton(R.string.cancel_button, (dialog, which) -> dialog.dismiss());
+
+        AlertDialog dialog = builder.create();
+
+        dialog.show();
+
+        Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+
+        if (positiveButton != null) {
+            positiveButton.setBackgroundColor(ContextCompat.getColor(context, R.color.colorAccent));
+            positiveButton.setTextColor(ContextCompat.getColor(context, android.R.color.white));
+            ViewParent buttonPanel = positiveButton.getParent();
+            if (buttonPanel instanceof ViewGroup) {
+                ((ViewGroup) buttonPanel).setBackgroundColor(ContextCompat.getColor(context, R.color.background_color_new));
+            }
+
+        }
+        if (negativeButton != null) {
+            negativeButton.setBackgroundColor(ContextCompat.getColor(context, R.color.selected_text_color_2));
+            negativeButton.setTextColor(ContextCompat.getColor(context, android.R.color.white));
+
+        }
 
     }
 

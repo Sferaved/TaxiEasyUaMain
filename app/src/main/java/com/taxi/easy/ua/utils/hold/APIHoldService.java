@@ -9,4 +9,9 @@ public interface APIHoldService {
     Call<HoldResponse> verifyHold(
             @Path("uid") String uid
     );
+
+    @GET("/wfp/deleteInvoice/{orderReference}")
+    Call<HoldResponse> deleteInvoice(
+            @Path("orderReference") String orderReference
+    );
 }

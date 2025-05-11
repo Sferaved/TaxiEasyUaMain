@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.navigation.NavOptions;
 
@@ -62,8 +63,9 @@ public class CustomArrayUidAdapter extends ArrayAdapter<String> {
         this.databaseHelperUid = new DatabaseHelperUid(context);;
     }
 
+    @NonNull
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(int position, View convertView, @NonNull ViewGroup parent) {
         View view = convertView;
         if (view == null) {
             LayoutInflater inflater = LayoutInflater.from(getContext());

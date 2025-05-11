@@ -10,8 +10,6 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -27,7 +25,6 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.exit.AnrActivity;
-import com.taxi.easy.ua.ui.settings.SettingsActivity;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.keys.SecurePrefs;
@@ -40,9 +37,6 @@ import com.uxcam.datamodel.UXConfig;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Locale;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 public class MyApplication extends Application {
 
@@ -56,7 +50,6 @@ public class MyApplication extends Application {
 
     public static SharedPreferencesHelper sharedPreferencesHelperMain;
 
-    private ThreadPoolExecutor threadPoolExecutor;
     private IdleTimeoutManager idleTimeoutManager;
 
     private long lastMemoryWarningTime = 0;
@@ -74,22 +67,22 @@ public class MyApplication extends Application {
         try {
 
             initializeFirebaseAndCrashlytics();
+
             setDefaultOrientation();
 
             sharedPreferencesHelperMain = new SharedPreferencesHelper(this);
-//            applyLocale();
+
             firestoreHelper = new FirestoreHelper(this);
             firestoreHelper.listenForResponseChanges();
 
-
-
             registerActivityLifecycleCallbacks();
 
-            Thread.setDefaultUncaughtExceptionHandler(new MyExceptionHandler());
+            setupCrashHandler();
+
             setupANRWatchDog();
 
             fetchUXCamKey(1);
-//            initializeThreadPoolExecutor();
+
 
             visicomKeyFromFb();
             mapboxKeyFromFb ();
@@ -101,35 +94,30 @@ public class MyApplication extends Application {
 
         instance = this;
     }
+    private void setupCrashHandler() {
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            // Логгируем исключение
+            FirebaseCrashlytics.getInstance().recordException(throwable);
 
-    private void applyLocale() {
-        Log.d(TAG, "applyLocale: " + Locale.getDefault().toString());
+            Logger.e(getApplicationContext(), "CrashHandler", "Crash caught: " + throwable.getMessage());
+            Logger.e(getApplicationContext(), "CrashHandler", "Crash caught: " + Log.getStackTraceString(throwable));
 
-        Locale previousLocale = new Locale(Locale.getDefault().toString().split("_")[0]);
-        Log.d(TAG, "applyLocale:  previousLocale " + previousLocale);
+            // Сохраняем stacktrace в SharedPreferences
+            sharedPreferencesHelperMain.saveValue("last_crash", Log.getStackTraceString(throwable));
+            // Запускаем AnrActivity на главном потоке
 
-        String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
-        Log.d(TAG, "applyLocale sharedPreferencesHelperMain: " + localeCode);
+            new Handler(Looper.getMainLooper()).post(() -> {
+                Intent intent = new Intent(getApplicationContext(), AnrActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+            });
 
-        Locale locale = new Locale(localeCode);
-
-        Log.d(TAG, "applyLocale locale: " + locale);
-
-        if (!locale.equals(previousLocale)) {
-
-            Locale.setDefault(locale);
-
-            Resources resources = getResources();
-            Configuration config = resources.getConfiguration();
-            config.setLocale(locale);
-            resources.updateConfiguration(config, resources.getDisplayMetrics());
-
-            // Перезапуск приложения для применения локали
-            Intent intent = new Intent(this, SettingsActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-        }
-
+            // Завершаем процесс через 1 секунду, чтобы успела запуститься активность
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                android.os.Process.killProcess(android.os.Process.myPid());
+                System.exit(1);
+            }, 1000);
+        });
     }
 
     private void fetchUXCamKey(int attempt) {
@@ -247,15 +235,6 @@ public class MyApplication extends Application {
     }
 
 
-    private void initializeThreadPoolExecutor() {
-        // Настройка ThreadPoolExecutor
-        threadPoolExecutor = new ThreadPoolExecutor(
-                4,  // минимальное количество потоков
-                8,  // максимальное количество потоков
-                1, TimeUnit.MINUTES, // время ожидания новых задач
-                new LinkedBlockingQueue<>() // очередь для задач
-        );
-    }
 
     @SuppressLint("SourceLockedOrientationActivity")
     private void setDefaultOrientation() {
@@ -299,6 +278,7 @@ public class MyApplication extends Application {
         }
 
         // Если версия изменилась, сохраняем новую и откладываем запуск ANRWatchDog
+        assert currentVersion != null;
         if (!currentVersion.equals(savedVersion)) {
             prefs.edit().putString("app_version", currentVersion).apply();
             // Откладываем запуск ANRWatchDog на 10 секунд
@@ -350,16 +330,6 @@ public class MyApplication extends Application {
                     return;
                 }
 
-
-                // Проверка длительного времени в фоне
-//                if (backgroundStartTime > 0) {
-//                    long timeInBackground = System.currentTimeMillis() - backgroundStartTime;
-//                    if (timeInBackground > 30 * 60 * 1000) { // 30 минут
-//                        restartApplication(activity);
-//                        backgroundStartTime = 0;
-//                        return;
-//                    }
-//                }
                 isAppInForeground = true;
                 if (idleTimeoutManager != null) {
                     idleTimeoutManager.resetTimer();
@@ -473,32 +443,7 @@ public class MyApplication extends Application {
         Logger.d(activity,"MemoryMonitor", "Состояние нехватки памяти: " + memoryInfo.lowMemory);
     }
 
-    // Новый обработчик необработанных исключений для записи логов и Firebase Crashlytics
-    private class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
-        private final Thread.UncaughtExceptionHandler defaultHandler;
 
-        public MyExceptionHandler() {
-            defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
-        }
-
-        @Override
-        public void uncaughtException(@NonNull Thread thread, @NonNull Throwable throwable) {
-            String message = throwable.getMessage() != null ? throwable.getMessage() : "No message";
-            Logger.e(instance, "MyExceptionHandler", "Uncaught Exception: " + message + ", " + throwable.toString());
-            FirebaseCrashlytics.getInstance().recordException(throwable);
-
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                Intent intent = new Intent(instance, AnrActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                System.exit(1); // Завершение процесса
-            }, 500);
-
-            if (defaultHandler != null) {
-                defaultHandler.uncaughtException(thread, throwable);
-            }
-        }
-    }
     private void visicomKeyFromFb()
     {
 

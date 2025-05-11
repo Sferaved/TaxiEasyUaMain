@@ -168,39 +168,37 @@ public class CardFragment extends Fragment {
                 Logger.d(context, TAG, "onResponse: " + response.body());
                 if (response.isSuccessful() && response.body() != null) {
                     CallbackResponseWfp callbackResponse = response.body();
-                    if (callbackResponse != null) {
-                        List<CardInfo> cards = callbackResponse.getCards();
-                        Logger.d(context, TAG, "onResponse: cards" + cards);
-                        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
+                    List<CardInfo> cards = callbackResponse.getCards();
+                    Logger.d(context, TAG, "onResponse: cards" + cards);
+                    String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
 
 
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
 
-                        database.execSQL("DELETE FROM " + tableName + ";");
+                    database.execSQL("DELETE FROM " + tableName + ";");
 
-                        if (cards != null && !cards.isEmpty()) {
-                            for (CardInfo cardInfo : cards) {
-                                String masked_card = cardInfo.getMasked_card(); // Маска карты
-                                String card_type = cardInfo.getCard_type(); // Тип карты
-                                String bank_name = cardInfo.getBank_name(); // Название банка
-                                String rectoken = cardInfo.getRectoken(); // Токен карты
-                                String merchant = cardInfo.getMerchant(); //
-                                String active = cardInfo.getActive();
+                    if (cards != null && !cards.isEmpty()) {
+                        for (CardInfo cardInfo : cards) {
+                            String masked_card = cardInfo.getMasked_card(); // Маска карты
+                            String card_type = cardInfo.getCard_type(); // Тип карты
+                            String bank_name = cardInfo.getBank_name(); // Название банка
+                            String rectoken = cardInfo.getRectoken(); // Токен карты
+                            String merchant = cardInfo.getMerchant(); //
+                            String active = cardInfo.getActive();
 
-                                Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
-                                ContentValues cv = new ContentValues();
-                                cv.put("masked_card", masked_card);
-                                cv.put("card_type", card_type);
-                                cv.put("bank_name", bank_name);
-                                cv.put("rectoken", rectoken);
-                                cv.put("merchant", merchant);
-                                cv.put("rectoken_check", active);
-                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
-                            }
+                            Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
+                            ContentValues cv = new ContentValues();
+                            cv.put("masked_card", masked_card);
+                            cv.put("card_type", card_type);
+                            cv.put("bank_name", bank_name);
+                            cv.put("rectoken", rectoken);
+                            cv.put("merchant", merchant);
+                            cv.put("rectoken_check", active);
+                            database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
                         }
-                        database.close();
                     }
+                    database.close();
                     try {
                         cardViews();
                     } catch (MalformedURLException | UnsupportedEncodingException e) {

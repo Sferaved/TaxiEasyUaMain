@@ -2,6 +2,7 @@ package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.GONE;
+import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -34,6 +35,8 @@ import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseResponse;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseService;
+import com.taxi.easy.ua.utils.hold.APIHoldService;
+import com.taxi.easy.ua.utils.hold.HoldResponse;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.uxcam.UXCam;
 
@@ -128,6 +131,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                 // Выключить кнопку
                 FinishSeparateFragment.btn_cancel_order.setEnabled(false);
                 FinishSeparateFragment.btn_cancel_order.setClickable(false);
+                FinishSeparateFragment.text_status.setText(context.getString(R.string.recounting_order));
                 startAddCostUpdate(
                         uid,
                         String.valueOf(currentAddCost[0])
@@ -169,6 +173,12 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                             FinishSeparateFragment.textCostMessage.setText(updatedCost);
                             FinishSeparateFragment.text_status.setText(statusMessage);
                             Log.d("UpdatedCost", "Обновленная строка: " + updatedCost);
+                            if (FinishSeparateFragment.btn_cancel_order != null) {
+                                FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
+                                FinishSeparateFragment.btn_cancel_order.setEnabled(true);
+                                FinishSeparateFragment.btn_cancel_order.setClickable(true);
+                                Logger.d(context,"Pusher eventTransactionStatus", "Cancel button enabled successfully");
+                            }
                     });
 
                 }
@@ -179,6 +189,12 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
                    new Handler(Looper.getMainLooper()).post(() -> {
                             FinishSeparateFragment.text_status.setText(errorMessage);
+                       if (FinishSeparateFragment.btn_cancel_order != null) {
+                           FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
+                           FinishSeparateFragment.btn_cancel_order.setEnabled(true);
+                           FinishSeparateFragment.btn_cancel_order.setClickable(true);
+                           Logger.d(context,"Pusher eventTransactionStatus", "Cancel button enabled successfully");
+                       }
                    });
                 }
 
@@ -211,7 +227,6 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                 public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
                     if (response.isSuccessful() && response.body() != null) {
                         Status status = response.body();
-                        assert status != null;
                         String responseStatus = status.getResponse();
                         Logger.d(context, TAG, "startAddCostUpdate nal_payment: " + responseStatus);
 
@@ -235,6 +250,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                 @Override
                 public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
                     FirebaseCrashlytics.getInstance().recordException(t);
+                    Logger.d(context, TAG, "URL запроса nal_payment: " + t.getMessage());
                     // Обработать ошибку выполнения запроса
                     FirebaseCrashlytics.getInstance().recordException(t);
                     if (callback != null) {
@@ -436,7 +452,6 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     Status status = response.body();
-                    assert status != null;
                     String responseStatus = status.getResponse();
                     Logger.d(context, TAG, "startAddCostUpdate wfp_payment status: " + responseStatus);
                     if (!responseStatus.equals("200")) {
@@ -447,11 +462,23 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                     // Обработка неуспешного ответа
                     FinishSeparateFragment.text_status.setText(R.string.verify_internet);
                 }
+                if (FinishSeparateFragment.btn_cancel_order != null) {
+                    FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
+                    FinishSeparateFragment.btn_cancel_order.setEnabled(true);
+                    FinishSeparateFragment.btn_cancel_order.setClickable(true);
+                    Logger.d(context,"Pusher eventTransactionStatus", "Cancel button enabled successfully");
+                }
             }
 
             @Override
             public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
                 FirebaseCrashlytics.getInstance().recordException(t);
+                if (FinishSeparateFragment.btn_cancel_order != null) {
+                    FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
+                    FinishSeparateFragment.btn_cancel_order.setEnabled(true);
+                    FinishSeparateFragment.btn_cancel_order.setClickable(true);
+                    Logger.d(context,"Pusher eventTransactionStatus", "Cancel button enabled successfully");
+                }
             }
         });
         FinishSeparateFragment.handlerStatus.post(FinishSeparateFragment.myTaskStatus);
@@ -503,10 +530,6 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             public void onResponse(@NonNull Call<PurchaseResponse> call, @NonNull Response<PurchaseResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     PurchaseResponse statusResponse = response.body();
-                    if (statusResponse == null) {
-                        Logger.e(context, TAG, "onResponse: StatusResponse is null");
-                        return;
-                    }
 
                     String orderStatus = statusResponse.getTransactionStatus();
                     Logger.d(context, TAG, "1 Transaction Status: " + orderStatus);
@@ -522,13 +545,20 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                             });
                             break;
                        default:
+                           deleteInvoice(order_id);
                            Toast.makeText(context, context.getString(R.string.pay_failure_mes), Toast.LENGTH_SHORT).show();
-                            Logger.d(context, TAG, "onResponse: Unexpected status: " + orderStatus);
+                           Logger.d(context, TAG, "onResponse: Unexpected status: " + orderStatus);
                     }
 
 
                 } else {
                     Logger.e(context, TAG, "onResponse: Unsuccessful response, code=" + response.code());
+                }
+                if (FinishSeparateFragment.btn_cancel_order != null) {
+                    FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
+                    FinishSeparateFragment.btn_cancel_order.setEnabled(true);
+                    FinishSeparateFragment.btn_cancel_order.setClickable(true);
+                    Logger.d(context,"Pusher eventTransactionStatus", "Cancel button enabled successfully");
                 }
             }
 
@@ -537,11 +567,55 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                 // Ошибка при выполнении запроса
                 FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "Ошибка при выполнении запроса");
+                if (FinishSeparateFragment.btn_cancel_order != null) {
+                    FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
+                    FinishSeparateFragment.btn_cancel_order.setEnabled(true);
+                    FinishSeparateFragment.btn_cancel_order.setClickable(true);
+                    Logger.d(context,"Pusher eventTransactionStatus", "Cancel button enabled successfully");
+                }
             }
         });
 
     }
+    private void deleteInvoice(String orderReference) {
 
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        // Создание клиента OkHttpClient с подключенным логгером
+        OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+        httpClient.addInterceptor(loggingInterceptor);
+        httpClient.connectTimeout(60, TimeUnit.SECONDS); // Тайм-аут для соединения
+        httpClient.readTimeout(60, TimeUnit.SECONDS);    // Тайм-аут для чтения
+        httpClient.writeTimeout(60, TimeUnit.SECONDS);   // Тайм-аут для записи
+
+        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(httpClient.build()) // Подключение клиента OkHttpClient с логгером
+                .build();
+
+
+        APIHoldService apiService = retrofit.create(APIHoldService.class);
+        Call<HoldResponse> call = apiService.deleteInvoice(orderReference);
+
+        call.enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<HoldResponse> call, @NonNull Response<HoldResponse> response) {
+
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<HoldResponse> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
+            }
+        });
+
+
+
+    }
 
     @SuppressLint("Range")
     private List<String> logCursor(String table) {

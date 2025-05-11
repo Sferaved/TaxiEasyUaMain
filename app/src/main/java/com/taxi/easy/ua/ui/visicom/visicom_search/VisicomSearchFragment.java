@@ -276,7 +276,7 @@ public class VisicomSearchFragment extends Fragment {
                 Logger.d(context, TAG, "onLocationResult: locations 222222" + locations);
 
                 if (!locations.isEmpty()) {
-                    Location firstLocation = locations.getFirst();
+                    Location firstLocation = locations.get(0); // Замена getFirst()
 
                     double latitude = firstLocation.getLatitude();
                     double longitude = firstLocation.getLongitude();

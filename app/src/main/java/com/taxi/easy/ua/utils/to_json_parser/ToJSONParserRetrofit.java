@@ -63,7 +63,7 @@ public class ToJSONParserRetrofit {
         Call<JsonResponse> call = apiService.getData(urlString);
         activeCalls.add(call);
 
-        call.enqueue(new Callback<JsonResponse>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<JsonResponse> call, @NonNull Response<JsonResponse> response) {
                 Map<String, String> costMap = new HashMap<>();
@@ -135,7 +135,7 @@ public class ToJSONParserRetrofit {
             Call<JsonResponse> call = apiService.getData(urlString);
             activeCall = call;
 
-            call.enqueue(new Callback<JsonResponse>() {
+            call.enqueue(new Callback<>() {
                 @Override
                 public void onResponse(@NonNull Call<JsonResponse> call, @NonNull Response<JsonResponse> response) {
                     if (eventReceived) {

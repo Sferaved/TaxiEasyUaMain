@@ -191,7 +191,6 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("StaticFieldLeak")
     public static NavController navController;
-    private FirebaseUserManager userManager;
 
     private String city;
     private String newTitle;
@@ -212,24 +211,15 @@ public class MainActivity extends AppCompatActivity {
         // Установка локали перед вызовом super.onCreate()
         applyLocale();
         super.onCreate(savedInstanceState);
-//
-//
-//
-//        if (!isTaskRoot()) {
-//            finish();
-//            return;
-//        }
 
         // Инициализация View Binding
         ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(binding.getRoot());
 
-//        try {
-//            Thread.sleep(10000); // Блокировка основного потока на 10 секунд
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
+        if (viewModel == null) {
+            viewModel = new ViewModelProvider(this).get(ExecutionStatusViewModel.class);
+        }
 
         // Логирование и очистка старых логов
 //        deleteOldLogFile();
@@ -414,7 +404,7 @@ public class MainActivity extends AppCompatActivity {
         sharedPreferencesHelperMain.saveValue("pay_error", "**");
 
         MainActivity.action = null;
-        viewModel = new ViewModelProvider(this).get(ExecutionStatusViewModel.class);
+//        viewModel = new ViewModelProvider(this).get(ExecutionStatusViewModel.class);
 
         // Устанавливаем Action Bar, если он доступен
         if (getSupportActionBar() != null) {
@@ -1556,7 +1546,27 @@ public class MainActivity extends AppCompatActivity {
 //    }
     private void startFireBase() {
         Toast.makeText(this, R.string.account_verify, Toast.LENGTH_SHORT).show();
-        startSignInInBackground();
+//        startSignInInBackground();
+        startSignIn();
+    }
+
+    private void startSignIn() {
+        try {
+            Logger.d(getApplicationContext(), TAG, "run: ");
+            List<AuthUI.IdpConfig> providers = Collections.singletonList(
+                    new AuthUI.IdpConfig.GoogleBuilder().build());
+
+            Intent signInIntent = AuthUI.getInstance()
+                    .createSignInIntentBuilder()
+                    .setAvailableProviders(providers)
+                    .build();
+
+            signInLauncher.launch(signInIntent);
+        } catch (Exception e) {
+            Logger.e(getApplicationContext(), TAG, "Exception during sign-in launch " + e);
+            FirebaseCrashlytics.getInstance().recordException(e);
+            VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+        }
     }
     private void startSignInInBackground() {
         Thread thread = new Thread(() -> {
@@ -1871,7 +1881,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void userPhoneFromFb ()
     {
-        userManager = new FirebaseUserManager();
+        FirebaseUserManager userManager = new FirebaseUserManager();
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
         if (currentUser != null) {
