@@ -5,6 +5,7 @@ import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.TABLE_USER_INFO;
 import static com.taxi.easy.ua.MainActivity.paySystemStatus;
+import static com.taxi.easy.ua.MainActivity.uid_Double;
 import static com.taxi.easy.ua.MainActivity.viewModel;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
@@ -115,7 +116,7 @@ public class FinishSeparateFragment extends Fragment {
     String messageResult;
     String messageResultCost;
     String messageFondy;
-    public static String uid_Double;
+
     @SuppressLint("StaticFieldLeak")
     public static AppCompatButton btn_add_cost;
     @SuppressLint("StaticFieldLeak")
@@ -653,7 +654,30 @@ public class FinishSeparateFragment extends Fragment {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Status status = response.body();
+                    Logger.d(context, TAG, "cancelOrderDouble status: " + status.toString());
 
+                    // Проверка, содержит ли ответ фразу "не вдалося скасувати"
+                    if (status.getResponse() != null && status.getResponse().contains("не вдалося скасувати")) {
+                        Logger.d(context, TAG, "Ошибка: Не удалось отменить заказ");
+                        // Здесь можно добавить дополнительную логику, например, показать сообщение пользователю
+                        try {
+                            cancelOrder(MainActivity.uid, context);
+                        } catch (ParseException e) {
+                            throw new RuntimeException(e);
+                        }
+                    } else {
+                        Logger.d(context, TAG, "Заказ успешно обработан или другой ответ: " + status.getResponse());
+                        // Логика для успешного ответа
+                        String message = context.getString(R.string.ex_st_canceled);
+                        orderCanceled(message);
+                    }
+                } else {
+                    Logger.d(context, TAG, "Ошибка ответа: " + response.code());
+                    // Обработка неуспешного ответа (например, HTTP-ошибки)
+                    cancelOrderDouble(context);
+                }
             }
 
             @Override
@@ -686,7 +710,26 @@ public class FinishSeparateFragment extends Fragment {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Status status = response.body();
+                    Logger.d(context, TAG, "cancelOrderDouble status: " + status.toString());
 
+                    // Проверка, содержит ли ответ фразу "не вдалося скасувати"
+                    if (status.getResponse() != null && status.getResponse().contains("не вдалося скасувати")) {
+                        Logger.d(context, TAG, "Ошибка: Не удалось отменить заказ");
+                        // Здесь можно добавить дополнительную логику, например, показать сообщение пользователю
+                        cancelOrderDouble(context);
+                    } else {
+                        Logger.d(context, TAG, "Заказ успешно обработан или другой ответ: " + status.getResponse());
+                        // Логика для успешного ответа
+                        String message = context.getString(R.string.ex_st_canceled);
+                        orderCanceled(message);
+                    }
+                } else {
+                    Logger.d(context, TAG, "Ошибка ответа: " + response.code());
+                    // Обработка неуспешного ответа (например, HTTP-ошибки)
+                    cancelOrderDouble(context);
+                }
             }
 
 
@@ -885,6 +928,7 @@ public class FinishSeparateFragment extends Fragment {
                 cancelAllHandlers(context);
                 setVisibility(GONE, btn_add_cost, carProgressBar);
                 text_status.setText(context.getString(R.string.checkout_status));
+                startCycle();
                 return;
             }
 

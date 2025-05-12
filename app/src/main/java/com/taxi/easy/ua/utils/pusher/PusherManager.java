@@ -46,6 +46,7 @@ public class PusherManager {
     private static final String CHANNEL_NAME = "teal-towel-48"; // Канал
 
     private final String eventUid;
+    private final String eventUidDouble;
     private final String eventOrder;
     private final String eventTransactionStatus;
     private final String eventCanceled;
@@ -60,6 +61,7 @@ public class PusherManager {
     private final Set<String> boundEvents = new HashSet<>();
     public PusherManager(String eventSuffix, String userEmail, Activity context) {
         this.eventUid = "order-status-updated-" + eventSuffix + "-" + userEmail;
+        this.eventUidDouble = "orderDouble-status-updated-" + eventSuffix + "-" + userEmail;
         this.eventOrder = "order-" + eventSuffix + "-" + userEmail;
         this.eventTransactionStatus = "transactionStatus-" + eventSuffix + "-" + userEmail;
         this.eventCanceled = "eventCanceled-" + eventSuffix + "-" + userEmail;
@@ -203,6 +205,41 @@ public class PusherManager {
 
             } catch (JSONException e) {
                 Logger.e(context,"Pusher", "JSON Parsing error" +  e);
+            }
+        });
+
+        bindEvent(eventUidDouble, event -> {
+            Logger.d(context,"Pusher Double", "Received eventUidDouble: " + event.toString());
+            try {
+                JSONObject eventData = new JSONObject(event.getData());
+                String orderUid = eventData.getString("order_uid");
+                String  paySystemStatus;
+                if (eventData.has("paySystemStatus")) {
+                    paySystemStatus = eventData.getString("paySystemStatus");
+                } else {
+                    paySystemStatus = "nal_payment";
+                }
+                Logger.d(context,"Pusher Double", "Order UID Double: " + orderUid);
+                Logger.d(context,"Pusher Double", "paySystemStatus: " + paySystemStatus);
+                // Переключаемся на главный поток для обновления UI и переменной
+                new Handler(Looper.getMainLooper()).post(() -> {
+
+                    MainActivity.uid_Double = orderUid;
+                    Logger.d(context,"Pusher Double", "MainActivity.uid_Double: " + MainActivity.uid_Double);
+
+                    MainActivity.paySystemStatus = paySystemStatus;
+
+//                    if (FinishSeparateFragment.btn_cancel_order != null ) {
+//                        FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
+//                        FinishSeparateFragment.btn_cancel_order.setEnabled(true);
+//                        FinishSeparateFragment.btn_cancel_order.setClickable(true);
+//                    } else {
+//                        Logger.e(context,"Pusher", "btn_cancel_order is null!");
+//                    }
+                });
+
+            } catch (JSONException e) {
+                Logger.e(context,"Pusher Double", "JSON Parsing error" +  e);
             }
         });
 

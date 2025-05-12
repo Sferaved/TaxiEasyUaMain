@@ -153,6 +153,7 @@ public class MainActivity extends AppCompatActivity {
     public static Cursor cursorDb;
     public static boolean firstStart;
     public static String uid;
+    public static String uid_Double;
 
     public static String paySystemStatus = "nal_payment";
     private AppBarConfiguration mAppBarConfiguration;

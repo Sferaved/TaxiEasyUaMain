@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.taxi.easy.ua.MainActivity.uid_Double;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -287,7 +288,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                                     checkoutUrl,
                                     amount,
                                     MainActivity.uid,
-                                    FinishSeparateFragment.uid_Double,
+                                    uid_Double,
                                     context,
                                     MainActivity.order_id
                             );
@@ -428,7 +429,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
                     FinishSeparateFragment.textCostMessage.setText(messagePayment);
                     MainActivity.uid = sendUrlMap.get("dispatching_order_uid");
-                    FinishSeparateFragment.uid_Double = " ";
+                    uid_Double = " ";
 
                     pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
                     FinishSeparateFragment.handlerStatus.post(FinishSeparateFragment.myTaskStatus);
@@ -771,7 +772,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                                         checkoutUrl,
                                         amount,
                                         MainActivity.uid,
-                                        FinishSeparateFragment.uid_Double,
+                                        uid_Double,
                                         context,
                                         MainActivity.order_id
                                 );
@@ -824,7 +825,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         String api = listCity.get(2);
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
         ;
-        String url = baseUrl + api + "/android/webordersCancelDouble/" + MainActivity.uid + "/" + FinishSeparateFragment.uid_Double + "/" + pay_method + "/" + city + "/" + context.getString(R.string.application);
+        String url = baseUrl + api + "/android/webordersCancelDouble/" + MainActivity.uid + "/" + uid_Double + "/" + pay_method + "/" + city + "/" + context.getString(R.string.application);
 
         Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
         Logger.d(context, TAG, "cancelOrderDouble: " + url);
@@ -868,7 +869,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         String api = listCity.get(2);
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
         ;
-        String url = baseUrl + api + "/android/webordersCancelDouble/" + MainActivity.uid + "/" + FinishSeparateFragment.uid_Double + "/" + pay_method + "/" + city + "/" + context.getString(R.string.application);
+        String url = baseUrl + api + "/android/webordersCancelDouble/" + MainActivity.uid + "/" + uid_Double + "/" + pay_method + "/" + city + "/" + context.getString(R.string.application);
 
         Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
         Logger.d(context, TAG, "cancelOrderDouble: " + url);
