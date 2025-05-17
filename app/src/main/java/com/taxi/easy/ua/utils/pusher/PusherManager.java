@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.utils.pusher;
 
 import static android.content.Context.MODE_PRIVATE;
-import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.viewModel;
 
 import android.annotation.SuppressLint;
@@ -25,7 +24,6 @@ import com.pusher.client.connection.ConnectionState;
 import com.pusher.client.connection.ConnectionStateChange;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 
@@ -51,6 +49,7 @@ public class PusherManager {
     private final String eventTransactionStatus;
     private final String eventCanceled;
     private final String eventBlackUserStatus;
+    private final String eventOrderCost;
 //    private final String orderResponseEvent;
 //    private final String eventStartExecution;
     private static Pusher pusher = null;
@@ -66,6 +65,7 @@ public class PusherManager {
         this.eventTransactionStatus = "transactionStatus-" + eventSuffix + "-" + userEmail;
         this.eventCanceled = "eventCanceled-" + eventSuffix + "-" + userEmail;
         this.eventBlackUserStatus = "black-user-status--" + userEmail;
+        this.eventOrderCost = "order-cost-" + eventSuffix + "-" + userEmail;
 //        this.orderResponseEvent = "orderResponseEvent-" + eventSuffix + "-" + userEmail;
         this.context = context;
 //        this.eventStartExecution = "orderStartExecution-" + eventSuffix + "-" + userEmail;
@@ -262,16 +262,7 @@ public class PusherManager {
                         // Установка начального статуса транзакции
                         viewModel.setTransactionStatus(transactionStatus);
                         Logger.d(context,"Pusher eventTransactionStatus", "Initial transaction status set: " + transactionStatus);
-
-                        // Проверка UI элемента перед взаимодействием
-                        if (FinishSeparateFragment.btn_cancel_order != null) {
-                            FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
-                            FinishSeparateFragment.btn_cancel_order.setEnabled(true);
-                            FinishSeparateFragment.btn_cancel_order.setClickable(true);
-                            Logger.d(context,"Pusher eventTransactionStatus", "Cancel button enabled successfully");
-                        } else {
-                            Logger.e(context,"Pusher eventTransactionStatus", "btn_cancel_order is null when updating status: " + transactionStatus);
-                        }
+                        viewModel.setCancelStatus(true);
                     });
                 }
 
@@ -341,6 +332,27 @@ public class PusherManager {
                 } catch(Exception e){
                     Logger.e(context,"Pusher eventCanceled", "Unexpected error processing Pusher event" +  e);
                 }
+
+        });
+        // Получение стоимости
+//        channel.bind(eventCanceled, event -> {
+        bindEvent(eventOrderCost, event -> {
+            Logger.d(context,"Pusher eventOrderCost", "Received event: " + event.toString());
+            VisicomFragment.costMap = null;
+            try {
+                JSONObject eventData = new JSONObject(event.getData());
+                String order_cost = eventData.getString("order_cost");
+                Logger.d(context,"Pusher eventOrderCost", "order_cost: " + order_cost);
+
+                Map<String, String> eventValues = new HashMap<>();
+                // Добавляем данные в Map
+                eventValues.put("order_cost", eventData.optString("order_cost", "0"));
+
+                VisicomFragment.costMap = eventValues;
+
+            } catch(JSONException e){
+                    Logger.e(context,"Pusher eventOrderCost", "JSON Parsing error for event: " + event.getData() +  e);
+            }
 
         });
 

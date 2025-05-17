@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 35
-        versionCode 1817
-        versionName '1.817'
+        versionCode 1818
+        versionName '1.818'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled true
@@ -138,4 +138,3 @@ dependencies {
     //security
     implementation "androidx.security:security-crypto:1.1.0-alpha07" // Или последняя версия
 }
-

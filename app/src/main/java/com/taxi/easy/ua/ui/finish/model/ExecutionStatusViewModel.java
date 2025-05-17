@@ -1,5 +1,6 @@
 package com.taxi.easy.ua.ui.finish.model;
 
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.lifecycle.LiveData;
@@ -22,7 +23,6 @@ public class ExecutionStatusViewModel extends ViewModel {
 
     //
     private final SingleLiveEvent<String> transactionStatus = new SingleLiveEvent<>();
-
     public LiveData<String> getTransactionStatus() {
         return transactionStatus;
     }
@@ -34,12 +34,36 @@ public class ExecutionStatusViewModel extends ViewModel {
 
 
     //Проверка отмены по оплате
+
     public LiveData<String> getCanceledStatus() {return canceledStatus;}
     public void setCanceledStatus(String canceled) {
         Log.e("Pusher eventCanceled", "setCanceledStatus:" + canceled);
         canceledStatus.postValue(canceled);
         EventBus.getDefault().post(new CanceledStatusEvent(canceled));
 
+    }
+    // Добавление стоимости
+
+    private final MutableLiveData<String> addCostViewUpdate = new MutableLiveData<>();
+    public LiveData<String> getAddCostViewUpdate() {return addCostViewUpdate;}
+    public void setAddCostViewUpdate(String addCost) {
+        Log.e("Pusher addCostViewUpdate", "addCostViewUpdate:" + addCost);
+        if (Looper.getMainLooper().isCurrentThread()) {
+            addCostViewUpdate.setValue(addCost);
+        } else {
+            addCostViewUpdate.postValue(addCost);
+        }
+    }
+
+    private final MutableLiveData<Boolean> cancelStatus = new MutableLiveData<>();
+    public LiveData<Boolean> getCancelStatus() {return cancelStatus;}
+    public void setCancelStatus(Boolean canceled) {
+        Log.e("Pusher canceled", "canceled:" + canceled);
+        if (Looper.getMainLooper().isCurrentThread()) {
+            cancelStatus.setValue(canceled);
+        } else {
+            cancelStatus.postValue(canceled);
+        }
     }
 
     //Опрос вилки

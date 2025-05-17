@@ -130,6 +130,7 @@ public class VisicomFragment extends Fragment {
 
     @SuppressLint("StaticFieldLeak")
     public static ProgressBar progressBar;
+    public static Map<String, String> costMap;
     private FragmentVisicomBinding binding;
     private static final String TAG = "VisicomFragment";
  
@@ -2416,7 +2417,7 @@ public class VisicomFragment extends Fragment {
                     String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
 
                     Logger.d(context, TAG, "visicomCost: " + urlCost);
-
+                    VisicomFragment.costMap = null;
 
                     CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
                     try {

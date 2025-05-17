@@ -432,7 +432,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     uid_Double = " ";
 
                     pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
-                    FinishSeparateFragment.handlerStatus.post(FinishSeparateFragment.myTaskStatus);
+//                    FinishSeparateFragment.handlerStatus.post(FinishSeparateFragment.myTaskStatus);
                     if (pay_method.equals("wfp_payment")) {
                         FinishSeparateFragment.handlerAddcost.postDelayed(FinishSeparateFragment.showDialogAddcost, FinishSeparateFragment.timeCheckOutAddCost);
                     }

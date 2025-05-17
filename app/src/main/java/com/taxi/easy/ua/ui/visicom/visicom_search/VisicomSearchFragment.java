@@ -2015,9 +2015,11 @@ public class VisicomSearchFragment extends Fragment {
             do {
                 // Получаем данные из курсора
                 String fromStreet = c.getString(c.getColumnIndexOrThrow("from_street"));
-                fromStreet = fromStreet.trim();
+                fromStreet = (fromStreet != null ? fromStreet.replace("null", "").trim() : "");
+
                 String toStreet = c.getString(c.getColumnIndexOrThrow("to_street"));
-                toStreet = toStreet.trim();
+                toStreet = (toStreet != null ? toStreet.replace("null", "").trim() : "");
+
                 // Проверяем, есть ли уже такая запись в множестве
                 if (uniqueAddressesSet.add(fromStreet)) {
                     addresses.add(new String[]{fromStreet + "\t"});
