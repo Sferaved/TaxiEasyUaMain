@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.818</string>
-    <string name="version">Версія: 1.818</string>
+    <string name="version_code">1.820</string>
+    <string name="version">Версія: 1.820</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -515,4 +515,5 @@
     <string name="err_del_phone_fb">Помилка видалення облікового запису. Зверніться до оператора.</string>
     <string name="anr_mes">Упс... Щось пішло не так 😓. Спробуйте ще раз чи трохи згодом 🔄</string>
     <string name="search_address">Пошук адреси</string>
+    <string name="err_nal_reoder_mes">На жаль, замовлення за готівку в даний момент не можливе. Виберіть інший спосіб оплати.</string>
 </resources>

@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.818</string>
-    <string name="version">Версия: 1.818</string>
+    <string name="version_code">1.820</string>
+    <string name="version">Версия: 1.820</string>
 
     <string name="app_name">Такси Доставка</string>
 
@@ -514,4 +514,5 @@
     <string name="err_del_phone_fb">Ошибка удаления аккаунта. Обратитесь к оператору.</string>
     <string name="anr_mes">Упс... Что-то пошло не так 😓. Попробуйте ещё раз или чуть позже 🔄</string>
     <string name="search_address">Поиск адреса</string>
+    <string name="err_nal_reoder_mes">К сожалению заказ за наличные в данный момент не возможен. Выберите другой способ оплаты.</string>
 </resources>

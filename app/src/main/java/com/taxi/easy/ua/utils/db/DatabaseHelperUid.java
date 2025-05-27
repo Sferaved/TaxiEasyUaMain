@@ -174,39 +174,37 @@ public class DatabaseHelperUid extends SQLiteOpenHelper {
 
         RouteInfoCancel routeInfo = null;
 
-        if (cursor != null) {
-            if (cursor.moveToFirst()) {
-                // Предположим, что у вас есть класс RouteInfo, который хранит информацию о маршруте
-                String dispatchingOrderUid = cursor.getString(cursor.getColumnIndexOrThrow("dispatchingOrderUid"));
-                String orderCost = cursor.getString(cursor.getColumnIndexOrThrow("orderCost"));
-                String routeFrom = cursor.getString(cursor.getColumnIndexOrThrow("routeFrom"));
-                String routeFromNumber = cursor.getString(cursor.getColumnIndexOrThrow("routeFromNumber"));
-                String routeTo = cursor.getString(cursor.getColumnIndexOrThrow("routeTo"));
-                String toNumber = cursor.getString(cursor.getColumnIndexOrThrow("toNumber"));
-                String dispatchingOrderUidDouble = cursor.getString(cursor.getColumnIndexOrThrow("dispatchingOrderUidDouble"));
-                String pay_method = cursor.getString(cursor.getColumnIndexOrThrow("pay_method"));
-                String required_time = cursor.getString(cursor.getColumnIndexOrThrow("required_time"));
-                String flexible_tariff_name = cursor.getString(cursor.getColumnIndexOrThrow("flexible_tariff_name"));
-                String comment_info = cursor.getString(cursor.getColumnIndexOrThrow("comment_info"));
-                String extra_charge_codes = cursor.getString(cursor.getColumnIndexOrThrow("extra_charge_codes"));
+        if (cursor.moveToFirst()) {
+            // Предположим, что у вас есть класс RouteInfo, который хранит информацию о маршруте
+            String dispatchingOrderUid = cursor.getString(cursor.getColumnIndexOrThrow("dispatchingOrderUid"));
+            String orderCost = cursor.getString(cursor.getColumnIndexOrThrow("orderCost"));
+            String routeFrom = cursor.getString(cursor.getColumnIndexOrThrow("routeFrom"));
+            String routeFromNumber = cursor.getString(cursor.getColumnIndexOrThrow("routeFromNumber"));
+            String routeTo = cursor.getString(cursor.getColumnIndexOrThrow("routeTo"));
+            String toNumber = cursor.getString(cursor.getColumnIndexOrThrow("toNumber"));
+            String dispatchingOrderUidDouble = cursor.getString(cursor.getColumnIndexOrThrow("dispatchingOrderUidDouble"));
+            String pay_method = cursor.getString(cursor.getColumnIndexOrThrow("pay_method"));
+            String required_time = cursor.getString(cursor.getColumnIndexOrThrow("required_time"));
+            String flexible_tariff_name = cursor.getString(cursor.getColumnIndexOrThrow("flexible_tariff_name"));
+            String comment_info = cursor.getString(cursor.getColumnIndexOrThrow("comment_info"));
+            String extra_charge_codes = cursor.getString(cursor.getColumnIndexOrThrow("extra_charge_codes"));
 
-                routeInfo = new RouteInfoCancel(
-                        dispatchingOrderUid,
-                        orderCost,
-                        routeFrom,
-                        routeFromNumber,
-                        routeTo,
-                        toNumber,
-                        dispatchingOrderUidDouble,
-                        pay_method,
-                        required_time,
-                        flexible_tariff_name,
-                        comment_info,
-                        extra_charge_codes
-                        );
-            }
-            cursor.close();
+            routeInfo = new RouteInfoCancel(
+                    dispatchingOrderUid,
+                    orderCost,
+                    routeFrom,
+                    routeFromNumber,
+                    routeTo,
+                    toNumber,
+                    dispatchingOrderUidDouble,
+                    pay_method,
+                    required_time,
+                    flexible_tariff_name,
+                    comment_info,
+                    extra_charge_codes
+            );
         }
+        cursor.close();
 
         db.close();
         return routeInfo;

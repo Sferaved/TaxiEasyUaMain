@@ -109,7 +109,29 @@ public class FirestoreHelper {
             }
         });
     }
+    public void getSupportEmail(OnSupportEmailFetchedListener listener) {
+        DocumentReference docRef = firestore.collection("keys").document("mail");
 
+        listenerMapboxKey = docRef.addSnapshotListener((documentSnapshot, e) -> {
+            if (e != null) {
+                if (listener != null) {
+                    listener.onFailure(e);
+                }
+                return;
+            }
+
+            if (documentSnapshot != null && documentSnapshot.exists() && documentSnapshot.contains("email")) {
+                String mKey = documentSnapshot.getString("email");
+                if (listener != null) {
+                    listener.onSuccess(mKey);
+                }
+            } else {
+                if (listener != null) {
+                    listener.onFailure(new Exception("Поле email не найдено в документе или документ отсутствует."));
+                }
+            }
+        });
+    }
 
     public void listenForResponseChanges() {
         firestore.collection("settings")
@@ -175,6 +197,10 @@ public class FirestoreHelper {
 
     public interface OnMapboxKeyFetchedListener {
         void onSuccess(String mKey);
+        void onFailure(Exception e);
+    }
+    public interface OnSupportEmailFetchedListener {
+        void onSuccess(String supportEmail);
         void onFailure(Exception e);
     }
 }

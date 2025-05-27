@@ -3,6 +3,7 @@ package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
 import static com.taxi.easy.ua.MainActivity.navController;
+import static com.taxi.easy.ua.MainActivity.supportEmail;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -539,7 +540,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         String body = generateEmailBody(errorMessage);
 
 
-        String[] TO = {"taxi.easy.ua@gmail.com"};
+        String[] TO = {supportEmail};
 
         File logFile = new File(requireActivity().getExternalFilesDir(null), "app_log.txt");
 

@@ -131,14 +131,14 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <service
-            android:name=".utils.fcm.MyFirebaseMessagingService"
-            android:exported="false"
-            android:permission="TODO">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
+<!--        <service-->
+<!--            android:name=".utils.fcm.MyFirebaseMessagingService"-->
+<!--            android:exported="false"-->
+<!--            android:permission="TODO">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="com.google.firebase.MESSAGING_EVENT" />-->
+<!--            </intent-filter>-->
+<!--        </service>-->
         <receiver
             android:name=".utils.download.AppUpdateReceiver"
             android:enabled="true"

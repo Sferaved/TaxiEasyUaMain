@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.818</string>
-    <string name="version">Version: 1.818</string>
+    <string name="version_code">1.820</string>
+    <string name="version">Version: 1.820</string>
 
     <string name="app_name">Taxi Dostavka</string>
 
@@ -512,4 +512,5 @@
     <string name="err_del_phone_fb">Error deleting account. Contact your operator.</string>
     <string name="anr_mes">Oops... Something went wrong 😓. Try again or later 🔄</string>
     <string name="search_address">Address search</string>
+    <string name="err_nal_reoder_mes">Unfortunately, cash orders are currently unavailable. Please select another payment method.</string>
 </resources>

@@ -1005,7 +1005,7 @@ public class VisicomFragment extends Fragment {
         Logger.d(context, TAG, "orderFinished: message " + message);
         assert orderWeb != null;
 
-        boolean visicomBackPressed = (boolean) sharedPreferencesHelperMain.getValue("VisicomBackPressed", false);
+        boolean VisicomBackPressed = (boolean) sharedPreferencesHelperMain.getValue("VisicomBackPressed", false);
 
         if (!"0".equals(orderWeb)) {
             String to_name;
@@ -1177,7 +1177,7 @@ public class VisicomFragment extends Fragment {
             }, 1000); // 5000 миллисекунд = 5 секунд
 
 
-        } else if (!visicomBackPressed) {
+        } else if (!VisicomBackPressed) {
             sharedPreferencesHelperMain.saveValue("VisicomBackPressed", false);
             btnVisible(VISIBLE);
             assert message != null;

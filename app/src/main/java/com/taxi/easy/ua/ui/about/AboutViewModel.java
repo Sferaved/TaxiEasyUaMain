@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.ui.about;
 
+import static com.taxi.easy.ua.MainActivity.supportEmail;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -15,7 +17,7 @@ public class AboutViewModel extends ViewModel {
 
 
     public AboutViewModel() {
-        mText_email.setValue("taxi.easy.ua@gmail.com");
+        mText_email.setValue(supportEmail);
         LocalDate currentDate = LocalDate.now();
         int currentYear = currentDate.getYear();
 

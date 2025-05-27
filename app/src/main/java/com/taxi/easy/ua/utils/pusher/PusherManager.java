@@ -9,6 +9,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -30,7 +31,10 @@ import com.taxi.easy.ua.utils.log.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,10 +46,12 @@ public class PusherManager {
     private static final String PUSHER_APP_KEY = "a10fb0bff91153d35f36"; // Ваш ключ
     private static final String PUSHER_CLUSTER = "mt1"; // Ваш кластер
     private static final String CHANNEL_NAME = "teal-towel-48"; // Канал
+    private static final String TAG = "PusherManager";
 
     private final String eventUid;
     private final String eventUidDouble;
     private final String eventOrder;
+    private final String eventAutoOrder;
     private final String eventTransactionStatus;
     private final String eventCanceled;
     private final String eventBlackUserStatus;
@@ -62,6 +68,7 @@ public class PusherManager {
         this.eventUid = "order-status-updated-" + eventSuffix + "-" + userEmail;
         this.eventUidDouble = "orderDouble-status-updated-" + eventSuffix + "-" + userEmail;
         this.eventOrder = "order-" + eventSuffix + "-" + userEmail;
+        this.eventAutoOrder = "orderAuto-" + eventSuffix + "-" + userEmail;
         this.eventTransactionStatus = "transactionStatus-" + eventSuffix + "-" + userEmail;
         this.eventCanceled = "eventCanceled-" + eventSuffix + "-" + userEmail;
         this.eventBlackUserStatus = "black-user-status--" + userEmail;
@@ -495,7 +502,170 @@ public class PusherManager {
             }
         });
 
+        bindEvent(eventAutoOrder, event -> {
+            Logger.d(context,"Pusher", "Received eventAutoOrder: " + event.toString());
+            try {
+                // Преобразуем данные события в JSONObject
+                JSONObject eventData = new JSONObject(event.getData());
+
+                // Создаём Map для хранения данных
+                Map<String, String> eventValues = new HashMap<>();
+                // Добавляем данные в Map
+
+                eventValues.put("dispatching_order_uid", eventData.optString("dispatching_order_uid", "null"));
+                eventValues.put("order_cost", eventData.optString("order_cost", "0"));
+                eventValues.put("routefrom", eventData.optString("routefrom", "null"));
+                eventValues.put("routefromnumber", eventData.optString("routefromnumber", "null"));
+                eventValues.put("routeto", eventData.optString("routeto", "null"));
+                eventValues.put("to_number", eventData.optString("to_number", "null"));
+
+                eventValues.put("pay_method", eventData.optString("pay_method", "nal_payment"));
+                eventValues.put("orderWeb", eventData.optString("order_cost", "0"));
+
+//                eventValues.put("currency", eventData.optString("currency", "null"));
+                eventValues.put("required_time", eventData.optString("required_time", ""));
+                eventValues.put("flexible_tariff_name", eventData.optString("flexible_tariff_name", "null"));
+                eventValues.put("comment_info", eventData.optString("comment_info", ""));
+                eventValues.put("extra_charge_codes", eventData.optString("extra_charge_codes", ""));
+
+                // Добавляем дополнительные поля, если они существуют
+
+                String dispatchingOrderUidDouble = eventData.optString("dispatching_order_uid_Double", " ");
+                eventValues.put("dispatching_order_uid_Double", dispatchingOrderUidDouble.equals(" ") ? " " : dispatchingOrderUidDouble);
+
+                Logger.d(context,"Pusher", "Received eventAutoOrder: " + eventValues.toString());
+
+                startFinishPage(eventValues);
+
+            } catch (JSONException e) {
+                // Логируем ошибку при парсинге JSON
+                Logger.e(context,"Pusher", "JSON Parsing error" +  e);
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
     }
+
+
+    private void startFinishPage(Map<String, String> sendUrlMap) throws ParseException {
+        String to_name;
+        if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
+            to_name = context.getString(R.string.on_city_tv);
+            Logger.d(context, TAG, "startFinishPage: to_name 1 " + to_name);
+
+        } else {
+
+            if(Objects.equals(sendUrlMap.get("routeto"), "Точка на карте")) {
+                to_name = context.getString(R.string.end_point_marker);
+            } else {
+                to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
+            }
+            Logger.d(context, TAG, "startFinishPage: to_name 2 " + to_name);
+        }
+        Logger.d(context, TAG, "startFinishPage: to_name 3" + to_name);
+        String to_name_local = to_name;
+        if(to_name.contains("по місту")
+                ||to_name.contains("по городу")
+                || to_name.contains("around the city")
+        ) {
+            to_name_local = context.getString(R.string.on_city_tv);
+        }
+        Logger.d(context, TAG, "startFinishPage: to_name 4" + to_name_local);
+        String pay_method_message = context.getString(R.string.pay_method_message_main);
+        switch (Objects.requireNonNull(sendUrlMap.get("pay_method"))) {
+            case "bonus_payment":
+                pay_method_message += " " + context.getString(R.string.pay_method_message_bonus);
+                break;
+            case "card_payment":
+            case "fondy_payment":
+            case "mono_payment":
+            case "wfp_payment":
+                pay_method_message += " " + context.getString(R.string.pay_method_message_card);
+                break;
+            default:
+                pay_method_message += " " + context.getString(R.string.pay_method_message_nal);
+        }
+
+        String routeFrom = cleanString(sendUrlMap.get("routefrom") + " " +sendUrlMap.get("routefromnumber"));
+        String toMessage = cleanString(context.getString(R.string.to_message));
+        String toNameLocal = cleanString(to_name_local);
+        String orderWeb = cleanString(Objects.requireNonNull(sendUrlMap.get("orderWeb")));
+        String uah = cleanString(context.getString(R.string.UAH));
+        String payMethodMessage = cleanString(pay_method_message);
+        String required_time = sendUrlMap.get("required_time");
+        Logger.d(context, TAG, "orderFinished: required_time " + required_time);
+
+
+        if (required_time != null && !required_time.contains("1970-01-01")) {
+            try {
+                @SuppressLint("SimpleDateFormat")
+                SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
+                @SuppressLint("SimpleDateFormat")
+                SimpleDateFormat outputFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+
+                // Преобразуем строку required_time в Date
+                Date date = inputFormat.parse(required_time);
+
+                // Преобразуем Date в строку нужного формата
+                assert date != null;
+                required_time = " " + context.getString(R.string.time_order)  + " " +  outputFormat.format(date)  + ".";
+
+            } catch (ParseException e) {
+                e.printStackTrace();
+                required_time = ""; // Если ошибка парсинга, задаём пустое значение
+            }
+        } else {
+            required_time = "";
+        }
+
+        String messageResult =
+                routeFrom + " " +
+                        toMessage + " " +
+                        toNameLocal + ". " +
+                        required_time;
+        String messagePayment = orderWeb + " " + uah + " " + payMethodMessage;
+        Logger.d(context, TAG, "messageResult: " + messageResult);
+        Logger.d(context, TAG, "messagePayment: " + messagePayment);
+
+        String messageFondy = context.getString(R.string.fondy_message) + " " +
+                sendUrlMap.get("routefrom") + " " + context.getString(R.string.to_message) +
+                to_name_local + ".";
+        Logger.d(context, TAG, "startFinishPage: messageResult " + messageResult);
+        Logger.d(context, TAG, "startFinishPage: to_name " + to_name);
+
+        Logger.d(context, TAG, "orderWeb: " + orderWeb);
+        Logger.d(context, TAG, "uah: " + uah);
+        Logger.d(context, TAG, "payMethodMessage: " + payMethodMessage);
+
+
+        Bundle bundle = new Bundle();
+        bundle.putString("messageResult_key", messageResult);
+        bundle.putString("messagePay_key", messagePayment);
+        bundle.putString("messageFondy_key", messageFondy);
+        bundle.putString("messageCost_key", Objects.requireNonNull(sendUrlMap.get("orderWeb")));
+        bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
+        bundle.putString("card_payment_key", "no");
+        bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+        bundle.putString("dispatching_order_uid_Double", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid_Double")));
+
+        new Handler(Looper.getMainLooper()).post(() -> {
+            // Выполняем навигацию в главном потоке
+            MainActivity.navController.navigate(
+                    R.id.nav_finish_separate,
+                    bundle,
+                    new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_visicom, true)
+                            .build()
+            );
+        });
+
+    }
+    private String cleanString(String input) {
+        if (input == null) return "";
+        return input.trim().replaceAll("\\s+", " ").replaceAll("\\s{2,}$", " ");
+    }
+
     @SuppressLint("Range")
     private static List<String> logCursor(String table, Context context) {
         List<String> list = new ArrayList<>();

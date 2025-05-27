@@ -8,7 +8,7 @@
     <dimen name="list_item_spacing">16sp</dimen>
     <dimen name="list_item_spacing_half">8sp</dimen>
     <dimen name="initial_margin_bottom">12</dimen>
-    <dimen name="button_height">45dp</dimen>
+    <dimen name="button_height">50dp</dimen>
     <dimen name="textView_minHeight">48dp</dimen>
     <dimen name="textView_textSize">18sp</dimen>
     <item name="button_width" type="dimen" format="float">0.8</item>

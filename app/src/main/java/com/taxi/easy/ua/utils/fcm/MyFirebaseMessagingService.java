@@ -58,8 +58,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private void notifyUser (String message) {
 
-        String title = getApplicationContext().getString(R.string.new_message)
-                + " " + getApplicationContext().getString(R.string.app_name) ;
+        String title = getApplicationContext().getString(R.string.new_message) + " " + getApplicationContext().getString(R.string.app_name) ;
 
         NotificationHelper.showNotificationMessage(getApplicationContext(), title, message);
 

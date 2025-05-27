@@ -86,6 +86,7 @@ public class MyApplication extends Application {
 
             visicomKeyFromFb();
             mapboxKeyFromFb ();
+            supportEmailFromFb();
 
         } catch (Exception e) {
             Logger.e(this, TAG, "Initialization failed: " + e);
@@ -453,6 +454,27 @@ public class MyApplication extends Application {
                 // Обработка успешного получения ключа
                 MainActivity.apiKey = vKey;
                 Logger.d(getApplicationContext(),TAG, "Visicom Key: " + vKey);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                // Обработка ошибок
+                FirebaseCrashlytics.getInstance().recordException(e);
+                Logger.e(getApplicationContext(),TAG, "Ошибка: " + e.getMessage());
+            }
+        });
+
+    }
+
+    private void supportEmailFromFb()
+    {
+
+        firestoreHelper.getSupportEmail(new FirestoreHelper.OnSupportEmailFetchedListener() {
+            @Override
+            public void onSuccess(String supportEmail) {
+                // Обработка успешного получения ключа
+                MainActivity.supportEmail = supportEmail;
+                Logger.d(getApplicationContext(),TAG, "supportEmail: " + supportEmail);
             }
 
             @Override

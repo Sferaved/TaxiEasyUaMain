@@ -122,6 +122,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
+    public static String supportEmail;
 
     @SuppressLint("StaticFieldLeak")
     private static AppUpdater appUpdater;
@@ -257,7 +258,7 @@ public class MainActivity extends AppCompatActivity {
                 R.id.nav_visicom, R.id.nav_home, R.id.nav_cancel,
                 R.id.nav_about, R.id.nav_uid, R.id.nav_bonus, R.id.nav_card,
                 R.id.nav_account, R.id.nav_author, R.id.nav_finish_separate,
-                R.id.nav_restart, R.id.nav_search)
+                R.id.nav_restart, R.id.nav_search, R.id.nav_cacheOrder)
                 .setOpenableLayout(drawer)
                 .build();
 
@@ -1143,7 +1144,7 @@ public class MainActivity extends AppCompatActivity {
                 getString(R.string.SA_phone_text) + " " + userList.get(2) + "\n" + "\n";
 
         String[] CC = {"cartaxi4@gmail.com"};
-        String[] TO = {"taxi.easy.ua@gmail.com"};
+        String[] TO = {supportEmail};
 
         File logFile = new File(getExternalFilesDir(null), "app_log.txt");
 

@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
-import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -30,6 +29,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.navigation.NavOptions;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -41,11 +41,9 @@ import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.tariff.TariffInfo;
-import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.uxcam.UXCam;
 
 import java.lang.reflect.Field;
-import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -56,12 +54,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.TimeZone;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 
 public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
@@ -324,6 +317,75 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
     public void onPause() {
         super.onPause();
 
+//        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
+//
+//        for (int i = 0; i < services.size()-1; i++) {
+//            ContentValues cv = new ContentValues();
+//            cv.put(arrayServiceCode[i], "0");
+//            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//            database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?",
+//                    new String[] { "1" });
+//            database.close();
+//        }
+//
+//        SparseBooleanArray booleanArray = listView.getCheckedItemPositions();
+//        for (int i = 0; i < booleanArray.size(); i++) {
+//            if(booleanArray.get(booleanArray.keyAt(i))) {
+//                ContentValues cv = new ContentValues();
+//                cv.put(arrayServiceCode[booleanArray.keyAt(i)], "1");
+//                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//                database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?",
+//                        new String[] { "1" });
+//                database.close();
+//
+//            }
+//        }
+//
+//        String commentText = komenterinp.getText().toString();
+//        if (!commentText.isEmpty()) {
+//            ContentValues cv = new ContentValues();
+//
+//            cv.put("comment", commentText);
+//
+//            // обновляем по id
+//            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
+//                    new String[]{"1"});
+//            database.close();
+//        }
+//        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
+//        String comment = stringList.get(2);
+//
+//        Logger.d(context, TAG, "comment " + comment);
+//
+//        String discountText = discount.getText().toString();
+//        if (!discountText.isEmpty()) {
+//
+//            ContentValues cv = new ContentValues();
+//
+//            cv.put("discount", discountText);
+//
+//            // обновляем по id
+//            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+//                    new String[]{"1"});
+//            database.close();
+//        }
+//        //Проверка даты времени
+//        timeVerify();
+//        changeCost();
+//        try {
+//
+//        } catch (MalformedURLException e) {
+//            FirebaseCrashlytics.getInstance().recordException(e);
+//            throw new RuntimeException(e);
+//        }
+
+    }
+
+    @Override
+    public void onDismiss(@NonNull DialogInterface dialog) {
+        super.onDismiss(dialog);
         List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
 
         for (int i = 0; i < services.size()-1; i++) {
@@ -380,20 +442,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         }
         //Проверка даты времени
         timeVerify();
-
-        try {
-            changeCost();
-        } catch (MalformedURLException e) {
-            FirebaseCrashlytics.getInstance().recordException(e);
-            throw new RuntimeException(e);
-        }
-
-    }
-
-    @Override
-    public void onDismiss(@NonNull DialogInterface dialog) {
-        super.onDismiss(dialog);
-
+        changeCost();
     }
 
     private void timeVerify() {
@@ -560,80 +609,86 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         VisicomFragment.schedule.setText(mes);
     }
 
-    private void changeCost() throws MalformedURLException {
+    private void changeCost()  {
+//        new Handler(Looper.getMainLooper()).post(() -> {
+            // Выполняем навигацию в главном потоке
+        MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                .setPopUpTo(R.id.nav_visicom, true)
+                .build());
+//        });
 
-
-        String  url = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
-        String message = context.getString(R.string.change_tarrif);
-        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
-        ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
-        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-
-        Logger.d(context, TAG, "orderFinished: "  + baseUrl + url);
-        costSearchMarkersLocalTariffs(context);
-
-        parser.sendURL(url, new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
-                Map<String, String> sendUrl = response.body();
-
-                assert sendUrl != null;
-                String orderC = sendUrl.get("order_cost");
-                Logger.d(context, TAG, "changeCost: sendUrl " + sendUrl);
-                Logger.d(context, TAG, "changeCost: orderC " + orderC);
-
-                assert orderC != null;
-                if (!orderC.equals("0")) {
-
-                    long firstCost = Long.parseLong(orderC);
-
-
-
-                    long discountInt = Integer.parseInt(discountText);
-                    long discount = firstCost * discountInt / 100;
-
-                    updateAddCost(String.valueOf(discount));
-
-                    String newCost = String.valueOf(firstCost + discount);
-                    VisicomFragment.startCost = firstCost + discount;
-                    VisicomFragment.finalCost = firstCost + discount;
-
-                    Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: startCost " + VisicomFragment.startCost);
-                    Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: finalCost " + VisicomFragment.finalCost);
-
-                    if (texViewCost != null) {
-                        texViewCost.setText(newCost);
-                        VisicomFragment.btnVisible(View.VISIBLE);
-                    }
-
-                } else {
-                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
-                    ContentValues cv = new ContentValues();
-                    cv.put("tarif", " ");
-
-                    // обновляем по id
-                    assert context != null;
-                    SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                    database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                            new String[]{"1"});
-                    database.close();
-                    try {
-                        changeCost();
-                    } catch (MalformedURLException e) {
-                        FirebaseCrashlytics.getInstance().recordException(e);
-                        throw new RuntimeException(e);
-                    }
-                }
-
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
-                FirebaseCrashlytics.getInstance().recordException(t);
-            }
-        });
-
-        VisicomFragment.addCheck(context);
+//        String  url = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
+//        String message = context.getString(R.string.change_tarrif);
+//        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
+//        ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
+//        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+//
+//        Logger.d(context, TAG, "orderFinished: "  + baseUrl + url);
+//        costSearchMarkersLocalTariffs(context);
+//
+//        parser.sendURL(url, new Callback<>() {
+//            @Override
+//            public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+//                Map<String, String> sendUrl = response.body();
+//
+//                assert sendUrl != null;
+//                String orderC = sendUrl.get("order_cost");
+//                Logger.d(context, TAG, "changeCost: sendUrl " + sendUrl);
+//                Logger.d(context, TAG, "changeCost: orderC " + orderC);
+//
+//                assert orderC != null;
+//                if (!orderC.equals("0")) {
+//
+//                    long firstCost = Long.parseLong(orderC);
+//
+//
+//
+//                    long discountInt = Integer.parseInt(discountText);
+//                    long discount = firstCost * discountInt / 100;
+//
+//                    updateAddCost(String.valueOf(discount));
+//
+//                    String newCost = String.valueOf(firstCost + discount);
+//                    VisicomFragment.startCost = firstCost + discount;
+//                    VisicomFragment.finalCost = firstCost + discount;
+//
+//                    Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: startCost " + VisicomFragment.startCost);
+//                    Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: finalCost " + VisicomFragment.finalCost);
+//
+//                    if (texViewCost != null) {
+//                        texViewCost.setText(newCost);
+//                        VisicomFragment.MIN_COST_VALUE = (long) (VisicomFragment.startCost * 0.6);
+//                        VisicomFragment.btnVisible(View.VISIBLE);
+//                    }
+//
+//                } else {
+//                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+//                    ContentValues cv = new ContentValues();
+//                    cv.put("tarif", " ");
+//
+//                    // обновляем по id
+//                    assert context != null;
+//                    SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//                    database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+//                            new String[]{"1"});
+//                    database.close();
+//                    try {
+//                        changeCost();
+//                    } catch (MalformedURLException e) {
+//                        FirebaseCrashlytics.getInstance().recordException(e);
+//                        throw new RuntimeException(e);
+//                    }
+//                }
+//
+//            }
+//
+//            @Override
+//            public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+//                FirebaseCrashlytics.getInstance().recordException(t);
+//            }
+//        });
+//
+//        VisicomFragment.addCheck(context);
     }
 
     @SuppressLint("Range")

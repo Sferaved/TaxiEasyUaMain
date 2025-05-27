@@ -27,8 +27,8 @@ public class OrderResponse {
     @SerializedName("driver_phone")
     private String driverPhone;
 
-    @SerializedName("drivercar_position")
-    private String driverCarPosition;
+//    @SerializedName("drivercar_position")
+//    private String driverCarPosition;
 
     @SerializedName("required_time")
     private String requiredTime;
@@ -125,9 +125,9 @@ public class OrderResponse {
         return driverPhone;
     }
 
-    public String getDriverCarPosition() {
-        return driverCarPosition;
-    }
+//    public String getDriverCarPosition() {
+//        return driverCarPosition;
+//    }
 
     public String getRequiredTime() {
         return requiredTime;
@@ -226,9 +226,9 @@ public class OrderResponse {
         this.driverPhone = driverPhone;
     }
 
-    public void setDriverCarPosition(String driverCarPosition) {
-        this.driverCarPosition = driverCarPosition;
-    }
+//    public void setDriverCarPosition(String driverCarPosition) {
+//        this.driverCarPosition = driverCarPosition;
+//    }
 
     public void setRequiredTime(String requiredTime) {
         this.requiredTime = requiredTime;
@@ -306,7 +306,7 @@ public class OrderResponse {
                 ", currency='" + currency + '\'' +
                 ", orderCarInfo='" + orderCarInfo + '\'' +
                 ", driverPhone='" + driverPhone + '\'' +
-                ", driverCarPosition='" + driverCarPosition + '\'' +
+//                ", driverCarPosition='" + driverCarPosition + '\'' +
                 ", requiredTime='" + requiredTime + '\'' +
                 ", closeReason=" + closeReason +
                 ", cancelReasonComment='" + cancelReasonComment + '\'' +

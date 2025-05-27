@@ -138,8 +138,18 @@ public class UIDFragment extends Fragment {
             }
         });
 
+        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
 
-        fetchRoutes();
+            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_visicom, true)
+                    .build());
+        } else {
+            fetchRoutes();
+        }
+
+
+        routeList();
+
         registerForContextMenu(listView);
 
         btnCallAdmin = binding.btnCallAdmin;
@@ -184,7 +194,7 @@ public class UIDFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null) {
                     List<RouteResponse> routes = response.body();
                     Logger.d(context, TAG, "onResponse: " + routes);
-                    if (routes != null && !routes.isEmpty()) {
+                    if (!routes.isEmpty()) {
                         boolean hasRouteWithAsterisk = false;
                         for (RouteResponse route : routes) {
                             if ("*".equals(route.getRouteFrom())) {
@@ -340,6 +350,93 @@ public class UIDFragment extends Fragment {
             databaseHelperUid.addRouteInfoUid(settings);
             Logger.d(context, TAG, settings.toString());
         }
+        array = databaseHelper.readRouteInfo();
+        Logger.d (context, TAG, "processRouteList: array " + Arrays.toString(array));
+        if(array != null) {
+            List<String> itemList = Arrays.asList(array); // Преобразование в List
+
+            CustomArrayUidAdapter adapter = new CustomArrayUidAdapter(
+                    context,
+                    R.layout.drop_down_layout_uid,  // Ваш макет элемента списка
+                    R.id.text1,  // ID TextView в вашем макете
+                    R.id.text2,  // ID TextView в вашем макете
+                    R.id.text3,  // ID TextView в вашем макете
+                    R.id.text4,  // ID TextView в вашем макете
+                    R.id.text5,  // ID TextView в вашем макете
+                    itemList  // Список строк
+            );
+            listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @Override
+                public void onGlobalLayout() {
+                    root.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                    // Теперь мы можем получить высоту фрагмента
+                    desiredHeight = root.getHeight()/2;
+                    ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
+                    layoutParams.height = desiredHeight;
+                    listView.setLayoutParams(layoutParams);
+
+                    int totalItemHeight = 0;
+                    for (int i = 0; i < listView.getChildCount(); i++) {
+                        totalItemHeight += listView.getChildAt(i).getHeight();
+                    }
+                    Log.d(TAG, "totalItemHeight: " + totalItemHeight);
+                    Log.d(TAG, "desiredHeight: " + desiredHeight);
+                    if (totalItemHeight > desiredHeight) {
+                        scrollButtonUp.setVisibility(View.VISIBLE);
+                        scrollButtonDown.setVisibility(View.VISIBLE);
+                    } else {
+                        scrollButtonUp.setVisibility(View.GONE);
+                        scrollButtonDown.setVisibility(View.GONE);
+                    }
+                }
+            });
+
+
+
+            listView.setVisibility(View.VISIBLE);
+            progressBar.setVisibility(View.GONE);
+            upd_but.setVisibility(View.VISIBLE);
+
+            listView.setAdapter(adapter);
+
+
+            ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
+            layoutParams.height = desiredHeight;
+            listView.setLayoutParams(layoutParams);
+//            registerForContextMenu(listView);
+
+            scrollButtonDown.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    // Определяем следующую позицию для прокрутки
+                    int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
+
+                    // Проверяем, чтобы не прокручивать за пределы списка
+                    if (nextVisiblePosition < array.length) {
+                        // Плавно прокручиваем к следующей позиции
+                        listView.smoothScrollToPosition(nextVisiblePosition);
+                    }
+                }
+            });
+
+            scrollButtonUp.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    // Определяем следующую позицию для прокрутки
+                    int nextVisiblePosition = listView.getFirstVisiblePosition() - 1;
+
+                    // Проверяем, чтобы не прокручивать за пределы списка
+                    if (nextVisiblePosition >= 0) {
+                        // Плавно прокручиваем к предыдущей позиции
+                        listView.smoothScrollToPosition(nextVisiblePosition);
+                    }
+                }
+            });
+        }
+    }
+
+    private void routeList() {
+
         array = databaseHelper.readRouteInfo();
         Logger.d (context, TAG, "processRouteList: array " + Arrays.toString(array));
         if(array != null) {

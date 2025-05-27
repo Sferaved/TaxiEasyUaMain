@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.taxi.easy.ua.MainActivity.uid;
 import static com.taxi.easy.ua.MainActivity.uid_Double;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
@@ -19,11 +20,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.FragmentManager;
+import androidx.navigation.NavOptions;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -51,6 +54,7 @@ import com.taxi.easy.ua.ui.fondy.token_pay.RequestDataToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.StatusRequestToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.SuccessResponseDataToken;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
+import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceResponse;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceService;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseResponse;
@@ -162,8 +166,15 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         btn_ok.setOnClickListener(v -> {
             btn_ok.setVisibility(View.INVISIBLE);
             view.findViewById(R.id.progress_bar).setVisibility(View.VISIBLE);
+
+            FinishSeparateFragment.handlerStatus.removeCallbacks(FinishSeparateFragment.myTaskStatus);
+            FinishSeparateFragment.text_status.setText(context.getString(R.string.recounting_order));
             cancelOrderDoubleForNal();
             sharedPreferencesHelperMain.saveValue("pay_error", "**");
+
+
+
+
 
         });
         textViewInfo = view.findViewById(R.id.textViewInfo);
@@ -280,24 +291,19 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 if (response.isSuccessful() && response.body() != null) {
                     InvoiceResponse invoiceResponse = response.body();
 
-                    if (invoiceResponse != null) {
-                        String checkoutUrl = invoiceResponse.getInvoiceUrl();
-                        Logger.d(context, TAG, "onResponse: Invoice URL: " + checkoutUrl);
-                        if (checkoutUrl != null) {
-                            MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
-                                    checkoutUrl,
-                                    amount,
-                                    MainActivity.uid,
-                                    uid_Double,
-                                    context,
-                                    MainActivity.order_id
-                            );
-                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    String checkoutUrl = invoiceResponse.getInvoiceUrl();
+                    Logger.d(context, TAG, "onResponse: Invoice URL: " + checkoutUrl);
+                    if (checkoutUrl != null) {
+                        MyBottomSheetCardPayment bottomSheetDialogFragment = new MyBottomSheetCardPayment(
+                                checkoutUrl,
+                                amount,
+                                MainActivity.uid,
+                                uid_Double,
+                                context,
+                                MainActivity.order_id
+                        );
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
-                        } else {
-                            Logger.d(context, TAG, "Response body is null");
-                            cancelOrderDouble();
-                        }
                     } else {
                         Logger.d(context, TAG, "Response body is null");
                         cancelOrderDouble();
@@ -345,11 +351,11 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
 
 
-        Call<PurchaseResponse> call = service.purchase(
+        Call<PurchaseResponse> call = service.purchaseWithChangeToken(
                 getString(R.string.application),
                 city,
                 MainActivity.order_id,
-                amount,
+                MainActivity.uid,
                 orderDescription,
                 email,
                 FinishSeparateFragment.phoneNumber
@@ -441,17 +447,32 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     assert message != null;
                     if (message.contains("Дублирование")) {
                         message = context.getResources().getString(R.string.double_order_error);
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        if(isAdded()) {
+                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        } else {
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+                        }
+
                     } else if (message.equals("ErrorMessage")) {
                         message = context.getResources().getString(R.string.server_error_connected);
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        if(isAdded()) {
+                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                        } else {
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+                        }
                     } else {
                         if (isAdded()) {
                             message = context.getResources().getString(R.string.error_message);
-                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                            if(isAdded()) {
+                                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+                            } else {
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
                         }
 
                     }
@@ -864,53 +885,28 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     }
 
     private void cancelOrderDoubleForNal() {
-        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
-        String city = listCity.get(1);
-        String api = listCity.get(2);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-        ;
-        String url = baseUrl + api + "/android/webordersCancelDouble/" + MainActivity.uid + "/" + uid_Double + "/" + pay_method + "/" + city + "/" + context.getString(R.string.application);
+        try {
+            VisicomFragment.sendUrlMap = null;
+            paymentType();
+            Bundle bundle = new Bundle();
 
-        Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
-        Logger.d(context, TAG, "cancelOrderDouble: " + url);
+            bundle.putString("text_full_message", FinishSeparateFragment.text_full_message.getText().toString());
+            bundle.putString("uid", uid);
+            bundle.putString("uid_Double", uid_Double);
+            Logger.d(context, TAG, "uid " + uid);
+            Logger.d(context, TAG, "uid_Double " + uid_Double);
 
-        call.enqueue(new Callback<Status>() {
-            @Override
-            public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    Logger.d(context, TAG, "cancelOrderDouble response: " + response.toString());
-
-                    paymentType();
-                    try {
-                        orderFinished(page);
-                    } catch (MalformedURLException e) {
-                        FirebaseCrashlytics.getInstance().recordException(e);
-                    }
-
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
-                if (t instanceof SocketTimeoutException) {
-                    Logger.d(context, TAG, "onFailure: Тайм-аут соединения");
-                } else if (t instanceof IOException) {
-                    Logger.d(context, TAG, "onFailure: Ошибка сети или соединения");
-                } else {
-                    Logger.d(context, TAG, "onFailure: Непредвиденная ошибка");
-                }
-
-                // Логируем исключение
-                FirebaseCrashlytics.getInstance().recordException(t);
-
-                // Выводим сообщение пользователю
-                String errorMessage = t.getMessage();
-                Logger.d(context, TAG, "onFailure: Ошибка: " + errorMessage);
-
-            }
-
-        });
-        dismiss();
+            MainActivity.navController.navigate(
+                    R.id.nav_cacheOrder,
+                    bundle,
+                    new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_cacheOrder, true)
+                            .build()
+            );
+            dismiss();
+        } catch (IllegalArgumentException e) {
+            Logger.e(context, TAG, "Ошибка навигации: " + e.getMessage());
+        }
     }
 
     @Override

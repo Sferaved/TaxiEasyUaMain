@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 35
-        versionCode 1818
-        versionName '1.818'
+        versionCode 1820
+        versionName '1.820'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled true
@@ -52,13 +52,13 @@ dependencies {
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
-    implementation 'androidx.datastore:datastore-preferences:1.1.6'
+    implementation 'androidx.datastore:datastore-preferences:1.1.7'
     implementation 'com.github.anrwatchdog:anrwatchdog:1.4.0'
     implementation 'androidx.databinding:databinding-runtime:8.10.0'
 
 
     // Firebase зависимости (с использованием BOM)
-    implementation platform('com.google.firebase:firebase-bom:33.13.0')
+    implementation platform('com.google.firebase:firebase-bom:33.14.0')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-crashlytics'
     implementation 'com.google.firebase:firebase-messaging'
