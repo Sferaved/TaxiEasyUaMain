@@ -965,6 +965,9 @@ public class FinishSeparateFragment extends Fragment {
                 btn_cancel_order.setVisibility(VISIBLE);
             }
 
+            btnAddCost (timeCheckOutAddCost);
+
+        btn_add_cost.setVisibility(View.VISIBLE);
             if (cancel_btn_click) {
                 Logger.d(context, TAG, "Order cancellation detected, stopping search...");
                 if (handler != null) {
@@ -1107,7 +1110,58 @@ public class FinishSeparateFragment extends Fragment {
             }
 //        });
     }
+     private void btnAddCost (int timeCheckout) {
+         btn_add_cost.setText(context.getString(R.string.add_cost_btn));
+         btn_add_cost.setOnClickListener( view -> {
 
+             if ("nal_payment".equals(pay_method)) {
+
+                 // Запускаем выполнение через 1 минуты (60 000 миллисекунд)
+                 if (handlerAddcost != null) {
+                     handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
+                 }
+
+                 String text = textCostMessage.getText().toString();
+                 Logger.d(getActivity(), TAG, "textCostMessage.getText().toString() " + text);
+
+                 Pattern pattern = Pattern.compile("(\\d+)");
+                 Matcher matcher = pattern.matcher(text);
+
+                 if (matcher.find()) {
+                     Logger.d(context, TAG, "amount_to_add: " + matcher.group(1));
+                     stopCycle();
+                     MyBottomSheetAddCostFragment bottomSheetDialogFragment = new MyBottomSheetAddCostFragment(
+                             matcher.group(1),
+                             uid,
+                             uid_Double,
+                             pay_method,
+                             context,
+                             fragmentManager
+                     );
+    // Устанавливаем слушатель для обработки закрытия
+                     bottomSheetDialogFragment.setOnDismissListener(() -> {
+                         isTaskCancelled = false; // Сбрасываем флаг
+                         startCycle(); // Запускаем задачу после закрытия
+                     });
+                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                 } else {
+                     Logger.d(context, TAG, "No numeric value found in the text.");
+                 }
+             }  else if ("wfp_payment".equals(pay_method)) {
+
+                 verifyOldHold();
+
+
+             } else if ("bonus_payment".equals(pay_method)) {
+
+                 String message = context.getString(R.string.addCostBonusMessage);
+                 MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, context, message);
+                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+
+
+             }
+         });
+     }
     private void orderCanceled(String message) {
 //        new Handler(Looper.getMainLooper()).post(() -> {
             sharedPreferencesHelperMain.saveValue("carFound", false);
@@ -1681,58 +1735,8 @@ public class FinishSeparateFragment extends Fragment {
                 }
             }
         }
-       
 
-
-        btn_add_cost.setOnClickListener( view -> {
-
-                if ("nal_payment".equals(pay_method)) {
-
-                    // Запускаем выполнение через 1 минуты (60 000 миллисекунд)
-                    if (handlerAddcost != null) {
-                        handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
-                    }
-
-                    String text = textCostMessage.getText().toString();
-                    Logger.d(getActivity(), TAG, "textCostMessage.getText().toString() " + text);
-
-                    Pattern pattern = Pattern.compile("(\\d+)");
-                    Matcher matcher = pattern.matcher(text);
-
-                    if (matcher.find()) {
-                        Logger.d(context, TAG, "amount_to_add: " + matcher.group(1));
-                        stopCycle();
-                        MyBottomSheetAddCostFragment bottomSheetDialogFragment = new MyBottomSheetAddCostFragment(
-                                matcher.group(1),
-                                uid,
-                                uid_Double,
-                                pay_method,
-                                context,
-                                fragmentManager
-                        );
-// Устанавливаем слушатель для обработки закрытия
-                        bottomSheetDialogFragment.setOnDismissListener(() -> {
-                            isTaskCancelled = false; // Сбрасываем флаг
-                            startCycle(); // Запускаем задачу после закрытия
-                        });
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                    } else {
-                        Logger.d(context, TAG, "No numeric value found in the text.");
-                    }
-                }  else if ("wfp_payment".equals(pay_method)) {
-
-                     verifyOldHold();
-
-
-                } else if ("bonus_payment".equals(pay_method)) {
-
-                    String message = context.getString(R.string.addCostBonusMessage);
-                    MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment = new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, context, message);
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-
-
-                }
-            });
+        btnAddCost (timeCheckOutAddCost);
     }
 
     private void verifyOldHold() {

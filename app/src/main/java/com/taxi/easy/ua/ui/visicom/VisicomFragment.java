@@ -160,7 +160,7 @@ public class VisicomFragment extends Fragment {
     public static long MIN_COST_VALUE;
     public static long firstCostForMin;
     @SuppressLint("StaticFieldLeak")
-    public static AppCompatButton btnAdd, ubt_btn;
+    public static AppCompatButton btnAdd;
     @SuppressLint("StaticFieldLeak")
     static ImageButton btn1;
     @SuppressLint("StaticFieldLeak")
@@ -2372,7 +2372,7 @@ public class VisicomFragment extends Fragment {
 
     private static void visicomCost(Context context) throws MalformedURLException {
 
-        progressBar.setVisibility(VISIBLE);
+
         constr2.setVisibility(View.INVISIBLE);
         
 
@@ -2387,10 +2387,11 @@ public class VisicomFragment extends Fragment {
         @SuppressLint("Range") double toLan = cursor.getDouble(cursor.getColumnIndex("to_lat"));
         String cityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
         Logger.d(context, TAG, "CityCheckActivity: " + cityCheckActivity);
-        progressBar.setVisibility(View.INVISIBLE);
+
         if (cityCheckActivity.equals("run")) {
             if (originLatitude != 0.0 && toLan != 0.0) {
-
+                progressBar.setVisibility(VISIBLE);
+                Toast.makeText(context, context.getString(R.string.check_cost_message), Toast.LENGTH_SHORT).show();
                 gpsbut.setVisibility(View.VISIBLE);
                 svButton.setVisibility(View.VISIBLE);
                 btnCallAdmin.setVisibility(View.VISIBLE);

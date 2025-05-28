@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -29,7 +30,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.navigation.NavOptions;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -41,6 +41,7 @@ import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.tariff.TariffInfo;
+import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.uxcam.UXCam;
 
 import java.lang.reflect.Field;
@@ -54,7 +55,12 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 
 public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
@@ -73,7 +79,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
     TimeZone timeZone;
     SQLiteDatabase database;
     Activity context;
-    private int newCheck;
+
 
     public MyBottomSheetGeoFragment(TextView texViewCost) {
         this.texViewCost = texViewCost;
@@ -612,83 +618,79 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
     private void changeCost()  {
 //        new Handler(Looper.getMainLooper()).post(() -> {
             // Выполняем навигацию в главном потоке
-        MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                .setPopUpTo(R.id.nav_visicom, true)
-                .build());
+//        MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+//                .setPopUpTo(R.id.nav_visicom, true)
+//                .build());
 //        });
+        Toast.makeText(context, context.getString(R.string.check_cost_message), Toast.LENGTH_SHORT).show();
 
-//        String  url = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
-//        String message = context.getString(R.string.change_tarrif);
-//        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
-//        ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
-//        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-//
-//        Logger.d(context, TAG, "orderFinished: "  + baseUrl + url);
-//        costSearchMarkersLocalTariffs(context);
-//
-//        parser.sendURL(url, new Callback<>() {
-//            @Override
-//            public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
-//                Map<String, String> sendUrl = response.body();
-//
-//                assert sendUrl != null;
-//                String orderC = sendUrl.get("order_cost");
-//                Logger.d(context, TAG, "changeCost: sendUrl " + sendUrl);
-//                Logger.d(context, TAG, "changeCost: orderC " + orderC);
-//
-//                assert orderC != null;
-//                if (!orderC.equals("0")) {
-//
-//                    long firstCost = Long.parseLong(orderC);
-//
-//
-//
-//                    long discountInt = Integer.parseInt(discountText);
-//                    long discount = firstCost * discountInt / 100;
-//
-//                    updateAddCost(String.valueOf(discount));
-//
-//                    String newCost = String.valueOf(firstCost + discount);
-//                    VisicomFragment.startCost = firstCost + discount;
-//                    VisicomFragment.finalCost = firstCost + discount;
-//
-//                    Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: startCost " + VisicomFragment.startCost);
-//                    Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: finalCost " + VisicomFragment.finalCost);
-//
-//                    if (texViewCost != null) {
-//                        texViewCost.setText(newCost);
-//                        VisicomFragment.MIN_COST_VALUE = (long) (VisicomFragment.startCost * 0.6);
-//                        VisicomFragment.btnVisible(View.VISIBLE);
-//                    }
-//
-//                } else {
-//                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
-//                    ContentValues cv = new ContentValues();
-//                    cv.put("tarif", " ");
-//
-//                    // обновляем по id
-//                    assert context != null;
-//                    SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-//                    database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-//                            new String[]{"1"});
-//                    database.close();
-//                    try {
-//                        changeCost();
-//                    } catch (MalformedURLException e) {
-//                        FirebaseCrashlytics.getInstance().recordException(e);
-//                        throw new RuntimeException(e);
-//                    }
-//                }
-//
-//            }
-//
-//            @Override
-//            public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
-//                FirebaseCrashlytics.getInstance().recordException(t);
-//            }
-//        });
-//
-//        VisicomFragment.addCheck(context);
+        String  url = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
+        String message = context.getString(R.string.change_tarrif);
+        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
+        ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
+        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+
+        Logger.d(context, TAG, "orderFinished: "  + baseUrl + url);
+        costSearchMarkersLocalTariffs(context);
+
+        parser.sendURL(url, new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                Map<String, String> sendUrl = response.body();
+
+                assert sendUrl != null;
+                String orderC = sendUrl.get("order_cost");
+                Logger.d(context, TAG, "changeCost: sendUrl " + sendUrl);
+                Logger.d(context, TAG, "changeCost: orderC " + orderC);
+
+                assert orderC != null;
+                if (!orderC.equals("0")) {
+
+                    long firstCost = Long.parseLong(orderC);
+
+
+
+                    long discountInt = Integer.parseInt(discountText);
+                    long discount = firstCost * discountInt / 100;
+
+                    updateAddCost(String.valueOf(discount));
+
+                    String newCost = String.valueOf(firstCost + discount);
+                    VisicomFragment.startCost = firstCost + discount;
+                    VisicomFragment.finalCost = firstCost + discount;
+
+                    Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: startCost " + VisicomFragment.startCost);
+                    Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: finalCost " + VisicomFragment.finalCost);
+
+                    if (texViewCost != null) {
+                        texViewCost.setText(newCost);
+                        VisicomFragment.MIN_COST_VALUE = (long) (VisicomFragment.startCost * 0.6);
+                        VisicomFragment.btnVisible(View.VISIBLE);
+                    }
+
+                } else {
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+                    ContentValues cv = new ContentValues();
+                    cv.put("tarif", " ");
+
+                    // обновляем по id
+                    assert context != null;
+                    SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                            new String[]{"1"});
+                    database.close();
+                    changeCost();
+                }
+
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
+            }
+        });
+
+        VisicomFragment.addCheck(context);
     }
 
     @SuppressLint("Range")
