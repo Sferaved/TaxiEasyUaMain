@@ -26,9 +26,9 @@
 <!--        tools:layout="@layout/fragment_gallery" />-->
     <fragment
         android:id="@+id/nav_uid"
-        android:name="com.taxi.easy.ua.ui.uid.UIDFragment"
+        android:name="com.taxi.easy.ua.ui.history.HistoryFragment"
         android:label="@string/uid_menu"
-        tools:layout="@layout/fragment_uid" />
+        tools:layout="@layout/fragment_history" />
     <fragment
         android:id="@+id/nav_bonus"
         android:name="com.taxi.easy.ua.ui.bonus.BonusFragment"
