@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.uid;
+package com.taxi.easy.ua.ui.history;
 
 
 import static android.content.Context.MODE_PRIVATE;

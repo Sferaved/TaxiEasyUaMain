@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.ui.open_map;
 
 
-import android.content.Context;
 import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
@@ -20,8 +19,8 @@ import java.net.MalformedURLException;
 public class MarkerOverlay extends Overlay {
     private static final String TAG = "MarkerOverlay";
     Marker marker;
-    public MarkerOverlay(Context context) {
-        super(context);
+    public MarkerOverlay() {
+        super();
     }
 
     @Override

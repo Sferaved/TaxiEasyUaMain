@@ -6,7 +6,6 @@ import static android.graphics.Color.RED;
 import static android.view.View.GONE;
 import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
-import static com.taxi.easy.ua.MainActivity.viewModel;
 import static com.taxi.easy.ua.R.string.address_error_message;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
@@ -16,24 +15,21 @@ import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteStatement;
 import android.graphics.BlendMode;
 import android.graphics.Typeface;
 import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.telephony.TelephonyManager;
 import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -55,8 +51,11 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.ColorRes;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -65,7 +64,10 @@ import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
 import androidx.room.Room;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
@@ -83,6 +85,7 @@ import com.taxi.easy.ua.ui.cities.Zaporizhzhia.Zaporizhzhia;
 import com.taxi.easy.ua.ui.exit.AnrActivity;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
+import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.home.room.AppDatabase;
 import com.taxi.easy.ua.ui.home.room.RouteCost;
@@ -124,6 +127,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -141,6 +146,7 @@ public class HomeFragment extends Fragment {
 
     private FragmentHomeBinding binding;
     public static String from, to;
+    @SuppressLint("StaticFieldLeak")
     public static EditText from_number, to_number;
     String messageResult;
 
@@ -165,13 +171,20 @@ public class HomeFragment extends Fragment {
     public static long costFirstForMin;
     public static String urlOrder;
     public static long discount;
-    private MyPhoneDialogFragment bottomSheetDialogFragment;
+    private final MyPhoneDialogFragment bottomSheetDialogFragment;
 
     public static int routeIdToCheck = 123;
-    private boolean finiched;
     private AlertDialog alertDialog;
     private CarProgressBar carProgressBar;
+
+    private final Executor executor = Executors.newSingleThreadExecutor();
     private final int LOCATION_PERMISSION_REQUEST_CODE = 123;
+    private ActivityResultLauncher<String[]> permissionLauncher;
+
+    public HomeFragment(MyPhoneDialogFragment bottomSheetDialogFragment) {
+        this.bottomSheetDialogFragment = bottomSheetDialogFragment;
+    }
+
     public static String[] arrayServiceCode() {
         return new String[]{
                 "BAGGAGE",
@@ -218,6 +231,8 @@ public class HomeFragment extends Fragment {
 //    private String baseUrl = "https://m.easy-order-taxi.site";
     private String baseUrl;
 
+    private ExecutionStatusViewModel viewModel;
+
     @SuppressLint("SourceLockedOrientationActivity")
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -227,6 +242,26 @@ public class HomeFragment extends Fragment {
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+
+
+        permissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                result -> {
+                    Logger.d(context, TAG, "Permissions result: " + result.toString());
+
+                    // Сохраняем результаты разрешений в SharedPreferences
+                    for (Map.Entry<String, Boolean> entry : result.entrySet()) {
+                        sharedPreferencesHelperMain.saveValue(entry.getKey(), entry.getValue() ? PackageManager.PERMISSION_GRANTED : PackageManager.PERMISSION_DENIED);
+                    }
+
+                    // Обновляем счетчик запросов разрешений
+                    int permissionRequestCount = loadPermissionRequestCount();
+                    permissionRequestCount++;
+                    savePermissionRequestCount(permissionRequestCount);
+                    Logger.d(context, TAG, "permissionRequestCount: " + permissionRequestCount);
+                }
+        );
+
 
         // Включаем блокировку кнопки "Назад" Применяем блокировку кнопки "Назад"
         BackPressBlocker backPressBlocker = new BackPressBlocker();
@@ -262,7 +297,7 @@ public class HomeFragment extends Fragment {
             case "Zhytomyr":
             case "Kropyvnytskyi":
             case "Mykolaiv":
-            case "Сhernivtsi":
+            case "Chernivtsi":
             case "Lutsk":
             case "foreign countries":
                 MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
@@ -270,15 +305,18 @@ public class HomeFragment extends Fragment {
                         .build());
                 break;
         }
-
-        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-            
-            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true) 
-                        .build());
+        if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_restart, true)
+                    .build());
         }
-
-        finiched = true;
+//        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+//
+//            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+//                        .setPopUpTo(R.id.nav_visicom, true)
+//                        .build());
+//        }
 
         context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
@@ -407,12 +445,18 @@ public class HomeFragment extends Fragment {
             @SuppressLint("UseRequireInsteadOfGet")
             @Override
             public void onClick(View v) {
-                if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-
-                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                    NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                    navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                             .setPopUpTo(R.id.nav_restart, true)
                             .build());
                 }
+//                if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+//
+//                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                            .setPopUpTo(R.id.nav_restart, true)
+//                            .build());
+//                }
                 btnVisible(VISIBLE);
                 if(connected()) {
                     List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
@@ -558,12 +602,22 @@ public class HomeFragment extends Fragment {
     public static void setBtnBonusName(Context context) {
         String btnBonusName;
         String pay_method =  logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
-        btnBonusName = switch (pay_method) {
-            case "bonus_payment" -> context.getString(R.string.btn_bon);
-            case "card_payment", "fondy_payment", "mono_payment", "wfp_payment" ->
-                    context.getString(R.string.btn_card);
-            default -> context.getString(R.string.btn_cache);
-        };
+
+        switch (pay_method) {
+            case "bonus_payment":
+                btnBonusName = context.getString(R.string.btn_bon);
+                break;
+            case "card_payment":
+            case "fondy_payment":
+            case "mono_payment":
+            case "wfp_payment":
+                btnBonusName = context.getString(R.string.btn_card);
+                break;
+            default:
+                btnBonusName = context.getString(R.string.btn_cache);
+                break;
+        }
+
         buttonBonus.setText(btnBonusName);
     }
     private void scheduleUpdate() {
@@ -853,11 +907,11 @@ public class HomeFragment extends Fragment {
             boolean stop = false;
             if (numberFlagFrom.equals("1") && from_number.getText().toString().equals(" ")) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                    from_number.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(),R.color.selected_text_color)));
                     from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
                     from_number.requestFocus();
                 } else {
-                    ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                    ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(ContextCompat.getColor(requireContext(),R.color.selected_text_color)));
                     from_number.requestFocus();
                 }
                 stop = true;
@@ -865,11 +919,11 @@ public class HomeFragment extends Fragment {
             if (numberFlagTo.equals("1") && to_number.getText().toString().equals(" ")) {
                 to_number.setBackgroundTintList(ColorStateList.valueOf(R.color.selected_text_color));
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    to_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                    to_number.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(),R.color.selected_text_color)));
                     to_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
                     to_number.requestFocus();
                 } else {
-                    ViewCompat.setBackgroundTintList(to_number, ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                    ViewCompat.setBackgroundTintList(to_number, ColorStateList.valueOf(ContextCompat.getColor(requireContext(),R.color.selected_text_color)));
                     to_number.requestFocus();
                 }
                 stop = true;
@@ -881,11 +935,11 @@ public class HomeFragment extends Fragment {
 
             if (numberFlagFrom.equals("1") && !from_number.getText().toString().equals(" ")) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                    from_number.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(),R.color.edit)));
                     from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
                     from_number.requestFocus();
                 } else {
-                    ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                    ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(ContextCompat.getColor(requireContext(),R.color.edit)));
                     from_number.requestFocus();
                 }
 
@@ -893,11 +947,11 @@ public class HomeFragment extends Fragment {
             if (numberFlagTo.equals("1") && !to_number.getText().toString().equals(" ")) {
                 to_number.setBackgroundTintList(ColorStateList.valueOf(R.color.selected_text_color));
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    to_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                    to_number.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(),R.color.edit)));
                     to_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
                     to_number.requestFocus();
                 } else {
-                    ViewCompat.setBackgroundTintList(to_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                    ViewCompat.setBackgroundTintList(to_number, ColorStateList.valueOf(ContextCompat.getColor(requireContext(),R.color.edit)));
                     to_number.requestFocus();
                 }
 
@@ -945,40 +999,51 @@ public class HomeFragment extends Fragment {
                 new String[] { "1" });
         database.close();
     }
+    // Метод для запуска запроса разрешений
+    private void requestPermissions() {
+        String[] permissions = new String[] {
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+                // другие нужные разрешения
+        };
+        permissionLauncher.launch(permissions);
+    }
 
     public void checkPermission(String permission, int requestCode) {
         // Checking if permission is not granted
         Logger.d(context, TAG, "checkPermission: " + permission);
-        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(context, new String[]{permission}, LOCATION_PERMISSION_REQUEST_CODE);
-        }
+//        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_DENIED) {
+//            ActivityCompat.requestPermissions(context, new String[]{permission}, LOCATION_PERMISSION_REQUEST_CODE);
+//        }
+        requestPermissions();
     }
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Logger.d(context, TAG, "onRequestPermissionsResult: " + requestCode);
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (permissions.length > 0) {
-                SharedPreferences.Editor editor = MainActivity.sharedPreferences.edit();
-                for (int i = 0; i < permissions.length; i++) {
-                    editor.putInt(permissions[i], grantResults[i]);
-
-                }
-                editor.apply();
-
-                int permissionRequestCount = loadPermissionRequestCount();
-
-                // Увеличение счетчика запросов разрешений при необходимости
-                permissionRequestCount++;
-
-                // Сохранение обновленного значения счетчика
-                savePermissionRequestCount(permissionRequestCount);
-                Logger.d(context, TAG, "permissionRequestCount: " + permissionRequestCount);
-                // Далее вы можете загрузить сохраненные разрешения и их результаты в любом месте вашего приложения,
-                // используя тот же самый объект SharedPreferences
-            }
-        }
-    }
+//    @Override
+//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+//        Logger.d(context, TAG, "onRequestPermissionsResult: " + requestCode);
+//        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+//            if (permissions.length > 0) {
+////                SharedPreferences.Editor editor = MainActivity.sharedPreferences.edit();
+//                for (int i = 0; i < permissions.length; i++) {
+//                    sharedPreferencesHelperMain.saveValue(permissions[i], grantResults[i]);
+////                    editor.putInt(permissions[i], grantResults[i]);
+//
+//                }
+////                editor.apply();
+//
+//                int permissionRequestCount = loadPermissionRequestCount();
+//
+//                // Увеличение счетчика запросов разрешений при необходимости
+//                permissionRequestCount++;
+//
+//                // Сохранение обновленного значения счетчика
+//                savePermissionRequestCount(permissionRequestCount);
+//                Logger.d(context, TAG, "permissionRequestCount: " + permissionRequestCount);
+//                // Далее вы можете загрузить сохраненные разрешения и их результаты в любом месте вашего приложения,
+//                // используя тот же самый объект SharedPreferences
+//            }
+//        }
+//    }
     public static void btnVisible(int visible) {
 
         if (text_view_cost != null) {
@@ -1000,14 +1065,15 @@ public class HomeFragment extends Fragment {
 
     // Метод для сохранения количества запросов разрешений в SharedPreferences
     private void savePermissionRequestCount(int count) {
-        SharedPreferences.Editor editor = MainActivity.sharedPreferencesCount.edit();
-        editor.putInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
-        editor.apply();
+//        SharedPreferences.Editor editor = MainActivity.sharedPreferencesCount.edit();
+//        editor.putInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
+//        editor.apply();
+        sharedPreferencesHelperMain.saveValue(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
     }
 
     // Метод для загрузки количества запросов разрешений из SharedPreferences
     private int loadPermissionRequestCount() {
-        return MainActivity.sharedPreferencesCount.getInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, 0);
+        return (int) sharedPreferencesHelperMain.getValue(MainActivity.PERMISSION_REQUEST_COUNT_KEY, 0);
     }
     @Override
     public void onPause() {
@@ -1035,7 +1101,7 @@ public class HomeFragment extends Fragment {
 
         VisicomFragment.sendUrlMap = null;
         MainActivity.uid = null;
-        MainActivity.action = null;
+//        MainActivity.action = null;
 
 
         constraintLayoutHomeMain.setVisibility(VISIBLE);
@@ -1129,7 +1195,13 @@ public class HomeFragment extends Fragment {
         });
 
     }
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        Log.d("LifecycleCheck 1", "Current lifecycle state: " + getViewLifecycleOwner().getLifecycle().getCurrentState());
+        viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
 
+    }
     @SuppressLint("Range")
     private void rout() {
 
@@ -1218,18 +1290,18 @@ public class HomeFragment extends Fragment {
             if (!hasFocus) {
                 if (!from_number.getText().toString().equals(" ")) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                        from_number.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(),R.color.edit)));
                         from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
                     } else {
-                        ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                        ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(ContextCompat.getColor(requireContext(),R.color.edit)));
                     }
                }
             } else {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    from_number.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                    from_number.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(),R.color.edit)));
                     from_number.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
                 } else {
-                    ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(getResources().getColor(R.color.edit)));
+                    ViewCompat.setBackgroundTintList(from_number, ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.edit)));
                 }
             }
         });
@@ -1288,10 +1360,10 @@ public class HomeFragment extends Fragment {
                 }
                 if (textViewFrom.getText().toString().isEmpty()) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        textViewFrom.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                        textViewFrom.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.selected_text_color)));
                         textViewFrom.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
                     } else {
-                        ViewCompat.setBackgroundTintList(textViewFrom, ColorStateList.valueOf(getResources().getColor(R.color.selected_text_color)));
+                        ViewCompat.setBackgroundTintList(textViewFrom, ColorStateList.valueOf(ContextCompat.getColor(requireContext(),R.color.selected_text_color)));
                     }
 
                 }
@@ -1473,51 +1545,44 @@ public class HomeFragment extends Fragment {
 
     }
 
+
+
     private void insertRouteCostToDatabase() {
         AppDatabase db = Room.databaseBuilder(context, AppDatabase.class, "app-database")
-                .addMigrations(AppDatabase.MIGRATION_1_3) // Добавьте миграцию
+                .addMigrations(AppDatabase.MIGRATION_1_3)
                 .build();
         RouteCostDao routeCostDao = db.routeCostDao();
-        int routeId = routeIdToCheck; // Получите routeId
+
+        int routeId = routeIdToCheck;
         List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
-        String tarif =  stringListInfo.get(2);
-        String payment_type =  stringListInfo.get(4);
+        String tarif = stringListInfo.get(2);
+        String payment_type = stringListInfo.get(4);
         String addCost = stringListInfo.get(5);
 
-        AsyncTask.execute(new Runnable() {
-            @Override
-            public void run() {
-//                List<String> servicesChecked = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
-//                Logger.d(context, TAG, "insertRouteCostToDatabase: " + servicesChecked.toString());
-                RouteCost existingRouteCost = routeCostDao.getRouteCost(routeId);
-                if (existingRouteCost == null) {
-                    // Записи с таким routeId ещё нет, выполните вставку
-                    RouteCost routeCost = new RouteCost();
-                    routeCost.routeId = routeId; // установите уникальный идентификатор
-                    routeCost.from = textViewFrom.getText().toString();
-                    routeCost.fromNumber = from_number.getText().toString();
-                    routeCost.to = textViewTo.getText().toString();
-                    routeCost.toNumber = to_number.getText().toString();
-                    routeCost.text_view_cost = text_view_cost.getText().toString();
-                    routeCost.tarif = tarif;
-                    routeCost.payment_type = payment_type;
-                    routeCost.addCost = addCost;
-//                    routeCost.servicesChecked = servicesChecked;
-
-                    routeCostDao.insert(routeCost);
-                } else {
-                    // Запись с таким routeId уже существует, выполните обновление
-                    existingRouteCost.from = textViewFrom.getText().toString();
-                    existingRouteCost.fromNumber = from_number.getText().toString();
-                    existingRouteCost.to = textViewTo.getText().toString();
-                    existingRouteCost.toNumber = to_number.getText().toString();
-                    existingRouteCost.text_view_cost = text_view_cost.getText().toString();
-                    existingRouteCost.tarif = tarif;
-                    existingRouteCost.payment_type = payment_type;
-                    existingRouteCost.addCost = addCost;
-//                    existingRouteCost.servicesChecked = servicesChecked;
-                    routeCostDao.update(existingRouteCost); // Обновление существующей записи
-                }
+        executor.execute(() -> {
+            RouteCost existingRouteCost = routeCostDao.getRouteCost(routeId);
+            if (existingRouteCost == null) {
+                RouteCost routeCost = new RouteCost();
+                routeCost.routeId = routeId;
+                routeCost.from = textViewFrom.getText().toString();
+                routeCost.fromNumber = from_number.getText().toString();
+                routeCost.to = textViewTo.getText().toString();
+                routeCost.toNumber = to_number.getText().toString();
+                routeCost.text_view_cost = text_view_cost.getText().toString();
+                routeCost.tarif = tarif;
+                routeCost.payment_type = payment_type;
+                routeCost.addCost = addCost;
+                routeCostDao.insert(routeCost);
+            } else {
+                existingRouteCost.from = textViewFrom.getText().toString();
+                existingRouteCost.fromNumber = from_number.getText().toString();
+                existingRouteCost.to = textViewTo.getText().toString();
+                existingRouteCost.toNumber = to_number.getText().toString();
+                existingRouteCost.text_view_cost = text_view_cost.getText().toString();
+                existingRouteCost.tarif = tarif;
+                existingRouteCost.payment_type = payment_type;
+                existingRouteCost.addCost = addCost;
+                routeCostDao.update(existingRouteCost);
             }
         });
     }
@@ -1525,13 +1590,14 @@ public class HomeFragment extends Fragment {
 
 
 
+
     private void setEditTextBackgroundTint(EditText editText, @ColorRes int colorResId) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            editText.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(colorResId)));
+            editText.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(),colorResId)));
             editText.setBackgroundTintBlendMode(BlendMode.SRC_IN); // Устанавливаем режим смешивания цветов
             editText.requestFocus();
         } else {
-            ViewCompat.setBackgroundTintList(editText, ColorStateList.valueOf(getResources().getColor(colorResId)));
+            ViewCompat.setBackgroundTintList(editText, ColorStateList.valueOf(ContextCompat.getColor(requireContext(),colorResId)));
             editText.requestFocus();
         }
     }
@@ -1541,45 +1607,52 @@ public class HomeFragment extends Fragment {
     private void costRoutHome(final List<String> stringListRoutHome) {
        btnVisible(INVISIBLE);
 
-      new AsyncTask<Integer, Void, RouteCost>() {
-            @Override
-            protected RouteCost doInBackground(Integer... params) {
-                int routeIdToCheck = params[0];
-                AppDatabase db = Room.databaseBuilder(context, AppDatabase.class, "app-database")
-                        .addMigrations(AppDatabase.MIGRATION_1_3) // Добавьте миграцию
-                        .build();
-                RouteCostDao routeCostDao = db.routeCostDao();
-                return routeCostDao.getRouteCost(routeIdToCheck);
-            }
+        loadRouteCost(routeIdToCheck, stringListRoutHome);
 
-            @SuppressLint("StaticFieldLeak")
-            @Override
-            protected void onPostExecute(RouteCost retrievedRouteCost) {
-                progressBar.setVisibility(GONE);
+    }
+
+
+    private void loadRouteCost(int routeIdToCheck, final List<String> stringListRoutHome) {
+        Executor executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+        progressBar.setVisibility(View.VISIBLE);
+
+        executor.execute(() -> {
+            // Работа в фоновом потоке (аналог doInBackground)
+            AppDatabase db = Room.databaseBuilder(context, AppDatabase.class, "app-database")
+                    .addMigrations(AppDatabase.MIGRATION_1_3)
+                    .build();
+            RouteCostDao routeCostDao = db.routeCostDao();
+            RouteCost retrievedRouteCost = routeCostDao.getRouteCost(routeIdToCheck);
+
+            // Возврат в главный поток (аналог onPostExecute)
+            handler.post(() -> {
+                progressBar.setVisibility(View.GONE);
                 if (retrievedRouteCost != null) {
-                    // Данные с указанным routeId существуют в базе данных
                     textViewFrom.setText(retrievedRouteCost.from);
                     from_number.setText(retrievedRouteCost.fromNumber);
+
                     textViewTo.setText(retrievedRouteCost.to);
                     to_number.setText(retrievedRouteCost.toNumber);
 
                     Logger.d(context, TAG, "onPostExecute: from_number.getText().toString()" + from_number.getText().toString());
+
                     if (!from_number.getText().toString().equals(" ")) {
-                        from_number.setVisibility(VISIBLE);
+                        from_number.setVisibility(View.VISIBLE);
                     }
-                    Logger.d(context, TAG, "onPostExecute: retrievedRouteCost.toNumber/" + retrievedRouteCost.toNumber +"/");
+
+                    Logger.d(context, TAG, "onPostExecute: retrievedRouteCost.toNumber/" + retrievedRouteCost.toNumber + "/");
 
                     if (!retrievedRouteCost.from.equals(retrievedRouteCost.to)) {
-                        textViewTo.setVisibility(VISIBLE);
-                        binding.textwhere.setVisibility(VISIBLE);
-                        binding.num2.setVisibility(VISIBLE);
+                        textViewTo.setVisibility(View.VISIBLE);
+                        binding.textwhere.setVisibility(View.VISIBLE);
+                        binding.num2.setVisibility(View.VISIBLE);
                         to_number.setText(" ");
-
                     }
                     if (!to_number.getText().toString().equals(" ")) {
-                        to_number.setVisibility(VISIBLE);
+                        to_number.setVisibility(View.VISIBLE);
                     } else {
-                        to_number.setVisibility(INVISIBLE);
+                        to_number.setVisibility(View.INVISIBLE);
                     }
 
                     List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
@@ -1587,19 +1660,18 @@ public class HomeFragment extends Fragment {
                     Logger.d(context, TAG, "onPostExecute: addCostforMin" + addCostforMin);
                     MIN_COST_VALUE = (long) ((Long.parseLong(retrievedRouteCost.text_view_cost) - addCostforMin) * 0.6);
                     Logger.d(context, TAG, "onPostExecute: MIN_COST_VALUE" + MIN_COST_VALUE);
-//                    btn_order.setVisibility(VISIBLE);
-                    btnVisible(VISIBLE);
+                    btnVisible(View.VISIBLE);
                 } else {
                     Intent intent = new Intent(context, AnrActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     context.startActivity(intent);
                 }
+
                 updateAddCost("0");
                 updateUIFromList(stringListRoutHome);
                 scheduleUpdate();
-            }
-        }.execute(routeIdToCheck);
-
+            });
+        });
     }
 
     private void updateUIFromList(List<String> stringListRoutHome) {
@@ -1805,26 +1877,21 @@ public class HomeFragment extends Fragment {
     }
 
     private boolean connected() {
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) return false;
 
-        boolean hasConnect = false;
+        Network network = cm.getActiveNetwork();
+        if (network == null) return false;
 
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(
-                Context.CONNECTIVITY_SERVICE);
-        NetworkInfo wifiNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        if (wifiNetwork != null && wifiNetwork.isConnected()) {
-            hasConnect = true;
-        }
-        NetworkInfo mobileNetwork = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
-        if (mobileNetwork != null && mobileNetwork.isConnected()) {
-            hasConnect = true;
-        }
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        if (activeNetwork != null && activeNetwork.isConnected()) {
-            hasConnect = true;
-        }
+        NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
+        if (capabilities == null) return false;
 
-        return hasConnect;
+        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+                || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+                || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH);
     }
+
 
     public void updateRoutHome(List<String> settings) {
         ContentValues cv = new ContentValues();
@@ -2213,81 +2280,8 @@ public class HomeFragment extends Fragment {
         c.close();
         return list;
     }
-    private void getPhoneNumber () {
-        String mPhoneNumber;
-        TelephonyManager tMgr = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-            Logger.d(context, TAG, "Manifest.permission.READ_PHONE_NUMBERS: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS));
-            Logger.d(context, TAG, "Manifest.permission.READ_PHONE_STATE: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE));
-            return;
-        }
-        mPhoneNumber = tMgr.getLine1Number();
-//        mPhoneNumber = null;
-        if(mPhoneNumber != null) {
-            String PHONE_PATTERN = "\\+38 \\d{3} \\d{3} \\d{2} \\d{2}";
-            boolean val = Pattern.compile(PHONE_PATTERN).matcher(mPhoneNumber).matches();
-            Logger.d(context, TAG, "onClick No validate: " + val);
-            if (!val) {
-                Toast.makeText(context, getString(R.string.format_phone) , Toast.LENGTH_SHORT).show();
-                Logger.d(context, TAG, "onClick:phoneNumber.getText().toString() " + mPhoneNumber);
-//                context.finish();
-
-            } else {
-                updateRecordsUser(mPhoneNumber, context);
-            }
-        }
-
-    }
-
-    public static void insertRecordsOrders(String from, String to,
-                                    String from_number, String to_number,
-                                    String from_lat, String from_lng,
-                                    String to_lat, String to_lng, Context context) {
-
-        String selection = "from_street = ?";
-        String[] selectionArgs = new String[] {from};
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor_from = database.query(MainActivity.TABLE_ORDERS_INFO,
-                null, selection, selectionArgs, null, null, null);
-
-        selection = "to_street = ?";
-        selectionArgs = new String[] {to};
-
-        Cursor cursor_to = database.query(MainActivity.TABLE_ORDERS_INFO,
-                null, selection, selectionArgs, null, null, null);
 
 
-
-        if (cursor_from.getCount() == 0 || cursor_to.getCount() == 0) {
-
-            String sql = "INSERT INTO " + MainActivity.TABLE_ORDERS_INFO + " VALUES(?,?,?,?,?,?,?,?,?);";
-            SQLiteStatement statement = database.compileStatement(sql);
-            database.beginTransaction();
-            try {
-                statement.clearBindings();
-                statement.bindString(2, from);
-                statement.bindString(3, from_number);
-                statement.bindString(4, from_lat);
-                statement.bindString(5, from_lng);
-                statement.bindString(6, to);
-                statement.bindString(7, to_number);
-                statement.bindString(8, to_lat);
-                statement.bindString(9, to_lng);
-
-                statement.execute();
-                database.setTransactionSuccessful();
-
-            } finally {
-                database.endTransaction();
-            }
-
-        }
-        database.close();
-        cursor_from.close();
-        cursor_to.close();
-
-    }
     private void paymentType() {
         ContentValues cv = new ContentValues();
         cv.put("payment_type", "nal_payment");
@@ -2399,40 +2393,52 @@ public class HomeFragment extends Fragment {
             String extra_charge_codes = route.getExtra_charge_codes();
 
             switch (closeReason) {
+                case "101":
                 case "-1":
-                    closeReasonText = getString(R.string.close_resone_in_work);
+                    closeReasonText = context.getString(R.string.close_resone_in_work);
+                    break;
+                case "102":
+                    closeReasonText = context.getString(R.string.close_resone_in_start_point);
+                    break;
+                case "103":
+                    closeReasonText = context.getString(R.string.close_resone_in_rout);
+                    break;
+                case "104":
+                case "8":
+                    closeReasonText = context.getString(R.string.close_resone_8);
                     break;
                 case "0":
-                    closeReasonText = getString(R.string.close_resone_0);
+                    closeReasonText = context.getString(R.string.close_resone_0);
                     break;
                 case "1":
-                    closeReasonText = getString(R.string.close_resone_1);
+                    closeReasonText = context.getString(R.string.close_resone_1);
                     break;
                 case "2":
-                    closeReasonText = getString(R.string.close_resone_2);
+                    closeReasonText = context.getString(R.string.close_resone_2);
                     break;
                 case "3":
-                    closeReasonText = getString(R.string.close_resone_3);
+                    closeReasonText = context.getString(R.string.close_resone_3);
                     break;
                 case "4":
-                    closeReasonText = getString(R.string.close_resone_4);
+                    closeReasonText = context.getString(R.string.close_resone_4);
                     break;
                 case "5":
-                    closeReasonText = getString(R.string.close_resone_5);
+                    closeReasonText = context.getString(R.string.close_resone_5);
                     break;
                 case "6":
-                    closeReasonText = getString(R.string.close_resone_6);
+                    closeReasonText = context.getString(R.string.close_resone_6);
                     break;
                 case "7":
-                    closeReasonText = getString(R.string.close_resone_7);
-                    break;
-                case "8":
-                    closeReasonText = getString(R.string.close_resone_8);
+                    closeReasonText = context.getString(R.string.close_resone_7);
                     break;
                 case "9":
-                    closeReasonText = getString(R.string.close_resone_9);
+                    closeReasonText = context.getString(R.string.close_resone_9);
+                    break;
+                default:
+                    // оставляем closeReasonText как есть
                     break;
             }
+
 
             if (routeFrom.equals("Місце відправлення")) {
                 routeFrom = getString(R.string.start_point_text);

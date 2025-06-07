@@ -12,6 +12,7 @@ import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Rect;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Message;
@@ -22,6 +23,7 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -50,6 +52,7 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.uxcam.UXCam;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -224,21 +227,36 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
             case "wfp_payment":
                 webView.setWebViewClient(new WebViewClient() {
                     @Override
-                    public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                    public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                        String url = request.getUrl().toString();
 
                         Logger.d(context, TAG, "Загружен URL: " + url);
-                        if(url.contains("https://secure.wayforpay.com/invoice")){
+                        if (url.contains("https://secure.wayforpay.com/invoice")) {
                             return false;
                         }
-                        if(url.contains("https://secure.wayforpay.com/closing")
-                        ) {
+                        if (url.contains("https://secure.wayforpay.com/closing")) {
+                            getStatusWfp(orderReference);
+                            return false;
+                        }
+                        return false; // разрешаем WebView загружать страницу
+                    }
+
+                    // Для поддержки старых версий API (до 24), можно оставить deprecated метод:
+                    @Override
+                    @Deprecated
+                    public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                        Logger.d(context, TAG, "Загружен URL (deprecated): " + url);
+                        if (url.contains("https://secure.wayforpay.com/invoice")) {
+                            return false;
+                        }
+                        if (url.contains("https://secure.wayforpay.com/closing")) {
                             getStatusWfp(orderReference);
                             return false;
                         }
                         return false;
-                        // Возвращаем false, чтобы разрешить WebView загрузить страницу.
                     }
                 });
+
                 // Ensure checkoutUrl is not null and valid before loading it
                 if (checkoutUrl != null && URLUtil.isValidUrl(checkoutUrl)) {
                     webView.loadUrl(checkoutUrl);
@@ -265,19 +283,38 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                         Logger.d(getActivity(), TAG, "Received signature digest: " + digest);
                         webView.setWebViewClient(new WebViewClient() {
                             @Override
-                            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                                String url = request.getUrl().toString();
                                 Logger.d(getActivity(), TAG, "Загружен URL: " + url);
 
-                                if(url.equals(baseUrl +"/mono/redirectUrl")) {
+                                if (url.equals(baseUrl + "/mono/redirectUrl")) {
                                     Logger.d(getActivity(), TAG, "shouldOverrideUrlLoading: " + pay_method);
-//                                                getStatusFondy(digest);
+                                    // getStatusFondy(digest);
                                     return true;
                                 } else {
-                                    // Возвращаем false, чтобы разрешить WebView загрузить страницу.
                                     return false;
                                 }
                             }
+
+                            @Override
+                            @Deprecated
+                            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                                return shouldOverrideUrlLoading(view, new WebResourceRequest() {
+                                    @Override
+                                    public Uri getUrl() {
+                                        return Uri.parse(url);
+                                    }
+
+                                    // Реализуйте остальные методы WebResourceRequest по необходимости, либо сделайте их возвращать дефолтные значения
+                                    @Override public boolean isForMainFrame() { return true; }
+                                    @Override public boolean isRedirect() { return false; }
+                                    @Override public boolean hasGesture() { return false; }
+                                    @Override public String getMethod() { return "GET"; }
+                                    @Override public Map<String, String> getRequestHeaders() { return Collections.emptyMap(); }
+                                });
+                            }
                         });
+
                         // Ensure checkoutUrl is not null and valid before loading it
                         if (checkoutUrl != null && URLUtil.isValidUrl(checkoutUrl)) {
                             webView.loadUrl(checkoutUrl);

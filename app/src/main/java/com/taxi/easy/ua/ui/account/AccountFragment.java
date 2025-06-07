@@ -30,6 +30,7 @@ import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.redmadrobot.inputmask.MaskedTextChangedListener;
@@ -236,12 +237,20 @@ public class AccountFragment extends Fragment {
 
         btnOrder = binding.btnOrder;
         btnOrder.setOnClickListener(v -> {
-            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
 
-                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+            if (NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_restart, true)
                         .build());
             }
+
+//            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+//
+//                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                        .setPopUpTo(R.id.nav_restart, true)
+//                        .build());
+//            }
             SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
             sharedPreferencesHelper.saveValue("gps_upd", true);
             sharedPreferencesHelper.saveValue("gps_upd_address", true);
@@ -418,9 +427,20 @@ public class AccountFragment extends Fragment {
             String comment_info = route.getComment_info();
             String extra_charge_codes = route.getExtra_charge_codes();
 
-            switch (closeReason){
+            switch (closeReason) {
+                case "101":
                 case "-1":
                     closeReasonText = context.getString(R.string.close_resone_in_work);
+                    break;
+                case "102":
+                    closeReasonText = context.getString(R.string.close_resone_in_start_point);
+                    break;
+                case "103":
+                    closeReasonText = context.getString(R.string.close_resone_in_rout);
+                    break;
+                case "104":
+                case "8":
+                    closeReasonText = context.getString(R.string.close_resone_8);
                     break;
                 case "0":
                     closeReasonText = context.getString(R.string.close_resone_0);
@@ -446,14 +466,15 @@ public class AccountFragment extends Fragment {
                 case "7":
                     closeReasonText = context.getString(R.string.close_resone_7);
                     break;
-                case "8":
-                    closeReasonText = context.getString(R.string.close_resone_8);
-                    break;
                 case "9":
                     closeReasonText = context.getString(R.string.close_resone_9);
                     break;
-
+                default:
+                    // Можно оставить старое значение или назначить что-то по умолчанию
+                    // closeReasonText = closeReasonText; // бесполезно, можно просто ничего не делать
+                    break;
             }
+
 
             if(routeFrom.equals("Місце відправлення")) {
                 routeFrom = context.getString(R.string.start_point_text);

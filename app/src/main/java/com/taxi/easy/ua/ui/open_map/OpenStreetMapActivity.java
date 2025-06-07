@@ -8,6 +8,7 @@ import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -18,9 +19,7 @@ import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -34,6 +33,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
+import androidx.multidex.BuildConfig;
 import androidx.navigation.NavOptions;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -41,10 +41,12 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -59,6 +61,7 @@ import org.osmdroid.bonuspack.routing.RoadManager;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.CustomZoomButtonsController;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Polyline;
@@ -70,6 +73,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Executors;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -143,7 +147,9 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
         Context ctx = getApplicationContext();
         //important! set your user agent to prevent getting banned from the osm servers
-        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+        SharedPreferences prefs = ctx.getSharedPreferences("osmdroid", Context.MODE_PRIVATE);
+        Configuration.getInstance().load(ctx, prefs);
+        Configuration.getInstance().setUserAgentValue(BuildConfig.APPLICATION_ID);
 
         fragmentManager = getSupportFragmentManager();
 
@@ -224,8 +230,8 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         city = stringList.get(1);
         api =  stringList.get(2);
 
-        map.setBuiltInZoomControls(true);
-        map.setMultiTouchControls(true);
+        map.setMultiTouchControls(true); // для pinch-to-zoom
+        map.getZoomController().setVisibility(CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT);
         double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, getApplicationContext()).get(4));
         mapController.setZoom(newZoomLevel);
         map.setClickable(true);
@@ -287,25 +293,13 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         fusedLocationProviderClient.removeLocationUpdates(locationCallback);
     }
 
+
     private LocationRequest createLocationRequest() {
-        LocationRequest locationRequest = new LocationRequest();
-        locationRequest.setInterval(1000); // Интервал обновления местоположения в миллисекундах
-        locationRequest.setFastestInterval(100); // Самый быстрый интервал обновления местоположения в миллисекундах
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY); // Приоритет точного местоположения
-        return locationRequest;
+        return new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)  // приоритет и интервал обновления
+                .setMinUpdateIntervalMillis(100) // минимальный быстрый интервал
+                .build();
     }
 
-    private void requestLocationPermission() {
-        if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                Manifest.permission.ACCESS_FINE_LOCATION)) {
-            // Показываем объяснение пользователю, почему мы запрашиваем разрешение
-            // Можно использовать диалоговое окно или другой пользовательский интерфейс
-        } else {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    REQUEST_LOCATION_PERMISSION);
-        }
-    }
    private boolean  switchState() {
         LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         boolean gps_enabled = false;
@@ -328,7 +322,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
    public void onResume() {
         super.onResume();
         gpsSwitch.setChecked(switchState());
-        markerOverlay = new MarkerOverlay(OpenStreetMapActivity.this);
+        markerOverlay = new MarkerOverlay();
         map.getOverlays().add(markerOverlay);
         fab_open_map.setOnClickListener(v -> {
             finish();
@@ -353,7 +347,10 @@ public class OpenStreetMapActivity extends AppCompatActivity {
                 map.invalidate();
             } else {
                 Toast.makeText(this, R.string.check_position, Toast.LENGTH_SHORT).show();
-                Configuration.getInstance().load(OpenStreetMapActivity.this, PreferenceManager.getDefaultSharedPreferences(OpenStreetMapActivity.this));
+
+                SharedPreferences prefs = OpenStreetMapActivity.this.getSharedPreferences("osmdroid_prefs", Context.MODE_PRIVATE);
+                Configuration.getInstance().load(OpenStreetMapActivity.this, prefs);
+                Configuration.getInstance().setUserAgentValue(BuildConfig.APPLICATION_ID);
 
                 fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -420,7 +417,15 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             }
         } else {
             Toast.makeText(this, R.string.check_position, Toast.LENGTH_SHORT).show();
-            Configuration.getInstance().load(OpenStreetMapActivity.this, PreferenceManager.getDefaultSharedPreferences(OpenStreetMapActivity.this));
+
+            SharedPreferences prefs = getSharedPreferences("osm_prefs", Context.MODE_PRIVATE);
+            Configuration.getInstance().load(MyApplication.getContext(), prefs);
+
+            Configuration.getInstance().load(
+                    OpenStreetMapActivity.this,
+                    OpenStreetMapActivity.this.getSharedPreferences("osm_prefs", Context.MODE_PRIVATE)
+            );
+
 
             fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -507,11 +512,13 @@ public class OpenStreetMapActivity extends AppCompatActivity {
         m.setTextLabelFontSize(40);
         m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
 
-        @SuppressLint("UseCompatLoadingForDrawables") Drawable originalDrawable = context.getResources().getDrawable(R.drawable.marker_green);
+        Drawable originalDrawable = ContextCompat.getDrawable(context, R.drawable.marker_green);
+
 
         // Уменьшите размер до 48 пикселей
         int width = 48;
         int height = 48;
+        assert originalDrawable != null;
         Bitmap bitmap = Bitmap.createScaledBitmap(((BitmapDrawable) originalDrawable).getBitmap(), width, height, false);
 
         // Создайте новый Drawable из уменьшенного изображения
@@ -520,13 +527,10 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
         // Set the marker as draggable
 
-        m.setOnMarkerClickListener(new Marker.OnMarkerClickListener() {
-            @Override
-            public boolean onMarkerClick(Marker marker, MapView mapView) {
-                Toast.makeText(context, R.string.drag_marker, Toast.LENGTH_LONG).show();
-                m.setDraggable(true);
-                return true;
-            }
+        m.setOnMarkerClickListener((marker, mapView) -> {
+            Toast.makeText(context, R.string.drag_marker, Toast.LENGTH_LONG).show();
+            m.setDraggable(true);
+            return true;
         });
 
         // Set up the drag listener
@@ -580,7 +584,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
     public static void showRout(GeoPoint startP, GeoPoint endP) {
         map.getOverlays().removeAll(Collections.singleton(roadOverlay));
 
-        AsyncTask.execute(() -> {
+        Executors.newSingleThreadExecutor().execute(() -> {
             RoadManager roadManager = new OSRMRoadManager(map.getContext(),  System.getProperty("http.agent"));
             ArrayList<GeoPoint> waypoints = new ArrayList<>();
 
@@ -589,7 +593,7 @@ public class OpenStreetMapActivity extends AppCompatActivity {
             waypoints.add(endP);
             Road road = roadManager.getRoad(waypoints);
             roadOverlay = RoadManager.buildRoadOverlay(road);
-            roadOverlay.setWidth(10); // Измените это значение на желаемую толщину
+            roadOverlay.getOutlinePaint().setStrokeWidth(10f);
 
             map.getOverlays().add(roadOverlay);
 //            m.showInfoWindow();
@@ -683,9 +687,11 @@ public class OpenStreetMapActivity extends AppCompatActivity {
 
                             marker.setTitle("2."+ unuString + ToAdressString);
 
-                            @SuppressLint("UseCompatLoadingForDrawables") Drawable originalDrawable = context.getResources().getDrawable(R.drawable.marker_green);
+                            Drawable originalDrawable = ContextCompat.getDrawable(context, R.drawable.marker_green);
+
                             int width = 48;
                             int height = 48;
+                            assert originalDrawable != null;
                             Bitmap bitmap = Bitmap.createScaledBitmap(((BitmapDrawable) originalDrawable).getBitmap(), width, height, false);
 
                             // Создайте новый Drawable из уменьшенного изображения

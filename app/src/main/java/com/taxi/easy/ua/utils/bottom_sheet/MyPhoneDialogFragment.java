@@ -206,24 +206,29 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         phoneNumber.setText(result);
     }
     @SuppressLint("HardwareIds")
-    private void getPhoneNumber (Context context) {
-        String phone;
+    private void getPhoneNumber(Context context) {
         TelephonyManager tMgr = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
 
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-            Logger.d(context, TAG, "Manifest.permission.READ_PHONE_NUMBERS: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS));
-            Logger.d(context, TAG, "Manifest.permission.READ_PHONE_STATE: " + ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE));
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            Logger.d(context, TAG, "Missing permissions for reading phone number");
             return;
         }
-        phone = tMgr.getLine1Number();
 
-        if(phone != null) {
+        String phone = tMgr.getLine1Number();  // старый метод, устарел, но пока работает
+
+
+        if (phone != null && !phone.isEmpty()) {
             phoneNumber.setText(phone);
             userManager = new FirebaseUserManager();
             userManager.saveUserPhone(phone);
+        } else {
+            Logger.d(context, TAG, "Phone number not available, please ask user to input manually.");
+            // Показать диалог для ручного ввода номера
         }
-
     }
+
+
     private void phoneFull (Context context) {
         String phone = logCursor(MainActivity.TABLE_USER_INFO).get(2);
         phoneNumber.setText(phone);

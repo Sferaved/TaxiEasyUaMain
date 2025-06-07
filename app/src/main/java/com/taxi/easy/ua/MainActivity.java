@@ -18,6 +18,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -30,7 +33,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -55,11 +60,13 @@ import com.google.android.material.navigation.NavigationView;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
+import com.google.android.play.core.install.model.InstallStatus;
 import com.google.android.play.core.install.model.UpdateAvailability;
-import com.google.firebase.FirebaseApp;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
 import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.cities.api.CityApiClient;
@@ -179,8 +186,9 @@ public class MainActivity extends AppCompatActivity {
 
 
     VisicomFragment visicomFragment;
-    public static SharedPreferences sharedPreferences;
-    public static SharedPreferences sharedPreferencesCount;
+
+//    public static SharedPreferences sharedPreferences;
+//    public static SharedPreferences sharedPreferencesCount;
     public static final String PERMISSIONS_PREF_NAME = "Permissions";
     public static final String PERMISSION_REQUEST_COUNT_KEY = "PermissionRequestCount";
     public static boolean location_update;
@@ -197,15 +205,19 @@ public class MainActivity extends AppCompatActivity {
     private String city;
     private String newTitle;
     public static List<Call<?>> activeCalls = new ArrayList<>();
-    public static NavigationView navigationView;
+    NavigationView navigationView;
 
     String baseUrl;
+    @SuppressLint("StaticFieldLeak")
     public static PusherManager pusherManager;
-    public static ExecutionStatusViewModel viewModel;
+    public ExecutionStatusViewModel viewModel;
     public static OrderResponse orderResponse;
-    public static  String action;
-    public static int currentNavDestination = -1; // ID текущего экрана
 
+    public static int currentNavDestination = -1; // ID текущего экрана
+    ActivityMainBinding binding;
+    AppUpdateManager appUpdateManager;
+    public ActivityResultLauncher<Intent> exactAlarmLauncher;
+    public ActivityResultLauncher<Intent> batteryOptimizationLauncher;
 
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
@@ -215,40 +227,18 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         // Инициализация View Binding
-        ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(binding.getRoot());
 
-        if (viewModel == null) {
-            viewModel = new ViewModelProvider(this).get(ExecutionStatusViewModel.class);
-        }
-
-        // Логирование и очистка старых логов
-//        deleteOldLogFile();
-        Logger.i(this, TAG, "MainActivity started");
-        Logger.i(this, TAG, getString(R.string.application));
-        Logger.i(this, TAG, getString(R.string.version));
-
-        // Логирование информации об устройстве
-        String model = Build.MODEL;
-        String androidVersion = Build.VERSION.RELEASE;
-        int sdkVersion = Build.VERSION.SDK_INT;
-        Logger.i(this, TAG, "device: " + model);
-        Logger.i(this, TAG, "android_version: " + androidVersion);
-        Logger.i(this, TAG, "Build.VERSION.SDK_INT: " + sdkVersion);
-
-        // Установка Toolbar
+        // Установка Toolbar как ActionBar
         setSupportActionBar(binding.appBarMain.toolbar);
-
-        // Инициализация SharedPreferences
-        sharedPreferencesHelperMain = new SharedPreferencesHelper(this);
-        sharedPreferences = getSharedPreferences(PERMISSIONS_PREF_NAME, Context.MODE_PRIVATE);
-        sharedPreferencesCount = getSharedPreferences(PERMISSION_REQUEST_COUNT_KEY, Context.MODE_PRIVATE);
 
         // Настройка Navigation
         DrawerLayout drawer = binding.drawerLayout;
         navigationView = binding.navView;
         navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
+
         // Добавляем слушатель изменения направления
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
             currentNavDestination = destination.getId(); // Обновляем текущий экран
@@ -270,7 +260,7 @@ public class MainActivity extends AppCompatActivity {
         navMenu = navigationView.getMenu();
         navVisicomMenuItem = navMenu.findItem(R.id.nav_visicom);
 
-        // Явная обработка нажатий в NavigationView для предотвращения самопроизвольных переходов
+        // Явная обработка нажатий в NavigationView
         navigationView.setNavigationItemSelectedListener(item -> {
             int itemId = item.getItemId();
             NavDestination currentDestination = navController.getCurrentDestination();
@@ -282,18 +272,83 @@ public class MainActivity extends AppCompatActivity {
             return true;
         });
 
+        // Инициализация ViewModel
+        if (viewModel == null) {
+            viewModel = new ViewModelProvider(this).get(ExecutionStatusViewModel.class);
+        }
+
+        // Инициализация ActivityResultLauncher
+        exactAlarmLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    Logger.d(this, "MainActivity", "Exact Alarm permission result received");
+                });
+
+        batteryOptimizationLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    Logger.d(this, "MainActivity", "Battery optimization ignore permission result received");
+                });
+
+        // Логирование и очистка старых логов
+        Logger.i(this, TAG, "*******************************************************************************");
+        Logger.i(this, TAG, "MainActivity started");
+        Logger.i(this, TAG, getString(R.string.application));
+        Logger.i(this, TAG, getString(R.string.version));
+
+        // Логирование информации об устройстве
+        String model = Build.MODEL;
+        String androidVersion = Build.VERSION.RELEASE;
+        int sdkVersion = Build.VERSION.SDK_INT;
+        Logger.i(this, TAG, "device: " + model);
+        Logger.i(this, TAG, "android_version: " + androidVersion);
+        Logger.i(this, TAG, "Build.VERSION.SDK_INT: " + sdkVersion);
+
         // Инициализация ресивера для отслеживания сети
         networkChangeReceiver = new NetworkChangeReceiver();
-
-        // Проверка разрешений на доступ к местоположению
-        MainActivity.location_update = checkLocationPermission();
-
-        // Инициализация базы данных с обработкой исключений
         try {
             initDB();
         } catch (MalformedURLException | JSONException | InterruptedException e) {
             FirebaseCrashlytics.getInstance().recordException(e);
         }
+        // Настройка Action Bar
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowCustomEnabled(true);
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+            getSupportActionBar().setCustomView(R.layout.custom_action_bar_title);
+
+            // Доступ к элементам кастомного Action Bar
+            View customView = getSupportActionBar().getCustomView();
+            TextView titleTextView = customView.findViewById(R.id.action_bar_title);
+            ImageButton button1 = customView.findViewById(R.id.button1);
+
+            setCityAppbar(); // Предполагается, что метод существует и корректен
+            titleTextView.setText(newTitle);
+
+            // Установка обработчиков нажатий
+            View.OnClickListener clickListener = v -> {
+                Logger.d(this, TAG, "Обработчик нажатия, сеть доступна: " + NetworkUtils.isNetworkAvailable(this));
+                if (NetworkUtils.isNetworkAvailable(this)) {
+                    MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, MainActivity.this);
+                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+                } else if (navController != null) {
+                    currentNavDestination = R.id.nav_restart;
+                    navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_restart, true)
+                            .build());
+                } else {
+                    Logger.e(this, TAG, "NavController равен null, навигация невозможна!");
+                }
+            };
+
+            titleTextView.setOnClickListener(clickListener);
+            button1.setOnClickListener(clickListener);
+        }
+
+        // Проверка разрешений на доступ к местоположению
+        MainActivity.location_update = checkLocationPermission();
+
+
     }
 
     // Вспомогательный метод для проверки разрешений
@@ -369,7 +424,7 @@ public class MainActivity extends AppCompatActivity {
             case "Mykolaiv":
                 cityMenu = getString(R.string.city_mykolaiv);
                 break;
-            case "Сhernivtsi":
+            case "Chernivtsi":
                 cityMenu = getString(R.string.city_chernivtsi);
                 break;
             case "Lutsk":
@@ -391,7 +446,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Передаем результаты обратно вашему фрагменту для обработки
         if (visicomFragment != null) {
-            visicomFragment.onRequestPermissionsResult(requestCode, permissions, grantResults);
+//            visicomFragment.onRequestPermissionsResult(requestCode, permissions, grantResults);
+            visicomFragment.requestPermissions();
         }
     }
 
@@ -401,80 +457,47 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-//        VisicomFragment.constraintLayoutVisicomMain.setVisibility(View.GONE);
+        appUpdateManager = AppUpdateManagerFactory.create(MainActivity.this);
+
+        if (appUpdateManager != null) {
+            appUpdateManager.getAppUpdateInfo().addOnSuccessListener(appUpdateInfo -> {
+                if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+                    appUpdateManager.completeUpdate();
+                }
+            }).addOnFailureListener(e -> {
+                Logger.e(this,TAG, "Ошибка проверки обновлений: " + e.getMessage());
+            });
+        }
+
+
+
+// Проверка сети и навигация
+        if (!NetworkUtils.isNetworkAvailable(this)) {
+            if (currentNavDestination != R.id.nav_restart && navController != null) {
+                currentNavDestination = R.id.nav_restart;
+                navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_restart, true)
+                        .build());
+            } else if (navController == null) {
+                Logger.e(this,TAG, "NavController равен null, навигация невозможна!");
+            }
+        }
 
         sharedPreferencesHelperMain.saveValue("pay_error", "**");
 
-        MainActivity.action = null;
-//        viewModel = new ViewModelProvider(this).get(ExecutionStatusViewModel.class);
+        newUser();
 
-        // Устанавливаем Action Bar, если он доступен
-        if (getSupportActionBar() != null) {
-            // Устанавливаем пользовательский макет в качестве заголовка Action Bar
-            getSupportActionBar().setDisplayShowCustomEnabled(true);
-            getSupportActionBar().setDisplayShowTitleEnabled(false); // Отключаем стандартный заголовок
-            getSupportActionBar().setCustomView(R.layout.custom_action_bar_title);
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
-            // Доступ к TextView в пользовательском заголовке
-            View customView = getSupportActionBar().getCustomView();
-            TextView titleTextView = customView.findViewById(R.id.action_bar_title);
-            ImageButton button1 = customView.findViewById(R.id.button1);
-
-            setCityAppbar();
-
-            titleTextView.setText(newTitle);
-            // Установка обработчика нажатий
-            titleTextView.setOnClickListener(v -> {
-                Logger.d(this, TAG, " Установка обработчика нажатий" + NetworkUtils.isNetworkAvailable(getApplicationContext()));
-                if (NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-                    // Ваш код при нажатии на заголовок
-                    MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, MainActivity.this);
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-                } else {
-                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
-                }
-            });
-
-            // Установка обработчика нажатий
-            button1.setOnClickListener(v -> {
-                Logger.d(this, TAG, " Установка обработчика нажатий" + NetworkUtils.isNetworkAvailable(getApplicationContext()));
-                if (NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-                    // Ваш код при нажатии на заголовок
-                    MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, MainActivity.this);
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-                } else {
-                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
-                }
-
-            });
+        boolean gps_upd;
+        if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            gps_upd = getIntent().getBooleanExtra("gps_upd", true);
+        } else {
+            gps_upd = false;
         }
+        sharedPreferencesHelperMain.saveValue("gps_upd", gps_upd);
 
-        if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-            // Ваш код при нажатии на заголовок
-
-            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_restart, true)
-                    .build());
-
-        } else  {
-
-            newUser();
-
-            baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-
-            boolean gps_upd;
-            if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                    == PackageManager.PERMISSION_GRANTED) {
-                gps_upd = getIntent().getBooleanExtra("gps_upd", true);
-            } else {
-                gps_upd = false;
-            }
-            sharedPreferencesHelperMain.saveValue("gps_upd", gps_upd);
-        }
 
     }
 
@@ -983,19 +1006,42 @@ public class MainActivity extends AppCompatActivity {
         return NavigationUI.navigateUp(navController, mAppBarConfiguration)
                 || super.onSupportNavigateUp();
     }
+    public ActivityResultLauncher<Intent> getExactAlarmLauncher() {
+        return exactAlarmLauncher;
+    }
 
+    public ActivityResultLauncher<Intent> getBatteryOptimizationLauncher() {
+        return batteryOptimizationLauncher;
+    }
 
     @SuppressLint("IntentReset")
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
         if (item.getItemId() == R.id.action_exit) {
-            FirebaseApp.getInstance().setDataCollectionDefaultEnabled(false);
+            FirebaseAnalytics firebaseAnalytics = FirebaseAnalytics.getInstance(MyApplication.getContext());
+            firebaseAnalytics.setAnalyticsCollectionEnabled(false);
+
             deleteOldLogFile();
 //            System.gc();
 
             finishAffinity(); // Закрывает все активити
             System.exit(0);
+        }
+
+
+        if (item.getItemId() == R.id.clearApp) {
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.clearAppMess) // Например: "Подтверждение"
+                    .setMessage(R.string.clearAppMess) // Текст сообщения, например: "Вы уверены, что хотите очистить приложение?"
+                    .setPositiveButton(R.string.ok_button, (dialog, which) -> {
+                        SharedPreferencesHelper.clearApplication(this);
+                    })
+                    .setNegativeButton(R.string.cancel_button, (dialog, which) -> {
+                        dialog.dismiss();
+                    })
+                    .show();
+            return true;
         }
 
         if (item.getItemId() == R.id.gps) {
@@ -1035,7 +1081,7 @@ public class MainActivity extends AppCompatActivity {
         if (item.getItemId() == R.id.update) {
             Logger.d(this, TAG, "onOptionsItemSelected: " + getString(R.string.version));
 
-            AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(MainActivity.this);
+//            AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(MainActivity.this);
             Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
             appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
                 if (appUpdateInfo.updateAvailability() != UpdateAvailability.UPDATE_AVAILABLE) {
@@ -1048,7 +1094,11 @@ public class MainActivity extends AppCompatActivity {
 
 
             if (NetworkUtils.isNetworkAvailable(this)) {
-                appUpdater = new AppUpdater(MainActivity.this);
+                appUpdater = new AppUpdater(
+                        this,
+                        this.getExactAlarmLauncher(),
+                        this.getBatteryOptimizationLauncher()
+                );
                 appUpdater.startUpdate();
 
             }
@@ -1184,7 +1234,7 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        } catch(Exception ex) {}
+        } catch(Exception ignored) {}
 
         try {
             network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
@@ -1216,24 +1266,55 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    private ConnectivityManager.NetworkCallback networkCallback;
+
     @Override
     protected void onStart() {
-        registerReceiver(networkChangeReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         super.onStart();
 
-        // Создание фильтра намерений для отслеживания изменений подключения к интернету
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        // Регистрация BroadcastReceiver для батареи
+        registerReceiver(networkChangeReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 
-        // Регистрация BroadcastReceiver с фильтром намерений
-        registerReceiver(networkChangeReceiver, filter);
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkRequest networkRequest = new NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build();
+
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network) {
+                super.onAvailable(network);
+                // Сеть доступна
+                // Здесь можно вызывать нужный код, например:
+                // Log.d("Network", "Сеть доступна");
+            }
+
+            @Override
+            public void onLost(@NonNull Network network) {
+                super.onLost(network);
+                // Сеть потеряна
+                // Например:
+                // Log.d("Network", "Сеть потеряна");
+            }
+        };
+
+        // Регистрируем callback
+        connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
     }
 
     @Override
     protected void onStop() {
-        unregisterReceiver(networkChangeReceiver);
         super.onStop();
+
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (networkCallback != null) {
+            connectivityManager.unregisterNetworkCallback(networkCallback);
+        }
+
+        unregisterReceiver(networkChangeReceiver);
     }
+
     @SuppressLint("Range")
     public List<String> logCursor(String table) {
         List<String> list = new ArrayList<>();
@@ -1286,7 +1367,12 @@ public class MainActivity extends AppCompatActivity {
                 firstStart = false;
 
                 // Инициализация и подключение к Pusher
-                pusherManager = new PusherManager(getString(R.string.application), userEmail, MainActivity.this);
+                pusherManager = new PusherManager(
+                        getString(R.string.application),
+                        userEmail,
+                        MainActivity.this,
+                        viewModel
+                );
                 pusherManager.connect();
                 pusherManager.subscribeToChannel();
 
@@ -1627,7 +1713,12 @@ public class MainActivity extends AppCompatActivity {
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                         startActivity(intent);
                     }
-                    pusherManager = new PusherManager(getString(R.string.application), user.getEmail(), this);
+                    pusherManager = new PusherManager(
+                            getString(R.string.application),
+                            user.getEmail(),
+                            this,
+                            viewModel
+                    );
                     pusherManager.connect();
                     pusherManager.subscribeToChannel();
                 }
@@ -1964,7 +2055,7 @@ public class MainActivity extends AppCompatActivity {
         editor.putLong(LAST_NOTIFICATION_TIME_KEY, currentTime);
         editor.apply();
 
-        AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(this);
+
         Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
         appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
             if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
@@ -1988,31 +2079,32 @@ public class MainActivity extends AppCompatActivity {
     private void applyLocale() {
         Log.d(TAG, "applyLocale: " + Locale.getDefault().toString());
 
-//        Locale previousLocale = new Locale(Locale.getDefault().toString().split("_")[0]);
-        Locale previousLocale = new Locale(Locale.getDefault().toString());
-        Log.d(TAG, "applyLocale:  previousLocale " + previousLocale);
+        Locale previousLocale = Locale.getDefault();
+        Log.d(TAG, "applyLocale: previousLocale " + previousLocale);
 
+        // Получаем сохранённый код локали из SharedPreferences
         String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
         Log.d(TAG, "applyLocale sharedPreferencesHelperMain: " + localeCode);
 
         Locale locale = new Locale(localeCode);
-
         Log.d(TAG, "applyLocale locale: " + locale);
 
-//        if (locale != previousLocale) {
         if (!locale.equals(previousLocale)) {
             Locale.setDefault(locale);
 
             Resources resources = getResources();
-            Configuration config = resources.getConfiguration();
+            Configuration config = new Configuration(resources.getConfiguration());
             config.setLocale(locale);
-            resources.updateConfiguration(config, resources.getDisplayMetrics());
-            // Перезапуск приложения для применения локали
-//            Intent intent = new Intent(this, SettingsActivity.class);
-//            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-//            startActivity(intent);
-         }
 
+            // Создаём новый контекст с обновленной локалью
+            Context context = createConfigurationContext(config);
+            // Если нужно, можно использовать context.getResources() дальше в приложении
+            // Вызов getResources() в текущей Activity при этом НЕ обновится глобально
+
+            // Можно добавить код для перезапуска Activity/приложения,
+            // чтобы применить изменения локали немедленно
+        }
     }
+
 
 }

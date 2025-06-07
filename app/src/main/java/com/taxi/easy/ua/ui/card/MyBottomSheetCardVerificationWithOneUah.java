@@ -12,6 +12,7 @@ import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Rect;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Message;
 import android.util.Log;
@@ -21,6 +22,7 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -51,7 +53,9 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.uxcam.UXCam;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -221,14 +225,10 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
                 if (response.isSuccessful() && response.body() != null) {
                     InvoiceResponse invoiceResponse = response.body();
 
-                    if (invoiceResponse != null) {
-                        String checkoutUrl = invoiceResponse.getInvoiceUrl();
-                        Logger.d(context, TAG, "onResponse: Invoice URL: " + checkoutUrl);
-                        if(checkoutUrl != null) {
-                            payWfp(checkoutUrl);
-                        } else {
-                            Logger.d(context, TAG,"Response body is null");
-                        }
+                    String checkoutUrl = invoiceResponse.getInvoiceUrl();
+                    Logger.d(context, TAG, "onResponse: Invoice URL: " + checkoutUrl);
+                    if(checkoutUrl != null) {
+                        payWfp(checkoutUrl);
                     } else {
                         Logger.d(context, TAG,"Response body is null");
                     }
@@ -250,21 +250,35 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
     {
         webView.setWebViewClient(new WebViewClient() {
             @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                String url = request.getUrl().toString();
                 Logger.d(context, TAG, "Загружен URL: " + url);
-                if(url.contains("https://secure.wayforpay.com/invoice")){
-                    return false;
+
+                if (url.contains("https://secure.wayforpay.com/invoice")) {
+                    return false; // Разрешаем загрузку
                 }
-                if(url.contains("https://secure.wayforpay.com/closing")
-                ) {
+                if (url.contains("https://secure.wayforpay.com/closing")) {
                     getStatusWfp();
-                    return false;
+                    return false; // Разрешаем загрузку
                 }
-                return false;
-                // Возвращаем false, чтобы разрешить WebView загрузить страницу.
+                return false; // По умолчанию разрешаем загрузку
+            }
+
+            // Для совместимости, если старый метод всё ещё вызовется, можно его перенаправить на новый
+            @Override
+            @Deprecated
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return shouldOverrideUrlLoading(view, new WebResourceRequest() {
+                    @Override public Uri getUrl() { return Uri.parse(url); }
+                    @Override public boolean isForMainFrame() { return true; }
+                    @Override public boolean isRedirect() { return false; }
+                    @Override public boolean hasGesture() { return false; }
+                    @Override public String getMethod() { return "GET"; }
+                    @Override public Map<String, String> getRequestHeaders() { return Collections.emptyMap(); }
+                });
             }
         });
+
         // Ensure checkoutUrl is not null and valid before loading it
         if (checkoutUrl != null && URLUtil.isValidUrl(checkoutUrl)) {
             webView.loadUrl(checkoutUrl);

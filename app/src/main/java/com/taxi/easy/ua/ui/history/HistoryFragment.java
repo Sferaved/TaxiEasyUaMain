@@ -1,6 +1,7 @@
-package com.taxi.easy.ua.ui.uid;
+package com.taxi.easy.ua.ui.history;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.taxi.easy.ua.MainActivity.supportEmail;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -23,52 +24,50 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
+import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.databinding.FragmentUidBinding;
+import com.taxi.easy.ua.databinding.FragmentHistoryBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponse;
-import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
-import com.taxi.easy.ua.utils.db.RouteInfo;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.uxcam.UXCam;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 
-public class UIDFragment extends Fragment {
+public class HistoryFragment extends Fragment {
 
     private static final String TAG = "UIDFragment";
-    private @NonNull FragmentUidBinding binding;
+    private FragmentHistoryBinding binding;
     private ListView listView;
     private String[] array;
-    private RouteInfo routeInfo;
-    private static TextView textView;
-    private NetworkChangeReceiver networkChangeReceiver;
+
     ProgressBar progressBar;
     DatabaseHelper databaseHelper;
     DatabaseHelperUid databaseHelperUid;
-//    String baseUrl = "https://m.easy-order-taxi.site";
     String baseUrl;
 
     private List<RouteResponse> routeList;
 
     AppCompatButton upd_but;
-    private AppCompatButton btnCallAdmin;
     private ImageButton scrollButtonDown, scrollButtonUp;
     private TextView textUid;
 
@@ -76,22 +75,32 @@ public class UIDFragment extends Fragment {
     Context context;
     View root;
 
-    @SuppressLint("SourceLockedOrientationActivity")
+    public HistoryFragment() {
+    }
+
+    @SuppressLint({"SourceLockedOrientationActivity", "IntentReset"})
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
 
-        binding = FragmentUidBinding.inflate(inflater, container, false);
-        root = binding.getRoot();
+        binding = FragmentHistoryBinding.inflate(inflater, container, false);
 
-        FragmentManager fragmentManager = getParentFragmentManager();
+        if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_restart, true)
+                    .build());
+        }
+
+
+        root = binding.getRoot();
 
         context = requireActivity();
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         listView = binding.listView;
         progressBar = binding.progressBar;
-        networkChangeReceiver = new NetworkChangeReceiver();
+
 
         databaseHelper = new DatabaseHelper(context);
         databaseHelperUid = new DatabaseHelperUid(context);
@@ -101,11 +110,11 @@ public class UIDFragment extends Fragment {
         textUid  = binding.textUid;
         upd_but = binding.updBut;
         upd_but.setOnClickListener(v -> {
-            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-
-                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_visicom, true)
-                    .build());
+            if (NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true)
+                        .build());
             }
 
         });
@@ -138,10 +147,10 @@ public class UIDFragment extends Fragment {
             }
         });
 
-        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-
-            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_visicom, true)
+        if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_restart, true)
                     .build());
         } else {
             fetchRoutes();
@@ -152,15 +161,99 @@ public class UIDFragment extends Fragment {
 
         registerForContextMenu(listView);
 
-        btnCallAdmin = binding.btnCallAdmin;
+        AppCompatButton btnCallAdmin = binding.btnCallAdmin;
         btnCallAdmin.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_DIAL);
             String phone = logCursor(MainActivity.CITY_INFO, context).get(3);
             intent.setData(Uri.parse(phone));
             startActivity(intent);
         });
+
+        AppCompatButton text_uid = binding.textUid;
+        text_uid.setOnClickListener(v -> {
+            sendEmailAdmin();
+        });
         sharedPreferencesHelperMain.saveValue("carFound", false);
         return root;
+    }
+
+    @SuppressLint("IntentReset")
+    private void sendEmailAdmin () {
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
+        String city;
+        switch (stringList.get(1)){
+            case "Dnipropetrovsk Oblast":
+                city = getString(R.string.Dnipro_city);
+                break;
+            case "Zaporizhzhia":
+                city = getString(R.string.Zaporizhzhia);
+                break;
+            case "Cherkasy Oblast":
+                city = getString(R.string.Cherkasy);
+                break;
+            case "Odessa":
+                city = getString(R.string.Odessa);
+                break;
+            case "OdessaTest":
+                city = getString(R.string.OdessaTest);
+                break;
+            default:
+                city = getString(R.string.Kyiv_city);
+                break;
+        }
+
+
+        List<String> userList = logCursor(MainActivity.TABLE_USER_INFO, context);
+
+        String subject = getString(R.string.SA_subject) + generateRandomString();
+
+        String body = getString(R.string.SA_message_history) + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" + "\n" +
+                getString(R.string.SA_info_pas) + "\n" +
+                getString(R.string.SA_info_city) + " " + city + "\n" +
+                getString(R.string.SA_pas_text) + " " + getString(R.string.version) + "\n" +
+                getString(R.string.SA_user_text) + " " + userList.get(4) + "\n" +
+                getString(R.string.SA_email) + " " + userList.get(3) + "\n" +
+                getString(R.string.SA_phone_text) + " " + userList.get(2) + "\n" + "\n";
+
+        String[] CC = {"cartaxi4@gmail.com"};
+        String[] TO = {supportEmail};
+
+        File logFile = new File(requireActivity().getExternalFilesDir(null), "app_log.txt");
+
+        Intent emailIntent = new Intent(Intent.ACTION_SEND);
+        emailIntent.setType("message/rfc822");
+        emailIntent.putExtra(Intent.EXTRA_EMAIL, TO);
+        emailIntent.putExtra(Intent.EXTRA_CC, CC);
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, subject);
+        emailIntent.putExtra(Intent.EXTRA_TEXT, body);
+        if (logFile.exists()) {
+            Uri uri = FileProvider.getUriForFile(requireActivity(), requireActivity().getPackageName() + ".fileprovider", logFile);
+            emailIntent.putExtra(Intent.EXTRA_STREAM, uri);
+            emailIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        } else {
+            Logger.e(requireActivity(), "MainActivity", "Log file does not exist");
+        }
+        try {
+            startActivity(Intent.createChooser(emailIntent, subject));
+        } catch (android.content.ActivityNotFoundException e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
+
+
+    }
+
+    private String generateRandomString() {
+        String characters = "012345678901234567890123456789";
+        StringBuilder randomString = new StringBuilder();
+
+        Random random = new Random();
+        for (int i = 0; i < 10; i++) {
+            int randomIndex = random.nextInt(characters.length());
+            char randomChar = characters.charAt(randomIndex);
+            randomString.append(randomChar);
+        }
+
+        return randomString.toString();
     }
 
     private void fetchRoutes() {
@@ -262,9 +355,20 @@ public class UIDFragment extends Fragment {
             String to_lat = route.getTo_lat();
             String to_lng = route.getTo_lng();
 
-            switch (closeReason){
+            switch (closeReason) {
+                case "101":
                 case "-1":
                     closeReasonText = context.getString(R.string.close_resone_in_work);
+                    break;
+                case "102":
+                    closeReasonText = context.getString(R.string.close_resone_in_start_point);
+                    break;
+                case "103":
+                    closeReasonText = context.getString(R.string.close_resone_in_rout);
+                    break;
+                case "104":
+                case "8":
+                    closeReasonText = context.getString(R.string.close_resone_8);
                     break;
                 case "0":
                     closeReasonText = context.getString(R.string.close_resone_0);
@@ -290,14 +394,14 @@ public class UIDFragment extends Fragment {
                 case "7":
                     closeReasonText = context.getString(R.string.close_resone_7);
                     break;
-                case "8":
-                    closeReasonText = context.getString(R.string.close_resone_8);
-                    break;
                 case "9":
                     closeReasonText = context.getString(R.string.close_resone_9);
                     break;
-
+                default:
+                    // оставляем старое значение
+                    break;
             }
+
 
             if(routeFrom.equals("Місце відправлення")) {
                 routeFrom = context.getString(R.string.start_point_text);
@@ -313,7 +417,7 @@ public class UIDFragment extends Fragment {
             if(routeTo.contains("по місту")) {
                 routeTo = context.getString(R.string.on_city);
             }
-            String routeInfo = "";
+            String routeInfo;
 
             if(auto == null) {
                 auto = "??";
@@ -405,31 +509,25 @@ public class UIDFragment extends Fragment {
             listView.setLayoutParams(layoutParams);
 //            registerForContextMenu(listView);
 
-            scrollButtonDown.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    // Определяем следующую позицию для прокрутки
-                    int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
+            scrollButtonDown.setOnClickListener(v -> {
+                // Определяем следующую позицию для прокрутки
+                int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
 
-                    // Проверяем, чтобы не прокручивать за пределы списка
-                    if (nextVisiblePosition < array.length) {
-                        // Плавно прокручиваем к следующей позиции
-                        listView.smoothScrollToPosition(nextVisiblePosition);
-                    }
+                // Проверяем, чтобы не прокручивать за пределы списка
+                if (nextVisiblePosition < array.length) {
+                    // Плавно прокручиваем к следующей позиции
+                    listView.smoothScrollToPosition(nextVisiblePosition);
                 }
             });
 
-            scrollButtonUp.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    // Определяем следующую позицию для прокрутки
-                    int nextVisiblePosition = listView.getFirstVisiblePosition() - 1;
+            scrollButtonUp.setOnClickListener(v -> {
+                // Определяем следующую позицию для прокрутки
+                int nextVisiblePosition = listView.getFirstVisiblePosition() - 1;
 
-                    // Проверяем, чтобы не прокручивать за пределы списка
-                    if (nextVisiblePosition >= 0) {
-                        // Плавно прокручиваем к предыдущей позиции
-                        listView.smoothScrollToPosition(nextVisiblePosition);
-                    }
+                // Проверяем, чтобы не прокручивать за пределы списка
+                if (nextVisiblePosition >= 0) {
+                    // Плавно прокручиваем к предыдущей позиции
+                    listView.smoothScrollToPosition(nextVisiblePosition);
                 }
             });
         }
@@ -492,31 +590,25 @@ public class UIDFragment extends Fragment {
             listView.setLayoutParams(layoutParams);
 //            registerForContextMenu(listView);
 
-            scrollButtonDown.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    // Определяем следующую позицию для прокрутки
-                    int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
+            scrollButtonDown.setOnClickListener(v -> {
+                // Определяем следующую позицию для прокрутки
+                int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
 
-                    // Проверяем, чтобы не прокручивать за пределы списка
-                    if (nextVisiblePosition < array.length) {
-                        // Плавно прокручиваем к следующей позиции
-                        listView.smoothScrollToPosition(nextVisiblePosition);
-                    }
+                // Проверяем, чтобы не прокручивать за пределы списка
+                if (nextVisiblePosition < array.length) {
+                    // Плавно прокручиваем к следующей позиции
+                    listView.smoothScrollToPosition(nextVisiblePosition);
                 }
             });
 
-            scrollButtonUp.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    // Определяем следующую позицию для прокрутки
-                    int nextVisiblePosition = listView.getFirstVisiblePosition() - 1;
+            scrollButtonUp.setOnClickListener(v -> {
+                // Определяем следующую позицию для прокрутки
+                int nextVisiblePosition = listView.getFirstVisiblePosition() - 1;
 
-                    // Проверяем, чтобы не прокручивать за пределы списка
-                    if (nextVisiblePosition >= 0) {
-                        // Плавно прокручиваем к предыдущей позиции
-                        listView.smoothScrollToPosition(nextVisiblePosition);
-                    }
+                // Проверяем, чтобы не прокручивать за пределы списка
+                if (nextVisiblePosition >= 0) {
+                    // Плавно прокручиваем к предыдущей позиции
+                    listView.smoothScrollToPosition(nextVisiblePosition);
                 }
             });
         }

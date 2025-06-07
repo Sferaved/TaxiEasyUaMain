@@ -10,7 +10,10 @@ import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
+import androidx.core.content.ContextCompat;
+
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 
 public class CarProgressBar extends RelativeLayout {
 
@@ -37,7 +40,9 @@ public class CarProgressBar extends RelativeLayout {
         carImage = new ImageView(getContext());
 
         // Set default car image and size
-        @SuppressLint("UseCompatLoadingForDrawables") Drawable carDrawable = getResources().getDrawable(R.drawable.button_image_button2_old);
+        @SuppressLint("UseCompatLoadingForDrawables")
+        Drawable carDrawable = ContextCompat.getDrawable(MyApplication.getContext(), R.drawable.button_image_button2_old);
+
         int carWidth = 400;  // Default width in dp
         int carHeight = 200; // Default height in dp
 

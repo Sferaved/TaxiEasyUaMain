@@ -25,7 +25,9 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -226,9 +228,9 @@ public class CardFragment extends Fragment {
         webView = binding.webView;
         context = requireActivity();
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-
-            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+        if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)
                     .build());
         }
@@ -236,9 +238,9 @@ public class CardFragment extends Fragment {
         btnCardLink  = binding.btnCardLink;
         btnOrder = binding.btnOrder;
         btnOrder.setOnClickListener(v -> {
-            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-
-                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+            if (NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_restart, true)
                         .build());
             }
@@ -294,11 +296,22 @@ public class CardFragment extends Fragment {
             progressBar.setVisibility(View.VISIBLE);
 
             Logger.d(context, TAG, "onClick: " + pay_method);
-            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+
+            if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_visicom, true)
                         .build());
-            } else {
+            }
+
+//
+//            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+//                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+//                        .setPopUpTo(R.id.nav_visicom, true)
+//                        .build());
+//            }
+
+            else {
                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getActivity());
 
                 MyBottomSheetCardVerificationWithOneUah bottomSheetDialogFragment = new MyBottomSheetCardVerificationWithOneUah();

@@ -300,7 +300,7 @@ public class CityFinder {
                     cityMenu = context.getString(R.string.city_mykolaiv);
                     countryState = "UA";
                     break;
-                case "Сhernivtsi":
+                case "Chernivtsi":
                     positionFirst = 19;
                     phoneNumber = Kyiv_City_phone;
                     cityMenu = context.getString(R.string.city_chernivtsi);
@@ -377,7 +377,7 @@ public class CityFinder {
             case "Zhytomyr":
             case "Kropyvnytskyi":
             case "Mykolaiv":
-            case "Сhernivtsi":
+            case "Chernivtsi":
             case "Lutsk":
                 sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
                 break;

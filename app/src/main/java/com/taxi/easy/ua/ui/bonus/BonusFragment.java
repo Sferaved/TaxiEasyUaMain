@@ -24,6 +24,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 
@@ -72,12 +73,19 @@ public class BonusFragment extends Fragment {
         context = requireActivity();
         context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         fragmentManager = getParentFragmentManager();
-        MainActivity.navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
-        if (!NetworkUtils.isNetworkAvailable(context)) {
-            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+
+        if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_restart, true)
                     .build());
         }
+//
+//        if (!NetworkUtils.isNetworkAvailable(context)) {
+//            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                    .setPopUpTo(R.id.nav_restart, true)
+//                    .build());
+//        }
         text0 =  binding.text0;
 
         progressBar = binding.progressBar;
@@ -127,12 +135,21 @@ public class BonusFragment extends Fragment {
         }
 
         btnBonus.setOnClickListener(v -> {
-            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-
-                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_visicom, true)
-                    .build());
-            } else {
+            if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true)
+                        .build());
+            }
+//
+//
+//            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+//
+//                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+//                    .setPopUpTo(R.id.nav_visicom, true)
+//                    .build());
+//            }
+            else {
                 @SuppressLint("UseRequireInsteadOfGet")
                 String email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(context)).get(3);
                 progressBar.setVisibility(View.VISIBLE);
@@ -148,12 +165,20 @@ public class BonusFragment extends Fragment {
 
 
         btnOrder.setOnClickListener(v -> {
-            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-
-                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+            if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_restart, true)
                         .build());
             }
+
+//
+//            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+//
+//                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                        .setPopUpTo(R.id.nav_restart, true)
+//                        .build());
+//            }
             // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту
             SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
             sharedPreferencesHelper.saveValue("gps_upd", true);

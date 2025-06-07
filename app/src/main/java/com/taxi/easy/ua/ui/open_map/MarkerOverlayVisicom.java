@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.ui.open_map;
 
 
-import android.content.Context;
 import android.util.Log;
 import android.view.MotionEvent;
 
@@ -22,13 +21,11 @@ public class MarkerOverlayVisicom extends Overlay {
     private final String TAG = "MarkerOverlayVisicom";
 
 
-    public MarkerOverlayVisicom(Context context, String point) {
-        super(context);
+    public MarkerOverlayVisicom(String point) {
+        super();
         this.point = point;
     }
-    public MarkerOverlayVisicom(Context context) {
-        super(context);
-    }
+
 
     @Override
     public boolean onSingleTapConfirmed(final MotionEvent event, final MapView mapView) {

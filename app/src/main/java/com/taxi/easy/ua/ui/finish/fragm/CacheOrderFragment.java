@@ -3,7 +3,6 @@ package com.taxi.easy.ua.ui.finish.fragm;
 
 import static android.content.Context.MODE_PRIVATE;
 import static com.taxi.easy.ua.MainActivity.activeCalls;
-import static com.taxi.easy.ua.MainActivity.viewModel;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -15,7 +14,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -38,7 +36,10 @@ import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -48,6 +49,7 @@ import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentCacheOrderBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.Status;
+import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
@@ -140,6 +142,7 @@ public class CacheOrderFragment extends Fragment {
     Bundle arguments;
 
     String uid, uid_Double;
+    private ExecutionStatusViewModel viewModel;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -154,6 +157,9 @@ public class CacheOrderFragment extends Fragment {
         backPressBlocker.setBackButtonBlocked(true);
         backPressBlocker.blockBackButtonWithCallback(this);
 
+
+        // Получение ViewModel из области видимости Activity
+        viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
 
         text_full_message = root.findViewById(R.id.text_full_message);
         textCostMessage = root.findViewById(R.id.text_cost_message);
@@ -958,7 +964,7 @@ public class CacheOrderFragment extends Fragment {
 
         sendUrlMap = null;
         MainActivity.uid = null;
-        MainActivity.action = null;
+//        MainActivity.action = null;
 
         MainActivity.orderResponse = null;
         viewModel.updateOrderResponse(null);
@@ -969,15 +975,19 @@ public class CacheOrderFragment extends Fragment {
         Logger.d(context, TAG, "CityCheckActivity: " + cityCheckActivity);
 
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!NetworkUtils.isNetworkAvailable(context)) {
-                // Ваш код при нажатии на заголовок
-                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_restart, true)
-                        .build());
-
-            }
+        if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_restart, true)
+                    .build());
         }
+//            if (!NetworkUtils.isNetworkAvailable(context)) {
+//                // Ваш код при нажатии на заголовок
+//                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                        .setPopUpTo(R.id.nav_restart, true)
+//                        .build());
+//
+//            }
 
 
         Logger.d(context, TAG, "onResume 5" );
@@ -987,31 +997,79 @@ public class CacheOrderFragment extends Fragment {
 
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         String city = listCity.get(1);
-        String cityMenu = switch (city) {
-            case "Kyiv City" -> context.getString(R.string.city_kyiv);
-            case "Dnipropetrovsk Oblast" -> context.getString(R.string.city_dnipro);
-            case "Odessa" -> context.getString(R.string.city_odessa);
-            case "Zaporizhzhia" -> context.getString(R.string.city_zaporizhzhia);
-            case "Cherkasy Oblast" -> context.getString(R.string.city_cherkassy);
-            case "Lviv" -> context.getString(R.string.city_lviv);
-            case "Ivano_frankivsk" -> context.getString(R.string.city_ivano_frankivsk);
-            case "Vinnytsia" -> context.getString(R.string.city_vinnytsia);
-            case "Poltava" -> context.getString(R.string.city_poltava);
-            case "Sumy" -> context.getString(R.string.city_sumy);
-            case "Kharkiv" -> context.getString(R.string.city_kharkiv);
-            case "Chernihiv" -> context.getString(R.string.city_chernihiv);
-            case "Rivne" -> context.getString(R.string.city_rivne);
-            case "Ternopil" -> context.getString(R.string.city_ternopil);
-            case "Khmelnytskyi" -> context.getString(R.string.city_khmelnytskyi);
-            case "Zakarpattya" -> context.getString(R.string.city_zakarpattya);
-            case "Zhytomyr" -> context.getString(R.string.city_zhytomyr);
-            case "Kropyvnytskyi" -> context.getString(R.string.city_kropyvnytskyi);
-            case "Mykolaiv" -> context.getString(R.string.city_mykolaiv);
-            case "Сhernivtsi" -> context.getString(R.string.city_chernivtsi);
-            case "Lutsk" -> context.getString(R.string.city_lutsk);
-            case "OdessaTest" -> "Test";
-            default -> context.getString(R.string.foreign_countries);
-        };
+        String cityMenu;
+        switch (city) {
+            case "Kyiv City":
+                cityMenu = context.getString(R.string.city_kyiv);
+                break;
+            case "Dnipropetrovsk Oblast":
+                cityMenu = context.getString(R.string.city_dnipro);
+                break;
+            case "Odessa":
+                cityMenu = context.getString(R.string.city_odessa);
+                break;
+            case "Zaporizhzhia":
+                cityMenu = context.getString(R.string.city_zaporizhzhia);
+                break;
+            case "Cherkasy Oblast":
+                cityMenu = context.getString(R.string.city_cherkassy);
+                break;
+            case "Lviv":
+                cityMenu = context.getString(R.string.city_lviv);
+                break;
+            case "Ivano_frankivsk":
+                cityMenu = context.getString(R.string.city_ivano_frankivsk);
+                break;
+            case "Vinnytsia":
+                cityMenu = context.getString(R.string.city_vinnytsia);
+                break;
+            case "Poltava":
+                cityMenu = context.getString(R.string.city_poltava);
+                break;
+            case "Sumy":
+                cityMenu = context.getString(R.string.city_sumy);
+                break;
+            case "Kharkiv":
+                cityMenu = context.getString(R.string.city_kharkiv);
+                break;
+            case "Chernihiv":
+                cityMenu = context.getString(R.string.city_chernihiv);
+                break;
+            case "Rivne":
+                cityMenu = context.getString(R.string.city_rivne);
+                break;
+            case "Ternopil":
+                cityMenu = context.getString(R.string.city_ternopil);
+                break;
+            case "Khmelnytskyi":
+                cityMenu = context.getString(R.string.city_khmelnytskyi);
+                break;
+            case "Zakarpattya":
+                cityMenu = context.getString(R.string.city_zakarpattya);
+                break;
+            case "Zhytomyr":
+                cityMenu = context.getString(R.string.city_zhytomyr);
+                break;
+            case "Kropyvnytskyi":
+                cityMenu = context.getString(R.string.city_kropyvnytskyi);
+                break;
+            case "Mykolaiv":
+                cityMenu = context.getString(R.string.city_mykolaiv);
+                break;
+            case "Chernivtsi":
+                cityMenu = context.getString(R.string.city_chernivtsi);
+                break;
+            case "Lutsk":
+                cityMenu = context.getString(R.string.city_lutsk);
+                break;
+            case "OdessaTest":
+                cityMenu = "Test";
+                break;
+            default:
+                cityMenu = context.getString(R.string.foreign_countries);
+                break;
+        }
+
 
 
         String newTitle = context.getString(R.string.menu_city) + " " + cityMenu;

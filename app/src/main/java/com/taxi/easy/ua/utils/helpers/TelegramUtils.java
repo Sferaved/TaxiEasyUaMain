@@ -68,13 +68,15 @@ public class TelegramUtils {
         Log.d(TAG, "TelegramApiService created.");
 
         // Создаем запрос для отправки сообщения с прикрепленным файлом
-        MultipartBody.Part filePart = MultipartBody.Part.createFormData("document", logFile.getName(),
-                RequestBody.create(MediaType.parse("application/octet-stream"), logFile));
+        RequestBody fileBody = RequestBody.create(logFile, MediaType.parse("application/octet-stream"));
+        MultipartBody.Part filePart = MultipartBody.Part.createFormData("document", logFile.getName(), fileBody);
+
 
         Log.d(TAG, "MultipartBody.Part created for the log file.");
 
         // Создаем описание для сообщения
-        RequestBody messageBody = RequestBody.create(MediaType.parse("text/plain"), errorMessage);
+        RequestBody messageBody = RequestBody.create(errorMessage, MediaType.parse("text/plain"));
+
 
         Log.d(TAG, "Message body created with error details.");
 
@@ -88,17 +90,12 @@ public class TelegramUtils {
             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                 Log.d(TAG, "Response received. Code: " + response.code());
 
-                if (response.isSuccessful() && response.body() != null) {
-                    Log.d(TAG, "Error message and log file sent successfully!");
-                } else {
-                    Log.e(TAG, "Failed to send error message. Response Code: " + response.code());
-                }
             }
 
             @Override
             public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
                 Log.e(TAG, "Failed to send error message: " + t.getMessage());
-                t.printStackTrace();
+
             }
         });
     }

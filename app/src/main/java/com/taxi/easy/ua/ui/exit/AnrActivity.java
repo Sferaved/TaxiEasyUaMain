@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
@@ -42,7 +43,14 @@ public class AnrActivity extends AppCompatActivity {
         btn_exit = findViewById(R.id.btn_exit);
         btn_ok = findViewById(R.id.btn_ok);
 
-
+        // Регистрируем обработчик нажатия кнопки "назад"
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Блокируем действие кнопки назад и вызываем вашу логику
+                closeApplication();
+            }
+        });
         btn_enter.setOnClickListener(view15 -> {
             startActivity(new Intent(getApplicationContext(), MainActivity.class));
         });
@@ -108,11 +116,11 @@ public class AnrActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public void onBackPressed() {
-        // Ничего не делать, блокируя действие кнопки "назад"
-        super.onBackPressed();
-        closeApplication();
-    }
+//    @Override
+//    public void onBackPressed() {
+//        // Ничего не делать, блокируя действие кнопки "назад"
+//        super.onBackPressed();
+//        closeApplication();
+//    }
 }
 

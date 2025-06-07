@@ -4,7 +4,6 @@ package com.taxi.easy.ua.ui.visicom;
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.activeCalls;
-import static com.taxi.easy.ua.MainActivity.viewModel;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.Manifest;
@@ -13,7 +12,6 @@ import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -46,7 +44,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
@@ -55,7 +56,10 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -63,6 +67,7 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
@@ -77,6 +82,7 @@ import com.taxi.easy.ua.databinding.FragmentVisicomBinding;
 import com.taxi.easy.ua.ui.exit.AnrActivity;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
+import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
@@ -215,6 +221,8 @@ public class VisicomFragment extends Fragment {
 
     public static  long startCost;
     public static  long finalCost;
+    private ExecutionStatusViewModel viewModel;
+    private ActivityResultLauncher<String[]> permissionLauncher;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -223,7 +231,25 @@ public class VisicomFragment extends Fragment {
 
         binding = FragmentVisicomBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
+        permissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                result -> {
+                    // result — Map<String, Boolean>, где ключ — имя разрешения, значение — результат (granted or not)
+                    for (Map.Entry<String, Boolean> entry : result.entrySet()) {
+                        String permission = entry.getKey();
+                        boolean granted = entry.getValue();
 
+                        // Сохраняем результат
+                        sharedPreferencesHelperMain.saveValue(permission, granted ? PackageManager.PERMISSION_GRANTED : PackageManager.PERMISSION_DENIED);
+                    }
+
+                    // Можно обновить счетчик запросов разрешений, если нужно
+                    int permissionRequestCount = loadPermissionRequestCount();
+                    permissionRequestCount++;
+                    savePermissionRequestCount(permissionRequestCount);
+                    Log.d("loadPermission", "permissionRequestCount: " + permissionRequestCount);
+                }
+        );
         // Включаем блокировку кнопки "Назад" Применяем блокировку кнопки "Назад"
         BackPressBlocker backPressBlocker = new BackPressBlocker();
         backPressBlocker.setBackButtonBlocked(true);
@@ -326,7 +352,13 @@ public class VisicomFragment extends Fragment {
         sharedPreferencesHelperMain.saveValue("carFound", false);
         return root;
     }
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        Log.d("LifecycleCheck 1", "Current lifecycle state: " + getViewLifecycleOwner().getLifecycle().getCurrentState());
+        viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
 
+    }
     private void cancelAllRequests() {
         for (Call<?> call : activeCalls) {
             if (!call.isCanceled()) {
@@ -386,17 +418,20 @@ public class VisicomFragment extends Fragment {
         if (!isAdded()) {
             return; // Фрагмент не прикреплен
         }
-        new MaterialAlertDialogBuilder(context)
+        new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.upd_available)
                 .setMessage(R.string.upd_available_promt)
-                .setCancelable(false) // Запрет закрытия диалога при нажатии вне его
+                .setCancelable(false)
                 .setPositiveButton(R.string.upd_available_ok, (dialog, which) -> {
-                    // Код для начала обновления
-                    AppUpdater appUpdater = new AppUpdater(requireActivity());
+                    MainActivity mainActivity = (MainActivity) requireActivity();
+                    AppUpdater appUpdater = new AppUpdater(
+                            mainActivity,
+                            mainActivity.getExactAlarmLauncher(),
+                            mainActivity.getBatteryOptimizationLauncher()
+                    );
                     appUpdater.startUpdate();
                 })
                 .setNegativeButton(R.string.upd_available_cancel, (dialog, which) -> {
-                    // Просто закрываем диалог
                     dialog.dismiss();
                 })
                 .show();
@@ -474,44 +509,53 @@ public class VisicomFragment extends Fragment {
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Logger.d(context, TAG, "onRequestPermissionsResult: " + requestCode);
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (permissions.length > 0) {
-                SharedPreferences.Editor editor = MainActivity.sharedPreferences.edit();
-                for (int i = 0; i < permissions.length; i++) {
-                    editor.putInt(permissions[i], grantResults[i]);
-
-                }
-                editor.apply();
-
-                int permissionRequestCount = loadPermissionRequestCount();
-
-                // Увеличение счетчика запросов разрешений при необходимости
-                permissionRequestCount++;
-
-                // Сохранение обновленного значения счетчика
-                savePermissionRequestCount(permissionRequestCount);
-                Log.d("loadPermission", "permissionRequestCount: " + permissionRequestCount);
-                // Далее вы можете загрузить сохраненные разрешения и их результаты в любом месте вашего приложения,
-                // используя тот же самый объект SharedPreferences
-            }
-        }
+//    @Override
+//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+//        Logger.d(context, TAG, "onRequestPermissionsResult: " + requestCode);
+//        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+//            if (permissions.length > 0) {
+////                SharedPreferences.Editor editor = MainActivity.sharedPreferences.edit();
+//                for (int i = 0; i < permissions.length; i++) {
+//                    sharedPreferencesHelperMain.saveValue(permissions[i], grantResults[i]);
+////                    editor.putInt(permissions[i], grantResults[i]);
+//
+//                }
+////                editor.apply();
+//
+//                int permissionRequestCount = loadPermissionRequestCount();
+//
+//                // Увеличение счетчика запросов разрешений при необходимости
+//                permissionRequestCount++;
+//
+//                // Сохранение обновленного значения счетчика
+//                savePermissionRequestCount(permissionRequestCount);
+//                Log.d("loadPermission", "permissionRequestCount: " + permissionRequestCount);
+//                // Далее вы можете загрузить сохраненные разрешения и их результаты в любом месте вашего приложения,
+//                // используя тот же самый объект SharedPreferences
+//            }
+//        }
+//    }
+public void requestPermissions() {
+        String[] permissions = new String[] {
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+                // добавьте нужные разрешения
+        };
+        permissionLauncher.launch(permissions);
     }
-
-
     // Метод для сохранения количества запросов разрешений в SharedPreferences
     private void savePermissionRequestCount(int count) {
-        SharedPreferences.Editor editor = MainActivity.sharedPreferencesCount.edit();
-        editor.putInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
-        editor.apply();
+        sharedPreferencesHelperMain.saveValue(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
+//        SharedPreferences.Editor editor = MainActivity.sharedPreferencesCount.edit();
+//        editor.putInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
+//        editor.apply();
     }
 
     // Метод для загрузки количества запросов разрешений из SharedPreferences
     private int loadPermissionRequestCount() {
-        return MainActivity.sharedPreferencesCount.getInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, 0);
+        return (int) sharedPreferencesHelperMain.getValue(MainActivity.PERMISSION_REQUEST_COUNT_KEY, 0);
+//        return MainActivity.sharedPreferencesCount.getInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, 0);
     }
 
     @Override
@@ -1425,7 +1469,7 @@ public class VisicomFragment extends Fragment {
 
         VisicomFragment.sendUrlMap = null;
         MainActivity.uid = null;
-        MainActivity.action = null;
+//        MainActivity.action = null;
 
         MainActivity.orderResponse = null;
         viewModel.updateOrderResponse(null);
@@ -1449,14 +1493,19 @@ public class VisicomFragment extends Fragment {
             binding.num2.setVisibility(VISIBLE);
             binding.textTo.setVisibility(VISIBLE);
         }
-
-        if (!NetworkUtils.isNetworkAvailable(context)) {
-            // Ваш код при нажатии на заголовок
-            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+        if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_restart, true)
                     .build());
-
         }
+//        if (!NetworkUtils.isNetworkAvailable(context)) {
+//            // Ваш код при нажатии на заголовок
+//            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                    .setPopUpTo(R.id.nav_restart, true)
+//                    .build());
+//
+//        }
 
         String visible_shed = (String) sharedPreferencesHelperMain.getValue("visible_shed", "no");
         if(visible_shed.equals("no")) {
@@ -1526,31 +1575,79 @@ public class VisicomFragment extends Fragment {
 
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         String city = listCity.get(1);
-        String cityMenu = switch (city) {
-            case "Kyiv City" -> context.getString(R.string.city_kyiv);
-            case "Dnipropetrovsk Oblast" -> context.getString(R.string.city_dnipro);
-            case "Odessa" -> context.getString(R.string.city_odessa);
-            case "Zaporizhzhia" -> context.getString(R.string.city_zaporizhzhia);
-            case "Cherkasy Oblast" -> context.getString(R.string.city_cherkassy);
-            case "Lviv" -> context.getString(R.string.city_lviv);
-            case "Ivano_frankivsk" -> context.getString(R.string.city_ivano_frankivsk);
-            case "Vinnytsia" -> context.getString(R.string.city_vinnytsia);
-            case "Poltava" -> context.getString(R.string.city_poltava);
-            case "Sumy" -> context.getString(R.string.city_sumy);
-            case "Kharkiv" -> context.getString(R.string.city_kharkiv);
-            case "Chernihiv" -> context.getString(R.string.city_chernihiv);
-            case "Rivne" -> context.getString(R.string.city_rivne);
-            case "Ternopil" -> context.getString(R.string.city_ternopil);
-            case "Khmelnytskyi" -> context.getString(R.string.city_khmelnytskyi);
-            case "Zakarpattya" -> context.getString(R.string.city_zakarpattya);
-            case "Zhytomyr" -> context.getString(R.string.city_zhytomyr);
-            case "Kropyvnytskyi" -> context.getString(R.string.city_kropyvnytskyi);
-            case "Mykolaiv" -> context.getString(R.string.city_mykolaiv);
-            case "Сhernivtsi" -> context.getString(R.string.city_chernivtsi);
-            case "Lutsk" -> context.getString(R.string.city_lutsk);
-            case "OdessaTest" -> "Test";
-            default -> context.getString(R.string.foreign_countries);
-        };
+        String cityMenu;
+        switch (city) {
+            case "Kyiv City":
+                cityMenu = context.getString(R.string.city_kyiv);
+                break;
+            case "Dnipropetrovsk Oblast":
+                cityMenu = context.getString(R.string.city_dnipro);
+                break;
+            case "Odessa":
+                cityMenu = context.getString(R.string.city_odessa);
+                break;
+            case "Zaporizhzhia":
+                cityMenu = context.getString(R.string.city_zaporizhzhia);
+                break;
+            case "Cherkasy Oblast":
+                cityMenu = context.getString(R.string.city_cherkassy);
+                break;
+            case "Lviv":
+                cityMenu = context.getString(R.string.city_lviv);
+                break;
+            case "Ivano_frankivsk":
+                cityMenu = context.getString(R.string.city_ivano_frankivsk);
+                break;
+            case "Vinnytsia":
+                cityMenu = context.getString(R.string.city_vinnytsia);
+                break;
+            case "Poltava":
+                cityMenu = context.getString(R.string.city_poltava);
+                break;
+            case "Sumy":
+                cityMenu = context.getString(R.string.city_sumy);
+                break;
+            case "Kharkiv":
+                cityMenu = context.getString(R.string.city_kharkiv);
+                break;
+            case "Chernihiv":
+                cityMenu = context.getString(R.string.city_chernihiv);
+                break;
+            case "Rivne":
+                cityMenu = context.getString(R.string.city_rivne);
+                break;
+            case "Ternopil":
+                cityMenu = context.getString(R.string.city_ternopil);
+                break;
+            case "Khmelnytskyi":
+                cityMenu = context.getString(R.string.city_khmelnytskyi);
+                break;
+            case "Zakarpattya":
+                cityMenu = context.getString(R.string.city_zakarpattya);
+                break;
+            case "Zhytomyr":
+                cityMenu = context.getString(R.string.city_zhytomyr);
+                break;
+            case "Kropyvnytskyi":
+                cityMenu = context.getString(R.string.city_kropyvnytskyi);
+                break;
+            case "Mykolaiv":
+                cityMenu = context.getString(R.string.city_mykolaiv);
+                break;
+            case "Chernivtsi":  // Обрати внимание, тут "С" кириллицей
+                cityMenu = context.getString(R.string.city_chernivtsi);
+                break;
+            case "Lutsk":
+                cityMenu = context.getString(R.string.city_lutsk);
+                break;
+            case "OdessaTest":
+                cityMenu = "Test";
+                break;
+            default:
+                cityMenu = context.getString(R.string.foreign_countries);
+                break;
+        }
+
 
 
         String newTitle = context.getString(R.string.menu_city) + " " + cityMenu;
@@ -1610,6 +1707,8 @@ public class VisicomFragment extends Fragment {
         buttonBonus.setOnClickListener(v -> {
             btnVisible(View.INVISIBLE);
             String costText = text_view_cost.getText().toString().trim();
+            VisicomFragment.costMap = null;
+            text_view_cost.setText("***");
             if (!costText.isEmpty() && costText.matches("\\d+")) {
                 updateAddCost("0", context);
                 MyBottomSheetBonusFragment bottomSheetDialogFragment = new MyBottomSheetBonusFragment(Long.parseLong(costText), geo_marker, api, text_view_cost);
@@ -1710,12 +1809,19 @@ public class VisicomFragment extends Fragment {
 
         });
         btnOrder.setOnClickListener(v -> {
-            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-
-                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+            if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_restart, true)
                         .build());
             }
+
+//            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+//
+//                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                        .setPopUpTo(R.id.nav_restart, true)
+//                        .build());
+//            }
             linearLayout.setVisibility(View.GONE);
             btnVisible(View.INVISIBLE);
             List<String> stringList1 = logCursor(MainActivity.CITY_INFO, context);
@@ -1821,11 +1927,19 @@ public class VisicomFragment extends Fragment {
                                 || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
 
                     // GPS включен, выполните ваш код здесь
-                    if (!NetworkUtils.isNetworkAvailable(context)) {
-                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                    if (!NetworkUtils.isNetworkAvailable(context)) {
+//                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                                .setPopUpTo(R.id.nav_restart, true)
+//                                .build());
+//                    }
+                    if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                        navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                                 .setPopUpTo(R.id.nav_restart, true)
                                 .build());
-                    } else if (isAdded() && isVisible() && MainActivity.location_update) {
+                    }
+
+                    else if (isAdded() && isVisible() && MainActivity.location_update) {
                         List<String> settings = new ArrayList<>();
 
                         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
@@ -1874,14 +1988,15 @@ public class VisicomFragment extends Fragment {
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                     || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_yellow));
+                gpsbut.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.btn_yellow));
+
                 gpsbut.setTextColor(Color.BLACK);
             } else {
-                gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_green));
+                gpsbut.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.btn_green));
                 gpsbut.setTextColor(Color.WHITE);
             }
         } else {
-            gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_red));
+            gpsbut.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.btn_red));
             gpsbut.setTextColor(Color.WHITE);
         }
 
@@ -1937,7 +2052,7 @@ public class VisicomFragment extends Fragment {
                     } else {
                         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
                                 != PackageManager.PERMISSION_GRANTED) {
-                            gpsbut.setBackground(getResources().getDrawable(R.drawable.btn_yellow));
+                            gpsbut.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.btn_yellow));
                             gpsbut.setTextColor(Color.BLACK);
                         }
 
@@ -2049,11 +2164,19 @@ public class VisicomFragment extends Fragment {
                 if (locationManager != null) {
                     if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                         // GPS включен, выполните ваш код здесь
-                        if (!NetworkUtils.isNetworkAvailable(context)) {
-                            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                        if (!NetworkUtils.isNetworkAvailable(context)) {
+//                            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                                    .setPopUpTo(R.id.nav_restart, true)
+//                                    .build());
+//                        }
+
+                        if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                                     .setPopUpTo(R.id.nav_restart, true)
                                     .build());
-                        } else if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                        }
+                        else if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                                 || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                             checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
                             checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
@@ -2231,11 +2354,19 @@ public class VisicomFragment extends Fragment {
                                 if (locationManager != null) {
                                     if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                                         // GPS включен, выполните ваш код здесь
-                                        if (!NetworkUtils.isNetworkAvailable(context)) {
-                                            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                                        if (!NetworkUtils.isNetworkAvailable(context)) {
+//                                            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                                                    .setPopUpTo(R.id.nav_restart, true)
+//                                                    .build());
+//                                        }
+                                        if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                                            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                                            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                                                     .setPopUpTo(R.id.nav_restart, true)
                                                     .build());
-                                        } else if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                                        }
+
+                                        else if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                                                 || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                                             checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
                                             checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
@@ -2322,12 +2453,11 @@ public class VisicomFragment extends Fragment {
     }
 
     private LocationRequest createLocationRequest() {
-        LocationRequest locationRequest = new LocationRequest();
-        locationRequest.setInterval(1000); // Интервал обновления местоположения в миллисекундах
-        locationRequest.setFastestInterval(100); // Самый быстрый интервал обновления местоположения в миллисекундах
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY); // Приоритет точного местоположения
-        return locationRequest;
+        return new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)  // приоритет и интервал обновления
+                .setMinUpdateIntervalMillis(100) // минимальный быстрый интервал
+                .build();
     }
+
 
     private void updateRoutMarker(List<String> settings) {
         Logger.d(context, TAG, "updateRoutMarker: " + settings.toString());
@@ -2704,8 +2834,19 @@ public class VisicomFragment extends Fragment {
             String extra_charge_codes = route.getExtra_charge_codes();
 
             switch (closeReason) {
+                case "101":
                 case "-1":
                     closeReasonText = context.getString(R.string.close_resone_in_work);
+                    break;
+                case "102":
+                    closeReasonText = context.getString(R.string.close_resone_in_start_point);
+                    break;
+                case "103":
+                    closeReasonText = context.getString(R.string.close_resone_in_rout);
+                    break;
+                case "104":
+                case "8":
+                    closeReasonText = context.getString(R.string.close_resone_8);
                     break;
                 case "0":
                     closeReasonText = context.getString(R.string.close_resone_0);
@@ -2731,13 +2872,14 @@ public class VisicomFragment extends Fragment {
                 case "7":
                     closeReasonText = context.getString(R.string.close_resone_7);
                     break;
-                case "8":
-                    closeReasonText = context.getString(R.string.close_resone_8);
-                    break;
                 case "9":
                     closeReasonText = context.getString(R.string.close_resone_9);
                     break;
+                default:
+                    // оставляем прежний текст, если не совпало
+                    break;
             }
+
 
             if (routeFrom.equals("Місце відправлення")) {
                 routeFrom = context.getString(R.string.start_point_text);

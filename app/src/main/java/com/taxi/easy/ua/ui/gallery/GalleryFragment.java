@@ -32,7 +32,9 @@ import androidx.appcompat.widget.AppCompatButton;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
@@ -109,12 +111,19 @@ public class GalleryFragment extends Fragment {
         View root = binding.getRoot();
         context = requireActivity();
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-        if (!NetworkUtils.isNetworkAvailable(context)) {
-
-            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+        if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_restart, true)
                     .build());
         }
+
+//        if (!NetworkUtils.isNetworkAvailable(context)) {
+//
+//            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                    .setPopUpTo(R.id.nav_restart, true)
+//                    .build());
+//        }
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         scrollButtonUp = binding.scrollButtonUp;
@@ -435,13 +444,21 @@ public class GalleryFragment extends Fragment {
     }
     @SuppressLint("ResourceAsColor")
     private boolean orderRout() {
-        if (!NetworkUtils.isNetworkAvailable(context)) {
-
-            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+        if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_restart, true)
                     .build());
             return false;
-        } else {
+        }
+//        if (!NetworkUtils.isNetworkAvailable(context)) {
+//
+//            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                    .setPopUpTo(R.id.nav_restart, true)
+//                    .build());
+//            return false;
+//        }
+        else {
             if (!verifyOrder(context)) {
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.black_list_message));
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -662,12 +679,21 @@ public class GalleryFragment extends Fragment {
 
 
     private void dialogFromToOneRout(Map <String, String> rout) throws MalformedURLException, InterruptedException, JSONException {
-        if (!NetworkUtils.isNetworkAvailable(context)) {
-
-            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+        if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_restart, true)
                     .build());
-        } else  {
+        }
+
+//        if (!NetworkUtils.isNetworkAvailable(context)) {
+//
+//            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                    .setPopUpTo(R.id.nav_restart, true)
+//                    .build());
+//        }
+
+        else  {
             Logger.d(getActivity(), TAG, "dialogFromToOneRout: " + rout.toString());
             from_lat =  Double.valueOf(rout.get("from_lat"));
             from_lng = Double.valueOf(rout.get("from_lng"));

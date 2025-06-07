@@ -61,6 +61,7 @@ public class CostJSONParserRetrofit {
             public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
                 if (eventReceived) {
                     Log.d("API_CALL", "HTTP-ответ отменен, так как событие уже получено.");
+//                    callback.onResponse(call, Response.success(VisicomFragment.costMap));
                     return;
                 }
                 Map<String, String> costMap = new HashMap<>();

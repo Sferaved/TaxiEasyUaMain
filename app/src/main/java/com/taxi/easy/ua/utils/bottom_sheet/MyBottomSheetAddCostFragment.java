@@ -2,7 +2,6 @@ package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.VISIBLE;
-import static com.taxi.easy.ua.MainActivity.viewModel;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -23,6 +22,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -31,6 +31,7 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.finish.ApiService;
 import com.taxi.easy.ua.ui.finish.Status;
 import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
+import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseResponse;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseService;
@@ -60,22 +61,26 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
     String cost, uid, uid_Double, pay_method;
     Context context;
     FragmentManager fragmentManager;
-
+    private ExecutionStatusViewModel viewModel;
 
     public MyBottomSheetAddCostFragment(
             String cost,
             String uid,
             String uid_Double,
-            String pay_method,
-            Context context,
-            FragmentManager fragmentManager
+            String pay_method
     ) {
         this.cost = cost;
         this.uid = uid;
         this.uid_Double = uid_Double;
         this.pay_method = pay_method;
-        this.context = context;
-        this.fragmentManager = fragmentManager;
+    }
+
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Инициализация ViewModel
+        viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
     }
 
     @Nullable
@@ -85,6 +90,8 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         UXCam.tagScreenName(TAG);
 
         View view = inflater.inflate(R.layout.add_cost_bottom_layout, container, false);
+
+        context = requireContext();
 
         btn_ok = view.findViewById(R.id.btn_ok);
 
@@ -123,16 +130,18 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         });
         btn_ok.setOnClickListener(v -> {
             Logger.d(getActivity(), TAG, "btn_ok: " + currentAddCost[0]);
-            if(currentAddCost[0] > 0) {
-                // Выключить кнопку
+            if (currentAddCost[0] > 0) {
+                // Проверка на null
+                if (viewModel == null) {
+                    Logger.e(getActivity(), TAG, "viewModel is null in btn_ok");
+                    return;
+                }
                 viewModel.setCancelStatus(false);
-//                FinishSeparateFragment.text_status.setText(context.getString(R.string.recounting_order));
                 startAddCostUpdate(
                         uid,
                         String.valueOf(currentAddCost[0])
                 );
             }
-
             dismiss();
         });
 

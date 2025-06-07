@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
+import static android.view.View.GONE;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 import static com.taxi.easy.ua.ui.visicom.VisicomFragment.setBtnBonusName;
 
@@ -137,13 +138,14 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         arrayCode = new  String[]{
                 "nal_payment",
                 "bonus_payment",
-                "card_payment",
+                "wfp_payment",
         };
 
         adapter = new CustomArrayAdapter(context, R.layout.services_adapter_layout, Arrays.asList(array));
         listView.setAdapter(adapter);
         listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         btn_ok = view.findViewById(R.id.btn_ok);
+
         btn_ok.setOnClickListener(v -> dismiss());
 
 
@@ -190,7 +192,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         listView.setOnItemClickListener((parent, view1, position, id) -> {
             progressBar.setVisibility(View.VISIBLE);
-            btn_ok.setVisibility(View.GONE);
+            btn_ok.setVisibility(GONE);
 
             pos = position;
             finishItem = pos;
@@ -207,23 +209,29 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     if(userPayPermissions[0].equals("0")) {
                         adapter.setItemEnabled(2, false);
                     } else {
-                        paySystem(new CardFragment.PaySystemCallback() {
-                            @Override
-                            public void onPaySystemResult(String paymentCode) {
-                                Log.d(TAG, "onPaySystemResult: paymentCode" + paymentCode);
-                                // Здесь вы можете использовать полученное значение paymentCode
-                                try {
-                                    paymentType(paymentCode, context);
-                                } catch (MalformedURLException | UnsupportedEncodingException e) {
-                                    FirebaseCrashlytics.getInstance().recordException(e);
-                                    throw new RuntimeException(e);
-                                }
-                            }
-
-                            @Override
-                            public void onPaySystemFailure(String errorMessage) {
-                            }
-                        });
+                        try {
+                            paymentType(arrayCode [pos], context);
+                        } catch (MalformedURLException | UnsupportedEncodingException e) {
+                            FirebaseCrashlytics.getInstance().recordException(e);
+                            throw new RuntimeException(e);
+                        }
+//                        paySystem(new CardFragment.PaySystemCallback() {
+//                            @Override
+//                            public void onPaySystemResult(String paymentCode) {
+//                                Log.d(TAG, "onPaySystemResult: paymentCode" + paymentCode);
+//                                // Здесь вы можете использовать полученное значение paymentCode
+//                                try {
+//                                    paymentType(paymentCode, context);
+//                                } catch (MalformedURLException | UnsupportedEncodingException e) {
+//                                    FirebaseCrashlytics.getInstance().recordException(e);
+//                                    throw new RuntimeException(e);
+//                                }
+//                            }
+//
+//                            @Override
+//                            public void onPaySystemFailure(String errorMessage) {
+//                            }
+//                        });
                     }
                 }
 
@@ -300,20 +308,18 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             public void onResponse(@NonNull Call<CityResponse> call, @NonNull Response<CityResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     CityResponse cityResponse = response.body();
-                    if (cityResponse != null) {
-                        int cardMaxPay = cityResponse.getCardMaxPay();
-                        int bonusMaxPay = cityResponse.getBonusMaxPay();
-                        String black_list = cityResponse.getBlack_list();
+                    int cardMaxPay = cityResponse.getCardMaxPay();
+                    int bonusMaxPay = cityResponse.getBonusMaxPay();
+                    String black_list = cityResponse.getBlack_list();
 
-                        ContentValues cv = new ContentValues();
-                        cv.put("card_max_pay", cardMaxPay);
-                        cv.put("bonus_max_pay", bonusMaxPay);
-                        sharedPreferencesHelperMain.saveValue("black_list", black_list);
+                    ContentValues cv = new ContentValues();
+                    cv.put("card_max_pay", cardMaxPay);
+                    cv.put("bonus_max_pay", bonusMaxPay);
+                    sharedPreferencesHelperMain.saveValue("black_list", black_list);
 
-                        database.update(MainActivity.CITY_INFO, cv, "id = ?",
-                                new String[]{"1"});
+                    database.update(MainActivity.CITY_INFO, cv, "id = ?",
+                            new String[]{"1"});
 
-                    }
                 } else {
                     Logger.d(getActivity(), TAG, "Failed. Error code: " + response.code());
                 }
@@ -342,34 +348,32 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 if (response.isSuccessful() && response.body() != null) {
                     CityResponseMerchantFondy cityResponse = response.body();
                     Log.d(TAG, "onResponse: cityResponse" + cityResponse);
-                    if (cityResponse != null) {
-                        String merchant_fondy = cityResponse.getMerchantFondy();
-                        String fondy_key_storage = cityResponse.getFondyKeyStorage();
+                    String merchant_fondy = cityResponse.getMerchantFondy();
+                    String fondy_key_storage = cityResponse.getFondyKeyStorage();
 
-                        ContentValues cv = new ContentValues();
-                        cv.put("merchant_fondy", merchant_fondy);
-                        cv.put("fondy_key_storage", fondy_key_storage);
-                        SQLiteDatabase db = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        db.update(MainActivity.CITY_INFO, cv, "id = ?",
-                                new String[]{"1"});
-                        db.close();
-                        Log.d(TAG, "onResponse: merchant_fondy" + merchant_fondy);
-                        Log.d(TAG, "onResponse: fondy_key_storage" + fondy_key_storage);
+                    ContentValues cv = new ContentValues();
+                    cv.put("merchant_fondy", merchant_fondy);
+                    cv.put("fondy_key_storage", fondy_key_storage);
+                    SQLiteDatabase db = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    db.update(MainActivity.CITY_INFO, cv, "id = ?",
+                            new String[]{"1"});
+                    db.close();
+                    Log.d(TAG, "onResponse: merchant_fondy" + merchant_fondy);
+                    Log.d(TAG, "onResponse: fondy_key_storage" + fondy_key_storage);
 
-                        if(merchant_fondy == null) {
-                            adapter.setItemEnabled(2, false);
-                            listView.setItemChecked(0, true);
-                            try {
-                                paymentType(arrayCode [0], context);
-                            } catch (MalformedURLException | UnsupportedEncodingException e) {
-                                FirebaseCrashlytics.getInstance().recordException(e);
-                                throw new RuntimeException(e);
-                            }
-                        } else {
-
-                            adapter.setItemEnabled(2, true);
-                            cityMaxPay(city);
+                    if(merchant_fondy == null) {
+                        adapter.setItemEnabled(2, false);
+                        listView.setItemChecked(0, true);
+                        try {
+                            paymentType(arrayCode [0], context);
+                        } catch (MalformedURLException | UnsupportedEncodingException e) {
+                            FirebaseCrashlytics.getInstance().recordException(e);
+                            throw new RuntimeException(e);
                         }
+                    } else {
+
+                        adapter.setItemEnabled(2, true);
+                        cityMaxPay(city);
                     }
                 } else {
                     Logger.d(getActivity(), TAG, "Failed. Error code: " + response.code());
@@ -397,8 +401,9 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         db.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
         db.close();
-
         reCount();
+        dismiss();
+
     }
 
     @SuppressLint("Range")
@@ -508,13 +513,13 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         PayApi apiService = retrofit.create(PayApi.class);
         Call<ResponsePaySystem> call = apiService.getPaySystem();
-        call.enqueue(new Callback<ResponsePaySystem>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     // Обработка успешного ответа
                     ResponsePaySystem responsePaySystem = response.body();
-                    assert responsePaySystem != null;
+
                     String paymentCode = responsePaySystem.getPay_system();
 
                     String paymentCodeNew = "fondy"; // Изначально устанавливаем значение
@@ -563,6 +568,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             VisicomFragment.setBtnBonusName(context);
         }
         UserPermissions.getPermissions(email, context);
+
         if(fistItem == finishItem) {
             try {
                 reCount();
@@ -624,9 +630,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         }
         if (rout != null && rout.equals("visicom")) {
-//            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-//                    .setPopUpTo(R.id.nav_visicom, true)
-//                    .build());
+
             timeVerify();
             Toast.makeText(context, context.getString(R.string.check_cost_message), Toast.LENGTH_SHORT).show();
             try {
@@ -634,7 +638,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
                     String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
                     long discountInt = Integer.parseInt(discountText);
-                    VisicomFragment.costMap = null;
+//                    VisicomFragment.costMap = null;
                     CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
                     parser.sendURL(urlCost, new Callback<>() {
                         @Override
@@ -646,12 +650,12 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                             assert orderCost != null;
                             if (!orderCost.equals("0")) {
                                 new Handler(Looper.getMainLooper()).post(() -> {
+
                                     String costUpdate;
 
                                     long discount;
                                     long firstCost = Long.parseLong(orderCost);
                                     discount = firstCost * discountInt / 100;
-
                                     firstCost = firstCost + discount;
     //                                updateAddCost(String.valueOf(discount));
 
@@ -666,8 +670,9 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                                     costUpdate = String.valueOf(firstCost);
                                     Log.d(TAG, "onResponse:costUpdate " + costUpdate);
 
-                                    textView.setText(costUpdate);
+                                    VisicomFragment.text_view_cost.setText(costUpdate);
                                     VisicomFragment.btnVisible(View.VISIBLE);
+
                                 });
                             } else {
                                 new Handler(Looper.getMainLooper()).post(() -> {
@@ -744,8 +749,11 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             }
 
         }
-        progressBar.setVisibility(View.GONE);
-        btn_ok.setVisibility(View.VISIBLE);
+        dismiss();
+//        progressBar.setVisibility(GONE);
+
+//        btn_ok.setVisibility(View.VISIBLE);
+
 
     }
     private AlertDialog alertDialog;
@@ -774,7 +782,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 FirebaseCrashlytics.getInstance().recordException(e);
                 throw new RuntimeException(e);
             }
-            progressBar.setVisibility(View.GONE);
+            progressBar.setVisibility(GONE);
             dismiss();
             alertDialog.dismiss();
         });
@@ -788,7 +796,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 FirebaseCrashlytics.getInstance().recordException(e);
                 throw new RuntimeException(e);
             }
-            progressBar.setVisibility(View.GONE);
+            progressBar.setVisibility(GONE);
             alertDialog.dismiss();
             dismiss();
         });

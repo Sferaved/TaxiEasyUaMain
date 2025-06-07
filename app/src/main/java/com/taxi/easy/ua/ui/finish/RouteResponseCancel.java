@@ -139,4 +139,29 @@ public class RouteResponseCancel {
     public String getExtra_charge_codes() {
         return extra_charge_codes;
     }
+
+    @Override
+    public String toString() {
+        return "RouteResponseCancel{" +
+                "uid='" + uid + '\'' +
+                ", routeFrom='" + routeFrom + '\'' +
+                ", routeFromNumber='" + routeFromNumber + '\'' +
+                ", startLat='" + startLat + '\'' +
+                ", startLan='" + startLan + '\'' +
+                ", routeTo='" + routeTo + '\'' +
+                ", routeToNumber='" + routeToNumber + '\'' +
+                ", to_lat='" + to_lat + '\'' +
+                ", to_lng='" + to_lng + '\'' +
+                ", webCost='" + webCost + '\'' +
+                ", closeReason='" + closeReason + '\'' +
+                ", auto='" + auto + '\'' +
+                ", dispatchingOrderUidDouble='" + dispatchingOrderUidDouble + '\'' +
+                ", pay_method='" + pay_method + '\'' +
+                ", createdAt='" + createdAt + '\'' +
+                ", required_time='" + required_time + '\'' +
+                ", flexible_tariff_name='" + flexible_tariff_name + '\'' +
+                ", comment_info='" + comment_info + '\'' +
+                ", extra_charge_codes='" + extra_charge_codes + '\'' +
+                '}';
+    }
 }

@@ -17,7 +17,6 @@ import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.navigation.NavOptions;
 
 import com.github.anrwatchdog.ANRWatchDog;
 import com.google.firebase.FirebaseApp;
@@ -135,7 +134,7 @@ public class MyApplication extends Application {
                 Logger.d(this, TAG, "Using cached UXCam key");
                 UXConfig config = new UXConfig.Builder(apiKey)
                         .enableAutomaticScreenNameTagging(true)
-                        .enableImprovedScreenCapture(true)
+//                        .enableImprovedScreenCapture(true)
                         .build();
 
                 UXCam.startWithConfiguration(config);
@@ -177,7 +176,7 @@ public class MyApplication extends Application {
                     if (!isUXCamInitialized) {
                         UXConfig config = new UXConfig.Builder(uKey)
                                 .enableAutomaticScreenNameTagging(true)
-                                .enableImprovedScreenCapture(true)
+//                                .enableImprovedScreenCapture(true)
                                 .build();
 
                         UXCam.startWithConfiguration(config);
@@ -211,7 +210,7 @@ public class MyApplication extends Application {
                         Logger.d(context, TAG, "Using cached UXCam key after Firestore failure");
                         UXConfig config = new UXConfig.Builder(cachedKey)
                                 .enableAutomaticScreenNameTagging(true)
-                                .enableImprovedScreenCapture(true)
+//                                .enableImprovedScreenCapture(true)
                                 .build();
 
                         UXCam.startWithConfiguration(config);
@@ -321,15 +320,6 @@ public class MyApplication extends Application {
             @Override
             public void onActivityResumed(@NonNull Activity activity) {
                 startMemoryMonitoring();
-                if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-                    if (MainActivity.currentNavDestination != R.id.nav_restart) {
-                        MainActivity.currentNavDestination = R.id.nav_restart; // Устанавливаем текущий экран
-                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_restart, true)
-                                .build());
-                    }
-                    return;
-                }
 
                 isAppInForeground = true;
                 if (idleTimeoutManager != null) {
@@ -364,7 +354,8 @@ public class MyApplication extends Application {
         });
     }
 
-    private final Handler memoryCheckHandler = new Handler();
+    private final Handler memoryCheckHandler = new Handler(Looper.getMainLooper());
+
     private final Runnable memoryCheckRunnable = new Runnable() {
         @Override
         public void run() {

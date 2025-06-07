@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 35
-        versionCode 1821
-        versionName '1.821'
+        versionCode 1822
+        versionName '1.822'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled true
@@ -48,17 +48,21 @@ dependencies {
     // Основные зависимости
     implementation 'androidx.multidex:multidex:2.0.1'
     implementation 'androidx.core:core:1.16.0'
-    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.appcompat:appcompat:1.7.1'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
     implementation 'androidx.datastore:datastore-preferences:1.1.7'
     implementation 'com.github.anrwatchdog:anrwatchdog:1.4.0'
-    implementation 'androidx.databinding:databinding-runtime:8.10.0'
+    implementation 'androidx.databinding:databinding-runtime:8.10.1'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
+    implementation "androidx.preference:preference:1.2.1"
 
+    implementation "androidx.datastore:datastore-preferences:1.1.7"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
 
     // Firebase зависимости (с использованием BOM)
-    implementation platform('com.google.firebase:firebase-bom:33.14.0')
+    implementation platform('com.google.firebase:firebase-bom:33.15.0')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-crashlytics'
     implementation 'com.google.firebase:firebase-messaging'
@@ -94,8 +98,8 @@ dependencies {
 
     // ConstraintLayout и жизненный цикл
     implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
-    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.9.0'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.0'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.9.1'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.1'
     implementation 'androidx.navigation:navigation-fragment:2.9.0'
     implementation 'androidx.navigation:navigation-ui:2.9.0'
 
@@ -136,5 +140,10 @@ dependencies {
     implementation 'com.uxcam:uxcam:3.6.41'
 
     //security
-    implementation "androidx.security:security-crypto:1.1.0-alpha07" // Или последняя версия
+    implementation "androidx.security:security-crypto:1.1.0-beta01"
 }
+// 👇 Добавьте это в конец файла
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ["-Xlint:deprecation"]
+}
+

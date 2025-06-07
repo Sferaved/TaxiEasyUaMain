@@ -10,12 +10,14 @@ import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Rect;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.webkit.URLUtil;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
@@ -64,10 +66,10 @@ import com.uxcam.UXCam;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
@@ -853,13 +855,12 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
 
         PayApi apiService = retrofit.create(PayApi.class);
         Call<ResponsePaySystem> call = apiService.getPaySystem();
-        call.enqueue(new Callback<ResponsePaySystem>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     // Обработка успешного ответа
                     ResponsePaySystem responsePaySystem = response.body();
-                    assert responsePaySystem != null;
                     String paymentCode = responsePaySystem.getPay_system();
 
                     switch (paymentCode) {
@@ -867,21 +868,42 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                             pay_method = "wfp_payment";
                             webView.setWebViewClient(new WebViewClient() {
                                 @Override
-                                public boolean shouldOverrideUrlLoading(WebView view, String url) {
-
+                                public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                                    String url = request.getUrl().toString();
                                     Logger.d(context, TAG, "Загружен URL: " + url);
-                                    if(url.contains("https://secure.wayforpay.com/invoice")){
+
+                                    if (url.contains("https://secure.wayforpay.com/invoice")) {
+                                        return false; // разрешаем загрузить
+                                    }
+
+                                    if (url.contains("https://secure.wayforpay.com/closing")) {
+                                        getStatusWfp();
+                                        return true; // перехватываем загрузку
+                                    }
+
+                                    return false;
+                                }
+
+                                // Для совместимости с API < 24 можно оставить устаревший метод,
+                                // чтобы поддержать старые устройства:
+                                @Override
+                                @SuppressWarnings("deprecation")
+                                public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                                    Logger.d(context, TAG, "Загружен URL: " + url);
+
+                                    if (url.contains("https://secure.wayforpay.com/invoice")) {
                                         return false;
                                     }
-                                    if(url.contains("https://secure.wayforpay.com/closing")
-                                    ) {
+
+                                    if (url.contains("https://secure.wayforpay.com/closing")) {
                                         getStatusWfp();
                                         return true;
                                     }
+
                                     return false;
-                                    // Возвращаем false, чтобы разрешить WebView загрузить страницу.
                                 }
                             });
+
                             // Ensure checkoutUrl is not null and valid before loading it
                             if (checkoutUrl != null && URLUtil.isValidUrl(checkoutUrl)) {
                                 webView.loadUrl(checkoutUrl);
@@ -892,7 +914,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                             break;
                         case "fondy":
                             pay_method = "fondy_payment";
-                            List<String>  arrayList = logCursor(MainActivity.CITY_INFO);
+                            List<String> arrayList = logCursor(MainActivity.CITY_INFO);
                             String MERCHANT_ID = arrayList.get(6);
 
 
@@ -909,9 +931,11 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
 
                                     webView.setWebViewClient(new WebViewClient() {
                                         @Override
-                                        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                                        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                                            String url = request.getUrl().toString();
                                             Logger.d(context, TAG, "Загружен URL: " + url);
-                                            if(url.equals(baseUrl  + "/mono/redirectUrl")) {
+
+                                            if (url.equals(baseUrl + "/mono/redirectUrl")) {
                                                 Logger.d(context, TAG, "shouldOverrideUrlLoading: " + pay_method);
                                                 switch (pay_method) {
                                                     case "fondy_payment":
@@ -922,13 +946,50 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                                                         break;
                                                 }
                                                 return true;
-                                            } else {
-                                                // Возвращаем false, чтобы разрешить WebView загрузить страницу.
-                                                return false;
                                             }
+                                            return false;
+                                        }
+
+                                        // Если нужна поддержка старых API, можно оставить старый метод:
+                                        @Override
+                                        @SuppressWarnings("deprecation")
+                                        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                                            return shouldOverrideUrlLoading(view, new WebResourceRequest() {
+                                                @Override
+                                                public Uri getUrl() {
+                                                    return Uri.parse(url);
+                                                }
+
+                                                @Override
+                                                public boolean isForMainFrame() {
+                                                    return false;
+                                                }
+
+                                                @Override
+                                                public boolean isRedirect() {
+                                                    return false;
+                                                }
+
+                                                @Override
+                                                public boolean hasGesture() {
+                                                    return false;
+                                                }
+
+                                                @Override
+                                                public String getMethod() {
+                                                    return "";
+                                                }
+
+                                                @Override
+                                                public Map<String, String> getRequestHeaders() {
+                                                    return Collections.emptyMap();
+                                                }
+                                                // Остальные методы WebResourceRequest нужно реализовать заглушками,
+                                                // но проще вряд ли стоит, если минимальный API 26 (у тебя 26), можно не поддерживать старый метод.
+                                            });
                                         }
                                     });
-                                    webView.loadUrl(Objects.requireNonNull(checkoutUrl));
+
                                 }
 
 
@@ -944,13 +1005,13 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                             pay_method = "mono_payment";
                             break;
                     }
-                    if(isAdded()){
+                    if (isAdded()) {
                         ContentValues cv = new ContentValues();
                         cv.put("payment_type", pay_method);
                         // обновляем по id
                         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                                new String[] { "1" });
+                                new String[]{"1"});
                         database.close();
 
                     }

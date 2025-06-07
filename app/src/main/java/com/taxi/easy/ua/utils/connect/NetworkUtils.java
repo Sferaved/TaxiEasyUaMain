@@ -1,15 +1,12 @@
 package com.taxi.easy.ua.utils.connect;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
-import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 
 import com.taxi.easy.ua.ui.finish.ApiService;
 import com.taxi.easy.ua.ui.finish.Status;
@@ -24,34 +21,25 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class NetworkUtils {
 
-    @SuppressLint("ObsoleteSdkInt")
-    @RequiresApi(api = Build.VERSION_CODES.M)
     public static boolean isNetworkAvailable(Context context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            ConnectivityManager connectivityManager =
-                    (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-            if (connectivityManager != null) {
-                android.net.NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-                return networkInfo != null && networkInfo.isConnected();
-            }
+        ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager == null) {
             return false;
         }
 
-        ConnectivityManager connectivityManager =
-                (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (connectivityManager != null) {
-            Network activeNetwork = connectivityManager.getActiveNetwork();
-            if (activeNetwork != null) {
-                NetworkCapabilities networkCapabilities =
-                        connectivityManager.getNetworkCapabilities(activeNetwork);
-                return networkCapabilities != null &&
-                        (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR));
-            }
+        Network activeNetwork = connectivityManager.getActiveNetwork();
+        if (activeNetwork == null) {
+            return false;
         }
-
-        return false;
+        NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(activeNetwork);
+        return capabilities != null && (
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ||
+                        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH)
+        );
     }
+
 
     public interface ApiCallback {
         void onSuccess(boolean isStable);

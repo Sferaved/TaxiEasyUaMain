@@ -3,48 +3,95 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:background="@color/background_color_new">
-    <!-- Определение элементов меню -->
+    android:background="@color/background_color_new"
+    android:paddingTop="0dp"
+    android:paddingBottom="0dp"
+    android:paddingLeft="0dp"
+    android:paddingRight="0dp">
 
 
     <item
         android:id="@+id/nav_driver"
         android:orderInCategory="100"
-        android:title="@string/driver" />
+        android:title="@string/driver"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp" />
 
     <item
         android:id="@+id/gps"
         android:orderInCategory="100"
-        android:title="GPS" />
+        android:title="GPS"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp" />
 
     <item
         android:id="@+id/settings"
         android:orderInCategory="100"
-        android:title="@string/item_settings" />
+        android:title="@string/item_settings"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp" />
 
     <item
         android:id="@+id/send_email"
         android:orderInCategory="100"
-        android:title="@string/send_email" />
+        android:title="@string/send_email"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp" />
     <item
         android:id="@+id/send_email_admin"
         android:orderInCategory="100"
-        android:title="@string/send_email_admin" />
+        android:title="@string/send_email_admin"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp" />
     <item
         android:id="@+id/send_like"
         android:orderInCategory="100"
-        android:title="@string/send_like" />
+        android:title="@string/send_like"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp" />
     <item
         android:id="@+id/update"
         android:orderInCategory="100"
-        android:title="@string/update_app" />
+        android:title="@string/update_app"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp" />
     <item
         android:id="@+id/uninstal_app"
         android:orderInCategory="100"
-        android:title="@string/uninstal" />
+        android:title="@string/uninstal"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp" />
+    <item
+        android:id="@+id/clearApp"
+        android:orderInCategory="100"
+        android:title="@string/clearApp"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp" />
     <item
         android:id="@+id/action_exit"
         android:orderInCategory="100"
         android:title="@string/action_exit"
-        app:showAsAction="never" />
+        app:showAsAction="never"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp" />
 </menu>

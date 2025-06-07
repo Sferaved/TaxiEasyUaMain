@@ -1,11 +1,13 @@
 package com.taxi.easy.ua.utils.time_ut;
 
-import static com.taxi.easy.ua.MainActivity.viewModel;
+
 
 import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+
+import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -15,8 +17,11 @@ import java.util.concurrent.TimeUnit;
 
 public class TimeUtils {
 
-    public TimeUtils(String required_time) {
+    private final ExecutionStatusViewModel viewModel;
+    public TimeUtils(String required_time,  ExecutionStatusViewModel viewModel) {
+
         this.required_time = required_time;
+        this.viewModel = viewModel;
     }
 
     private static final String TAG = "TimeUtils";

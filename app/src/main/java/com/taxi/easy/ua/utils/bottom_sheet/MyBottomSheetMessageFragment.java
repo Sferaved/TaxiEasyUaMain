@@ -33,6 +33,9 @@ public class MyBottomSheetMessageFragment extends BottomSheetDialogFragment {
     String message;
     private final String TAG = "MyBottomSheetMessageFragment";
 
+    public MyBottomSheetMessageFragment() {
+        // Пустой конструктор по умолчанию
+    }
     public MyBottomSheetMessageFragment(String message) {
         this.message = message;
     }

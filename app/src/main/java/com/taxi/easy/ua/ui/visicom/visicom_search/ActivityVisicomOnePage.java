@@ -2,6 +2,7 @@ package com.taxi.easy.ua.ui.visicom.visicom_search;
 
 
 import static com.taxi.easy.ua.androidx.startup.MyApplication.getContext;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.Manifest;
@@ -9,7 +10,6 @@ import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -42,13 +42,16 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
@@ -246,7 +249,16 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                                 MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                                         .setPopUpTo(R.id.nav_restart, true)
                                         .build());
-                            } else {
+                            }
+
+                            if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+                                NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+                                navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                        .setPopUpTo(R.id.nav_restart, true)
+                                        .build());
+                            }
+
+                            else {
 
                                 if (location_update) {
                                     String searchText = getString(R.string.search_text) + "...";
@@ -394,12 +406,12 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
     }
 
     private LocationRequest createLocationRequest() {
-        LocationRequest locationRequest = new LocationRequest();
-        locationRequest.setInterval(1000); // Интервал обновления местоположения в миллисекундах
-        locationRequest.setFastestInterval(100); // Самый быстрый интервал обновления местоположения в миллисекундах
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY); // Приоритет точного местоположения
-        return locationRequest;
+        return new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY)
+                .setIntervalMillis(1000)          // Интервал обновления местоположения в миллисекундах
+                .setMinUpdateIntervalMillis(100)  // Самый быстрый интервал обновления
+                .build();
     }
+
 
     private void checkPermission(String permission, int requestCode) {
         // Checking if permission is not granted
@@ -413,12 +425,13 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
         Logger.d(getApplicationContext(), TAG, "onRequestPermissionsResult: " + requestCode);
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
             if (permissions.length > 0) {
-                SharedPreferences.Editor editor = MainActivity.sharedPreferences.edit();
+//                SharedPreferences.Editor editor = MainActivity.sharedPreferences.edit();
                 for (int i = 0; i < permissions.length; i++) {
-                    editor.putInt(permissions[i], grantResults[i]);
+                    sharedPreferencesHelperMain.saveValue(permissions[i], grantResults[i]);
+//                    editor.putInt(permissions[i], grantResults[i]);
 
                 }
-                editor.apply();
+//                editor.apply();
 
                 int permissionRequestCount = loadPermissionRequestCount();
 
@@ -437,14 +450,16 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
     // Метод для сохранения количества запросов разрешений в SharedPreferences
     private void savePermissionRequestCount(int count) {
-        SharedPreferences.Editor editor = MainActivity.sharedPreferencesCount.edit();
-        editor.putInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
-        editor.apply();
+        sharedPreferencesHelperMain.saveValue(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
+//        SharedPreferences.Editor editor = MainActivity.sharedPreferencesCount.edit();
+//        editor.putInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
+//        editor.apply();
     }
 
     // Метод для загрузки количества запросов разрешений из SharedPreferences
     private int loadPermissionRequestCount() {
-        return MainActivity.sharedPreferencesCount.getInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, 0);
+//        return MainActivity.sharedPreferencesCount.getInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, 0);
+        return (int) sharedPreferencesHelperMain.getValue(MainActivity.PERMISSION_REQUEST_COUNT_KEY, 0);
     }
 
     @SuppressLint("UseCompatLoadingForDrawables")
@@ -452,10 +467,17 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+            NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_restart, true)
                     .build());
         }
+
+//        if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+//            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                    .setPopUpTo(R.id.nav_restart, true)
+//                    .build());
+//        }
         start = getIntent().getStringExtra("start");
         end = getIntent().getStringExtra("end");
         client = new OkHttpClient();
@@ -529,7 +551,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                     case "Mykolaiv":
                         citySearch = "Николаев";
                         break;
-                    case "Сhernivtsi":
+                    case "Chernivtsi":
                         citySearch = "Черновцы";
                         break;
                     case "Lutsk":
@@ -598,7 +620,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                     case "Mykolaiv":
                         citySearch = "Mykolaiv";
                         break;
-                    case "Сhernivtsi":
+                    case "Chernivtsi":
                         citySearch = "Сhernivtsi";
                         break;
                     case "Lutsk":
@@ -667,7 +689,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                     case "Mykolaiv":
                         citySearch = "Миколаїв";
                         break;
-                    case "Сhernivtsi":
+                    case "Chernivtsi":
                         citySearch = "Чернівці";
                         break;
                     case "Lutsk":
@@ -699,10 +721,16 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             // Пытаемся скрыть клавиатуру
             immHide.hideSoftInputFromWindow(v.getWindowToken(), 0);
             if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_restart, true)
                         .build());
             }
+//            if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+//                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                        .setPopUpTo(R.id.nav_restart, true)
+//                        .build());
+//            }
             VisicomFragment.btnVisible(View.INVISIBLE);
             finish();
 
@@ -810,11 +838,19 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
                     Logger.d(getApplicationContext(), TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
                     // GPS включен, выполните ваш код здесь
+//                    if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
+//                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                                .setPopUpTo(R.id.nav_restart, true)
+//                                .build());
+//                    }
                     if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                        NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+                        navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                                 .setPopUpTo(R.id.nav_restart, true)
                                 .build());
-                    } else  if(location_update) {
+                    }
+
+                    else  if(location_update) {
                         String searchText = getString(R.string.search_text) + "...";
 
                         progressBar.setVisibility(View.VISIBLE);
@@ -943,14 +979,15 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                 if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                         || ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    btn_change.setBackground(getResources().getDrawable(R.drawable.btn_yellow));
+                    btn_change.setBackground(ContextCompat.getDrawable(this, R.drawable.btn_yellow));
+
                     btn_change.setTextColor(Color.BLACK);
                 } else {
-                    btn_change.setBackground(getResources().getDrawable(R.drawable.btn_green));
+                    btn_change.setBackground(ContextCompat.getDrawable(this, R.drawable.btn_green));
                     btn_change.setTextColor(Color.WHITE);
                 }
             } else {
-                btn_change.setBackground(getResources().getDrawable(R.drawable.btn_red));
+                btn_change.setBackground(ContextCompat.getDrawable(this, R.drawable.btn_red));
                 btn_change.setTextColor(Color.WHITE);
 
             }

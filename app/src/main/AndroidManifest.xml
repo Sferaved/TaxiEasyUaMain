@@ -10,6 +10,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
@@ -65,12 +66,14 @@
         <activity
             android:name=".ui.exit.ExitActivity"
             android:screenOrientation="portrait"
+            tools:ignore="DiscouragedApi,Instantiatable,LockedOrientationActivity"
             android:exported="false"
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="portrait"
+            tools:ignore="DiscouragedApi,Instantiatable,LockedOrientationActivity"
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -83,34 +86,49 @@
         <activity
             android:name=".ui.open_map.OpenStreetMapActivity"
             android:screenOrientation="portrait"
+            tools:ignore="DiscouragedApi,Instantiatable,LockedOrientationActivity"
             android:exported="true"
             android:theme="@style/Theme.TaxiEasyUa.NoActionBar" />
 
         <activity android:name=".ui.open_map.OpenStreetMapVisicomActivity"
             android:exported="true"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.TaxiEasyUa.NoActionBar"
-            tools:ignore="Instantiatable"
-            />
+            tools:ignore="DiscouragedApi,Instantiatable,LockedOrientationActivity"
+            android:theme="@style/Theme.TaxiEasyUa.NoActionBar" />
 
         <activity android:name=".ui.visicom.visicom_search.ActivityVisicomOnePage"
             android:exported="true"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.TaxiEasyUa.NoActionBar"
-            tools:ignore="Instantiatable" />
+            tools:ignore="DiscouragedApi,Instantiatable,LockedOrientationActivity"
+            android:theme="@style/Theme.TaxiEasyUa.NoActionBar"  />
 
-        <activity android:name="com.taxi.easy.ua.ui.cities.check.CityCheckActivity" />
+        <activity android:name="com.taxi.easy.ua.ui.cities.check.CityCheckActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            tools:ignore="DiscouragedApi,Instantiatable,LockedOrientationActivity"
+            android:theme="@style/Theme.TaxiEasyUa.NoActionBar" />
 
-        <activity android:name=".ui.settings.SettingsActivity" />
+        <activity android:name=".ui.settings.SettingsActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            tools:ignore="DiscouragedApi,Instantiatable,LockedOrientationActivity"
+            android:theme="@style/Theme.TaxiEasyUa.NoActionBar" />
 
         <activity
             android:name="com.taxi.easy.ua.utils.clear.ClearTaskActivity"
             android:noHistory="true"
             android:excludeFromRecents="true"
+            android:screenOrientation="portrait"
+            tools:ignore="DiscouragedApi,Instantiatable,LockedOrientationActivity"
             android:theme="@android:style/Theme.NoDisplay"
             android:launchMode="singleTask" />
 
-        <activity android:name="com.taxi.easy.ua.ui.exit.AnrActivity" />
+        <activity android:name="com.taxi.easy.ua.ui.exit.AnrActivity"
+            android:excludeFromRecents="true"
+            android:screenOrientation="portrait"
+            tools:ignore="DiscouragedApi,Instantiatable,LockedOrientationActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:launchMode="singleTask"/>
 
         <receiver android:name="com.taxi.easy.ua.utils.connect.NetworkChangeReceiver" />
 
@@ -131,14 +149,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-<!--        <service-->
-<!--            android:name=".utils.fcm.MyFirebaseMessagingService"-->
-<!--            android:exported="false"-->
-<!--            android:permission="TODO">-->
-<!--            <intent-filter>-->
-<!--                <action android:name="com.google.firebase.MESSAGING_EVENT" />-->
-<!--            </intent-filter>-->
-<!--        </service>-->
         <receiver
             android:name=".utils.download.AppUpdateReceiver"
             android:enabled="true"

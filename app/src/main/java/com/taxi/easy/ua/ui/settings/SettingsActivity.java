@@ -1,11 +1,12 @@
 package com.taxi.easy.ua.ui.settings;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
@@ -16,7 +17,9 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
@@ -77,11 +80,21 @@ public class SettingsActivity extends AppCompatActivity {
         Locale locale = new Locale(localeCode);
         Locale.setDefault(locale);
 
-        Resources resources = getResources();
-        Configuration config = resources.getConfiguration();
+        Configuration config = new Configuration(getResources().getConfiguration());
         config.setLocale(locale);
-        resources.updateConfiguration(config, resources.getDisplayMetrics());
+
+        // Создаем новый контекст с нужной локалью
+        Context context = createConfigurationContext(config);
+
+        // Обновляем базовый контекст активности на новый с нужной локалью
+        // (если нужно, можно сохранить context для дальнейшего использования)
+
+        // Пересоздаем активность, чтобы применить изменения
+        recreate();
     }
+
+
+
 
     @Override
     protected void onResume() {
@@ -115,9 +128,15 @@ public class SettingsActivity extends AppCompatActivity {
                     MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, SettingsActivity.this);
                     bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 } else {
-                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
+
+                        NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_restart);
+                        navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
+
+//                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                            .setPopUpTo(R.id.nav_restart, true)
+//                            .build());
                 }
 
             });
@@ -129,9 +148,15 @@ public class SettingsActivity extends AppCompatActivity {
                     MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, SettingsActivity.this);
                     bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 } else {
-                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
+
+                        NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_restart);
+                        navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_restart, true)
+                                .build());
+
+//                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                            .setPopUpTo(R.id.nav_restart, true)
+//                            .build());
                 }
 
             });
@@ -200,7 +225,7 @@ public class SettingsActivity extends AppCompatActivity {
             case "Mykolaiv":
                 cityMenu = getString(R.string.city_mykolaiv);
                 break;
-            case "Сhernivtsi":
+            case "Chernivtsi":
                 cityMenu = getString(R.string.city_chernivtsi);
                 break;
             case "Lutsk":
@@ -250,16 +275,17 @@ public class SettingsActivity extends AppCompatActivity {
         }
         Logger.i(this, "locale Code", localeCode);
         // Сохранение нового языка
-         sharedPreferencesHelperMain.saveValue("locale", localeCode);
+        sharedPreferencesHelperMain.saveValue("locale", localeCode);
 
         // Установка локали
         Locale locale = new Locale(localeCode);
         Locale.setDefault(locale);
 
-        Resources resources = getResources();
-        Configuration config = resources.getConfiguration();
+        Configuration config = new Configuration(getResources().getConfiguration());
         config.setLocale(locale);
-        resources.updateConfiguration(config, resources.getDisplayMetrics());
+
+        // Создаем новый контекст с нужной локалью (если понадобится использовать дальше)
+        Context context = createConfigurationContext(config);
 
         // Перезапуск приложения для применения локали
         Intent intent = new Intent(this, MainActivity.class);
@@ -267,6 +293,7 @@ public class SettingsActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
+
 
 
 }

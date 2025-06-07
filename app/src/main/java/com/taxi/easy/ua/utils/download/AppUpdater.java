@@ -2,7 +2,6 @@ package com.taxi.easy.ua.utils.download;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -15,6 +14,8 @@ import android.os.PowerManager;
 import android.provider.Settings;
 import android.widget.Toast;
 
+import androidx.activity.ComponentActivity;
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.RequiresPermission;
 
@@ -35,17 +36,24 @@ public class AppUpdater {
 
     private static final String TAG = "AppUpdater";
     private AppUpdateManager appUpdateManager;
-    private final Activity activity;
+    private final ComponentActivity activity;
     private static final int MY_REQUEST_CODE = 100;
+
     private OnUpdateListener onUpdateListener;
-    private static final int REQUEST_CODE_EXACT_ALARM = 1001;
-    private static final int REQUEST_CODE_BATTERY_OPTIMIZATION = 1002;
-    public AppUpdater(Activity activity) {
+
+    private final ActivityResultLauncher<Intent> exactAlarmLauncher;
+    private final ActivityResultLauncher<Intent> batteryOptimizationLauncher;
+
+    public AppUpdater(ComponentActivity activity,
+                      ActivityResultLauncher<Intent> exactAlarmLauncher,
+                      ActivityResultLauncher<Intent> batteryOptimizationLauncher) {
         if (activity == null) {
             throw new IllegalArgumentException("Activity must not be null");
         }
         this.activity = activity;
         this.appUpdateManager = AppUpdateManagerFactory.create(activity);
+        this.exactAlarmLauncher = exactAlarmLauncher;
+        this.batteryOptimizationLauncher = batteryOptimizationLauncher;
     }
 
     public void setOnUpdateListener(OnUpdateListener onUpdateListener) {
@@ -59,17 +67,28 @@ public class AppUpdater {
             Logger.d(activity, TAG, "Update availability: " + appUpdateInfo.updateAvailability());
             Logger.d(activity, TAG, "Update priority: " + appUpdateInfo.updatePriority());
             Logger.d(activity, TAG, "Client version staleness days: " + appUpdateInfo.clientVersionStalenessDays());
+            Logger.d(activity, TAG, "Install status: " + appUpdateInfo.installStatus());
 
             if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
                 Logger.d(activity, TAG, "Available updates found");
+
                 try {
-                    if (appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) {
-                        appUpdateManager.startUpdateFlowForResult(
-                                appUpdateInfo, AppUpdateType.IMMEDIATE, activity, MY_REQUEST_CODE);
-                    } else if (appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
-                        appUpdateManager.startUpdateFlowForResult(
-                                appUpdateInfo, AppUpdateType.FLEXIBLE, activity, MY_REQUEST_CODE);
+                    if (appUpdateInfo.installStatus() != InstallStatus.INSTALLING &&
+                            appUpdateInfo.installStatus() != InstallStatus.DOWNLOADED) {
+
+                        if (appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) {
+                            appUpdateManager.startUpdateFlowForResult(
+                                    appUpdateInfo, AppUpdateType.IMMEDIATE, activity, MY_REQUEST_CODE);
+
+                        } else if (appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
+                            appUpdateManager.startUpdateFlowForResult(
+                                    appUpdateInfo, AppUpdateType.FLEXIBLE, activity, MY_REQUEST_CODE);
+                        }
+
+                    } else {
+                        Logger.d(activity, TAG, "Update already in progress or downloaded. Skipping update flow.");
                     }
+
                 } catch (Exception e) {
                     Logger.e(activity, TAG, "Failed to start update flow: " + e.getMessage());
                     FirebaseCrashlytics.getInstance().recordException(e);
@@ -84,7 +103,7 @@ public class AppUpdater {
 
     public void startUpdate() {
         Logger.d(activity, TAG, "Starting app update process");
-        requestDisableBatteryOptimization(activity);
+        requestDisableBatteryOptimization();
 
         setOnUpdateListener(() -> {
             Toast.makeText(activity, R.string.update_finish_mes, Toast.LENGTH_SHORT).show();
@@ -110,40 +129,48 @@ public class AppUpdater {
     };
 
     @RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
-    private static void restartApplication(Context context) {
+    private void restartApplication(Context context) {
         try {
             Intent intent = new Intent(context, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-            PendingIntent pendingIntent = PendingIntent.getActivity(
-                    context,
-                    0,
-                    intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-            );
 
             AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
             if (alarmManager != null) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     if (alarmManager.canScheduleExactAlarms()) {
+                        PendingIntent pendingIntent = PendingIntent.getActivity(
+                                context,
+                                0,
+                                intent,
+                                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                        );
                         alarmManager.setExact(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 500, pendingIntent);
                     } else {
-                        requestExactAlarmPermission(context);
+                        requestExactAlarmPermission();
                         return;
                     }
                 } else {
+                    PendingIntent pendingIntent = PendingIntent.getActivity(
+                            context,
+                            0,
+                            intent,
+                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                    );
                     alarmManager.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 500, pendingIntent);
                 }
             } else {
                 context.startActivity(intent);
             }
 
-            if (context instanceof Activity) {
-                ((Activity) context).finish();
+            if (context instanceof ComponentActivity) {
+                ((ComponentActivity) context).finish();
             }
 
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 System.exit(0);
             }, 600);
+
         } catch (Exception e) {
             Logger.e(context, TAG, "Error restarting application: " + e.getMessage());
             try {
@@ -157,66 +184,18 @@ public class AppUpdater {
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
-    private static void requestExactAlarmPermission(Context context) {
-        if (context instanceof Activity) {
-            Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
-            ((Activity) context).startActivityForResult(intent, REQUEST_CODE_EXACT_ALARM);
-        }
+    private void requestExactAlarmPermission() {
+        Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+        exactAlarmLauncher.launch(intent);
     }
 
-    private static void requestDisableBatteryOptimization(Context context) {
-        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-        if (!pm.isIgnoringBatteryOptimizations(context.getPackageName())) {
+    private void requestDisableBatteryOptimization() {
+        PowerManager pm = (PowerManager) activity.getSystemService(Context.POWER_SERVICE);
+        if (pm != null && !pm.isIgnoringBatteryOptimizations(activity.getPackageName())) {
             @SuppressLint("BatteryLife") Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-            intent.setData(Uri.parse("package:" + context.getPackageName()));
-            if (context instanceof Activity) {
-                ((Activity) context).startActivityForResult(intent, REQUEST_CODE_BATTERY_OPTIMIZATION);
-            }
+            intent.setData(Uri.parse("package:" + activity.getPackageName()));
+            batteryOptimizationLauncher.launch(intent);
         }
-    }
-
-
-
-//    private static void restartApplication(Context context) {
-//        int sdkVersion = android.os.Build.VERSION.SDK_INT;
-//        if (sdkVersion >= android.os.Build.VERSION_CODES.TIRAMISU) {
-//            restartWithAlarmManager(context);
-//        } else {
-//            restartActivity(context);
-//        }
-//    }
-
-    private static void restartWithAlarmManager(Context context) {
-        Intent intent = new Intent(context, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                context, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        if (alarmManager != null) {
-            alarmManager.set(AlarmManager.RTC, System.currentTimeMillis() + 500, pendingIntent);
-        }
-
-        if (context instanceof Activity) {
-            ((Activity) context).finish();
-        }
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            android.os.Process.killProcess(android.os.Process.myPid());
-        }, 500);
-    }
-
-    private static void restartActivity(Context context) {
-        Intent intent = new Intent(context, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(intent);
-
-        if (context instanceof Activity) {
-            ((Activity) context).finish();
-        }
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            android.os.Process.killProcess(android.os.Process.myPid());
-        }, 500);
     }
 
     public void registerListener() {

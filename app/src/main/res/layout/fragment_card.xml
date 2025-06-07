@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@color/background_color_new"
     android:id="@+id/fragment_card"
-    tools:context=".ui.uid.UIDFragment">
+    tools:context=".ui.history.HistoryFragment">
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshLayout"

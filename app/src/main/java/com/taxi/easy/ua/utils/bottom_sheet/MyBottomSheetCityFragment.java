@@ -281,7 +281,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 phoneNumber = Kyiv_City_phone;
                 cityMenu = getString(R.string.city_mykolaiv);
                 break;
-            case "Сhernivtsi":
+            case "Chernivtsi":
                 positionFirst = 19;
                 phoneNumber = Kyiv_City_phone;
                 cityMenu = getString(R.string.city_chernivtsi);
@@ -429,7 +429,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                     cityMenu = getString(R.string.city_mykolaiv);
                     countryState = "UA";
                     break;
-                case "Сhernivtsi":
+                case "Chernivtsi":
                     positionFirst = 19;
                     phoneNumber = Kyiv_City_phone;
                     cityMenu = getString(R.string.city_chernivtsi);
@@ -613,7 +613,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             case "Zhytomyr":
             case "Kropyvnytskyi":
             case "Mykolaiv":
-            case "Сhernivtsi":
+            case "Chernivtsi":
             case "Lutsk":
                 sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
                 break;
@@ -742,7 +742,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 startLan = 31.99378;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
-            case "Сhernivtsi":
+            case "Chernivtsi":
                 position = context.getString(R.string.pos_chr);
                 startLat = 48.29306;
                 startLan = 25.93484;
@@ -813,7 +813,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         Logger.d(context, TAG, "newUser: " + userEmail);
 
-        new Thread(() -> fetchRoutes(userEmail)).start();
+//        new Thread(() -> fetchRoutes(userEmail)).start();
         cityMaxPay(city);
         Logger.d(context, TAG, "1");
         getCardTokenWfp(cityCode[positionFirst]);
@@ -824,7 +824,6 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
         double startLat = Double.parseDouble(startLatString);;
         double startLan = Double.parseDouble(startLanString);
-        String position = routefrom;
         Logger.d(context, TAG, "updateMyPosition:city "+ city);
 //        ActionBarUtil.setupCustomActionBar(this, R.layout.custom_action_bar_title, R.id.action_bar_title, newTitle);
 
@@ -848,7 +847,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             case "Zhytomyr":
             case "Kropyvnytskyi":
             case "Mykolaiv":
-            case "Сhernivtsi":
+            case "Chernivtsi":
             case "Lutsk":
                 sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
                 break;
@@ -939,7 +938,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
-            case "Сhernivtsi":
+            case "Chernivtsi":
 
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
@@ -971,7 +970,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         cv = new ContentValues();
         cv.put("startLat", startLat);
         cv.put("startLan", startLan);
-        cv.put("position", position);
+        cv.put("position", routefrom);
         database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
                 new String[] { "1" });
 
@@ -994,15 +993,15 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         settings.add(Double.toString(startLan));
         settings.add(Double.toString(startLat));
         settings.add(Double.toString(startLan));
-        settings.add(position);
-        settings.add(position);
+        settings.add(routefrom);
+        settings.add(routefrom);
 
         updateRoutMarker(settings);
 
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         Logger.d(context, TAG, "newUser: " + userEmail);
 
-        new Thread(() -> fetchRoutes(userEmail)).start();
+//        new Thread(() -> fetchRoutes(userEmail)).start();
 
         cityMaxPay(city);
         Logger.d(context, TAG, "1");

@@ -13,6 +13,8 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
@@ -31,6 +33,7 @@ public class MyBottomSheetPhoneStateFragment extends BottomSheetDialogFragment {
     AppCompatButton btn_ok, btn_no;
     TextView text_message;
     private final String TAG = "MyBottomSheetPhoneStateFragment";
+    private ActivityResultLauncher<String> requestPermissionLauncher;
 
     @SuppressLint("MissingInflatedId")
     @Nullable
@@ -40,6 +43,25 @@ public class MyBottomSheetPhoneStateFragment extends BottomSheetDialogFragment {
         UXCam.tagScreenName(TAG);
 
         View view = inflater.inflate(R.layout.gps_layout, container, false);
+        requestPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                isGranted -> {
+                    if (isGranted) {
+                        Logger.d(getActivity(), TAG, "Разрешение получено");
+                        performPhoneStateOperation(); // твоя функция
+                    } else {
+                        Logger.d(getActivity(), TAG, "Разрешение отклонено");
+                    }
+                }
+        );
+
+        // Запрашиваем разрешение при старте, если еще не выдано
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_PHONE_STATE)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE);
+        } else {
+            performPhoneStateOperation(); // разрешение уже есть
+        }
 
         text_message= view.findViewById(R.id.text_message);
         text_message.setText(R.string.id_phone_text);
@@ -85,19 +107,19 @@ public class MyBottomSheetPhoneStateFragment extends BottomSheetDialogFragment {
     }
 
     // Обработка ответа пользователя на запрос разрешения
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Logger.d(getActivity(), TAG, "onRequestPermissionsResult: " + requestCode);
-        if (requestCode == PERMISSION_REQUEST_READ_PHONE_STATE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Разрешение получено, можно выполнять операции, требующие доступа к состоянию телефона
-                Logger.d(getActivity(), TAG, "onRequestPermissionsResult: Разрешение получено");
-                performPhoneStateOperation();
-            }
-        }
-    }
+//    @Override
+//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+//                                           @NonNull int[] grantResults) {
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+//        Logger.d(getActivity(), TAG, "onRequestPermissionsResult: " + requestCode);
+//        if (requestCode == PERMISSION_REQUEST_READ_PHONE_STATE) {
+//            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                // Разрешение получено, можно выполнять операции, требующие доступа к состоянию телефона
+//                Logger.d(getActivity(), TAG, "onRequestPermissionsResult: Разрешение получено");
+//                performPhoneStateOperation();
+//            }
+//        }
+//    }
 
     // Проверка наличия разрешения и выполнение операции
     private void performPhoneStateOperation() {

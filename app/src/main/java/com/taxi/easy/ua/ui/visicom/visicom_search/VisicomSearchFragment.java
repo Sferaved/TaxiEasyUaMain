@@ -9,7 +9,6 @@ import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -37,22 +36,28 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentVisicomSearchBinding;
 import com.taxi.easy.ua.ui.cities.Kyiv.KyivRegion;
 import com.taxi.easy.ua.ui.cities.Kyiv.KyivRegionRu;
@@ -143,7 +148,8 @@ public class VisicomSearchFragment extends Fragment {
     private SharedPreferencesHelper sharedPreferencesHelper;
     View root;
     Context context;
-    
+    private ActivityResultLauncher<String[]> permissionLauncher;
+
     @SuppressLint({"MissingInflatedId", "UseCompatLoadingForDrawables"})
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -151,11 +157,39 @@ public class VisicomSearchFragment extends Fragment {
         binding = FragmentVisicomSearchBinding.inflate(inflater, container, false);
         root = binding.getRoot();
         context = requireActivity();
-        
+
+
+        permissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                result -> {
+                    // result — Map<String, Boolean>, где ключ — имя разрешения, значение — granted или нет
+                    int permissionRequestCount = loadPermissionRequestCount();
+
+                    for (Map.Entry<String, Boolean> entry : result.entrySet()) {
+                        String permission = entry.getKey();
+                        boolean granted = entry.getValue();
+                        sharedPreferencesHelperMain.saveValue(permission, granted ? PackageManager.PERMISSION_GRANTED : PackageManager.PERMISSION_DENIED);
+                    }
+
+                    // Увеличиваем счетчик
+                    permissionRequestCount++;
+                    savePermissionRequestCount(permissionRequestCount);
+
+                    Logger.d(requireContext(), TAG, "permissionRequestCount: " + permissionRequestCount);
+
+                    // Можно вызвать дополнительную логику в зависимости от разрешений
+                }
+        );
+
         return root;
 
     }
-
+    private void requestLocationPermissions() {
+        permissionLauncher.launch(new String[]{
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+        });
+    }
     private void scrollSetVisibility() {
         if (addressesList != null) {
             addressListView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
@@ -239,11 +273,19 @@ public class VisicomSearchFragment extends Fragment {
 
 
                         // GPS включен, выполните ваш код здесь
-                        if (!NetworkUtils.isNetworkAvailable(context)) {
-                            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                        if (!NetworkUtils.isNetworkAvailable(context)) {
+//                            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                                    .setPopUpTo(R.id.nav_restart, true)
+//                                    .build());
+//                        }
+                        if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                                     .setPopUpTo(R.id.nav_restart, true)
                                     .build());
-                        } else {
+                        }
+
+                        else {
 
                             if (location_update) {
                                 String searchText = getString(R.string.search_text) + "...";
@@ -391,68 +433,77 @@ public class VisicomSearchFragment extends Fragment {
     }
 
     private LocationRequest createLocationRequest() {
-        LocationRequest locationRequest = new LocationRequest();
-        locationRequest.setInterval(1000); // Интервал обновления местоположения в миллисекундах
-        locationRequest.setFastestInterval(100); // Самый быстрый интервал обновления местоположения в миллисекундах
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY); // Приоритет точного местоположения
-        return locationRequest;
+        return new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY)
+                .setIntervalMillis(1000)          // Интервал обновления местоположения в миллисекундах
+                .setMinUpdateIntervalMillis(100)  // Самый быстрый интервал обновления
+                .build();
     }
+
 
     private void checkPermission(String permission) {
         // Checking if permission is not granted
-        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(requireActivity(), new String[]{permission}, LOCATION_PERMISSION_REQUEST_CODE);
-
-        }
+//        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_DENIED) {
+//            ActivityCompat.requestPermissions(requireActivity(), new String[]{permission}, LOCATION_PERMISSION_REQUEST_CODE);
+//
+//        }
+        requestLocationPermissions();
     }
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Logger.d(context, TAG, "onRequestPermissionsResult: " + requestCode);
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (permissions.length > 0) {
-                SharedPreferences.Editor editor = MainActivity.sharedPreferences.edit();
-                for (int i = 0; i < permissions.length; i++) {
-                    editor.putInt(permissions[i], grantResults[i]);
-
-                }
-                editor.apply();
-
-                int permissionRequestCount = loadPermissionRequestCount();
-
-                // Увеличение счетчика запросов разрешений при необходимости
-                permissionRequestCount++;
-
-                // Сохранение обновленного значения счетчика
-                savePermissionRequestCount(permissionRequestCount);
-                Logger.d(context, TAG, "permissionRequestCount: " + permissionRequestCount);
-                // Далее вы можете загрузить сохраненные разрешения и их результаты в любом месте вашего приложения,
-                // используя тот же самый объект SharedPreferences
-            }
-        }
-    }
+//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+//        Logger.d(context, TAG, "onRequestPermissionsResult: " + requestCode);
+//        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+//            if (permissions.length > 0) {
+////                SharedPreferences.Editor editor = MainActivity.sharedPreferences.edit();
+//                for (int i = 0; i < permissions.length; i++) {
+////                    editor.putInt(permissions[i], grantResults[i]);
+//                    sharedPreferencesHelperMain.saveValue(permissions[i], grantResults[i]);
+//                }
+////                editor.apply();
+//
+//                int permissionRequestCount = loadPermissionRequestCount();
+//
+//                // Увеличение счетчика запросов разрешений при необходимости
+//                permissionRequestCount++;
+//
+//                // Сохранение обновленного значения счетчика
+//                savePermissionRequestCount(permissionRequestCount);
+//                Logger.d(context, TAG, "permissionRequestCount: " + permissionRequestCount);
+//                // Далее вы можете загрузить сохраненные разрешения и их результаты в любом месте вашего приложения,
+//                // используя тот же самый объект SharedPreferences
+//            }
+//        }
+//    }
 
 
     // Метод для сохранения количества запросов разрешений в SharedPreferences
     private void savePermissionRequestCount(int count) {
-        SharedPreferences.Editor editor = MainActivity.sharedPreferencesCount.edit();
-        editor.putInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
-        editor.apply();
+        sharedPreferencesHelperMain.saveValue(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
+//        SharedPreferences.Editor editor = MainActivity.sharedPreferencesCount.edit();
+//        editor.putInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
+//        editor.apply();
     }
 
     // Метод для загрузки количества запросов разрешений из SharedPreferences
     private int loadPermissionRequestCount() {
-        return MainActivity.sharedPreferencesCount.getInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, 0);
+        return (int) sharedPreferencesHelperMain.getValue(MainActivity.PERMISSION_REQUEST_COUNT_KEY, 0);
+//        return MainActivity.sharedPreferencesCount.getInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, 0);
     }
 
     @SuppressLint("UseCompatLoadingForDrawables")
     @Override
     public void onResume() {
         super.onResume();
-        if (!NetworkUtils.isNetworkAvailable(context)) {
-            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+        if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_restart, true)
                     .build());
         }
+//        if (!NetworkUtils.isNetworkAvailable(context)) {
+//            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                    .setPopUpTo(R.id.nav_restart, true)
+//                    .build());
+//        }
         Bundle arguments = getArguments();
         assert arguments != null;
 
@@ -530,7 +581,7 @@ public class VisicomSearchFragment extends Fragment {
                     case "Mykolaiv":
                         citySearch = "Николаев";
                         break;
-                    case "Сhernivtsi":
+                    case "Chernivtsi":
                         citySearch = "Черновцы";
                         break;
                     case "Lutsk":
@@ -599,7 +650,7 @@ public class VisicomSearchFragment extends Fragment {
                     case "Mykolaiv":
                         citySearch = "Mykolaiv";
                         break;
-                    case "Сhernivtsi":
+                    case "Chernivtsi":
                         citySearch = "Сhernivtsi";
                         break;
                     case "Lutsk":
@@ -668,7 +719,7 @@ public class VisicomSearchFragment extends Fragment {
                     case "Mykolaiv":
                         citySearch = "Миколаїв";
                         break;
-                    case "Сhernivtsi":
+                    case "Chernivtsi":
                         citySearch = "Чернівці";
                         break;
                     case "Lutsk":
@@ -699,11 +750,18 @@ public class VisicomSearchFragment extends Fragment {
             InputMethodManager immHide = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
             // Пытаемся скрыть клавиатуру
             immHide.hideSoftInputFromWindow(v.getWindowToken(), 0);
-            if (!NetworkUtils.isNetworkAvailable(context)) {
-                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+            if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_restart, true)
                         .build());
             }
+
+//            if (!NetworkUtils.isNetworkAvailable(context)) {
+//                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                        .setPopUpTo(R.id.nav_restart, true)
+//                        .build());
+//            }
             VisicomFragment.btnVisible(View.INVISIBLE);
             MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)
@@ -809,11 +867,19 @@ public class VisicomSearchFragment extends Fragment {
 
                     Logger.d(context, TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
                     // GPS включен, выполните ваш код здесь
-                    if (!NetworkUtils.isNetworkAvailable(context)) {
-                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                    if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                        navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                                 .setPopUpTo(R.id.nav_restart, true)
                                 .build());
-                    } else  if(location_update) {
+                    }
+
+//                    if (!NetworkUtils.isNetworkAvailable(context)) {
+//                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                                .setPopUpTo(R.id.nav_restart, true)
+//                                .build());
+//                    }
+                    else  if(location_update) {
                         String searchText = getString(R.string.search_text) + "...";
 
                         progressBar.setVisibility(View.VISIBLE);
@@ -939,14 +1005,14 @@ public class VisicomSearchFragment extends Fragment {
             if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                 if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                         || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    btn_change.setBackground(getResources().getDrawable(R.drawable.btn_yellow));
+                    btn_change.setBackground(ContextCompat.getDrawable(MyApplication.getContext(), R.drawable.btn_yellow));
                     btn_change.setTextColor(Color.BLACK);
                 } else {
-                    btn_change.setBackground(getResources().getDrawable(R.drawable.btn_green));
+                    btn_change.setBackground(ContextCompat.getDrawable(MyApplication.getContext(), R.drawable.btn_green));
                     btn_change.setTextColor(Color.WHITE);
                 }
             } else {
-                btn_change.setBackground(getResources().getDrawable(R.drawable.btn_red));
+                btn_change.setBackground(ContextCompat.getDrawable(MyApplication.getContext(), R.drawable.btn_red));
                 btn_change.setTextColor(Color.WHITE);
 
             }

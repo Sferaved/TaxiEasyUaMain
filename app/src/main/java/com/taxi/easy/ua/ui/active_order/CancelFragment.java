@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.ui.active_order;
 
 import static android.content.Context.MODE_PRIVATE;
+import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -11,6 +12,8 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,7 +26,9 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
@@ -76,7 +81,8 @@ public class CancelFragment extends Fragment {
     Context context;
     private final int desiredHeight = 1200;
     public static AppCompatButton btnCallAdmin;
-
+    private Handler handler;
+    private Runnable taskRunnable;
 
     public CancelFragment() {
     }
@@ -121,9 +127,9 @@ public class CancelFragment extends Fragment {
         textUid  = binding.textUid;
         upd_but = binding.updBut;
         upd_but.setOnClickListener(v -> {
-            if (!NetworkUtils.isNetworkAvailable(context)) {
-
-                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+            if (NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_restart, true)
                         .build());
             }
@@ -146,12 +152,12 @@ public class CancelFragment extends Fragment {
             listView.smoothScrollByOffset(offset);
         });
 
-        fetchRoutesCancel(email);
-
+        startRepeatingTask();
         return root;
     }
 
     private void fetchRoutesCancel(String value) {
+        progressBar.setVisibility(VISIBLE);
         listView.setVisibility(View.GONE);
         scrollButtonDown.setVisibility(View.GONE);
         scrollButtonUp.setVisibility(View.GONE);
@@ -181,8 +187,9 @@ public class CancelFragment extends Fragment {
                 progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null) {
                     List<RouteResponseCancel> routes = response.body();
-                    Logger.d(context, TAG, "onResponse: " + routes);
+                    Logger.d(context, TAG, "onResponse: " + routes.toString());
                     if (!routes.isEmpty()) {
+
                         boolean hasRouteWithAsterisk = false;
                         for (RouteResponseCancel route : routes) {
                             if ("*".equals(route.getRouteFrom())) {
@@ -192,17 +199,19 @@ public class CancelFragment extends Fragment {
                             }
                         }
                         if (!hasRouteWithAsterisk) {
+                            //  stopRepeatingTask();
                             routeList.addAll(routes);
                             processCancelList();
-                            textUid.setVisibility(View.VISIBLE);
+                            textUid.setVisibility(VISIBLE);
                             textUid.setText(R.string.order_to_cancel);
+                            stopRepeatingTask();
                         } else {
-                            textUid.setVisibility(View.VISIBLE);
+                            textUid.setVisibility(VISIBLE);
                             textUid.setText(R.string.no_routs);
                         }
 
                     } else {
-                        textUid.setVisibility(View.VISIBLE);
+                        textUid.setVisibility(VISIBLE);
                         textUid.setText(R.string.no_routs);
                     }
                 } else {
@@ -211,11 +220,17 @@ public class CancelFragment extends Fragment {
                             .build());
 
                 }
+                requireActivity().runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                });
             }
 
             public void onFailure(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Throwable t) {
                 // Обработка ошибок сети или других ошибок
                 FirebaseCrashlytics.getInstance().recordException(t);
+                requireActivity().runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                });
             }
 
 
@@ -254,9 +269,20 @@ public class CancelFragment extends Fragment {
             String comment_info = route.getComment_info();
             String extra_charge_codes = route.getExtra_charge_codes();
 
-            switch (closeReason){
+            switch (closeReason) {
+                case "101":
                 case "-1":
                     closeReasonText = context.getString(R.string.close_resone_in_work);
+                    break;
+                case "102":
+                    closeReasonText = context.getString(R.string.close_resone_in_start_point);
+                    break;
+                case "103":
+                    closeReasonText = context.getString(R.string.close_resone_in_rout);
+                    break;
+                case "104":
+                case "8":
+                    closeReasonText = context.getString(R.string.close_resone_8);
                     break;
                 case "0":
                     closeReasonText = context.getString(R.string.close_resone_0);
@@ -282,14 +308,14 @@ public class CancelFragment extends Fragment {
                 case "7":
                     closeReasonText = context.getString(R.string.close_resone_7);
                     break;
-                case "8":
-                    closeReasonText = context.getString(R.string.close_resone_8);
-                    break;
                 case "9":
                     closeReasonText = context.getString(R.string.close_resone_9);
                     break;
-
+                default:
+                    // ничего не меняем или задаём значение по умолчанию
+                    break;
             }
+
 
             if(routeFrom.equals("Місце відправлення")) {
                 routeFrom = context.getString(R.string.start_point_text);
@@ -375,11 +401,11 @@ public class CancelFragment extends Fragment {
             listView.setAdapter(adapter);
 
 
-            listView.setVisibility(View.VISIBLE);
-            scrollButtonDown.setVisibility(View.VISIBLE);
-            scrollButtonUp.setVisibility(View.VISIBLE);
+            listView.setVisibility(VISIBLE);
+            scrollButtonDown.setVisibility(VISIBLE);
+            scrollButtonUp.setVisibility(VISIBLE);
             progressBar.setVisibility(View.GONE);
-            upd_but.setVisibility(View.VISIBLE);
+            upd_but.setVisibility(VISIBLE);
 
             listView.setAdapter(adapter);
 
@@ -395,8 +421,8 @@ public class CancelFragment extends Fragment {
                 }
 
                 if (totalItemHeight > desiredHeight) {
-                    scrollButtonUp.setVisibility(View.VISIBLE);
-                    scrollButtonDown.setVisibility(View.VISIBLE);
+                    scrollButtonUp.setVisibility(VISIBLE);
+                    scrollButtonDown.setVisibility(VISIBLE);
                 } else {
                     scrollButtonUp.setVisibility(View.GONE);
                     scrollButtonDown.setVisibility(View.GONE);
@@ -466,5 +492,35 @@ public class CancelFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+        stopRepeatingTask();
     }
+
+
+
+    public void startRepeatingTask() {
+        handler = new Handler(Looper.getMainLooper());
+        final int intervalMillis = 5000;
+        final int[] runCount = {0};
+
+        taskRunnable = new Runnable() {
+            @Override
+            public void run() {
+                fetchRoutesCancel(email);
+                Logger.d(context, TAG, "Выполнение задачи #" + (runCount[0] + 1));
+
+                runCount[0]++;
+                handler.postDelayed(this, intervalMillis); // бесконечный повтор
+            }
+        };
+
+        handler.post(taskRunnable); // запускаем сразу
+    }
+
+    public void stopRepeatingTask() {
+        if (handler != null && taskRunnable != null) {
+            handler.removeCallbacks(taskRunnable);
+            Logger.d(context, TAG, "Задача остановлена вручную");
+        }
+    }
+
 }

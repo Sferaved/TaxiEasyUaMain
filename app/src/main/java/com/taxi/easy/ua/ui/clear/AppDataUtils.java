@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.Looper;
 
 import com.taxi.easy.ua.utils.log.Logger;
 
@@ -155,7 +156,7 @@ public class AppDataUtils {
 
 
         // Запуск нового потока для перезапуска приложения после очистки
-        new Handler().postDelayed(() -> {
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
             // Запуск экрана удаления приложения
             Intent uninstallIntent = new Intent(Intent.ACTION_DELETE);
             uninstallIntent.setData(Uri.parse("package:" + context.getPackageName()));

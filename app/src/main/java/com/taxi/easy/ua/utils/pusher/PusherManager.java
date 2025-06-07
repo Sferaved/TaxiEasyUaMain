@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.utils.pusher;
 
 import static android.content.Context.MODE_PRIVATE;
-import static com.taxi.easy.ua.MainActivity.viewModel;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -25,12 +24,14 @@ import com.pusher.client.connection.ConnectionState;
 import com.pusher.client.connection.ConnectionStateChange;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.lang.ref.WeakReference;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -62,9 +63,10 @@ public class PusherManager {
     private boolean isSubscribed = false;
     Channel channel;
    Activity context;
+    private final ExecutionStatusViewModel viewModel;
 
     private final Set<String> boundEvents = new HashSet<>();
-    public PusherManager(String eventSuffix, String userEmail, Activity context) {
+    public PusherManager(String eventSuffix, String userEmail, Activity context, ExecutionStatusViewModel viewModel) {
         this.eventUid = "order-status-updated-" + eventSuffix + "-" + userEmail;
         this.eventUidDouble = "orderDouble-status-updated-" + eventSuffix + "-" + userEmail;
         this.eventOrder = "order-" + eventSuffix + "-" + userEmail;
@@ -73,18 +75,22 @@ public class PusherManager {
         this.eventCanceled = "eventCanceled-" + eventSuffix + "-" + userEmail;
         this.eventBlackUserStatus = "black-user-status--" + userEmail;
         this.eventOrderCost = "order-cost-" + eventSuffix + "-" + userEmail;
-//        this.orderResponseEvent = "orderResponseEvent-" + eventSuffix + "-" + userEmail;
-        this.context = context;
+//        this.orderResponseEvent = "orderResponseEvent-" + eventSuffix + "-" + userEmail;\
+        this.context = new WeakReference<>(context).get();
+//        this.context = context;
 //        this.eventStartExecution = "orderStartExecution-" + eventSuffix + "-" + userEmail;
 
         PusherOptions options = new PusherOptions();
         options.setCluster(PUSHER_CLUSTER);
-
+// Получение ViewModel из области видимости Activity
+        this.viewModel = viewModel;
         pusher = new Pusher(PUSHER_APP_KEY, options);
     }
 
     // Подключение к Pusher с улучшенным логированием и обработкой ошибок
     private final boolean isShuttingDown = false; // Флаг завершения работы приложения
+
+
 
     public void connect() {
         if (pusher == null) {
@@ -504,44 +510,47 @@ public class PusherManager {
 
         bindEvent(eventAutoOrder, event -> {
             Logger.d(context,"Pusher", "Received eventAutoOrder: " + event.toString());
-            try {
-                // Преобразуем данные события в JSONObject
-                JSONObject eventData = new JSONObject(event.getData());
 
-                // Создаём Map для хранения данных
-                Map<String, String> eventValues = new HashMap<>();
-                // Добавляем данные в Map
+            if (MainActivity.currentNavDestination != R.id.nav_finish_separate) {
+                try {
+                    // Преобразуем данные события в JSONObject
+                    JSONObject eventData = new JSONObject(event.getData());
 
-                eventValues.put("dispatching_order_uid", eventData.optString("dispatching_order_uid", "null"));
-                eventValues.put("order_cost", eventData.optString("order_cost", "0"));
-                eventValues.put("routefrom", eventData.optString("routefrom", "null"));
-                eventValues.put("routefromnumber", eventData.optString("routefromnumber", "null"));
-                eventValues.put("routeto", eventData.optString("routeto", "null"));
-                eventValues.put("to_number", eventData.optString("to_number", "null"));
+                    // Создаём Map для хранения данных
+                    Map<String, String> eventValues = new HashMap<>();
+                    // Добавляем данные в Map
 
-                eventValues.put("pay_method", eventData.optString("pay_method", "nal_payment"));
-                eventValues.put("orderWeb", eventData.optString("order_cost", "0"));
+                    eventValues.put("dispatching_order_uid", eventData.optString("dispatching_order_uid", "null"));
+                    eventValues.put("order_cost", eventData.optString("order_cost", "0"));
+                    eventValues.put("routefrom", eventData.optString("routefrom", "null"));
+                    eventValues.put("routefromnumber", eventData.optString("routefromnumber", "null"));
+                    eventValues.put("routeto", eventData.optString("routeto", "null"));
+                    eventValues.put("to_number", eventData.optString("to_number", "null"));
+
+                    eventValues.put("pay_method", eventData.optString("pay_method", "nal_payment"));
+                    eventValues.put("orderWeb", eventData.optString("order_cost", "0"));
 
 //                eventValues.put("currency", eventData.optString("currency", "null"));
-                eventValues.put("required_time", eventData.optString("required_time", ""));
-                eventValues.put("flexible_tariff_name", eventData.optString("flexible_tariff_name", "null"));
-                eventValues.put("comment_info", eventData.optString("comment_info", ""));
-                eventValues.put("extra_charge_codes", eventData.optString("extra_charge_codes", ""));
+                    eventValues.put("required_time", eventData.optString("required_time", ""));
+                    eventValues.put("flexible_tariff_name", eventData.optString("flexible_tariff_name", "null"));
+                    eventValues.put("comment_info", eventData.optString("comment_info", ""));
+                    eventValues.put("extra_charge_codes", eventData.optString("extra_charge_codes", ""));
 
-                // Добавляем дополнительные поля, если они существуют
+                    // Добавляем дополнительные поля, если они существуют
 
-                String dispatchingOrderUidDouble = eventData.optString("dispatching_order_uid_Double", " ");
-                eventValues.put("dispatching_order_uid_Double", dispatchingOrderUidDouble.equals(" ") ? " " : dispatchingOrderUidDouble);
+                    String dispatchingOrderUidDouble = eventData.optString("dispatching_order_uid_Double", " ");
+                    eventValues.put("dispatching_order_uid_Double", dispatchingOrderUidDouble.equals(" ") ? " " : dispatchingOrderUidDouble);
 
-                Logger.d(context,"Pusher", "Received eventAutoOrder: " + eventValues.toString());
+                    Logger.d(context,"Pusher", "Received eventAutoOrder: " + eventValues.toString());
 
-                startFinishPage(eventValues);
+                    startFinishPage(eventValues);
 
-            } catch (JSONException e) {
-                // Логируем ошибку при парсинге JSON
-                Logger.e(context,"Pusher", "JSON Parsing error" +  e);
-            } catch (ParseException e) {
-                throw new RuntimeException(e);
+                } catch (JSONException e) {
+                    // Логируем ошибку при парсинге JSON
+                    Logger.e(context,"Pusher", "JSON Parsing error" +  e);
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
             }
         });
 

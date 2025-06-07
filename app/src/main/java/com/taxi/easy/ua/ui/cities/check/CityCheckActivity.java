@@ -11,6 +11,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
@@ -93,7 +94,21 @@ public class CityCheckActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.city_activity_layout);
+// Регистрация обработчика кнопки "Назад"
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Ваш код вместо onBackPressed()
+                sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
+                city = "Kyiv City";
+                updateMyPosition();
 
+                // Если нужно, чтобы при этом действие назад было заблокировано,
+                // ничего не вызывайте дальше.
+                // Если хотите завершить Activity:
+                // finish();
+            }
+        });
         fragmentManager = getSupportFragmentManager();
 
         sharedPreferencesHelper = new SharedPreferencesHelper(this);
@@ -516,7 +531,7 @@ public class CityCheckActivity extends AppCompatActivity {
                 startLan = 31.99378;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
-            case "Сhernivtsi":
+            case "Chernivtsi":
                 position = getString(R.string.pos_chr);
                 startLat = 48.29306;
                 startLan = 25.93484;
@@ -732,15 +747,15 @@ public class CityCheckActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public void onBackPressed() {
-        // Ничего не делать, блокируя действие кнопки "назад"
-        super.onBackPressed();
-        sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
-        city = "Kyiv City";
-        updateMyPosition();
-
-    }
+//    @Override
+//    public void onBackPressed() {
+//        // Ничего не делать, блокируя действие кнопки "назад"
+//        super.onBackPressed();
+//        sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
+//        city = "Kyiv City";
+//        updateMyPosition();
+//
+//    }
 
     private void closeApplication() {
         // Полный выход из приложения
@@ -830,7 +845,7 @@ public class CityCheckActivity extends AppCompatActivity {
             case "Zhytomyr":
             case "Kropyvnytskyi":
             case "Mykolaiv":
-            case "Сhernivtsi":
+            case "Chernivtsi":
             case "Lutsk":
                 sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
                 break;
@@ -921,7 +936,7 @@ public class CityCheckActivity extends AppCompatActivity {
 
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
-            case "Сhernivtsi":
+            case "Chernivtsi":
 
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;

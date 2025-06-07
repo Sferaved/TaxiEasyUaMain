@@ -26,8 +26,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.content.FileProvider;
+import androidx.navigation.NavController;
 import androidx.navigation.NavDestination;
 import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -115,9 +117,15 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                     database.close();
                     dismiss();
 
-                    if (NetworkUtils.isNetworkAvailable(requireContext())) {
-
-                        MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+//                    if (NetworkUtils.isNetworkAvailable(requireContext())) {
+//
+//                        MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+//                                .setPopUpTo(R.id.nav_visicom, true)
+//                                .build());
+//                    }
+                    if (NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                        navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                                 .setPopUpTo(R.id.nav_visicom, true)
                                 .build());
                     }
@@ -368,7 +376,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                 startLan = 31.99378;
                 phoneNumber = Kyiv_City_phone; // Укажите соответствующий номер телефона
                 break;
-            case "Сhernivtsi":
+            case "Chernivtsi":
                 position = getString(R.string.pos_chr);
                 startLat = 48.29306;
                 startLan = 25.93484;
@@ -573,30 +581,77 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
 
         // Определение города
 
-        String city = switch (stringList.get(1)) {
-            case "Dnipropetrovsk Oblast" -> getString(R.string.Dnipro_city);
-            case "OdessaTest" -> getString(R.string.OdessaTest);
-            case "Odessa" ->  getString(R.string.city_odessa);
-            case "Zaporizhzhia" ->  getString(R.string.city_zaporizhzhia);
-            case "Cherkasy Oblast" ->  getString(R.string.city_cherkassy);
-            case "Lviv" -> getString(R.string.city_lviv);
-            case "Ivano_frankivsk" ->  getString(R.string.city_ivano_frankivsk);
-            case "Vinnytsia" -> getString(R.string.city_vinnytsia);
-            case "Poltava" ->  getString(R.string.city_poltava);
-            case "Sumy" ->  getString(R.string.city_sumy);
-            case "Kharkiv" ->  getString(R.string.city_kharkiv);
-            case "Chernihiv" -> getString(R.string.city_chernihiv);
-            case "Rivne" -> getString(R.string.city_rivne);
-            case "Ternopil" -> getString(R.string.city_ternopil);
-            case "Khmelnytskyi" -> getString(R.string.city_khmelnytskyi);
-            case "Zakarpattya" -> getString(R.string.city_zakarpattya);
-            case "Zhytomyr" -> getString(R.string.city_zhytomyr);
-            case "Kropyvnytskyi" -> getString(R.string.city_kropyvnytskyi);
-            case "Mykolaiv" -> getString(R.string.city_mykolaiv);
-            case "Сhernivtsi" -> getString(R.string.city_chernivtsi);
-            case "Lutsk" ->  getString(R.string.city_lutsk);
-            default -> getString(R.string.Kyiv_city);
-        };
+        String city;
+        String input = stringList.get(1);
+
+        switch (input) {
+            case "Dnipropetrovsk Oblast":
+                city = getString(R.string.Dnipro_city);
+                break;
+            case "OdessaTest":
+                city = getString(R.string.OdessaTest);
+                break;
+            case "Odessa":
+                city = getString(R.string.city_odessa);
+                break;
+            case "Zaporizhzhia":
+                city = getString(R.string.city_zaporizhzhia);
+                break;
+            case "Cherkasy Oblast":
+                city = getString(R.string.city_cherkassy);
+                break;
+            case "Lviv":
+                city = getString(R.string.city_lviv);
+                break;
+            case "Ivano_frankivsk":
+                city = getString(R.string.city_ivano_frankivsk);
+                break;
+            case "Vinnytsia":
+                city = getString(R.string.city_vinnytsia);
+                break;
+            case "Poltava":
+                city = getString(R.string.city_poltava);
+                break;
+            case "Sumy":
+                city = getString(R.string.city_sumy);
+                break;
+            case "Kharkiv":
+                city = getString(R.string.city_kharkiv);
+                break;
+            case "Chernihiv":
+                city = getString(R.string.city_chernihiv);
+                break;
+            case "Rivne":
+                city = getString(R.string.city_rivne);
+                break;
+            case "Ternopil":
+                city = getString(R.string.city_ternopil);
+                break;
+            case "Khmelnytskyi":
+                city = getString(R.string.city_khmelnytskyi);
+                break;
+            case "Zakarpattya":
+                city = getString(R.string.city_zakarpattya);
+                break;
+            case "Zhytomyr":
+                city = getString(R.string.city_zhytomyr);
+                break;
+            case "Kropyvnytskyi":
+                city = getString(R.string.city_kropyvnytskyi);
+                break;
+            case "Mykolaiv":
+                city = getString(R.string.city_mykolaiv);
+                break;
+            case "Chernivtsi":
+                city = getString(R.string.city_chernivtsi);
+                break;
+            case "Lutsk":
+                city = getString(R.string.city_lutsk);
+                break;
+            default:
+                city = getString(R.string.Kyiv_city);
+                break;
+        }
 
         // Формирование тела сообщения
 

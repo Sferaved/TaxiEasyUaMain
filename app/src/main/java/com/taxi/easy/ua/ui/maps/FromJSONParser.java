@@ -58,17 +58,16 @@ public Map<String, String> sendURL(String urlString) throws MalformedURLExceptio
     try {
         String response = asyncTaskFuture.get(60, TimeUnit.SECONDS);
         if (response != null) {
-
             JSONObject jsonarray = new JSONObject(response);
-
             if (!jsonarray.getString("order_cost").equals("0")) {
                 costMap.put("order_cost", "100");
-                costMap.put("route_address_from", jsonarray.getString("route_address_from"));
-                costMap.put("name", jsonarray.getString("name"));
-                costMap.put("house", jsonarray.getString("house"));
+                // Проверяем наличие ключей перед доступом
+                costMap.put("route_address_from", jsonarray.has("route_address_from") ? jsonarray.getString("route_address_from") : "");
+                costMap.put("name", jsonarray.has("name") ? jsonarray.getString("name") : "");
+                costMap.put("house", jsonarray.has("house") ? jsonarray.getString("house") : "");
             } else {
                 costMap.put("order_cost", "0");
-                costMap.put("message", jsonarray.getString("Message"));
+                costMap.put("message", jsonarray.has("Message") ? jsonarray.getString("Message") : "Нет сообщения");
             }
         } else {
             costMap.put("order_cost", "0");
@@ -79,7 +78,7 @@ public Map<String, String> sendURL(String urlString) throws MalformedURLExceptio
         FirebaseCrashlytics.getInstance().recordException(e);
         asyncTaskFuture.cancel(true);
         costMap.put("order_cost", "0");
-        costMap.put("message", "Сталася помилка");
+        costMap.put("message", "Сталася помилка: " + e.getMessage());
         return costMap;
     }
 

@@ -4,12 +4,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_color_new"
-    tools:context=".ui.uid.UIDFragment">
+    tools:context=".ui.history.HistoryFragment">
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/upd_but"
-       android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:background="@drawable/buttons"
@@ -21,12 +20,12 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.525"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_percent="@dimen/button_width" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnCallAdmin"
-       android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+        android:layout_width="0dp"
         android:layout_height="@dimen/button_height"
         android:layout_marginTop="12sp"
         android:background="@drawable/buttons"
@@ -38,34 +37,36 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.525"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/upd_but" />
+        app:layout_constraintTop_toBottomOf="@+id/upd_but"
+        app:layout_constraintWidth_percent="@dimen/button_width" />
 
-    <TextView
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/text_uid"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8sp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8sp"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/button_height"
+        android:layout_marginTop="12sp"
+        android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
-        android:minHeight="30sp"
+        android:text="@string/email_history_order"
         android:textAlignment="center"
-        android:textColor="#D9D9D9"
+        android:textColor="@color/white"
         android:textSize="@dimen/textView_textSize"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btnCallAdmin"
+        app:layout_constraintWidth_percent="@dimen/button_width"
         tools:ignore="RtlCompat" />
+
 
     <ProgressBar
         android:id="@+id/progress_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:scrollbarThumbVertical="@drawable/scrollbar_track"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        android:scrollbarThumbVertical="@drawable/scrollbar_track"
         app:layout_constraintTop_toBottomOf="@+id/btnCallAdmin" />
 
 

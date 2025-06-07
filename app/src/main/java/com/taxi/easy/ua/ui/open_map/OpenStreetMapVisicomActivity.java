@@ -9,6 +9,7 @@ import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
@@ -21,9 +22,7 @@ import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -45,10 +44,12 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.open_map.api.ApiResponse;
 import com.taxi.easy.ua.ui.open_map.api.ApiService;
@@ -67,6 +68,7 @@ import org.osmdroid.bonuspack.routing.RoadManager;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.CustomZoomButtonsController;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Polyline;
@@ -77,6 +79,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -128,6 +132,8 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     private static String endPointNoText;
     private static Marker previousMarker;
 
+    private static final Executor executor = Executors.newSingleThreadExecutor();
+
     public static String[] arrayServiceCode() {
         return new String[]{
                 "BAGGAGE",
@@ -156,7 +162,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
 
 
-    @SuppressLint({"MissingInflatedId", "InflateParams", "UseCompatLoadingForDrawables"})
+    @SuppressLint({"MissingInflatedId", "InflateParams", "UseCompatLoadingForDrawables", "SourceLockedOrientationActivity"})
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -169,9 +175,10 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         startMarker = getIntent().getStringExtra("startMarker");
         finishMarker = getIntent().getStringExtra("finishMarker");
 
-        originalDrawable = getResources().getDrawable(R.drawable.marker_green);
+        originalDrawable = ContextCompat.getDrawable(MyApplication.getContext(), R.drawable.marker_green);
         int width = 48;
         int height = 48;
+        assert originalDrawable != null;
         Bitmap bitmap = Bitmap.createScaledBitmap(((BitmapDrawable) originalDrawable).getBitmap(), width, height, false);
 
         // Создайте новый Drawable из уменьшенного изображения
@@ -183,7 +190,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
         Context ctx = getApplicationContext();
         //important! set your user agent to prevent getting banned from the osm servers
-        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+        Configuration.getInstance().load(ctx, androidx.preference.PreferenceManager.getDefaultSharedPreferences(ctx));
 
         fragmentManager = getSupportFragmentManager();
 
@@ -262,8 +269,9 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
 
 
-        map.setBuiltInZoomControls(true);
-        map.setMultiTouchControls(true);
+        map.setMultiTouchControls(true); // для pinch-to-zoom
+        map.getZoomController().setVisibility(CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT);
+
 
         double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, getApplicationContext()).get(4));
         mapController.setZoom(newZoomLevel);
@@ -339,11 +347,9 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     }
 
     private LocationRequest createLocationRequest() {
-        LocationRequest locationRequest = new LocationRequest();
-        locationRequest.setInterval(1000); // Интервал обновления местоположения в миллисекундах
-        locationRequest.setFastestInterval(100); // Самый быстрый интервал обновления местоположения в миллисекундах
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY); // Приоритет точного местоположения
-        return locationRequest;
+        return new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)  // приоритет и интервал обновления
+                .setMinUpdateIntervalMillis(100) // минимальный быстрый интервал
+                .build();
     }
 
 
@@ -463,7 +469,8 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         Resources resources = getContext().getResources();
         android.content.res.Configuration config = resources.getConfiguration();
         config.setLocale(locale);
-        resources.updateConfiguration(config, resources.getDisplayMetrics());
+//        resources.updateConfiguration(config, resources.getDisplayMetrics());
+        Context localizedContext = getContext().createConfigurationContext(config);
         Logger.d(getContext(), TAG, "language currentLocale " + localeCode);
 
         Call<ApiResponse> call = apiService.reverseAddressLocal(latitude, longitude, localeCode);
@@ -474,41 +481,39 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
             public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     ApiResponse apiResponse = response.body();
-                    if (apiResponse != null) {
-                        String result = apiResponse.getResult();
-                        if (map != null && map.getRepository() != null) {
+                    String result = apiResponse.getResult();
+                    if (map != null && map.getRepository() != null) {
 
-                                if (!result.equals("Точка на карте")) {
-                                    FromAdressString = result;
-                                } else {
-                                    FromAdressString = getContext().getString(R.string.startPoint);
-                                }
+                            if (!result.equals("Точка на карте")) {
+                                FromAdressString = result;
+                            } else {
+                                FromAdressString = getContext().getString(R.string.startPoint);
+                            }
 
-                                m.setPosition(startPoint);
-                                m.setTextLabelBackgroundColor(
-                                        Color.TRANSPARENT
-                                );
-                                m.setTextLabelForegroundColor(
-                                        Color.RED
-                                );
-                                m.setTextLabelFontSize(40);
-                                m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-                                String unuString = new String(Character.toChars(0x1F449));
+                            m.setPosition(startPoint);
+                            m.setTextLabelBackgroundColor(
+                                    Color.TRANSPARENT
+                            );
+                            m.setTextLabelForegroundColor(
+                                    Color.RED
+                            );
+                            m.setTextLabelFontSize(40);
+                            m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+                            String unuString = new String(Character.toChars(0x1F449));
 
-                                m.setTitle("1." + unuString + FromAdressString);
-                                m.setIcon(scaledDrawable);
-                                m.showInfoWindow();
+                            m.setTitle("1." + unuString + FromAdressString);
+                            m.setIcon(scaledDrawable);
+                            m.showInfoWindow();
 
-                                map.getOverlays().add(m);
-                                previousMarker = m;
-                                map.getController().setCenter(startPoint);
-                                double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, fab.getContext()).get(4));
-                                mapController.setZoom(newZoomLevel);
+                            map.getOverlays().add(m);
+                            previousMarker = m;
+                            map.getController().setCenter(startPoint);
+                            double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, fab.getContext()).get(4));
+                            mapController.setZoom(newZoomLevel);
 
-                                map.invalidate();
+                            map.invalidate();
 
 
-                        }
                     }
                 } else {
                     // Обработка неуспешного запроса
@@ -533,7 +538,8 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         Resources resources = getContext().getResources();
         android.content.res.Configuration config = resources.getConfiguration();
         config.setLocale(locale);
-        resources.updateConfiguration(config, resources.getDisplayMetrics());
+//        resources.updateConfiguration(config, resources.getDisplayMetrics());
+        Context localizedContext = getContext().createConfigurationContext(config);
         Logger.d(getContext(), TAG, "language currentLocale " + localeCode);
 
         Call<ApiResponse> call = apiService.reverseAddressLocal(latitude, longitude, localeCode);
@@ -547,127 +553,125 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
             public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     ApiResponse apiResponse = response.body();
-                    if (apiResponse != null) {
-                        String result = apiResponse.getResult();
-                        if (map != null && map.getRepository() != null) {
-                            if (startMarker.equals("ok")) {
-                                if (!result.equals("Точка на карте")) {
-                                    FromAdressString = result;
-                                } else {
-                                    FromAdressString = getContext().getString(R.string.startPoint);
-                                }
-
-
-                                if (previousMarker != null) {
-                                    map.getOverlays().remove(previousMarker);
-                                }
-
-                                m.setPosition(startPoint);
-                                m.setTextLabelBackgroundColor(Color.TRANSPARENT);
-                                m.setTextLabelForegroundColor(Color.RED);
-                                m.setTextLabelFontSize(40);
-                                m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-                                String unuString = new String(Character.toChars(0x1F449));
-
-                                m.setTitle("1." + unuString + FromAdressString);
-                                m.setIcon(scaledDrawable);
-                                m.showInfoWindow();
-
-                                // Сохраняем текущий маркер и добавляем его
-                                previousMarker = m;
-                                map.getOverlays().add(m);
-
-                                map.getController().setCenter(startPoint);
-                                double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, fab.getContext()).get(4));
-                                mapController.setZoom(newZoomLevel);
-
-                                map.invalidate();
-
-                                List<String> settings = new ArrayList<>();
-
-                                if (VisicomFragment.textViewTo.getText().toString().equals(map.getContext().getString(R.string.on_city_tv))) {
-
-                                    settings.add(String.valueOf(startLat));
-                                    settings.add(String.valueOf(startLan));
-                                    settings.add(String.valueOf(startLat));
-                                    settings.add(String.valueOf(startLan));
-                                    settings.add(FromAdressString);
-                                    settings.add(map.getContext().getString(R.string.on_city_tv));
-                                } else {
-                                    String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                                    SQLiteDatabase database = map.getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                                    Cursor cursor = database.rawQuery(query, null);
-
-                                    cursor.moveToFirst();
-                                    // Получите значения полей из первой записи
-
-                                    @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                                    @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                                    cursor.close();
-                                    database.close();
-
-
-                                    settings.add(String.valueOf(startLat));
-                                    settings.add(String.valueOf(startLan));
-                                    settings.add(String.valueOf(toLatitude));
-                                    settings.add(String.valueOf(toLongitude));
-
-                                    settings.add(FromAdressString);
-                                    settings.add(VisicomFragment.textViewTo.getText().toString());
-                                }
-                                updateRoutMarker(settings, map.getContext());
-                                updateMyPosition(startLat, startLan, FromAdressString, map.getContext());
-
-                                CityFinder cityFinder = new CityFinder(getContext(), latitude, longitude, FromAdressString);
-                                cityFinder.findCity(latitude, longitude);
-
-
+                    String result = apiResponse.getResult();
+                    if (map != null && map.getRepository() != null) {
+                        if (startMarker.equals("ok")) {
+                            if (!result.equals("Точка на карте")) {
+                                FromAdressString = result;
+                            } else {
+                                FromAdressString = getContext().getString(R.string.startPoint);
                             }
-                            if (finishMarker.equals("ok")) {
-                                if (!result.equals("Точка на карте")) {
-                                    ToAdressString = result;
-                                } else {
-                                    ToAdressString = getContext().getString(R.string.end_point_marker);
-                                }
 
 
-                                assert map != null;
-                                marker = new Marker(map);
-                                marker.setPosition(new GeoPoint(endPoint.getLatitude(), endPoint.getLongitude()));
-                                marker.setTextLabelBackgroundColor(
-                                        Color.TRANSPARENT
-                                );
-                                marker.setTextLabelForegroundColor(
-                                        Color.RED
-                                );
-                                marker.setTextLabelFontSize(40);
-                                marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-                                String unuString = new String(Character.toChars(0x1F449));
+                            if (previousMarker != null) {
+                                map.getOverlays().remove(previousMarker);
+                            }
 
-                                marker.setTitle("2." + unuString + ToAdressString);
-                                marker.setIcon(scaledDrawable);
-                                marker.showInfoWindow();
+                            m.setPosition(startPoint);
+                            m.setTextLabelBackgroundColor(Color.TRANSPARENT);
+                            m.setTextLabelForegroundColor(Color.RED);
+                            m.setTextLabelFontSize(40);
+                            m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+                            String unuString = new String(Character.toChars(0x1F449));
 
-                                map.getOverlays().add(marker);
+                            m.setTitle("1." + unuString + FromAdressString);
+                            m.setIcon(scaledDrawable);
+                            m.showInfoWindow();
 
-                                GeoPoint initialGeoPoint = new GeoPoint(endPoint.getLatitude(), endPoint.getLongitude());
-                                map.getController().setCenter(initialGeoPoint);
-//                            double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, fab.getContext()).get(4));
-//                            mapController.setZoom(newZoomLevel);
+                            // Сохраняем текущий маркер и добавляем его
+                            previousMarker = m;
+                            map.getOverlays().add(m);
 
-                                map.invalidate();
-                                showRout(startPoint, endPoint);
-                                List<String> settings = new ArrayList<>();
+                            map.getController().setCenter(startPoint);
+                            double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, fab.getContext()).get(4));
+                            mapController.setZoom(newZoomLevel);
+
+                            map.invalidate();
+
+                            List<String> settings = new ArrayList<>();
+
+                            if (VisicomFragment.textViewTo.getText().toString().equals(map.getContext().getString(R.string.on_city_tv))) {
 
                                 settings.add(String.valueOf(startLat));
                                 settings.add(String.valueOf(startLan));
-                                settings.add(String.valueOf(endPoint.getLatitude()));
-                                settings.add(String.valueOf(endPoint.getLongitude()));
+                                settings.add(String.valueOf(startLat));
+                                settings.add(String.valueOf(startLan));
                                 settings.add(FromAdressString);
-                                settings.add(ToAdressString);
+                                settings.add(map.getContext().getString(R.string.on_city_tv));
+                            } else {
+                                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                                SQLiteDatabase database = map.getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                                Cursor cursor = database.rawQuery(query, null);
 
-                                updateRoutMarker(settings, map.getContext());
+                                cursor.moveToFirst();
+                                // Получите значения полей из первой записи
+
+                                @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                                @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+                                cursor.close();
+                                database.close();
+
+
+                                settings.add(String.valueOf(startLat));
+                                settings.add(String.valueOf(startLan));
+                                settings.add(String.valueOf(toLatitude));
+                                settings.add(String.valueOf(toLongitude));
+
+                                settings.add(FromAdressString);
+                                settings.add(VisicomFragment.textViewTo.getText().toString());
                             }
+                            updateRoutMarker(settings, map.getContext());
+                            updateMyPosition(startLat, startLan, FromAdressString, map.getContext());
+
+                            CityFinder cityFinder = new CityFinder(getContext(), latitude, longitude, FromAdressString);
+                            cityFinder.findCity(latitude, longitude);
+
+
+                        }
+                        if (finishMarker.equals("ok")) {
+                            if (!result.equals("Точка на карте")) {
+                                ToAdressString = result;
+                            } else {
+                                ToAdressString = getContext().getString(R.string.end_point_marker);
+                            }
+
+
+                            assert map != null;
+                            marker = new Marker(map);
+                            marker.setPosition(new GeoPoint(endPoint.getLatitude(), endPoint.getLongitude()));
+                            marker.setTextLabelBackgroundColor(
+                                    Color.TRANSPARENT
+                            );
+                            marker.setTextLabelForegroundColor(
+                                    Color.RED
+                            );
+                            marker.setTextLabelFontSize(40);
+                            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+                            String unuString = new String(Character.toChars(0x1F449));
+
+                            marker.setTitle("2." + unuString + ToAdressString);
+                            marker.setIcon(scaledDrawable);
+                            marker.showInfoWindow();
+
+                            map.getOverlays().add(marker);
+
+                            GeoPoint initialGeoPoint = new GeoPoint(endPoint.getLatitude(), endPoint.getLongitude());
+                            map.getController().setCenter(initialGeoPoint);
+//                            double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, fab.getContext()).get(4));
+//                            mapController.setZoom(newZoomLevel);
+
+                            map.invalidate();
+                            showRout(startPoint, endPoint);
+                            List<String> settings = new ArrayList<>();
+
+                            settings.add(String.valueOf(startLat));
+                            settings.add(String.valueOf(startLan));
+                            settings.add(String.valueOf(endPoint.getLatitude()));
+                            settings.add(String.valueOf(endPoint.getLongitude()));
+                            settings.add(FromAdressString);
+                            settings.add(ToAdressString);
+
+                            updateRoutMarker(settings, map.getContext());
                         }
                     }
                 } else {
@@ -686,9 +690,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         super.onResume();
         map = findViewById(R.id.map);
         mapController = map.getController();
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, getApplicationContext()).get(3);
 
-        String application =  getString(R.string.application);
         new VerifyUserTask(getApplicationContext()).execute();
 
         apiServiceActivate();
@@ -701,10 +703,10 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         Logger.d(getApplicationContext(), TAG, "onResume: getFromTablePositionInfo(this, \"startLat\" )" + getFromTablePositionInfo(this, "startLat" ));
 
         if (startMarker.equals("ok")) {
-            markerOverlay = new MarkerOverlayVisicom(OpenStreetMapVisicomActivity.this, "startMarker");
+            markerOverlay = new MarkerOverlayVisicom("startMarker");
         }
         if (finishMarker.equals("ok")) {
-            markerOverlay = new MarkerOverlayVisicom(OpenStreetMapVisicomActivity.this, "finishMarker");
+            markerOverlay = new MarkerOverlayVisicom("finishMarker");
         }
         map.getOverlays().add(markerOverlay);
         switchToRegion();
@@ -812,7 +814,13 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
             } else {
 
                 Toast.makeText(this, R.string.check_position, Toast.LENGTH_SHORT).show();
-                Configuration.getInstance().load(OpenStreetMapVisicomActivity.this, PreferenceManager.getDefaultSharedPreferences(OpenStreetMapVisicomActivity.this));
+//                Configuration.getInstance().load(OpenStreetMapVisicomActivity.this, PreferenceManager.getDefaultSharedPreferences(OpenStreetMapVisicomActivity.this));
+                SharedPreferences prefs = getSharedPreferences("osm_prefs", Context.MODE_PRIVATE);
+                Configuration.getInstance().load(MyApplication.getContext(), prefs);
+                Configuration.getInstance().load(
+                        OpenStreetMapVisicomActivity.this,
+                        OpenStreetMapVisicomActivity.this.getSharedPreferences("osm_prefs", Context.MODE_PRIVATE)
+                );
 
                 fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -900,11 +908,11 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         m.setTextLabelFontSize(40);
         m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
 
-        @SuppressLint("UseCompatLoadingForDrawables") Drawable originalDrawable = context.getResources().getDrawable(R.drawable.marker_green);
-
+        Drawable originalDrawable = ContextCompat.getDrawable(context, R.drawable.marker_green);
         // Уменьшите размер до 48 пикселей
         int width = 48;
         int height = 48;
+        assert originalDrawable != null;
         Bitmap bitmap = Bitmap.createScaledBitmap(((BitmapDrawable) originalDrawable).getBitmap(), width, height, false);
 
         // Создайте новый Drawable из уменьшенного изображения
@@ -915,23 +923,27 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         map.getOverlays().add(m);
         map.invalidate();
     }
+
+
     public static void showRout(GeoPoint startP, GeoPoint endP) {
         map.getOverlays().removeAll(Collections.singleton(roadOverlay));
 
-        AsyncTask.execute(() -> {
-            RoadManager roadManager = new OSRMRoadManager(map.getContext(),  System.getProperty("http.agent"));
+        executor.execute(() -> {
+            RoadManager roadManager = new OSRMRoadManager(map.getContext(), System.getProperty("http.agent"));
             ArrayList<GeoPoint> waypoints = new ArrayList<>();
 
             waypoints.add(startP);
-
             waypoints.add(endP);
+
             Road road = roadManager.getRoad(waypoints);
             roadOverlay = RoadManager.buildRoadOverlay(road);
-            roadOverlay.setWidth(10); // Измените это значение на желаемую толщину
+            roadOverlay.getOutlinePaint().setStrokeWidth(10f);
 
-            map.getOverlays().add(roadOverlay);
-            // Вычисляем BoundingBox
-            map.invalidate();
+            // Чтобы внести изменения в UI, нужно переключиться на главный поток
+            map.post(() -> {
+                map.getOverlays().add(roadOverlay);
+                map.invalidate();
+            });
         });
     }
 

@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.821</string>
-    <string name="version">Version: 1.821</string>
+    <string name="version_code">1.822</string>
+    <string name="version">Version: 1.822</string>
 
     <string name="app_name">Taxi Dostavka</string>
 
@@ -181,6 +181,8 @@
     <string name="uid_menu">Order history</string>
     <string name="close_resone_def">Check with the dispatcher</string>
     <string name="close_resone_in_work">In processing</string>
+    <string name="close_resone_in_start_point">Car served</string>
+    <string name="close_resone_in_rout">Running</string>
     <string name="close_resone_0">Done</string>
     <string name="close_resone_1">Removed by customer</string>
     <string name="close_resone_2">Not done</string>
@@ -486,6 +488,8 @@
     <string name="addCostBonusMessage">For a faster car search, order in cash or pay for the trip by card</string>
     <string name="recounting_order">Order recalculation in progress</string>
     <string name="ex_st_finished">Your trip is over. Thank you for using our services. We look forward to seeing you next time.</string>
+    <string name="ex_st_in_rout">Fulfillment of the order by the driver.</string>
+    <string name="ex_st_in_start_point">The car has arrived. Please proceed to board. Enjoy your trip</string>
     <string name="pay_error_title">Payment error</string>
     <string name="try_again_pay">"Try again, invoice number: "</string>
     <string name="no_cards_info">You have no verified cards for payment. Verify your payment card to pay for trips.</string>
@@ -513,4 +517,8 @@
     <string name="anr_mes">Oops... Something went wrong 😓. Try again or later 🔄</string>
     <string name="search_address">Address search</string>
     <string name="err_nal_reoder_mes">Unfortunately, cash orders are currently unavailable. Please select another payment method.</string>
+    <string name="clearApp">Clear data</string>
+    <string name="clearAppMess">Warning! Clearing app data will delete all settings, databases, internal and external cache, and the app will be restarted. This action is irreversible and may affect the functionality of the app. Make sure you have saved important data before continuing. Continue?</string>
+    <string name="email_history_order">Request history</string>
+    <string name="SA_message_history">Please send me a history of my trips for the period from ..... to .....</string>
 </resources>
