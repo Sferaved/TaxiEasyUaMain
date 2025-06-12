@@ -17,6 +17,7 @@ import androidx.appcompat.widget.AppCompatButton;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.connect.NetworkMonitor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +31,7 @@ public class AnrActivity extends AppCompatActivity {
     AppCompatButton btn_exit;
     AppCompatButton btn_ok;
 
-
+    private NetworkMonitor networkMonitor;
 
     @SuppressLint("MissingInflatedId")
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
@@ -64,12 +65,16 @@ public class AnrActivity extends AppCompatActivity {
             closeApplication();
         });
 
-
+        networkMonitor = new NetworkMonitor(this);
+        networkMonitor.startMonitoring(this);
 
     }
 
     private void closeApplication() {
         // Полный выход из приложения
+        if (networkMonitor != null) {
+            networkMonitor.stopMonitoring();
+        }
         finishAffinity();
         System.exit(0);
     }
@@ -100,15 +105,22 @@ public class AnrActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         // Проверяем, идет ли приложение в фон
+        if (networkMonitor != null) {
+            networkMonitor.stopMonitoring();
+        }
         if (isFinishing()) {
             // Закрываем приложение полностью
             closeApplication();
         }
+
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+        if (networkMonitor != null) {
+            networkMonitor.stopMonitoring();
+        }
         // Проверяем, идет ли приложение в фон
         if (isFinishing()) {
             // Закрываем приложение полностью
@@ -116,11 +128,5 @@ public class AnrActivity extends AppCompatActivity {
         }
     }
 
-//    @Override
-//    public void onBackPressed() {
-//        // Ничего не делать, блокируя действие кнопки "назад"
-//        super.onBackPressed();
-//        closeApplication();
-//    }
 }
 

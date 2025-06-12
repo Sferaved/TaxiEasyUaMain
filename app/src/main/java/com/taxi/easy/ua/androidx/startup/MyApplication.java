@@ -4,6 +4,9 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.Application;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -17,6 +20,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.NotificationCompat;
 
 import com.github.anrwatchdog.ANRWatchDog;
 import com.google.firebase.FirebaseApp;
@@ -281,29 +285,56 @@ public class MyApplication extends Application {
         assert currentVersion != null;
         if (!currentVersion.equals(savedVersion)) {
             prefs.edit().putString("app_version", currentVersion).apply();
-            // Откладываем запуск ANRWatchDog на 10 секунд
-            new Handler(Looper.getMainLooper()).postDelayed(this::startANRWatchDog, 10_000);
         } else {
             // Если обновления не было, запускаем сразу
-            startANRWatchDog();
+            startANRWatchDog(this);
         }
     }
 
-    private void startANRWatchDog() {
-        new ANRWatchDog(4000)
+    private void startANRWatchDog(Context context) {
+        new ANRWatchDog(4000) // Увеличенный таймаут
                 .setANRListener(error -> {
-                    new Handler(Looper.getMainLooper()).post(() -> {
-                        Toast.makeText(getApplicationContext(), R.string.anr_message, Toast.LENGTH_LONG).show();
-                        Intent intent = new Intent(getApplicationContext(), AnrActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(intent);
-                    });
-                    Logger.e(getApplicationContext(), TAG, "ANR occurred: " + error.toString());
+                    Logger.e(context, TAG, "ANR occurred: " + error.toString());
                     FirebaseCrashlytics.getInstance().recordException(error);
+
+                    // Проверяем, можно ли запустить AnrActivity
+                    if (context instanceof Activity && !((Activity) context).isFinishing()) {
+                        try {
+                            Intent intent = new Intent(context, AnrActivity.class);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // Для запуска из неактивного контекста
+                            context.startActivity(intent);
+                        } catch (Exception e) {
+                            Logger.e(context, TAG, "Failed to start AnrActivity: " + e.getMessage());
+                            FirebaseCrashlytics.getInstance().recordException(e); // Записываем ошибку в Crashlytics
+                            showNotification(context); // Fallback на уведомление
+                        }
+                    } else {
+                        // Контекст не является активностью или активность завершена, показываем уведомление
+                        showNotification(context);
+                    }
                 })
                 .start();
     }
 
+    private void showNotification(Context context) {
+        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationChannel channel = new NotificationChannel("anr_channel", "ANR Notifications", NotificationManager.IMPORTANCE_HIGH);
+        manager.createNotificationChannel(channel);
+
+        // Настройка перехода к MainActivity при нажатии на уведомление
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "anr_channel")
+                .setSmallIcon(R.drawable.ic_error)
+                .setContentTitle(context.getString(R.string.anr_detected))
+                .setContentText(context.getString(R.string.application_is_not_responding))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true);
+        manager.notify((int) System.currentTimeMillis(), builder.build());
+    }
     private void registerActivityLifecycleCallbacks() {
         // Register ActivityLifecycleCallbacks to track foreground/background state
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
@@ -424,6 +455,7 @@ public class MyApplication extends Application {
                 @Override
                 public void onFailure(Throwable t) {
                     FirebaseCrashlytics.getInstance().recordException(t);
+                    
                     Logger.e(activity,"NetworkCheck", "Error checking internet stability." + t);
                 }
             });

@@ -382,7 +382,8 @@ public class CityFinder {
                 sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
                 break;
             case "OdessaTest":
-                sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
+//                sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://t.easy-order-taxi.site");
                 break;
             default:
                 sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");

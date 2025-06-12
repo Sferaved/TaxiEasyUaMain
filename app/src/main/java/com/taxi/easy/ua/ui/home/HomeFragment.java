@@ -75,6 +75,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentHomeBinding;
 import com.taxi.easy.ua.ui.cities.Cherkasy.Cherkasy;
 import com.taxi.easy.ua.ui.cities.Dnipro.DniproCity;
@@ -171,19 +172,15 @@ public class HomeFragment extends Fragment {
     public static long costFirstForMin;
     public static String urlOrder;
     public static long discount;
-    private final MyPhoneDialogFragment bottomSheetDialogFragment;
-
     public static int routeIdToCheck = 123;
     private AlertDialog alertDialog;
     private CarProgressBar carProgressBar;
 
     private final Executor executor = Executors.newSingleThreadExecutor();
-    private final int LOCATION_PERMISSION_REQUEST_CODE = 123;
+
     private ActivityResultLauncher<String[]> permissionLauncher;
 
-    public HomeFragment(MyPhoneDialogFragment bottomSheetDialogFragment) {
-        this.bottomSheetDialogFragment = bottomSheetDialogFragment;
-    }
+
 
     public static String[] arrayServiceCode() {
         return new String[]{
@@ -216,7 +213,7 @@ public class HomeFragment extends Fragment {
     FragmentManager fragmentManager;
     @SuppressLint("StaticFieldLeak")
     public static TextView schedule;
-    ImageButton shed_down;
+    static ImageButton shed_down;
 
     @SuppressLint("StaticFieldLeak")
     static ConstraintLayout constr2;
@@ -311,12 +308,7 @@ public class HomeFragment extends Fragment {
                     .setPopUpTo(R.id.nav_restart, true)
                     .build());
         }
-//        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-//
-//            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-//                        .setPopUpTo(R.id.nav_visicom, true)
-//                        .build());
-//        }
+
 
         context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
@@ -451,12 +443,7 @@ public class HomeFragment extends Fragment {
                             .setPopUpTo(R.id.nav_restart, true)
                             .build());
                 }
-//                if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-//
-//                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                            .setPopUpTo(R.id.nav_restart, true)
-//                            .build());
-//                }
+
                 btnVisible(VISIBLE);
                 if(connected()) {
                     List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
@@ -621,7 +608,12 @@ public class HomeFragment extends Fragment {
         buttonBonus.setText(btnBonusName);
     }
     private void scheduleUpdate() {
+        (MyApplication.getCurrentActivity()).runOnUiThread(() -> {
+        schedule.setVisibility(VISIBLE);
+        shed_down.setVisibility(VISIBLE);
         schedule.setText(R.string.on_now);
+        });
+
         if(!MainActivity.firstStart) {
             ContentValues cv = new ContentValues();
             cv.put("time", "no_time");
@@ -1012,62 +1004,35 @@ public class HomeFragment extends Fragment {
     public void checkPermission(String permission, int requestCode) {
         // Checking if permission is not granted
         Logger.d(context, TAG, "checkPermission: " + permission);
-//        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_DENIED) {
-//            ActivityCompat.requestPermissions(context, new String[]{permission}, LOCATION_PERMISSION_REQUEST_CODE);
-//        }
+
         requestPermissions();
     }
-//    @Override
-//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-//        Logger.d(context, TAG, "onRequestPermissionsResult: " + requestCode);
-//        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-//            if (permissions.length > 0) {
-////                SharedPreferences.Editor editor = MainActivity.sharedPreferences.edit();
-//                for (int i = 0; i < permissions.length; i++) {
-//                    sharedPreferencesHelperMain.saveValue(permissions[i], grantResults[i]);
-////                    editor.putInt(permissions[i], grantResults[i]);
-//
-//                }
-////                editor.apply();
-//
-//                int permissionRequestCount = loadPermissionRequestCount();
-//
-//                // Увеличение счетчика запросов разрешений при необходимости
-//                permissionRequestCount++;
-//
-//                // Сохранение обновленного значения счетчика
-//                savePermissionRequestCount(permissionRequestCount);
-//                Logger.d(context, TAG, "permissionRequestCount: " + permissionRequestCount);
-//                // Далее вы можете загрузить сохраненные разрешения и их результаты в любом месте вашего приложения,
-//                // используя тот же самый объект SharedPreferences
-//            }
-//        }
-//    }
+
     public static void btnVisible(int visible) {
 
-        if (text_view_cost != null) {
-            text_view_cost.setVisibility(visible);
-            btn_clear.setVisibility(visible);
-            btn_minus.setVisibility(visible);
-            btn_plus.setVisibility(visible);
-            buttonAddServices.setVisibility(visible);
-            buttonBonus.setVisibility(visible);
-            btn_clear.setVisibility(visible);
-            btn_order.setVisibility(visible);
-            if (visible == View.INVISIBLE) {
-                progressBar.setVisibility(VISIBLE);
-            } else {
-                progressBar.setVisibility(View.GONE);
+        (MyApplication.getCurrentActivity()).runOnUiThread(() -> {
+            if (text_view_cost != null) {
+                schedule.setVisibility(visible);
+                shed_down.setVisibility(visible);
+                text_view_cost.setVisibility(visible);
+                btn_clear.setVisibility(visible);
+                btn_minus.setVisibility(visible);
+                btn_plus.setVisibility(visible);
+                buttonAddServices.setVisibility(visible);
+                buttonBonus.setVisibility(visible);
+                btn_clear.setVisibility(visible); // Note: btn_clear is set twice, consider removing duplicate
+                btn_order.setVisibility(visible);
+                if (visible == View.INVISIBLE) {
+                    progressBar.setVisibility(View.VISIBLE);
+                } else {
+                    progressBar.setVisibility(View.GONE);
+                }
             }
-        }
+        });
     }
 
     // Метод для сохранения количества запросов разрешений в SharedPreferences
     private void savePermissionRequestCount(int count) {
-//        SharedPreferences.Editor editor = MainActivity.sharedPreferencesCount.edit();
-//        editor.putInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
-//        editor.apply();
         sharedPreferencesHelperMain.saveValue(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
     }
 
@@ -1101,7 +1066,7 @@ public class HomeFragment extends Fragment {
 
         VisicomFragment.sendUrlMap = null;
         MainActivity.uid = null;
-//        MainActivity.action = null;
+
 
 
         constraintLayoutHomeMain.setVisibility(VISIBLE);
@@ -1111,16 +1076,14 @@ public class HomeFragment extends Fragment {
         databaseHelperUid = new DatabaseHelperUid(context);
         viewModel.setTransactionStatus(null);
 
-        new Thread(this::fetchRoutesCancel).start();
+
 
         new VerifyUserTask(context).execute();
 
         progressBar.setVisibility(GONE);
         pay_method =  logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
 
-        if(bottomSheetDialogFragment != null) {
-            bottomSheetDialogFragment.dismiss();
-        }
+
 
         addCost = 0;
         updateAddCost(String.valueOf(addCost));
@@ -1236,6 +1199,7 @@ public class HomeFragment extends Fragment {
                         sendUrlMapCost = ResultSONParser.sendURL(url);
                     } catch (MalformedURLException | InterruptedException | JSONException e) {
                         FirebaseCrashlytics.getInstance().recordException(e);
+                        Logger.d(context, TAG, "AnrActivity.class 2" );
                         Intent intent = new Intent(context, AnrActivity.class);
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         context.startActivity(intent);
@@ -1269,6 +1233,7 @@ public class HomeFragment extends Fragment {
                             cost();
                             break;
                         default:
+                            Logger.d(context, TAG, "AnrActivity.class 3" );
                             Intent intent = new Intent(context, AnrActivity.class);
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                             context.startActivity(intent);
@@ -1385,6 +1350,7 @@ public class HomeFragment extends Fragment {
         binding.textwhere.setVisibility(VISIBLE);
         binding.num2.setVisibility(VISIBLE);
         btn_clear.setVisibility(VISIBLE);
+
 
 
         from = textViewFrom.getText().toString();
@@ -1625,6 +1591,10 @@ public class HomeFragment extends Fragment {
             RouteCostDao routeCostDao = db.routeCostDao();
             RouteCost retrievedRouteCost = routeCostDao.getRouteCost(routeIdToCheck);
 
+            List<RouteCost> allRouteCosts = routeCostDao.getAllRouteCosts();
+            Logger.d(context, TAG, "All RouteCosts: " + allRouteCosts);
+
+            Logger.d(context, TAG, "retrievedRouteCost" + retrievedRouteCost);
             // Возврат в главный поток (аналог onPostExecute)
             handler.post(() -> {
                 progressBar.setVisibility(View.GONE);
@@ -1662,6 +1632,7 @@ public class HomeFragment extends Fragment {
                     Logger.d(context, TAG, "onPostExecute: MIN_COST_VALUE" + MIN_COST_VALUE);
                     btnVisible(View.VISIBLE);
                 } else {
+                    Logger.d(context, TAG, "AnrActivity.class 1" );
                     Intent intent = new Intent(context, AnrActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     context.startActivity(intent);

@@ -618,7 +618,8 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
                 break;
             case "OdessaTest":
-                sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
+//                sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://t.easy-order-taxi.site");
                 break;
             default:
                 sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
@@ -852,7 +853,8 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
                 break;
             case "OdessaTest":
-                sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
+//                sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://t.easy-order-taxi.site");
                 break;
             default:
                 sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
@@ -1570,8 +1572,10 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
         Logger.d(context, TAG, "lastAddressUser: cityString" + cityString);
         if (cityString.equals("OdessaTest")) {
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
-            BASE_URL = "https://test-taxi.kyiv.ua";
+//            sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
+            sharedPreferencesHelperMain.saveValue("baseUrl", "https://t.easy-order-taxi.site");
+//            BASE_URL = "https://test-taxi.kyiv.ua";
+            BASE_URL = "https://t.easy-order-taxi.site";
         } else {
             sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
 

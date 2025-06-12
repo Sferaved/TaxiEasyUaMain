@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.823</string>
-    <string name="version">Версия: 1.823</string>
+    <string name="version_code">1.824</string>
+    <string name="version">Версия: 1.824</string>
 
     <string name="app_name">Такси Доставка</string>
 
@@ -523,5 +523,7 @@
     <string name="clearAppMess">Внимание! Очистка данных приложения удалит все настройки, базы данных, внутренний и внешний кэш, после чего приложение будет перезапущено. Это действие необратимо и может повлиять на работу приложения. Убедитесь, что вы сохранили важные данные перед продолжением. Продолжить?</string>
     <string name="email_history_order">Запросить историю</string>
     <string name="SA_message_history">Прошу прислать мне историю моих поездок за период с ..... по .....</string>
+    <string name="anr_detected">Обнаружена ошибка</string>
+    <string name="application_is_not_responding">Приложение не отвечает.</string>
 
 </resources>

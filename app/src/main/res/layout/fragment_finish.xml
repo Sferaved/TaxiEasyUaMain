@@ -86,7 +86,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_marginTop="12dp"
-            app:carImage="@drawable/button_image_button2_old"
+            app:carImage="@drawable/button_image_button2_sm"
             app:layout_constraintTop_toBottomOf="@+id/text_full_message" />
 
 

@@ -7,7 +7,6 @@ import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -17,13 +16,11 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.location.LocationManager;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
-import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -50,6 +47,11 @@ import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
+import androidx.work.Constraints;
+import androidx.work.Data;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract;
@@ -81,15 +83,11 @@ import com.taxi.easy.ua.ui.settings.SettingsActivity;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetCityFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
-import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
+import com.taxi.easy.ua.utils.connect.NetworkMonitor;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.download.AppUpdater;
-import com.taxi.easy.ua.utils.fcm.token_send.ApiServiceToken;
-import com.taxi.easy.ua.utils.fcm.token_send.RetrofitClientToken;
-import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
@@ -99,9 +97,14 @@ import com.taxi.easy.ua.utils.user.del_server.ApiUserService;
 import com.taxi.easy.ua.utils.user.del_server.CallbackUser;
 import com.taxi.easy.ua.utils.user.del_server.RetrofitClient;
 import com.taxi.easy.ua.utils.user.del_server.UserFindResponse;
-import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
-import com.taxi.easy.ua.utils.user.save_server.ApiServiceUser;
-import com.taxi.easy.ua.utils.user.save_server.UserResponse;
+import com.taxi.easy.ua.utils.worker.AddUserNoNameWorker;
+import com.taxi.easy.ua.utils.worker.GetCardTokenWfpWorker;
+import com.taxi.easy.ua.utils.worker.InsertPushDateWorker;
+import com.taxi.easy.ua.utils.worker.SendTokenWorker;
+import com.taxi.easy.ua.utils.worker.UpdatePushDateWorker;
+import com.taxi.easy.ua.utils.worker.UpdateUserInfoWorker;
+import com.taxi.easy.ua.utils.worker.UserPhoneFromFbWorker;
+import com.taxi.easy.ua.utils.worker.VersionFromMarketWorker;
 
 import org.json.JSONException;
 
@@ -114,10 +117,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -165,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static String paySystemStatus = "nal_payment";
     private AppBarConfiguration mAppBarConfiguration;
-    private NetworkChangeReceiver networkChangeReceiver;
+
     /**
      * Api section
      */
@@ -187,17 +187,10 @@ public class MainActivity extends AppCompatActivity {
 
     VisicomFragment visicomFragment;
 
-//    public static SharedPreferences sharedPreferences;
-//    public static SharedPreferences sharedPreferencesCount;
-    public static final String PERMISSIONS_PREF_NAME = "Permissions";
+
     public static final String PERMISSION_REQUEST_COUNT_KEY = "PermissionRequestCount";
     public static boolean location_update;
 
-    private static final String PREFS_NAME_VERSION = "MyPrefsFileNew";
-    private static final String LAST_NOTIFICATION_TIME_KEY = "lastNotificationTimeNew";
-    //    private static final long ONE_DAY_IN_MILLISECONDS = 0; // 24 часа в миллисекундах
-    private static final long ONE_DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
-//    private static final long ONE_DAY_IN_MILLISECONDS = 60 * 1000; // 1 минута в миллисекундах
 
     @SuppressLint("StaticFieldLeak")
     public static NavController navController;
@@ -215,9 +208,13 @@ public class MainActivity extends AppCompatActivity {
 
     public static int currentNavDestination = -1; // ID текущего экрана
     ActivityMainBinding binding;
-    AppUpdateManager appUpdateManager;
+    static AppUpdateManager appUpdateManager;
     public ActivityResultLauncher<Intent> exactAlarmLauncher;
     public ActivityResultLauncher<Intent> batteryOptimizationLauncher;
+    private NetworkMonitor networkMonitor;
+
+//    ExecutorService executor;
+    Constraints constraints;
 
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
@@ -245,12 +242,22 @@ public class MainActivity extends AppCompatActivity {
         });
 
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.nav_visicom, R.id.nav_home, R.id.nav_cancel,
-                R.id.nav_about, R.id.nav_uid, R.id.nav_bonus, R.id.nav_card,
-                R.id.nav_account, R.id.nav_author, R.id.nav_finish_separate,
-                R.id.nav_restart, R.id.nav_search, R.id.nav_cacheOrder)
-                .setOpenableLayout(drawer)
-                .build();
+                R.id.nav_visicom,
+                R.id.nav_home,
+                R.id.nav_cancel,
+                R.id.nav_about,
+                R.id.nav_uid,
+                R.id.nav_bonus,
+                R.id.nav_card,
+                R.id.nav_account,
+                R.id.nav_author,
+                R.id.nav_finish_separate,
+                R.id.nav_restart,
+                R.id.nav_search,
+                R.id.nav_cacheOrder,
+                R.id.nav_map,
+                R.id.nav_city
+        ).setOpenableLayout(drawer).build();
 
         // Связывание Navigation с UI
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
@@ -305,7 +312,12 @@ public class MainActivity extends AppCompatActivity {
         Logger.i(this, TAG, "Build.VERSION.SDK_INT: " + sdkVersion);
 
         // Инициализация ресивера для отслеживания сети
-        networkChangeReceiver = new NetworkChangeReceiver();
+
+        networkMonitor = new NetworkMonitor(this);
+        networkMonitor.startMonitoring(this);
+        constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
         try {
             initDB();
         } catch (MalformedURLException | JSONException | InterruptedException e) {
@@ -329,8 +341,16 @@ public class MainActivity extends AppCompatActivity {
             View.OnClickListener clickListener = v -> {
                 Logger.d(this, TAG, "Обработчик нажатия, сеть доступна: " + NetworkUtils.isNetworkAvailable(this));
                 if (NetworkUtils.isNetworkAvailable(this)) {
-                    MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, MainActivity.this);
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+//                    MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, MainActivity.this);
+//                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
+//                    Intent intent = new Intent(this, CityCheckActivity.class);
+//                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+//                    startActivity(intent);
+
+                    Logger.d(this, "CityCheckFrgment", "Navigating to nav_city");
+                    navController.navigate(R.id.nav_city, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_city, true)
+                            .build());
                 } else if (navController != null) {
                     currentNavDestination = R.id.nav_restart;
                     navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
@@ -347,6 +367,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Проверка разрешений на доступ к местоположению
         MainActivity.location_update = checkLocationPermission();
+
 
 
     }
@@ -459,33 +480,18 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         appUpdateManager = AppUpdateManagerFactory.create(MainActivity.this);
 
-        if (appUpdateManager != null) {
-            appUpdateManager.getAppUpdateInfo().addOnSuccessListener(appUpdateInfo -> {
-                if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
-                    appUpdateManager.completeUpdate();
-                }
-            }).addOnFailureListener(e -> {
-                Logger.e(this,TAG, "Ошибка проверки обновлений: " + e.getMessage());
-            });
-        }
-
-
-
-// Проверка сети и навигация
-        if (!NetworkUtils.isNetworkAvailable(this)) {
-            if (currentNavDestination != R.id.nav_restart && navController != null) {
-                currentNavDestination = R.id.nav_restart;
-                navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_restart, true)
-                        .build());
-            } else if (navController == null) {
-                Logger.e(this,TAG, "NavController равен null, навигация невозможна!");
+        appUpdateManager.getAppUpdateInfo().addOnSuccessListener(appUpdateInfo -> {
+            if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+                appUpdateManager.completeUpdate();
             }
-        }
+        }).addOnFailureListener(e -> {
+            Logger.e(this, TAG, "Ошибка проверки обновлений: " + e.getMessage());
+        });
+
 
         sharedPreferencesHelperMain.saveValue("pay_error", "**");
 
-        newUser();
+//        newUser();
 
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
@@ -717,10 +723,10 @@ public class MainActivity extends AppCompatActivity {
 
         database.close();
 
-//        if (NetworkUtils.isNetworkAvailable(this)) {
-//            // Действия при наличии интернета
-//            newUser();
-//        }
+        if (NetworkUtils.isNetworkAvailable(this)) {
+            // Действия при наличии интернета
+            newUser();
+        }
 
     }
 
@@ -739,27 +745,23 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(@NonNull Call<CityResponse> call, @NonNull Response<CityResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     CityResponse cityResponse = response.body();
-                    if (cityResponse != null) {
-                        int cardMaxPay = cityResponse.getCardMaxPay();
-                        int bonusMaxPay = cityResponse.getBonusMaxPay();
-                        String black_list = cityResponse.getBlack_list();
+                    int cardMaxPay = cityResponse.getCardMaxPay();
+                    int bonusMaxPay = cityResponse.getBonusMaxPay();
+                    String black_list = cityResponse.getBlack_list();
 
-                        ContentValues cv = new ContentValues();
-                        cv.put("card_max_pay", cardMaxPay);
-                        cv.put("bonus_max_pay", bonusMaxPay);
-                        sharedPreferencesHelperMain.saveValue("black_list", black_list);
-                        Logger.d(getApplication(), TAG, "black_list 2" + black_list);
-                        SQLiteDatabase database = getApplication().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        database.update(MainActivity.CITY_INFO, cv, "id = ?",
-                                new String[]{"1"});
+                    ContentValues cv = new ContentValues();
+                    cv.put("card_max_pay", cardMaxPay);
+                    cv.put("bonus_max_pay", bonusMaxPay);
+                    sharedPreferencesHelperMain.saveValue("black_list", black_list);
+                    Logger.d(getApplication(), TAG, "black_list 2" + black_list);
+                    SQLiteDatabase database = getApplication().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    database.update(MainActivity.CITY_INFO, cv, "id = ?",
+                            new String[]{"1"});
 
-                        database.close();
-
+                    database.close();
 
 
-
-                        // Добавьте здесь код для обработки полученных значений
-                    }
+                    // Добавьте здесь код для обработки полученных значений
                 } else {
                     Logger.d(getApplication(), TAG, "Failed. Error code: " + response.code());
                 }
@@ -773,38 +775,10 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void insertPushDate(Context context) {
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        if (database != null) {
-            try {
-                // Получаем текущее время и дату
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                String currentDateandTime = sdf.format(new Date());
-                Logger.d(getApplicationContext(), TAG, "Current date and time: " + currentDateandTime);
 
-                // Создаем объект ContentValues для передачи данных в базу данных
-                ContentValues values = new ContentValues();
-                values.put("push_date", currentDateandTime);
 
-                // Пытаемся вставить новую запись. Если запись уже существует, выполняется обновление.
-                long rowId = database.insertWithOnConflict(MainActivity.TABLE_LAST_PUSH, null, values, SQLiteDatabase.CONFLICT_REPLACE);
-
-                if (rowId != -1) {
-                    Logger.d(getApplicationContext(), TAG, "Insert or update successful");
-                } else {
-                    Logger.d(getApplicationContext(), TAG, "Error inserting or updating");
-                }
-            } catch (Exception e) {
-                FirebaseCrashlytics.getInstance().recordException(e);
-            } finally {
-                database.close();
-            }
-        }
-        assert database != null;
-        database.close();
-    }
     public void updatePushDate(Context context) {
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         if (database != null) {
             try {
                 // Получаем текущее время и дату
@@ -826,7 +800,9 @@ public class MainActivity extends AppCompatActivity {
 
 
             } catch (Exception e) {
-                FirebaseCrashlytics.getInstance().recordException(e);
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    FirebaseCrashlytics.getInstance().recordException(e);
+                });
             } finally {
                 database.close();
             }
@@ -1138,6 +1114,7 @@ public class MainActivity extends AppCompatActivity {
         if (appUpdater != null) {
             appUpdater.unregisterListener();
         }
+
     }
 
 
@@ -1266,53 +1243,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private ConnectivityManager.NetworkCallback networkCallback;
 
     @Override
     protected void onStart() {
         super.onStart();
-
-        // Регистрация BroadcastReceiver для батареи
-        registerReceiver(networkChangeReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-
-        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-
-        NetworkRequest networkRequest = new NetworkRequest.Builder()
-                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                .build();
-
-        networkCallback = new ConnectivityManager.NetworkCallback() {
-            @Override
-            public void onAvailable(Network network) {
-                super.onAvailable(network);
-                // Сеть доступна
-                // Здесь можно вызывать нужный код, например:
-                // Log.d("Network", "Сеть доступна");
-            }
-
-            @Override
-            public void onLost(@NonNull Network network) {
-                super.onLost(network);
-                // Сеть потеряна
-                // Например:
-                // Log.d("Network", "Сеть потеряна");
-            }
-        };
-
-        // Регистрируем callback
-        connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
     }
 
     @Override
     protected void onStop() {
+        WorkManager.getInstance(this).cancelAllWork(); // Отмена всех задач WorkManager
+        Logger.d(this, TAG, "Все задачи WorkManager отменены в onStop");
         super.onStop();
 
-        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (networkCallback != null) {
-            connectivityManager.unregisterNetworkCallback(networkCallback);
+        if (networkMonitor != null) {
+            networkMonitor.stopMonitoring();
         }
-
-        unregisterReceiver(networkChangeReceiver);
     }
 
     @SuppressLint("Range")
@@ -1337,8 +1282,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    private void insertPushDateWorkerTask() {
+        OneTimeWorkRequest insertPushDateRequest = new OneTimeWorkRequest.Builder(InsertPushDateWorker.class)
+                .setConstraints(constraints)
+                .build();
+
+        // Запуск задачи через WorkManager
+        WorkManager.getInstance(this).enqueue(insertPushDateRequest);
+
+        // Отслеживание завершения задачи
+        WorkManager.getInstance(this).getWorkInfoByIdLiveData(insertPushDateRequest.getId())
+                .observe(this, workInfo -> {
+                    if (workInfo != null && workInfo.getState().isFinished()) {
+                        Logger.d(this, TAG, "Задача insertPushDate завершена, состояние: " + workInfo.getState());
+                    }
+                });
+    }
+
+
     public void newUser() {
-        new Thread(() -> insertPushDate(getApplicationContext())).start();
+
+        insertPushDateWorkerTask();
 
         String userEmail = logCursor(TABLE_USER_INFO).get(3);
         Logger.d(this, TAG, "newUser: " + userEmail);
@@ -1376,55 +1340,50 @@ public class MainActivity extends AppCompatActivity {
                 pusherManager.connect();
                 pusherManager.subscribeToChannel();
 
-                // Создаем пул потоков для выполнения задач
-                ExecutorService executor = Executors.newFixedThreadPool(5);
+                OneTimeWorkRequest versionFromMarketRequest = new OneTimeWorkRequest.Builder(VersionFromMarketWorker.class)
+                        .setConstraints(constraints)
+                        .build();
 
-                // Запускаем задачи в пуле потоков
-                executor.execute(() -> {
-                    try {
-                        versionFromMarket(); // Предполагается, что метод void и без параметров
-                    } catch (Exception e) {
-                        Log.e(TAG, "Ошибка в versionFromMarket: " + e.getMessage());
-                    }
-                });
+                OneTimeWorkRequest userPhoneFromFbRequest = new OneTimeWorkRequest.Builder(UserPhoneFromFbWorker.class)
+                        .setConstraints(constraints)
+                        .build();
 
-                executor.execute(() -> {
-                    try {
-                        userPhoneFromFb(); // Предполагается, что метод void и без параметров
-                    } catch (Exception e) {
-                        Log.e(TAG, "Ошибка в userPhoneFromFb: " + e.getMessage());
-                    }
-                });
-                executor.execute(() -> updatePushDate(getApplicationContext()));
+                OneTimeWorkRequest updatePushDateRequest = new OneTimeWorkRequest.Builder(UpdatePushDateWorker.class)
+                        .setConstraints(constraints)
+                        .build();
 
-                executor.execute(() -> {
-                    List<String> stringList = logCursor(MainActivity.CITY_INFO);
-                    String city = stringList.get(1);
-                    if (city != null) {
-                        getCardTokenWfp(city);
-                    }
-                });
+                OneTimeWorkRequest getCardTokenWfpRequest = new OneTimeWorkRequest.Builder(GetCardTokenWfpWorker.class)
+                        .setConstraints(constraints)
+                        .setInputData(new Data.Builder()
+                                .putString("city", city)
+                                .build())
+                        .build();
 
-                executor.execute(() -> sendToken(userEmail));
+                OneTimeWorkRequest sendTokenRequest = new OneTimeWorkRequest.Builder(SendTokenWorker.class)
+                        .setConstraints(constraints)
+                        .setInputData(new Data.Builder()
+                                .putString("userEmail", userEmail)
+                                .build())
+                        .build();
 
-                // Закрываем пул после выполнения задач
-                executor.shutdown();
+                // Запуск задач через WorkManager
+                WorkManager.getInstance(this)
+                        .beginWith(versionFromMarketRequest)
+                        .then(userPhoneFromFbRequest)
+                        .then(updatePushDateRequest)
+                        .then(getCardTokenWfpRequest)
+                        .then(sendTokenRequest)
+                        .enqueue();
+
+                // Отслеживание завершения задач
+                WorkManager.getInstance(this).getWorkInfoByIdLiveData(sendTokenRequest.getId())
+                        .observe(this, workInfo -> {
+                            if (workInfo != null && workInfo.getState().isFinished()) {
+                                Log.d(TAG, "Все задачи завершены, состояние: " + workInfo.getState());
+                            }
+                        });
 
                 UserPermissions.getPermissions(userEmail, getApplicationContext());
-
-                Thread wfpCardThread = new Thread(() -> {
-                    List<String> stringList = logCursor(MainActivity.CITY_INFO);
-                    String city = stringList.get(1);
-                    if(city != null) {
-                        getCardTokenWfp(city);
-                    }
-                });
-                wfpCardThread.start();
-
-                Thread sendTokenThread = new Thread(() -> {
-                    sendToken(userEmail);
-                });
-                sendTokenThread.start();
             }
         });
 
@@ -1442,7 +1401,7 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(@NonNull Call<UserFindResponse> call, @NonNull Response<UserFindResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     UserFindResponse serverResponse = response.body();
-                    if (serverResponse != null && serverResponse.getCheckUser() != null) {
+                    if (serverResponse.getCheckUser() != null) {
                         // Возвращаем значение checkUser через callback
                         resultCallback.onResult(serverResponse.getCheckUser());
                         Log.d(TAG, "Успех: Пользователь найден = " + serverResponse.getCheckUser());
@@ -1467,94 +1426,89 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private  void getCardTokenWfp(String city) {
 
-
-
-
+    public void getCardTokenWfp(String city) {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(interceptor)
-                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
-                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
-                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
                 .build();
+
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
+                .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
 
-        // Создайте сервис
         CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
-        Logger.d(this, TAG, "getCardTokenWfp: ");
+        Logger.d(getApplicationContext(), TAG, "getCardTokenWfp: ");
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
 
-        // Выполните запрос
         Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
-                getString(R.string.application),
+                getApplicationContext().getString(R.string.application),
                 city,
                 userEmail,
                 "wfp"
         );
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
-                Logger.d(MainActivity.this, TAG, "onResponse: " + response.body());
-                if (response.isSuccessful() && response.body() != null) {
-                    CallbackResponseWfp callbackResponse = response.body();
-                    if (callbackResponse != null) {
-                        List<CardInfo> cards = callbackResponse.getCards();
-                        Logger.d(MainActivity.this, TAG, "onResponse: cards" + cards);
 
-                        SQLiteDatabase database = MainActivity.this.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
-                        database.execSQL("DELETE FROM " + tableName + ";");
+        try {
+            Response<CallbackResponseWfp> response = call.execute();
+            Logger.d(getApplicationContext(), TAG, "onResponse: " + response.body());
+            if (response.isSuccessful() && response.body() != null) {
+                CallbackResponseWfp callbackResponse = response.body();
+                List<CardInfo> cards = callbackResponse.getCards();
+                Logger.d(getApplicationContext(), TAG, "onResponse: cards" + cards);
 
-                        if (cards != null && !cards.isEmpty()) {
-                            for (CardInfo cardInfo : cards) {
-                                String masked_card = cardInfo.getMasked_card(); // Маска карты
-                                String card_type = cardInfo.getCard_type(); // Тип карты
-                                String bank_name = cardInfo.getBank_name(); // Название банка
-                                String rectoken = cardInfo.getRectoken(); // Токен карты
-                                String merchant = cardInfo.getMerchant(); //
-                                String active = cardInfo.getActive();
+                SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, Context.MODE_PRIVATE, null);
+                database.execSQL("DELETE FROM " + MainActivity.TABLE_WFP_CARDS + ";");
 
-                                Logger.d(MainActivity.this, TAG, "onResponse: card_token: " + rectoken);
-                                ContentValues cv = new ContentValues();
-                                cv.put("masked_card", masked_card);
-                                cv.put("card_type", card_type);
-                                cv.put("bank_name", bank_name);
-                                cv.put("rectoken", rectoken);
-                                cv.put("merchant", merchant);
-                                cv.put("rectoken_check", active);
-                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
-                            }
-                        }
-                        database.close();
+                if (cards != null && !cards.isEmpty()) {
+                    for (CardInfo cardInfo : cards) {
+                        String masked_card = cardInfo.getMasked_card();
+                        String card_type = cardInfo.getCard_type();
+                        String bank_name = cardInfo.getBank_name();
+                        String rectoken = cardInfo.getRectoken();
+                        String merchant = cardInfo.getMerchant();
+                        String active = cardInfo.getActive();
+
+                        Logger.d(getApplicationContext(), TAG, "onResponse: card_token: " + rectoken);
+                        ContentValues cv = new ContentValues();
+                        cv.put("masked_card", masked_card);
+                        cv.put("card_type", card_type);
+                        cv.put("bank_name", bank_name);
+                        cv.put("rectoken", rectoken);
+                        cv.put("merchant", merchant);
+                        cv.put("rectoken_check", active);
+                        database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
                     }
-
-                } else {
-                    // Обработка случаев, когда ответ не 200 OK
                 }
+                database.close();
+            } else {
+                // Обработка случаев, когда ответ не 200 OK
+                Logger.d(getApplicationContext(), TAG, "onResponse: not successful, code: " + response.code());
             }
-
-            @Override
-            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
-                // Обработка ошибки запроса
-                Logger.d(MainActivity.this, TAG, "onResponse: failure " + t);
-                FirebaseCrashlytics.getInstance().recordException(t);
-            }
-        });
+        } catch (Exception e) {
+            Logger.d(getApplicationContext(), TAG, "onResponse: failure " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
     }
-//    private  void getCardTokenWfp(String city, String pay_system, String email) {
+}
+//    public void getCardTokenWfp(String city) {
+//
+//
+//
+//
 //        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
 //        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-//        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+//
 //        OkHttpClient client = new OkHttpClient.Builder()
 //                .addInterceptor(interceptor)
+//                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
+//                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
+//                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
 //                .build();
 //        Retrofit retrofit = new Retrofit.Builder()
 //                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
@@ -1565,76 +1519,68 @@ public class MainActivity extends AppCompatActivity {
 //        // Создайте сервис
 //        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
 //        Logger.d(this, TAG, "getCardTokenWfp: ");
+//        String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
+//
 //        // Выполните запрос
-//        Call<CallbackResponseWfp> call = service.handleCallbackWfp(
+//        Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
 //                getString(R.string.application),
 //                city,
-//                email,
-//                pay_system
+//                userEmail,
+//                "wfp"
 //        );
-//        call.enqueue(new Callback<CallbackResponseWfp>() {
+//        call.enqueue(new Callback<>() {
 //            @Override
 //            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
-//                Logger.d(getApplicationContext(), TAG, "onResponse: " + response.body());
+//                Logger.d(MainActivity.this, TAG, "onResponse: " + response.body());
 //                if (response.isSuccessful() && response.body() != null) {
 //                    CallbackResponseWfp callbackResponse = response.body();
 //                    if (callbackResponse != null) {
 //                        List<CardInfo> cards = callbackResponse.getCards();
-//                        Logger.d(getApplicationContext(), TAG, "onResponse: cards" + cards);
-//                        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-//                        database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
+//                        Logger.d(MainActivity.this, TAG, "onResponse: cards" + cards);
+//
+//                        SQLiteDatabase database = MainActivity.this.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//                        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
+//                        database.execSQL("DELETE FROM " + tableName + ";");
+//
 //                        if (cards != null && !cards.isEmpty()) {
 //                            for (CardInfo cardInfo : cards) {
 //                                String masked_card = cardInfo.getMasked_card(); // Маска карты
 //                                String card_type = cardInfo.getCard_type(); // Тип карты
 //                                String bank_name = cardInfo.getBank_name(); // Название банка
 //                                String rectoken = cardInfo.getRectoken(); // Токен карты
-//                                String merchant = cardInfo.getMerchant(); // Токен карты
+//                                String merchant = cardInfo.getMerchant(); //
+//                                String active = cardInfo.getActive();
 //
-//                                Logger.d(getApplicationContext(), TAG, "onResponse: card_token: " + rectoken);
+//                                Logger.d(MainActivity.this, TAG, "onResponse: card_token: " + rectoken);
 //                                ContentValues cv = new ContentValues();
 //                                cv.put("masked_card", masked_card);
 //                                cv.put("card_type", card_type);
 //                                cv.put("bank_name", bank_name);
 //                                cv.put("rectoken", rectoken);
 //                                cv.put("merchant", merchant);
-//                                cv.put("rectoken_check", "0");
+//                                cv.put("rectoken_check", active);
 //                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
 //                            }
-//                            Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_WFP_CARDS + " ORDER BY id DESC LIMIT 1", null);
-//                            if (cursor != null && cursor.moveToFirst()) {
-//                                // Получаем значение ID последней записи
-//                                @SuppressLint("Range") int lastId = cursor.getInt(cursor.getColumnIndex("id"));
-//                                cursor.close();
-//
-//                                // Обновляем строку с найденным ID
-//                                ContentValues cv = new ContentValues();
-//                                cv.put("rectoken_check", "1");
-//                                database.update(MainActivity.TABLE_WFP_CARDS, cv, "id = ?", new String[] { String.valueOf(lastId) });
-//                            }
-//
-//                            database.close();
 //                        }
 //                        database.close();
 //                    }
 //
 //                } else {
 //                    // Обработка случаев, когда ответ не 200 OK
-//                    Logger.d(getApplicationContext(), TAG, "onResponse: getCardTokenWfp error ");
 //                }
 //            }
 //
 //            @Override
 //            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
 //                // Обработка ошибки запроса
-//                Logger.d(getApplicationContext(), TAG, "onResponse:getCardTokenWfp onFailure" + t);
+//                Logger.d(MainActivity.this, TAG, "onResponse: failure " + t);
 //                FirebaseCrashlytics.getInstance().recordException(t);
 //            }
 //        });
 //    }
+
     private void startFireBase() {
         Toast.makeText(this, R.string.account_verify, Toast.LENGTH_SHORT).show();
-//        startSignInInBackground();
         startSignIn();
     }
 
@@ -1656,29 +1602,7 @@ public class MainActivity extends AppCompatActivity {
             VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
         }
     }
-    private void startSignInInBackground() {
-        Thread thread = new Thread(() -> {
-            try {
-            Logger.d(getApplicationContext(), TAG, "run: ");
-            // Choose authentication providers
-            List<AuthUI.IdpConfig> providers = Collections.singletonList(
-                    new AuthUI.IdpConfig.GoogleBuilder().build());
 
-            // Create and launch sign-in intent
-            Intent signInIntent = AuthUI.getInstance()
-                    .createSignInIntentBuilder()
-                    .setAvailableProviders(providers)
-                    .build();
-
-                runOnUiThread(() -> signInLauncher.launch(signInIntent));
-            } catch (Exception e) {
-                Logger.e(getApplicationContext(), TAG, "Exception during sign-in launch " + e);
-                FirebaseCrashlytics.getInstance().recordException(e);
-                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-            }
-        });
-        thread.start();
-    }
 
     private final ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
 
@@ -1769,116 +1693,93 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void settingsNewUser (String emailUser) {
-        // Assuming this code is inside a method or a runnable block
-
-// Task 1: Update user info in a separate thread
-        Thread updateUserInfoThread = new Thread(() -> {
-            ContentValues cv = new ContentValues();
-            updateRecordsUserInfo("email", emailUser, getApplicationContext());
-            cv.put("verifyOrder", "1");
-            SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-            database.close();
-            Logger.d(this, TAG, "settingsNewUser" + emailUser);
-        });
-        updateUserInfoThread.start();
-
-        Thread sendTokenThread = new Thread(() -> {
-            sendToken(emailUser);
-        });
-        sendTokenThread.start();
-
-// Task 2: Add user with no name in a separate thread
-        Thread addUserNoNameThread = new Thread(() -> {
-            addUserNoName(emailUser, getApplicationContext());
-        });
-        addUserNoNameThread.start();
-
-// Task 3: Fetch user phone information from the server in a separate thread
-        //            userPhoneFromServer(emailUser);
-        new Thread(this::userPhoneFromFb).start();
-
-// Task 4: Get card token for "fondy" in a separate thread
-//        Thread fondyCardThread = new Thread(() -> {
-//            getCardToken("fondy", TABLE_FONDY_CARDS, emailUser);
+//    private void settingsNewUser (String emailUser) {
+//        // Assuming this code is inside a method or a runnable block
 //
+//// Task 1: Update user info in a separate thread
+//        Thread updateUserInfoThread = new Thread(() -> {
+//            ContentValues cv = new ContentValues();
+//            updateRecordsUserInfo("email", emailUser, getApplicationContext());
+//            cv.put("verifyOrder", "1");
+//            SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//            database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+//            database.close();
+//            Logger.d(this, TAG, "settingsNewUser" + emailUser);
 //        });
-//        fondyCardThread.start();
-//        Thread wfpCardThread = new Thread(() -> {
-//            List<String> stringList = logCursor(MainActivity.CITY_INFO);
-//            String city = stringList.get(1);
-//            getCardTokenWfp("OdessaTest","wfp", emailUser);
+//        updateUserInfoThread.start();
 //
+//        Thread sendTokenThread = new Thread(() -> {
+//            sendToken(emailUser);
 //        });
-//        wfpCardThread.start();
-
-// Task 5: Get card token for "mono" in a separate thread
-//        Thread monoCardThread = new Thread(() -> {
-//            getCardToken("mono", TABLE_MONO_CARDS, email);
+//        sendTokenThread.start();
+//
+//// Task 2: Add user with no name in a separate thread
+//        Thread addUserNoNameThread = new Thread(() -> {
+//            addUserNoName(emailUser, getApplicationContext());
 //        });
-//        monoCardThread.start();
+//        addUserNoNameThread.start();
+//
+//// Task 3: Fetch user phone information from the server in a separate thread
+//        //            userPhoneFromServer(emailUser);
+//        new Thread(this::userPhoneFromFb).start();
+//
+//
+//// Wait for all threads to finish (optional)
+//        try {
+//            updateUserInfoThread.join();
+//            addUserNoNameThread.join();
+////            fondyCardThread.join();
+////            monoCardThread.join();
+//        } catch (InterruptedException e) {
+//            FirebaseCrashlytics.getInstance().recordException(e);
+//        }
+//
+//    }
+    private void settingsNewUser(String emailUser) {
 
-// Wait for all threads to finish (optional)
-        try {
-            updateUserInfoThread.join();
-            addUserNoNameThread.join();
-//            fondyCardThread.join();
-//            monoCardThread.join();
-        } catch (InterruptedException e) {
-            FirebaseCrashlytics.getInstance().recordException(e);
-        }
-
-    }
-
-
-    public static void addUserNoName(String email, Context context) {
-        // Создание объекта Retrofit
-        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
+           // Создание запросов для задач settingsNewUser
+        OneTimeWorkRequest updateUserInfoRequest = new OneTimeWorkRequest.Builder(UpdateUserInfoWorker.class)
+                .setConstraints(constraints)
+                .setInputData(new Data.Builder()
+                        .putString("emailUser", emailUser)
+                        .build())
                 .build();
 
-        // Создание экземпляра ApiService
-        ApiServiceUser apiService = retrofit.create(ApiServiceUser.class);
+        OneTimeWorkRequest sendTokenRequest = new OneTimeWorkRequest.Builder(SendTokenWorker.class)
+                .setConstraints(constraints)
+                .setInputData(new Data.Builder()
+                        .putString("userEmail", emailUser)
+                        .build())
+                .build();
 
-        // Вызов метода addUserNoName
-        Call<UserResponse> call = apiService.addUserNoName(email, context.getString(R.string.application));
+        OneTimeWorkRequest addUserNoNameRequest = new OneTimeWorkRequest.Builder(AddUserNoNameWorker.class)
+                .setConstraints(constraints)
+                .setInputData(new Data.Builder()
+                        .putString("emailUser", emailUser)
+                        .build())
+                .build();
 
-        // Асинхронный вызов
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<UserResponse> call, @NonNull Response<UserResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    UserResponse userResponse = response.body();
-                    if (userResponse != null) {
-                        updateRecordsUserInfo("username", userResponse.getUserName(), context);
+        OneTimeWorkRequest userPhoneFromFbRequest = new OneTimeWorkRequest.Builder(UserPhoneFromFbWorker.class)
+                .setConstraints(constraints)
+                .build();
 
+        // Запуск задач через WorkManager
+        WorkManager.getInstance(this)
+                .beginWith(updateUserInfoRequest)
+                .then(sendTokenRequest)
+                .then(addUserNoNameRequest)
+                .then(userPhoneFromFbRequest)
+                .enqueue();
+
+        // Отслеживание завершения задач
+        WorkManager.getInstance(this).getWorkInfoByIdLiveData(userPhoneFromFbRequest.getId())
+                .observe(this, workInfo -> {
+                    if (workInfo != null && workInfo.getState().isFinished()) {
+                        Log.d(TAG, "Задачи settingsNewUser завершены, состояние: " + workInfo.getState());
                     }
-                } else {
-                    updateRecordsUserInfo("username", "no_name", context);
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<UserResponse> call, @NonNull Throwable t) {
-                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-                FirebaseCrashlytics.getInstance().recordException(t);
-            }
-        });
+                });
     }
-    private static void updateRecordsUserInfo(String userInfo, String result, Context context) {
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        ContentValues cv = new ContentValues();
 
-        cv.put(userInfo, result);
-
-        // обновляем по id
-        database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
-                new String[] { "1" });
-        database.close();
-    }
     private void insertCard(List<String> settings) {
         String sql = "INSERT INTO " + MainActivity.TABLE_FONDY_CARDS + " VALUES(?,?,?,?,?);";
 
@@ -1972,83 +1873,38 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    private void userPhoneFromFb ()
-    {
-        FirebaseUserManager userManager = new FirebaseUserManager();
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+//    public void userPhoneFromFb()
+//    {
+//        FirebaseUserManager userManager = new FirebaseUserManager();
+//        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+//
+//        if (currentUser != null) {
+//            String userId = currentUser.getUid();
+//            userManager.getUserPhoneById(userId, phone -> {
+//                if (phone != null) {
+//                    // Используйте phone по своему усмотрению
+//                    Logger.d(getApplicationContext(), TAG, "User phone: " + phone);
+//                    String PHONE_PATTERN = "\\+38 \\d{3} \\d{3} \\d{2} \\d{2}";
+//                    boolean val = Pattern.compile(PHONE_PATTERN).matcher(phone).matches();
+//
+//                    if (val) {
+//                        updateRecordsUser("phone_number", phone);
+//                    } else {
+//                        // Handle case where phone doesn't match the pattern
+//                        Logger.d(getApplicationContext(), TAG, "Phone does not match pattern");
+//                    }
+//                } else {
+//                    Logger.d(getApplicationContext(), TAG, "Phone is null");
+//                }
+//            });
+//        }
+//    }
 
-        if (currentUser != null) {
-            String userId = currentUser.getUid();
-            userManager.getUserPhoneById(userId, phone -> {
-                if (phone != null) {
-                    // Используйте phone по своему усмотрению
-                    Logger.d(getApplicationContext(), TAG, "User phone: " + phone);
-                    String PHONE_PATTERN = "\\+38 \\d{3} \\d{3} \\d{2} \\d{2}";
-                    boolean val = Pattern.compile(PHONE_PATTERN).matcher(phone).matches();
-
-                    if (val) {
-                        updateRecordsUser("phone_number", phone);
-                    } else {
-                        // Handle case where phone doesn't match the pattern
-                        Logger.d(getApplicationContext(), TAG, "Phone does not match pattern");
-                    }
-                } else {
-                    Logger.d(getApplicationContext(), TAG, "Phone is null");
-                }
-            });
-        }
-    }
-
-    private void sendToken (String email) {
-        // Создаем экземпляр Retrofit
-
-        Logger.d(getApplicationContext(),TAG, "sendToken email " + email);
-
-        SharedPreferences sharedPreferences = getSharedPreferences("UserTokenPrefs", Context.MODE_PRIVATE);
-        String token = sharedPreferences.getString("token","");
-
-        Logger.d(getApplicationContext(),TAG, "sendToken token" + token );
-
-        if(!token.isEmpty()) {
-            baseUrl  = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-            ApiServiceToken apiService = RetrofitClientToken.getClient(baseUrl).create(ApiServiceToken.class);
-
-            String app = getApplicationContext().getString(R.string.application);
-
-            Call<Void> call = apiService.sendToken(email, app, token, LocaleHelper.getLocale());
-
-            // Выполняем асинхронный запрос
-            call.enqueue(new Callback<Void>() {
-                @Override
-                public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
-                    Logger.e(getApplicationContext(), TAG, "response.code: " + response.code());
-                }
-
-                @Override
-                public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
-                    Logger.e(getApplicationContext(),TAG, "Ошибка отправки токена на сервер: " + t);
-                    FirebaseCrashlytics.getInstance().recordException(t);
-                }
-            });
-        }
-    }
-
-
-    private void versionFromMarket()  {
-        // Получаем SharedPreferences
-        SharedPreferences SharedPreferences = getSharedPreferences(PREFS_NAME_VERSION, Context.MODE_PRIVATE);
-        // Получаем время последней отправки уведомления
-        long lastNotificationTime = SharedPreferences.getLong(LAST_NOTIFICATION_TIME_KEY, 0);
-        // Получаем текущее время
-        long currentTime = System.currentTimeMillis();
-        // Проверяем, прошло ли уже 24 часа с момента последней отправки
-        if (currentTime - lastNotificationTime >= ONE_DAY_IN_MILLISECONDS) {
-            checkForUpdateForPush(SharedPreferences, currentTime);
-        }
-    }
-    private void checkForUpdateForPush(
+    public static void checkForUpdateForPush(
             SharedPreferences SharedPreferences,
-            long currentTime
+            long currentTime,
+            String LAST_NOTIFICATION_TIME_KEY
+
     ) {
         // Обновляем время последней отправки уведомления
         SharedPreferences.Editor editor = SharedPreferences.edit();
@@ -2060,12 +1916,12 @@ public class MainActivity extends AppCompatActivity {
         appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
             if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
                 // Доступны обновления
-                Logger.d(getApplicationContext(), TAG, "Available updates found");
-                String title = getString(R.string.new_version);
-                String messageNotif = getString(R.string.news_of_version);
+                Logger.d(MyApplication.getContext(), TAG, "Available updates found");
+                String title = MyApplication.getContext().getString(R.string.new_version);
+                String messageNotif = MyApplication.getContext().getString(R.string.news_of_version);
 
                 String urlStr = "https://play.google.com/store/apps/details?id=com.taxi.easy.ua";
-                NotificationHelper.showNotification(MainActivity.this, title, messageNotif, urlStr);
+                NotificationHelper.showNotification(MyApplication.getContext(), title, messageNotif, urlStr);
             }
         });
     }

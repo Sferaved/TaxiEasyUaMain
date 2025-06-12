@@ -1,5 +1,6 @@
 package com.taxi.easy.ua.ui.cities.check;
 
+import static android.content.Context.MODE_PRIVATE;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -9,25 +10,26 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 
-import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.databinding.FragmentCityCheckBinding;
 import com.taxi.easy.ua.ui.cities.api.CityApiClient;
 import com.taxi.easy.ua.ui.cities.api.CityLastAddressResponse;
 import com.taxi.easy.ua.ui.cities.api.CityResponse;
 import com.taxi.easy.ua.ui.cities.api.CityService;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
@@ -42,9 +44,10 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 
-public class CityCheckActivity extends AppCompatActivity {
+public class CityCheckFragment extends Fragment {
 
-    private static final String TAG = "CityCheckActivity";
+    private static final String TAG = "CityCheckFragment";
+    private FragmentCityCheckBinding binding;
     AppCompatButton btn_city_1;
     AppCompatButton btn_city_2;
     AppCompatButton btn_city_3;
@@ -86,62 +89,42 @@ public class CityCheckActivity extends AppCompatActivity {
 
     String countryState;
     SharedPreferencesHelper sharedPreferencesHelper;
-
+    View root;
 
     @SuppressLint("MissingInflatedId")
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
 
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.city_activity_layout);
-// Регистрация обработчика кнопки "Назад"
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                // Ваш код вместо onBackPressed()
-                sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
-                city = "Kyiv City";
-                updateMyPosition();
-
-                // Если нужно, чтобы при этом действие назад было заблокировано,
-                // ничего не вызывайте дальше.
-                // Если хотите завершить Activity:
-                // finish();
-            }
-        });
-        fragmentManager = getSupportFragmentManager();
-
-        sharedPreferencesHelper = new SharedPreferencesHelper(this);
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             ViewGroup container, Bundle savedInstanceState) {
+        binding = FragmentCityCheckBinding.inflate(inflater, container, false);
+        root = binding.getRoot();
+  
+        sharedPreferencesHelper = new SharedPreferencesHelper(requireActivity());
         sharedPreferencesHelperMain.saveValue("visible_shed", "ok");
 
-        String message = getString(R.string.check_city);
-        MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
-        bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-
-        btn_city_1 = findViewById(R.id.btn_city_1);
-        btn_city_2 = findViewById(R.id.btn_city_2);
-        btn_city_3 = findViewById(R.id.btn_city_3);
-        btn_city_4 = findViewById(R.id.btn_city_4);
-        btn_city_5 = findViewById(R.id.btn_city_5);
-        btn_city_6 = findViewById(R.id.btn_city_6);
-        btn_city_7 = findViewById(R.id.btn_city_7);
-        btn_city_8 = findViewById(R.id.btn_city_8);
-        btn_city_9 = findViewById(R.id.btn_city_9);
-        btn_city_10 = findViewById(R.id.btn_city_10);
-        btn_city_11 = findViewById(R.id.btn_city_11);
-        btn_city_12 = findViewById(R.id.btn_city_12);
-        btn_city_13 = findViewById(R.id.btn_city_13);
-        btn_city_14 = findViewById(R.id.btn_city_14);
-        btn_city_15 = findViewById(R.id.btn_city_15);
-        btn_city_16 = findViewById(R.id.btn_city_16);
-        btn_city_17 = findViewById(R.id.btn_city_17);
-        btn_city_18 = findViewById(R.id.btn_city_18);
-        btn_city_19 = findViewById(R.id.btn_city_19);
-        btn_city_20 = findViewById(R.id.btn_city_20);
-        btn_city_21 = findViewById(R.id.btn_city_21);
-        btn_city_22 = findViewById(R.id.btn_city_22);
-        btn_city_23 = findViewById(R.id.btn_city_23);
-        btn_exit = findViewById(R.id.btn_exit);
+        btn_city_1 = binding.btnCity1;
+        btn_city_2 = binding.btnCity2;
+        btn_city_3 = binding.btnCity3;
+        btn_city_4 = binding.btnCity4;
+        btn_city_5 = binding.btnCity5;
+        btn_city_6 = binding.btnCity6;
+        btn_city_7 = binding.btnCity7;
+        btn_city_8 = binding.btnCity8;
+        btn_city_9 = binding.btnCity9;
+        btn_city_10 = binding.btnCity10;
+        btn_city_11 = binding.btnCity11;
+        btn_city_12 = binding.btnCity12;
+        btn_city_13 = binding.btnCity13;
+        btn_city_14 = binding.btnCity14;
+        btn_city_15 = binding.btnCity15;
+        btn_city_16 = binding.btnCity16;
+        btn_city_17 = binding.btnCity17;
+        btn_city_18 = binding.btnCity18;
+        btn_city_19 = binding.btnCity19;
+        btn_city_20 = binding.btnCity20;
+        btn_city_21 = binding.btnCity21;
+        btn_city_22 = binding.btnCity22;
+        btn_city_23 = binding.btnCity23; 
 
         btn_city_1.setText(R.string.city_kyiv); //
         btn_city_2.setText(R.string.city_dnipro); //
@@ -165,8 +148,7 @@ public class CityCheckActivity extends AppCompatActivity {
         btn_city_20.setText(R.string.city_chernivtsi); //
         btn_city_21.setText(R.string.city_lutsk); //
         btn_city_22.setText(R.string.test_city); //
-        btn_city_23.setText(R.string.foreign_countries); //
-        btn_exit.setText(R.string.action_exit);
+        btn_city_23.setText(R.string.foreign_countries); // 
 
 
         btn_city_1.setOnClickListener(view1 -> {
@@ -393,7 +375,7 @@ public class CityCheckActivity extends AppCompatActivity {
             lastAddressUser(city);
         });
         btn_city_23.setOnClickListener(view22 -> {
-            new Thread(this::getCountryByIP).start();
+            getCountryByIP();
             city = "foreign countries";
             phoneNumber = Kyiv_City_phone;
             cityMenu = getString(R.string.foreign_countries);
@@ -402,9 +384,8 @@ public class CityCheckActivity extends AppCompatActivity {
             sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
             lastAddressUser(city);
         });
-        btn_exit.setOnClickListener(view16 -> {
-            closeApplication();
-        });
+
+        return root;
     }
 
 
@@ -413,7 +394,7 @@ public class CityCheckActivity extends AppCompatActivity {
         double startLat;
         double startLan;
         String position;
-        Logger.d(getApplicationContext(), TAG, "updateMyPosition:city "+ city);
+        Logger.d(requireActivity(), TAG, "updateMyPosition:city "+ city);
 
         switch (city) {
             case "Kyiv City":
@@ -560,7 +541,7 @@ public class CityCheckActivity extends AppCompatActivity {
         }
 
         cityMaxPay(city);
-        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
         ContentValues cv = new ContentValues();
 
@@ -605,7 +586,7 @@ public class CityCheckActivity extends AppCompatActivity {
 
    
     private void updateRoutMarker(List<String> settings) {
-        Logger.d(getApplicationContext(), TAG, "updateRoutMarker: " + settings.toString());
+        Logger.d(requireActivity(), TAG, "updateRoutMarker: " + settings.toString());
         ContentValues cv = new ContentValues();
 
         cv.put("startLat", Double.parseDouble(settings.get(0)));
@@ -616,12 +597,12 @@ public class CityCheckActivity extends AppCompatActivity {
         cv.put("finish", settings.get(5));
 
         // обновляем по id
-        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
                 new String[]{"1"});
         database.close();
         sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
-        startActivity(new Intent(this, MainActivity.class));
+        startActivity(new Intent(requireActivity(), MainActivity.class));
     }
 
 
@@ -650,7 +631,7 @@ public class CityCheckActivity extends AppCompatActivity {
                     cv.put("bonus_max_pay", bonusMaxPay);
                     sharedPreferencesHelperMain.saveValue("black_list", black_list);
 
-                    SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                     database.update(MainActivity.CITY_INFO, cv, "id = ?",
                             new String[]{"1"});
 
@@ -659,7 +640,7 @@ public class CityCheckActivity extends AppCompatActivity {
 
                     // Добавьте здесь код для обработки полученных значений
                 } else {
-                    Logger.d(getApplicationContext(), TAG, "Failed. Error code: " + response.code());
+                    Logger.d(requireActivity(), TAG, "Failed. Error code: " + response.code());
 
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -669,7 +650,7 @@ public class CityCheckActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<CityResponse> call, @NonNull Throwable t) {
                 FirebaseCrashlytics.getInstance().recordException(t);
-                Logger.d(getApplicationContext(), TAG, "Failed. Error message: " + t.getMessage());
+                Logger.d(requireActivity(), TAG, "Failed. Error message: " + t.getMessage());
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
@@ -680,7 +661,7 @@ public class CityCheckActivity extends AppCompatActivity {
     @SuppressLint("Range")
     public List<String> logCursor(String table) {
         List<String> list = new ArrayList<>();
-        SQLiteDatabase db = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase db = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = db.query(table, null, null, null, null, null, null);
         if (c.moveToFirst()) {
             String str;
@@ -707,7 +688,7 @@ public class CityCheckActivity extends AppCompatActivity {
             public void onResponse(@NonNull Call<CountryResponse> call, @NonNull Response<CountryResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     CountryResponse countryResponse = response.body();
-                    Logger.d(getApplicationContext(), TAG, "onResponse:countryResponse.getCountry(); " + countryResponse.getCountry());
+                    Logger.d(requireActivity(), TAG, "onResponse:countryResponse.getCountry(); " + countryResponse.getCountry());
                     countryState = countryResponse.getCountry();
                 } else {
                     countryState = "UA";
@@ -717,7 +698,7 @@ public class CityCheckActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(@NonNull Call<CountryResponse> call, @NonNull Throwable t) {
-                Logger.d(getApplicationContext(), TAG, "Error: " + t.getMessage());
+                Logger.d(requireActivity(), TAG, "Error: " + t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
                 VisicomFragment.progressBar.setVisibility(View.GONE);
                 sharedPreferencesHelperMain.saveValue("countryState", "UA");
@@ -727,71 +708,35 @@ public class CityCheckActivity extends AppCompatActivity {
 
 
 
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        // Проверяем, идет ли приложение в фон
-        if (isFinishing()) {
-            // Закрываем приложение полностью
-            closeApplication();
-        }
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        // Проверяем, идет ли приложение в фон
-        if (isFinishing()) {
-            // Закрываем приложение полностью
-            closeApplication();
-        }
-    }
-
-//    @Override
-//    public void onBackPressed() {
-//        // Ничего не делать, блокируя действие кнопки "назад"
-//        super.onBackPressed();
-//        sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
-//        city = "Kyiv City";
-//        updateMyPosition();
-//
-//    }
-
-    private void closeApplication() {
-        // Полный выход из приложения
-        sharedPreferencesHelperMain.saveValue("CityCheckActivity", "**");
-        finishAffinity();
-//        System.exit(0);
-    }
+ 
 
     private void lastAddressUser(String cityString) {
 
         String email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
 
-        Logger.d(this, TAG, "lastAddressUser: cityString" + cityString);
+        Logger.d(requireActivity(), TAG, "lastAddressUser: cityString" + cityString);
 
         String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
 
         CityApiClient cityApiClient = new CityApiClient(BASE_URL);
         CityService cityService = cityApiClient.getClient().create(CityService.class);
 
-        Call<CityLastAddressResponse> call = cityService.lastAddressUser(email, cityString, this.getString(R.string.application));
+        Call<CityLastAddressResponse> call = cityService.lastAddressUser(email, cityString, requireActivity().getString(R.string.application));
 
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<CityLastAddressResponse> call, @NonNull Response<CityLastAddressResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     CityLastAddressResponse cityResponse = response.body();
-                    Logger.d(getApplicationContext(), TAG, "onResponse: cityResponse" + cityResponse);
+                    Logger.d(requireActivity(), TAG, "onResponse: cityResponse" + cityResponse);
                     String routefrom = cityResponse.getRoutefrom();
                     String startLat = cityResponse.getStartLat();
                     String startLan = cityResponse.getStartLan();
 
 
-                    Logger.d(getApplicationContext(), TAG, "lastAddressUser: routefrom" + routefrom);
-                    Logger.d(getApplicationContext(), TAG, "lastAddressUser: startLat" + startLat);
-                    Logger.d(getApplicationContext(), TAG, "lastAddressUser: startLan" + startLan);
+                    Logger.d(requireActivity(), TAG, "lastAddressUser: routefrom" + routefrom);
+                    Logger.d(requireActivity(), TAG, "lastAddressUser: startLat" + startLat);
+                    Logger.d(requireActivity(), TAG, "lastAddressUser: startLan" + startLan);
                     if (startLat.equals("0.0") || startLat.equals("0")) {
                         updateMyPosition();
 
@@ -800,13 +745,13 @@ public class CityCheckActivity extends AppCompatActivity {
                     }
 
                 } else {
-                    Logger.d(getApplicationContext(), TAG, "Failed. Error code: " + response.code());
+                    Logger.d(requireActivity(), TAG, "Failed. Error code: " + response.code());
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<CityLastAddressResponse> call, Throwable t) {
-                Logger.d(getApplicationContext(), TAG, "Failed. Error message: " + t.getMessage());
+                Logger.d(requireActivity(), TAG, "Failed. Error message: " + t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
@@ -821,8 +766,8 @@ public class CityCheckActivity extends AppCompatActivity {
         double startLat = Double.parseDouble(startLatString);;
         double startLan = Double.parseDouble(startLanString);
         String position = routefrom;
-        Logger.d(getApplicationContext(), TAG, "updateMyPosition:city "+ city);
-//        ActionBarUtil.setupCustomActionBar(this, R.layout.custom_action_bar_title, R.id.action_bar_title, newTitle);
+        Logger.d(requireActivity(), TAG, "updateMyPosition:city "+ city);
+//        ActionBarUtil.setupCustomActionBar(requireActivity(), R.layout.custom_action_bar_title, R.id.action_bar_title, newTitle);
 
         switch (city){
             case "Dnipropetrovsk Oblast":
@@ -957,7 +902,7 @@ public class CityCheckActivity extends AppCompatActivity {
         }
 
 
-        SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
         ContentValues cv = new ContentValues();
 

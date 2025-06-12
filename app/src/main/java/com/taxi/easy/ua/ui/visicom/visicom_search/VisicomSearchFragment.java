@@ -63,7 +63,6 @@ import com.taxi.easy.ua.ui.cities.Kyiv.KyivRegion;
 import com.taxi.easy.ua.ui.cities.Kyiv.KyivRegionRu;
 import com.taxi.easy.ua.ui.keyboard.KeyboardUtils;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapVisicomActivity;
 import com.taxi.easy.ua.ui.open_map.mapbox.Feature;
 import com.taxi.easy.ua.ui.open_map.mapbox.Geometry;
 import com.taxi.easy.ua.ui.open_map.mapbox.MapboxApiClient;
@@ -219,10 +218,6 @@ public class VisicomSearchFragment extends Fragment {
     }
 
     private void firstLocation() {
-        // Получить менеджер ввода
-//        InputMethodManager inputMethodManager = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-//
-//        inputMethodManager.hideSoftInputFromWindow(Objects.requireNonNull(getCurrentFocus()).getWindowToken(), 0);
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context);
         Logger.d(context, TAG, "firstLocation: ");
@@ -272,12 +267,6 @@ public class VisicomSearchFragment extends Fragment {
                                 || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
 
 
-                        // GPS включен, выполните ваш код здесь
-//                        if (!NetworkUtils.isNetworkAvailable(context)) {
-//                            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                                    .setPopUpTo(R.id.nav_restart, true)
-//                                    .build());
-//                        }
                         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
                             NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
                             navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
@@ -441,46 +430,17 @@ public class VisicomSearchFragment extends Fragment {
 
 
     private void checkPermission(String permission) {
-        // Checking if permission is not granted
-//        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_DENIED) {
-//            ActivityCompat.requestPermissions(requireActivity(), new String[]{permission}, LOCATION_PERMISSION_REQUEST_CODE);
-//
-//        }
+
         requestLocationPermissions();
     }
-//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-//        Logger.d(context, TAG, "onRequestPermissionsResult: " + requestCode);
-//        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-//            if (permissions.length > 0) {
-////                SharedPreferences.Editor editor = MainActivity.sharedPreferences.edit();
-//                for (int i = 0; i < permissions.length; i++) {
-////                    editor.putInt(permissions[i], grantResults[i]);
-//                    sharedPreferencesHelperMain.saveValue(permissions[i], grantResults[i]);
-//                }
-////                editor.apply();
-//
-//                int permissionRequestCount = loadPermissionRequestCount();
-//
-//                // Увеличение счетчика запросов разрешений при необходимости
-//                permissionRequestCount++;
-//
-//                // Сохранение обновленного значения счетчика
-//                savePermissionRequestCount(permissionRequestCount);
-//                Logger.d(context, TAG, "permissionRequestCount: " + permissionRequestCount);
-//                // Далее вы можете загрузить сохраненные разрешения и их результаты в любом месте вашего приложения,
-//                // используя тот же самый объект SharedPreferences
-//            }
-//        }
-//    }
+
+
 
 
     // Метод для сохранения количества запросов разрешений в SharedPreferences
     private void savePermissionRequestCount(int count) {
         sharedPreferencesHelperMain.saveValue(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
-//        SharedPreferences.Editor editor = MainActivity.sharedPreferencesCount.edit();
-//        editor.putInt(MainActivity.PERMISSION_REQUEST_COUNT_KEY, count);
-//        editor.apply();
+
     }
 
     // Метод для загрузки количества запросов разрешений из SharedPreferences
@@ -499,11 +459,7 @@ public class VisicomSearchFragment extends Fragment {
                     .setPopUpTo(R.id.nav_restart, true)
                     .build());
         }
-//        if (!NetworkUtils.isNetworkAvailable(context)) {
-//            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                    .setPopUpTo(R.id.nav_restart, true)
-//                    .build());
-//        }
+
         Bundle arguments = getArguments();
         assert arguments != null;
 
@@ -757,16 +713,11 @@ public class VisicomSearchFragment extends Fragment {
                         .build());
             }
 
-//            if (!NetworkUtils.isNetworkAvailable(context)) {
-//                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                        .setPopUpTo(R.id.nav_restart, true)
-//                        .build());
-//            }
             VisicomFragment.btnVisible(View.INVISIBLE);
             MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)
                     .build());
-//            finish();
+
 
         });
 
@@ -874,11 +825,6 @@ public class VisicomSearchFragment extends Fragment {
                                 .build());
                     }
 
-//                    if (!NetworkUtils.isNetworkAvailable(context)) {
-//                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                                .setPopUpTo(R.id.nav_restart, true)
-//                                .build());
-//                    }
                     else  if(location_update) {
                         String searchText = getString(R.string.search_text) + "...";
 
@@ -947,13 +893,18 @@ public class VisicomSearchFragment extends Fragment {
         }
         btnOnMap = root.findViewById(R.id.btn_on_map);
         btnOnMap.setOnClickListener(v -> {
-            Intent intent = new Intent(context, OpenStreetMapVisicomActivity.class);
+            Bundle bundle = new Bundle();
+            bundle.putString("startMarker", start);
+            bundle.putString("finishMarker", end);
 
-            intent.putExtra("startMarker", start);
-            intent.putExtra("finishMarker", end);
+            MainActivity.navController.navigate(
+                    R.id.nav_map,
+                    bundle,
+                    new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_map, true)
+                            .build()
+            );
 
-            startActivity(intent);
-//            finish();
         });
         btn_ok.setOnClickListener(v -> {
             sharedPreferencesHelper.saveValue("gps_upd_address", false);
@@ -1841,12 +1792,23 @@ public class VisicomSearchFragment extends Fragment {
                     }
 
                     if (position == addressesList.size() - 1) {
-                        Intent intent = new Intent(context, OpenStreetMapVisicomActivity.class);
+                        Bundle bundle = new Bundle();
+                        bundle.putString("startMarker", start);
+                        bundle.putString("finishMarker", end);
 
-                        intent.putExtra("startMarker", startMarker);
-                        intent.putExtra("finishMarker", finishMarker);
-
-                        startActivity(intent);
+                        MainActivity.navController.navigate(
+                                R.id.nav_map,
+                                bundle,
+                                new NavOptions.Builder()
+                                        .setPopUpTo(R.id.nav_map, true)
+                                        .build()
+                        );
+//                        Intent intent = new Intent(context, OpenStreetMapVisicomActivity.class);
+//
+//                        intent.putExtra("startMarker", startMarker);
+//                        intent.putExtra("finishMarker", finishMarker);
+//
+//                        startActivity(intent);
 //                        finish();
                     } else {
                         double[] coordinates = coordinatesList.get(position);
@@ -2152,12 +2114,23 @@ public class VisicomSearchFragment extends Fragment {
             }
 
             if (position == addressesList.size() - 1) {
-                Intent intent = new Intent(context, OpenStreetMapVisicomActivity.class);
+                Bundle bundle = new Bundle();
+                bundle.putString("startMarker", startMarker);
+                bundle.putString("finishMarker", finishMarker);
 
-                intent.putExtra("startMarker", startMarker);
-                intent.putExtra("finishMarker", finishMarker);
-
-                startActivity(intent);
+                MainActivity.navController.navigate(
+                        R.id.nav_map,
+                        bundle,
+                        new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_map, true)
+                                .build()
+                );
+//                Intent intent = new Intent(context, OpenStreetMapVisicomActivity.class);
+//
+//                intent.putExtra("startMarker", startMarker);
+//                intent.putExtra("finishMarker", finishMarker);
+//
+//                startActivity(intent);
 //                finish();
             } else {
                 double[] coordinates = coordinatesList.get(position);
@@ -2397,12 +2370,23 @@ public class VisicomSearchFragment extends Fragment {
                 }
 
                 if (position == addressesList.size() - 1) {
-                    Intent intent = new Intent(context, OpenStreetMapVisicomActivity.class);
+                    Bundle bundle = new Bundle();
+                    bundle.putString("startMarker", startMarker);
+                    bundle.putString("finishMarker", finishMarker);
 
-                    intent.putExtra("startMarker", startMarker);
-                    intent.putExtra("finishMarker", finishMarker);
-
-                    startActivity(intent);
+                    MainActivity.navController.navigate(
+                            R.id.nav_map,
+                            bundle,
+                            new NavOptions.Builder()
+                                    .setPopUpTo(R.id.nav_map, true)
+                                    .build()
+                    );
+//                    Intent intent = new Intent(context, OpenStreetMapVisicomActivity.class);
+//
+//                    intent.putExtra("startMarker", startMarker);
+//                    intent.putExtra("finishMarker", finishMarker);
+//
+//                    startActivity(intent);
 //                        finish();
                 } else {
                     double[] coordinates = coordinatesList.get(position);

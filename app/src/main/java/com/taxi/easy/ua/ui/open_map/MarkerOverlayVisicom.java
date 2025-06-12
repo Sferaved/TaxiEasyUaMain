@@ -5,6 +5,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import org.json.JSONException;
@@ -43,9 +44,9 @@ public class MarkerOverlayVisicom extends Overlay {
         Logger.d(mapView.getContext(), TAG, "onSingleTapConfirmed: point " + point);
         switch (point) {
             case "startMarker":
-                OpenStreetMapVisicomActivity.startPoint = pointGeo;
+                OpenStreetMapFragment.startPoint = pointGeo;
                 try {
-                        OpenStreetMapVisicomActivity.dialogMarkerStartPoint();
+                        OpenStreetMapFragment.dialogMarkerStartPoint(MyApplication.getContext());
 
                 } catch (MalformedURLException e) {
                     Log.d("TAG", "onCreate:" + new RuntimeException(e));
@@ -53,11 +54,11 @@ public class MarkerOverlayVisicom extends Overlay {
                 }
                 break;
             case "finishMarker":
-                OpenStreetMapVisicomActivity.endPoint = pointGeo;
+                OpenStreetMapFragment.endPoint = pointGeo;
                 try {
 
 
-                        OpenStreetMapVisicomActivity.dialogMarkersEndPoint();
+                    OpenStreetMapFragment.dialogMarkersEndPoint(MyApplication.getContext());
 
                 } catch (MalformedURLException | JSONException | InterruptedException e) {
                     Log.d("TAG", "onCreate:" + new RuntimeException(e));

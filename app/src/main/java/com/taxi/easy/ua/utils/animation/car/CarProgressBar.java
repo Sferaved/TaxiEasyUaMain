@@ -41,7 +41,7 @@ public class CarProgressBar extends RelativeLayout {
 
         // Set default car image and size
         @SuppressLint("UseCompatLoadingForDrawables")
-        Drawable carDrawable = ContextCompat.getDrawable(MyApplication.getContext(), R.drawable.button_image_button2_old);
+        Drawable carDrawable = ContextCompat.getDrawable(MyApplication.getContext(), R.drawable.button_image_button2_sm);
 
         int carWidth = 400;  // Default width in dp
         int carHeight = 200; // Default height in dp

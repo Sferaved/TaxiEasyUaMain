@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.823</string>
-    <string name="version">Версія: 1.823</string>
+    <string name="version_code">1.824</string>
+    <string name="version">Версія: 1.824</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -523,5 +523,7 @@
     <string name="clearApp">Очистити дані</string>
     <string name="clearAppMess">Увага! Очищення даних програми видаляє всі налаштування, бази даних, внутрішній та зовнішній кеш, після чого програма буде перезапущена. Ця дія необоротна і може вплинути на роботу програми. Переконайтеся, що перед продовженням зберегли важливі дані. Продовжити?</string>
     <string name="email_history_order">Запросить историю</string>
-    <string name="SA_message_history">Прошу прислать мне историю моих поездок за период с ..... по .....</string>
+    <string name="SA_message_history">Прошу прислати мені історію моїх поїздок за період з ..... по .....</string>
+    <string name="anr_detected">Виявлена помілка</string>
+    <string name="application_is_not_responding">Додаток не відповідає.</string>
 </resources>

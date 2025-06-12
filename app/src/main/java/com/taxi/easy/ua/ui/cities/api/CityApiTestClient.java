@@ -11,7 +11,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class CityApiTestClient {
 //    private static final String BASE_URL = "https://m.easy-order-taxi.site/";
-    private static final String BASE_URL = "https://test-taxi.kyiv.ua/";
+//    private static final String BASE_URL = "https://test-taxi.kyiv.ua/";
+    private static final String BASE_URL = "https://t.easy-order-taxi.site/";
 
     private static Retrofit retrofit;
 

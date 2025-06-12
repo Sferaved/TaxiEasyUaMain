@@ -36,7 +36,6 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentCancelBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
-import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
@@ -65,7 +64,7 @@ public class CancelFragment extends Fragment {
     private ListView listView;
     private String[] array;
 
-    private NetworkChangeReceiver networkChangeReceiver;
+
     ProgressBar progressBar;
 
     DatabaseHelper databaseHelper;
@@ -109,7 +108,7 @@ public class CancelFragment extends Fragment {
 
         listView = binding.listView;
         progressBar = binding.progressBar;
-        networkChangeReceiver = new NetworkChangeReceiver();
+
 
         email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(requireActivity())).get(3);
 
@@ -226,11 +225,14 @@ public class CancelFragment extends Fragment {
             }
 
             public void onFailure(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Throwable t) {
-                // Обработка ошибок сети или других ошибок
                 FirebaseCrashlytics.getInstance().recordException(t);
-                requireActivity().runOnUiThread(() -> {
-                    progressBar.setVisibility(View.GONE);
-                });
+                if (isAdded() && getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        progressBar.setVisibility(View.GONE);
+                    });
+                } else {
+                    Logger.i(requireContext(), TAG, "Фрагмент не привязан к активности, пропуск обработки UI");
+                }
             }
 
 

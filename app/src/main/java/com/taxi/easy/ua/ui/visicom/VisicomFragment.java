@@ -62,6 +62,7 @@ import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.bumptech.glide.Glide;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -84,7 +85,6 @@ import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
@@ -223,13 +223,31 @@ public class VisicomFragment extends Fragment {
     public static  long finalCost;
     private ExecutionStatusViewModel viewModel;
     private ActivityResultLauncher<String[]> permissionLauncher;
+    static String[] arrayServiceCode() {
+        return new String[]{
+                "BAGGAGE",
+                "ANIMAL",
+                "CONDIT",
+                "MEET",
+                "COURIER",
+                "CHECK_OUT",
+                "BABY_SEAT",
+                "DRIVER",
+                "NO_SMOKE",
+                "ENGLISH",
+                "CABLE",
+                "FUEL",
+                "WIRES",
+                "SMOKE",
+        };
+    }
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-
+        binding = FragmentVisicomBinding.inflate(inflater, container, false);
+        setupImages();
         UXCam.tagScreenName(TAG);
 
-        binding = FragmentVisicomBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
         permissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestMultiplePermissions(),
@@ -359,6 +377,32 @@ public class VisicomFragment extends Fragment {
         viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
 
     }
+    private void setupImages() {
+        // Загрузка изображений с помощью Glide
+        Glide.with(this)
+                .load(R.drawable.button_image_button1_sm)
+                .override(512, 512)
+                .thumbnail(0.25f)
+                .into(binding.button1);
+
+        Glide.with(this)
+                .load(R.drawable.button_image_button2_sm)
+                .override(512, 512)
+                .thumbnail(0.25f)
+                .into(binding.button2);
+
+        Glide.with(this)
+                .load(R.drawable.button_image_button3_sm)
+                .override(512, 512)
+                .thumbnail(0.25f)
+                .into(binding.button3);
+
+        Glide.with(this)
+                .load(R.drawable.down_arrow_white)
+                .override(32, 32)
+                .into(binding.shedDown);
+    }
+
     private void cancelAllRequests() {
         for (Call<?> call : activeCalls) {
             if (!call.isCanceled()) {
@@ -402,7 +446,9 @@ public class VisicomFragment extends Fragment {
             if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
                 // Доступны обновления
                 showUpdateDialog();
-                Logger.d(requireActivity(), TAG, "Available updates found");
+                if (isAdded()) {
+                    Logger.d(MyApplication.getContext(), TAG, "Available updates found");
+                }
             }
         });
 
@@ -772,9 +818,9 @@ public void requestPermissions() {
             }
         }
         if (servicesVer) {
-            for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
+            for (int i = 0; i < arrayServiceCode().length; i++) {
                 if (services.get(i + 1).equals("1")) {
-                    servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
+                    servicesChecked.add(arrayServiceCode()[i]);
                 }
             }
             for (int i = 0; i < servicesChecked.size(); i++) {
@@ -1124,7 +1170,6 @@ public void requestPermissions() {
                     }
 
                 } catch (Exception e) {
-                    e.printStackTrace();
                     required_time = "";
                 }
 
@@ -1183,9 +1228,9 @@ public void requestPermissions() {
                 }
             }
             if (servicesVer) {
-                for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
+                for (int i = 0; i < arrayServiceCode().length; i++) {
                     if (services.get(i + 1).equals("1")) {
-                        servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
+                        servicesChecked.add(arrayServiceCode()[i]);
                     }
                 }
                 for (int i = 0; i < servicesChecked.size(); i++) {
@@ -1465,6 +1510,14 @@ public void requestPermissions() {
     public void onResume() {
         super.onResume();
         Logger.d(context, TAG, "onResume 1" );
+
+        if (!NetworkUtils.isNetworkAvailable(requireActivity())) {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_restart, true)
+                    .build());
+        }
+
         new VerifyUserTask(context).execute();
 
         VisicomFragment.sendUrlMap = null;
@@ -2628,17 +2681,6 @@ public void requestPermissions() {
                 Intent intent = new Intent(context, AnrActivity.class);
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 context.startActivity(intent);
-//                String message = context.getString(R.string.verify_address);
-//
-//                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-//                if (fragmentManager != null && !fragmentManager.isStateSaved()) {
-//                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-//                } else {
-//                    assert fragmentManager != null;
-//                    fragmentManager.beginTransaction()
-//                            .add(bottomSheetDialogFragment, bottomSheetDialogFragment.getTag())
-//                            .commitAllowingStateLoss();
-//                }
 
             }
         }

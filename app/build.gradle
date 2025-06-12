@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 35
-        versionCode 1823
-        versionName '1.823'
+        versionCode 1824
+        versionName '1.824'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled true
@@ -141,8 +141,15 @@ dependencies {
 
     //security
     implementation "androidx.security:security-crypto:1.1.0-beta01"
+
+    //worker
+    implementation "androidx.work:work-runtime:2.10.1"
+
+
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
 }
-// 👇 Добавьте это в конец файла
+
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ["-Xlint:deprecation"]
 }

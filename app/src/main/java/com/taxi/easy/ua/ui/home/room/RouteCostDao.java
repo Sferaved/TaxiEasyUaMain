@@ -5,6 +5,8 @@ import androidx.room.Insert;
 import androidx.room.Query;
 import androidx.room.Update;
 
+import java.util.List;
+
 @Dao
 public interface RouteCostDao {
     @Insert
@@ -15,6 +17,9 @@ public interface RouteCostDao {
 
     @Query("SELECT * FROM routecost WHERE routeId = :routeId")
     RouteCost getRouteCost(int routeId);
+
+    @Query("SELECT * FROM routecost")
+    List<RouteCost> getAllRouteCosts();
 }
 
 

@@ -1,7 +1,7 @@
 package com.taxi.easy.ua.ui.open_map;
 
 
-import static com.taxi.easy.ua.androidx.startup.MyApplication.getContext;
+import static android.content.Context.MODE_PRIVATE;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.Manifest;
@@ -10,7 +10,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.database.Cursor;
@@ -22,20 +21,22 @@ import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavOptions;
 
@@ -49,16 +50,14 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.androidx.startup.MyApplication;
+import com.taxi.easy.ua.databinding.FragmentOpenstreetmapBinding;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.open_map.api.ApiResponse;
 import com.taxi.easy.ua.ui.open_map.api.ApiService;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.city.CityFinder;
-import com.taxi.easy.ua.utils.connect.NetworkChangeReceiver;
 import com.taxi.easy.ua.utils.log.Logger;
-import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 
 import org.json.JSONException;
 import org.osmdroid.api.IMapController;
@@ -92,8 +91,8 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 
-public class OpenStreetMapVisicomActivity extends AppCompatActivity {
-    private static final String TAG = "OpenStreetMapVisicomActivity";
+public class OpenStreetMapFragment extends Fragment {
+    private static final String TAG = "OpenStreetMapFragment";
     public static IMapController mapController;
 
     private static ApiService apiService;
@@ -153,46 +152,49 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         };
     }
 
-    NetworkChangeReceiver networkChangeReceiver;
 
-    private static final int REQUEST_LOCATION_PERMISSION = 1;
+
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
     public static MarkerOverlayVisicom markerOverlay;
 
-
+    private FragmentOpenstreetmapBinding binding;
+    Context ctx;
 
     @SuppressLint({"MissingInflatedId", "InflateParams", "UseCompatLoadingForDrawables", "SourceLockedOrientationActivity"})
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.open_street_map_layout);
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             ViewGroup container, Bundle savedInstanceState) {
+        binding = FragmentOpenstreetmapBinding.inflate(inflater, container, false);
+        View root = binding.getRoot();
 
         startPointNoText = getString(R.string.startPoint);
         endPointNoText = getString(R.string.end_point_marker);
 
-        startMarker = getIntent().getStringExtra("startMarker");
-        finishMarker = getIntent().getStringExtra("finishMarker");
+        Bundle arguments = getArguments();
+        assert arguments != null;
 
-        originalDrawable = ContextCompat.getDrawable(MyApplication.getContext(), R.drawable.marker_green);
+        startMarker = arguments.getString("startMarker");
+        finishMarker = arguments.getString("finishMarker");
+
+
+        originalDrawable = ContextCompat.getDrawable(requireActivity(), R.drawable.marker_green);
         int width = 48;
         int height = 48;
         assert originalDrawable != null;
         Bitmap bitmap = Bitmap.createScaledBitmap(((BitmapDrawable) originalDrawable).getBitmap(), width, height, false);
 
         // Создайте новый Drawable из уменьшенного изображения
-        scaledDrawable = new BitmapDrawable(getResources(), bitmap);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.DONUT) {
+            scaledDrawable = new BitmapDrawable(getResources(), bitmap);
+        }
 
-        new VerifyUserTask(getApplicationContext()).execute();
 
-        networkChangeReceiver = new NetworkChangeReceiver();
-
-        Context ctx = getApplicationContext();
+        Context ctx = requireActivity();
         //important! set your user agent to prevent getting banned from the osm servers
         Configuration.getInstance().load(ctx, androidx.preference.PreferenceManager.getDefaultSharedPreferences(ctx));
 
-        fragmentManager = getSupportFragmentManager();
+        fragmentManager = getChildFragmentManager();
 
         inflater = getLayoutInflater();
         view = inflater.inflate(R.layout.phone_verify_layout, null);
@@ -203,30 +205,30 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         FromAdressString = getString(R.string.startPoint);
         ToAdressString = getString(R.string.end_point_marker);
 
-        progressBar = findViewById(R.id.progressBar);
+        progressBar = binding.progressBar;
         progressBar.setVisibility(View.INVISIBLE);
 
-        fab = findViewById(R.id.fab);
+        fab = binding.fab;
         fab.setVisibility(View.INVISIBLE);
-        fab_call = findViewById(R.id.fab_call);
-        fab_open_map = findViewById(R.id.fab_open_map);
+        fab_call = binding.fabCall;
+        fab_open_map = binding.fabOpenMap;
         fab_open_map.setOnClickListener(v -> {
-            Intent intent = new Intent(OpenStreetMapVisicomActivity.this, MainActivity.class);
+            Intent intent = new Intent(requireActivity(), MainActivity.class);
             intent.putExtra("gps_upd", false);
             startActivity(intent);
         });
-        fab_open_marker = findViewById(R.id.fab_open_marker);
+        fab_open_marker = binding.fabOpenMarker;
         fab_open_marker.setVisibility(View.INVISIBLE);
 
-        gpsSwitch = findViewById(R.id.gpsSwitch);
+        gpsSwitch = binding.gpsSwitch;
 
         gpsSwitch.setChecked(switchState());
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             gpsSwitch.setVisibility(View.INVISIBLE);
         }
         fab_call.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_DIAL);
-            List<String> stringList = logCursor(MainActivity.CITY_INFO, getApplicationContext());
+            List<String> stringList = logCursor(MainActivity.CITY_INFO, ctx);
             String phone = stringList.get(3);
             intent.setData(Uri.parse(phone));
             startActivity(intent);
@@ -237,18 +239,18 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
             startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
             gpsSwitch.setChecked(switchState());
         });
-
+        return root;
     }
 
     @SuppressLint("ClickableViewAccessibility")
     private void switchToRegion() {
 
-        List<String> stringList = logCursor(MainActivity.CITY_INFO, this);
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
         city = stringList.get(1);
         api =  stringList.get(2);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-            SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             Cursor cursor = database.rawQuery(query, null);
 
             cursor.moveToFirst();
@@ -262,7 +264,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
             cursor.close();
             database.close();
 //            FromAdressString = start;
-            setStartPoint(originLatitude, originLongitude);
+            setStartPoint(originLatitude, originLongitude, requireActivity());
             startPoint = new GeoPoint(originLatitude,originLongitude);
 
         }
@@ -273,7 +275,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         map.getZoomController().setVisibility(CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT);
 
 
-        double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, getApplicationContext()).get(4));
+        double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, requireActivity()).get(4));
         mapController.setZoom(newZoomLevel);
         map.setClickable(true);
         map.setTileSource(TileSourceFactory.MAPNIK);
@@ -298,9 +300,9 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                 if (event.getAction() == MotionEvent.ACTION_MOVE) {
                     // Обработка изменения масштаба
                     double newZoomLevel = map.getZoomLevelDouble();
-                    Logger.d(getApplicationContext(), TAG, "Zoom level: " + newZoomLevel);
+                    Logger.d(requireActivity(), TAG, "Zoom level: " + newZoomLevel);
                     // Добавьте свой код обработки здесь
-                    SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                     ContentValues cv = new ContentValues();
 
                     cv.put("newZoomLevel", newZoomLevel);
@@ -332,16 +334,12 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     }
     private void startLocationUpdates() {
         LocationRequest locationRequest = createLocationRequest();
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
         }
     }
-    @Override
-    protected void onRestart() {
-        super.onRestart();
-        finish();
-    }
+
     private void stopLocationUpdates() {
         fusedLocationProviderClient.removeLocationUpdates(locationCallback);
     }
@@ -354,7 +352,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
 
    private boolean  switchState() {
-        LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        LocationManager lm = (LocationManager) requireActivity().getSystemService(Context.LOCATION_SERVICE);
         boolean gps_enabled = false;
         boolean network_enabled = false;
 
@@ -373,54 +371,6 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
        return gps_enabled && network_enabled;
     }
 
-    public static void dialogMarkerStartPoint() throws MalformedURLException {
-        Logger.d(MyApplication.getContext(), TAG, "dialogMarkerStartPoint: " + startPoint.toString());
-        if(startPoint != null) {
-
-            startLat = startPoint.getLatitude();
-            startLan = startPoint.getLongitude();
-
-             if(m != null) {
-                map.getOverlays().remove(m);
-                map.invalidate();
-                m = null;
-            }
-//            String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-//
-//            Retrofit retrofit = new Retrofit.Builder()
-//                    .baseUrl(BASE_URL)
-//                    .addConverterFactory(GsonConverterFactory.create())
-//                    .build();
-//
-//            Logger.d(map.getContext(), TAG, "Request URL: " + retrofit.baseUrl());
-
-
-            makeApiCall(startLat, startLan);
-        }
-    }
-
-    public static void dialogMarkersEndPoint() throws MalformedURLException, JSONException, InterruptedException {  {
-            if(endPoint != null) {
-
-
-                finishLat = endPoint.getLatitude();
-                finishLan = endPoint.getLongitude();
-                if(marker != null) {
-                    map.getOverlays().remove(marker);
-                    map.invalidate();
-                    marker = null;
-                }
-
-
-
-                makeApiCall(finishLat, finishLan);
-
-
-
-            }
-        }
-
-    }
 
     private void apiServiceActivate() {
         String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
@@ -435,7 +385,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
             @Override
-            public void log(String message) {
+            public void log(@NonNull String message) {
                 // Log the URL
                 Logger.d(map.getContext(), TAG, message);
             }
@@ -458,7 +408,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
         apiService = retrofit.create(ApiService.class);
     }
-    public static void setStartPoint(double latitude, double longitude) {
+    public static void setStartPoint(double latitude, double longitude, Context context) {
 
 
         String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
@@ -466,12 +416,12 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         Locale locale = new Locale(localeCode.split("_")[0]);
         Locale.setDefault(locale);
 
-        Resources resources = getContext().getResources();
+        Resources resources = context.getResources();
         android.content.res.Configuration config = resources.getConfiguration();
         config.setLocale(locale);
-//        resources.updateConfiguration(config, resources.getDisplayMetrics());
-        Context localizedContext = getContext().createConfigurationContext(config);
-        Logger.d(getContext(), TAG, "language currentLocale " + localeCode);
+        //        resources.updateConfiguration(config, resources.getDisplayMetrics());
+        Context localizedContext = context.createConfigurationContext(config);
+        Logger.d(context, TAG, "language currentLocale " + localeCode);
 
         Call<ApiResponse> call = apiService.reverseAddressLocal(latitude, longitude, localeCode);
         m = new Marker(map);
@@ -487,7 +437,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                             if (!result.equals("Точка на карте")) {
                                 FromAdressString = result;
                             } else {
-                                FromAdressString = getContext().getString(R.string.startPoint);
+                                FromAdressString = context.getString(R.string.startPoint);
                             }
 
                             m.setPosition(startPoint);
@@ -528,21 +478,23 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         });
     }
 
-    public static void makeApiCall(double latitude, double longitude) {
+    public static void makeApiCall(double latitude, double longitude, Context context) {
 
 
         String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
         Locale locale = new Locale(localeCode.split("_")[0]);
         Locale.setDefault(locale);
 
-        Resources resources = getContext().getResources();
+        Resources resources = context.getResources();
         android.content.res.Configuration config = resources.getConfiguration();
-        config.setLocale(locale);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            config.setLocale(locale);
+        }
 //        resources.updateConfiguration(config, resources.getDisplayMetrics());
-        Context localizedContext = getContext().createConfigurationContext(config);
-        Logger.d(getContext(), TAG, "language currentLocale " + localeCode);
-        Logger.d(getContext(), TAG, "language currentLocale " + latitude);
-        Logger.d(getContext(), TAG, "language currentLocale " + longitude);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            Context localizedContext = context.createConfigurationContext(config);
+        }
+        Logger.d(context, TAG, "language currentLocale " + localeCode);
 
         Call<ApiResponse> call = apiService.reverseAddressLocal(latitude, longitude, localeCode);
         map.getOverlays().remove(m);
@@ -561,7 +513,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                             if (!result.equals("Точка на карте")) {
                                 FromAdressString = result;
                             } else {
-                                FromAdressString = getContext().getString(R.string.startPoint);
+                                FromAdressString = context.getString(R.string.startPoint);
                             }
 
 
@@ -625,7 +577,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                             updateRoutMarker(settings, map.getContext());
                             updateMyPosition(startLat, startLan, FromAdressString, map.getContext());
 
-                            CityFinder cityFinder = new CityFinder(getContext(), latitude, longitude, FromAdressString);
+                            CityFinder cityFinder = new CityFinder(context, latitude, longitude, FromAdressString);
                             cityFinder.findCity(latitude, longitude);
 
 
@@ -634,7 +586,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                             if (!result.equals("Точка на карте")) {
                                 ToAdressString = result;
                             } else {
-                                ToAdressString = getContext().getString(R.string.end_point_marker);
+                                ToAdressString = context.getString(R.string.end_point_marker);
                             }
 
 
@@ -690,19 +642,19 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
     }
     public void onResume() {
         super.onResume();
-        map = findViewById(R.id.map);
+        map = binding.map;
         mapController = map.getController();
 
-        new VerifyUserTask(getApplicationContext()).execute();
+
 
         apiServiceActivate();
 
 
 
         gpsSwitch.setChecked(switchState());
-        Logger.d(getApplicationContext(), TAG, "onResume: startMarker" + startMarker);
-        Logger.d(getApplicationContext(), TAG, "onResume: finishMarker" + finishMarker);
-        Logger.d(getApplicationContext(), TAG, "onResume: getFromTablePositionInfo(this, \"startLat\" )" + getFromTablePositionInfo(this, "startLat" ));
+        Logger.d(requireActivity(), TAG, "onResume: startMarker" + startMarker);
+        Logger.d(requireActivity(), TAG, "onResume: finishMarker" + finishMarker);
+        Logger.d(requireActivity(), TAG, "onResume: getFromTablePositionInfo(ctx, \"startLat\" )" + getFromTablePositionInfo(ctx, "startLat" ));
 
         if (startMarker.equals("ok")) {
             markerOverlay = new MarkerOverlayVisicom("startMarker");
@@ -712,15 +664,15 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         }
         map.getOverlays().add(markerOverlay);
         switchToRegion();
-        if(getFromTablePositionInfo(this, "startLat" ) != 0 ){
-            startLat = getFromTablePositionInfo(this, "startLat" );
-            startLan = getFromTablePositionInfo(this, "startLan" );
+        if(getFromTablePositionInfo(requireActivity(), "startLat" ) != 0 ){
+            startLat = getFromTablePositionInfo(requireActivity(), "startLat" );
+            startLan = getFromTablePositionInfo(requireActivity(), "startLan" );
 
-            List<String> startList = logCursor(MainActivity.TABLE_POSITION_INFO, this);
+            List<String> startList = logCursor(MainActivity.TABLE_POSITION_INFO, requireActivity());
             FromAdressString = startList.get(3);
             startPoint = new GeoPoint(startLat, startLan);
             map.getController().setCenter(startPoint);
-            setMarker(startLat, startLan, FromAdressString, getApplicationContext());
+            setMarker(startLat, startLan, FromAdressString, requireActivity());
 
             map.invalidate();
 
@@ -768,13 +720,13 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
             }
 
        } else {
-            Logger.d(getApplicationContext(), TAG, "onResume: " + ContextCompat.checkSelfPermission(OpenStreetMapVisicomActivity.this, Manifest.permission.ACCESS_FINE_LOCATION));
-            if(ContextCompat.checkSelfPermission(OpenStreetMapVisicomActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Logger.d(requireActivity(), TAG, "onResume: " + ContextCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION));
+            if(ContextCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 startLat = startPoint.getLatitude();
                 startLan = startPoint.getLongitude();
                 startPoint = new GeoPoint(startLat, startLan);
                 map.getController().setCenter(startPoint);
-                setMarker(startLat, startLan, FromAdressString, getApplicationContext());
+                setMarker(startLat, startLan, FromAdressString, requireActivity());
 
                 map.invalidate();
 
@@ -815,16 +767,16 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
             } else {
 
-                Toast.makeText(this, R.string.check_position, Toast.LENGTH_SHORT).show();
-//                Configuration.getInstance().load(OpenStreetMapVisicomActivity.this, PreferenceManager.getDefaultSharedPreferences(OpenStreetMapVisicomActivity.this));
-                SharedPreferences prefs = getSharedPreferences("osm_prefs", Context.MODE_PRIVATE);
-                Configuration.getInstance().load(MyApplication.getContext(), prefs);
+                Toast.makeText(requireActivity(), R.string.check_position, Toast.LENGTH_SHORT).show();
+//                Configuration.getInstance().load(OpenStreetMapVisicomActivity.ctx, PreferenceManager.getDefaultSharedPreferences(OpenStreetMapVisicomActivity.requireActivity()));
+                SharedPreferences prefs = requireActivity().getSharedPreferences("osm_prefs", MODE_PRIVATE);
+                Configuration.getInstance().load(requireActivity(), prefs);
                 Configuration.getInstance().load(
-                        OpenStreetMapVisicomActivity.this,
-                        OpenStreetMapVisicomActivity.this.getSharedPreferences("osm_prefs", Context.MODE_PRIVATE)
+                        requireActivity(),
+                        requireActivity().getSharedPreferences("osm_prefs", MODE_PRIVATE)
                 );
 
-                fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+                fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireActivity());
 
                 locationCallback = new LocationCallback() {
                 @Override
@@ -834,7 +786,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
                     // Обработка полученных местоположений
                     List<Location> locations = locationResult.getLocations();
-                    Logger.d(getApplicationContext(), TAG, "onLocationResult: locations 222222" + locations);
+                    Logger.d(requireActivity(), TAG, "onLocationResult: locations 222222" + locations);
 
                     if (!locations.isEmpty()) {
                         Location firstLocation = locations.get(0);
@@ -863,7 +815,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                                 FromAdressString = getString(R.string.startPoint);
                             }
                         }
-                        updateMyPosition(startLat, startLan, FromAdressString, getApplicationContext());
+                        updateMyPosition(startLat, startLan, FromAdressString, requireActivity());
 
 
                         map.getOverlays().add(markerOverlay);
@@ -871,7 +823,7 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
                         startPoint = new GeoPoint(startLat, startLan);
                         map.getController().setCenter(startPoint);
 
-                        setMarker(startLat, startLan, FromAdressString, getApplicationContext());
+                        setMarker(startLat, startLan, FromAdressString, requireActivity());
                         map.invalidate();
                     } catch (MalformedURLException | InterruptedException |
                              JSONException e) {
@@ -891,11 +843,54 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         map.onResume();
     }
 
-   @Override
-   protected void onPause() {
-       super.onPause();
-       map.onPause();
-   }
+    public static void dialogMarkerStartPoint(Context context) throws MalformedURLException {
+        Logger.d(context, TAG, "dialogMarkerStartPoint: " + startPoint.toString());
+        if(startPoint != null) {
+
+            startLat = startPoint.getLatitude();
+            startLan = startPoint.getLongitude();
+
+            if(m != null) {
+                map.getOverlays().remove(m);
+                map.invalidate();
+                m = null;
+            }
+//            String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+//
+//            Retrofit retrofit = new Retrofit.Builder()
+//                    .baseUrl(BASE_URL)
+//                    .addConverterFactory(GsonConverterFactory.create())
+//                    .build();
+//
+//            Logger.d(map.getContext(), TAG, "Request URL: " + retrofit.baseUrl());
+
+
+            makeApiCall(startLat, startLan, context);
+        }
+    }
+
+    public static void dialogMarkersEndPoint(Context context) throws MalformedURLException, JSONException, InterruptedException {  {
+        if(endPoint != null) {
+
+
+            finishLat = endPoint.getLatitude();
+            finishLan = endPoint.getLongitude();
+            if(marker != null) {
+                map.getOverlays().remove(marker);
+                map.invalidate();
+                marker = null;
+            }
+
+
+
+            makeApiCall(finishLat, finishLan, context);
+
+
+
+        }
+    }
+
+    }
 
     public static void setMarker(double Lat, double Lan, String title, Context context) {
         m = new Marker(map);
@@ -918,7 +913,10 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
         Bitmap bitmap = Bitmap.createScaledBitmap(((BitmapDrawable) originalDrawable).getBitmap(), width, height, false);
 
         // Создайте новый Drawable из уменьшенного изображения
-        Drawable scaledDrawable = new BitmapDrawable(context.getResources(), bitmap);
+        Drawable scaledDrawable = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.DONUT) {
+            scaledDrawable = new BitmapDrawable(context.getResources(), bitmap);
+        }
         m.setIcon(scaledDrawable);
 
         m.showInfoWindow();
@@ -951,14 +949,14 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
     public void checkPermission(String permission, int requestCode) {
         // Checking if permission is not granted
-        if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(this, new String[]{permission}, requestCode);
+        if (ContextCompat.checkSelfPermission(requireActivity(), permission) == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(requireActivity(), new String[]{permission}, requestCode);
 
         }
     }
-    // This function is called when user accept or decline the permission.
-// Request Code is used to check which permission called this function.
-// This request code is provided when user is prompt for permission.
+    // ctx function is called when user accept or decline the permission.
+// Request Code is used to check which permission called ctx function.
+// ctx request code is provided when user is prompt for permission.
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions,
@@ -1064,9 +1062,9 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
             }
         }
         if(servicesVer) {
-            for (int i = 0; i < OpenStreetMapVisicomActivity.arrayServiceCode().length; i++) {
+            for (int i = 0; i < OpenStreetMapFragment.arrayServiceCode().length; i++) {
                 if(services.get(i+1).equals("1")) {
-                    servicesChecked.add(OpenStreetMapVisicomActivity.arrayServiceCode()[i]);
+                    servicesChecked.add(OpenStreetMapFragment.arrayServiceCode()[i]);
                 }
             }
             for (int i = 0; i < servicesChecked.size(); i++) {
@@ -1118,12 +1116,12 @@ public class OpenStreetMapVisicomActivity extends AppCompatActivity {
 
     @SuppressLint("Range")
     private double getFromTablePositionInfo(Context context, String columnName) {
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor cursor = database.rawQuery("SELECT "+ columnName + " FROM " + MainActivity.TABLE_POSITION_INFO + " WHERE id = ?", new String[]{"1"});
 
         double result = 0.0; // Значение по умолчанию или обработка, если запись не найдена.
 
-        if (cursor != null && cursor.moveToFirst()) {
+        if (cursor.moveToFirst()) {
             result = cursor.getDouble(cursor.getColumnIndex(columnName));
             cursor.close();
         }

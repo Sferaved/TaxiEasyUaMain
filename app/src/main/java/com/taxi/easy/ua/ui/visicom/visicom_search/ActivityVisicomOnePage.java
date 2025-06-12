@@ -59,7 +59,6 @@ import com.taxi.easy.ua.ui.cities.Kyiv.KyivRegion;
 import com.taxi.easy.ua.ui.cities.Kyiv.KyivRegionRu;
 import com.taxi.easy.ua.ui.keyboard.KeyboardUtils;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapVisicomActivity;
 import com.taxi.easy.ua.ui.open_map.mapbox.Feature;
 import com.taxi.easy.ua.ui.open_map.mapbox.Geometry;
 import com.taxi.easy.ua.ui.open_map.mapbox.MapboxApiClient;
@@ -918,13 +917,31 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
         }
         btnOnMap = findViewById(R.id.btn_on_map);
         btnOnMap.setOnClickListener(v -> {
-            Intent intent = new Intent(getApplicationContext(), OpenStreetMapVisicomActivity.class);
+            Bundle bundle = new Bundle();
+            bundle.putString("startMarker", start);
+            bundle.putString("finishMarker", end);
 
-            intent.putExtra("startMarker", start);
-            intent.putExtra("finishMarker", end);
+            MainActivity.navController.navigate(
+                    R.id.nav_map,
+                    bundle,
+                    new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_visicom, true)
+                            .build()
+            );
 
-            startActivity(intent);
-            finish();
+
+
+
+
+
+
+//            Intent intent = new Intent(getApplicationContext(), OpenStreetMapVisicomActivity.class);
+//
+//            intent.putExtra("startMarker", start);
+//            intent.putExtra("finishMarker", end);
+//
+//            startActivity(intent);
+//            finish();
         });
         btn_ok.setOnClickListener(v -> {
             sharedPreferencesHelper.saveValue("gps_upd_address", false);
@@ -1828,13 +1845,24 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                     }
 
                     if (position == addressesList.size() - 1) {
-                        Intent intent = new Intent(getApplicationContext(), OpenStreetMapVisicomActivity.class);
+                        Bundle bundle = new Bundle();
+                        bundle.putString("startMarker", startMarker);
+                        bundle.putString("finishMarker", finishMarker);
 
-                        intent.putExtra("startMarker", startMarker);
-                        intent.putExtra("finishMarker", finishMarker);
-
-                        startActivity(intent);
-                        finish();
+                        MainActivity.navController.navigate(
+                                R.id.nav_map,
+                                bundle,
+                                new NavOptions.Builder()
+                                        .setPopUpTo(R.id.nav_visicom, true)
+                                        .build()
+                        );
+//                        Intent intent = new Intent(getApplicationContext(), OpenStreetMapVisicomActivity.class);
+//
+//                        intent.putExtra("startMarker", startMarker);
+//                        intent.putExtra("finishMarker", finishMarker);
+//
+//                        startActivity(intent);
+//                        finish();
                     } else {
                         double[] coordinates = coordinatesList.get(position);
 
@@ -2143,13 +2171,24 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
             }
 
             if (position == addressesList.size() - 1) {
-                Intent intent = new Intent(getApplicationContext(), OpenStreetMapVisicomActivity.class);
+                Bundle bundle = new Bundle();
+                bundle.putString("startMarker", startMarker);
+                bundle.putString("finishMarker", finishMarker);
 
-                intent.putExtra("startMarker", startMarker);
-                intent.putExtra("finishMarker", finishMarker);
-
-                startActivity(intent);
-                finish();
+                MainActivity.navController.navigate(
+                        R.id.nav_map,
+                        bundle,
+                        new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_visicom, true)
+                                .build()
+                );
+//                Intent intent = new Intent(getApplicationContext(), OpenStreetMapVisicomActivity.class);
+//
+//                intent.putExtra("startMarker", startMarker);
+//                intent.putExtra("finishMarker", finishMarker);
+//
+//                startActivity(intent);
+//                finish();
             } else {
                 double[] coordinates = coordinatesList.get(position);
 
@@ -2433,13 +2472,24 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
                     }
 
                     if (position == addressesList.size() - 1) {
-                        Intent intent = new Intent(getApplicationContext(), OpenStreetMapVisicomActivity.class);
+                        Bundle bundle = new Bundle();
+                        bundle.putString("startMarker", startMarker);
+                        bundle.putString("finishMarker", finishMarker);
 
-                        intent.putExtra("startMarker", startMarker);
-                        intent.putExtra("finishMarker", finishMarker);
-
-                        startActivity(intent);
-                        finish();
+                        MainActivity.navController.navigate(
+                                R.id.nav_map,
+                                bundle,
+                                new NavOptions.Builder()
+                                        .setPopUpTo(R.id.nav_visicom, true)
+                                        .build()
+                        );
+//                        Intent intent = new Intent(getApplicationContext(), OpenStreetMapVisicomActivity.class);
+//
+//                        intent.putExtra("startMarker", startMarker);
+//                        intent.putExtra("finishMarker", finishMarker);
+//
+//                        startActivity(intent);
+//                        finish();
                     } else {
                         double[] coordinates = coordinatesList.get(position);
 
