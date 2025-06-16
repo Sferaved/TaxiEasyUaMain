@@ -7,10 +7,15 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import androidx.navigation.NavController;
+import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
+
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.ui.exit.AnrActivity;
 
@@ -146,9 +151,12 @@ public class FirestoreHelper {
                         Boolean respons = documentSnapshot.getBoolean("respons");
                         if (respons != null && !respons) {
                             new Handler(Looper.getMainLooper()).post(() -> {
-                                Intent intent = new Intent(context, AnrActivity.class);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                context.startActivity(intent);
+                                NavController navController = Navigation.findNavController(MyApplication.getCurrentActivity(), R.id.nav_host_fragment_content_main);
+                                navController.navigate(R.id.nav_anr, null, new NavOptions.Builder()
+                                        .build());
+//                                Intent intent = new Intent(context, AnrActivity.class);
+//                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+//                                context.startActivity(intent);
                             });
                         } else if (respons != null) {
                             Activity activity = MyApplication.getCurrentActivity();

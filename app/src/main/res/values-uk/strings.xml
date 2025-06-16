@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.824</string>
-    <string name="version">Версія: 1.824</string>
+    <string name="version_code">1.825</string>
+    <string name="version">Версія: 1.825</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -127,7 +127,7 @@
     <string name="from_text">Звідки</string>
     <string name="to_text">Куди</string>
     <string name="serve">Подача</string>
-    <string name="coment">Коментар</string>
+    <string name="coment">Введіть повідомлення для водія</string>
     <string name="services">ПОСЛУГИ</string>
     <string name="resettimetoorder">Перевірте дату або час для попереднього замовлення</string>
     <string name="my_routs">Оберіть маршрут</string>
@@ -526,4 +526,5 @@
     <string name="SA_message_history">Прошу прислати мені історію моїх поїздок за період з ..... по .....</string>
     <string name="anr_detected">Виявлена помілка</string>
     <string name="application_is_not_responding">Додаток не відповідає.</string>
+    <string name="check_permition">Будь ласка, увімкніть геолокацію або надайте дозвіл на доступ до місцеположення.</string>
 </resources>

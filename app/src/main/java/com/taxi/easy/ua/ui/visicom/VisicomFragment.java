@@ -4,6 +4,7 @@ package com.taxi.easy.ua.ui.visicom;
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.activeCalls;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.Manifest;
@@ -60,6 +61,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
@@ -80,7 +82,6 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentVisicomBinding;
-import com.taxi.easy.ua.ui.exit.AnrActivity;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
@@ -93,7 +94,6 @@ import com.taxi.easy.ua.utils.blacklist.BlacklistManager;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGeoFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
 import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
@@ -183,7 +183,6 @@ public class VisicomFragment extends Fragment {
     public static TextView num1;
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
-    private final int LOCATION_PERMISSION_REQUEST_CODE = 123;
 
     @SuppressLint("StaticFieldLeak")
     static ConstraintLayout linearLayout;
@@ -211,10 +210,9 @@ public class VisicomFragment extends Fragment {
     @SuppressLint("StaticFieldLeak")
     public static TextView text_full_message, textCostMessage, textStatusCar;
 
-    private Animation blinkAnimation;
-//    private final String baseUrl = "https://m.easy-order-taxi.site";
+    //    private final String baseUrl = "https://m.easy-order-taxi.site";
     private static String baseUrl;
-    private final int MY_REQUEST_CODE = 1234;
+
     private CarProgressBar carProgressBar;
     @SuppressLint("StaticFieldLeak")
     static TextView svButton;
@@ -295,6 +293,12 @@ public class VisicomFragment extends Fragment {
 // Устанавливаем слушатель для распознавания жеста свайпа вниз
         swipeRefreshLayout.setOnRefreshListener(() -> {
             // Скрываем TextView (⬇️) сразу после появления индикатора свайпа
+            clearTABLE_SERVICE_INFO();
+            sharedPreferencesHelperMain.saveValue("time", "no_time");
+            sharedPreferencesHelperMain.saveValue("date", "no_date");
+            sharedPreferencesHelperMain.saveValue("comment", "no_comment");
+            sharedPreferencesHelperMain.saveValue("tarif", " ");
+
             svButton.setVisibility(View.GONE);
 
             // Выполняем необходимое действие (например, запуск новой активности)
@@ -428,14 +432,19 @@ public class VisicomFragment extends Fragment {
 
         schedule.setOnClickListener(v -> {
             btnVisible(View.INVISIBLE);
-            MyBottomSheetGeoFragment bottomSheetDialogFragment = new MyBottomSheetGeoFragment(text_view_cost);
-            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+
+            NavController navController = NavHostFragment.findNavController(this);
+            navController.navigate(R.id.nav_visicom_options);
         });
+
 
         shed_down.setOnClickListener(v -> {
             btnVisible(View.INVISIBLE);
-            MyBottomSheetGeoFragment bottomSheetDialogFragment = new MyBottomSheetGeoFragment(text_view_cost);
-            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+            NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_visicom_options, null, new NavOptions.Builder()
+                    .build());
+//            MyBottomSheetGeoFragment bottomSheetDialogFragment = new MyBottomSheetGeoFragment(text_view_cost);
+//            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         });
     }
 
@@ -484,8 +493,8 @@ public class VisicomFragment extends Fragment {
     }
 
     public static void addCheck(Context context) {
-        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
-        String tarif = stringListInfo.get(2);
+
+        String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
         int newCheck = 0;
         List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
         for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
@@ -551,6 +560,7 @@ public class VisicomFragment extends Fragment {
         // Checking if permission is not granted
         Logger.d(context, TAG, "checkPermission: " + permission);
         if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_DENIED) {
+            int LOCATION_PERMISSION_REQUEST_CODE = 123;
             ActivityCompat.requestPermissions(context, new String[]{permission}, LOCATION_PERMISSION_REQUEST_CODE);
         }
     }
@@ -674,7 +684,8 @@ public void requestPermissions() {
         double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
         String start = cursor.getString(cursor.getColumnIndex("start"));
         String finish = cursor.getString(cursor.getColumnIndex("finish"));
-        if (finish.equals(context.getString(R.string.on_city_tv))) {
+        if (finish.equals(context.getString(R.string.on_city_tv)) || finish.trim().isEmpty()
+            ) {
             finish = start;
         }
         if (originLatitude == toLatitude) {
@@ -700,14 +711,33 @@ public void requestPermissions() {
 
 
         List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
-        String time = stringList.get(1);
-        String comment = stringList.get(2);
-        String date = stringList.get(3);
+//        String time = stringList.get(1);
+//        String comment = stringList.get(2);
+//        String date = stringList.get(3);
+
+        String time = (String) sharedPreferencesHelperMain.getValue("time", "no_time");
+        String comment = (String) sharedPreferencesHelperMain.getValue("coment", "no_comment");
+        String date = (String) sharedPreferencesHelperMain.getValue("date", "no_date");
+
+        Logger.d(context, TAG, "getTaxiUrlSearchMarkers: time " + time);
+        Logger.d(context, TAG, "getTaxiUrlSearchMarkers: comment " + comment);
+        Logger.d(context, TAG, "getTaxiUrlSearchMarkers: date " + date);
+
+        String mes = context.getString(R.string.on) + " " + time + " " + date;
+        if(time.equals("no_time") && date.equals("no_date")) {
+            mes = context.getString((R.string.on_now));
+        }
+        schedule.setText(mes);
 
         List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
-        String tarif = stringListInfo.get(2);
+//        String tarif = stringListInfo.get(2);
         String payment_type = stringListInfo.get(4);
 
+        String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
+//        String payment_type = (String) sharedPreferencesHelperMain.getValue("payment_type", "nal_payment");
+
+        Logger.d(context, TAG, "getTaxiUrlSearchMarkers: tarif " + tarif);
+        Logger.d(context, TAG, "getTaxiUrlSearchMarkers: payment_type " + payment_type);
 
         // Building the parameters to the web service
 
@@ -794,15 +824,9 @@ public void requestPermissions() {
                     + time + "/" + comment + "/" + date + "/" + start + "/" + finish + "/" + wfpInvoice;
 
 
-            ContentValues cv = new ContentValues();
-
-            cv.put("time", "no_time");
-//            cv.put("comment", "no_comment");
-            cv.put("date", "no_date");
-
-            // обновляем по id
-            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
-                    new String[]{"1"});
+            sharedPreferencesHelperMain.saveValue("time", "no_time");
+            sharedPreferencesHelperMain.saveValue("date", "no_date");
+            sharedPreferencesHelperMain.saveValue("comment", "no_comment");
 
         }
 
@@ -883,7 +907,7 @@ public void requestPermissions() {
    }
 
     @SuppressLint("SetTextI18n")
-    public static void readTariffInfo(Context context) {
+    public void readTariffInfo() {
         // Создаем экземпляр класса для работы с базой данных
 
         List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
@@ -925,8 +949,8 @@ public void requestPermissions() {
             try {
                 String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
                 if (!userEmail.equals("email")) {
-                    visicomCost(context);
-                    readTariffInfo(context);
+                    visicomCost();
+                    readTariffInfo();
                 }
             } catch (MalformedURLException e) {
                 throw new RuntimeException(e);
@@ -957,8 +981,8 @@ public void requestPermissions() {
                 try {
                     String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
                     if (!userEmail.equals("email")) {
-                        visicomCost(context);
-                        readTariffInfo(context);
+                        visicomCost();
+                        readTariffInfo();
                     }
                 } catch (MalformedURLException e) {
                     throw new RuntimeException(e);
@@ -988,8 +1012,8 @@ public void requestPermissions() {
                 try {
                     String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
                     if (!userEmail.equals("email")) {
-                        visicomCost(context);
-                        readTariffInfo(context);
+                        visicomCost();
+                        readTariffInfo();
                     }
                 } catch (MalformedURLException e) {
                     throw new RuntimeException(e);
@@ -1030,7 +1054,7 @@ public void requestPermissions() {
 
                 textStatusCar.setText(R.string.ex_st_0);
 
-                blinkAnimation = AnimationUtils.loadAnimation(context, R.anim.blink_animation);
+            Animation blinkAnimation = AnimationUtils.loadAnimation(context, R.anim.blink_animation);
                 textStatusCar.startAnimation(blinkAnimation);
                 String pay_method_message = "";
                 switch (pay_method) {
@@ -1543,8 +1567,10 @@ public void requestPermissions() {
             binding.textfrom.setVisibility(VISIBLE);
             binding.num1.setVisibility(VISIBLE);
             binding.textGeo.setVisibility(VISIBLE);
+            binding.clearButtonFrom.setVisibility(VISIBLE);
             binding.num2.setVisibility(VISIBLE);
             binding.textTo.setVisibility(VISIBLE);
+            binding.clearButtonTo.setVisibility(VISIBLE);
         }
         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
             NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
@@ -1552,13 +1578,7 @@ public void requestPermissions() {
                     .setPopUpTo(R.id.nav_restart, true)
                     .build());
         }
-//        if (!NetworkUtils.isNetworkAvailable(context)) {
-//            // Ваш код при нажатии на заголовок
-//            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                    .setPopUpTo(R.id.nav_restart, true)
-//                    .build());
-//
-//        }
+
 
         String visible_shed = (String) sharedPreferencesHelperMain.getValue("visible_shed", "no");
         if(visible_shed.equals("no")) {
@@ -1581,14 +1601,17 @@ public void requestPermissions() {
 
                 binding.textfrom.setVisibility(VISIBLE);
                 binding.num1.setVisibility(VISIBLE);
+                binding.clearButtonFrom.setVisibility(VISIBLE);
 
-                binding.textTo.setVisibility(VISIBLE);
-                binding.num2.setVisibility(VISIBLE);
+
+                binding.clearButtonTo.setVisibility(VISIBLE);
 
                 binding.textGeo.setVisibility(VISIBLE);
+                binding.clearButtonFrom.setVisibility(VISIBLE);
+
                 binding.num2.setVisibility(VISIBLE);
                 binding.textTo.setVisibility(VISIBLE);
-
+                binding.clearButtonTo.setVisibility(VISIBLE);
 
                 schedule.setVisibility(VISIBLE);
                 shed_down.setVisibility(VISIBLE);
@@ -1738,18 +1761,24 @@ public void requestPermissions() {
             MainActivity.navController.navigate(R.id.nav_search, bundle, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_search, true)
                     .build());
-//
-//            Intent intent = new Intent(getContext(), ActivityVisicomOnePage.class);
-//            intent.putExtra("start", "ok");
-//            intent.putExtra("end", "no");
-//            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-//            startActivity(intent);
-//            requireActivity().finish();
+
         });
 
-       
+        binding.clearButtonFrom.setOnClickListener(v -> {
+            if (fusedLocationProviderClient != null && locationCallback != null) {
+                fusedLocationProviderClient.removeLocationUpdates(locationCallback);
+                gpsbut.setText(R.string.change);
+            }
+            sharedPreferencesHelperMain.saveValue("gps_upd", false);
 
-         
+            Bundle bundle = new Bundle();
+            bundle.putString("start", "ok");
+            bundle.putString("end", "no");
+            MainActivity.navController.navigate(R.id.nav_search, bundle, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_search, true)
+                    .build());
+
+        });
 
         text_view_cost = binding.textViewCost;
 
@@ -1768,7 +1797,7 @@ public void requestPermissions() {
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
-//        setNalPaymentNoCards(context);
+
         textViewTo = binding.textTo;
         textViewTo.setOnClickListener(v -> {
             textViewTo.setText("");
@@ -1780,16 +1809,11 @@ public void requestPermissions() {
                     .setPopUpTo(R.id.nav_search, true)
                     .build());
 
-//
-//            Intent intent = new Intent(getContext(), ActivityVisicomOnePage.class);
-//            intent.putExtra("start", "no");
-//            intent.putExtra("end", "ok");
-//
-//            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-//            startActivity(intent);
-//            requireActivity().finish();
         });
 
+        binding.clearButtonTo.setOnClickListener(v -> {
+            textViewTo.setText("");
+        });
 
         btn_minus = binding.btnMinus;
         btn_plus = binding.btnPlus;
@@ -1798,9 +1822,11 @@ public void requestPermissions() {
 
         btnAdd.setOnClickListener(v -> {
             btnVisible(View.INVISIBLE);
-            MyBottomSheetGeoFragment bottomSheetDialogFragment = new MyBottomSheetGeoFragment(text_view_cost);
-            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+
+            NavController navController = NavHostFragment.findNavController(this);
+            navController.navigate(R.id.nav_visicom_options);
         });
+
 
         btn_minus.setOnClickListener(v -> {
 
@@ -2071,8 +2097,8 @@ public void requestPermissions() {
                     try {
                         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
                         if (!userEmail.equals("email")) {
-                            visicomCost(context);
-                            readTariffInfo(context);
+                            visicomCost();
+                            readTariffInfo();
                         }
 
                     } catch (MalformedURLException e) {
@@ -2114,8 +2140,8 @@ public void requestPermissions() {
                         try {
                             String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
                             if (!userEmail.equals("email")) {
-                                visicomCost(context);
-                                readTariffInfo(context);
+                                visicomCost();
+                                readTariffInfo();
                             }
 
                         } catch (MalformedURLException e) {
@@ -2137,8 +2163,8 @@ public void requestPermissions() {
                 try {
                     String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
                     if (!userEmail.equals("email")) {
-                        visicomCost(context);
-                        readTariffInfo(context);
+                        visicomCost();
+                        readTariffInfo();
                     }
                 } catch (MalformedURLException e) {
                     FirebaseCrashlytics.getInstance().recordException(e);
@@ -2473,8 +2499,8 @@ public void requestPermissions() {
                             try {
                                 String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
                                 if (!userEmail.equals("email")) {
-                                    visicomCost(context);
-                                    readTariffInfo(context);
+                                    visicomCost();
+                                    readTariffInfo();
                                 }
                             } catch (MalformedURLException e) {
                                 FirebaseCrashlytics.getInstance().recordException(e);
@@ -2553,7 +2579,7 @@ public void requestPermissions() {
     }
 
 
-    private static void visicomCost(Context context) throws MalformedURLException {
+    private void visicomCost() throws MalformedURLException {
 
 
         constr2.setVisibility(View.INVISIBLE);
@@ -2600,7 +2626,7 @@ public void requestPermissions() {
 
                     String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
 
-                    Logger.d(context, TAG, "visicomCost: " + urlCost);
+                    Logger.d(context, TAG, "visicomCost " + urlCost);
                     VisicomFragment.costMap = null;
 
                     CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
@@ -2635,27 +2661,10 @@ public void requestPermissions() {
 //                                    String orderMessage = sendUrlMapCost.get("Message");
 
                                     assert orderCost != null;
-                                    if (orderCost.equals("0")) {
-                                        Intent intent = new Intent(context, AnrActivity.class);
-                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                        context.startActivity(intent);
-//                                        String message = context.getString(R.string.error_message);
-//                                        assert orderMessage != null;
-//                                        if (orderMessage.equals("ErrorMessage")) {
-//                                            message = context.getString(R.string.server_error_connected);
-//                                        }
-//
-//                                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-//                                        if (fragmentManager != null && !fragmentManager.isStateSaved()) {
-//                                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-//                                        } else {
-//                                            assert fragmentManager != null;
-//                                            fragmentManager.beginTransaction()
-//                                                    .add(bottomSheetDialogFragment, bottomSheetDialogFragment.getTag())
-//                                                    .commitAllowingStateLoss();
-//                                        }
-
-
+                                    if ("0".equals(orderCost)) {
+                                        NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
+                                        navController.navigate(R.id.nav_anr, null, new NavOptions.Builder()
+                                                .build());
                                     } else {
                                         applyDiscountAndUpdateUI(orderCost, context);
                                     }
@@ -2678,12 +2687,25 @@ public void requestPermissions() {
                 }).start();
             } else {
                 sharedPreferencesHelperMain.saveValue("CityCheckActivity", "**");
-                Intent intent = new Intent(context, AnrActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                context.startActivity(intent);
+                NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(R.id.nav_anr, null, new NavOptions.Builder()
+                        .build());
+
 
             }
         }
+    }
+
+    private void clearTABLE_SERVICE_INFO () {
+        String[] arrayServiceCode = DataArr.arrayServiceCode();
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        for (int i = 0; i < arrayServiceCode.length; i++) {
+            ContentValues cv = new ContentValues();
+            cv.put(arrayServiceCode[i], "0");
+            database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?",
+                    new String[] { "1" });
+        }
+        database.close();
     }
 
     private static void applyDiscountAndUpdateUI(String orderCost, Context context) {

@@ -196,7 +196,6 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                     SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                     ContentValues cv = new ContentValues();
                     cv.put("email", "email");
-                    cv.put("verifyOrder", "1");
                     // обновляем по id
                     database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
                             new String[] { "1" });

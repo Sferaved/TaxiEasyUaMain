@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color_new">
+
+    <!-- Кнопка "Назад" в верхнем левом углу -->
+    <ImageButton
+        android:id="@+id/okButton"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/btn_accents"
+        android:contentDescription="@string/make_rout"
+        android:scaleType="centerInside"
+        android:src="@drawable/arrow_back_fill0_wght400_grad0_opsz24"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Текст "Тариф" -->
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/regular"
+        android:text="@string/tar"
+        android:textColor="#D9D9D9"
+        android:textSize="@dimen/textView_textSize"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/okButton" />
+
+    <!-- Выпадающий список тарифов -->
+
+    <!-- Текст "Обслуживание" -->
+    <Spinner
+        android:id="@+id/list_tariff"
+        android:layout_width="215dp"
+        android:layout_height="34dp"
+        android:layout_marginStart="8dp"
+        android:background="@null"
+        android:popupBackground="@color/background_color_new"
+        app:layout_constraintBottom_toBottomOf="@+id/textView4"
+        app:layout_constraintStart_toEndOf="@+id/textView4"
+        app:layout_constraintTop_toTopOf="@+id/textView4"
+        app:layout_constraintVertical_bias="0.0"
+        app:layout_constraintWidth_max="208dp"
+        app:layout_constraintWidth_percent="0.5" />
+
+    <ImageButton
+        android:id="@+id/shed_down"
+        android:layout_width="32dp"
+        android:layout_height="30dp"
+        android:background="@drawable/input"
+        android:src="@drawable/down_arrow_white"
+        app:layout_constraintBottom_toBottomOf="@+id/list_tariff"
+        app:layout_constraintEnd_toEndOf="@+id/list_tariff"
+        app:layout_constraintTop_toTopOf="@+id/list_tariff" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/regular"
+        android:text="@string/serve"
+        android:textColor="#D9D9D9"
+        android:textSize="@dimen/textView_textSize"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/list_tariff" />
+
+    <!-- Поле времени -->
+
+    <!-- Поле даты -->
+
+    <!-- Текст "Скидка" -->
+
+    <TextView
+        android:id="@+id/tv_selected_time"
+        android:layout_width="75dp"
+        android:layout_height="34dp"
+        android:background="@drawable/input"
+        android:ems="10"
+        android:fontFamily="@font/regular"
+        android:gravity="center"
+        android:inputType="text"
+        android:textAllCaps="true"
+        android:textColor="#D9D9D9"
+        android:textSize="@dimen/textView_textSize"
+        app:layout_constraintBottom_toBottomOf="@+id/textView"
+        app:layout_constraintStart_toStartOf="@+id/list_tariff"
+        app:layout_constraintTop_toTopOf="@+id/textView"
+        app:layout_constraintVertical_bias="1.0" />
+
+    <TextView
+        android:id="@+id/tv_selected_date"
+        android:layout_width="130dp"
+        android:layout_height="34dp"
+        android:layout_marginStart="2dp"
+        android:background="@drawable/input"
+        android:ems="10"
+        android:fontFamily="@font/regular"
+        android:gravity="center"
+        android:inputType="text"
+        android:textAllCaps="true"
+        android:textColor="#D9D9D9"
+        android:textSize="@dimen/textView_textSize"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_selected_time"
+        app:layout_constraintEnd_toEndOf="@+id/list_tariff"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@+id/tv_selected_time"
+        app:layout_constraintTop_toTopOf="@+id/tv_selected_time"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="131dp"
+        android:layout_height="45dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/regular"
+        android:text="@string/disc_text"
+        android:textColor="#D9D9D9"
+        android:textSize="@dimen/textView_textSize"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView" />
+
+    <!-- Поле комментария -->
+    <EditText
+        android:id="@+id/komenterinp"
+        android:layout_width="0dp"
+        android:layout_height="43dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/input"
+        android:ems="10"
+        android:fontFamily="@font/regular"
+        android:hint="@string/coment"
+        android:inputType="text"
+        android:textAlignment="viewStart"
+        android:textAllCaps="true"
+        android:textColor="#D9D9D9"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView2" />
+
+    <!-- Кнопка "Минус" -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_minus"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="8dp"
+        android:backgroundTint="@color/white"
+        android:gravity="center"
+        android:text="-"
+        android:textColor="@color/black"
+        android:textSize="15sp"
+        app:layout_constraintBottom_toBottomOf="@+id/discinp"
+        app:layout_constraintStart_toEndOf="@+id/textView2"
+        app:layout_constraintTop_toTopOf="@+id/discinp" />
+
+    <!-- Поле ввода скидки -->
+    <EditText
+        android:id="@+id/discinp"
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="2dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/input"
+        android:ems="10"
+        android:fontFamily="@font/regular"
+        android:inputType="number"
+        android:textAlignment="center"
+        android:textAllCaps="true"
+        android:textColor="#D9D9D9"
+        android:textSize="@dimen/textView_textSize"
+        app:layout_constraintWidth_percent="0.15"
+        app:layout_constraintWidth_max="60dp"
+        app:layout_constraintStart_toEndOf="@+id/btn_minus"
+        app:layout_constraintTop_toBottomOf="@+id/tv_selected_time" />
+
+    <!-- Символ процента -->
+    <TextView
+        android:id="@+id/textView5"
+        android:layout_width="19dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="2dp"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/regular"
+        android:text="%"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        android:textSize="@dimen/textView_textSize"
+        app:layout_constraintStart_toEndOf="@+id/discinp"
+        app:layout_constraintTop_toBottomOf="@+id/tv_selected_time" />
+
+    <!-- Кнопка "Плюс" -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_plus"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="2dp"
+        android:backgroundTint="@color/colorAccent"
+        android:gravity="center"
+        android:text="+"
+        android:textColor="@color/black"
+        android:textSize="15sp"
+        app:layout_constraintBottom_toBottomOf="@+id/discinp"
+        app:layout_constraintEnd_toEndOf="@+id/tv_selected_date"
+        app:layout_constraintStart_toEndOf="@+id/textView5"
+        app:layout_constraintTop_toTopOf="@+id/discinp" />
+
+    <!-- Заголовок списка услуг -->
+    <TextView
+        android:id="@+id/maintext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/medium"
+        android:text="@string/services"
+        android:textColor="#D9D9D9"
+        android:textSize="@dimen/textView_textSize"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/komenterinp" />
+
+    <!-- Список услуг -->
+    <ListView
+        android:id="@+id/list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_margin="4dp"
+        android:minHeight="33dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/maintext" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

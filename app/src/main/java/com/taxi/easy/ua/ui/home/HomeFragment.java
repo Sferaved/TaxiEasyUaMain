@@ -83,7 +83,6 @@ import com.taxi.easy.ua.ui.cities.Kyiv.KyivCity;
 import com.taxi.easy.ua.ui.cities.Odessa.Odessa;
 import com.taxi.easy.ua.ui.cities.Odessa.OdessaTest;
 import com.taxi.easy.ua.ui.cities.Zaporizhzhia.Zaporizhzhia;
-import com.taxi.easy.ua.ui.exit.AnrActivity;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
@@ -91,7 +90,6 @@ import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.home.room.AppDatabase;
 import com.taxi.easy.ua.ui.home.room.RouteCost;
 import com.taxi.easy.ua.ui.home.room.RouteCostDao;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.start.ResultSONParser;
@@ -769,9 +767,9 @@ public class HomeFragment extends Fragment {
                             }
                         }
                         if (servicesVer) {
-                            for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
+                            for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
                                 if (services.get(i + 1).equals("1")) {
-                                    servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
+                                    servicesChecked.add(DataArr.arrayServiceCode()[i]);
                                 }
                             }
                             for (int i = 0; i < servicesChecked.size(); i++) {
@@ -1200,9 +1198,12 @@ public class HomeFragment extends Fragment {
                     } catch (MalformedURLException | InterruptedException | JSONException e) {
                         FirebaseCrashlytics.getInstance().recordException(e);
                         Logger.d(context, TAG, "AnrActivity.class 2" );
-                        Intent intent = new Intent(context, AnrActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        context.startActivity(intent);
+                        NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
+                        navController.navigate(R.id.nav_anr, null, new NavOptions.Builder()
+                                .build());
+//                        Intent intent = new Intent(context, AnrActivity.class);
+//                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+//                        context.startActivity(intent);
                     }
                     assert sendUrlMapCost != null;
                     String orderCost = (String) sendUrlMapCost.get("message");
@@ -1234,9 +1235,12 @@ public class HomeFragment extends Fragment {
                             break;
                         default:
                             Logger.d(context, TAG, "AnrActivity.class 3" );
-                            Intent intent = new Intent(context, AnrActivity.class);
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                            context.startActivity(intent);
+                            NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
+                            navController.navigate(R.id.nav_anr, null, new NavOptions.Builder()
+                                    .build());
+//                            Intent intent = new Intent(context, AnrActivity.class);
+//                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+//                            context.startActivity(intent);
                             Logger.d(context, TAG, "onItemClick: " + new IllegalStateException("Unexpected value: " + Objects.requireNonNull(orderCost)));
                     }
                     progressBar.setVisibility(GONE);
@@ -1633,9 +1637,12 @@ public class HomeFragment extends Fragment {
                     btnVisible(View.VISIBLE);
                 } else {
                     Logger.d(context, TAG, "AnrActivity.class 1" );
-                    Intent intent = new Intent(context, AnrActivity.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    context.startActivity(intent);
+                    NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
+                    navController.navigate(R.id.nav_anr, null, new NavOptions.Builder()
+                            .build());
+//                    Intent intent = new Intent(context, AnrActivity.class);
+//                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+//                    context.startActivity(intent);
                 }
 
                 updateAddCost("0");

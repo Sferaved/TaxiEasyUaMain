@@ -99,11 +99,17 @@ public class SettingsActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
         String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
         Logger.i(this, "locale", localeCode);
-        // Установка локали
-        Locale locale = new Locale(localeCode.split("_")[0]);
-        applyLocale(localeCode);
+
+        // Проверяем, отличается ли текущая локаль от сохраненной
+        String currentLocale = getResources().getConfiguration().getLocales().get(0).toString();
+//        if (!currentLocale.equals(localeCode)) {
+//            applyLocale(localeCode);
+//        }
+
+
 
         // Устанавливаем Action Bar, если он доступен
         if (getSupportActionBar() != null) {

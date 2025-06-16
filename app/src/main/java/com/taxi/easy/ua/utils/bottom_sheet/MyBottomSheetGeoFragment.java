@@ -36,7 +36,6 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.home.CustomListAdapter;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -733,9 +732,9 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             }
         }
         if(servicesVer) {
-            for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
+            for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
                 if(services.get(i+1).equals("1")) {
-                    servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
+                    servicesChecked.add(DataArr.arrayServiceCode()[i]);
                 }
             }
             for (int i = 0; i < servicesChecked.size(); i++) {
@@ -895,9 +894,9 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             }
         }
         if(servicesVer) {
-            for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
+            for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
                 if(services.get(i+1).equals("1")) {
-                    servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
+                    servicesChecked.add(DataArr.arrayServiceCode()[i]);
                 }
             }
             for (int i = 0; i < servicesChecked.size(); i++) {

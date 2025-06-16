@@ -11,7 +11,6 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
@@ -79,7 +78,6 @@ import com.taxi.easy.ua.ui.clear.AppDataUtils;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
 import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.ui.home.HomeFragment;
-import com.taxi.easy.ua.ui.settings.SettingsActivity;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
@@ -91,7 +89,6 @@ import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
-import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.pusher.PusherManager;
 import com.taxi.easy.ua.utils.user.del_server.ApiUserService;
 import com.taxi.easy.ua.utils.user.del_server.CallbackUser;
@@ -220,7 +217,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Установка локали перед вызовом super.onCreate()
-        applyLocale();
+        String localeCode = (String) MyApplication.sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().getLanguage());
+        applyLocale(localeCode);
         super.onCreate(savedInstanceState);
 
         // Инициализация View Binding
@@ -256,7 +254,10 @@ public class MainActivity extends AppCompatActivity {
                 R.id.nav_search,
                 R.id.nav_cacheOrder,
                 R.id.nav_map,
-                R.id.nav_city
+                R.id.nav_city,
+                R.id.nav_settings,
+                R.id.nav_visicom_options,
+                R.id.nav_anr
         ).setOpenableLayout(drawer).build();
 
         // Связывание Navigation с UI
@@ -341,12 +342,6 @@ public class MainActivity extends AppCompatActivity {
             View.OnClickListener clickListener = v -> {
                 Logger.d(this, TAG, "Обработчик нажатия, сеть доступна: " + NetworkUtils.isNetworkAvailable(this));
                 if (NetworkUtils.isNetworkAvailable(this)) {
-//                    MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, MainActivity.this);
-//                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-//                    Intent intent = new Intent(this, CityCheckActivity.class);
-//                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-//                    startActivity(intent);
-
                     Logger.d(this, "CityCheckFrgment", "Navigating to nav_city");
                     navController.navigate(R.id.nav_city, null, new NavOptions.Builder()
                             .setPopUpTo(R.id.nav_city, true)
@@ -368,6 +363,9 @@ public class MainActivity extends AppCompatActivity {
         // Проверка разрешений на доступ к местоположению
         MainActivity.location_update = checkLocationPermission();
 
+        sharedPreferencesHelperMain.saveValue("time", "no_time");
+        sharedPreferencesHelperMain.saveValue("date", "no_date");
+        sharedPreferencesHelperMain.saveValue("comment", "no_comment");
 
 
     }
@@ -1011,7 +1009,7 @@ public class MainActivity extends AppCompatActivity {
                     .setTitle(R.string.clearAppMess) // Например: "Подтверждение"
                     .setMessage(R.string.clearAppMess) // Текст сообщения, например: "Вы уверены, что хотите очистить приложение?"
                     .setPositiveButton(R.string.ok_button, (dialog, which) -> {
-                        SharedPreferencesHelper.clearApplication(this);
+                        clearApplication(this);
                     })
                     .setNegativeButton(R.string.cancel_button, (dialog, which) -> {
                         dialog.dismiss();
@@ -1025,8 +1023,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (item.getItemId() == R.id.settings) {
-            Intent intent = new Intent(this, SettingsActivity.class);
-            startActivity(intent);
+
+            navController.navigate(R.id.nav_settings, null, new NavOptions.Builder()
+                    .build());
+
         }
 
         if (item.getItemId() == R.id.send_email_admin) {
@@ -1496,88 +1496,6 @@ public class MainActivity extends AppCompatActivity {
             FirebaseCrashlytics.getInstance().recordException(e);
     }
 }
-//    public void getCardTokenWfp(String city) {
-//
-//
-//
-//
-//        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-//        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-//
-//        OkHttpClient client = new OkHttpClient.Builder()
-//                .addInterceptor(interceptor)
-//                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
-//                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
-//                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
-//                .build();
-//        Retrofit retrofit = new Retrofit.Builder()
-//                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
-//                .addConverterFactory(GsonConverterFactory.create())
-//                .client(client)
-//                .build();
-//
-//        // Создайте сервис
-//        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
-//        Logger.d(this, TAG, "getCardTokenWfp: ");
-//        String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
-//
-//        // Выполните запрос
-//        Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
-//                getString(R.string.application),
-//                city,
-//                userEmail,
-//                "wfp"
-//        );
-//        call.enqueue(new Callback<>() {
-//            @Override
-//            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
-//                Logger.d(MainActivity.this, TAG, "onResponse: " + response.body());
-//                if (response.isSuccessful() && response.body() != null) {
-//                    CallbackResponseWfp callbackResponse = response.body();
-//                    if (callbackResponse != null) {
-//                        List<CardInfo> cards = callbackResponse.getCards();
-//                        Logger.d(MainActivity.this, TAG, "onResponse: cards" + cards);
-//
-//                        SQLiteDatabase database = MainActivity.this.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-//                        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
-//                        database.execSQL("DELETE FROM " + tableName + ";");
-//
-//                        if (cards != null && !cards.isEmpty()) {
-//                            for (CardInfo cardInfo : cards) {
-//                                String masked_card = cardInfo.getMasked_card(); // Маска карты
-//                                String card_type = cardInfo.getCard_type(); // Тип карты
-//                                String bank_name = cardInfo.getBank_name(); // Название банка
-//                                String rectoken = cardInfo.getRectoken(); // Токен карты
-//                                String merchant = cardInfo.getMerchant(); //
-//                                String active = cardInfo.getActive();
-//
-//                                Logger.d(MainActivity.this, TAG, "onResponse: card_token: " + rectoken);
-//                                ContentValues cv = new ContentValues();
-//                                cv.put("masked_card", masked_card);
-//                                cv.put("card_type", card_type);
-//                                cv.put("bank_name", bank_name);
-//                                cv.put("rectoken", rectoken);
-//                                cv.put("merchant", merchant);
-//                                cv.put("rectoken_check", active);
-//                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
-//                            }
-//                        }
-//                        database.close();
-//                    }
-//
-//                } else {
-//                    // Обработка случаев, когда ответ не 200 OK
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
-//                // Обработка ошибки запроса
-//                Logger.d(MainActivity.this, TAG, "onResponse: failure " + t);
-//                FirebaseCrashlytics.getInstance().recordException(t);
-//            }
-//        });
-//    }
 
     private void startFireBase() {
         Toast.makeText(this, R.string.account_verify, Toast.LENGTH_SHORT).show();
@@ -1932,34 +1850,194 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void applyLocale() {
-        Log.d(TAG, "applyLocale: " + Locale.getDefault().toString());
-
-        Locale previousLocale = Locale.getDefault();
-        Log.d(TAG, "applyLocale: previousLocale " + previousLocale);
-
-        // Получаем сохранённый код локали из SharedPreferences
-        String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
-        Log.d(TAG, "applyLocale sharedPreferencesHelperMain: " + localeCode);
-
+    private void applyLocale(String localeCode) {
         Locale locale = new Locale(localeCode);
-        Log.d(TAG, "applyLocale locale: " + locale);
+        Locale.setDefault(locale);
 
-        if (!locale.equals(previousLocale)) {
-            Locale.setDefault(locale);
+        Configuration config = new Configuration(getResources().getConfiguration());
+        config.setLocale(locale);
 
-            Resources resources = getResources();
-            Configuration config = new Configuration(resources.getConfiguration());
-            config.setLocale(locale);
+        getResources().updateConfiguration(config, getResources().getDisplayMetrics());
+    }
+    void clearApplication(Context context) {
+        Logger.d(context, TAG, "Starting clearApplication");
+        clearAllSharedPreferences(context);
+        clearAllDatabases(context);
+        clearAllCache(context);
+        clearAllExternalCache(context);
 
-            // Создаём новый контекст с обновленной локалью
-            Context context = createConfigurationContext(config);
-            // Если нужно, можно использовать context.getResources() дальше в приложении
-            // Вызов getResources() в текущей Activity при этом НЕ обновится глобально
-
-            // Можно добавить код для перезапуска Activity/приложения,
-            // чтобы применить изменения локали немедленно
+        // Restart the application
+        try {
+            Logger.d(context, TAG, "Initiating application restart");
+            Intent intent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
+            if (intent != null) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(intent);
+                System.exit(0); // Terminate the current process
+            } else {
+                Logger.d(context, TAG, "Could not find launch intent for package: " + context.getPackageName());
+            }
+        } catch (Exception e) {
+            Logger.e(context, TAG, "Error during application restart: " + e.toString());
         }
+        Logger.d(context, TAG, "Completed clearApplication");
+    }
+
+    // Clears all SharedPreferences files for the app
+    void clearAllSharedPreferences(Context context) {
+        Logger.d(context, TAG, "Starting clearAllSharedPreferences");
+        if (context == null) {
+            throw new IllegalArgumentException("Context cannot be null");
+        }
+
+        String prefsDir = context.getApplicationInfo().dataDir + "/shared_prefs";
+        File dir = new File(prefsDir);
+
+        if (dir.exists() && dir.isDirectory()) {
+            String[] files = dir.list();
+            if (files != null) {
+                for (String file : files) {
+                    if (file.endsWith(".xml")) {
+                        String prefName = file.substring(0, file.length() - 4);
+                        Logger.d(context, TAG, "Clearing SharedPreferences: " + prefName);
+                        try {
+                            SharedPreferences prefs = context.getSharedPreferences(prefName, Context.MODE_PRIVATE);
+                            SharedPreferences.Editor editor = prefs.edit();
+                            editor.clear();
+                            editor.apply();
+                            Logger.d(context, TAG, "Cleared SharedPreferences: " + prefName);
+                        } catch (Exception e) {
+                            Logger.e(context, TAG, "Error clearing SharedPreferences " + prefName + ": " + e.toString());
+                        }
+                    }
+                }
+            } else {
+                Logger.d(context, TAG, "No SharedPreferences files found or unable to list files in: " + prefsDir);
+            }
+        } else {
+            Logger.d(context, TAG, "SharedPreferences directory does not exist or is not a directory: " + prefsDir);
+        }
+        Logger.d(context, TAG, "Completed clearAllSharedPreferences");
+    }
+
+    // Clears all database files for the app
+    void clearAllDatabases(Context context) {
+        context.deleteDatabase(DB_NAME);
+        Logger.d(context, TAG, "Starting clearAllDatabases");
+
+        // Close any open database connections (example for SQLiteOpenHelper)
+        // Replace with your actual database helper class
+        if (database != null && database.isOpen()) {
+            database.close();
+        }
+
+        Logger.d(context, TAG, "Closed database helper");
+
+
+        String dbDir = context.getApplicationInfo().dataDir + "/databases";
+        File dir = new File(dbDir);
+
+        if (dir.exists() && dir.isDirectory()) {
+            String[] files = dir.list();
+            if (files != null) {
+                for (String file : files) {
+                    // Include additional database-related extensions
+                    if (file.endsWith(".db") || file.endsWith(".sqlite") ||
+                            file.endsWith(".db-journal") || file.endsWith(".db-wal") || file.endsWith(".db-shm")) {
+                        Logger.d(context, TAG, "Deleting database: " + file);
+                        try {
+                            if (context.deleteDatabase(file)) {
+                                Logger.d(context, TAG, "Deleted database: " + file);
+                            } else {
+                                Logger.d(context, TAG, "Failed to delete database: " + file);
+                            }
+                        } catch (Exception e) {
+                            Logger.e(context, TAG, "Error deleting database " + file + ": " + e.toString());
+                        }
+                    }
+                }
+            } else {
+                Logger.d(context, TAG, "No database files found or unable to list files in: " + dbDir);
+            }
+        } else {
+            Logger.d(context, TAG, "Database directory does not exist or is not a directory: " + dbDir);
+        }
+        Logger.d(context, TAG, "Completed clearAllDatabases");
+    }
+
+    // Clears all cache files for the app
+    void clearAllCache(Context context) {
+        if (context == null) {
+            Logger.e(context, TAG, "Context is null in clearAllCache");
+            throw new IllegalArgumentException("Context cannot be null");
+        }
+        Logger.d(context, TAG, "Starting clearAllCache");
+        File cacheDir = context.getCacheDir();
+        if (cacheDir != null && cacheDir.isDirectory()) {
+            if (deleteRecursive(cacheDir, context)) {
+                Logger.d(context, TAG, "Cleared internal cache directory: " + cacheDir.getAbsolutePath());
+            } else {
+                Logger.d(context, TAG, "Failed to clear internal cache directory: " + cacheDir.getAbsolutePath());
+            }
+        } else {
+            Logger.d(context, TAG, "Internal cache directory is null or not a directory");
+        }
+        Logger.d(context, TAG, "Completed clearAllCache");
+    }
+
+    // Clears all external cache files for the app
+    void clearAllExternalCache(Context context) {
+        if (context == null) {
+            Logger.e(context, TAG, "Context is null in clearAllExternalCache");
+            throw new IllegalArgumentException("Context cannot be null");
+        }
+        Logger.d(context, TAG, "Starting clearAllExternalCache");
+        File externalCacheDir = context.getExternalCacheDir();
+        if (externalCacheDir != null && externalCacheDir.isDirectory()) {
+            if (deleteRecursive(externalCacheDir, context)) {
+                Logger.d(context, TAG, "Cleared external cache directory: " + externalCacheDir.getAbsolutePath());
+            } else {
+                Logger.d(context, TAG, "Failed to clear external cache directory: " + externalCacheDir.getAbsolutePath());
+            }
+        } else {
+            Logger.d(context, TAG, "External cache directory is null or not a directory");
+        }
+        Logger.d(context, TAG, "Completed clearAllExternalCache");
+    }
+
+    // Recursively deletes files and directories, returns true if successful
+    boolean deleteRecursive(File fileOrDir, Context context) {
+        if (fileOrDir == null) {
+            Logger.d(context, TAG, "File or directory is null in deleteRecursive");
+            return false;
+        }
+        boolean success = true;
+        try {
+            if (fileOrDir.isDirectory()) {
+                File[] files = fileOrDir.listFiles();
+                if (files != null) {
+                    for (File child : files) {
+                        Logger.d(context, TAG, "Attempting to delete: " + child.getAbsolutePath());
+                        success &= deleteRecursive(child, context);
+                    }
+                } else {
+                    Logger.d(context, TAG, "Unable to list files in directory: " + fileOrDir.getAbsolutePath());
+                }
+            }
+            if (fileOrDir.delete()) {
+                Logger.d(context, TAG, "Deleted: " + fileOrDir.getAbsolutePath());
+            } else {
+                Logger.d(context, TAG, "Failed to delete: " + fileOrDir.getAbsolutePath());
+                success = false;
+            }
+        } catch (SecurityException e) {
+            Logger.e(context, TAG, "SecurityException while deleting: " + fileOrDir.getAbsolutePath() + " " + e.toString());
+            success = false;
+        } catch (Exception e) {
+            Logger.e(context, TAG, "Unexpected error while deleting: " + fileOrDir.getAbsolutePath() + " " + e.toString());
+            success = false;
+        }
+        return success;
     }
 
 

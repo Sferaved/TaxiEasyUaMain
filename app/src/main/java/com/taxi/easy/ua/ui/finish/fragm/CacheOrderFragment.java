@@ -51,7 +51,6 @@ import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.Status;
 import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
@@ -59,6 +58,7 @@ import com.taxi.easy.ua.utils.auth.FirebaseConsentManager;
 import com.taxi.easy.ua.utils.blacklist.BlacklistManager;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
@@ -444,9 +444,9 @@ public class CacheOrderFragment extends Fragment {
             }
         }
         if (servicesVer) {
-            for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
+            for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
                 if (services.get(i + 1).equals("1")) {
-                    servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
+                    servicesChecked.add(DataArr.arrayServiceCode()[i]);
                 }
             }
             for (int i = 0; i < servicesChecked.size(); i++) {
@@ -711,9 +711,9 @@ public class CacheOrderFragment extends Fragment {
                 }
             }
             if (servicesVer) {
-                for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
+                for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
                     if (services.get(i + 1).equals("1")) {
-                        servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
+                        servicesChecked.add(DataArr.arrayServiceCode()[i]);
                     }
                 }
                 for (int i = 0; i < servicesChecked.size(); i++) {

@@ -40,7 +40,6 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentGalleryBinding;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetDialogFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
@@ -884,9 +883,9 @@ public class GalleryFragment extends Fragment {
             }
         }
         if(servicesVer) {
-            for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
+            for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
                 if(services.get(i+1).equals("1")) {
-                    servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
+                    servicesChecked.add(DataArr.arrayServiceCode()[i]);
                 }
             }
             for (int i = 0; i < servicesChecked.size(); i++) {

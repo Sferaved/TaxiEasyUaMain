@@ -244,11 +244,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 
 
                             // GPS включен, выполните ваш код здесь
-                            if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
-                                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                                        .setPopUpTo(R.id.nav_restart, true)
-                                        .build());
-                            }
+
 
                             if (!NetworkUtils.isNetworkAvailable(getApplicationContext())) {
                                 NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);

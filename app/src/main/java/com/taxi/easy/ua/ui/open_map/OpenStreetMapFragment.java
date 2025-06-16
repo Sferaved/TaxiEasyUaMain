@@ -1,6 +1,5 @@
 package com.taxi.easy.ua.ui.open_map;
 
-
 import static android.content.Context.MODE_PRIVATE;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
@@ -9,7 +8,6 @@ import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.database.Cursor;
@@ -21,7 +19,6 @@ import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.LayoutInflater;
@@ -33,6 +30,8 @@ import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -72,6 +71,7 @@ import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Polyline;
 
+import java.io.File;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -82,6 +82,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.Cache;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
@@ -90,856 +91,846 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-
+// Фрагмент для отображения карты и управления маркерами
 public class OpenStreetMapFragment extends Fragment {
     private static final String TAG = "OpenStreetMapFragment";
-    public static IMapController mapController;
 
-    private static ApiService apiService;
+    // UI элементы и зависимости
+    private FragmentOpenstreetmapBinding binding;
+    private Context ctx;
+    private MapView map;
+    private IMapController mapController;
+    private ProgressBar progressBar;
+    private FloatingActionButton fabCall, fabOpenMap;
+    private ImageButton fab;
+    private Switch gpsSwitch;
+    private FragmentManager fragmentManager;
 
-    public String[] arrayStreet;
-    public static FloatingActionButton  fab_call, fab_open_map, fab_open_marker;
-    public static ImageButton fab;
+    // Данные карты и маркеров
+    private Marker startMarkerObj; // Маркер начальной точки
+    private Marker finishMarkerObj; // Маркер конечной точки
+    private GeoPoint startPoint; // Координаты начальной точки
+    private GeoPoint endPoint; // Координаты конечной точки
+    private String fromAddressString; // Адрес начальной точки
+    private String toAddressString; // Адрес конечной точки
+    private Drawable scaledDrawable; // Иконка маркера
+    private Marker previousMarker; // Предыдущий маркер для замены
+    private Polyline roadOverlay; // Оверлей маршрута
+    private String markerType; // Тип маркера: "startMarker" или "finishMarker"
+    private double startLat, startLan, finishLat, finishLan; // Координаты
+    private String city; // Город
+    private String api; // API ключ
+    private long addCost; // Дополнительная стоимость
 
-    public static double startLat, startLan, finishLat, finishLan;
-    public static MapView map;
-    public static String api;
-    public static GeoPoint startPoint;
-    public static GeoPoint endPoint;
-    @SuppressLint({"StaticFieldLeak", "UseSwitchCompatOrMaterialCode"})
-    static Switch gpsSwitch;
-    public static Polyline roadOverlay;
-    public static Marker m, marker;
-    public static String FromAdressString, ToAdressString;
-    LayoutInflater inflater;
-    @SuppressLint("StaticFieldLeak")
-    static View view;
-    public static long addCost;
-
-    public static FragmentManager fragmentManager;
-    @SuppressLint("StaticFieldLeak")
-    public static ProgressBar progressBar;
-    @SuppressLint("StaticFieldLeak")
-
-    private String city;
-
-    private static String  startMarker;
-    private static String finishMarker;
-    private static Drawable originalDrawable;
-    private static Drawable scaledDrawable;
-    private static String startPointNoText;
-    private static String endPointNoText;
-    private static Marker previousMarker;
-
-    private static final Executor executor = Executors.newSingleThreadExecutor();
-
-    public static String[] arrayServiceCode() {
-        return new String[]{
-                "BAGGAGE",
-                "ANIMAL",
-                "CONDIT",
-                "MEET",
-                "COURIER",
-                "CHECK_OUT",
-                "BABY_SEAT",
-                "DRIVER",
-                "NO_SMOKE",
-                "ENGLISH",
-                "CABLE",
-                "FUEL",
-                "WIRES",
-                "SMOKE",
-        };
-    }
-
-
-
+    // Геолокация
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
-    public static MarkerOverlayVisicom markerOverlay;
 
-    private FragmentOpenstreetmapBinding binding;
-    Context ctx;
+    // API
+    private ApiService apiService;
 
-    @SuppressLint({"MissingInflatedId", "InflateParams", "UseCompatLoadingForDrawables", "SourceLockedOrientationActivity"})
+    // Запрос разрешений
+    private ActivityResultLauncher<String[]> locationPermissionLauncher;
+
+    // Поток для маршрутов
+    private static final Executor executor = Executors.newSingleThreadExecutor();
+
+    @SuppressLint({"MissingInflatedId", "InflateParams", "UseCompatLoadingForDrawables"})
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentOpenstreetmapBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
+        ctx = requireContext();
 
-        startPointNoText = getString(R.string.startPoint);
-        endPointNoText = getString(R.string.end_point_marker);
+        // Инициализация лаунчера для запроса разрешений
+        initializePermissionLauncher();
 
-        Bundle arguments = getArguments();
-        assert arguments != null;
+        // Инициализация иконки маркера
+        initializeMarkerIcon();
 
-        startMarker = arguments.getString("startMarker");
-        finishMarker = arguments.getString("finishMarker");
+        // Инициализация аргументов
+        initializeArguments();
 
+        // Инициализация строк адресов
+        fromAddressString = getString(R.string.startPoint);
+        toAddressString = getString(R.string.end_point_marker);
 
-        originalDrawable = ContextCompat.getDrawable(requireActivity(), R.drawable.marker_green);
-        int width = 48;
-        int height = 48;
-        assert originalDrawable != null;
-        Bitmap bitmap = Bitmap.createScaledBitmap(((BitmapDrawable) originalDrawable).getBitmap(), width, height, false);
+        // Инициализация UI
+        initializeUI();
 
-        // Создайте новый Drawable из уменьшенного изображения
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.DONUT) {
-            scaledDrawable = new BitmapDrawable(getResources(), bitmap);
-        }
-
-
-        Context ctx = requireActivity();
-        //important! set your user agent to prevent getting banned from the osm servers
+        // Настройка конфигурации OSMDroid
+        Configuration.getInstance().setCacheMapTileCount((short) 12); // Увеличить кэш в памяти
+        Configuration.getInstance().setTileFileSystemCacheMaxBytes(1024 * 1024 * 50); // 50 МБ кэша на диске
         Configuration.getInstance().load(ctx, androidx.preference.PreferenceManager.getDefaultSharedPreferences(ctx));
-
         fragmentManager = getChildFragmentManager();
 
-        inflater = getLayoutInflater();
-        view = inflater.inflate(R.layout.phone_verify_layout, null);
+        return root;
+    }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        map = binding.map;
+        mapController = map.getController();
+        apiServiceActivate();
+        gpsSwitch.setChecked(switchState());
+        Logger.d(ctx, TAG, "onResume: markerType=" + markerType);
 
+        // Настройка карты
+        configureMap();
 
+        // Настройка слушателя касаний
+        setupMapTouchListener();
 
-        FromAdressString = getString(R.string.startPoint);
-        ToAdressString = getString(R.string.end_point_marker);
+        // Инициализация начальной позиции
+        initializeMapPosition();
 
+        map.onResume();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        stopLocationUpdates();
+        map.onPause();
+    }
+
+    // Инициализация лаунчера для запроса разрешений
+    private void initializePermissionLauncher() {
+        locationPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                permissions -> {
+                    Boolean fineLocationGranted = permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false);
+                    Boolean coarseLocationGranted = permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false);
+
+                    Logger.d(ctx, TAG, "Location permissions result: fineLocation=" + fineLocationGranted + ", coarseLocation=" + coarseLocationGranted);
+
+                    if (Boolean.TRUE.equals(fineLocationGranted) && Boolean.TRUE.equals(coarseLocationGranted)) {
+                        // Разрешения предоставлены
+                        initializeLocationUpdates();
+                    } else {
+                        // Разрешения отклонены
+                        Toast.makeText(ctx, R.string.check_permition, Toast.LENGTH_SHORT).show();
+                        Logger.e(ctx, TAG, "Location permissions denied");
+                        // Предложить открыть настройки, если пользователь окончательно отклонил разрешение
+                        if (!shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+                            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                            Uri uri = Uri.fromParts("package", ctx.getPackageName(), null);
+                            intent.setData(uri);
+                            startActivity(intent);
+                        }
+                    }
+                }
+        );
+    }
+
+    // Запрос разрешений на геолокацию
+    private void requestLocationPermissions() {
+        Logger.d(ctx, TAG, "Requesting location permissions");
+        locationPermissionLauncher.launch(new String[]{
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+        });
+    }
+
+    // Инициализация иконки маркера
+    private void initializeMarkerIcon() {
+        Drawable originalDrawable = ContextCompat.getDrawable(ctx, R.drawable.marker_green);
+        if (originalDrawable != null) {
+            int width = 48, height = 48;
+            Bitmap bitmap = Bitmap.createScaledBitmap(((BitmapDrawable) originalDrawable).getBitmap(), width, height, false);
+            scaledDrawable = new BitmapDrawable(getResources(), bitmap);
+        }
+    }
+
+    // Инициализация аргументов фрагмента
+    private void initializeArguments() {
+        Bundle arguments = getArguments();
+        if (arguments != null) {
+            markerType = arguments.getString("startMarker", "").equals("ok") ? "startMarker" :
+                    arguments.getString("finishMarker", "").equals("ok") ? "finishMarker" : null;
+        }
+    }
+
+    // Инициализация UI элементов
+    private void initializeUI() {
         progressBar = binding.progressBar;
         progressBar.setVisibility(View.INVISIBLE);
-
         fab = binding.fab;
         fab.setVisibility(View.INVISIBLE);
-        fab_call = binding.fabCall;
-        fab_open_map = binding.fabOpenMap;
-        fab_open_map.setOnClickListener(v -> {
+        fabCall = binding.fabCall;
+        fabOpenMap = binding.fabOpenMap;
+        gpsSwitch = binding.gpsSwitch;
+
+        fabOpenMap.setOnClickListener(v -> {
             Intent intent = new Intent(requireActivity(), MainActivity.class);
             intent.putExtra("gps_upd", false);
             startActivity(intent);
         });
-        fab_open_marker = binding.fabOpenMarker;
-        fab_open_marker.setVisibility(View.INVISIBLE);
-
-        gpsSwitch = binding.gpsSwitch;
 
         gpsSwitch.setChecked(switchState());
         if (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             gpsSwitch.setVisibility(View.INVISIBLE);
         }
-        fab_call.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_DIAL);
+
+        fabCall.setOnClickListener(v -> {
             List<String> stringList = logCursor(MainActivity.CITY_INFO, ctx);
             String phone = stringList.get(3);
+            Intent intent = new Intent(Intent.ACTION_DIAL);
             intent.setData(Uri.parse(phone));
             startActivity(intent);
         });
-
 
         gpsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
             gpsSwitch.setChecked(switchState());
         });
-        return root;
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    private void switchToRegion() {
-
-        List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
-        city = stringList.get(1);
-        api =  stringList.get(2);
-        if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            Cursor cursor = database.rawQuery(query, null);
-
-            cursor.moveToFirst();
-
-            // Получите значения полей из первой записи
-
-            @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-            @SuppressLint("Range") double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
-//            @SuppressLint("Range") String start = cursor.getString(cursor.getColumnIndex("start"));
-
-            cursor.close();
-            database.close();
-//            FromAdressString = start;
-            setStartPoint(originLatitude, originLongitude, requireActivity());
-            startPoint = new GeoPoint(originLatitude,originLongitude);
-
+    // Настройка карты
+    private void configureMap() {
+        if (map == null) {
+            Logger.e(ctx, TAG, "MapView is null, cannot configure map");
+            return;
         }
+        map.setTileSource(TileSourceFactory.MAPNIK);
+        map.setMultiTouchControls(true);
+        // Убрать ограничения зума
+        map.setMinZoomLevel(null);
+        map.setMaxZoomLevel(null);
 
-
-
-        map.setMultiTouchControls(true); // для pinch-to-zoom
         map.getZoomController().setVisibility(CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT);
-
-
-        double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, requireActivity()).get(4));
+        map.setScrollableAreaLimitDouble(null); // Отключить ограничения прокрутки для плавности
+        Logger.d(ctx, TAG, "Zoom animation minimized");
+        double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, ctx).get(4));
         mapController.setZoom(newZoomLevel);
         map.setClickable(true);
-        map.setTileSource(TileSourceFactory.MAPNIK);
-//        map.setTileSource(TileSourceFactory.WIKIMEDIA);
-//        map.setTileSource(TileSourceFactory.PUBLIC_TRANSPORT);
-//        map.setTileSource(TileSourceFactory.CLOUDMADESTANDARDTILES);
-//        map.setTileSource(TileSourceFactory.CLOUDMADESMALLTILES);
-//        map.setTileSource(TileSourceFactory.FIETS_OVERLAY_NL);
-//        map.setTileSource(TileSourceFactory.BASE_OVERLAY_NL);
-//        map.setTileSource(TileSourceFactory.ROADS_OVERLAY_NL);
-//        map.setTileSource(TileSourceFactory.HIKEBIKEMAP);
-// *       map.setTileSource(TileSourceFactory.OPEN_SEAMAP);
-//        map.setTileSource(TileSourceFactory.USGS_SAT);
-//        map.setTileSource(TileSourceFactory.ChartbundleWAC);
-//        map.setTileSource(TileSourceFactory.ChartbundleENRH);
-//        map.setTileSource(TileSourceFactory.ChartbundleENRL);
-//        map.setTileSource(TileSourceFactory.OpenTopo);
-         map.setOnTouchListener(new View.OnTouchListener() {
-            @SuppressLint("ClickableViewAccessibility")
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                    // Обработка изменения масштаба
-                    double newZoomLevel = map.getZoomLevelDouble();
-                    Logger.d(requireActivity(), TAG, "Zoom level: " + newZoomLevel);
-                    // Добавьте свой код обработки здесь
-                    SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                    ContentValues cv = new ContentValues();
+    }
 
-                    cv.put("newZoomLevel", newZoomLevel);
-                    database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
-                            new String[] { "1" });
-                    database.close();
-                }
-                return false;
+    // Настройка слушателя касаний карты
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupMapTouchListener() {
+        map.setOnTouchListener((v, event) -> {
+            int action = event.getAction();
+            GeoPoint centerPoint = (GeoPoint) map.getMapCenter();
+            Logger.d(ctx, TAG, "Map touch event: action=" + action + ", centerPoint=" + centerPoint);
+
+            if (action == MotionEvent.ACTION_DOWN) {
+                removeMarkerOnTouchDown();
+            } else if (action == MotionEvent.ACTION_UP) {
+                handleTouchUp(centerPoint);
+                return true;
+            } else if (action == MotionEvent.ACTION_MOVE) {
+                updateZoomLevel();
             }
+            return false;
         });
 
+        map.setOnClickListener(v -> {
+            GeoPoint centerPoint = (GeoPoint) map.getMapCenter();
+            Logger.d(ctx, TAG, "onSingleTapConfirmed: centerPoint=" + centerPoint);
+            handleSingleTap(centerPoint);
+        });
     }
 
-    private static void updateMyPosition(Double startLat, Double startLan, String position, Context context) {
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+    // Удаление маркера при начале касания
+    private void removeMarkerOnTouchDown() {
+        if (map == null) {
+            Logger.e(ctx, TAG, "MapView is null, cannot remove marker");
+            return;
+        }
+        if ("startMarker".equals(markerType)) {
+            if (startMarkerObj != null) {
+                map.getOverlays().remove(startMarkerObj);
+                startMarkerObj = null;
+                map.invalidate();
+                Logger.d(ctx, TAG, "Removed startMarkerObj");
+            }
+        } else if ("finishMarker".equals(markerType)) {
+            if (finishMarkerObj != null) {
+                map.getOverlays().remove(finishMarkerObj);
+                finishMarkerObj = null;
+                map.invalidate();
+                Logger.d(ctx, TAG, "Removed finishMarkerObj");
+            }
+        } else {
+            Logger.i(ctx, TAG, "Invalid markerType in removeMarkerOnTouchDown: " + markerType);
+        }
+    }
+
+    // Обработка окончания касания
+    private void handleTouchUp(GeoPoint centerPoint) {
+        try {
+            if ("startMarker".equals(markerType)) {
+                startPoint = centerPoint;
+                dialogMarkerStartPoint(ctx);
+            } else if ("finishMarker".equals(markerType)) {
+                endPoint = centerPoint;
+                dialogMarkersEndPoint(ctx);
+            }
+        } catch (MalformedURLException | JSONException | InterruptedException e) {
+            Logger.e(ctx, TAG, "Error handling marker point on ACTION_UP" + e);
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
+    }
+
+    // Обработка одиночного касания
+    private void handleSingleTap(GeoPoint centerPoint) {
+        try {
+            if ("startMarker".equals(markerType)) {
+                startPoint = centerPoint;
+                dialogMarkerStartPoint(ctx);
+            } else if ("finishMarker".equals(markerType)) {
+                endPoint = centerPoint;
+                dialogMarkersEndPoint(ctx);
+            }
+        } catch (MalformedURLException | JSONException | InterruptedException e) {
+            Logger.e(ctx, TAG, "Error handling marker point" + e);
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
+    }
+
+    // Обновление уровня зума
+    private void updateZoomLevel() {
+        double newZoomLevel = map.getZoomLevelDouble();
+        Logger.d(ctx, TAG, "Zoom level: " + newZoomLevel);
+        SQLiteDatabase database = ctx.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         ContentValues cv = new ContentValues();
-
-        cv.put("startLat", startLat);
-        database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
-                new String[] { "1" });
-        cv.put("startLan", startLan);
-        database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
-                new String[] { "1" });
-        cv.put("position", position);
-        database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
-                new String[] { "1" });
+        cv.put("newZoomLevel", newZoomLevel);
+        database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?", new String[]{"1"});
         database.close();
-
     }
+
+    // Инициализация позиции карты
+    private void initializeMapPosition() {
+        if (map == null || ctx == null) {
+            Logger.e(ctx, TAG, "Map or context is null, skipping map position initialization");
+            initializeRegion();
+            return;
+        }
+        double savedStartLat = getFromTablePositionInfo(ctx, "startLat");
+        if (savedStartLat != 0) {
+            startLat = savedStartLat;
+            startLan = getFromTablePositionInfo(ctx, "startLan");
+            List<String> startList = logCursor(MainActivity.TABLE_POSITION_INFO, ctx);
+            if (startList.size() > 3) {
+                fromAddressString = startList.get(3);
+            } else {
+                Logger.i(ctx, TAG, "Insufficient data in TABLE_POSITION_INFO, size: " + startList.size());
+                fromAddressString = "";
+            }
+            startPoint = new GeoPoint(startLat, startLan);
+            mapController.setCenter(startPoint);
+            setMarker(startLat, startLan, fromAddressString, ctx);
+            map.invalidate();
+
+            if (startPoint != null) {
+                // Прокрутка области для загрузки тайлов в кэш
+                double offset = 0.01; // Смещение в градусах (~1 км)
+                mapController.setCenter(new GeoPoint(startPoint.getLatitude() + offset, startPoint.getLongitude() + offset));
+                map.invalidate();
+                map.postDelayed(() -> {
+                    mapController.setCenter(new GeoPoint(startPoint.getLatitude() - offset, startPoint.getLongitude() - offset));
+                    map.invalidate();
+                    map.postDelayed(() -> {
+                        mapController.setCenter(startPoint); // Возврат в центр
+                        map.invalidate();
+                        Logger.d(ctx, TAG, "Preloaded tiles by scrolling around startPoint");
+                    }, 100);
+                }, 100);
+            }
+
+        } else {
+            initializeRegion();
+        }
+    }
+
+    // Инициализация региона, если нет сохраненной позиции
+    private void initializeRegion() {
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, ctx);
+        city = stringList.get(1);
+        api = stringList.get(2);
+
+        if (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+            SQLiteDatabase database = ctx.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            Cursor cursor = database.rawQuery(query, null);
+            if (cursor.moveToFirst()) {
+                @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
+                @SuppressLint("Range") double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
+                cursor.close();
+                database.close();
+                startPoint = new GeoPoint(originLatitude, originLongitude);
+            }
+        }
+
+        if (startPoint != null) {
+            startLat = startPoint.getLatitude();
+            startLan = startPoint.getLongitude();
+            mapController.setCenter(startPoint);
+            setMarker(startLat, startLan, fromAddressString, ctx);
+            map.invalidate();
+
+        } else if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            initializeLocationUpdates();
+        } else {
+            requestLocationPermissions();
+        }
+    }
+
+    // Инициализация обновлений геолокации
+    private void initializeLocationUpdates() {
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(ctx);
+        locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(@NonNull LocationResult locationResult) {
+                stopLocationUpdates();
+                List<Location> locations = locationResult.getLocations();
+                Logger.d(ctx, TAG, "onLocationResult: locations=" + locations);
+                if (!locations.isEmpty()) {
+                    Location firstLocation = locations.get(0);
+                    if (startLat != firstLocation.getLatitude() || startLan != firstLocation.getLongitude()) {
+                        startLat = firstLocation.getLatitude();
+                        startLan = firstLocation.getLongitude();
+                        updateLocation();
+                    }
+                }
+            }
+        };
+        startLocationUpdates();
+    }
+
+    // Обновление позиции на основе геолокации
+    private void updateLocation() {
+        String language = Locale.getDefault().getLanguage();
+        String BASE_URL = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        String urlFrom = BASE_URL + "/" + api + "/android/fromSearchGeoLocal/" + startLat + "/" + startLan + "/" + language;
+
+        try {
+            FromJSONParser parser = new FromJSONParser(urlFrom);
+            Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
+            if (sendUrlFrom != null) {
+                fromAddressString = sendUrlFrom.get("route_address_from");
+                if (fromAddressString != null && fromAddressString.equals("Точка на карте")) {
+                    fromAddressString = getString(R.string.startPoint);
+                }
+            }
+            updateMyPosition(startLat, startLan, fromAddressString, ctx);
+            startPoint = new GeoPoint(startLat, startLan);
+            mapController.setCenter(startPoint);
+            setMarker(startLat, startLan, fromAddressString, ctx);
+            map.invalidate();
+        } catch (MalformedURLException | InterruptedException | JSONException e) {
+            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder().setPopUpTo(R.id.nav_restart, true).build());
+        }
+    }
+
+    // Запуск обновлений геолокации
     private void startLocationUpdates() {
-        LocationRequest locationRequest = createLocationRequest();
-        if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
+                .setMinUpdateIntervalMillis(100)
+                .build();
+        if (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
         }
     }
 
+    // Остановка обновлений геолокации
     private void stopLocationUpdates() {
-        fusedLocationProviderClient.removeLocationUpdates(locationCallback);
-    }
-
-    private LocationRequest createLocationRequest() {
-        return new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)  // приоритет и интервал обновления
-                .setMinUpdateIntervalMillis(100) // минимальный быстрый интервал
-                .build();
-    }
-
-
-   private boolean  switchState() {
-        LocationManager lm = (LocationManager) requireActivity().getSystemService(Context.LOCATION_SERVICE);
-        boolean gps_enabled = false;
-        boolean network_enabled = false;
-
-        try {
-            gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        } catch(Exception e) {
-            FirebaseCrashlytics.getInstance().recordException(e);
+        if (fusedLocationProviderClient != null && locationCallback != null) {
+            fusedLocationProviderClient.removeLocationUpdates(locationCallback);
         }
-
-        try {
-            network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-        } catch(Exception e) {
-            FirebaseCrashlytics.getInstance().recordException(e);
-        }
-
-       return gps_enabled && network_enabled;
     }
 
-
+    // Инициализация API сервиса
     private void apiServiceActivate() {
-        String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        Logger.d(map.getContext(), TAG, "Request URL: " + retrofit.baseUrl());
-
-        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
-            @Override
-            public void log(@NonNull String message) {
-                // Log the URL
-                Logger.d(map.getContext(), TAG, message);
-            }
-        });
-
+        String BASE_URL = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(message -> Logger.d(ctx, TAG, message));
         loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(loggingInterceptor)
-                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
-                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
-                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
+                .connectTimeout(10, TimeUnit.SECONDS) // Уменьшить таймаут подключения
+                .readTimeout(10, TimeUnit.SECONDS) // Уменьшить таймаут чтения
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .cache(new Cache(new File(ctx.getCacheDir(), "okhttp_cache"), 50 * 1024 * 1024)) // 50 МБ кэша
                 .build();
 
-        retrofit = new Retrofit.Builder()
+        Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
-                .client(client)  // Set the client with logging interceptor
+                .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
         apiService = retrofit.create(ApiService.class);
+        Logger.d(ctx, TAG, "Request URL: " + retrofit.baseUrl());
     }
-    public static void setStartPoint(double latitude, double longitude, Context context) {
 
-
+    // Вызов API для получения адреса по координатам
+    private void makeApiCall(double latitude, double longitude, Context context) {
+        Logger.d(context, TAG, "makeApiCall started with latitude=" + latitude + ", longitude=" + longitude + ", map=" + map + ", markerType=" + markerType);
+        if (map == null) {
+            Logger.e(context, TAG, "MapView is null, aborting API call");
+            return;
+        }
+        if (markerType == null || (!"startMarker".equals(markerType) && !"finishMarker".equals(markerType))) {
+            Logger.i(context, TAG, "Invalid markerType: " + markerType + ", defaulting to startMarker");
+            markerType = "startMarker"; // Fallback
+        }
         String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
-
+        Logger.d(context, TAG, "localeCode=" + localeCode);
         Locale locale = new Locale(localeCode.split("_")[0]);
         Locale.setDefault(locale);
 
         Resources resources = context.getResources();
         android.content.res.Configuration config = resources.getConfiguration();
         config.setLocale(locale);
-        //        resources.updateConfiguration(config, resources.getDisplayMetrics());
         Context localizedContext = context.createConfigurationContext(config);
-        Logger.d(context, TAG, "language currentLocale " + localeCode);
+        Logger.d(context, TAG, "language currentLocale=" + localeCode);
+
+        if (map == null) {
+            Logger.e(context, TAG, "MapView is null");
+            return;
+        }
 
         Call<ApiResponse> call = apiService.reverseAddressLocal(latitude, longitude, localeCode);
-        m = new Marker(map);
+        Logger.d(context, TAG, "API call created for reverseAddressLocal");
 
+        prepareMarker();
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse apiResponse = response.body();
-                    String result = apiResponse.getResult();
-                    if (map != null && map.getRepository() != null) {
-
-                            if (!result.equals("Точка на карте")) {
-                                FromAdressString = result;
-                            } else {
-                                FromAdressString = context.getString(R.string.startPoint);
-                            }
-
-                            m.setPosition(startPoint);
-                            m.setTextLabelBackgroundColor(
-                                    Color.TRANSPARENT
-                            );
-                            m.setTextLabelForegroundColor(
-                                    Color.RED
-                            );
-                            m.setTextLabelFontSize(40);
-                            m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-                            String unuString = new String(Character.toChars(0x1F449));
-
-                            m.setTitle("1." + unuString + FromAdressString);
-                            m.setIcon(scaledDrawable);
-                            m.showInfoWindow();
-
-                            map.getOverlays().add(m);
-                            previousMarker = m;
-                            map.getController().setCenter(startPoint);
-                            double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, fab.getContext()).get(4));
-                            mapController.setZoom(newZoomLevel);
-
-                            map.invalidate();
-
-
-                    }
-                } else {
-                    // Обработка неуспешного запроса
-                }
+                handleApiResponse(response, localizedContext);
             }
 
             @Override
             public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
-                // Обработка ошибок
+                Logger.e(context, TAG, "API call failed: " + t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
     }
 
-    public static void makeApiCall(double latitude, double longitude, Context context) {
-
-
-        String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
-        Locale locale = new Locale(localeCode.split("_")[0]);
-        Locale.setDefault(locale);
-
-        Resources resources = context.getResources();
-        android.content.res.Configuration config = resources.getConfiguration();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            config.setLocale(locale);
+    // Подготовка маркера перед API вызовом
+    private void prepareMarker() {
+        if (map == null) {
+            Logger.e(ctx, TAG, "MapView is null, cannot prepare marker");
+            return;
         }
-//        resources.updateConfiguration(config, resources.getDisplayMetrics());
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            Context localizedContext = context.createConfigurationContext(config);
+        if ("startMarker".equals(markerType)) {
+            if (startMarkerObj != null) {
+                map.getOverlays().remove(startMarkerObj);
+                Logger.d(ctx, TAG, "Removed startMarkerObj from overlays");
+            }
+            startMarkerObj = new Marker(map);
+            Logger.d(ctx, TAG, "Created new start marker: " + startMarkerObj);
+        } else if ("finishMarker".equals(markerType)) {
+            if (finishMarkerObj != null) {
+                map.getOverlays().remove(finishMarkerObj);
+                Logger.d(ctx, TAG, "Removed finishMarkerObj from overlays");
+            }
+            finishMarkerObj = new Marker(map);
+            Logger.d(ctx, TAG, "Created new finish marker: " + finishMarkerObj);
+        } else {
+            Logger.e(ctx, TAG, "Invalid markerType: " + markerType);
+            FirebaseCrashlytics.getInstance().recordException(new Exception("Invalid markerType: " + markerType));
         }
-        Logger.d(context, TAG, "language currentLocale " + localeCode);
+    }
 
-        Call<ApiResponse> call = apiService.reverseAddressLocal(latitude, longitude, localeCode);
-        map.getOverlays().remove(m);
+    // Обработка ответа API
+    private void handleApiResponse(Response<ApiResponse> response, Context localizedContext) {
+        Logger.d(ctx, TAG, "onResponse called, response successful: " + response.isSuccessful());
+        if (!isAdded()) {
+            Logger.e(ctx, TAG, "Fragment is not attached");
+            return;
+        }
+        if (response.isSuccessful() && response.body() != null) {
+            ApiResponse apiResponse = response.body();
+            String result = apiResponse.getResult();
+            Logger.d(ctx, TAG, "API response result: " + result);
+
+            if (map == null || map.getRepository() == null) {
+                Logger.e(ctx, TAG, "Map or repository is null");
+                return;
+            }
+
+            if ("startMarker".equals(markerType)) {
+                handleStartMarkerResponse(result, localizedContext);
+            } else if ("finishMarker".equals(markerType)) {
+                handleFinishMarkerResponse(result, localizedContext);
+            }
+        } else {
+            Logger.e(ctx, TAG, "API response unsuccessful or body is null, response code: " + response.code());
+        }
+    }
+
+    // Обработка ответа для начального маркера
+    private void handleStartMarkerResponse(String result, Context localizedContext) {
+        if (startPoint == null) {
+            Logger.e(ctx, TAG, "startPoint is null");
+            return;
+        }
+        if (startMarkerObj == null) {
+            Logger.e(ctx, TAG, "startMarkerObj is null, cannot set marker position");
+            return;
+        }
+        fromAddressString = result.equals("Точка на карте") ? localizedContext.getString(R.string.startPoint) : result;
+        Logger.d(ctx, TAG, "fromAddressString set to: " + fromAddressString);
+
+        if (previousMarker != null) {
+            map.getOverlays().remove(previousMarker);
+            Logger.d(ctx, TAG, "Removed previousMarker from overlays");
+        }
+
+        startMarkerObj.setPosition(startPoint);
+        configureMarker(startMarkerObj, fromAddressString, "1.");
+        previousMarker = startMarkerObj;
+        map.getOverlays().add(startMarkerObj);
+        Logger.d(ctx, TAG, "Added startMarkerObj to overlays");
+
+        mapController.setCenter(startPoint);
+        double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, fab.getContext()).get(4));
+        mapController.setZoom(newZoomLevel);
         map.invalidate();
+        Logger.d(ctx, TAG, "Map invalidated after startMarker setup");
 
-        m = new Marker(map);
+        updateRouteSettings("start");
+        CityFinder cityFinder = new CityFinder(ctx, startLat, startLan, fromAddressString);
+        cityFinder.findCity(startLat, startLan);
+        Logger.d(ctx, TAG, "CityFinder called with latitude=" + startLat + ", longitude=" + startLan);
+    }
 
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse apiResponse = response.body();
-                    String result = apiResponse.getResult();
-                    if (map != null && map.getRepository() != null) {
-                        if (startMarker.equals("ok")) {
-                            if (!result.equals("Точка на карте")) {
-                                FromAdressString = result;
-                            } else {
-                                FromAdressString = context.getString(R.string.startPoint);
-                            }
+    // Обработка ответа для конечного маркера
+    private void handleFinishMarkerResponse(String result, Context localizedContext) {
+        if (endPoint == null) {
+            Logger.e(ctx, TAG, "endPoint is null");
+            return;
+        }
+        if (map == null) {
+            Logger.e(ctx, TAG, "MapView is null, cannot handle finish marker");
+            return;
+        }
+        if (finishMarkerObj == null) {
+            Logger.e(ctx, TAG, "finishMarkerObj is null, cannot set marker position");
+            FirebaseCrashlytics.getInstance().recordException(new Exception("finishMarkerObj is null in handleFinishMarkerResponse"));
+            return;
+        }
+        toAddressString = result.equals("Точка на карте") ? localizedContext.getString(R.string.end_point_marker) : result;
+        Logger.d(ctx, TAG, "toAddressString set to: " + toAddressString);
 
+        finishMarkerObj.setPosition(new GeoPoint(endPoint.getLatitude(), endPoint.getLongitude()));
+        configureMarker(finishMarkerObj, toAddressString, "2.");
+        map.getOverlays().add(finishMarkerObj);
+        Logger.d(ctx, TAG, "Added finishMarkerObj to overlays");
 
-                            if (previousMarker != null) {
-                                map.getOverlays().remove(previousMarker);
-                            }
+        GeoPoint initialGeoPoint = new GeoPoint(endPoint.getLatitude(), endPoint.getLongitude());
+        mapController.setCenter(initialGeoPoint);
+        map.invalidate();
+        showRout(startPoint, endPoint);
+        Logger.d(ctx, TAG, "Map invalidated after finishMarker setup");
 
-                            m.setPosition(startPoint);
-                            m.setTextLabelBackgroundColor(Color.TRANSPARENT);
-                            m.setTextLabelForegroundColor(Color.RED);
-                            m.setTextLabelFontSize(40);
-                            m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-                            String unuString = new String(Character.toChars(0x1F449));
+        updateRouteSettings("finish");
+    }
 
-                            m.setTitle("1." + unuString + FromAdressString);
-                            m.setIcon(scaledDrawable);
-                            m.showInfoWindow();
+    // Настройка свойств маркера
+    private void configureMarker(Marker marker, String title, String prefix) {
+        marker.setTextLabelBackgroundColor(Color.TRANSPARENT);
+        marker.setTextLabelForegroundColor(Color.RED);
+        marker.setTextLabelFontSize(40);
+        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+        String unuString = new String(Character.toChars(0x1F449));
+        marker.setTitle(prefix + unuString + title);
+        Logger.d(ctx, TAG, "scaledDrawable: " + scaledDrawable);
+        marker.setIcon(scaledDrawable);
+        marker.showInfoWindow();
+    }
 
-                            // Сохраняем текущий маркер и добавляем его
-                            previousMarker = m;
-                            map.getOverlays().add(m);
+    // Обновление настроек маршрута
 
-                            map.getController().setCenter(startPoint);
-                            double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, fab.getContext()).get(4));
-                            mapController.setZoom(newZoomLevel);
+    private void updateRouteSettings(String point) {
+        if (map == null || map.getContext() == null || VisicomFragment.textViewTo == null) {
+            Logger.e(ctx, TAG, "Map, context, or textViewTo is null");
+            String message = getString(R.string.error_message);
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+            return;
+        }
 
-                            map.invalidate();
+        List<String> settings = new ArrayList<>();
+        SQLiteDatabase database = null;
+        Cursor cursor = null;
+        try {
+            database = map.getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            // Убедимся, что таблица существует с правильной схемой
+            database.execSQL("CREATE TABLE IF NOT EXISTS " + MainActivity.ROUT_MARKER + " (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "startLat REAL, startLan REAL, to_lat REAL, to_lng REAL, " +
+                    "start TEXT, finish TEXT)");
 
-                            List<String> settings = new ArrayList<>();
+            // Получение текущих данных
+            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+            cursor = database.rawQuery(query, null);
+            double currentFromLatitude = 0.0;
+            double currentFromLongitude = 0.0;
+            String currentStartAddress = "";
 
-                            if (VisicomFragment.textViewTo.getText().toString().equals(map.getContext().getString(R.string.on_city_tv))) {
+            double currentToLatitude = 0.0;
+            double currentToLongitude = 0.0;
+            String currentFinishAddress = "";
 
-                                settings.add(String.valueOf(startLat));
-                                settings.add(String.valueOf(startLan));
-                                settings.add(String.valueOf(startLat));
-                                settings.add(String.valueOf(startLan));
-                                settings.add(FromAdressString);
-                                settings.add(map.getContext().getString(R.string.on_city_tv));
-                            } else {
-                                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                                SQLiteDatabase database = map.getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                                Cursor cursor = database.rawQuery(query, null);
+            if (cursor.moveToFirst()) {
+                int fromLatIndex = cursor.getColumnIndex("startLat");
+                int fromLngIndex = cursor.getColumnIndex("startLan");
+                int startIndex = cursor.getColumnIndex("start");
 
-                                cursor.moveToFirst();
-                                // Получите значения полей из первой записи
+                int toLatIndex = cursor.getColumnIndex("to_lat");
+                int toLngIndex = cursor.getColumnIndex("to_lng");
+                int finishIndex = cursor.getColumnIndex("finish");
 
-                                @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                                @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                                cursor.close();
-                                database.close();
-
-
-                                settings.add(String.valueOf(startLat));
-                                settings.add(String.valueOf(startLan));
-                                settings.add(String.valueOf(toLatitude));
-                                settings.add(String.valueOf(toLongitude));
-
-                                settings.add(FromAdressString);
-                                settings.add(VisicomFragment.textViewTo.getText().toString());
-                            }
-                            updateRoutMarker(settings, map.getContext());
-                            updateMyPosition(startLat, startLan, FromAdressString, map.getContext());
-
-                            CityFinder cityFinder = new CityFinder(context, latitude, longitude, FromAdressString);
-                            cityFinder.findCity(latitude, longitude);
-
-
-                        }
-                        if (finishMarker.equals("ok")) {
-                            if (!result.equals("Точка на карте")) {
-                                ToAdressString = result;
-                            } else {
-                                ToAdressString = context.getString(R.string.end_point_marker);
-                            }
-
-
-                            assert map != null;
-                            marker = new Marker(map);
-                            marker.setPosition(new GeoPoint(endPoint.getLatitude(), endPoint.getLongitude()));
-                            marker.setTextLabelBackgroundColor(
-                                    Color.TRANSPARENT
-                            );
-                            marker.setTextLabelForegroundColor(
-                                    Color.RED
-                            );
-                            marker.setTextLabelFontSize(40);
-                            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-                            String unuString = new String(Character.toChars(0x1F449));
-
-                            marker.setTitle("2." + unuString + ToAdressString);
-                            marker.setIcon(scaledDrawable);
-                            marker.showInfoWindow();
-
-                            map.getOverlays().add(marker);
-
-                            GeoPoint initialGeoPoint = new GeoPoint(endPoint.getLatitude(), endPoint.getLongitude());
-                            map.getController().setCenter(initialGeoPoint);
-//                            double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, fab.getContext()).get(4));
-//                            mapController.setZoom(newZoomLevel);
-
-                            map.invalidate();
-                            showRout(startPoint, endPoint);
-                            List<String> settings = new ArrayList<>();
-
-                            settings.add(String.valueOf(startLat));
-                            settings.add(String.valueOf(startLan));
-                            settings.add(String.valueOf(endPoint.getLatitude()));
-                            settings.add(String.valueOf(endPoint.getLongitude()));
-                            settings.add(FromAdressString);
-                            settings.add(ToAdressString);
-
-                            updateRoutMarker(settings, map.getContext());
-                        }
-                    }
+                if (fromLatIndex != -1) {
+                    currentFromLatitude = cursor.getDouble(fromLatIndex);
                 } else {
-                    // Обработка неуспешного запроса
+                    Logger.i(ctx, TAG, "from_lat column not found in ROUT_MARKER");
                 }
+                if (fromLngIndex != -1) {
+                    currentFromLatitude = cursor.getDouble(fromLngIndex);
+                } else {
+                    Logger.i(ctx, TAG, "from_lng column not found in ROUT_MARKER");
+                }
+                if (startIndex != -1) {
+                    currentStartAddress = cursor.getString(startIndex) != null ? cursor.getString(startIndex) : "";
+                } else {
+                    Logger.i(ctx, TAG, "start column not found in ROUT_MARKER");
+                }
+
+
+
+                if (toLatIndex != -1) {
+                    currentToLatitude = cursor.getDouble(toLatIndex);
+                } else {
+                    Logger.i(ctx, TAG, "to_lat column not found in ROUT_MARKER");
+                }
+                if (toLngIndex != -1) {
+                    currentToLongitude = cursor.getDouble(toLngIndex);
+                } else {
+                    Logger.i(ctx, TAG, "to_lng column not found in ROUT_MARKER");
+                }
+                if (finishIndex != -1) {
+                    currentFinishAddress = cursor.getString(finishIndex) != null ? cursor.getString(finishIndex) : "";
+                } else {
+                    Logger.i(ctx, TAG, "finish column not found in ROUT_MARKER");
+                }
+                Logger.d(ctx, TAG, "Current data: toLatitude=" + currentToLatitude + ", toLongitude=" + currentToLongitude + ", finishAddress=" + currentFinishAddress);
             }
 
-            @Override
-            public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
-                // Обработка ошибок
-                FirebaseCrashlytics.getInstance().recordException(t);
+            // Подготовка новых данных
+
+
+            if(point.equals("start")) {
+                settings.add(String.valueOf(startLat));
+                settings.add(String.valueOf(startLan));
+                settings.add(String.valueOf(currentToLatitude));
+                settings.add(String.valueOf(currentToLongitude));
+                settings.add(fromAddressString);
+                settings.add(currentFinishAddress);
+                Logger.d(ctx, TAG, "New settings for route start point update: " + settings);
             }
-        });
-    }
-    public void onResume() {
-        super.onResume();
-        map = binding.map;
-        mapController = map.getController();
+
+            if(point.equals("finish")) {
+                settings.add(String.valueOf(currentFromLatitude));
+                settings.add(String.valueOf(currentFromLatitude));
+                settings.add(String.valueOf(finishLat));
+                settings.add(String.valueOf(finishLan));
+                settings.add(currentStartAddress);
+                settings.add(toAddressString);
+                Logger.d(ctx, TAG, "New settings for route finish point update: " + settings);
+            }
 
 
+            // Обновление таблицы
+            ContentValues values = new ContentValues();
+            values.put("startLat", Double.parseDouble(settings.get(0)));
+            values.put("startLan", Double.parseDouble(settings.get(1)));
+            values.put("to_lat", Double.parseDouble(settings.get(2)));
+            values.put("to_lng", Double.parseDouble(settings.get(3)));
+            values.put("start", settings.get(4));
+            values.put("finish", settings.get(5));
 
-        apiServiceActivate();
-
-
-
-        gpsSwitch.setChecked(switchState());
-        Logger.d(requireActivity(), TAG, "onResume: startMarker" + startMarker);
-        Logger.d(requireActivity(), TAG, "onResume: finishMarker" + finishMarker);
-        Logger.d(requireActivity(), TAG, "onResume: getFromTablePositionInfo(ctx, \"startLat\" )" + getFromTablePositionInfo(ctx, "startLat" ));
-
-        if (startMarker.equals("ok")) {
-            markerOverlay = new MarkerOverlayVisicom("startMarker");
-        }
-        if (finishMarker.equals("ok")) {
-            markerOverlay = new MarkerOverlayVisicom("finishMarker");
-        }
-        map.getOverlays().add(markerOverlay);
-        switchToRegion();
-        if(getFromTablePositionInfo(requireActivity(), "startLat" ) != 0 ){
-            startLat = getFromTablePositionInfo(requireActivity(), "startLat" );
-            startLan = getFromTablePositionInfo(requireActivity(), "startLan" );
-
-            List<String> startList = logCursor(MainActivity.TABLE_POSITION_INFO, requireActivity());
-            FromAdressString = startList.get(3);
-            startPoint = new GeoPoint(startLat, startLan);
-            map.getController().setCenter(startPoint);
-            setMarker(startLat, startLan, FromAdressString, requireActivity());
-
-            map.invalidate();
-
-            List<String> settings = new ArrayList<>();
-            // Проверяем, не являются ли textViewTo и map пустыми
-            if (VisicomFragment.textViewTo != null && map != null && map.getContext() != null) {
-                // Продолжаем выполнение кода
-                if (VisicomFragment.textViewTo.getText().toString().equals(map.getContext().getString(R.string.on_city_tv))) {
-                    settings.add(String.valueOf(startLat));
-                    settings.add(String.valueOf(startLan));
-                    settings.add(String.valueOf(startLat));
-                    settings.add(String.valueOf(startLan));
-                    settings.add(FromAdressString);
-                    settings.add(map.getContext().getString(R.string.on_city_tv));
-                } else  {
-                    String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                    SQLiteDatabase database = map.getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                    Cursor cursor = database.rawQuery(query, null);
-
-                    cursor.moveToFirst();
-                    // Получите значения полей из первой записи
-
-                    @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                    @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                    cursor.close();
-                    database.close();
-
-
-                    settings.add(String.valueOf(startLat));
-                    settings.add(String.valueOf(startLan));
-                    settings.add(String.valueOf(toLatitude));
-                    settings.add(String.valueOf(toLongitude));
-
-                    settings.add(FromAdressString);
-                    settings.add(VisicomFragment.textViewTo.getText().toString());
-                }
-                updateRoutMarker(settings, map.getContext());
-                updateMyPosition(startLat, startLan, FromAdressString, map.getContext());
+            int rowsUpdated = database.update(MainActivity.ROUT_MARKER, values, null, null);
+            if (rowsUpdated == 0) {
+                database.insert(MainActivity.ROUT_MARKER, null, values);
+                Logger.d(ctx, TAG, "Inserted new route marker data");
             } else {
-                // Обработка ситуации, когда textViewTo или map не были инициализированы
-                // Можете добавить здесь логирование или другие действия по вашему усмотрению
-                String message = getString(R.string.error_message);
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                Logger.d(ctx, TAG, "Updated route marker data, rows affected: " + rowsUpdated);
             }
-
-       } else {
-            Logger.d(requireActivity(), TAG, "onResume: " + ContextCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION));
-            if(ContextCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                startLat = startPoint.getLatitude();
-                startLan = startPoint.getLongitude();
-                startPoint = new GeoPoint(startLat, startLan);
-                map.getController().setCenter(startPoint);
-                setMarker(startLat, startLan, FromAdressString, requireActivity());
-
-                map.invalidate();
-
-               List<String> settings = new ArrayList<>();
-
-               if (VisicomFragment.textViewTo.getText().toString().equals(map.getContext().getString(R.string.on_city_tv))) {
-
-                   settings.add(String.valueOf(startLat));
-                   settings.add(String.valueOf(startLan));
-                   settings.add(String.valueOf(startLat));
-                   settings.add(String.valueOf(startLan));
-                   settings.add(FromAdressString);
-                   settings.add(map.getContext().getString(R.string.on_city_tv));
-               } else  {
-                   String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                   SQLiteDatabase database = map.getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                   Cursor cursor = database.rawQuery(query, null);
-
-                   cursor.moveToFirst();
-                   // Получите значения полей из первой записи
-
-                   @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                   @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                   cursor.close();
-                   database.close();
-
-
-                   settings.add(String.valueOf(startLat));
-                   settings.add(String.valueOf(startLan));
-                   settings.add(String.valueOf(toLatitude));
-                   settings.add(String.valueOf(toLongitude));
-
-                   settings.add(FromAdressString);
-                   settings.add(VisicomFragment.textViewTo.getText().toString());
-               }
-               updateRoutMarker(settings, map.getContext());
-               updateMyPosition(startLat, startLan, FromAdressString, map.getContext());
-
-            } else {
-
-                Toast.makeText(requireActivity(), R.string.check_position, Toast.LENGTH_SHORT).show();
-//                Configuration.getInstance().load(OpenStreetMapVisicomActivity.ctx, PreferenceManager.getDefaultSharedPreferences(OpenStreetMapVisicomActivity.requireActivity()));
-                SharedPreferences prefs = requireActivity().getSharedPreferences("osm_prefs", MODE_PRIVATE);
-                Configuration.getInstance().load(requireActivity(), prefs);
-                Configuration.getInstance().load(
-                        requireActivity(),
-                        requireActivity().getSharedPreferences("osm_prefs", MODE_PRIVATE)
-                );
-
-                fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireActivity());
-
-                locationCallback = new LocationCallback() {
-                @Override
-                public void onLocationResult(@NonNull LocationResult locationResult) {
-                    // Обработка полученных местоположений
-                    stopLocationUpdates();
-
-                    // Обработка полученных местоположений
-                    List<Location> locations = locationResult.getLocations();
-                    Logger.d(requireActivity(), TAG, "onLocationResult: locations 222222" + locations);
-
-                    if (!locations.isEmpty()) {
-                        Location firstLocation = locations.get(0);
-                        if (startLat != firstLocation.getLatitude() && startLan != firstLocation.getLongitude()) {
-
-                            double latitude = firstLocation.getLatitude();
-                            double longitude = firstLocation.getLongitude();
-                            startLat = latitude;
-                            startLan = longitude;
-
-                        }
-                    }
-                    Locale locale = Locale.getDefault();
-                    String language = locale.getLanguage(); // Получаем язык устройства
-                    String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-
-                    String urlFrom = BASE_URL + "/" + api + "/android/fromSearchGeoLocal/"  + startLat + "/" + startLan + "/" + language;
-
-                    try {
-                        FromJSONParser parser = new FromJSONParser(urlFrom);
-                        Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
-                        assert sendUrlFrom != null;
-                        FromAdressString = sendUrlFrom.get("route_address_from");
-                        if (FromAdressString != null) {
-                            if (FromAdressString.equals("Точка на карте")) {
-                                FromAdressString = getString(R.string.startPoint);
-                            }
-                        }
-                        updateMyPosition(startLat, startLan, FromAdressString, requireActivity());
-
-
-                        map.getOverlays().add(markerOverlay);
-
-                        startPoint = new GeoPoint(startLat, startLan);
-                        map.getController().setCenter(startPoint);
-
-                        setMarker(startLat, startLan, FromAdressString, requireActivity());
-                        map.invalidate();
-                    } catch (MalformedURLException | InterruptedException |
-                             JSONException e) {
-                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_restart, true)
-                                .build());
-                    }
-
-                }
-            };
-
-                    startLocationUpdates();
-
+        } catch (Exception e) {
+            Logger.e(ctx, TAG, "Failed to update ROUT_MARKER: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            if (database != null && database.isOpen()) {
+                database.close();
+            }
         }
 
-            }
-        map.onResume();
+        // Обновление маршрута и позиции
+        updateRoutMarker(settings, map.getContext());
+        updateMyPosition(startLat, startLan, fromAddressString, map.getContext());
+        Logger.d(ctx, TAG, "Updated route settings and position");
     }
 
-    public static void dialogMarkerStartPoint(Context context) throws MalformedURLException {
-        Logger.d(context, TAG, "dialogMarkerStartPoint: " + startPoint.toString());
-        if(startPoint != null) {
 
+    // Обработка начального маркера
+    private void dialogMarkerStartPoint(Context context) throws MalformedURLException {
+        Logger.d(context, TAG, "dialogMarkerStartPoint: " + startPoint);
+        if (startPoint != null) {
             startLat = startPoint.getLatitude();
             startLan = startPoint.getLongitude();
-
-            if(m != null) {
-                map.getOverlays().remove(m);
-                map.invalidate();
-                m = null;
-            }
-//            String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-//
-//            Retrofit retrofit = new Retrofit.Builder()
-//                    .baseUrl(BASE_URL)
-//                    .addConverterFactory(GsonConverterFactory.create())
-//                    .build();
-//
-//            Logger.d(map.getContext(), TAG, "Request URL: " + retrofit.baseUrl());
-
-
             makeApiCall(startLat, startLan, context);
         }
     }
 
-    public static void dialogMarkersEndPoint(Context context) throws MalformedURLException, JSONException, InterruptedException {  {
-        if(endPoint != null) {
-
-
+    // Обработка конечного маркера
+    private void dialogMarkersEndPoint(Context context) throws MalformedURLException, JSONException, InterruptedException {
+        if (endPoint != null) {
             finishLat = endPoint.getLatitude();
             finishLan = endPoint.getLongitude();
-            if(marker != null) {
-                map.getOverlays().remove(marker);
-                map.invalidate();
-                marker = null;
-            }
-
-
-
             makeApiCall(finishLat, finishLan, context);
-
-
-
         }
     }
 
-    }
-
-    public static void setMarker(double Lat, double Lan, String title, Context context) {
-        m = new Marker(map);
-        m.setPosition(new GeoPoint(Lat, Lan));
-
-        // Установите название маркера
-        String unuString = new String(Character.toChars(0x1F449));
-        m.setTitle("1." + unuString + title);
-
-        m.setTextLabelBackgroundColor(Color.TRANSPARENT);
-        m.setTextLabelForegroundColor(Color.RED);
-        m.setTextLabelFontSize(40);
-        m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-
-        Drawable originalDrawable = ContextCompat.getDrawable(context, R.drawable.marker_green);
-        // Уменьшите размер до 48 пикселей
-        int width = 48;
-        int height = 48;
-        assert originalDrawable != null;
-        Bitmap bitmap = Bitmap.createScaledBitmap(((BitmapDrawable) originalDrawable).getBitmap(), width, height, false);
-
-        // Создайте новый Drawable из уменьшенного изображения
-        Drawable scaledDrawable = null;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.DONUT) {
-            scaledDrawable = new BitmapDrawable(context.getResources(), bitmap);
-        }
-        m.setIcon(scaledDrawable);
-
-        m.showInfoWindow();
-        map.getOverlays().add(m);
+    // Установка маркера
+    private void setMarker(double lat, double lan, String title, Context context) {
+        Marker marker = new Marker(map);
+        marker.setPosition(new GeoPoint(lat, lan));
+        configureMarker(marker, title, "1.");
+        map.getOverlays().add(marker);
         map.invalidate();
+        if ("startMarker".equals(markerType)) {
+            startMarkerObj = marker;
+        } else if ("finishMarker".equals(markerType)) {
+            finishMarkerObj = marker;
+        }
     }
 
-
-    public static void showRout(GeoPoint startP, GeoPoint endP) {
+    // Отображение маршрута
+    private void showRout(GeoPoint startP, GeoPoint endP) {
+        if (startP == null || endP == null) {
+            Logger.e(ctx, TAG, "Cannot show route: startP or endP is null");
+            return;
+        }
         map.getOverlays().removeAll(Collections.singleton(roadOverlay));
-
         executor.execute(() -> {
             RoadManager roadManager = new OSRMRoadManager(map.getContext(), System.getProperty("http.agent"));
             ArrayList<GeoPoint> waypoints = new ArrayList<>();
-
             waypoints.add(startP);
             waypoints.add(endP);
-
             Road road = roadManager.getRoad(waypoints);
             roadOverlay = RoadManager.buildRoadOverlay(road);
             roadOverlay.getOutlinePaint().setStrokeWidth(10f);
-
-            // Чтобы внести изменения в UI, нужно переключиться на главный поток
             map.post(() -> {
                 map.getOverlays().add(roadOverlay);
                 map.invalidate();
@@ -947,190 +938,73 @@ public class OpenStreetMapFragment extends Fragment {
         });
     }
 
-    public void checkPermission(String permission, int requestCode) {
-        // Checking if permission is not granted
-        if (ContextCompat.checkSelfPermission(requireActivity(), permission) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(requireActivity(), new String[]{permission}, requestCode);
-
+    // Проверка состояния GPS
+    private boolean switchState() {
+        LocationManager lm = (LocationManager) ctx.getSystemService(Context.LOCATION_SERVICE);
+        boolean gps_enabled = false, network_enabled = false;
+        try {
+            gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch (Exception e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
-    }
-    // ctx function is called when user accept or decline the permission.
-// Request Code is used to check which permission called ctx function.
-// ctx request code is provided when user is prompt for permission.
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
+        return gps_enabled && network_enabled;
     }
 
-    private static void updateRoutMarker(List<String> settings, Context context) {
+    // Обновление текущей позиции
+    private void updateMyPosition(double startLat, double startLan, String position, Context context) {
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         ContentValues cv = new ContentValues();
+        cv.put("startLat", startLat);
+        cv.put("startLan", startLan);
+        cv.put("position", position);
+        database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?", new String[]{"1"});
+        database.close();
+    }
 
-        cv.put("startLat",  Double.parseDouble(settings.get(0)));
+    // Обновление данных маршрута
+    private void updateRoutMarker(List<String> settings, Context context) {
+        ContentValues cv = new ContentValues();
+        cv.put("startLat", Double.parseDouble(settings.get(0)));
         cv.put("startLan", Double.parseDouble(settings.get(1)));
         cv.put("to_lat", Double.parseDouble(settings.get(2)));
         cv.put("to_lng", Double.parseDouble(settings.get(3)));
         cv.put("start", settings.get(4));
         cv.put("finish", settings.get(5));
-
-        // обновляем по id
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
-                new String[] { "1" });
+        database.update(MainActivity.ROUT_MARKER, cv, "id = ?", new String[]{"1"});
         database.close();
     }
 
-    @SuppressLint("Range")
-    public static String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
-
-        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor = database.rawQuery(query, null);
-
-        cursor.moveToFirst();
-
-        // Получите значения полей из первой записи
-
-        double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-        double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
-        double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-        double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-        // Origin of route
-        String str_origin = originLatitude + "/" + originLongitude;
-
-        // Destination of route
-        String str_dest = toLatitude + "/" + toLongitude;
-
-        cursor.close();
-        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
-        String time = stringList.get(1);
-        String comment = stringList.get(2);
-        String date = stringList.get(3);
-
-        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
-        String tarif =  stringListInfo.get(2);
-        String payment_type =  stringListInfo.get(4);
-        String addCost = stringListInfo.get(5);
-        // Building the parameters to the web service
-
-        String parameters = null;
-        String phoneNumber = "no phone";
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-        String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
-        if(urlAPI.equals("costSearchMarkersTime")) {
-            Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-
-            if (c.getCount() == 1) {
-                phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
-                c.close();
-            }
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "*" + payment_type + "/"
-                    + time + "/" + date ;
-        }
-
-        if(urlAPI.equals("orderSearchMarkers")) {
-            phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
-
-
-            parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
-                    + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "/" + addCost + "/" + time + "/" + comment + "/" + date;
-
-            ContentValues cv = new ContentValues();
-
-            cv.put("time", "no_time");
-//            cv.put("comment", "no_comment");
-            cv.put("date", "no_date");
-
-            // обновляем по id
-            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
-                    new String[] { "1" });
-
-        }
-
-        // Building the url to the web service
-        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
-        List<String> servicesChecked = new ArrayList<>();
-        String result;
-        boolean servicesVer = false;
-        for (int i = 1; i < services.size()-1 ; i++) {
-            if(services.get(i).equals("1")) {
-                servicesVer = true;
-                break;
-            }
-        }
-        if(servicesVer) {
-            for (int i = 0; i < OpenStreetMapFragment.arrayServiceCode().length; i++) {
-                if(services.get(i+1).equals("1")) {
-                    servicesChecked.add(OpenStreetMapFragment.arrayServiceCode()[i]);
-                }
-            }
-            for (int i = 0; i < servicesChecked.size(); i++) {
-                if(servicesChecked.get(i).equals("CHECK_OUT")) {
-                    servicesChecked.set(i, "CHECK");
-                }
-            }
-            result = String.join("*", servicesChecked);
-            Logger.d(map.getContext(), TAG, "getTaxiUrlSearchGeo result:" + result + "/");
-        } else {
-            result = "no_extra_charge_codes";
-        }
-        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
-        String city = listCity.get(1);
-        String api = listCity.get(2);
-        String BASE_URL =  sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-
-        String url = BASE_URL + "/" + api + "/android/" + urlAPI + "/"
-                + parameters + "/" + result + "/" + city  + "/" + context.getString(R.string.application);
-        database.close();
-        Logger.d(map.getContext(), TAG, "getTaxiUrlSearchMarkers: " + url);
-        return url;
-    }
-
-    @SuppressLint("Range")
-    public static List<String> logCursor(String table, Context context) {
-        List<String> list = new ArrayList<>();
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor c = database.query(table, null, null, null, null, null, null);
-        if (c != null) {
-            if (c.moveToFirst()) {
-                String str;
-                do {
-                    str = "";
-                    for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
-
-                    }
-
-                } while (c.moveToNext());
-            }
-        }
-        assert c != null;
-        c.close();
-        database.close();
-        return list;
-    }
-
+    // Получение данных из таблицы POSITION_INFO
     @SuppressLint("Range")
     private double getFromTablePositionInfo(Context context, String columnName) {
-        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor = database.rawQuery("SELECT "+ columnName + " FROM " + MainActivity.TABLE_POSITION_INFO + " WHERE id = ?", new String[]{"1"});
-
-        double result = 0.0; // Значение по умолчанию или обработка, если запись не найдена.
-
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursor = database.rawQuery("SELECT " + columnName + " FROM " + MainActivity.TABLE_POSITION_INFO + " WHERE id = ?", new String[]{"1"});
+        double result = 0.0;
         if (cursor.moveToFirst()) {
             result = cursor.getDouble(cursor.getColumnIndex(columnName));
-            cursor.close();
         }
-
+        cursor.close();
         database.close();
-
         return result;
     }
 
-
-
+    // Логирование данных из таблицы
+    @SuppressLint("Range")
+    private List<String> logCursor(String table, Context context) {
+        List<String> list = new ArrayList<>();
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor c = database.query(table, null, null, null, null, null, null);
+        if (c.moveToFirst()) {
+            do {
+                for (String cn : c.getColumnNames()) {
+                    list.add(c.getString(c.getColumnIndex(cn)));
+                }
+            } while (c.moveToNext());
+            c.close();
+        }
+        database.close();
+        return list;
+    }
 }

@@ -53,12 +53,12 @@ import com.taxi.easy.ua.ui.fondy.token_pay.PaymentApiToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.RequestDataToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.StatusRequestToken;
 import com.taxi.easy.ua.ui.fondy.token_pay.SuccessResponseDataToken;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceResponse;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceService;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseResponse;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseService;
+import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
@@ -583,9 +583,9 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             }
         }
         if (servicesVer) {
-            for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
+            for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
                 if (services.get(i + 1).equals("1")) {
-                    servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
+                    servicesChecked.add(DataArr.arrayServiceCode()[i]);
                 }
             }
             for (int i = 0; i < servicesChecked.size(); i++) {

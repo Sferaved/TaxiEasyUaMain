@@ -42,11 +42,11 @@ import com.taxi.easy.ua.ui.cities.api.CityService;
 import com.taxi.easy.ua.ui.gallery.GalleryFragment;
 import com.taxi.easy.ua.ui.home.CustomArrayAdapter;
 import com.taxi.easy.ua.ui.home.HomeFragment;
-import com.taxi.easy.ua.ui.open_map.OpenStreetMapActivity;
 import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
+import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
 import com.uxcam.UXCam;
@@ -982,9 +982,9 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             }
         }
         if(servicesVer) {
-            for (int i = 0; i < OpenStreetMapActivity.arrayServiceCode().length; i++) {
+            for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
                 if(services.get(i+1).equals("1")) {
-                    servicesChecked.add(OpenStreetMapActivity.arrayServiceCode()[i]);
+                    servicesChecked.add(DataArr.arrayServiceCode()[i]);
                 }
             }
             for (int i = 0; i < servicesChecked.size(); i++) {

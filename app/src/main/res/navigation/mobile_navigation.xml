@@ -96,4 +96,22 @@
         android:label="@string/search_address"
         tools:layout="@layout/fragment_city_check" />
 
+    <fragment
+        android:id="@+id/nav_settings"
+        android:name="com.taxi.easy.ua.ui.settings.SettingsFragment"
+        android:label="@string/search_address"
+        tools:layout="@layout/fragment_settings" />
+
+    <fragment
+        android:id="@+id/nav_visicom_options"
+        android:name="com.taxi.easy.ua.ui.visicom.VisicomOptionsFragment"
+        android:label="@string/search_address"
+        tools:layout="@layout/fragment_visicom_options" />
+
+    <fragment
+        android:id="@+id/nav_anr"
+        android:name="com.taxi.easy.ua.ui.exit.AnrFragment"
+        android:label="@string/search_address"
+        tools:layout="@layout/fragment_anr" />
+
 </navigation>
