@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.825</string>
-    <string name="version">Версия: 1.825</string>
+    <string name="version_code">1.826</string>
+    <string name="version">Версия: 1.826</string>
 
     <string name="app_name">Такси Доставка</string>
 
@@ -302,7 +302,7 @@
     <string name="city_ivano_frankivsk">Ивано-Франковск</string>
     <string name="city_vinnytsia">Винница</string>
     <string name="city_poltava">Полтава</string>
-    <string name="city_sumy">Суммы</string>
+    <string name="city_sumy">Сумы</string>
     <string name="city_kharkiv">Харьков</string>
     <string name="city_chernihiv">Чернигов</string>
     <string name="city_rivne">Ровно</string>
@@ -526,5 +526,7 @@
     <string name="anr_detected">Обнаружена ошибка</string>
     <string name="application_is_not_responding">Приложение не отвечает.</string>
     <string name="check_permition">Пожалуйста, включите геолокацию или предоставьте разрешение на доступ к местоположению.</string>
+    <string name="map_loading">Карта всё ещё загружается...</string>
+    <string name="cost_error">Ошибка создания заказа. Попробуйте изменить адрес или наберите оператора</string>
 
 </resources>

@@ -117,12 +117,6 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                     database.close();
                     dismiss();
 
-//                    if (NetworkUtils.isNetworkAvailable(requireContext())) {
-//
-//                        MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-//                                .setPopUpTo(R.id.nav_visicom, true)
-//                                .build());
-//                    }
                     if (NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
                         NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
                         navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
@@ -142,8 +136,6 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
 
                 String logFilePath = requireActivity().getExternalFilesDir(null) + "/app_log.txt"; // Путь к лог-файлу
                 TelegramUtils.sendErrorToTelegram(generateEmailBody(errorMessage), logFilePath);
-//                TelegramUtils.sendLogFileToTelegram(logFilePath);
-
 
 
             } else if (errorMessage.equals(getString(R.string.order_to_cancel_true))){
@@ -171,10 +163,16 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
 
                     dismiss();
                 });
+            } else if (errorMessage.equals(getString(R.string.cost_error))){
+                textViewInfo.setOnClickListener(v -> dismiss());
+                btn_ok.setText(getString(R.string.ok_error));
+                btn_ok.setOnClickListener(v -> {
+                    dismiss();
+                });
             } else if (errorMessage.equals(getString(R.string.no_cards_info))){
                  textViewInfo.setOnClickListener(view2 -> {
                      dismiss();
-//                     navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder().build());
+
                      VisicomFragment.btnVisible(View.VISIBLE);
                      HomeFragment.btnVisible(View.VISIBLE);
                  });

@@ -2,6 +2,7 @@ package com.taxi.easy.ua.ui.visicom;
 
 
 import static android.content.Context.MODE_PRIVATE;
+import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.activeCalls;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
@@ -63,6 +64,8 @@ import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
 import com.bumptech.glide.Glide;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -108,6 +111,7 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
+import com.taxi.easy.ua.utils.worker.TilePreloadWorker;
 import com.uxcam.UXCam;
 
 import java.net.MalformedURLException;
@@ -221,24 +225,7 @@ public class VisicomFragment extends Fragment {
     public static  long finalCost;
     private ExecutionStatusViewModel viewModel;
     private ActivityResultLauncher<String[]> permissionLauncher;
-    static String[] arrayServiceCode() {
-        return new String[]{
-                "BAGGAGE",
-                "ANIMAL",
-                "CONDIT",
-                "MEET",
-                "COURIER",
-                "CHECK_OUT",
-                "BABY_SEAT",
-                "DRIVER",
-                "NO_SMOKE",
-                "ENGLISH",
-                "CABLE",
-                "FUEL",
-                "WIRES",
-                "SMOKE",
-        };
-    }
+
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -274,7 +261,7 @@ public class VisicomFragment extends Fragment {
         constraintLayoutVisicomMain = root.findViewById(R.id.visicomMain);
         constraintLayoutVisicomFinish = root.findViewById(R.id.visicomFinish);
 
-        constraintLayoutVisicomFinish.setVisibility(View.GONE);
+        constraintLayoutVisicomFinish.setVisibility(GONE);
 
 
         text_full_message = root.findViewById(R.id.text_full_message);
@@ -299,7 +286,7 @@ public class VisicomFragment extends Fragment {
             sharedPreferencesHelperMain.saveValue("comment", "no_comment");
             sharedPreferencesHelperMain.saveValue("tarif", " ");
 
-            svButton.setVisibility(View.GONE);
+            svButton.setVisibility(GONE);
 
             // Выполняем необходимое действие (например, запуск новой активности)
             startActivity(new Intent(context, MainActivity.class));
@@ -366,7 +353,7 @@ public class VisicomFragment extends Fragment {
                 // Действия при нажатии кнопки "Назад"
                 sharedPreferencesHelperMain.saveValue("VisicomBackPressed", true);
                 cancelAllRequests(); // Отменяем запросы
-                constraintLayoutVisicomFinish.setVisibility(View.GONE);
+                constraintLayoutVisicomFinish.setVisibility(GONE);
                 constraintLayoutVisicomMain.setVisibility(VISIBLE);
 //                requireActivity().onBackPressed(); // Возвращаемся назад
             }
@@ -528,7 +515,7 @@ public class VisicomFragment extends Fragment {
             if (visible == View.INVISIBLE) {
                 progressBar.setVisibility(VISIBLE);
             } else {
-                progressBar.setVisibility(View.GONE);
+                progressBar.setVisibility(GONE);
             }
 
 
@@ -667,8 +654,11 @@ public void requestPermissions() {
     }
 
     @SuppressLint("Range")
-    public static String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
+    public String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
+
         Logger.d(context, TAG, "getTaxiUrlSearchMarkers: " + urlAPI);
+
+        startTilePreloadWorker();
 
         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -688,9 +678,7 @@ public void requestPermissions() {
             ) {
             finish = start;
         }
-        if (originLatitude == toLatitude) {
-            textViewTo.setText(context.getString(R.string.on_city_tv));
-        }
+
         Logger.d(context, TAG, "getTaxiUrlSearchMarkers: start " + start);
         Logger.d(context, TAG, "getTaxiUrlSearchMarkers: finish " + finish);
 
@@ -842,9 +830,9 @@ public void requestPermissions() {
             }
         }
         if (servicesVer) {
-            for (int i = 0; i < arrayServiceCode().length; i++) {
+            for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
                 if (services.get(i + 1).equals("1")) {
-                    servicesChecked.add(arrayServiceCode()[i]);
+                    servicesChecked.add(DataArr.arrayServiceCode()[i]);
                 }
             }
             for (int i = 0; i < servicesChecked.size(); i++) {
@@ -1029,7 +1017,7 @@ public void requestPermissions() {
     }
 
     @SuppressLint("ResourceAsColor")
-    public static boolean orderRout() {
+    public boolean orderRout() {
         urlOrder = getTaxiUrlSearchMarkers("orderClientCost", MyApplication.getContext());
         Logger.d(MyApplication.getContext(), TAG, "order:  urlOrder " + urlOrder);
         return true;
@@ -1039,10 +1027,10 @@ public void requestPermissions() {
         if (!verifyPhone()) {
             MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment(context, "visicom");
             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-            progressBar.setVisibility(View.GONE);
+            progressBar.setVisibility(GONE);
         } else {
 
-                constraintLayoutVisicomMain.setVisibility(View.GONE);
+                constraintLayoutVisicomMain.setVisibility(GONE);
                 String messageResult =
                         geoText.getText().toString() + " " + getString(R.string.to_message) +
                                 textViewTo.getText() + ".";
@@ -1092,9 +1080,10 @@ public void requestPermissions() {
 
                             handleOrderFinished(sendUrlMap, pay_method, context);
                         } else {
-                            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                                    .setPopUpTo(R.id.nav_restart, true)
-                                    .build());
+                            btnVisible(VISIBLE);
+                            String messageErr = getString(R.string.cost_error);
+                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(messageErr);
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                         }
 
                     }
@@ -1252,9 +1241,9 @@ public void requestPermissions() {
                 }
             }
             if (servicesVer) {
-                for (int i = 0; i < arrayServiceCode().length; i++) {
+                for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
                     if (services.get(i + 1).equals("1")) {
-                        servicesChecked.add(arrayServiceCode()[i]);
+                        servicesChecked.add(DataArr.arrayServiceCode()[i]);
                     }
                 }
                 for (int i = 0; i < servicesChecked.size(); i++) {
@@ -1294,7 +1283,7 @@ public void requestPermissions() {
             sharedPreferencesHelperMain.saveValue("VisicomBackPressed", false);
             btnVisible(VISIBLE);
             assert message != null;
-            constraintLayoutVisicomFinish.setVisibility(View.GONE);
+            constraintLayoutVisicomFinish.setVisibility(GONE);
             constraintLayoutVisicomMain.setVisibility(VISIBLE);
             Logger.d(context, TAG, "2 orderFinished: message " + message);
             String addType = "60";
@@ -1337,7 +1326,7 @@ public void requestPermissions() {
             sharedPreferencesHelperMain.saveValue("VisicomBackPressed", false);
             btnVisible(VISIBLE);
             assert message != null;
-            constraintLayoutVisicomFinish.setVisibility(View.GONE);
+            constraintLayoutVisicomFinish.setVisibility(GONE);
             constraintLayoutVisicomMain.setVisibility(VISIBLE);
         }
     }
@@ -1467,7 +1456,7 @@ public void requestPermissions() {
                 googleVerifyAccount();
             }
 
-            progressBar.setVisibility(View.GONE);
+            progressBar.setVisibility(GONE);
             alertDialog.dismiss();
         });
 
@@ -1503,13 +1492,13 @@ public void requestPermissions() {
                 googleVerifyAccount();
             }
 
-            progressBar.setVisibility(View.GONE);
+            progressBar.setVisibility(GONE);
             alertDialog.dismiss();
         });
 
         Button cancelButton = dialogView.findViewById(R.id.dialog_cancel_button);
         cancelButton.setOnClickListener(v -> {
-            progressBar.setVisibility(View.GONE);
+            progressBar.setVisibility(GONE);
             alertDialog.dismiss();
         });
 
@@ -1555,10 +1544,10 @@ public void requestPermissions() {
 
         textfrom = binding.textfrom;
 
-        constraintLayoutVisicomMain.setVisibility(View.GONE);
+        constraintLayoutVisicomMain.setVisibility(GONE);
  
-        binding.svButton.setVisibility(View.GONE);
-        binding.btnCallAdmin.setVisibility(View.GONE);
+        binding.svButton.setVisibility(GONE);
+        binding.btnCallAdmin.setVisibility(GONE);
 
         String cityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
         Logger.d(context, TAG, "CityCheckActivity: " + cityCheckActivity);
@@ -1633,14 +1622,14 @@ public void requestPermissions() {
 
               
        
-                binding.svButton.setVisibility(View.GONE);
-                binding.btnCallAdmin.setVisibility(View.GONE);
+                binding.svButton.setVisibility(GONE);
+                binding.btnCallAdmin.setVisibility(GONE);
 
             }
         }
         Logger.d(context, TAG, "onResume 5" );
         constraintLayoutVisicomMain.setVisibility(VISIBLE);
-        constraintLayoutVisicomFinish.setVisibility(View.GONE);
+        constraintLayoutVisicomFinish.setVisibility(GONE);
 
         databaseHelper = new DatabaseHelper(context);
         databaseHelperUid = new DatabaseHelperUid(context);
@@ -1812,6 +1801,12 @@ public void requestPermissions() {
         });
 
         binding.clearButtonTo.setOnClickListener(v -> {
+            updateRouteSettings();
+            try {
+                visicomCost();
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
             textViewTo.setText("");
         });
 
@@ -1901,7 +1896,7 @@ public void requestPermissions() {
 //                        .setPopUpTo(R.id.nav_restart, true)
 //                        .build());
 //            }
-            linearLayout.setVisibility(View.GONE);
+            linearLayout.setVisibility(GONE);
             btnVisible(View.INVISIBLE);
             List<String> stringList1 = logCursor(MainActivity.CITY_INFO, context);
 
@@ -2189,7 +2184,7 @@ public void requestPermissions() {
 
             binding.textwhere.setVisibility(View.INVISIBLE);
 
-            progressBar.setVisibility(View.GONE);
+            progressBar.setVisibility(GONE);
 
 
         }
@@ -2367,7 +2362,7 @@ public void requestPermissions() {
                             updateMyPosition(latitude, longitude, FromAdressString, context);
 
                             geoText.setText(FromAdressString);
-                            progressBar.setVisibility(View.GONE);
+                            progressBar.setVisibility(GONE);
                             String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
                             SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
                             @SuppressLint("Recycle") Cursor cursor = database.rawQuery(query, null);
@@ -2636,11 +2631,12 @@ public void requestPermissions() {
                             public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
                                 handler.post(() -> {
                                     geoText.setText(start);
-                                    if (originLatitude == toLatitude) {
-                                        textViewTo.setText(context.getString(R.string.on_city_tv));
-                                    } else {
-                                        textViewTo.setText(finish);
-                                    }
+//                                    if (originLatitude == toLatitude) {
+//                                        textViewTo.setText(context.getString(R.string.on_city_tv));
+//                                    } else {
+//                                        textViewTo.setText(finish);
+//                                    }
+                                    textViewTo.setText(finish);
 
                                     Map<String, String> sendUrlMapCost = response.body();
                                     if (sendUrlMapCost == null) {
@@ -2658,13 +2654,16 @@ public void requestPermissions() {
                                     }
 
 
-//                                    String orderMessage = sendUrlMapCost.get("Message");
-
+                                    String orderMessage = sendUrlMapCost.get("Message");
+                                    Logger.d(context, TAG, "Message " + orderMessage);
                                     assert orderCost != null;
                                     if ("0".equals(orderCost)) {
-                                        NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
-                                        navController.navigate(R.id.nav_anr, null, new NavOptions.Builder()
-                                                .build());
+
+                                         btnVisible(VISIBLE);
+                                            String messageErr = getString(R.string.cost_error);
+                                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(messageErr);
+                                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+
                                     } else {
                                         applyDiscountAndUpdateUI(orderCost, context);
                                     }
@@ -2674,6 +2673,7 @@ public void requestPermissions() {
 
                             @Override
                             public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                                btnVisible(VISIBLE);
                                 handler.post(() -> {
                                     FirebaseCrashlytics.getInstance().recordException(t);
                                     Toast.makeText(context, context.getString(R.string.server_error_connected), Toast.LENGTH_SHORT).show();
@@ -2729,7 +2729,7 @@ public void requestPermissions() {
 
 
             geoText.setVisibility(VISIBLE);
-            progressBar.setVisibility(View.GONE);
+            progressBar.setVisibility(GONE);
 
             textfrom.setVisibility(VISIBLE);
             num1.setVisibility(VISIBLE);
@@ -3248,5 +3248,135 @@ public void requestPermissions() {
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
             }
         });
+    }
+
+    private void startTilePreloadWorker() {
+        try {
+            OneTimeWorkRequest tilePreloadRequest = new OneTimeWorkRequest.Builder(TilePreloadWorker.class)
+                    .addTag("TilePreloadWork")
+                    .build();
+            WorkManager.getInstance(requireContext()).enqueue(tilePreloadRequest);
+            Logger.d(requireContext(), TAG, "TilePreloadWorker enqueued");
+        } catch (Exception e) {
+            Logger.e(requireContext(), TAG, "Error enqueuing TilePreloadWorker: " + e.getMessage());
+        }
+    }
+    private void updateRouteSettings() {
+
+        List<String> settings = new ArrayList<>();
+        SQLiteDatabase database = null;
+        Cursor cursor = null;
+        try {
+            database =context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            // Убедимся, что таблица существует с правильной схемой
+            database.execSQL("CREATE TABLE IF NOT EXISTS " + MainActivity.ROUT_MARKER + " (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "startLat REAL, startLan REAL, to_lat REAL, to_lng REAL, " +
+                    "start TEXT, finish TEXT)");
+
+            // Получение текущих данных
+            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+            cursor = database.rawQuery(query, null);
+            double currentFromLatitude = 0.0;
+            double currentFromLongitude = 0.0;
+            String currentStartAddress = "";
+
+            double currentToLatitude = 0.0;
+            double currentToLongitude = 0.0;
+            String currentFinishAddress = "";
+
+            if (cursor.moveToFirst()) {
+                int fromLatIndex = cursor.getColumnIndex("startLat");
+                int fromLngIndex = cursor.getColumnIndex("startLan");
+                int startIndex = cursor.getColumnIndex("start");
+
+                int toLatIndex = cursor.getColumnIndex("to_lat");
+                int toLngIndex = cursor.getColumnIndex("to_lng");
+                int finishIndex = cursor.getColumnIndex("finish");
+
+                if (fromLatIndex != -1) {
+                    currentFromLatitude = cursor.getDouble(fromLatIndex);
+                } else {
+                    Logger.i(context, TAG, "from_lat column not found in ROUT_MARKER");
+                }
+                if (fromLngIndex != -1) {
+                    currentFromLongitude = cursor.getDouble(fromLngIndex);
+                } else {
+                    Logger.i(context, TAG, "from_lng column not found in ROUT_MARKER");
+                }
+                if (startIndex != -1) {
+                    currentStartAddress = cursor.getString(startIndex) != null ? cursor.getString(startIndex) : "";
+                } else {
+                    Logger.i(context, TAG, "start column not found in ROUT_MARKER");
+                }
+
+
+
+                if (toLatIndex != -1) {
+                    currentToLatitude = cursor.getDouble(toLatIndex);
+                } else {
+                    Logger.i(context, TAG, "to_lat column not found in ROUT_MARKER");
+                }
+                if (toLngIndex != -1) {
+                    currentToLongitude = cursor.getDouble(toLngIndex);
+                } else {
+                    Logger.i(context, TAG, "to_lng column not found in ROUT_MARKER");
+                }
+                if (finishIndex != -1) {
+                    currentFinishAddress = cursor.getString(finishIndex) != null ? cursor.getString(finishIndex) : "";
+                } else {
+                    Logger.i(context, TAG, "finish column not found in ROUT_MARKER");
+                }
+                Logger.d(context, TAG, "Current data: toLatitude=" + currentToLatitude + ", toLongitude=" + currentToLongitude + ", finishAddress=" + currentFinishAddress);
+            }
+
+            // Подготовка новых данных
+
+                settings.add(String.valueOf(currentFromLatitude));
+                settings.add(String.valueOf(currentFromLongitude));
+                settings.add(String.valueOf(currentFromLatitude));
+                settings.add(String.valueOf(currentFromLongitude));
+                settings.add(currentStartAddress);
+                settings.add("");
+                Logger.d(context, TAG, "New settings for route finish point update: " + settings);
+
+
+            // Обновление таблицы
+            ContentValues values = new ContentValues();
+            values.put("startLat", Double.parseDouble(settings.get(0)));
+            values.put("startLan", Double.parseDouble(settings.get(1)));
+            values.put("to_lat", Double.parseDouble(settings.get(2)));
+            values.put("to_lng", Double.parseDouble(settings.get(3)));
+            values.put("start", settings.get(4));
+            values.put("finish", settings.get(5));
+
+            int rowsUpdated = database.update(MainActivity.ROUT_MARKER, values, null, null);
+            if (rowsUpdated == 0) {
+                database.insert(MainActivity.ROUT_MARKER, null, values);
+                Logger.d(context, TAG, "Inserted new route marker data");
+            } else {
+                Logger.d(context, TAG, "Updated route marker data, rows affected: " + rowsUpdated);
+            }
+            // Обновление маршрута и позиции
+
+            updateRoutMarker(settings);
+
+            updateMyPosition(currentFromLatitude, currentFromLongitude, currentStartAddress, context);
+            Logger.d(context, TAG, "Updated route settings and position");
+
+        } catch (Exception e) {
+            Logger.e(context, TAG, "Failed to update ROUT_MARKER: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            if (database != null && database.isOpen()) {
+                database.close();
+            }
+        }
+
+
+
     }
 }

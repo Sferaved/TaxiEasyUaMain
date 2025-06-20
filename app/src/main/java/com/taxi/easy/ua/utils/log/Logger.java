@@ -58,6 +58,10 @@ public class Logger {
         Log.i(tag, message);
         writeLog(context, "INFO: " + tag + ": " + message);
     }
+    public static void w(Context context, String tag, String message) {
+        Log.w(tag, message);
+        writeLog(context, "INFO: " + tag + ": " + message);
+    }
 
     public static String getLogcat() {
         StringBuilder log = new StringBuilder();

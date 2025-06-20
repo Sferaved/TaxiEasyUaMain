@@ -1,6 +1,8 @@
 package com.taxi.easy.ua.ui.open_map;
 
 import static android.content.Context.MODE_PRIVATE;
+import static android.view.View.GONE;
+import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.Manifest;
@@ -13,19 +15,33 @@ import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Point;
+import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
+import android.text.Layout;
+import android.text.StaticLayout;
+import android.text.TextPaint;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.Toast;
@@ -38,6 +54,8 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavOptions;
+import androidx.work.WorkInfo;
+import androidx.work.WorkManager;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -55,7 +73,6 @@ import com.taxi.easy.ua.ui.open_map.api.ApiResponse;
 import com.taxi.easy.ua.ui.open_map.api.ApiService;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
-import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import org.json.JSONException;
@@ -64,11 +81,14 @@ import org.osmdroid.bonuspack.routing.OSRMRoadManager;
 import org.osmdroid.bonuspack.routing.Road;
 import org.osmdroid.bonuspack.routing.RoadManager;
 import org.osmdroid.config.Configuration;
+import org.osmdroid.tileprovider.modules.SqlTileWriter;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.CustomZoomButtonsController;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.Projection;
 import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Overlay;
 import org.osmdroid.views.overlay.Polyline;
 
 import java.io.File;
@@ -120,7 +140,8 @@ public class OpenStreetMapFragment extends Fragment {
     private double startLat, startLan, finishLat, finishLan; // Координаты
     private String city; // Город
     private String api; // API ключ
-    private long addCost; // Дополнительная стоимость
+
+    ImageView center_marker;
 
     // Геолокация
     private FusedLocationProviderClient fusedLocationProviderClient;
@@ -139,33 +160,96 @@ public class OpenStreetMapFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentOpenstreetmapBinding.inflate(inflater, container, false);
+        map = binding.map;
         View root = binding.getRoot();
         ctx = requireContext();
 
-        // Инициализация лаунчера для запроса разрешений
-        initializePermissionLauncher();
+        // Настройка конфигурации OSMDroid
+        try {
+            File cacheDir = new File(ctx.getCacheDir(), "osmdroid");
+            if (!cacheDir.exists()) {
+                cacheDir.mkdirs();
+                Logger.d(ctx, TAG, "Created osmdroid cache directory: " + cacheDir.getPath());
+            }
+            Configuration.getInstance().setOsmdroidTileCache(cacheDir);
+            Configuration.getInstance().setCacheMapTileCount((short) 12);
+            Configuration.getInstance().setTileFileSystemCacheMaxBytes(1024 * 1024 * 50);
+            Configuration.getInstance().setTileDownloadMaxQueueSize((short) 40);
+            Configuration.getInstance().setUserAgentValue(ctx.getPackageName());
+            Configuration.getInstance().load(ctx, androidx.preference.PreferenceManager.getDefaultSharedPreferences(ctx));
+            Logger.d(ctx, TAG, "OSMDroid configuration initialized, cache path: " + cacheDir.getPath());
 
-        // Инициализация иконки маркера
-        initializeMarkerIcon();
+            // Проверка сети
+            if (!isNetworkAvailable()) {
+                Logger.w(ctx, TAG, "No network connection, relying on cached tiles");
+                Toast.makeText(ctx, "Нет интернета, используются кэшированные тайлы", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Logger.e(ctx, TAG, "Error configuring OSMDroid: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
 
-        // Инициализация аргументов
+        // Инициализация MapView
+
+        map.setTileSource(TileSourceFactory.MAPNIK);
+        map.setMultiTouchControls(true);
+        map.setTilesScaledToDpi(true);
+        map.setVisibility(GONE); // Скрыть карту до готовности
+        mapController = map.getController();
+        mapController.setZoom(16.0); // Начальный зум
+        mapController.setCenter(new GeoPoint(0.0, 0.0)); // Временный центр
+        Logger.d(ctx, TAG, "MapView initialized with zoom=16.0");
+
+        // Инициализация остальных компонентов
         initializeArguments();
-
-        // Инициализация строк адресов
+        initializePermissionLauncher();
+        requestStoragePermission();
+        initializeMarkerIcon();
         fromAddressString = getString(R.string.startPoint);
         toAddressString = getString(R.string.end_point_marker);
-
-        // Инициализация UI
         initializeUI();
-
-        // Настройка конфигурации OSMDroid
-        Configuration.getInstance().setCacheMapTileCount((short) 12); // Увеличить кэш в памяти
-        Configuration.getInstance().setTileFileSystemCacheMaxBytes(1024 * 1024 * 50); // 50 МБ кэша на диске
-        Configuration.getInstance().load(ctx, androidx.preference.PreferenceManager.getDefaultSharedPreferences(ctx));
         fragmentManager = getChildFragmentManager();
 
         return root;
     }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+    }
+
+    private void requestStoragePermission() {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            if (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                if (shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    // Показать объяснение, почему нужно разрешение
+                    Toast.makeText(ctx, "Разрешение на доступ к файлам необходимо для кэширования карт", Toast.LENGTH_LONG).show();
+                    locationPermissionLauncher.launch(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE});
+                } else if (!(boolean) sharedPreferencesHelperMain.getValue("storagePermissionRequested", false)) {
+                    // Первый запрос разрешения
+                    locationPermissionLauncher.launch(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE});
+                    sharedPreferencesHelperMain.saveValue("storagePermissionRequested", true);
+                } else {
+                    // Пользователь отклонил разрешение навсегда, предложить открыть настройки
+                    Toast.makeText(ctx, "Пожалуйста, предоставьте разрешение на доступ к файлам в настройках", Toast.LENGTH_LONG).show();
+                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    Uri uri = Uri.fromParts("package", ctx.getPackageName(), null);
+                    intent.setData(uri);
+                    startActivity(intent);
+                }
+            } else {
+                Logger.d(ctx, TAG, "Storage permission already granted");
+                configureMap();
+                initializeMapPosition();
+            }
+        } else {
+            Logger.d(ctx, TAG, "No storage permission needed for Android Q and above");
+            configureMap();
+            initializeMapPosition();
+        }
+    }
+
 
     @Override
     public void onResume() {
@@ -176,16 +260,103 @@ public class OpenStreetMapFragment extends Fragment {
         gpsSwitch.setChecked(switchState());
         Logger.d(ctx, TAG, "onResume: markerType=" + markerType);
 
-        // Настройка карты
-        configureMap();
+        // Счетчик попыток
+        final int[] retryCount = {0};
+        final int MAX_RETRIES = 1;
 
-        // Настройка слушателя касаний
+        // Ожидание завершения TilePreloadWorker
+        WorkManager.getInstance(ctx).getWorkInfosByTagLiveData("TilePreloadWork")
+                .observe(getViewLifecycleOwner(), workInfos -> {
+                    boolean isWorkerFinished = false;
+                    for (WorkInfo workInfo : workInfos) {
+                        if (workInfo.getState() == WorkInfo.State.SUCCEEDED) {
+                            Logger.d(ctx, TAG, "TilePreloadWorker completed");
+                            isWorkerFinished = true;
+                        } else if (workInfo.getState() == WorkInfo.State.FAILED) {
+                            Logger.e(ctx, TAG, "TilePreloadWorker failed");
+                            Toast.makeText(ctx, "Ошибка загрузки карты", Toast.LENGTH_SHORT).show();
+                            showMapWithFallback();
+                        }
+                    }
+                    if (isWorkerFinished) {
+                        // Проверка тайлов с задержкой
+                        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                            try {
+                                if (map == null) {
+                                    Logger.e(ctx, TAG, "MapView is null, cannot check tiles or render map");
+                                    showMapWithFallback();
+                                    return;
+                                }
+                                SqlTileWriter tileWriter = new SqlTileWriter();
+                                long tileCount = tileWriter.getRowCount("tiles");
+                                Logger.d(ctx, TAG, "Tiles in cache: " + tileCount);
+                                if (tileCount >= 1) {
+                                    progressBar.setVisibility(GONE);
+                                    center_marker.setVisibility(View.VISIBLE);
+                                    Logger.d(ctx, TAG, "Tiles available, rendering map");
+                                    configureMap();
+                                    initializeMapPosition();
+                                    map.setVisibility(VISIBLE);
+                                    map.onResume();
+                                    map.invalidate();
+                                } else if (retryCount[0] < MAX_RETRIES) {
+                                    retryCount[0]++;
+                                    Logger.w(ctx, TAG, "No tiles in cache yet, retry " + retryCount[0] + "/" + MAX_RETRIES);
+                                    checkTilesAndRender();
+                                } else {
+                                    Logger.w(ctx, TAG, "Max retries reached, rendering map with fallback");
+                                    showMapWithFallback();
+                                }
+                            } catch (Exception e) {
+                                Logger.e(ctx, TAG, "Error checking tile cache: " + e.getMessage());
+                                showMapWithFallback();
+                            }
+                        }, 100);
+                    }
+                });
+
+
         setupMapTouchListener();
+    }
 
-        // Инициализация начальной позиции
+    private void checkTilesAndRender() {
+        try {
+            SqlTileWriter tileWriter = new SqlTileWriter();
+            long tileCount = tileWriter.getRowCount("tiles");
+            Logger.d(ctx, TAG, "Retry - Tiles in cache: " + tileCount);
+            if (tileCount >= 1) {
+                progressBar.setVisibility(GONE);
+                center_marker.setVisibility(View.VISIBLE);
+                Logger.d(ctx, TAG, "Tiles available on retry, rendering map");
+                configureMap();
+                initializeMapPosition();
+                map.setVisibility(VISIBLE);
+                map.onResume();
+                map.invalidate();
+            } else {
+                Logger.w(ctx, TAG, "Still no tiles: " + tileCount);
+                progressBar.setVisibility(VISIBLE);
+                center_marker.setVisibility(View.INVISIBLE);
+
+                showMapWithFallback();
+            }
+        } catch (Exception e) {
+            Logger.e(ctx, TAG, "Error on retry checking tile cache: " + e.getMessage());
+            showMapWithFallback();
+        }
+    }
+
+    private void showMapWithFallback() {
+        progressBar.setVisibility(GONE);
+        center_marker.setVisibility(View.VISIBLE);
+        Logger.w(ctx, TAG, "Fallback: Showing map with available tiles or online loading");
+        configureMap();
         initializeMapPosition();
-
+        map.setUseDataConnection(isNetworkAvailable());
+        map.setVisibility(VISIBLE);
         map.onResume();
+        map.invalidate();
+//        Toast.makeText(ctx, "Карта отображается с доступными данными", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -202,23 +373,42 @@ public class OpenStreetMapFragment extends Fragment {
                 permissions -> {
                     Boolean fineLocationGranted = permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false);
                     Boolean coarseLocationGranted = permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false);
+                    Boolean storageGranted = permissions.getOrDefault(Manifest.permission.WRITE_EXTERNAL_STORAGE, false);
 
-                    Logger.d(ctx, TAG, "Location permissions result: fineLocation=" + fineLocationGranted + ", coarseLocation=" + coarseLocationGranted);
+                    Logger.d(ctx, TAG, "Permissions result: fineLocation=" + fineLocationGranted + ", coarseLocation=" + coarseLocationGranted + ", storage=" + storageGranted);
 
+                    // Обработка разрешений на геолокацию
                     if (Boolean.TRUE.equals(fineLocationGranted) && Boolean.TRUE.equals(coarseLocationGranted)) {
-                        // Разрешения предоставлены
+                        Logger.d(ctx, TAG, "Location permissions granted, initializing location updates");
                         initializeLocationUpdates();
                     } else {
-                        // Разрешения отклонены
+                        Logger.w(ctx, TAG, "Location permissions denied");
                         Toast.makeText(ctx, R.string.check_permition, Toast.LENGTH_SHORT).show();
-                        Logger.e(ctx, TAG, "Location permissions denied");
-                        // Предложить открыть настройки, если пользователь окончательно отклонил разрешение
                         if (!shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
                             Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                             Uri uri = Uri.fromParts("package", ctx.getPackageName(), null);
                             intent.setData(uri);
                             startActivity(intent);
                         }
+                    }
+
+                    // Обработка разрешения на хранилище
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                        if (Boolean.TRUE.equals(storageGranted)) {
+                            Logger.d(ctx, TAG, "Storage permission granted");
+                            configureMap();
+                            initializeMapPosition();
+                        } else {
+                            Logger.w(ctx, TAG, "Storage permission denied");
+                            Toast.makeText(ctx, "Без разрешения на доступ к файлам карта может работать некорректно", Toast.LENGTH_LONG).show();
+                            map.setUseDataConnection(isNetworkAvailable());
+                            configureMap();
+                            initializeMapPosition();
+                        }
+                    } else {
+                        Logger.d(ctx, TAG, "No storage permission needed for Android Q and above");
+                        configureMap();
+                        initializeMapPosition();
                     }
                 }
         );
@@ -255,7 +445,11 @@ public class OpenStreetMapFragment extends Fragment {
     // Инициализация UI элементов
     private void initializeUI() {
         progressBar = binding.progressBar;
-        progressBar.setVisibility(View.INVISIBLE);
+        center_marker = binding.centerMarker;
+
+        progressBar.setVisibility(View.VISIBLE);
+        center_marker.setVisibility(View.INVISIBLE);
+
         fab = binding.fab;
         fab.setVisibility(View.INVISIBLE);
         fabCall = binding.fabCall;
@@ -293,16 +487,28 @@ public class OpenStreetMapFragment extends Fragment {
             Logger.e(ctx, TAG, "MapView is null, cannot configure map");
             return;
         }
+        File cacheDir = Configuration.getInstance().getOsmdroidTileCache();
+        Logger.d(ctx, TAG, "Checking cache directory: " + cacheDir.getPath() + ", exists: " + cacheDir.exists());
         map.setTileSource(TileSourceFactory.MAPNIK);
         map.setMultiTouchControls(true);
-        // Убрать ограничения зума
-        map.setMinZoomLevel(null);
-        map.setMaxZoomLevel(null);
-
+        map.setMinZoomLevel(0.0);
+        map.setMaxZoomLevel(20.0);
+        map.setTilesScaledToDpi(true);
         map.getZoomController().setVisibility(CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT);
-        map.setScrollableAreaLimitDouble(null); // Отключить ограничения прокрутки для плавности
-        Logger.d(ctx, TAG, "Zoom animation minimized");
-        double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, ctx).get(4));
+        map.setScrollableAreaLimitDouble(null);
+        Logger.d(ctx, TAG, "Map configured");
+
+        // Установка зума
+        double newZoomLevel;
+        try {
+            newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, ctx).get(4));
+        } catch (Exception e) {
+            Logger.w(ctx, TAG, "Error parsing zoom level, using default: " + e.getMessage());
+            newZoomLevel = 0;
+        }
+        if (newZoomLevel == 0) {
+            newZoomLevel = 16.0; // Совпадение с OPTIMAL_ZOOM
+        }
         mapController.setZoom(newZoomLevel);
         map.setClickable(true);
     }
@@ -316,8 +522,11 @@ public class OpenStreetMapFragment extends Fragment {
             Logger.d(ctx, TAG, "Map touch event: action=" + action + ", centerPoint=" + centerPoint);
 
             if (action == MotionEvent.ACTION_DOWN) {
+                binding.centerMarker.setVisibility(VISIBLE);
                 removeMarkerOnTouchDown();
             } else if (action == MotionEvent.ACTION_UP) {
+                binding.centerMarker.setVisibility(GONE);
+
                 handleTouchUp(centerPoint);
                 return true;
             } else if (action == MotionEvent.ACTION_MOVE) {
@@ -326,11 +535,6 @@ public class OpenStreetMapFragment extends Fragment {
             return false;
         });
 
-        map.setOnClickListener(v -> {
-            GeoPoint centerPoint = (GeoPoint) map.getMapCenter();
-            Logger.d(ctx, TAG, "onSingleTapConfirmed: centerPoint=" + centerPoint);
-            handleSingleTap(centerPoint);
-        });
     }
 
     // Удаление маркера при начале касания
@@ -340,12 +544,10 @@ public class OpenStreetMapFragment extends Fragment {
             return;
         }
         if ("startMarker".equals(markerType)) {
-            if (startMarkerObj != null) {
-                map.getOverlays().remove(startMarkerObj);
-                startMarkerObj = null;
-                map.invalidate();
-                Logger.d(ctx, TAG, "Removed startMarkerObj");
-            }
+
+            map.getOverlays().clear();
+            map.invalidate();
+            Logger.d(ctx, TAG, "Removed all overlays");
         } else if ("finishMarker".equals(markerType)) {
             if (finishMarkerObj != null) {
                 map.getOverlays().remove(finishMarkerObj);
@@ -368,30 +570,18 @@ public class OpenStreetMapFragment extends Fragment {
                 endPoint = centerPoint;
                 dialogMarkersEndPoint(ctx);
             }
+
         } catch (MalformedURLException | JSONException | InterruptedException e) {
             Logger.e(ctx, TAG, "Error handling marker point on ACTION_UP" + e);
             FirebaseCrashlytics.getInstance().recordException(e);
         }
     }
 
-    // Обработка одиночного касания
-    private void handleSingleTap(GeoPoint centerPoint) {
-        try {
-            if ("startMarker".equals(markerType)) {
-                startPoint = centerPoint;
-                dialogMarkerStartPoint(ctx);
-            } else if ("finishMarker".equals(markerType)) {
-                endPoint = centerPoint;
-                dialogMarkersEndPoint(ctx);
-            }
-        } catch (MalformedURLException | JSONException | InterruptedException e) {
-            Logger.e(ctx, TAG, "Error handling marker point" + e);
-            FirebaseCrashlytics.getInstance().recordException(e);
-        }
-    }
+
 
     // Обновление уровня зума
     private void updateZoomLevel() {
+        map.invalidate(); // Убедитесь, что маркеры сохраняются
         double newZoomLevel = map.getZoomLevelDouble();
         Logger.d(ctx, TAG, "Zoom level: " + newZoomLevel);
         SQLiteDatabase database = ctx.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -403,78 +593,131 @@ public class OpenStreetMapFragment extends Fragment {
 
     // Инициализация позиции карты
     private void initializeMapPosition() {
+        newShowRout();
+    }
+
+    private void newShowRout() {
         if (map == null || ctx == null) {
-            Logger.e(ctx, TAG, "Map or context is null, skipping map position initialization");
+
             initializeRegion();
             return;
         }
+        // Удалить все маркеры и наложения с карты
+        map.getOverlays().clear();
+        map.invalidate(); // Обновить карту
+
         double savedStartLat = getFromTablePositionInfo(ctx, "startLat");
         if (savedStartLat != 0) {
-            startLat = savedStartLat;
-            startLan = getFromTablePositionInfo(ctx, "startLan");
-            List<String> startList = logCursor(MainActivity.TABLE_POSITION_INFO, ctx);
-            if (startList.size() > 3) {
-                fromAddressString = startList.get(3);
-            } else {
-                Logger.i(ctx, TAG, "Insufficient data in TABLE_POSITION_INFO, size: " + startList.size());
-                fromAddressString = "";
-            }
-            startPoint = new GeoPoint(startLat, startLan);
-            mapController.setCenter(startPoint);
-            setMarker(startLat, startLan, fromAddressString, ctx);
-            map.invalidate();
 
-            if (startPoint != null) {
-                // Прокрутка области для загрузки тайлов в кэш
-                double offset = 0.01; // Смещение в градусах (~1 км)
-                mapController.setCenter(new GeoPoint(startPoint.getLatitude() + offset, startPoint.getLongitude() + offset));
-                map.invalidate();
-                map.postDelayed(() -> {
-                    mapController.setCenter(new GeoPoint(startPoint.getLatitude() - offset, startPoint.getLongitude() - offset));
-                    map.invalidate();
-                    map.postDelayed(() -> {
-                        mapController.setCenter(startPoint); // Возврат в центр
-                        map.invalidate();
-                        Logger.d(ctx, TAG, "Preloaded tiles by scrolling around startPoint");
-                    }, 100);
-                }, 100);
+            List<String> startList = logCursor(MainActivity.ROUT_MARKER, ctx);
+
+            fromAddressString = startList.get(5);
+            Logger.d(ctx, TAG, "address11 fromAddressString" + fromAddressString);
+            toAddressString = startList.get(6);
+            Logger.d(ctx, TAG, "address11 toAddressString" + toAddressString);
+
+            startLat = Double.parseDouble(startList.get(1));
+            startLan = Double.parseDouble(startList.get(2));
+
+            finishLat = Double.parseDouble(startList.get(3));
+            finishLan = Double.parseDouble(startList.get(4));
+
+            startPoint = new GeoPoint(startLat, startLan);
+
+
+            startMarkerObj = new Marker(map);
+            startMarkerObj.setPosition(startPoint);
+
+            setMarker(startLat, startLan, fromAddressString, ctx, "1.");
+
+            GeoPoint finishPoint = new GeoPoint(finishLat, finishLan);
+            finishMarkerObj = new Marker(map);
+            finishMarkerObj.setPosition(finishPoint);
+
+            setMarker(finishLat, finishLan, toAddressString, ctx, "2.");
+
+            if(markerType.equals("startMarker")) {
+                mapController.setCenter(startPoint);
+            } else {
+                binding.centerMarker.setVisibility(GONE);
+                mapController.setCenter(finishPoint);
             }
+
+            showRout(startPoint, finishPoint);
+
+            map.invalidate();
 
         } else {
             initializeRegion();
         }
     }
 
-    // Инициализация региона, если нет сохраненной позиции
+      // Инициализация региона, если нет сохраненной позиции
     private void initializeRegion() {
-        List<String> stringList = logCursor(MainActivity.CITY_INFO, ctx);
-        city = stringList.get(1);
-        api = stringList.get(2);
-
-        if (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-            SQLiteDatabase database = ctx.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            Cursor cursor = database.rawQuery(query, null);
-            if (cursor.moveToFirst()) {
-                @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                @SuppressLint("Range") double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
-                cursor.close();
-                database.close();
-                startPoint = new GeoPoint(originLatitude, originLongitude);
+        SQLiteDatabase database = null;
+        Cursor cursor = null;
+        try {
+            // Получение данных из CITY_INFO
+            List<String> cityInfo = logCursor(MainActivity.CITY_INFO, ctx);
+            if (cityInfo.size() >= 3) {
+                city = cityInfo.get(1);
+                api = cityInfo.get(2);
+                Logger.d(ctx, TAG, "City and API loaded: city=" + city + ", api=" + api);
+            } else {
+                Logger.e(ctx, TAG, "Insufficient data in CITY_INFO, size: " + cityInfo.size());
+                return;
             }
-        }
 
-        if (startPoint != null) {
-            startLat = startPoint.getLatitude();
-            startLan = startPoint.getLongitude();
-            mapController.setCenter(startPoint);
-            setMarker(startLat, startLan, fromAddressString, ctx);
-            map.invalidate();
+            // Проверка разрешений на геолокацию
+            if (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // Попытка получить координаты из ROUT_MARKER
+                database = ctx.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                String query = "SELECT startLat, startLan FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                cursor = database.rawQuery(query, null);
+                if (cursor.moveToFirst()) {
+                    @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
+                    @SuppressLint("Range") double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
+                    startPoint = new GeoPoint(originLatitude, originLongitude);
+                    Logger.d(ctx, TAG, "Loaded start point from ROUT_MARKER: " + startPoint);
+                } else {
+                    Logger.i(ctx, TAG, "No data found in ROUT_MARKER");
+                }
+            }
 
-        } else if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            initializeLocationUpdates();
-        } else {
-            requestLocationPermissions();
+            // Установка позиции карты и маркера, если есть начальная точка
+            if (startPoint != null) {
+                startLat = startPoint.getLatitude();
+                startLan = startPoint.getLongitude();
+                mapController.setCenter(startPoint);
+                // Установка оптимального зума из сохраненных данных или по умолчанию
+                double zoomLevel = getFromTablePositionInfo(ctx, "newZoomLevel");
+                if (zoomLevel == 0) {
+                    zoomLevel = 16.0; // Оптимальный зум по умолчанию
+                }
+                mapController.setZoom(zoomLevel);
+                setMarker(startLat, startLan, fromAddressString, ctx, "1.");
+                map.invalidate();
+                Logger.d(ctx, TAG, "Map centered at: " + startPoint + ", zoom: " + zoomLevel);
+            } else if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                // Инициализация геолокации, если есть разрешение
+                initializeLocationUpdates();
+                Logger.d(ctx, TAG, "Initializing location updates");
+            } else {
+                // Запрос разрешений
+                requestLocationPermissions();
+                Logger.d(ctx, TAG, "Requesting location permissions");
+            }
+        } catch (Exception e) {
+            Logger.e(ctx, TAG, "Error in initializeRegion: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
+        } finally {
+            // Закрытие курсора и базы данных
+            if (cursor != null) {
+                cursor.close();
+            }
+            if (database != null && database.isOpen()) {
+                database.close();
+            }
         }
     }
 
@@ -518,7 +761,7 @@ public class OpenStreetMapFragment extends Fragment {
             updateMyPosition(startLat, startLan, fromAddressString, ctx);
             startPoint = new GeoPoint(startLat, startLan);
             mapController.setCenter(startPoint);
-            setMarker(startLat, startLan, fromAddressString, ctx);
+            setMarker(startLat, startLan, fromAddressString, ctx, "1.");
             map.invalidate();
         } catch (MalformedURLException | InterruptedException | JSONException e) {
             MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder().setPopUpTo(R.id.nav_restart, true).build());
@@ -660,6 +903,8 @@ public class OpenStreetMapFragment extends Fragment {
             } else if ("finishMarker".equals(markerType)) {
                 handleFinishMarkerResponse(result, localizedContext);
             }
+
+
         } else {
             Logger.e(ctx, TAG, "API response unsuccessful or body is null, response code: " + response.code());
         }
@@ -683,68 +928,64 @@ public class OpenStreetMapFragment extends Fragment {
             Logger.d(ctx, TAG, "Removed previousMarker from overlays");
         }
 
-        startMarkerObj.setPosition(startPoint);
-        configureMarker(startMarkerObj, fromAddressString, "1.");
-        previousMarker = startMarkerObj;
-        map.getOverlays().add(startMarkerObj);
-        Logger.d(ctx, TAG, "Added startMarkerObj to overlays");
-
-        mapController.setCenter(startPoint);
-        double newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, fab.getContext()).get(4));
-        mapController.setZoom(newZoomLevel);
-        map.invalidate();
-        Logger.d(ctx, TAG, "Map invalidated after startMarker setup");
-
         updateRouteSettings("start");
-        CityFinder cityFinder = new CityFinder(ctx, startLat, startLan, fromAddressString);
-        cityFinder.findCity(startLat, startLan);
-        Logger.d(ctx, TAG, "CityFinder called with latitude=" + startLat + ", longitude=" + startLan);
     }
 
     // Обработка ответа для конечного маркера
     private void handleFinishMarkerResponse(String result, Context localizedContext) {
+        // Проверка всех зависимостей
         if (endPoint == null) {
-            Logger.e(ctx, TAG, "endPoint is null");
+            Logger.e(ctx, TAG, "endPoint is null, cannot handle finish marker");
+            FirebaseCrashlytics.getInstance().recordException(new Exception("endPoint is null in handleFinishMarkerResponse"));
             return;
         }
         if (map == null) {
             Logger.e(ctx, TAG, "MapView is null, cannot handle finish marker");
+            FirebaseCrashlytics.getInstance().recordException(new Exception("MapView is null in handleFinishMarkerResponse"));
             return;
         }
+        if (mapController == null) {
+            Logger.e(ctx, TAG, "MapController is null, cannot set map center");
+            FirebaseCrashlytics.getInstance().recordException(new Exception("MapController is null in handleFinishMarkerResponse"));
+            return;
+        }
+
+        // Инициализация finishMarkerObj, если он null
+
+
         if (finishMarkerObj == null) {
-            Logger.e(ctx, TAG, "finishMarkerObj is null, cannot set marker position");
-            FirebaseCrashlytics.getInstance().recordException(new Exception("finishMarkerObj is null in handleFinishMarkerResponse"));
-            return;
+            Logger.w(ctx, TAG, "finishMarkerObj is null, creating new Marker");
+            try {
+                finishMarkerObj = new Marker(map);
+            } catch (Exception e) {
+                Logger.e(ctx, TAG, "Failed to create finishMarkerObj: " + e.getMessage());
+                FirebaseCrashlytics.getInstance().recordException(new Exception("Failed to create finishMarkerObj in handleFinishMarkerResponse", e));
+                return;
+            }
         }
+
+        // Установка строки адреса
         toAddressString = result.equals("Точка на карте") ? localizedContext.getString(R.string.end_point_marker) : result;
         Logger.d(ctx, TAG, "toAddressString set to: " + toAddressString);
 
-        finishMarkerObj.setPosition(new GeoPoint(endPoint.getLatitude(), endPoint.getLongitude()));
-        configureMarker(finishMarkerObj, toAddressString, "2.");
-        map.getOverlays().add(finishMarkerObj);
-        Logger.d(ctx, TAG, "Added finishMarkerObj to overlays");
+        // Конфигурация маркера и добавление на карту
+        try {
 
-        GeoPoint initialGeoPoint = new GeoPoint(endPoint.getLatitude(), endPoint.getLongitude());
-        mapController.setCenter(initialGeoPoint);
-        map.invalidate();
-        showRout(startPoint, endPoint);
-        Logger.d(ctx, TAG, "Map invalidated after finishMarker setup");
 
-        updateRouteSettings("finish");
+//            // Удаляем маркер из overlays, если он уже добавлен, чтобы избежать дублирования
+            map.getOverlays().remove(finishMarkerObj);
+            map.getOverlays().removeAll(Collections.singleton(roadOverlay));
+
+            map.invalidate();
+            Logger.d(ctx, TAG, "Map invalidated after finishMarker setup");
+
+            updateRouteSettings("finish");
+        } catch (Exception e) {
+            Logger.e(ctx, TAG, "Error configuring finish marker: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(new Exception("Error configuring finish marker in handleFinishMarkerResponse", e));
+        }
     }
 
-    // Настройка свойств маркера
-    private void configureMarker(Marker marker, String title, String prefix) {
-        marker.setTextLabelBackgroundColor(Color.TRANSPARENT);
-        marker.setTextLabelForegroundColor(Color.RED);
-        marker.setTextLabelFontSize(40);
-        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-        String unuString = new String(Character.toChars(0x1F449));
-        marker.setTitle(prefix + unuString + title);
-        Logger.d(ctx, TAG, "scaledDrawable: " + scaledDrawable);
-        marker.setIcon(scaledDrawable);
-        marker.showInfoWindow();
-    }
 
     // Обновление настроек маршрута
 
@@ -794,7 +1035,7 @@ public class OpenStreetMapFragment extends Fragment {
                     Logger.i(ctx, TAG, "from_lat column not found in ROUT_MARKER");
                 }
                 if (fromLngIndex != -1) {
-                    currentFromLatitude = cursor.getDouble(fromLngIndex);
+                    currentFromLongitude = cursor.getDouble(fromLngIndex);
                 } else {
                     Logger.i(ctx, TAG, "from_lng column not found in ROUT_MARKER");
                 }
@@ -839,7 +1080,7 @@ public class OpenStreetMapFragment extends Fragment {
 
             if(point.equals("finish")) {
                 settings.add(String.valueOf(currentFromLatitude));
-                settings.add(String.valueOf(currentFromLatitude));
+                settings.add(String.valueOf(currentFromLongitude));
                 settings.add(String.valueOf(finishLat));
                 settings.add(String.valueOf(finishLan));
                 settings.add(currentStartAddress);
@@ -879,6 +1120,7 @@ public class OpenStreetMapFragment extends Fragment {
         // Обновление маршрута и позиции
         updateRoutMarker(settings, map.getContext());
         updateMyPosition(startLat, startLan, fromAddressString, map.getContext());
+        new Handler(Looper.getMainLooper()).post(this::newShowRout);
         Logger.d(ctx, TAG, "Updated route settings and position");
     }
 
@@ -903,19 +1145,132 @@ public class OpenStreetMapFragment extends Fragment {
     }
 
     // Установка маркера
-    private void setMarker(double lat, double lan, String title, Context context) {
+    private void setMarker(double lat, double lon, String title, Context context, String prefix) {
+        if (map == null) {
+            Logger.e(context, TAG, "MapView is null, cannot set marker");
+            return;
+        }
+
+        // Create new marker
         Marker marker = new Marker(map);
-        marker.setPosition(new GeoPoint(lat, lan));
-        configureMarker(marker, title, "1.");
+        marker.setTextLabelBackgroundColor(Color.TRANSPARENT);
+        marker.setTextLabelForegroundColor(Color.RED);
+        marker.setTextLabelFontSize(40);
+        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+        String unuString = new String(Character.toChars(0x1F449));
+
+        // Set title for the marker (used by InfoWindow if clicked)
+        marker.setTitle(prefix + unuString + title);
+        Logger.d(context, TAG, "scaledDrawable: " + scaledDrawable);
+
+        // Set custom icon
+        initializeMarkerIcon();
+        if (scaledDrawable != null) {
+            marker.setIcon(scaledDrawable);
+        } else {
+            Logger.w(context, TAG, "scaledDrawable is null, no icon set");
+        }
+
+        // Set marker position
+        marker.setPosition(new GeoPoint(lat, lon));
+
+        // Add marker to map
         map.getOverlays().add(marker);
-        map.invalidate();
+
+        // Add custom text overlay for persistent label
+        addTextOverlay(new GeoPoint(lat, lon), prefix + unuString + title);
+
+        // Update map on the main thread
+        new Handler(Looper.getMainLooper()).post(() -> map.invalidate());
+
+        // Update marker references
         if ("startMarker".equals(markerType)) {
             startMarkerObj = marker;
+            binding.centerMarker.setVisibility(View.GONE);
         } else if ("finishMarker".equals(markerType)) {
             finishMarkerObj = marker;
         }
     }
 
+
+    private void addTextOverlay(GeoPoint point, String text) {
+        Overlay textOverlay = new Overlay() {
+            @Override
+            public void draw(Canvas canvas, MapView mapView, boolean shadow) {
+                if (shadow) return; // Skip shadow pass
+
+                Projection projection = mapView.getProjection();
+                Point screenPoint = new Point();
+                projection.toPixels(point, screenPoint);
+
+                // Настройка TextPaint для текста
+                TextPaint textPaint = new TextPaint();
+                textPaint.setColor(Color.BLACK); // Черный текст
+                textPaint.setTextSize(36); // ~14sp
+                textPaint.setAntiAlias(true);
+
+                // Настройка Paint для фона
+                Paint backgroundPaint = new Paint();
+                backgroundPaint.setColor(Color.WHITE); // Белый фон
+                backgroundPaint.setAlpha(230); // Полупрозрачность
+                backgroundPaint.setAntiAlias(true);
+
+                // Настройка Paint для обводки
+                Paint borderPaint = new Paint();
+                borderPaint.setColor(Color.GRAY); // Серая обводка
+                borderPaint.setStyle(Paint.Style.STROKE);
+                borderPaint.setStrokeWidth(2);
+                borderPaint.setAntiAlias(true);
+
+                // Параметры для фона
+                int padding = 10; // Отступ внутри фона
+                int fixedWidth = 500; // Фиксированная ширина
+                int arrowHeight = 30; // Высота стрелки
+
+                // Создаем StaticLayout для переноса текста
+                StaticLayout textLayout = new StaticLayout(
+                        text, textPaint, fixedWidth - padding * 2, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false
+                );
+                int textHeight = textLayout.getHeight();
+                int height = textHeight + padding * 2;
+
+                // Координаты для фона (центрируем над маркером)
+                float left = screenPoint.x - (float) fixedWidth / 2;
+                float top = screenPoint.y - height - arrowHeight - 120; // Подняли еще выше (было -90, теперь -140)
+                float right = left + fixedWidth;
+                float bottom = top + height;
+
+                // Включаем тень для фона
+                backgroundPaint.setShadowLayer(4, 2, 2, Color.argb(100, 0, 0, 0));
+
+                // Рисуем фон (прямоугольник с закругленным углом)
+                RectF backgroundRect = new RectF(left, top, right, bottom);
+                canvas.drawRoundRect(backgroundRect, 10, 10, backgroundPaint);
+                canvas.drawRoundRect(backgroundRect, 10, 10, borderPaint);
+
+                // Рисуем "стрелку" (треугольник) внизу фона
+                Path arrowPath = new Path();
+                float arrowWidth = 20;
+                arrowPath.moveTo(screenPoint.x - arrowWidth / 2, bottom);
+                arrowPath.lineTo(screenPoint.x + arrowWidth / 2, bottom);
+                arrowPath.lineTo(screenPoint.x, bottom + arrowHeight);
+                arrowPath.close();
+                canvas.drawPath(arrowPath, backgroundPaint); // Фон стрелки
+                canvas.drawPath(arrowPath, borderPaint); // Обводка стрелки
+
+                // Рисуем текст с переносом
+                canvas.save();
+                canvas.translate(left + padding, top + padding);
+                textLayout.draw(canvas);
+                canvas.restore();
+            }
+        };
+
+        new Handler(Looper.getMainLooper()).post(() -> {
+            map.getOverlays().add(textOverlay);
+            map.invalidate();
+        });
+    }
     // Отображение маршрута
     private void showRout(GeoPoint startP, GeoPoint endP) {
         if (startP == null || endP == null) {

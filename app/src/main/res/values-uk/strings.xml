@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.825</string>
-    <string name="version">Версія: 1.825</string>
+    <string name="version_code">1.826</string>
+    <string name="version">Версія: 1.826</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -527,4 +527,6 @@
     <string name="anr_detected">Виявлена помілка</string>
     <string name="application_is_not_responding">Додаток не відповідає.</string>
     <string name="check_permition">Будь ласка, увімкніть геолокацію або надайте дозвіл на доступ до місцеположення.</string>
+    <string name="map_loading">Мапа ще завантажується...</string>
+    <string name="cost_error">Помилка створення замовлення. Спробуйте змінити адресу або наберіть оператора</string>
 </resources>

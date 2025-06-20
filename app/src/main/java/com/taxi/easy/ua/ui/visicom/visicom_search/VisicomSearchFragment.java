@@ -1803,13 +1803,7 @@ public class VisicomSearchFragment extends Fragment {
                                         .setPopUpTo(R.id.nav_map, true)
                                         .build()
                         );
-//                        Intent intent = new Intent(context, OpenStreetMapVisicomActivity.class);
-//
-//                        intent.putExtra("startMarker", startMarker);
-//                        intent.putExtra("finishMarker", finishMarker);
-//
-//                        startActivity(intent);
-//                        finish();
+
                     } else {
                         double[] coordinates = coordinatesList.get(position);
 
@@ -1842,14 +1836,13 @@ public class VisicomSearchFragment extends Fragment {
                             Logger.d(context, TAG, "processAddressData:settings finish " + finish);
 
 
-                            if(finish.equals(getString(R.string.on_city_tv))) {
+                            if(finish.equals(getString(R.string.on_city_tv)) || finish.isEmpty()) {
                                 settings.add(Double.toString(coordinates[1]));
                                 settings.add(Double.toString(coordinates[0]));
                                 settings.add(addressesList.get(position));
-                                settings.add(addressesList.get(position));
+//                                settings.add(addressesList.get(position));
+                                settings.add(getString(R.string.on_city_tv));
                             } else {
-
-
                                 settings.add(String.valueOf(toLatitude));
                                 settings.add(String.valueOf(toLongitude));
                                 settings.add(addressesList.get(position));
