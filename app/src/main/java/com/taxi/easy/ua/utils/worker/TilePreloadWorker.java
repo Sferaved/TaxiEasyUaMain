@@ -6,7 +6,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteDiskIOException;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
@@ -29,22 +28,31 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import okhttp3.Cache;
 import okhttp3.OkHttpClient;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
+import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.http.GET;
 import retrofit2.http.Path;
 
 public class TilePreloadWorker extends Worker {
     private static final String TAG = "TilePreloadWorker";
-    private static final double COORDINATE_THRESHOLD = 0.001; // Coordinate change threshold (~100 meters)
-    private static final int OPTIMAL_ZOOM = 16; // Optimal zoom level
-    private static final double OFFSET = 0.03; // ~3 km in degrees
+    private static final double COORDINATE_THRESHOLD = 0.001; // ~100 метров
+    private static final int OPTIMAL_ZOOM = 15; // Уменьшен для оптимизации
+    private static final double OFFSET = 0.005;
+    private static final double TAIL = 2;
 
-    // Retrofit service interface
+    // Retrofit интерфейс
     interface TileService {
         @GET("{z}/{x}/{y}.png")
         Call<ResponseBody> downloadTile(
@@ -62,32 +70,25 @@ public class TilePreloadWorker extends Worker {
     @Override
     public Result doWork() {
         try {
-            // Retrieve coordinates from ROUT_MARKER
             GeoPoint newStartPoint = getStartPointFromDatabase();
             if (newStartPoint == null) {
-                Logger.e(getApplicationContext(), TAG, "No start point found in ROUT_MARKER");
+                Logger.e(getApplicationContext(), TAG, "Точка старта не найдена в ROUT_MARKER");
                 return Result.failure();
             }
 
-            // Check if coordinates have changed significantly
             if (!hasStartPointChanged(newStartPoint)) {
-                Logger.d(getApplicationContext(), TAG, "Start point has not changed significantly, skipping tile preload");
+                Logger.d(getApplicationContext(), TAG, "Точка старта не изменилась значительно, пропуск предзагрузки");
                 return Result.success();
             }
 
-            // Clear tile cache, preserving cache.db
             clearTileCache();
-
-            // Preload tiles
             preloadTiles(newStartPoint);
-
-            // Save new coordinates as last known
             saveLastStartPoint(newStartPoint);
 
-            Logger.d(getApplicationContext(), TAG, "Tile preload completed successfully");
+            Logger.d(getApplicationContext(), TAG, "Предзагрузка тайлов завершена успешно");
             return Result.success();
         } catch (Exception e) {
-            Logger.e(getApplicationContext(), TAG, "Error in TilePreloadWorker: " + e.getMessage());
+            Logger.e(getApplicationContext(), TAG, "Ошибка в TilePreloadWorker: " + e.getMessage());
             FirebaseCrashlytics.getInstance().recordException(e);
             return Result.failure();
         }
@@ -104,12 +105,12 @@ public class TilePreloadWorker extends Worker {
                 @SuppressLint("Range") double startLat = cursor.getDouble(cursor.getColumnIndex("startLat"));
                 @SuppressLint("Range") double startLan = cursor.getDouble(cursor.getColumnIndex("startLan"));
                 startPoint = new GeoPoint(startLat, startLan);
-                Logger.d(getApplicationContext(), TAG, "Loaded start point from ROUT_MARKER: " + startPoint);
+                Logger.d(getApplicationContext(), TAG, "Загружена точка старта из ROUT_MARKER: " + startPoint);
             } else {
-                Logger.i(getApplicationContext(), TAG, "No data found in ROUT_MARKER");
+                Logger.i(getApplicationContext(), TAG, "Данные в ROUT_MARKER не найдены");
             }
         } catch (Exception e) {
-            Logger.e(getApplicationContext(), TAG, "Error reading ROUT_MARKER: " + e.getMessage());
+            Logger.e(getApplicationContext(), TAG, "Ошибка чтения ROUT_MARKER: " + e.getMessage());
             FirebaseCrashlytics.getInstance().recordException(e);
         } finally {
             if (cursor != null) cursor.close();
@@ -119,8 +120,8 @@ public class TilePreloadWorker extends Worker {
     }
 
     private boolean hasStartPointChanged(GeoPoint newStartPoint) {
-        String lastLat = (String) sharedPreferencesHelperMain.getValue("lastStartLat", "0.0");
-        String lastLan = (String) sharedPreferencesHelperMain.getValue("lastStartLan", "0.0");
+        String lastLat = (String) sharedPreferencesHelperMain.getValue("lastStartPointLat", "0.0");
+        String lastLan = (String) sharedPreferencesHelperMain.getValue("lastStartPointLon", "0.0");
         double lastStartLat = Double.parseDouble(lastLat);
         double lastStartLan = Double.parseDouble(lastLan);
 
@@ -137,7 +138,7 @@ public class TilePreloadWorker extends Worker {
                     deleteDirectory(file);
                 }
             }
-            Logger.d(getApplicationContext(), TAG, "Tile cache cleared");
+            Logger.d(getApplicationContext(), TAG, "Кэш тайлов очищен");
         }
     }
 
@@ -150,249 +151,133 @@ public class TilePreloadWorker extends Worker {
         file.delete();
     }
 
+
     private void preloadTiles(GeoPoint startPoint) {
-        SQLiteDatabase db = null;
-        Cursor cursor = null;
-        try {
-            // Check and create cache directory
-            File cacheDir = Configuration.getInstance().getOsmdroidTileCache();
-            File dbFile = new File(cacheDir, "cache.db");
-            if (!Objects.requireNonNull(dbFile.getParentFile()).isDirectory()) {
-                cacheDir.mkdirs();
-                Logger.d(getApplicationContext(), TAG, "Created cache directory: " + cacheDir.getPath());
-            }
+    SqlTileWriter tileWriter = null;
+    ExecutorService executor = null;
 
-            // Check and update/create cache database
-            if (!dbFile.exists() || !isDatabaseValid(dbFile)) {
-                Logger.d(getApplicationContext(), TAG, "Cache database missing or invalid, creating new one");
-                createNewTileCacheDatabase();
-            }
+    try {
+        File cacheDir = new File(getApplicationContext().getCacheDir(), "osmdroid");
+        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+            Logger.e(getApplicationContext(), TAG, "Не удалось создать директорию кэша: " + cacheDir.getAbsolutePath());
+            return;
+        }
+        Configuration.getInstance().setOsmdroidTileCache(cacheDir);
+        Configuration.getInstance().setUserAgentValue(getApplicationContext().getPackageName());
 
-            // Check network connectivity
-            ConnectivityManager cm = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-            boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
-            if (!isConnected) {
-                Logger.e(getApplicationContext(), TAG, "No network connection, cannot preload tiles");
-                return;
-            }
+        if (!isConnected()) {
+            Logger.e(getApplicationContext(), TAG, "Нет интернет-соединения");
+            return;
+        }
 
-            // Configure OSMDroid
-            Configuration.getInstance().setCacheMapTileCount((short) 12);
-            Configuration.getInstance().setTileFileSystemCacheMaxBytes(1024 * 1024 * 50L);
-            Configuration.getInstance().setTileDownloadMaxQueueSize((short) 40);
-            Configuration.getInstance().setUserAgentValue(getApplicationContext().getPackageName());
+        File httpCacheDir = new File(getApplicationContext().getCacheDir(), "http_cache");
+        if (!httpCacheDir.exists() && !httpCacheDir.mkdirs()) {
+            Logger.e(getApplicationContext(), TAG, "Не удалось создать директорию кэша HTTP: " + httpCacheDir.getAbsolutePath());
+        }
+        Cache cache = new Cache(httpCacheDir, 10 * 1024 * 1024);
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .cache(cache)
+                .connectTimeout(Duration.ofSeconds(5))
+                .readTimeout(Duration.ofSeconds(5))
+                .addInterceptor(chain -> chain.proceed(
+                        chain.request().newBuilder()
+                                .header(HttpHeaders.USER_AGENT, getApplicationContext().getPackageName())
+                                .build()))
+                .build();
 
-            // Initialize SqlTileWriter
-            SqlTileWriter tileWriter = new SqlTileWriter();
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(TileSourceFactory.MAPNIK.getBaseUrl())
+                .client(okHttpClient)
+                .build();
 
-            try {
-                db = SQLiteDatabase.openOrCreateDatabase(dbFile, null);
-            } catch (SQLiteDiskIOException e) {
-                Logger.e(getApplicationContext(), TAG, "Ошибка ввода-вывода при открытии базы данных: " + e.getMessage());
-                // Логика восстановления или уведомление пользователя
-            } finally {
-                if (db != null && db.isOpen()) {
-                    db.close();
+        TileService tileService = retrofit.create(TileService.class);
+        tileWriter = new SqlTileWriter();
+
+        GeoPoint topLeft = new GeoPoint(startPoint.getLatitude() + OFFSET, startPoint.getLongitude() - OFFSET);
+        GeoPoint bottomRight = new GeoPoint(startPoint.getLatitude() - OFFSET, startPoint.getLongitude() + OFFSET);
+
+        double n = Math.pow(2, OPTIMAL_ZOOM); // Зум 16
+        long xMin = (long) ((topLeft.getLongitude() + 180.0) / 360.0 * n);
+        long xMax = (long) ((bottomRight.getLongitude() + 180.0) / 360.0 * n);
+        long yMin = (long) ((1.0 - Math.log(Math.tan(Math.toRadians(topLeft.getLatitude())) + 1.0 / Math.cos(Math.toRadians(topLeft.getLatitude()))) / Math.PI) / 2.0 * n);
+        long yMax = (long) ((1.0 - Math.log(Math.tan(Math.toRadians(bottomRight.getLatitude())) + 1.0 / Math.cos(Math.toRadians(bottomRight.getLatitude()))) / Math.PI) / 2.0 * n);
+
+        if (xMin > xMax) { long t = xMin; xMin = xMax; xMax = t; }
+        if (yMin > yMax) { long t = yMin; yMin = yMax; yMax = t; }
+
+        int threadCount = 4; // Уменьшен для стабильности
+        executor = Executors.newFixedThreadPool(threadCount);
+        List<Future<?>> futures = new ArrayList<>();
+        AtomicBoolean cancelFlag = new AtomicBoolean(false);
+        int maxTiles = 50; // Ограничение на 50 тайлов
+        int tileCount = 0;
+
+        for (long x = xMin; x <= xMax && tileCount < maxTiles; x += TAIL) {
+            for (long y = yMin; y <= yMax && tileCount < maxTiles; y += TAIL) {
+                final long tileX = x;
+                final long tileY = y;
+                tileCount++;
+
+                long tileIndex = MapTileIndex.getTileIndex(OPTIMAL_ZOOM, (int) tileX, (int) tileY);
+                if (tileWriter.exists(TileSourceFactory.MAPNIK, tileIndex)) {
+                    Logger.d(getApplicationContext(), TAG, "Тайл уже в кэше: Z=OPTIMAL_ZOOM, X=" + tileX + ", Y=" + tileY);
+                    continue;
                 }
-            }
 
-            // Setup Retrofit
-            OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                    .connectTimeout(Duration.ofSeconds(5))
-                    .readTimeout(Duration.ofSeconds(5))
-                    .addInterceptor(chain -> chain.proceed(
-                            chain.request().newBuilder()
-                                    .header(HttpHeaders.USER_AGENT, getApplicationContext().getPackageName())
-                                    .build()
-                    ))
-                    .build();
+                SqlTileWriter finalTileWriter = tileWriter;
+                Future<?> future = executor.submit(() -> {
+                    if (cancelFlag.get()) return;
 
-            Retrofit retrofit = new Retrofit.Builder()
-                    .baseUrl(TileSourceFactory.MAPNIK.getBaseUrl())
-                    .client(okHttpClient)
-                    .build();
-
-            TileService tileService = retrofit.create(TileService.class);
-
-            // Define tile download area
-            GeoPoint topLeft = new GeoPoint(startPoint.getLatitude() + OFFSET, startPoint.getLongitude() - OFFSET);
-            GeoPoint bottomRight = new GeoPoint(startPoint.getLatitude() - OFFSET, startPoint.getLongitude() + OFFSET);
-
-            // Calculate tile indices
-            double n = Math.pow(2, OPTIMAL_ZOOM);
-            long tileXMin = (long) ((topLeft.getLongitude() + 180.0) / 360.0 * n);
-            long tileXMax = (long) ((bottomRight.getLongitude() + 180.0) / 360.0 * n);
-            long tileYMin = (long) ((1.0 - Math.log(Math.tan(Math.toRadians(topLeft.getLatitude())) + 1.0 / Math.cos(Math.toRadians(topLeft.getLatitude()))) / Math.PI) / 2.0 * n);
-            long tileYMax = (long) ((1.0 - Math.log(Math.tan(Math.toRadians(bottomRight.getLatitude())) + 1.0 / Math.cos(Math.toRadians(bottomRight.getLatitude()))) / Math.PI) / 2.0 * n);
-
-            // Adjust min/max order
-            if (tileXMin > tileXMax) {
-                long temp = tileXMin;
-                tileXMin = tileXMax;
-                tileXMax = temp;
-            }
-            if (tileYMin > tileYMax) {
-                long temp = tileYMin;
-                tileYMin = tileYMax;
-                tileYMax = temp;
-            }
-
-            // Download tiles using Retrofit
-            String providerId = "mapnik"; // Hardcoded provider identifier for MAPNIK
-            for (long x = tileXMin; x <= tileXMax; x++) {
-                for (long y = tileYMin; y <= tileYMax; y++) {
                     if (!isConnected()) {
-                        Logger.e(getApplicationContext(), TAG, "Network disconnected during tile download");
+                        Logger.e(getApplicationContext(), TAG, "Потеряно соединение, отмена загрузки");
+                        cancelFlag.set(true);
                         return;
                     }
+
                     try {
-                        long tileKey = MapTileIndex.getTileIndex(OPTIMAL_ZOOM, (int) x, (int) y);
-
-                        // Check if tile exists in cache using SQL
-                        cursor = db.rawQuery("SELECT 1 FROM tiles WHERE [key] = ? AND provider = ?",
-                                new String[]{String.valueOf(tileKey), providerId});
-                        boolean tileExists = cursor.moveToFirst();
-                        cursor.close();
-
-                        if (!tileExists) {
-                            // Download tile using Retrofit
-                            Call<ResponseBody> call = tileService.downloadTile(OPTIMAL_ZOOM, x, y);
-                            retrofit2.Response<ResponseBody> response = call.execute();
-                            if (response.isSuccessful() && response.body() != null) {
-                                byte[] tileData = response.body().bytes();
-                                // Convert byte[] to InputStream
-                                ByteArrayInputStream tileInputStream = new ByteArrayInputStream(tileData);
-                                tileWriter.saveFile(TileSourceFactory.MAPNIK, tileKey, tileInputStream, System.currentTimeMillis() + 30 * 24 * 60 * 60 * 1000L);
-                                tileInputStream.close();
-                                Logger.i(getApplicationContext(), TAG,"Loaded tile: z=" + OPTIMAL_ZOOM + ", x=" + x + ", y=" + y);
-                            } else {
-                                Logger.e(getApplicationContext(), TAG, "Failed to download tile: z=" + OPTIMAL_ZOOM + ", x=" + x + ", y=" + y + ", HTTP code: " + response.code());
+                        Response<ResponseBody> response = tileService.downloadTile(OPTIMAL_ZOOM, tileX, tileY).execute();
+                        if (response.isSuccessful() && response.body() != null) {
+                            byte[] data = response.body().bytes();
+                            try (ByteArrayInputStream stream = new ByteArrayInputStream(data)) {
+                                finalTileWriter.saveFile(TileSourceFactory.MAPNIK, tileIndex, stream,
+                                        System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000);
+                                Logger.d(getApplicationContext(), TAG, "Сохранен тайл: Z=16, X=" + tileX + ", Y=" + tileY);
                             }
                         } else {
-                            Logger.i(getApplicationContext(), TAG, "Tile already in cache: z=" + OPTIMAL_ZOOM + ", x=" + x + ", y=" + y);
+                            Logger.w(getApplicationContext(), TAG, "Ошибка загрузки: Z=16, X=" + tileX + ", Y=" + tileY);
                         }
                     } catch (IOException e) {
-                        Logger.e(getApplicationContext(), TAG, "Failed to load tile: z=" + OPTIMAL_ZOOM + ", x=" + x + ", y=" + y + ", error: " + e.getMessage());
+                        Logger.e(getApplicationContext(), TAG, "Ошибка при загрузке тайла: " + e.getMessage());
                         FirebaseCrashlytics.getInstance().recordException(e);
                     }
-                }
-            }
-
-            // Check cache
-            long tileCount = tileWriter.getRowCount("tiles");
-            if (tileCount < 1) {
-                Logger.e(getApplicationContext(), TAG, "No tiles loaded: " + tileCount);
-            } else {
-                Logger.i(getApplicationContext(), TAG,"Total tiles in cache: " + tileCount);
-            }
-
-            Logger.d(getApplicationContext(), TAG, "Tile preload completed around: " + startPoint);
-        } catch (Exception e) {
-            Logger.e(getApplicationContext(), TAG, "Error preloading tiles: " + e.getMessage());
-            FirebaseCrashlytics.getInstance().recordException(e);
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
-            if (db != null && db.isOpen()) {
-                db.close();
+                });
+                futures.add(future);
             }
         }
-    }
 
-    @SuppressLint("Range")
-    private boolean isDatabaseValid(File dbFile) {
-        SQLiteDatabase db = null;
-        try {
-            db = SQLiteDatabase.openDatabase(dbFile.getPath(), null, SQLiteDatabase.OPEN_READWRITE);
-
-            Cursor tableCursor = db.rawQuery("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'tiles'", null);
-            boolean hasTable = tableCursor.moveToFirst();
-            tableCursor.close();
-            if (!hasTable) {
-                Logger.e(getApplicationContext(), TAG, "Cache database is invalid: tiles table missing");
-                return false;
-            }
-
-            // Check for expires column
-            Cursor columnCursor = db.rawQuery("PRAGMA table_info(tiles)", null);
-            boolean hasExpiresColumn = false;
-            while (columnCursor.moveToNext()) {
-                if ("expires".equalsIgnoreCase(columnCursor.getString(columnCursor.getColumnIndex("name")))) {
-                    hasExpiresColumn = true;
-                    break;
-                }
-            }
-            columnCursor.close();
-
-            if (!hasExpiresColumn) {
-                db.execSQL("ALTER TABLE tiles ADD COLUMN expires INTEGER");
-                Logger.i(getApplicationContext(), TAG,"Added expires column to tiles table");
-                db.execSQL("CREATE INDEX IF NOT EXISTS expires_index ON tiles (expires)");
-                Logger.i(getApplicationContext(),TAG, "Created expires index on tiles table");
-            }
-
-            return true;
-        } catch (Exception e) {
-            Logger.e(getApplicationContext(), TAG, "Cache database is invalid: " + e.getMessage());
-            FirebaseCrashlytics.getInstance().recordException(e);
-            return false;
-        } finally {
-            if (db != null && db.isOpen()) {
-                db.close();
-            }
-        }
-    }
-
-    private void createNewTileCacheDatabase() {
-        SQLiteDatabase db = null;
-        try {
-            File dbFile = new File(getApplicationContext().getCacheDir(), "tiles.db");
+        for (Future<?> f : futures) {
             try {
-                db = SQLiteDatabase.openOrCreateDatabase(dbFile, null);
-            } catch (SQLiteDiskIOException e) {
-                Logger.e(getApplicationContext(), TAG, "Ошибка ввода-вывода при открытии базы данных: " + e.getMessage());
-                // Логика восстановления или уведомление пользователя
-            } finally {
-                if (db != null && db.isOpen()) {
-                    db.close();
-                }
-            }
-
-            // Create tiles table
-            assert db != null;
-            db.execSQL("CREATE TABLE IF NOT EXISTS tiles ([key] INTEGER PRIMARY KEY, provider TEXT NOT NULL, tile BLOB NOT NULL, expires INTEGER NOT NULL)");
-
-            // Check for expires column
-            Cursor cursor = db.rawQuery("PRAGMA table_info(tiles)", null);
-            boolean hasExpiresColumn = false;
-            while (cursor.moveToNext()) {
-                if ("expires".equalsIgnoreCase(String.valueOf(cursor.getColumnIndex("name")))) {
-                    hasExpiresColumn = true;
-                    break;
-                }
-            }
-            cursor.close();
-
-            if (!hasExpiresColumn) {
-                db.execSQL("ALTER TABLE tiles ADD COLUMN expires INTEGER NOT NULL");
-                Logger.i(getApplicationContext(), TAG,"Added expires column to tiles table");
-                db.execSQL("CREATE INDEX IF NOT EXISTS expires_index ON tiles (expires)");
-                Logger.i(getApplicationContext(), TAG,"Created expires index on tiles table");
-            }
-
-            Logger.d(getApplicationContext(), TAG, "Tile cache database created at: " + dbFile.getPath());
-        } catch (Exception e) {
-            Logger.e(getApplicationContext(), TAG, "Error creating tiles database: " + e.getMessage());
-            FirebaseCrashlytics.getInstance().recordException(e);
-        } finally {
-            if (db != null && db.isOpen()) {
-                db.close();
+                f.get();
+            } catch (Exception e) {
+                Logger.e(getApplicationContext(), TAG, "Ошибка ожидания завершения загрузки: " + e.getMessage());
             }
         }
-    }
 
+        Logger.i(getApplicationContext(), TAG, "✅ Все тайлы успешно загружены и сохранены.");
+        Logger.d(getApplicationContext(), TAG, "Пропущено " + (tileCount - futures.size()) + " тайлов, так как они уже в кэше");
+
+    } catch (Exception e) {
+        Logger.e(getApplicationContext(), TAG, "❌ Ошибка preloadTiles: " + e.getMessage());
+        FirebaseCrashlytics.getInstance().recordException(e);
+    } finally {
+        if (tileWriter != null) {
+            tileWriter.onDetach();
+        }
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdown();
+        }
+    }
+}
     private void saveLastStartPoint(GeoPoint startPoint) {
         sharedPreferencesHelperMain.saveValue("lastStartPointLat", String.valueOf(startPoint.getLatitude()));
         sharedPreferencesHelperMain.saveValue("lastStartPointLon", String.valueOf(startPoint.getLongitude()));

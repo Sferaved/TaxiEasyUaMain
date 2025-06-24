@@ -39,7 +39,6 @@ import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.log.Logger;
-import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.uxcam.UXCam;
 
 import java.io.UnsupportedEncodingException;
@@ -245,9 +244,8 @@ public class CardFragment extends Fragment {
                         .build());
             }
             // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту
-            SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
-            sharedPreferencesHelper.saveValue("gps_upd", true);
-            sharedPreferencesHelper.saveValue("gps_upd_address", true);
+
+            sharedPreferencesHelperMain.saveValue("gps_upd", true);
 
             MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)

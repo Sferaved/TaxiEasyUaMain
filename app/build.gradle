@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk 26
         targetSdk 35
-        versionCode 1826
-        versionName '1.826'
+        versionCode 1827
+        versionName '1.827'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled true
@@ -114,8 +114,8 @@ dependencies {
     implementation 'com.squareup.picasso:picasso:2.71828'
 
     // Room для работы с локальной базой данных
-    implementation "androidx.room:room-runtime:2.7.1"
-    annotationProcessor "androidx.room:room-compiler:2.7.1"
+    implementation "androidx.room:room-runtime:2.7.2"
+    annotationProcessor "androidx.room:room-compiler:2.7.2"
 
     // Стартовые зависимости
     implementation 'androidx.startup:startup-runtime:1.2.0'
@@ -137,13 +137,13 @@ dependencies {
     implementation 'org.greenrobot:eventbus:3.3.1'
 
     // тепловой след
-    implementation 'com.uxcam:uxcam:3.6.41'
+    implementation 'com.uxcam:uxcam:3.6.43'
 
     //security
     implementation "androidx.security:security-crypto:1.1.0-beta01"
 
     //worker
-    implementation "androidx.work:work-runtime:2.10.1"
+    implementation "androidx.work:work-runtime:2.10.2"
 
 
     implementation 'com.github.bumptech.glide:glide:4.16.0'
@@ -153,5 +153,4 @@ dependencies {
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ["-Xlint:deprecation"]
 }
-
 

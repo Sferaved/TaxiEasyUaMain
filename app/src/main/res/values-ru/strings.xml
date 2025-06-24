@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.826</string>
-    <string name="version">Версия: 1.826</string>
+    <string name="version_code">1.827</string>
+    <string name="version">Версия: 1.827</string>
 
     <string name="app_name">Такси Доставка</string>
 
@@ -153,13 +153,13 @@
     <string name="change_message">"Изменение базы адресов."</string>
     <string name="server_error_connected">Сервер не принял запрос. Наберите оператора через "ПОМОЩЬ"</string>
     <string name="GDPR">GDPR</string>
-    <string name="ok_GDPR">Согласиться -> </string>
+    <string name="ok_GDPR">Согласиться</string>
     <string name="Dnipro_city">Днепр</string>
     <string name="city_change">Выберите город</string>
     <string name="Zaporizhzhia">Запорожье</string>
     <string name="Cherkasy">Черкассы</string>
     <string name="OdessaTest">Одесса (Тест)</string>
-    <string name="disc_text">Изменить стоимость на</string>
+    <string name="disc_text">% к стоимости </string>
     <string name="email_sent">Сообщение отправлено</string>
     <string name="send_like">Оценить приложение</string>
     <string name="send_email_admin">Сообщить о проблеме</string>
@@ -254,7 +254,7 @@
     <string name="e_google_pay_canceled">GooglePay отменен</string>
     <string name="update_count">Проверить баланс</string>
     <string name="pay_count">Пополнить счет</string>
-    <string name="my_card_pay">Платежная карта</string>
+    <string name="my_card_pay">Оплата</string>
     <string name="my_site">Посетите наш сайт</string>
     <!-- <string name="fondy_message">Оплата по услуге такси.</string>-->
     <string name="fondy_message">Другая вспомогательная деятельность в сфере транспорта</string>

@@ -7,6 +7,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
 import com.taxi.easy.ua.utils.pusher.events.CanceledStatusEvent;
 import com.taxi.easy.ua.utils.pusher.events.OrderResponseEvent;
@@ -106,4 +107,65 @@ public class ExecutionStatusViewModel extends ViewModel {
     }
 
 
+    private final MutableLiveData<String> uidLiveData = new MutableLiveData<>();
+    private final MutableLiveData<String> paySystemStatusLiveData = new MutableLiveData<>();
+
+    public ExecutionStatusViewModel() {
+        // Initialize with current values
+        uidLiveData.setValue(MainActivity.uid);
+        paySystemStatusLiveData.setValue(MainActivity.paySystemStatus);
+    }
+
+    // Expose LiveData to observe uid changes
+    public LiveData<String> getUid() {
+        return uidLiveData;
+    }
+
+    // Expose LiveData to observe paySystemStatus changes
+    public LiveData<String> getPaySystemStatus() {
+        return paySystemStatusLiveData;
+    }
+
+    // Method to update uid
+    public void updateUid(String newUid) {
+        uidLiveData.setValue(newUid);
+    }
+
+    // Method to update paySystemStatus
+    public void updatePaySystemStatus(String newPaySystemStatus) {
+        paySystemStatusLiveData.setValue(newPaySystemStatus);
+    }
+
+    private final MutableLiveData<Boolean> statusNalUpdate = new MutableLiveData<>();
+    public LiveData<Boolean> getStatusNalUpdate() {return statusNalUpdate;}
+    public void setStatusNalUpdate(Boolean canceled) {
+        Log.e("startFinishPage", "StatusNalUpdate:" + canceled);
+        if (Looper.getMainLooper().isCurrentThread()) {
+            statusNalUpdate.setValue(canceled);
+        } else {
+            statusNalUpdate.postValue(canceled);
+        }
+    }
+
+    private final MutableLiveData<Boolean> statusXUpdate = new MutableLiveData<>();
+    public LiveData<Boolean> getStatusX() {return statusXUpdate;}
+    public void setStatusX(Boolean statusX) {
+        Log.e("setStatusX", "setStatusXUpdate:" + statusX);
+        if (Looper.getMainLooper().isCurrentThread()) {
+            statusXUpdate.setValue(statusX);
+        } else {
+            statusXUpdate.postValue(statusX);
+        }
+    }
+
+    private final MutableLiveData<Boolean> statusGpsUpdate = new MutableLiveData<>();
+    public LiveData<Boolean> getStatusGpsUpdate() {return statusGpsUpdate;}
+    public void setStatusGpsUpdate(Boolean statusGps) {
+        Log.e("setStatusGps", "setStatusGpsUpdate:" + statusGps);
+        if (Looper.getMainLooper().isCurrentThread()) {
+            statusGpsUpdate.setValue(statusGps);
+        } else {
+            statusGpsUpdate.postValue(statusGps);
+        }
+    }
 }

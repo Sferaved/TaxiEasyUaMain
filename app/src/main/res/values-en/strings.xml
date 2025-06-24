@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.826</string>
-    <string name="version">Version: 1.826</string>
+    <string name="version_code">1.827</string>
+    <string name="version">Version: 1.827</string>
 
     <string name="app_name">Taxi Dostavka</string>
 
@@ -152,13 +152,13 @@
     <string name="change_message">"Change of address base. "</string>
     <string name="server_error_connected">The server did not accept the request. Dial the operator via "HELP"</string>
     <string name="GDPR">GDPR</string>
-    <string name="ok_GDPR">Agree  -> </string>
+    <string name="ok_GDPR">Agree</string>
     <string name="Dnipro_city">Dnipro</string>
     <string name="city_change">Select a city</string>
     <string name="Zaporizhzhia">Zaporizhzhia</string>
     <string name="Cherkasy">Cherkasy</string>
     <string name="OdessaTest">Odesa (Test)</string>
-    <string name="disc_text">Change cost to</string>
+    <string name="disc_text">% to cost</string>
     <string name="email_sent">Message sent</string>
     <string name="send_like">Rate the app</string>
     <string name="send_email_admin">Report a problem</string>
@@ -252,7 +252,7 @@
     <string name="e_google_pay_canceled">GooglePay has been canceled</string>
     <string name="update_count">Check balance</string>
     <string name="pay_count">Top up account</string>
-    <string name="my_card_pay">Payment card</string>
+    <string name="my_card_pay">Payment</string>
     <string name="my_site">Visit our site</string>
     <!-- <string name="fondy_message">Payment for taxi service.</string>-->
     <string name="fondy_message"> Other auxiliary activities in the field of transport</string>

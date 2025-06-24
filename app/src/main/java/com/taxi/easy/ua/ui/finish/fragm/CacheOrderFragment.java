@@ -738,6 +738,7 @@ public class CacheOrderFragment extends Fragment {
             bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
             bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
 
+            viewModel.setStatusNalUpdate(true); //наюлюдение за опросом статусом нала
             new Handler(Looper.getMainLooper()).post (() -> {
                 MainActivity.navController.navigate(
                         R.id.nav_finish_separate,

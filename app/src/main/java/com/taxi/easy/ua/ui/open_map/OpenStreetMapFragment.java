@@ -81,7 +81,6 @@ import org.osmdroid.bonuspack.routing.OSRMRoadManager;
 import org.osmdroid.bonuspack.routing.Road;
 import org.osmdroid.bonuspack.routing.RoadManager;
 import org.osmdroid.config.Configuration;
-import org.osmdroid.tileprovider.modules.SqlTileWriter;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.CustomZoomButtonsController;
@@ -203,7 +202,8 @@ public class OpenStreetMapFragment extends Fragment {
         // Инициализация остальных компонентов
         initializeArguments();
         initializePermissionLauncher();
-        requestStoragePermission();
+        configureMap();
+        initializeMapPosition();
         initializeMarkerIcon();
         fromAddressString = getString(R.string.startPoint);
         toAddressString = getString(R.string.end_point_marker);
@@ -230,13 +230,6 @@ public class OpenStreetMapFragment extends Fragment {
                     // Первый запрос разрешения
                     locationPermissionLauncher.launch(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE});
                     sharedPreferencesHelperMain.saveValue("storagePermissionRequested", true);
-                } else {
-                    // Пользователь отклонил разрешение навсегда, предложить открыть настройки
-                    Toast.makeText(ctx, "Пожалуйста, предоставьте разрешение на доступ к файлам в настройках", Toast.LENGTH_LONG).show();
-                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                    Uri uri = Uri.fromParts("package", ctx.getPackageName(), null);
-                    intent.setData(uri);
-                    startActivity(intent);
                 }
             } else {
                 Logger.d(ctx, TAG, "Storage permission already granted");
@@ -250,114 +243,84 @@ public class OpenStreetMapFragment extends Fragment {
         }
     }
 
-
     @Override
     public void onResume() {
         super.onResume();
+
         map = binding.map;
         mapController = map.getController();
         apiServiceActivate();
         gpsSwitch.setChecked(switchState());
+
         Logger.d(ctx, TAG, "onResume: markerType=" + markerType);
 
-        // Счетчик попыток
-        final int[] retryCount = {0};
-        final int MAX_RETRIES = 1;
-
-        // Ожидание завершения TilePreloadWorker
         WorkManager.getInstance(ctx).getWorkInfosByTagLiveData("TilePreloadWork")
                 .observe(getViewLifecycleOwner(), workInfos -> {
-                    boolean isWorkerFinished = false;
+                    boolean preloadFinished = false;
+
                     for (WorkInfo workInfo : workInfos) {
                         if (workInfo.getState() == WorkInfo.State.SUCCEEDED) {
-                            Logger.d(ctx, TAG, "TilePreloadWorker completed");
-                            isWorkerFinished = true;
+                            Logger.d(ctx, TAG, "TilePreloadWorker завершён");
+                            preloadFinished = true;
+                            break;
                         } else if (workInfo.getState() == WorkInfo.State.FAILED) {
-                            Logger.e(ctx, TAG, "TilePreloadWorker failed");
-                            Toast.makeText(ctx, "Ошибка загрузки карты", Toast.LENGTH_SHORT).show();
-                            showMapWithFallback();
+                            Logger.e(ctx, TAG, "TilePreloadWorker завершился с ошибкой");
+                            showMapWithFallback("TilePreloadWorker failed");
+                            return;
                         }
                     }
-                    if (isWorkerFinished) {
-                        // Проверка тайлов с задержкой
-                        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                            try {
-                                if (map == null) {
-                                    Logger.e(ctx, TAG, "MapView is null, cannot check tiles or render map");
-                                    showMapWithFallback();
-                                    return;
-                                }
-                                SqlTileWriter tileWriter = new SqlTileWriter();
-                                long tileCount = tileWriter.getRowCount("tiles");
-                                Logger.d(ctx, TAG, "Tiles in cache: " + tileCount);
-                                if (tileCount >= 1) {
-                                    progressBar.setVisibility(GONE);
-                                    center_marker.setVisibility(View.VISIBLE);
-                                    Logger.d(ctx, TAG, "Tiles available, rendering map");
-                                    configureMap();
-                                    initializeMapPosition();
-                                    map.setVisibility(VISIBLE);
-                                    map.onResume();
-                                    map.invalidate();
-                                } else if (retryCount[0] < MAX_RETRIES) {
-                                    retryCount[0]++;
-                                    Logger.w(ctx, TAG, "No tiles in cache yet, retry " + retryCount[0] + "/" + MAX_RETRIES);
-                                    checkTilesAndRender();
-                                } else {
-                                    Logger.w(ctx, TAG, "Max retries reached, rendering map with fallback");
-                                    showMapWithFallback();
-                                }
-                            } catch (Exception e) {
-                                Logger.e(ctx, TAG, "Error checking tile cache: " + e.getMessage());
-                                showMapWithFallback();
-                            }
-                        }, 100);
+
+                    if (preloadFinished) {
+                        if (isTileCacheAvailable()) {
+                            Logger.d(ctx, TAG, "Кэш тайлов найден, отображаем карту");
+                            renderMap();
+                        } else {
+                            Logger.w(ctx, TAG, "Кэш отсутствует, fallback");
+                            showMapWithFallback("Кэш пустой");
+                        }
                     }
                 });
 
-
         setupMapTouchListener();
     }
-
-    private void checkTilesAndRender() {
+    private void renderMap() {
         try {
-            SqlTileWriter tileWriter = new SqlTileWriter();
-            long tileCount = tileWriter.getRowCount("tiles");
-            Logger.d(ctx, TAG, "Retry - Tiles in cache: " + tileCount);
-            if (tileCount >= 1) {
-                progressBar.setVisibility(GONE);
-                center_marker.setVisibility(View.VISIBLE);
-                Logger.d(ctx, TAG, "Tiles available on retry, rendering map");
-                configureMap();
-                initializeMapPosition();
-                map.setVisibility(VISIBLE);
-                map.onResume();
-                map.invalidate();
-            } else {
-                Logger.w(ctx, TAG, "Still no tiles: " + tileCount);
-                progressBar.setVisibility(VISIBLE);
-                center_marker.setVisibility(View.INVISIBLE);
+            configureMap();
+            initializeMapPosition();
 
-                showMapWithFallback();
-            }
+            map.setUseDataConnection(isNetworkAvailable());
+            map.setVisibility(View.VISIBLE);
+            map.onResume();
+            map.invalidate();
+
+            progressBar.setVisibility(View.GONE);
+//            center_marker.setVisibility(View.VISIBLE);
+
+            Logger.d(ctx, TAG, "Карта отрисована");
         } catch (Exception e) {
-            Logger.e(ctx, TAG, "Error on retry checking tile cache: " + e.getMessage());
-            showMapWithFallback();
+            Logger.e(ctx, TAG, "Ошибка в renderMap(): " + e.getMessage());
+            showMapWithFallback("Ошибка renderMap");
         }
     }
 
-    private void showMapWithFallback() {
-        progressBar.setVisibility(GONE);
-        center_marker.setVisibility(View.VISIBLE);
-        Logger.w(ctx, TAG, "Fallback: Showing map with available tiles or online loading");
+
+
+    private void showMapWithFallback(String reason) {
+        Logger.w(ctx, TAG, "Fallback карта: " + reason);
         configureMap();
         initializeMapPosition();
+
         map.setUseDataConnection(isNetworkAvailable());
-        map.setVisibility(VISIBLE);
+        map.setVisibility(View.VISIBLE);
         map.onResume();
         map.invalidate();
-//        Toast.makeText(ctx, "Карта отображается с доступными данными", Toast.LENGTH_SHORT).show();
+
+        progressBar.setVisibility(View.GONE);
+        center_marker.setVisibility(View.VISIBLE);
+
+//        Toast.makeText(ctx, "Карта загружена с fallback: " + reason, Toast.LENGTH_SHORT).show();
     }
+
 
     @Override
     public void onPause() {
@@ -391,25 +354,10 @@ public class OpenStreetMapFragment extends Fragment {
                             startActivity(intent);
                         }
                     }
+                    Logger.d(ctx, TAG, "No storage permission needed for Android Q and above");
+                    configureMap();
+                    initializeMapPosition();
 
-                    // Обработка разрешения на хранилище
-                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-                        if (Boolean.TRUE.equals(storageGranted)) {
-                            Logger.d(ctx, TAG, "Storage permission granted");
-                            configureMap();
-                            initializeMapPosition();
-                        } else {
-                            Logger.w(ctx, TAG, "Storage permission denied");
-                            Toast.makeText(ctx, "Без разрешения на доступ к файлам карта может работать некорректно", Toast.LENGTH_LONG).show();
-                            map.setUseDataConnection(isNetworkAvailable());
-                            configureMap();
-                            initializeMapPosition();
-                        }
-                    } else {
-                        Logger.d(ctx, TAG, "No storage permission needed for Android Q and above");
-                        configureMap();
-                        initializeMapPosition();
-                    }
                 }
         );
     }
@@ -482,35 +430,38 @@ public class OpenStreetMapFragment extends Fragment {
     }
 
     // Настройка карты
+    private boolean mapConfigured = false;
+
     private void configureMap() {
-        if (map == null) {
-            Logger.e(ctx, TAG, "MapView is null, cannot configure map");
+        if (map == null || mapConfigured) {
+            Logger.d(ctx, TAG, "Map уже сконфигурирован или null");
             return;
         }
-        File cacheDir = Configuration.getInstance().getOsmdroidTileCache();
-        Logger.d(ctx, TAG, "Checking cache directory: " + cacheDir.getPath() + ", exists: " + cacheDir.exists());
+
+        File cacheDir = new File(ctx.getCacheDir(), "osmdroid");
+        Configuration.getInstance().setOsmdroidTileCache(cacheDir);
+        Configuration.getInstance().setUserAgentValue(ctx.getPackageName());
+
         map.setTileSource(TileSourceFactory.MAPNIK);
         map.setMultiTouchControls(true);
+        map.setTilesScaledToDpi(true);
         map.setMinZoomLevel(0.0);
         map.setMaxZoomLevel(20.0);
-        map.setTilesScaledToDpi(true);
         map.getZoomController().setVisibility(CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT);
         map.setScrollableAreaLimitDouble(null);
-        Logger.d(ctx, TAG, "Map configured");
 
-        // Установка зума
-        double newZoomLevel;
-        try {
-            newZoomLevel = Double.parseDouble(logCursor(MainActivity.TABLE_POSITION_INFO, ctx).get(4));
-        } catch (Exception e) {
-            Logger.w(ctx, TAG, "Error parsing zoom level, using default: " + e.getMessage());
-            newZoomLevel = 0;
-        }
-        if (newZoomLevel == 0) {
-            newZoomLevel = 16.0; // Совпадение с OPTIMAL_ZOOM
-        }
-        mapController.setZoom(newZoomLevel);
-        map.setClickable(true);
+        Logger.d(ctx, TAG, "Map настроен");
+        mapConfigured = true;
+
+    }
+
+    private boolean isTileCacheAvailable() {
+        File tileCacheDir = Configuration.getInstance().getOsmdroidTileCache();
+        File cacheDb = new File(tileCacheDir, "cache.db");
+        boolean exists = cacheDb.exists() && cacheDb.length() > 0;
+
+        Logger.d(ctx, TAG, "Проверка кэша тайлов: " + cacheDb.getAbsolutePath() + ", exists=" + exists);
+        return exists;
     }
 
     // Настройка слушателя касаний карты
@@ -524,9 +475,9 @@ public class OpenStreetMapFragment extends Fragment {
             if (action == MotionEvent.ACTION_DOWN) {
                 binding.centerMarker.setVisibility(VISIBLE);
                 removeMarkerOnTouchDown();
+
             } else if (action == MotionEvent.ACTION_UP) {
                 binding.centerMarker.setVisibility(GONE);
-
                 handleTouchUp(centerPoint);
                 return true;
             } else if (action == MotionEvent.ACTION_MOVE) {
@@ -564,6 +515,7 @@ public class OpenStreetMapFragment extends Fragment {
     private void handleTouchUp(GeoPoint centerPoint) {
         try {
             if ("startMarker".equals(markerType)) {
+                sharedPreferencesHelperMain.saveValue("on_gps", false);
                 startPoint = centerPoint;
                 dialogMarkerStartPoint(ctx);
             } else if ("finishMarker".equals(markerType)) {
@@ -613,7 +565,17 @@ public class OpenStreetMapFragment extends Fragment {
 
             fromAddressString = startList.get(5);
             Logger.d(ctx, TAG, "address11 fromAddressString" + fromAddressString);
-            toAddressString = startList.get(6);
+
+            boolean isShowRout = true;
+            if(!startList.get(6).trim().isEmpty()) {
+                toAddressString = startList.get(6);
+            } else {
+                toAddressString = fromAddressString;
+                isShowRout = false;
+
+            }
+
+            Logger.d(ctx, TAG, "address11 startList.get(6)" + startList.get(6));
             Logger.d(ctx, TAG, "address11 toAddressString" + toAddressString);
 
             startLat = Double.parseDouble(startList.get(1));
@@ -634,16 +596,22 @@ public class OpenStreetMapFragment extends Fragment {
             finishMarkerObj = new Marker(map);
             finishMarkerObj.setPosition(finishPoint);
 
-            setMarker(finishLat, finishLan, toAddressString, ctx, "2.");
 
             if(markerType.equals("startMarker")) {
                 mapController.setCenter(startPoint);
+                if(isShowRout) {
+                    setMarker(finishLat, finishLan, toAddressString, ctx, "2.");
+                    showRout(startPoint, finishPoint);
+                }
             } else {
-                binding.centerMarker.setVisibility(GONE);
-                mapController.setCenter(finishPoint);
+                    binding.centerMarker.setVisibility(GONE);
+                    mapController.setCenter(finishPoint);
+                if(isShowRout) {
+                    setMarker(finishLat, finishLan, toAddressString, ctx, "2.");
+                    showRout(startPoint, finishPoint);
+                }
             }
 
-            showRout(startPoint, finishPoint);
 
             map.invalidate();
 
@@ -1206,7 +1174,7 @@ public class OpenStreetMapFragment extends Fragment {
                 // Настройка TextPaint для текста
                 TextPaint textPaint = new TextPaint();
                 textPaint.setColor(Color.BLACK); // Черный текст
-                textPaint.setTextSize(36); // ~14sp
+                textPaint.setTextSize(48); // ~14sp
                 textPaint.setAntiAlias(true);
 
                 // Настройка Paint для фона
@@ -1224,7 +1192,7 @@ public class OpenStreetMapFragment extends Fragment {
 
                 // Параметры для фона
                 int padding = 10; // Отступ внутри фона
-                int fixedWidth = 500; // Фиксированная ширина
+                int fixedWidth = 700; // Фиксированная ширина
                 int arrowHeight = 30; // Высота стрелки
 
                 // Создаем StaticLayout для переноса текста

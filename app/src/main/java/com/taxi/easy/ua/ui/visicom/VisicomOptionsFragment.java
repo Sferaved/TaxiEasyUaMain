@@ -140,7 +140,8 @@ public class VisicomOptionsFragment extends Fragment {
         spinner.setPrompt("Title");
         spinner.setBackgroundResource(R.drawable.spinner_border);
 
-        String tariffOld =  logCursor(MainActivity.TABLE_SETTINGS_INFO,context).get(2);
+//        String tariffOld =  logCursor(MainActivity.TABLE_SETTINGS_INFO,context).get(2);
+        String tariffOld = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
 
         switch (tariffOld) {
             case "Базовий онлайн":

@@ -900,7 +900,6 @@ public class FinishSeparateFragment extends Fragment {
 
     }
 
-
     private void orderComplete() {
         sharedPreferencesHelperMain.saveValue("carFound", true);
 //        new Handler(Looper.getMainLooper()).post(() -> {
@@ -1550,6 +1549,21 @@ public class FinishSeparateFragment extends Fragment {
                             }
                         }
             });
+            viewModel.getStatusNalUpdate().observe(getViewLifecycleOwner(), aBoolean -> {
+                Logger.d(context, "startFinishPage","StatusNalUpdate changed: " + aBoolean);
+
+                if (!aBoolean) {
+                    handlerStatus.removeCallbacks(myTaskStatus);
+                    try {
+                        statusOrder();
+                    } catch (ParseException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    handlerStatus.post(myTaskStatus);
+                }
+            });
+
             Log.d("LifecycleCheck", "Current lifecycle state: " + getViewLifecycleOwner().getLifecycle().getCurrentState());
         }
 
@@ -1566,7 +1580,22 @@ public class FinishSeparateFragment extends Fragment {
         // Начинаем наблюдение
         viewModel.isTenMinutesRemaining.observe(getViewLifecycleOwner(), observer);
 
+// Observe uid changes
+        viewModel.getUid().observe(requireActivity(), newUid -> {
+            Log.d("UID 11123", "UID updated: " + newUid);
+            // Update UI or perform other actions
+            if(newUid != null)  {
+                MainActivity.uid = newUid;
+            }
 
+        });
+
+        // Observe paySystemStatus changes
+        viewModel.getPaySystemStatus().observe(requireActivity(), newPaySystemStatus -> {
+            Log.d("UID 11123", "PaySystemStatus updated: " + newPaySystemStatus);
+            // Update UI or perform other actions
+            MainActivity.paySystemStatus = newPaySystemStatus;
+        });
     }
 
     private void addCostView (String addCost) {
@@ -1608,7 +1637,8 @@ public class FinishSeparateFragment extends Fragment {
         timeUtils = new TimeUtils(required_time, viewModel);
         timeUtils.startTimer();
 
-        btn_cancel_order.setOnClickListener(v -> showCancelDialog());
+        btn_cancel_order.setOnClickListener(v ->
+                showCancelDialog());
 
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
         if(pay_method.equals("nal_payment")) {
@@ -1942,10 +1972,10 @@ public class FinishSeparateFragment extends Fragment {
 
     private void showCancelDialog() {
         Logger.d(context, TAG, "btn_cancel_order.isEnabled(): " + btn_cancel_order.isEnabled());
-
         if (!btn_cancel_order.isEnabled()) {
             Toast.makeText(context, R.string.cancel_btn_enable, Toast.LENGTH_LONG).show();
         } else {
+            viewModel.setStatusNalUpdate(true);
             if (handlerAddcost != null) {
                 handlerAddcost.removeCallbacks(showDialogAddcost);
             }
@@ -1961,10 +1991,10 @@ public class FinishSeparateFragment extends Fragment {
                         cancel_btn_click = true;
                         if(!uid_Double.equals(" ")) {
                             cancelOrderDouble(context);
-
                         } else{
                             try {
                                 cancelOrder(uid, context);
+                                statusOrder();
                             } catch (ParseException e) {
                                 throw new RuntimeException(e);
                             }

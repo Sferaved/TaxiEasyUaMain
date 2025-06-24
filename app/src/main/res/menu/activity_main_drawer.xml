@@ -10,8 +10,9 @@
             android:title="@string/main_page" />
         <item
             android:id="@+id/nav_home"
-            android:icon="@android:drawable/ic_menu_gallery"
+            android:icon="@drawable/ic_menu_gallery"
             android:title="@string/menu_home" />
+
         <item
             android:id="@+id/nav_cancel"
             android:icon="@drawable/ic_menu_gallery"
@@ -37,6 +38,7 @@
             android:id="@+id/nav_about"
             android:icon="@drawable/ic_menu_gallery"
             android:title="@string/conf" />
+
         <item
             android:id="@+id/nav_account"
             android:icon="@drawable/ic_menu_gallery"
@@ -45,6 +47,7 @@
             android:id="@+id/nav_author"
             android:icon="@android:drawable/ic_menu_info_details"
             android:title="@string/author_about" />
+
     </group>
 
 </menu>

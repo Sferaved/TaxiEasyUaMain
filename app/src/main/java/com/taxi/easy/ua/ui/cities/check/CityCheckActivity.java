@@ -17,6 +17,8 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.FragmentManager;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
@@ -33,6 +35,7 @@ import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
+import com.taxi.easy.ua.utils.worker.TilePreloadWorker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -594,7 +597,7 @@ public class CityCheckActivity extends AppCompatActivity {
         settings.add(Double.toString(startLat));
         settings.add(Double.toString(startLan));
         settings.add(position);
-        settings.add(position);
+        settings.add("");
 
         updateRoutMarker(settings);
 
@@ -621,10 +624,23 @@ public class CityCheckActivity extends AppCompatActivity {
                 new String[]{"1"});
         database.close();
         sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
+
+        startTilePreloadWorker();
+
         startActivity(new Intent(this, MainActivity.class));
     }
 
-
+    private void startTilePreloadWorker() {
+        try {
+            OneTimeWorkRequest tilePreloadRequest = new OneTimeWorkRequest.Builder(TilePreloadWorker.class)
+                    .addTag("TilePreloadWork")
+                    .build();
+            WorkManager.getInstance(this).enqueue(tilePreloadRequest);
+            Logger.d(this, TAG, "TilePreloadWorker enqueued");
+        } catch (Exception e) {
+            Logger.e(this, TAG, "Error enqueuing TilePreloadWorker: " + e.getMessage());
+        }
+    }
     private void cityMaxPay(String city) {
 
 
@@ -994,7 +1010,7 @@ public class CityCheckActivity extends AppCompatActivity {
         settings.add(Double.toString(startLat));
         settings.add(Double.toString(startLan));
         settings.add(position);
-        settings.add(position);
+        settings.add("");
 
         updateRoutMarker(settings);
 

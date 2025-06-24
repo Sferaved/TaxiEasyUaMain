@@ -940,7 +940,7 @@ public class ActivityVisicomOnePage extends AppCompatActivity {
 //            finish();
         });
         btn_ok.setOnClickListener(v -> {
-            sharedPreferencesHelper.saveValue("gps_upd_address", false);
+            sharedPreferencesHelper.saveValue("gps_upd", false);
             Logger.d(this, TAG, "sharedPreferencesHelper.getValue(\"gps_upd\", false)" +sharedPreferencesHelper.getValue("gps_upd", false));
 
             startActivity(new Intent(this, MainActivity.class));

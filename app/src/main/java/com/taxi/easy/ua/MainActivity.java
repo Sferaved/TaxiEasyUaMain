@@ -113,6 +113,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -184,6 +185,7 @@ public class MainActivity extends AppCompatActivity {
 
     VisicomFragment visicomFragment;
 
+    public static Map<String, String> costMap;
 
     public static final String PERMISSION_REQUEST_COUNT_KEY = "PermissionRequestCount";
     public static boolean location_update;
@@ -1219,14 +1221,29 @@ public class MainActivity extends AppCompatActivity {
 
         Logger.d(this, TAG, "onOptionsItemSelected gps_enabled: " + gps_enabled);
         Logger.d(this, TAG, "onOptionsItemSelected network_enabled: " + network_enabled);
-        if(!gps_enabled || !network_enabled) {
+        if(!gps_enabled) {
             MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
             bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
         } else {
             Toast.makeText(this, getString(R.string.gps_ok), Toast.LENGTH_SHORT).show();
         }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+
+        }
     }
 
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 123;
+
+    public void checkPermission(String permission, int requestCode) {
+        // Checking if permission is not granted
+        Logger.d(this, TAG, "checkPermission: " + permission);
+        if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(this, new String[]{permission}, LOCATION_PERMISSION_REQUEST_CODE);
+        }
+    }
     private void updateRecordsUser(String field, String result) {
         ContentValues cv = new ContentValues();
 

@@ -6,6 +6,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -91,6 +93,60 @@ public class NotificationHelper {
 
             return;
         }
+        notificationManager.notify(notificationId, builder.build());
+    }
+
+    public static void showNotificationFindAutoMessage(Context context, String title, String message) {
+        // Создание канала уведомлений для Android 8.0+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    CHANNEL_NAME,
+                    NotificationManager.IMPORTANCE_DEFAULT
+            );
+            channel.setDescription(CHANNEL_DESCRIPTION);
+            channel.enableLights(true);
+            channel.setLightColor(Color.RED);
+            channel.enableVibration(true);
+            NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        // Создание интента для открытия приложения
+        Intent intent = new Intent(context, MainActivity.class); // Замените на стартовую активность
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        // Получаем картинку (можно загрузить по URL, здесь используется локальная)
+        Bitmap largeIcon = BitmapFactory.decodeResource(context.getResources(), R.drawable.notification_image); // замените на своё изображение
+
+        // Построение уведомления с big picture
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setLargeIcon(largeIcon)
+                .setStyle(new NotificationCompat.BigPictureStyle()
+                        .bigPicture(largeIcon)
+                        .bigLargeIcon((Bitmap) null)) // скрыть большую иконку при bigPicture
+                .setContentIntent(pendingIntent)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
+        int notificationId = generateUniqueNotificationId();
+
+        if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
         notificationManager.notify(notificationId, builder.build());
     }
 

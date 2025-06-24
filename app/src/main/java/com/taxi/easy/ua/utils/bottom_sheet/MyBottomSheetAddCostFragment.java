@@ -21,7 +21,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
-import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
@@ -60,7 +59,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
     AppCompatButton btn_ok, btn_minus, btn_plus;
     String cost, uid, uid_Double, pay_method;
     Context context;
-    FragmentManager fragmentManager;
+
     private ExecutionStatusViewModel viewModel;
 
     public MyBottomSheetAddCostFragment(
@@ -152,7 +151,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
     ) {
 
         String  baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-//        FinishSeparateFragment.text_status.setText(context.getString(R.string.recounting_order));
+
         if ("nal_payment".equals(pay_method)) {
             viewModel.setAddCostViewUpdate(addCost);
             viewModel.setCancelStatus(false);
@@ -205,8 +204,6 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         Logger.d(context, TAG, "startAddCostCardUpdate: ");
         String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS);
         Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
-
-//        FinishSeparateFragment.text_status.setText(R.string.recounting_order);
 
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
 

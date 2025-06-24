@@ -189,7 +189,7 @@ public class PusherManager {
         // Обработка события получения номера заказа после регистрации на сервере и определения нал/безнал для выбора способа опроса статусов
 //        channel.bind(eventUid, event -> {
         bindEvent(eventUid, event -> {
-            Logger.d(context,"Pusher", "Received event: " + event.toString());
+            Logger.d(context,"UID 11123", "Received event: " + event.toString());
             try {
                 JSONObject eventData = new JSONObject(event.getData());
                 String orderUid = eventData.getString("order_uid");
@@ -199,21 +199,17 @@ public class PusherManager {
                 } else {
                     paySystemStatus = "nal_payment";
                 }
-                Logger.d(context,"Pusher", "Order UID: " + orderUid);
-                Logger.d(context,"Pusher", "paySystemStatus: " + paySystemStatus);
+                Logger.d(context,"UID 11123", "Order UID: " + orderUid);
+                Logger.d(context,"UID 11123", "paySystemStatus: " + paySystemStatus);
                 // Переключаемся на главный поток для обновления UI и переменной
                 new Handler(Looper.getMainLooper()).post(() -> {
-                    MainActivity.uid = orderUid;
 
-                    MainActivity.paySystemStatus = paySystemStatus;
+                    // Update ViewModel
+                    if(orderUid != null) {
+                        viewModel.updateUid(orderUid);
+                        viewModel.updatePaySystemStatus(paySystemStatus);
+                    }
 
-//                    if (FinishSeparateFragment.btn_cancel_order != null ) {
-//                        FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
-//                        FinishSeparateFragment.btn_cancel_order.setEnabled(true);
-//                        FinishSeparateFragment.btn_cancel_order.setClickable(true);
-//                    } else {
-//                        Logger.e(context,"Pusher", "btn_cancel_order is null!");
-//                    }
                 });
 
             } catch (JSONException e) {
@@ -349,25 +345,25 @@ public class PusherManager {
         });
         // Получение стоимости
 //        channel.bind(eventCanceled, event -> {
-        bindEvent(eventOrderCost, event -> {
-            Logger.d(context,"Pusher eventOrderCost", "Received event: " + event.toString());
-            VisicomFragment.costMap = null;
-            try {
-                JSONObject eventData = new JSONObject(event.getData());
-                String order_cost = eventData.getString("order_cost");
-                Logger.d(context,"Pusher eventOrderCost", "order_cost: " + order_cost);
-
-                Map<String, String> eventValues = new HashMap<>();
-                // Добавляем данные в Map
-                eventValues.put("order_cost", eventData.optString("order_cost", "0"));
-
-                VisicomFragment.costMap = eventValues;
-
-            } catch(JSONException e){
-                    Logger.e(context,"Pusher eventOrderCost", "JSON Parsing error for event: " + event.getData() +  e);
-            }
-
-        });
+//        bindEvent(eventOrderCost, event -> {
+//            Logger.d(context,"Pusher eventOrderCost", "Received event: " + event.toString());
+//            MainActivity.costMap = null;
+//            try {
+//                JSONObject eventData = new JSONObject(event.getData());
+//                String order_cost = eventData.getString("order_cost");
+//                Logger.d(context,"Pusher eventOrderCost", "order_cost: " + order_cost);
+//
+//                Map<String, String> eventValues = new HashMap<>();
+//                // Добавляем данные в Map
+//                eventValues.put("order_cost", eventData.optString("order_cost", "0"));
+//
+//                MainActivity.costMap = eventValues;
+//
+//            } catch(JSONException e){
+//                    Logger.e(context,"Pusher eventOrderCost", "JSON Parsing error for event: " + event.getData() +  e);
+//            }
+//
+//        });
 
         bindEvent(eventBlackUserStatus, event -> {
             Logger.d(context,"Pusher eventBlackUserStatus", "Received event: " + event.toString());
@@ -511,8 +507,9 @@ public class PusherManager {
         bindEvent(eventAutoOrder, event -> {
             Logger.d(context,"Pusher", "Received eventAutoOrder: " + event.toString());
 
-            if (MainActivity.currentNavDestination != R.id.nav_finish_separate) {
+//            if (MainActivity.currentNavDestination != R.id.nav_finish_separate) {
                 try {
+
                     // Преобразуем данные события в JSONObject
                     JSONObject eventData = new JSONObject(event.getData());
 
@@ -551,17 +548,33 @@ public class PusherManager {
                 } catch (ParseException e) {
                     throw new RuntimeException(e);
                 }
-            }
+//            }
         });
 
     }
 
 
     private void startFinishPage(Map<String, String> sendUrlMap) throws ParseException {
+    if (MainActivity.currentNavDestination == R.id.nav_finish_separate) {
+        String paySystemStatus = "nal_payment";
+        String orderUid = sendUrlMap.get("dispatching_order_uid");;
+
+        Logger.e(context,"startFinishPage", "paySystemStatus" +  paySystemStatus);
+        Logger.e(context,"startFinishPage", "orderUid" +  orderUid);
+        new Handler(Looper.getMainLooper()).post(() -> {
+            if(orderUid != null){
+                viewModel.updateUid(orderUid);
+                viewModel.updatePaySystemStatus(paySystemStatus);
+            }
+
+            viewModel.setStatusNalUpdate(false);
+        });
+    } else {
         String to_name;
+
         if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
             to_name = context.getString(R.string.on_city_tv);
-            Logger.d(context, TAG, "startFinishPage: to_name 1 " + to_name);
+            Logger.d(context, "startFinishPage", "startFinishPage: to_name 1 " + to_name);
 
         } else {
 
@@ -570,9 +583,9 @@ public class PusherManager {
             } else {
                 to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
             }
-            Logger.d(context, TAG, "startFinishPage: to_name 2 " + to_name);
+            Logger.d(context, "startFinishPage", "startFinishPage: to_name 2 " + to_name);
         }
-        Logger.d(context, TAG, "startFinishPage: to_name 3" + to_name);
+        Logger.d(context, "startFinishPage", "startFinishPage: to_name 3" + to_name);
         String to_name_local = to_name;
         if(to_name.contains("по місту")
                 ||to_name.contains("по городу")
@@ -580,7 +593,7 @@ public class PusherManager {
         ) {
             to_name_local = context.getString(R.string.on_city_tv);
         }
-        Logger.d(context, TAG, "startFinishPage: to_name 4" + to_name_local);
+        Logger.d(context, "startFinishPage", "startFinishPage: to_name 4" + to_name_local);
         String pay_method_message = context.getString(R.string.pay_method_message_main);
         switch (Objects.requireNonNull(sendUrlMap.get("pay_method"))) {
             case "bonus_payment":
@@ -603,7 +616,7 @@ public class PusherManager {
         String uah = cleanString(context.getString(R.string.UAH));
         String payMethodMessage = cleanString(pay_method_message);
         String required_time = sendUrlMap.get("required_time");
-        Logger.d(context, TAG, "orderFinished: required_time " + required_time);
+        Logger.d(context, "startFinishPage", "orderFinished: required_time " + required_time);
 
 
         if (required_time != null && !required_time.contains("1970-01-01")) {
@@ -621,7 +634,6 @@ public class PusherManager {
                 required_time = " " + context.getString(R.string.time_order)  + " " +  outputFormat.format(date)  + ".";
 
             } catch (ParseException e) {
-                e.printStackTrace();
                 required_time = ""; // Если ошибка парсинга, задаём пустое значение
             }
         } else {
@@ -657,8 +669,9 @@ public class PusherManager {
         bundle.putString("card_payment_key", "no");
         bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
         bundle.putString("dispatching_order_uid_Double", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid_Double")));
-
+        viewModel.setStatusNalUpdate(true); //наюлюдение за опросом статусом нала
         new Handler(Looper.getMainLooper()).post(() -> {
+
             // Выполняем навигацию в главном потоке
             MainActivity.navController.navigate(
                     R.id.nav_finish_separate,
@@ -668,6 +681,9 @@ public class PusherManager {
                             .build()
             );
         });
+    }
+
+
 
     }
     private String cleanString(String input) {

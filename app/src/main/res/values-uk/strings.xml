@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.826</string>
-    <string name="version">Версія: 1.826</string>
+    <string name="version_code">1.827</string>
+    <string name="version">Версія: 1.827</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -153,13 +153,13 @@
     <string name="change_message">"Зміна бази адрес. "</string>
     <string name="server_error_connected">Сервер не прийняв запит. Наберіть оператора через "ДОПОМОГУ"</string>
     <string name="GDPR">GDPR</string>
-    <string name="ok_GDPR">Погодитись  -> </string>
+    <string name="ok_GDPR">Погодитись</string>
     <string name="Dnipro_city">Дніпро</string>
     <string name="city_change">Виберіть місто</string>
     <string name="Zaporizhzhia">Запоріжжя</string>
     <string name="Cherkasy">Черкаси</string>
     <string name="OdessaTest">Одеса (Тест)</string>
-    <string name="disc_text">Змінити вартість на</string>
+    <string name="disc_text">% к вартості</string>
     <string name="email_sent">Повідомлення відправлено</string>
     <string name="send_like">Оцінити додаток</string>
     <string name="send_email_admin">Повідомити про проблему</string>
@@ -254,7 +254,7 @@
     <string name="e_google_pay_canceled">GooglePay скасовано</string>
     <string name="update_count">Перевірити баланс</string>
     <string name="pay_count">Поповнити рахунок</string>
-    <string name="my_card_pay">Платіжна карта</string>
+    <string name="my_card_pay">Оплата</string>
     <string name="my_site">Відвідайте наш сайт</string>
     <!--    <string name="fondy_message">Сплата за послугі таксі.</string>-->
     <string name="fondy_message"> Інша допоміжна діяльність у сфері транспорту</string>
@@ -522,9 +522,9 @@
     <string name="err_nal_reoder_mes">На жаль, замовлення за готівку в даний момент не можливе. Виберіть інший спосіб оплати.</string>
     <string name="clearApp">Очистити дані</string>
     <string name="clearAppMess">Увага! Очищення даних програми видаляє всі налаштування, бази даних, внутрішній та зовнішній кеш, після чого програма буде перезапущена. Ця дія необоротна і може вплинути на роботу програми. Переконайтеся, що перед продовженням зберегли важливі дані. Продовжити?</string>
-    <string name="email_history_order">Запросить историю</string>
+    <string name="email_history_order">Запитати історію</string>
     <string name="SA_message_history">Прошу прислати мені історію моїх поїздок за період з ..... по .....</string>
-    <string name="anr_detected">Виявлена помілка</string>
+    <string name="anr_detected">Виявлено помілка</string>
     <string name="application_is_not_responding">Додаток не відповідає.</string>
     <string name="check_permition">Будь ласка, увімкніть геолокацію або надайте дозвіл на доступ до місцеположення.</string>
     <string name="map_loading">Мапа ще завантажується...</string>

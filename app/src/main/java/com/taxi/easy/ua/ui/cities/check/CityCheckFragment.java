@@ -19,6 +19,8 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
@@ -35,6 +37,7 @@ import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
+import com.taxi.easy.ua.utils.worker.TilePreloadWorker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -575,15 +578,25 @@ public class CityCheckFragment extends Fragment {
         settings.add(Double.toString(startLat));
         settings.add(Double.toString(startLan));
         settings.add(position);
-        settings.add(position);
+        settings.add("");
 
         updateRoutMarker(settings);
 
         String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-
+        startTilePreloadWorker();
     }
-
+    private void startTilePreloadWorker() {
+        try {
+            OneTimeWorkRequest tilePreloadRequest = new OneTimeWorkRequest.Builder(TilePreloadWorker.class)
+                    .addTag("TilePreloadWork")
+                    .build();
+            WorkManager.getInstance(requireContext()).enqueue(tilePreloadRequest);
+            Logger.d(requireContext(), TAG, "TilePreloadWorker enqueued");
+        } catch (Exception e) {
+            Logger.e(requireContext(), TAG, "Error enqueuing TilePreloadWorker: " + e.getMessage());
+        }
+    }
    
     private void updateRoutMarker(List<String> settings) {
         Logger.d(requireActivity(), TAG, "updateRoutMarker: " + settings.toString());
@@ -939,7 +952,7 @@ public class CityCheckFragment extends Fragment {
         settings.add(Double.toString(startLat));
         settings.add(Double.toString(startLan));
         settings.add(position);
-        settings.add(position);
+        settings.add("");
 
         updateRoutMarker(settings);
 

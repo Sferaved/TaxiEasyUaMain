@@ -2,11 +2,7 @@ package com.taxi.easy.ua.utils.cost_json_parser;
 
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
-import android.util.Log;
-
 import androidx.annotation.NonNull;
-
-import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 
 import java.net.MalformedURLException;
 import java.util.HashMap;
@@ -59,11 +55,11 @@ public class CostJSONParserRetrofit {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
-                if (eventReceived) {
-                    Log.d("API_CALL", "HTTP-ответ отменен, так как событие уже получено.");
-//                    callback.onResponse(call, Response.success(VisicomFragment.costMap));
-                    return;
-                }
+//                if (eventReceived) {
+//                    Log.d("API_CALL", "HTTP-ответ отменен, так как событие уже получено.");
+//                    callback.onResponse(call, Response.success(costMap));
+//                    return;
+//                }
                 Map<String, String> costMap = new HashMap<>();
                 if (response.isSuccessful() && response.body() != null) {
                     Map<String, String> jsonResponse = response.body();
@@ -89,24 +85,24 @@ public class CostJSONParserRetrofit {
             }
         });
 
-        // Ожидаем событие
-        new Thread(() -> {
-            while (!eventReceived) {
-                if (VisicomFragment.costMap != null && !VisicomFragment.costMap.isEmpty()) {
-                    eventReceived = true;
-                    if (activeCall != null && !activeCall.isExecuted()) {
-                        activeCall.cancel(); // Прерываем запрос
-                        Log.d("API_CALL", "HTTP-запрос прерван из-за события.");
-                    }
-                    callback.onResponse(null, Response.success(VisicomFragment.costMap));
-                }
-                try {
-                    Thread.sleep(100); // Ожидание события с минимальной задержкой
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-
-            }
-        }).start();
+//        // Ожидаем событие
+//        new Thread(() -> {
+//            while (!eventReceived) {
+//                if (costMap != null && !costMap.isEmpty()) {
+//                    eventReceived = true;
+//                    if (activeCall != null && !activeCall.isExecuted()) {
+//                        activeCall.cancel(); // Прерываем запрос
+//                        Log.d("API_CALL", "HTTP-запрос прерван из-за события.");
+//                    }
+//                    callback.onResponse(null, Response.success(costMap));
+//                }
+//                try {
+//                    Thread.sleep(100); // Ожидание события с минимальной задержкой
+//                } catch (InterruptedException e) {
+//                    throw new RuntimeException(e);
+//                }
+//
+//            }
+//        }).start();
     }
 }

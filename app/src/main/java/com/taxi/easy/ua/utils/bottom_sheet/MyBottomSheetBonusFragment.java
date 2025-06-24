@@ -58,6 +58,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -91,6 +92,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     Activity context;
     int fistItem, finishItem;
     private TextView tvSelectedTime, tvSelectedDate;
+    View view;
 
     public MyBottomSheetBonusFragment() {
     }
@@ -115,7 +117,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         UXCam.tagScreenName(TAG);
 
-        View view = inflater.inflate(R.layout.bonus_list_layout, container, false);
+        view = inflater.inflate(R.layout.bonus_list_layout, container, false);
         context = requireActivity();
 
         try {
@@ -248,50 +250,83 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         return view;
     }
     private void timeVerify() {
-        String mes;
-
-        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO);
-        String time = stringList.get(1);
-        String date = stringList.get(3);
-
-        Logger.d(context, TAG, "onPause:time 1 " + time);
-        Logger.d(context, TAG, "onPause:date 1 " + date);
-
+        String TAG = "TimeVerify"; // Тег для логирования
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
         DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
+        // Текущие дата и время в Киеве
         LocalDateTime currentDateTimeInKyiv = LocalDateTime.now(ZoneId.of("Europe/Kiev"));
-        Logger.d(context, TAG, "onPause:currentDateTimeInKyiv 2 " + currentDateTimeInKyiv);
+        LocalDate currentDate = LocalDate.now(ZoneId.of("Europe/Kiev"));
+        Logger.d(context, TAG, "Текущая дата и время в Киеве: " + currentDateTimeInKyiv);
 
-        LocalDate currentDate = LocalDate.now();
-        Logger.d(context, TAG, "onPause:currentDate 2 " + currentDate);
-        mes = context.getString((R.string.on_now));
-        if(!time.equals("no_time") && !date.equals("no_date")) {
+        // Получение сохраненных значений
+        String time = (String) sharedPreferencesHelperMain.getValue("time", "no_time");
+        String date = (String) sharedPreferencesHelperMain.getValue("date", "no_date");
+        Logger.d(context, TAG, "Сохраненные значения -> время: " + time + ", дата: " + date);
 
-            mes = getString(R.string.on) + " " +  time + " " + date;
+        // Если дата не выбрана, используем текущую дату с экрана
+        tvSelectedDate = view.findViewById(R.id.tv_selected_date);
+        tvSelectedTime = view.findViewById(R.id.tv_selected_time);
+        if (tvSelectedDate != null && tvSelectedTime != null) {
+            if (date.equals("no_date")) {
+                date = tvSelectedDate.getText().toString();
+                Logger.d(context, TAG, "Дата не выбрана, взята с экрана: " + date);
+            }
 
-        } else if(!time.equals("no_time")) {
+            // Если время не выбрано, используем время с экрана
+            if (time.equals("no_time")) {
+                time = tvSelectedTime.getText().toString();
+                Logger.d(context, TAG, "Время не выбрано, взято с экрана: " + time);
+            }
+        }
 
-            date = currentDate.format(formatterDate);
+        try {
+            // Проверка, если дата или время все еще не определены
+            if (date.equals("no_date") || time.equals("no_time")) {
+                Logger.d(context, TAG, "Дата или время не определены, сброс значений");
+                sharedPreferencesHelperMain.saveValue("time", "no_time");
+                sharedPreferencesHelperMain.saveValue("date", "no_date");
+                return;
+            }
 
+            // Преобразование строки в LocalDateTime
             LocalDateTime dateTimeFromString = LocalDateTime.parse(date + " " + time, formatter);
+            Logger.d(context, TAG, "Преобразованная дата и время: " + dateTimeFromString);
 
+            // Проверка, если выбранное время раньше текущего
+            if (dateTimeFromString.isBefore(currentDateTimeInKyiv)) {
+                Logger.d(context, TAG, "Выбранное время в прошлом, сброс значений");
+                Toast.makeText(context, context.getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
+                sharedPreferencesHelperMain.saveValue("time", "no_time");
+                sharedPreferencesHelperMain.saveValue("date", "no_date");
+                return;
+            }
 
+            // Вычисление разницы во времени
             long minutesDifference = Duration.between(currentDateTimeInKyiv, dateTimeFromString).toMinutes();
             Logger.d(context, TAG, "Разница во времени: " + minutesDifference + " минут");
 
-            if(minutesDifference <= 10 && minutesDifference >= 0) {
-
-                mes = context.getString((R.string.on_now));
-                Logger.d(context, TAG, "Разница во времени <= 10 : " + minutesDifference + " минут");
+            // Если разница меньше или равна 10 минут, сбрасываем
+            if (minutesDifference <= 10 && minutesDifference >= 0) {
+                Logger.d(context, TAG, "Разница <= 10 минут, сброс значений");
+                sharedPreferencesHelperMain.saveValue("time", "no_time");
+                sharedPreferencesHelperMain.saveValue("date", "no_date");
+                Toast.makeText(context, context.getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
             } else {
-                mes = getString(R.string.on) + " " +  time + " " + date;
+                // Сохраняем валидные значения
+                sharedPreferencesHelperMain.saveValue("time", time);
+                sharedPreferencesHelperMain.saveValue("date", date);
+                Logger.d(context, TAG, "Сохранены значения -> время: " + time + ", дата: " + date);
             }
+        } catch (DateTimeParseException e) {
+            Logger.e(context, TAG, "Ошибка парсинга даты/времени: " + e.getMessage());
+            sharedPreferencesHelperMain.saveValue("time", "no_time");
+            sharedPreferencesHelperMain.saveValue("date", "no_date");
+            Toast.makeText(context, "Неверный формат даты или времени", Toast.LENGTH_SHORT).show();
+        } finally {
+            database.close();
+            Logger.d(context, TAG, "База данных закрыта");
         }
-        if(time.equals("no_time") && date.equals("no_date")) {
-            mes = context.getString((R.string.on_now));
-        }
-        VisicomFragment.schedule.setText(mes);
     }
     private void cityMaxPay(String $city) {
 
@@ -342,7 +377,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         // Замените "your_city" на фактическое название города
         Call<CityResponseMerchantFondy> call = cityService.getMerchantFondy(city);
 
-        call.enqueue(new Callback<CityResponseMerchantFondy>() {
+        call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<CityResponseMerchantFondy> call, @NonNull Response<CityResponseMerchantFondy> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -361,11 +396,11 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     Log.d(TAG, "onResponse: merchant_fondy" + merchant_fondy);
                     Log.d(TAG, "onResponse: fondy_key_storage" + fondy_key_storage);
 
-                    if(merchant_fondy == null) {
+                    if (merchant_fondy == null) {
                         adapter.setItemEnabled(2, false);
                         listView.setItemChecked(0, true);
                         try {
-                            paymentType(arrayCode [0], context);
+                            paymentType(arrayCode[0], context);
                         } catch (MalformedURLException | UnsupportedEncodingException e) {
                             FirebaseCrashlytics.getInstance().recordException(e);
                             throw new RuntimeException(e);
@@ -891,7 +926,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     }
 
     @SuppressLint("Range")
-     
+
     private String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
 
         double originLatitude = 0;
@@ -941,22 +976,34 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         // Destination of route
         String str_dest = toLatitude + "/" + toLongitude;
 
-        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO);
-        String time = stringList.get(1);
-        String comment = stringList.get(2);
-        String date = stringList.get(3);
+//        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO);
+//        String time = stringList.get(1);
+//        String comment = stringList.get(2);
+//        String date = stringList.get(3);
 
         List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO);
-        String tarif =  stringListInfo.get(2);
+//        String tarif =  stringListInfo.get(2);
         String payment_type = stringListInfo.get(4);
         String addCost = stringListInfo.get(5);
 
+        String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
+
+        Logger.d(context, TAG, "getTaxiUrlSearchMarkers: tarif " + tarif);
         // Building the parameters to the web service
 
         String parameters = null;
         String phoneNumber = "no phone";
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
         String displayName = logCursor(MainActivity.TABLE_USER_INFO).get(4);
+
+        String time = (String) sharedPreferencesHelperMain.getValue("time", "no_time");
+        String comment = (String) sharedPreferencesHelperMain.getValue("coment", "no_comment");
+        String date = (String) sharedPreferencesHelperMain.getValue("date", "no_date");
+
+        Logger.d(context, TAG, "getTaxiUrlSearchMarkers: time " + time);
+        Logger.d(context, TAG, "getTaxiUrlSearchMarkers: comment " + comment);
+        Logger.d(context, TAG, "getTaxiUrlSearchMarkers: date " + date);
+
 
         if(urlAPI.equals("costSearchMarkersTime")) {
             Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
@@ -1009,7 +1056,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         return url;
     }
 
-
     @Override
     public void onDetach() {
         super.onDetach();
@@ -1047,19 +1093,17 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         List<String> list = new ArrayList<>();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = database.query(table, null, null, null, null, null, null);
-        if (c != null) {
-            if (c.moveToFirst()) {
-                String str;
-                do {
-                    str = "";
-                    for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+        if (c.moveToFirst()) {
+            String str;
+            do {
+                str = "";
+                for (String cn : c.getColumnNames()) {
+                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
+                    list.add(c.getString(c.getColumnIndex(cn)));
 
-                    }
+                }
 
-                } while (c.moveToNext());
-            }
+            } while (c.moveToNext());
         }
 
         c.close();
