@@ -2353,23 +2353,23 @@ public void requestPermissions() {
                                 Cursor cursor = db.rawQuery(query, null);
 
                                 if (cursor.moveToFirst()) {
-                                    @SuppressLint("Range") double originLat = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                                    @SuppressLint("Range") double toLat = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                                    @SuppressLint("Range") double startLat = cursor.getDouble(cursor.getColumnIndex("startLat"));
+                                    @SuppressLint("Range") double to_lat = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+                                    @SuppressLint("Range") double to_lng = cursor.getDouble(cursor.getColumnIndex("to_lng"));
                                     @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
 
                                     List<String> settings = new ArrayList<>();
-                                    if (originLat == toLat) {
+                                    if (startLat == to_lat) {
                                         textViewTo.setText("");
                                         finish = "";
                                     }
 
                                     settings.add(String.valueOf(latitude));
                                     settings.add(String.valueOf(longitude));
-                                    settings.add(String.valueOf(latitude));
-                                    settings.add(String.valueOf(longitude));
+                                    settings.add(String.valueOf(to_lat));
+                                    settings.add(String.valueOf(to_lng));
                                     settings.add(FromAdressString);
                                     settings.add(finish);
-
                                     updateRoutMarker(settings);
                                 }
 
