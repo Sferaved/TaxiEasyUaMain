@@ -18,7 +18,6 @@ import androidx.work.WorkManager;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.taxi.easy.ua.MainActivity;
-import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -117,12 +116,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         // Создание локализованного контекста
         Context localizedContext = getLocalizedContext(context, localeCode);
 
-        // Получение локализованных строк
-        String title = localizedContext.getString(R.string.new_message) + " " +
-                localizedContext.getString(R.string.app_name);
-
         // Показ уведомления
-        NotificationHelper.showNotificationFindAutoMessage(context, title, message);
+        NotificationHelper.showNotificationFindAutoMessage(localizedContext, message);
     }
 
     private Context getLocalizedContext(Context context, String localeCode) {

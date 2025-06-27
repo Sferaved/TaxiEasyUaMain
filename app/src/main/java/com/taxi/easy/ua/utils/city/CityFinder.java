@@ -1,18 +1,21 @@
 package com.taxi.easy.ua.utils.city;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.navigation.NavController;
+import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
@@ -174,7 +177,7 @@ public class CityFinder {
         city = stringList.get(1);
 
         if(!city.equals(cityResult)) {
-
+            sharedPreferencesHelperMain.saveValue("setStatusX", false);
             Log.d(TAG, "City: " + city);
             Log.d(TAG, "cityResult: " + cityResult);
 
@@ -441,13 +444,13 @@ public class CityFinder {
         sharedPreferencesHelperMain.saveValue("tarif", " ");
         sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
 
-        Intent intent = new Intent(context, MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        context.startActivity(intent);
-//        NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
-//        navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-//                .setPopUpTo(R.id.nav_visicom, true)
-//                .build());
+//        Intent intent = new Intent(context, MainActivity.class);
+//        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+//        context.startActivity(intent);
+        NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+        navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                .setPopUpTo(R.id.nav_visicom, true)
+                .build());
     }
     private void clearTABLE_SERVICE_INFO () {
         String[] arrayServiceCode = DataArr.arrayServiceCode();

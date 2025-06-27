@@ -4,44 +4,47 @@ import android.content.Context;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.work.Worker;
+import androidx.concurrent.futures.CallbackToFutureAdapter;
+import androidx.work.ListenableWorker;
 import androidx.work.WorkerParameters;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.firebase.messaging.FirebaseMessaging;
-import com.taxi.easy.ua.androidx.startup.MyApplication;
-import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.worker.utils.TokenUtils;
 
-public class SendTokenWorker extends Worker {
+public class SendTokenWorker extends ListenableWorker {
     private static final String TAG = "SendTokenWorker";
+    private final Context context;
 
-    public SendTokenWorker(Context context, WorkerParameters params) {
+    public SendTokenWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
+        this.context = context;
     }
 
     @NonNull
     @Override
-    public Result doWork() {
-        String userEmail = getInputData().getString("userEmail");
-        Log.e(TAG, "doWork: " + userEmail);
-        try {
+    public ListenableFuture<Result> startWork() {
+        return CallbackToFutureAdapter.getFuture(completer -> {
+            String userEmail = getInputData().getString("userEmail");
+            Log.d(TAG, "startWork: " + userEmail);
 
-            FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
-                if (task.isSuccessful() && task.getResult() != null) {
-                    String token = task.getResult();
-                    Log.d(TAG, "FCM Token: " + token);
-                    // Optionally, send the token to your server
-                    TokenUtils.sendToken(getApplicationContext(), userEmail, token);
-                } else {
-                    Log.e(TAG, "Failed to get FCM token", task.getException());
-                }
-            });
+            // Удаляем старый FID, чтобы избежать ошибки "Invalid argument for the given fid"
+            com.google.firebase.installations.FirebaseInstallations.getInstance().delete()
+                    .addOnCompleteListener(deleteTask -> {
+                        // После удаления пытаемся получить токен
+                        FirebaseMessaging.getInstance().getToken()
+                                .addOnSuccessListener(token -> {
+                                    Log.d(TAG, "FCM Token: " + token);
+                                    TokenUtils.sendToken(context, userEmail, token);
+                                    completer.set(Result.success());
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e(TAG, "Failed to get FCM token", e);
+                                    completer.set(Result.failure());
+                                });
+                    });
 
-
-            return Result.success();
-        } catch (Exception e) {
-            Logger.e(MyApplication.getContext(), TAG, "Ошибка в sendToken: " + e.getMessage());
-            return Result.failure();
-        }
+            return "SendTokenWorker-getToken";
+        });
     }
 }

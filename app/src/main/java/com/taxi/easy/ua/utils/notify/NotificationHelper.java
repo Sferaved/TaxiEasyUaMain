@@ -96,22 +96,7 @@ public class NotificationHelper {
         notificationManager.notify(notificationId, builder.build());
     }
 
-    public static void showNotificationFindAutoMessage(Context context, String title, String message) {
-        // Создание канала уведомлений для Android 8.0+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    CHANNEL_NAME,
-                    NotificationManager.IMPORTANCE_DEFAULT
-            );
-            channel.setDescription(CHANNEL_DESCRIPTION);
-            channel.enableLights(true);
-            channel.setLightColor(Color.RED);
-            channel.enableVibration(true);
-            NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
-
+    public static void showNotificationFindAutoMessage(Context context, String message) {
         // Создание интента для открытия приложения
         Intent intent = new Intent(context, MainActivity.class); // Замените на стартовую активность
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -129,7 +114,6 @@ public class NotificationHelper {
         // Построение уведомления с big picture
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(title)
                 .setContentText(message)
                 .setLargeIcon(largeIcon)
                 .setStyle(new NotificationCompat.BigPictureStyle()

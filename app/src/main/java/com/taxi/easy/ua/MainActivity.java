@@ -285,6 +285,7 @@ public class MainActivity extends AppCompatActivity {
         // Инициализация ViewModel
         if (viewModel == null) {
             viewModel = new ViewModelProvider(this).get(ExecutionStatusViewModel.class);
+            sharedPreferencesHelperMain.saveValue("setStatusX", true);
         }
 
         // Инициализация ActivityResultLauncher
@@ -491,7 +492,7 @@ public class MainActivity extends AppCompatActivity {
 
         sharedPreferencesHelperMain.saveValue("pay_error", "**");
 
-//        newUser();
+
 
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 

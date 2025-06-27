@@ -3,6 +3,7 @@ package com.taxi.easy.ua.ui.visicom.visicom_search;
 
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.GONE;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.Manifest;
@@ -14,7 +15,6 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
-import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
@@ -54,7 +54,6 @@ import androidx.navigation.Navigation;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -76,9 +75,7 @@ import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiResponseMapbox;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.visicom.visicom_search.key_visicom.ApiResponse;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
-import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
-import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 
@@ -91,7 +88,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -245,94 +241,94 @@ public class VisicomSearchFragment extends Fragment {
 
         });
 
-        locationCallback = new LocationCallback() {
-
-            @Override
-            public void onLocationResult(@NonNull LocationResult locationResult) {
-                // Обработка полученных местоположений
-                stopLocationUpdates();
-                viewModel.setStatusX(false);
-                // Обработка полученных местоположений
-                List<Location> locations = locationResult.getLocations();
-                Logger.d(context, TAG, "onLocationResult: locations 222222" + locations);
-
-                if (!locations.isEmpty()) {
-                    Location firstLocation = locations.get(0);
-
-                    double latitude = firstLocation.getLatitude();
-                    double longitude = firstLocation.getLongitude();
-
-
-                    List<String> stringList = logCursor(MainActivity.CITY_INFO);
-                    String api = stringList.get(2);
-
-                    Locale locale = Locale.getDefault();
-                    String language = locale.getLanguage(); // Получаем язык устройства
-                    String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-                    String urlFrom = baseUrl + "/" + api + "/android/fromSearchGeoLocal/" + latitude + "/" + longitude + "/" + language;
-                    FromJSONParserRetrofit.sendURL(urlFrom, result -> {
-                        // Обработка результата в основном потоке
-                        if (result != null) {
-                            Logger.d(context, TAG, "Результат: " + result);
-                            String FromAdressString = result.get("route_address_from");
-
-                            if (FromAdressString != null && FromAdressString.contains("Точка на карте")) {
-                                FromAdressString = context.getString(R.string.startPoint);
-                            }
-                            CityFinder cityFinder = new CityFinder(context, latitude, longitude , FromAdressString);
-                            cityFinder.findCity(latitude, longitude);
-                            updateMyPosition(latitude, longitude, FromAdressString, context);
-
-                        fromEditAddress.setText(FromAdressString);
-                        progressBar.setVisibility(GONE);
-
-                        assert FromAdressString != null;
-                        fromEditAddress.setSelection(FromAdressString.length());
-
-                        
-
-
-
-
-                        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        @SuppressLint("Recycle") Cursor cursor = database.rawQuery(query, null);
-
-                        cursor.moveToFirst();
-
-                            // Получите значения полей из первой записи
-                        @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                        @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                        @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
-
-                        Logger.d(context, TAG, "onLocationResult:FromAdressString " + FromAdressString);
-
-                        List<String> settings = new ArrayList<>();
-
-                        if (originLatitude == toLatitude) {
-
-                            finish = "";
-                        }
-
-                        settings.add(Double.toString(latitude));
-                        settings.add(Double.toString(longitude));
-                        settings.add(Double.toString(latitude));
-                        settings.add(Double.toString(longitude));
-                        settings.add(FromAdressString);
-                        settings.add(finish);
-                        updateRoutMarker(settings);
-
-                        } else {
-                            Logger.d(context, TAG, "Ошибка при выполнении запроса");
-                        }
-                    });
-
-                }
-            }
-
-        };
-
-        startLocationUpdates();
+//        locationCallback = new LocationCallback() {
+//
+//            @Override
+//            public void onLocationResult(@NonNull LocationResult locationResult) {
+//                // Обработка полученных местоположений
+//                stopLocationUpdates();
+//                viewModel.setStatusX(false);
+//                // Обработка полученных местоположений
+//                List<Location> locations = locationResult.getLocations();
+//                Logger.d(context, TAG, "onLocationResult: locations 222222" + locations);
+//
+//                if (!locations.isEmpty()) {
+//                    Location firstLocation = locations.get(0);
+//
+//                    double latitude = firstLocation.getLatitude();
+//                    double longitude = firstLocation.getLongitude();
+//
+//
+//                    List<String> stringList = logCursor(MainActivity.CITY_INFO);
+//                    String api = stringList.get(2);
+//
+//                    Locale locale = Locale.getDefault();
+//                    String language = locale.getLanguage(); // Получаем язык устройства
+//                    String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+//                    String urlFrom = baseUrl + "/" + api + "/android/fromSearchGeoLocal/" + latitude + "/" + longitude + "/" + language;
+//                    FromJSONParserRetrofit.sendURL(urlFrom, result -> {
+//                        // Обработка результата в основном потоке
+//                        if (result != null) {
+//                            Logger.d(context, TAG, "Результат: " + result);
+//                            String FromAdressString = result.get("route_address_from");
+//
+//                            if (FromAdressString != null && FromAdressString.contains("Точка на карте")) {
+//                                FromAdressString = context.getString(R.string.startPoint);
+//                            }
+//                            CityFinder cityFinder = new CityFinder(context, latitude, longitude , FromAdressString);
+//                            cityFinder.findCity(latitude, longitude);
+//                            updateMyPosition(latitude, longitude, FromAdressString, context);
+//
+//                        fromEditAddress.setText(FromAdressString);
+//                        progressBar.setVisibility(GONE);
+//
+//                        assert FromAdressString != null;
+//                        fromEditAddress.setSelection(FromAdressString.length());
+//
+//
+//
+//
+//
+//
+//                        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+//                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//                        @SuppressLint("Recycle") Cursor cursor = database.rawQuery(query, null);
+//
+//                        cursor.moveToFirst();
+//
+//                            // Получите значения полей из первой записи
+//                        @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
+//                        @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+//                        @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
+//
+//                        Logger.d(context, TAG, "onLocationResult:FromAdressString " + FromAdressString);
+//
+//                        List<String> settings = new ArrayList<>();
+//
+//                        if (originLatitude == toLatitude) {
+//
+//                            finish = "";
+//                        }
+//
+//                        settings.add(Double.toString(latitude));
+//                        settings.add(Double.toString(longitude));
+//                        settings.add(Double.toString(latitude));
+//                        settings.add(Double.toString(longitude));
+//                        settings.add(FromAdressString);
+//                        settings.add(finish);
+//                        updateRoutMarker(settings);
+//
+//                        } else {
+//                            Logger.d(context, TAG, "Ошибка при выполнении запроса");
+//                        }
+//                    });
+//
+//                }
+//            }
+//
+//        };
+//
+//        startLocationUpdates();
     }
 
     private static void updateMyPosition(Double startLat, Double startLan, String position, Context context) {
@@ -749,6 +745,7 @@ public class VisicomSearchFragment extends Fragment {
             Bundle bundle = new Bundle();
             bundle.putString("startMarker", start);
             bundle.putString("finishMarker", end);
+            Log.e("setStatusX 3", "start:" + start);
 
             MainActivity.navController.navigate(
                     R.id.nav_map,
@@ -761,9 +758,12 @@ public class VisicomSearchFragment extends Fragment {
         });
         btn_ok.setOnClickListener(v -> {
 
-            viewModel.setStatusGpsUpdate(false);
+            NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_visicom, true)
+                    .build());
 
-            startActivity(new Intent(context, MainActivity.class));
+//            startActivity(new Intent(context, MainActivity.class));
         });
 
         scrollButtonDown.setOnClickListener(v -> {
@@ -1687,20 +1687,19 @@ public class VisicomSearchFragment extends Fragment {
 
                 addressListView.setOnItemClickListener((parent, viewC, position, id) -> {
                     Logger.d(context, TAG, "processAddressData:position3333 " + position);
-                    viewModel.setStatusX(true);
-                    viewModel.setStatusGpsUpdate(false);
+
 
                     positionChecked = position;
                     startMarker = "ok";
                     finishMarker = "no";
+                    Log.e("setStatusX 1", "point: " + point);
                     if (point.equals("start")) {
                         fromEditAddress.requestFocus();
                         fromEditAddress.setSelection(fromEditAddress.getText().toString().length());
                         KeyboardUtils.showKeyboard(context, fromEditAddress);
 
-
-
                     } else if (point.equals("finish")) {
+
                         toEditAddress.requestFocus();
                         toEditAddress.setSelection(toEditAddress.getText().toString().length());
                         KeyboardUtils.showKeyboard(context, toEditAddress);
@@ -1772,6 +1771,11 @@ public class VisicomSearchFragment extends Fragment {
                             VisicomFragment.geoText.setText(startPoint);
                             Logger.d(context, TAG, "processAddressData: startPoint 1" + startPoint);
                             if(startPoint.contains("\t")) {
+                                viewModel.setStatusX(true);
+                                sharedPreferencesHelperMain.saveValue("setStatusX", true);
+                                viewModel.setStatusGpsUpdate(false);
+                                Log.e("setStatusX 11", "setStatusXUpdate:" + (boolean)sharedPreferencesHelperMain.getValue("setStatusX", false));
+
                                 btn_ok.performClick();
                             } else {
                                 textGeoError.setVisibility(View.VISIBLE);
@@ -1817,12 +1821,19 @@ public class VisicomSearchFragment extends Fragment {
                             settings.add(VisicomFragment.geoText.getText().toString());
                             settings.add(addressesList.get(position));
                             updateRoutMarker(settings);
-//                                            }
+
 
 
                             Logger.d(context, TAG, "settings: " + settings);
                             toEditAddress.setSelection(addressesList.get(position).length());
                             if(addressesList.get(position).contains("\t")) {
+                                viewModel.setStatusX(false);
+                                if(!(boolean)sharedPreferencesHelperMain.getValue("setStatusX", false)) {
+                                    sharedPreferencesHelperMain.saveValue("setStatusX", false);
+                                }
+                                viewModel.setStatusGpsUpdate(false);
+                                Log.e("setStatusX 13", "setStatusXUpdate:" + (boolean)sharedPreferencesHelperMain.getValue("setStatusX", false));
+
                                 btn_ok.performClick();
                             } else {
                                 text_toError.setVisibility(View.VISIBLE);
@@ -2091,6 +2102,11 @@ public class VisicomSearchFragment extends Fragment {
                         VisicomFragment.geoText.setText(startPoint);
                         Logger.d(context, TAG, "processAddressData: startPoint 2" + startPoint);
                         if(startPoint.contains("\t")) {
+                            viewModel.setStatusX(true);
+                            sharedPreferencesHelperMain.saveValue("setStatusX", true);
+                            viewModel.setStatusGpsUpdate(false);
+                            Log.e("setStatusX 11", "setStatusXUpdate:" + (boolean)sharedPreferencesHelperMain.getValue("setStatusX", false));
+
                             btn_ok.performClick();
                         }
                     }
@@ -2136,6 +2152,14 @@ public class VisicomSearchFragment extends Fragment {
                         Logger.d(context, TAG, "settings: " + settings);
                         toEditAddress.setSelection(addressesList.get(position).length());
                         if(toEditAddress.getText().toString().contains("\t")) {
+                            viewModel.setStatusX(false);
+                            if(!(boolean)sharedPreferencesHelperMain.getValue("setStatusX", false)) {
+                                sharedPreferencesHelperMain.saveValue("setStatusX", false);
+                            }
+                            viewModel.setStatusGpsUpdate(false);
+
+                            Log.e("setStatusX 12", "setStatusXUpdate:" + (boolean)sharedPreferencesHelperMain.getValue("setStatusX", false));
+
                             btn_ok.performClick();
                         }
                     }

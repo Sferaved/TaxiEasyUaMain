@@ -3,6 +3,7 @@ package com.taxi.easy.ua.ui.open_map;
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.Manifest;
@@ -53,7 +54,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 
@@ -405,9 +408,24 @@ public class OpenStreetMapFragment extends Fragment {
         gpsSwitch = binding.gpsSwitch;
 
         fabOpenMap.setOnClickListener(v -> {
-            Intent intent = new Intent(requireActivity(), MainActivity.class);
-            intent.putExtra("gps_upd", false);
-            startActivity(intent);
+            Logger.e(ctx, "setStatusX 10", "markerType " + markerType);
+
+            if ("startMarker".equals(markerType)) {
+                sharedPreferencesHelperMain.saveValue("setStatusX", true);
+            } else {
+                Logger.e(ctx, "setStatusX 11", "markerType " + (boolean)sharedPreferencesHelperMain.getValue("setStatusX", false));
+                if(!(boolean)sharedPreferencesHelperMain.getValue("setStatusX", false)) {
+                    sharedPreferencesHelperMain.saveValue("setStatusX", false);
+                }
+
+            }
+            NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_visicom, true)
+                    .build());
+//            Intent intent = new Intent(requireActivity(), MainActivity.class);
+//            intent.putExtra("gps_upd", false);
+//            startActivity(intent);
         });
 
         gpsSwitch.setChecked(switchState());

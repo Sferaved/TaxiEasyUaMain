@@ -48,7 +48,7 @@ public class TokenUtils {
                 }
 
                 @Override
-                public void onFailure(Call<Void> call, Throwable t) {
+                public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
                     Logger.e(context, TAG, "Ошибка отправки токена на сервер: " + t.toString());
                     FirebaseCrashlytics.getInstance().recordException(t);
                 }
