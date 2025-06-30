@@ -3,6 +3,7 @@ package com.taxi.easy.ua.ui.visicom.visicom_search;
 
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.GONE;
+import static com.taxi.easy.ua.MainActivity.button1;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
@@ -155,7 +156,7 @@ public class VisicomSearchFragment extends Fragment {
         binding = FragmentVisicomSearchBinding.inflate(inflater, container, false);
         root = binding.getRoot();
         context = requireActivity();
-
+        button1.setVisibility(View.VISIBLE);
 
         permissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestMultiplePermissions(),

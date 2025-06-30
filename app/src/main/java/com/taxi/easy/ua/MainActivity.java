@@ -1,5 +1,6 @@
 package com.taxi.easy.ua;
 
+import static android.view.View.GONE;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.Manifest;
@@ -114,6 +115,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -214,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
 
 //    ExecutorService executor;
     Constraints constraints;
-
+    public static ImageButton button1;
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -336,19 +338,23 @@ public class MainActivity extends AppCompatActivity {
             // Доступ к элементам кастомного Action Bar
             View customView = getSupportActionBar().getCustomView();
             TextView titleTextView = customView.findViewById(R.id.action_bar_title);
-            ImageButton button1 = customView.findViewById(R.id.button1);
+            button1 = customView.findViewById(R.id.button1);
 
             setCityAppbar(); // Предполагается, что метод существует и корректен
             titleTextView.setText(newTitle);
+
 
             // Установка обработчиков нажатий
             View.OnClickListener clickListener = v -> {
                 Logger.d(this, TAG, "Обработчик нажатия, сеть доступна: " + NetworkUtils.isNetworkAvailable(this));
                 if (NetworkUtils.isNetworkAvailable(this)) {
                     Logger.d(this, "CityCheckFrgment", "Navigating to nav_city");
-                    navController.navigate(R.id.nav_city, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_city, true)
-                            .build());
+                    if (navController.getCurrentDestination().getId() != R.id.nav_finish_separate) {
+                        Logger.d(this, "CityCheckFrgment", "Navigating to nav_city");
+                        navController.navigate(R.id.nav_city, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_city, true)
+                                .build());
+                    }
                 } else if (navController != null) {
                     currentNavDestination = R.id.nav_restart;
                     navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
@@ -358,9 +364,13 @@ public class MainActivity extends AppCompatActivity {
                     Logger.e(this, TAG, "NavController равен null, навигация невозможна!");
                 }
             };
+            if (Objects.requireNonNull(navController.getCurrentDestination()).getId() != R.id.nav_finish_separate) {
+                Logger.d(this, "CityCheckFrgment", "Navigating to nav_city");
+                titleTextView.setOnClickListener(clickListener);
+                button1.setOnClickListener(clickListener);
+            }
 
-            titleTextView.setOnClickListener(clickListener);
-            button1.setOnClickListener(clickListener);
+
         }
 
         // Проверка разрешений на доступ к местоположению
@@ -479,6 +489,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
+        costMap = null;
+
         appUpdateManager = AppUpdateManagerFactory.create(MainActivity.this);
 
         appUpdateManager.getAppUpdateInfo().addOnSuccessListener(appUpdateInfo -> {
@@ -1068,19 +1081,20 @@ public class MainActivity extends AppCompatActivity {
                     MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
                     bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
 
+                } else {
+                    if (NetworkUtils.isNetworkAvailable(this)) {
+                        appUpdater = new AppUpdater(
+                                this,
+                                this.getExactAlarmLauncher(),
+                                this.getBatteryOptimizationLauncher()
+                        );
+                        appUpdater.startUpdate();
+                    }
                 }
             });
 
 
-            if (NetworkUtils.isNetworkAvailable(this)) {
-                appUpdater = new AppUpdater(
-                        this,
-                        this.getExactAlarmLauncher(),
-                        this.getBatteryOptimizationLauncher()
-                );
-                appUpdater.startUpdate();
 
-            }
         }
         if (item.getItemId() == R.id.nav_driver) {
             if (NetworkUtils.isNetworkAvailable(this)) {
@@ -1613,7 +1627,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Метод для скрытия индикатора прогресса и обновления базы данных
     private void hideProgressBarAndUpdateDatabase(ContentValues cv) {
-        VisicomFragment.progressBar.setVisibility(View.GONE);
+        VisicomFragment.progressBar.setVisibility(GONE);
         cv.put("verifyOrder", "0");
         SQLiteDatabase database = null;
         try {

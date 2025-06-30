@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.829</string>
-    <string name="version">Версия: 1.829</string>
+    <string name="version_code">1.830</string>
+    <string name="version">Версия: 1.830</string>
 
     <string name="app_name">Такси Доставка</string>
 
@@ -528,5 +528,6 @@
     <string name="check_permition">Пожалуйста, включите геолокацию или предоставьте разрешение на доступ к местоположению.</string>
     <string name="map_loading">Карта всё ещё загружается...</string>
     <string name="cost_error">Ошибка создания заказа. Попробуйте изменить адрес или наберите оператора</string>
+    <string name="google_maps">Google Maps не установлены</string>
 
 </resources>

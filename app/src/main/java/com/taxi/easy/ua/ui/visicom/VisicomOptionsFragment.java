@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.ui.visicom;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.taxi.easy.ua.MainActivity.button1;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -82,7 +83,7 @@ public class VisicomOptionsFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_visicom_options, container, false);
         listView = view.findViewById(R.id.list);
-        
+        button1.setVisibility(View.VISIBLE);
         context = requireActivity();
         database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 

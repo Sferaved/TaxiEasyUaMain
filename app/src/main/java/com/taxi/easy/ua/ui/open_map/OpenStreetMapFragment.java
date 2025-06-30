@@ -3,6 +3,7 @@ package com.taxi.easy.ua.ui.open_map;
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
+import static com.taxi.easy.ua.MainActivity.button1;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
@@ -15,21 +16,18 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.RectF;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -157,6 +155,7 @@ public class OpenStreetMapFragment extends Fragment {
 
     // Поток для маршрутов
     private static final Executor executor = Executors.newSingleThreadExecutor();
+    private boolean userMovedMap = false;
 
     @SuppressLint({"MissingInflatedId", "InflateParams", "UseCompatLoadingForDrawables"})
     @Override
@@ -165,7 +164,7 @@ public class OpenStreetMapFragment extends Fragment {
         map = binding.map;
         View root = binding.getRoot();
         ctx = requireContext();
-
+        button1.setVisibility(View.VISIBLE);
         // Настройка конфигурации OSMDroid
         try {
             File cacheDir = new File(ctx.getCacheDir(), "osmdroid");
@@ -220,30 +219,6 @@ public class OpenStreetMapFragment extends Fragment {
         ConnectivityManager cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
         return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
-    }
-
-    private void requestStoragePermission() {
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-            if (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                if (shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                    // Показать объяснение, почему нужно разрешение
-                    Toast.makeText(ctx, "Разрешение на доступ к файлам необходимо для кэширования карт", Toast.LENGTH_LONG).show();
-                    locationPermissionLauncher.launch(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE});
-                } else if (!(boolean) sharedPreferencesHelperMain.getValue("storagePermissionRequested", false)) {
-                    // Первый запрос разрешения
-                    locationPermissionLauncher.launch(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE});
-                    sharedPreferencesHelperMain.saveValue("storagePermissionRequested", true);
-                }
-            } else {
-                Logger.d(ctx, TAG, "Storage permission already granted");
-                configureMap();
-                initializeMapPosition();
-            }
-        } else {
-            Logger.d(ctx, TAG, "No storage permission needed for Android Q and above");
-            configureMap();
-            initializeMapPosition();
-        }
     }
 
     @Override
@@ -376,12 +351,15 @@ public class OpenStreetMapFragment extends Fragment {
 
     // Инициализация иконки маркера
     private void initializeMarkerIcon() {
-        Drawable originalDrawable = ContextCompat.getDrawable(ctx, R.drawable.marker_green);
-        if (originalDrawable != null) {
-            int width = 48, height = 48;
-            Bitmap bitmap = Bitmap.createScaledBitmap(((BitmapDrawable) originalDrawable).getBitmap(), width, height, false);
-            scaledDrawable = new BitmapDrawable(getResources(), bitmap);
-        }
+        scaledDrawable = null; // Устанавливаем scaledDrawable в null, чтобы не устанавливать иконку
+        Logger.w(ctx, TAG, "Icon intentionally not set to hide marker");
+
+//        Drawable originalDrawable = ContextCompat.getDrawable(ctx, R.drawable.marker_green);
+//        if (originalDrawable != null) {
+//            int width = 48, height = 48;
+//            Bitmap bitmap = Bitmap.createScaledBitmap(((BitmapDrawable) originalDrawable).getBitmap(), width, height, false);
+//            scaledDrawable = new BitmapDrawable(getResources(), bitmap);
+//        }
     }
 
     // Инициализация аргументов фрагмента
@@ -399,7 +377,6 @@ public class OpenStreetMapFragment extends Fragment {
         center_marker = binding.centerMarker;
 
         progressBar.setVisibility(View.VISIBLE);
-        center_marker.setVisibility(View.INVISIBLE);
 
         fab = binding.fab;
         fab.setVisibility(View.INVISIBLE);
@@ -423,9 +400,7 @@ public class OpenStreetMapFragment extends Fragment {
             navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)
                     .build());
-//            Intent intent = new Intent(requireActivity(), MainActivity.class);
-//            intent.putExtra("gps_upd", false);
-//            startActivity(intent);
+
         });
 
         gpsSwitch.setChecked(switchState());
@@ -494,8 +469,8 @@ public class OpenStreetMapFragment extends Fragment {
                 binding.centerMarker.setVisibility(VISIBLE);
                 removeMarkerOnTouchDown();
 
-            } else if (action == MotionEvent.ACTION_UP) {
-                binding.centerMarker.setVisibility(GONE);
+            }else if (action == MotionEvent.ACTION_UP) {
+                userMovedMap = true;
                 handleTouchUp(centerPoint);
                 return true;
             } else if (action == MotionEvent.ACTION_MOVE) {
@@ -572,6 +547,7 @@ public class OpenStreetMapFragment extends Fragment {
             initializeRegion();
             return;
         }
+
         // Удалить все маркеры и наложения с карты
         map.getOverlays().clear();
         map.invalidate(); // Обновить карту
@@ -613,21 +589,18 @@ public class OpenStreetMapFragment extends Fragment {
             GeoPoint finishPoint = new GeoPoint(finishLat, finishLan);
             finishMarkerObj = new Marker(map);
             finishMarkerObj.setPosition(finishPoint);
-
-
-            if(markerType.equals("startMarker")) {
-                mapController.setCenter(startPoint);
-                if(isShowRout) {
-                    setMarker(finishLat, finishLan, toAddressString, ctx, "2.");
-                    showRout(startPoint, finishPoint);
-                }
-            } else {
-                    binding.centerMarker.setVisibility(GONE);
+            if (!userMovedMap) {
+                if (markerType.equals("startMarker")) {
+                    mapController.setCenter(startPoint);
+                } else {
                     mapController.setCenter(finishPoint);
-                if(isShowRout) {
-                    setMarker(finishLat, finishLan, toAddressString, ctx, "2.");
-                    showRout(startPoint, finishPoint);
                 }
+            }
+
+
+            if(isShowRout) {
+                setMarker(finishLat, finishLan, toAddressString, ctx, "2.");
+                showRout(startPoint, finishPoint);
             }
 
 
@@ -1139,23 +1112,24 @@ public class OpenStreetMapFragment extends Fragment {
 
         // Create new marker
         Marker marker = new Marker(map);
-        marker.setTextLabelBackgroundColor(Color.TRANSPARENT);
-        marker.setTextLabelForegroundColor(Color.RED);
-        marker.setTextLabelFontSize(40);
-        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+//        marker.setTextLabelBackgroundColor(Color.TRANSPARENT);
+//        marker.setTextLabelForegroundColor(Color.RED);
+//        marker.setTextLabelFontSize(40);
+//        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
         String unuString = new String(Character.toChars(0x1F449));
-
-        // Set title for the marker (used by InfoWindow if clicked)
-        marker.setTitle(prefix + unuString + title);
-        Logger.d(context, TAG, "scaledDrawable: " + scaledDrawable);
-
-        // Set custom icon
-        initializeMarkerIcon();
-        if (scaledDrawable != null) {
-            marker.setIcon(scaledDrawable);
-        } else {
-            Logger.w(context, TAG, "scaledDrawable is null, no icon set");
-        }
+//
+//        // Set title for the marker (used by InfoWindow if clicked)
+//        marker.setTitle(prefix + unuString + title);
+//        Logger.d(context, TAG, "scaledDrawable: " + scaledDrawable);
+        marker.setVisible(false);
+//        // Set custom icon
+//        initializeMarkerIcon();
+//        if (scaledDrawable != null) {
+//            marker.setIcon(scaledDrawable);
+//        } else {
+//            marker.setIcon(null);
+//            Logger.w(context, TAG, "scaledDrawable is null, no icon set");
+//        }
 
         // Set marker position
         marker.setPosition(new GeoPoint(lat, lon));
@@ -1172,7 +1146,6 @@ public class OpenStreetMapFragment extends Fragment {
         // Update marker references
         if ("startMarker".equals(markerType)) {
             startMarkerObj = marker;
-            binding.centerMarker.setVisibility(View.GONE);
         } else if ("finishMarker".equals(markerType)) {
             finishMarkerObj = marker;
         }

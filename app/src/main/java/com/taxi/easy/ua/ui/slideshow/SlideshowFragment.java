@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.ui.slideshow;
 
+import static com.taxi.easy.ua.MainActivity.button1;
+
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,7 +25,7 @@ public class SlideshowFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
-
+        button1.setVisibility(View.VISIBLE);
         SlideshowViewModel slideshowViewModel =
                 new ViewModelProvider(this).get(SlideshowViewModel.class);
 

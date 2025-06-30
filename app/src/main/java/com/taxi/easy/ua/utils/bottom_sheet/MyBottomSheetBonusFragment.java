@@ -34,16 +34,12 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.card.CardFragment;
 import com.taxi.easy.ua.ui.cities.api.CityApiClient;
 import com.taxi.easy.ua.ui.cities.api.CityResponse;
-import com.taxi.easy.ua.ui.cities.api.CityResponseMerchantFondy;
 import com.taxi.easy.ua.ui.cities.api.CityService;
 import com.taxi.easy.ua.ui.gallery.GalleryFragment;
 import com.taxi.easy.ua.ui.home.CustomArrayAdapter;
 import com.taxi.easy.ua.ui.home.HomeFragment;
-import com.taxi.easy.ua.ui.payment_system.PayApi;
-import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.data.DataArr;
@@ -67,8 +63,6 @@ import java.util.Map;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 
 public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
@@ -166,7 +160,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             case "Zaporizhzhia":
             case "Cherkasy Oblast":
                 listView.setItemChecked(0, true);
-//                paymentType(arrayCode [0], requireContext());
                 adapter.setItemEnabled(1, false);
                 adapter.setItemEnabled(2, false);
                 break;
@@ -212,33 +205,19 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                         adapter.setItemEnabled(2, false);
                     } else {
                         try {
+                            Logger.d(context, TAG, "paymentType: 1 ");
                             paymentType(arrayCode [pos], context);
                         } catch (MalformedURLException | UnsupportedEncodingException e) {
                             FirebaseCrashlytics.getInstance().recordException(e);
                             throw new RuntimeException(e);
                         }
-//                        paySystem(new CardFragment.PaySystemCallback() {
-//                            @Override
-//                            public void onPaySystemResult(String paymentCode) {
-//                                Log.d(TAG, "onPaySystemResult: paymentCode" + paymentCode);
-//                                // Здесь вы можете использовать полученное значение paymentCode
-//                                try {
-//                                    paymentType(paymentCode, context);
-//                                } catch (MalformedURLException | UnsupportedEncodingException e) {
-//                                    FirebaseCrashlytics.getInstance().recordException(e);
-//                                    throw new RuntimeException(e);
-//                                }
-//                            }
-//
-//                            @Override
-//                            public void onPaySystemFailure(String errorMessage) {
-//                            }
-//                        });
+
                     }
                 }
 
             } else {
                 try {
+                    Logger.d(context, TAG, "paymentType: 2 ");
                     paymentType(arrayCode [pos], context);
                 } catch (MalformedURLException | UnsupportedEncodingException e) {
                     FirebaseCrashlytics.getInstance().recordException(e);
@@ -367,63 +346,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             }
         });
     }
-    private void merchantFondy(String city, Context context) {
 
-
-        String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-        CityApiClient cityApiClient = new CityApiClient(BASE_URL);
-        CityService cityService = cityApiClient.getClient().create(CityService.class);
-
-        // Замените "your_city" на фактическое название города
-        Call<CityResponseMerchantFondy> call = cityService.getMerchantFondy(city);
-
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<CityResponseMerchantFondy> call, @NonNull Response<CityResponseMerchantFondy> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    CityResponseMerchantFondy cityResponse = response.body();
-                    Log.d(TAG, "onResponse: cityResponse" + cityResponse);
-                    String merchant_fondy = cityResponse.getMerchantFondy();
-                    String fondy_key_storage = cityResponse.getFondyKeyStorage();
-
-                    ContentValues cv = new ContentValues();
-                    cv.put("merchant_fondy", merchant_fondy);
-                    cv.put("fondy_key_storage", fondy_key_storage);
-                    SQLiteDatabase db = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                    db.update(MainActivity.CITY_INFO, cv, "id = ?",
-                            new String[]{"1"});
-                    db.close();
-                    Log.d(TAG, "onResponse: merchant_fondy" + merchant_fondy);
-                    Log.d(TAG, "onResponse: fondy_key_storage" + fondy_key_storage);
-
-                    if (merchant_fondy == null) {
-                        adapter.setItemEnabled(2, false);
-                        listView.setItemChecked(0, true);
-                        try {
-                            paymentType(arrayCode[0], context);
-                        } catch (MalformedURLException | UnsupportedEncodingException e) {
-                            FirebaseCrashlytics.getInstance().recordException(e);
-                            throw new RuntimeException(e);
-                        }
-                    } else {
-
-                        adapter.setItemEnabled(2, true);
-                        cityMaxPay(city);
-                    }
-                } else {
-                    Logger.d(getActivity(), TAG, "Failed. Error code: " + response.code());
-                    adapter.setItemEnabled(2, false);
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<CityResponseMerchantFondy> call, @NonNull Throwable t) {
-                Logger.d(getActivity(), TAG, "Failed. Error message: " + t.getMessage());
-                FirebaseCrashlytics.getInstance().recordException(t);
-                adapter.setItemEnabled(2, false);
-            }
-        });
-    }
 
     private void paymentType(String paymentCode, Context context) throws MalformedURLException, UnsupportedEncodingException {
         ContentValues cv = new ContentValues();
@@ -443,7 +366,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
     @SuppressLint("Range")
     private void fistItem() {
-//        reCount();
+
         String payment_type = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(4);
 
         Log.d(TAG, "fistItem: " + payment_type);
@@ -451,7 +374,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             case "nal_payment":
                 listView.setItemChecked(0, true);
                 pos = 0;
-//                paymentType(arrayCode [pos], requireContext());
+
                 adapter.setItemEnabled(2, !userPayPermissions[1].equals("0"));
                 break;
             case "bonus_payment":
@@ -460,27 +383,19 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     adapter.setItemEnabled(1, false);
                 } else {
                     listView.setItemChecked(1, true);
+                    Logger.d(context, TAG, "paymentType: 3 ");
                     pos = 1;
-                    try {
-                        paymentType(arrayCode [pos], context);
-                    } catch (MalformedURLException | UnsupportedEncodingException e) {
-                        FirebaseCrashlytics.getInstance().recordException(e);
-                        throw new RuntimeException(e);
-                    }
+//                    try {
+////                        paymentType(arrayCode [pos], context);
+//                    } catch (MalformedURLException | UnsupportedEncodingException e) {
+//                        FirebaseCrashlytics.getInstance().recordException(e);
+//                        throw new RuntimeException(e);
+//                    }
                 }
 
                 adapter.setItemEnabled(2, !userPayPermissions[1].equals("0"));
                 break;
 
-            case "fondy_payment":
-                merchantFondy(city, context);
-                if(userPayPermissions[1].equals("0")) {
-                    adapter.setItemEnabled(2, false);
-                } else  {
-                    listView.setItemChecked(2, true);
-                    pos = 2;
-                }
-                break;
             case "card_payment":
             case "mono_payment":
             case "wfp_payment":
@@ -490,6 +405,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     pos = 0;
                     listView.setItemChecked(0, true);
                     try {
+                        Logger.d(context, TAG, "paymentType: 4 ");
                         paymentType("nal_payment", context);
                     } catch (MalformedURLException | UnsupportedEncodingException e) {
                         throw new RuntimeException(e);
@@ -537,60 +453,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         database.close();
 
         return result;
-    }
-
-
-    private void paySystem(final CardFragment.PaySystemCallback callback) {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        PayApi apiService = retrofit.create(PayApi.class);
-        Call<ResponsePaySystem> call = apiService.getPaySystem();
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    // Обработка успешного ответа
-                    ResponsePaySystem responsePaySystem = response.body();
-
-                    String paymentCode = responsePaySystem.getPay_system();
-
-                    String paymentCodeNew = "fondy"; // Изначально устанавливаем значение
-
-                    switch (paymentCode) {
-                        case "wfp":
-                            paymentCodeNew = "wfp_payment";
-                            break;
-                        case "fondy":
-                            paymentCodeNew = "fondy_payment";
-                            break;
-                        case "mono":
-                            paymentCodeNew = "mono_payment";
-                            break;
-                    }
-                    try {
-                        reCount();
-                    } catch (UnsupportedEncodingException | MalformedURLException e) {
-                        FirebaseCrashlytics.getInstance().recordException(e);
-                        throw new RuntimeException(e);
-                    }
-                    // Вызываем обработчик, передавая полученное значение
-                    callback.onPaySystemResult(paymentCodeNew);
-                } else {
-                    // Обработка ошибки
-                    callback.onPaySystemFailure(getString(R.string.verify_internet));
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
-                // Обработка ошибки
-                FirebaseCrashlytics.getInstance().recordException(t);
-                callback.onPaySystemFailure(getString(R.string.verify_internet));
-            }
-        });
     }
 
     @Override
@@ -679,44 +541,45 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                         @Override
                         public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
                             Map<String, String> sendUrlMapCost = response.body();
-                            assert sendUrlMapCost != null;
-                            String orderCost = sendUrlMapCost.get("order_cost");
-                            Log.d(TAG, "onDismiss: orderCost " + orderCost);
-                            assert orderCost != null;
-                            if (!orderCost.equals("0")) {
-                                new Handler(Looper.getMainLooper()).post(() -> {
+                            if (sendUrlMapCost != null) {
+                                String orderCost = sendUrlMapCost.get("order_cost");
+                                Log.d(TAG, "onDismiss: orderCost " + orderCost);
+                                assert orderCost != null;
+                                if (!orderCost.equals("0")) {
+                                    new Handler(Looper.getMainLooper()).post(() -> {
 
-                                    String costUpdate;
+                                        String costUpdate;
 
-                                    long discount;
-                                    long firstCost = Long.parseLong(orderCost);
-                                    discount = firstCost * discountInt / 100;
-                                    firstCost = firstCost + discount;
-    //                                updateAddCost(String.valueOf(discount));
+                                        long discount;
+                                        long firstCost = Long.parseLong(orderCost);
+                                        discount = firstCost * discountInt / 100;
+                                        firstCost = firstCost + discount;
+                                        //                                updateAddCost(String.valueOf(discount));
 
-                                    VisicomFragment.firstCostForMin = firstCost;
+                                        VisicomFragment.firstCostForMin = firstCost;
 
-                                    VisicomFragment.startCost = firstCost;
-                                    VisicomFragment.finalCost = firstCost;
+                                        VisicomFragment.startCost = firstCost;
+                                        VisicomFragment.finalCost = firstCost;
 
-                                    Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: startCost " + VisicomFragment.startCost);
-                                    Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: finalCost " + VisicomFragment.finalCost);
+                                        Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: startCost " + VisicomFragment.startCost);
+                                        Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: finalCost " + VisicomFragment.finalCost);
 
-                                    costUpdate = String.valueOf(firstCost);
-                                    Log.d(TAG, "onResponse:costUpdate " + costUpdate);
+                                        costUpdate = String.valueOf(firstCost);
+                                        Log.d(TAG, "onResponse:costUpdate " + costUpdate);
 
-                                    VisicomFragment.text_view_cost.setText(costUpdate);
-                                    VisicomFragment.btnVisible(View.VISIBLE);
+                                        VisicomFragment.text_view_cost.setText(costUpdate);
+                                        VisicomFragment.btnVisible(View.VISIBLE);
 
-                                });
-                            } else {
-                                new Handler(Looper.getMainLooper()).post(() -> {
-                                    progressBar.setVisibility(View.INVISIBLE);
-                                    if (pos == 1 || pos == 2) {
-                                        changePayMethodToNal();
-                                    }
-                                });
+                                    });
+                                } else {
+                                    new Handler(Looper.getMainLooper()).post(() -> {
+                                        progressBar.setVisibility(View.INVISIBLE);
+                                        if (pos == 1 || pos == 2) {
+                                            changePayMethodToNal();
+                                        }
+                                    });
 
+                                }
                             }
                         }
 
@@ -811,6 +674,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         okButton.setOnClickListener(v -> {
             listView.setItemChecked(0, true);
             try {
+                Logger.d(context, TAG, "paymentType: 5 ");
                 paymentType(arrayCode [0], context);
                 setBtnBonusName(context);
             } catch (MalformedURLException | UnsupportedEncodingException e) {

@@ -10,27 +10,40 @@
         android:id="@+id/map"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:layout_editor_absoluteX="-8dp"
-        tools:layout_editor_absoluteY="0dp">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        tools:layout_editor_absoluteX="0dp"
+        tools:layout_editor_absoluteY="0dp" />
 
+    <!-- Guideline for vertical center (50% of screen height) -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline_vertical_center"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.5" />
 
-    </org.osmdroid.views.MapView>
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline_horizontal_center"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.5" />
 
     <ImageView
         android:id="@+id/center_marker"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_gravity="center"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:contentDescription="center marker"
         android:src="@drawable/marker_green"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.5"
-        tools:ignore="MissingConstraints"  />
+        app:layout_constraintStart_toEndOf="@id/guideline_horizontal_center"
+        app:layout_constraintEnd_toStartOf="@id/guideline_horizontal_center"
+        app:layout_constraintBottom_toTopOf="@id/guideline_vertical_center"
+        tools:ignore="MissingConstraints" />
+
+
 
     <ImageButton
         android:id="@+id/fab"
@@ -53,7 +66,7 @@
         android:layout_width="409dp"
         android:layout_height="wrap_content"
         android:indeterminateTint="@android:color/holo_green_light"
-        android:visibility="visible"
+        android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"

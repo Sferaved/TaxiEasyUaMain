@@ -3,8 +3,11 @@ package com.taxi.easy.ua.ui.visicom;
 
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.GONE;
+import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.activeCalls;
+import static com.taxi.easy.ua.MainActivity.button1;
+import static com.taxi.easy.ua.MainActivity.costMap;
 import static com.taxi.easy.ua.MainActivity.navController;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
@@ -228,6 +231,7 @@ public class VisicomFragment extends Fragment {
     private ActivityResultLauncher<String[]> permissionLauncher;
     private boolean location_update;
     LocationManager locationManager;
+    public static int currentNavDestination = -1; // ID текущего экрана
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -373,6 +377,10 @@ public class VisicomFragment extends Fragment {
 
         viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
 
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
+
 
 
         viewModel.getStatusX().observe(getViewLifecycleOwner(), aBoolean -> {
@@ -454,24 +462,34 @@ public class VisicomFragment extends Fragment {
                 setCityAppbar(); // Убедитесь, что метод существует
                 String newTitle = (String) sharedPreferencesHelperMain.getValue("newTitle", ""); // Или получите из аргументов/ресурсов
                 titleTextView.setText(newTitle);
-
+                if (Objects.requireNonNull(navController.getCurrentDestination()).getId() != R.id.nav_finish_separate) {
+                    button1.setVisibility(VISIBLE);
+                }
                 // Установка обработчиков нажатий
                 View.OnClickListener clickListener = v -> {
-                    Logger.d(requireActivity(), TAG, "Обработчик нажатия, сеть доступна: " + NetworkUtils.isNetworkAvailable(requireContext()));
-                    if (NetworkUtils.isNetworkAvailable(requireContext())) {
-                        Logger.d(requireActivity(), "CityCheckFragment", "Navigating to nav_city");
-                        navController.navigate(R.id.nav_city, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_city, true)
-                                .build());
-                    } else {
+                    Logger.d(context, TAG, "Обработчик нажатия, сеть доступна: " + NetworkUtils.isNetworkAvailable(context));
+                    if (NetworkUtils.isNetworkAvailable(context)) {
+                        Logger.d(context, "CityCheckFrgment", "Navigating to nav_city");
+                        if (navController.getCurrentDestination().getId() != R.id.nav_finish_separate) {
+                            Logger.d(context, "CityCheckFrgment", "Navigating to nav_city");
+                            navController.navigate(R.id.nav_city, null, new NavOptions.Builder()
+                                    .setPopUpTo(R.id.nav_city, true)
+                                    .build());
+                        }
+                    } else if (navController != null) {
+                        currentNavDestination = R.id.nav_restart;
                         navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
                                 .setPopUpTo(R.id.nav_restart, true)
                                 .build());
+                    } else {
+                        Logger.e(context, TAG, "NavController равен null, навигация невозможна!");
                     }
                 };
-
-                titleTextView.setOnClickListener(clickListener);
-                button1.setOnClickListener(clickListener);
+                if (Objects.requireNonNull(navController.getCurrentDestination()).getId() != R.id.nav_finish_separate) {
+                    Logger.d(context, "CityCheckFrgment", "Navigating to nav_city");
+                    titleTextView.setOnClickListener(clickListener);
+                    button1.setOnClickListener(clickListener);
+                }
             } else {
                 Logger.e(requireActivity(), TAG, "ActionBar равен null!");
             }
@@ -480,7 +498,6 @@ public class VisicomFragment extends Fragment {
         }
     }
 
-    // Предполагаемый метод для настройки ActionBar (реализуйте по вашим требованиям)
     private void setCityAppbar()
     {
         List<String> stringList = logCursor(MainActivity.CITY_INFO, requireContext());
@@ -2330,49 +2347,49 @@ public class VisicomFragment extends Fragment {
                                 }
 
                                 new CityFinder(context, latitude, longitude, FromAdressString).findCity(latitude, longitude);
-                                updateMyPosition(latitude, longitude, FromAdressString, context);
-                                geoText.setText(FromAdressString);
-                                progressBar.setVisibility(View.GONE);
-
-                                // Работа с базой
-                                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-                                SQLiteDatabase db = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                                Cursor cursor = db.rawQuery(query, null);
-
-                                if (cursor.moveToFirst()) {
-                                    @SuppressLint("Range") double startLat = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                                    @SuppressLint("Range") double to_lat = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                                    @SuppressLint("Range") double to_lng = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                                    @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
-
-                                    List<String> settings = new ArrayList<>();
-                                    if (startLat == to_lat) {
-                                        textViewTo.setText("");
-                                        finish = "";
-                                    }
-
-                                    settings.add(String.valueOf(latitude));
-                                    settings.add(String.valueOf(longitude));
-                                    settings.add(String.valueOf(to_lat));
-                                    settings.add(String.valueOf(to_lng));
-                                    settings.add(FromAdressString);
-                                    settings.add(finish);
-                                    updateRoutMarker(settings);
-                                }
-
-                                cursor.close();
-                                db.close();
-
-                                try {
-                                    String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-                                    if (!userEmail.equals("email")) {
-                                        visicomCost();
-                                        readTariffInfo();
-                                    }
-                                } catch (MalformedURLException e) {
-                                    FirebaseCrashlytics.getInstance().recordException(e);
-                                    throw new RuntimeException(e);
-                                }
+//                                updateMyPosition(latitude, longitude, FromAdressString, context);
+//                                geoText.setText(FromAdressString);
+//                                progressBar.setVisibility(View.GONE);
+//
+//                                // Работа с базой
+//                                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+//                                SQLiteDatabase db = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//                                Cursor cursor = db.rawQuery(query, null);
+//
+//                                if (cursor.moveToFirst()) {
+//                                    @SuppressLint("Range") double startLat = cursor.getDouble(cursor.getColumnIndex("startLat"));
+//                                    @SuppressLint("Range") double to_lat = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+//                                    @SuppressLint("Range") double to_lng = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+//                                    @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
+//
+//                                    List<String> settings = new ArrayList<>();
+//                                    if (startLat == to_lat) {
+//                                        textViewTo.setText("");
+//                                        finish = "";
+//                                    }
+//
+//                                    settings.add(String.valueOf(latitude));
+//                                    settings.add(String.valueOf(longitude));
+//                                    settings.add(String.valueOf(to_lat));
+//                                    settings.add(String.valueOf(to_lng));
+//                                    settings.add(FromAdressString);
+//                                    settings.add(finish);
+//                                    updateRoutMarker(settings);
+//                                }
+//
+//                                cursor.close();
+//                                db.close();
+//
+//                                try {
+//                                    String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+//                                    if (!userEmail.equals("email")) {
+//                                        visicomCost();
+//                                        readTariffInfo();
+//                                    }
+//                                } catch (MalformedURLException e) {
+//                                    FirebaseCrashlytics.getInstance().recordException(e);
+//                                    throw new RuntimeException(e);
+//                                }
 
                             } else {
                                 Logger.d(context, TAG, "Ошибка при получении адреса");
@@ -2423,30 +2440,31 @@ public class VisicomFragment extends Fragment {
 
     }
 
-
-
     private void visicomCost() throws MalformedURLException {
         constr2.setVisibility(View.INVISIBLE);
-
+        MainActivity.costMap = null;
         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor cursor = database.rawQuery(query, null);
-        cursor.moveToFirst();
 
-        double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-        double toLat = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-        String start = cursor.getString(cursor.getColumnIndex("start"));
-        String finish = cursor.getString(cursor.getColumnIndex("finish"));
+        if (!cursor.moveToFirst()) {
+            cursor.close();
+            database.close();
+            return;
+        }
 
-        // Закрываем курсор и базу после считывания
+        @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
+        @SuppressLint("Range") double toLat = cursor.getDouble(cursor.getColumnIndex("to_lat"));
+        @SuppressLint("Range") String start = cursor.getString(cursor.getColumnIndex("start"));
+        @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
+
         cursor.close();
         database.close();
 
         String cityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
 
-        Logger.d(context, TAG, "orderCost1 " + cityCheckActivity);
-        Logger.d(context, TAG, "orderCost1 " + originLatitude);
-        Logger.d(context, TAG, "orderCost1 " + toLat);
+        Logger.d(context, TAG, "orderCost1 cityCheckActivity=" + cityCheckActivity);
+        Logger.d(context, TAG, "orderCost1 origin=" + originLatitude + ", to=" + toLat);
 
         if (cityCheckActivity.equals("run") && originLatitude != 0.0 && toLat != 0.0) {
             progressBar.setVisibility(VISIBLE);
@@ -2459,69 +2477,74 @@ public class VisicomFragment extends Fragment {
             textwhere.setVisibility(VISIBLE);
             num2.setVisibility(VISIBLE);
             textViewTo.setVisibility(VISIBLE);
+            MainActivity.costMap = null;
+            btnVisible(INVISIBLE);
 
-            // Асинхронная проверка blacklist
-            verifyOrderAsync(context, black_list_yes -> {
-                sharedPreferencesHelperMain.saveValue("black_list", String.valueOf(black_list_yes));
+            verifyOrderAsync(context, blackListYes -> {
+                sharedPreferencesHelperMain.saveValue("black_list", String.valueOf(blackListYes));
 
-                String black_list_city = sharedPreferencesHelperMain.getValue("black_list", "cache").toString();
-                Log.d("black_list_city", "black_list_city 1 " + black_list_city);
+                String blackListCity = sharedPreferencesHelperMain.getValue("black_list", "cache").toString();
+                Log.d("black_list_city", "black_list_city 1 " + blackListCity);
 
-                Handler handler = new Handler(Looper.getMainLooper());
-                new Thread(() -> {
-                    String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context, black_list_yes);
+                String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context, blackListYes);
+                Logger.d(context, TAG, "orderCost1 URL: " + urlCost);
 
-                    Logger.d(context, TAG, "orderCost1 " + urlCost);
+                CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
+                try {
+                    parser.sendURL(urlCost, new Callback<>() {
+                        @Override
+                        public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                            // Обновляем UI только на главном потоке:
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                if (!isAdded() || binding == null) return;
 
-                    CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
-                    try {
-                        parser.sendURL(urlCost, new Callback<>() {
-                            @Override
-                            public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
-                                handler.post(() -> {
-                                    if (isAdded() && binding != null) {
-                                        geoText.setText(start);
-                                        if (finish.trim().equals(start.trim())) {
-                                            binding.textTo.setText("");
-                                        } else {
-                                            binding.textTo.setText(finish);
-                                        }
+                                geoText.setText(start);
+                                if (finish.trim().equals(start.trim())) {
+                                    binding.textTo.setText("");
+                                } else {
+                                    binding.textTo.setText(finish);
+                                }
 
-                                        Map<String, String> sendUrlMapCost = response.body();
-                                        assert sendUrlMapCost != null;
-                                        Logger.d(context, TAG, "orderCost1 " + sendUrlMapCost);
-                                        String orderCost = sendUrlMapCost.get("order_cost");
+                                Map<String, String> sendUrlMapCost = response.body();
+                                if (sendUrlMapCost == null) return;
 
-                                        if (black_list_yes && "cards only".equals(black_list_city)) {
-                                            orderCost = addCostBlackList(orderCost);
-                                        }
+                                Logger.d(context, TAG, "orderCost1 RESPONSE: " + sendUrlMapCost);
+                                String orderCost = sendUrlMapCost.get("order_cost");
 
-                                        String orderMessage = sendUrlMapCost.get("Message");
-                                        Logger.d(context, TAG, "orderCost1 " + orderMessage);
+                                if (blackListYes && "cards only".equals(blackListCity)) {
+                                    orderCost = addCostBlackList(orderCost);
+                                }
 
-                                        if ("0".equals(orderCost) || "Ошибка создания заказа".equals(orderMessage)) {
-                                            binding.textViewCost.setText("");
-                                        } else {
-                                            applyDiscountAndUpdateUI(orderCost, context);
-                                            binding.linearLayoutButtons.setVisibility(View.VISIBLE);
-                                        }
+                                String orderMessage = sendUrlMapCost.get("Message");
+                                Logger.d(context, TAG, "orderCost1 MESSAGE: " + orderMessage);
+
+                                if ("0".equals(orderCost) || "Ошибка создания заказа".equals(orderMessage)) {
+                                    binding.textViewCost.setText("");
+                                } else {
+                                    if(costMap != null) {
+                                        applyDiscountAndUpdateUI(orderCost, context);
+                                        binding.linearLayoutButtons.setVisibility(View.VISIBLE);
                                     }
-                                });
-                            }
 
-                            @Override
-                            public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
-                                handler.post(() -> {
-                                    btnVisible(VISIBLE);
-                                    FirebaseCrashlytics.getInstance().recordException(t);
-                                    Toast.makeText(context, context.getString(R.string.server_error_connected), Toast.LENGTH_SHORT).show();
-                                });
-                            }
-                        });
-                    } catch (MalformedURLException e) {
-                        throw new RuntimeException(e);
-                    }
-                }).start();
+                                }
+
+                                progressBar.setVisibility(View.GONE);
+                            });
+                        }
+
+                        @Override
+                        public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                btnVisible(VISIBLE);
+                                FirebaseCrashlytics.getInstance().recordException(t);
+                                Toast.makeText(context, context.getString(R.string.server_error_connected), Toast.LENGTH_SHORT).show();
+                                progressBar.setVisibility(View.GONE);
+                            });
+                        }
+                    });
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                }
             });
         } else {
             sharedPreferencesHelperMain.saveValue("CityCheckActivity", "**");
@@ -2529,8 +2552,6 @@ public class VisicomFragment extends Fragment {
             navController.navigate(R.id.nav_anr, null, new NavOptions.Builder().build());
         }
     }
-
-
 
     private void clearTABLE_SERVICE_INFO () {
         String[] arrayServiceCode = DataArr.arrayServiceCode();

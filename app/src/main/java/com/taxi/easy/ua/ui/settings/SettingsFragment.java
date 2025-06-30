@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.ui.settings;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.taxi.easy.ua.MainActivity.button1;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -37,7 +38,7 @@ public class SettingsFragment extends Fragment {
         FragmentSettingsBinding binding = FragmentSettingsBinding.inflate(inflater, container, false);
 
         View root = binding.getRoot();
-
+        button1.setVisibility(View.VISIBLE);
         // Настройка выпадающего списка
         Spinner languageSpinner = binding.languageSpinner;
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(

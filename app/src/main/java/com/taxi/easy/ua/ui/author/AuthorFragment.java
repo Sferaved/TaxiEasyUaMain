@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.ui.author;
 
+import static com.taxi.easy.ua.MainActivity.button1;
+
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -28,7 +30,7 @@ public class AuthorFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
-
+        button1.setVisibility(View.VISIBLE);
         AuthorViewModel authorViewModel =
                 new ViewModelProvider(this).get(AuthorViewModel.class);
 

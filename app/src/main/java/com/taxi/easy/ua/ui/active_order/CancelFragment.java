@@ -2,6 +2,7 @@ package com.taxi.easy.ua.ui.active_order;
 
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.VISIBLE;
+import static com.taxi.easy.ua.MainActivity.button1;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -91,7 +92,7 @@ public class CancelFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
-
+        button1.setVisibility(View.VISIBLE);
         binding = FragmentCancelBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
         context = requireActivity();

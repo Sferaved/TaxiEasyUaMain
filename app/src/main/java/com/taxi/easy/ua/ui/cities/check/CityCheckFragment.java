@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.ui.cities.check;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.taxi.easy.ua.MainActivity.button1;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -101,7 +102,7 @@ public class CityCheckFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentCityCheckBinding.inflate(inflater, container, false);
         root = binding.getRoot();
-  
+        button1.setVisibility(View.VISIBLE);
         sharedPreferencesHelper = new SharedPreferencesHelper(requireActivity());
         sharedPreferencesHelperMain.saveValue("visible_shed", "ok");
 

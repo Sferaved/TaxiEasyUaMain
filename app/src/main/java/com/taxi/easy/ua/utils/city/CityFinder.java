@@ -176,7 +176,7 @@ public class CityFinder {
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         city = stringList.get(1);
 
-        if(!city.equals(cityResult)) {
+//        if(!city.equals(cityResult)) {
             sharedPreferencesHelperMain.saveValue("setStatusX", false);
             Log.d(TAG, "City: " + city);
             Log.d(TAG, "cityResult: " + cityResult);
@@ -352,7 +352,7 @@ public class CityFinder {
                     position
             );
 
-        }
+//        }
 
     }
     private void updateMyPosition(
@@ -443,14 +443,19 @@ public class CityFinder {
         sharedPreferencesHelperMain.saveValue("comment", "no_comment");
         sharedPreferencesHelperMain.saveValue("tarif", " ");
         sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
-
+        MainActivity.costMap = null;
+//        if (context instanceof Activity) {
+//            ((Activity) context).finish();
+//        }
+//
 //        Intent intent = new Intent(context, MainActivity.class);
 //        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-//        context.startActivity(intent);
+//        getCurrentActivity().startActivity(intent);
         NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
         navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                 .setPopUpTo(R.id.nav_visicom, true)
                 .build());
+
     }
     private void clearTABLE_SERVICE_INFO () {
         String[] arrayServiceCode = DataArr.arrayServiceCode();
@@ -470,8 +475,8 @@ public class CityFinder {
 
         cv.put("startLat", Double.parseDouble(settings.get(0)));
         cv.put("startLan", Double.parseDouble(settings.get(1)));
-        cv.put("to_lat", Double.parseDouble(settings.get(2)));
-        cv.put("to_lng", Double.parseDouble(settings.get(3)));
+        cv.put("to_lat", Double.parseDouble(settings.get(0)));
+        cv.put("to_lng", Double.parseDouble(settings.get(1)));
         cv.put("start", settings.get(4));
         cv.put("finish", settings.get(5));
 
@@ -580,7 +585,7 @@ public class CityFinder {
                 Logger.d(context, TAG, "onResponse: " + response.body());
                 if (response.isSuccessful() && response.body() != null) {
                     CallbackResponseWfp callbackResponse = response.body();
-                    if (callbackResponse != null) {
+
                         List<CardInfo> cards = callbackResponse.getCards();
                         Logger.d(context, TAG, "onResponse: cards" + cards);
                         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -617,7 +622,7 @@ public class CityFinder {
 
                             database.close();
                         }
-                    }
+
 
                 }
             }
@@ -689,7 +694,6 @@ public class CityFinder {
             public void onResponse(@NonNull Call<CountryResponse> call, @NonNull Response<CountryResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     CountryResponse countryResponse = response.body();
-                    assert countryResponse != null;
                     Logger.d(context, TAG, "onResponse:countryResponse.getCountry(); " + countryResponse.getCountry());
                     countryState = countryResponse.getCountry();
                 } else {

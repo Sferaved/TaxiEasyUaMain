@@ -1,5 +1,6 @@
 package com.taxi.easy.ua.ui.about;
 
+import static com.taxi.easy.ua.MainActivity.button1;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -36,7 +37,7 @@ public class AboutFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
-
+        button1.setVisibility(View.VISIBLE);
         AboutViewModel aboutViewModel =
                 new ViewModelProvider(this).get(AboutViewModel.class);
 

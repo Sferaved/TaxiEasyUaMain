@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.ui.card;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.taxi.easy.ua.MainActivity.button1;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -86,7 +87,7 @@ public class CardFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
-
+        button1.setVisibility(View.VISIBLE);
         binding = FragmentCardBinding.inflate(inflater, container, false);
         root = binding.getRoot();
 

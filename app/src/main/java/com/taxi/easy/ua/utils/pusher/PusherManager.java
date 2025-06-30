@@ -345,25 +345,25 @@ public class PusherManager {
         });
         // Получение стоимости
 //        channel.bind(eventCanceled, event -> {
-//        bindEvent(eventOrderCost, event -> {
-//            Logger.d(context,"Pusher eventOrderCost", "Received event: " + event.toString());
-//            MainActivity.costMap = null;
-//            try {
-//                JSONObject eventData = new JSONObject(event.getData());
-//                String order_cost = eventData.getString("order_cost");
-//                Logger.d(context,"Pusher eventOrderCost", "order_cost: " + order_cost);
-//
-//                Map<String, String> eventValues = new HashMap<>();
-//                // Добавляем данные в Map
-//                eventValues.put("order_cost", eventData.optString("order_cost", "0"));
-//
-//                MainActivity.costMap = eventValues;
-//
-//            } catch(JSONException e){
-//                    Logger.e(context,"Pusher eventOrderCost", "JSON Parsing error for event: " + event.getData() +  e);
-//            }
-//
-//        });
+        bindEvent(eventOrderCost, event -> {
+            Logger.d(context,"Pusher eventOrderCost", "Received event: " + event.toString());
+            MainActivity.costMap = null;
+            try {
+                JSONObject eventData = new JSONObject(event.getData());
+                String order_cost = eventData.getString("order_cost");
+                Logger.d(context,"Pusher eventOrderCost", "order_cost: " + order_cost);
+
+                Map<String, String> eventValues = new HashMap<>();
+                // Добавляем данные в Map
+                eventValues.put("order_cost", eventData.optString("order_cost", "0"));
+
+                MainActivity.costMap = eventValues;
+
+            } catch(JSONException e){
+                    Logger.e(context,"Pusher eventOrderCost", "JSON Parsing error for event: " + event.getData() +  e);
+            }
+
+        });
 
         bindEvent(eventBlackUserStatus, event -> {
             Logger.d(context,"Pusher eventBlackUserStatus", "Received event: " + event.toString());

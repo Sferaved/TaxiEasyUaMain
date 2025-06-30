@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.ui.history;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.taxi.easy.ua.MainActivity.button1;
 import static com.taxi.easy.ua.MainActivity.supportEmail;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
@@ -83,7 +84,7 @@ public class HistoryFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
-
+        button1.setVisibility(View.VISIBLE);
         binding = FragmentHistoryBinding.inflate(inflater, container, false);
 
         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {

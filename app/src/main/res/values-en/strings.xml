@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.829</string>
-    <string name="version">Version: 1.829</string>
+    <string name="version_code">1.830</string>
+    <string name="version">Version: 1.830</string>
 
     <string name="app_name">Taxi Dostavka</string>
 
@@ -526,4 +526,5 @@
     <string name="check_permition">Please enable geolocation or grant permission to access your location.</string>
     <string name="map_loading">The map is still loading...</string>
     <string name="cost_error">Error creating order. Try changing the address or dial the operator</string>
+    <string name="google_maps">Google Maps not installed</string>
 </resources>

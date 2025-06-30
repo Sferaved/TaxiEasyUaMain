@@ -97,7 +97,7 @@ public class CostJSONParserRetrofit {
                         activeCall.cancel(); // Прерываем запрос
                         Log.d("API_CALL", "HTTP-запрос прерван из-за события.");
                     }
-                    callback.onResponse(null, Response.success(costMap));
+                    callback.onResponse(call, Response.success(costMap));
                 }
                 try {
                     Thread.sleep(100); // Ожидание события с минимальной задержкой
