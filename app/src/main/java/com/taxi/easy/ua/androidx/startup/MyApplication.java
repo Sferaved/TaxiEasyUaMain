@@ -306,10 +306,11 @@ public class MyApplication extends Application {
                             FirebaseCrashlytics.getInstance().recordException(e); // Записываем ошибку в Crashlytics
                             showNotification(context); // Fallback на уведомление
                         }
-                    } else {
-                        // Контекст не является активностью или активность завершена, показываем уведомление
-                        showNotification(context);
                     }
+//                    else {
+//                        // Контекст не является активностью или активность завершена, показываем уведомление
+//                        showNotification(context);
+//                    }
                 })
                 .start();
     }
