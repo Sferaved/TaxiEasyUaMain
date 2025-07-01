@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.annotations.SerializedName;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -81,6 +82,7 @@ public class FromJSONParserRetrofit {
             // Создание экземпляра OkHttpClient с таймаутом
 
             OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                    .addInterceptor(new RetryInterceptor())
                     .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
                     .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
                     .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных

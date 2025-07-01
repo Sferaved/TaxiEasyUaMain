@@ -61,6 +61,7 @@ import com.taxi.easy.ua.ui.wfp.purchase.PurchaseService;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.uxcam.UXCam;
 
@@ -251,6 +252,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
                 .addInterceptor(interceptor)
                 .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
                 .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
@@ -331,6 +333,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
                 .addInterceptor(interceptor)
                 .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
                 .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных

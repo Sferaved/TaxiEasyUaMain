@@ -7,6 +7,8 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
+
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +34,7 @@ public class CostJSONParserRetrofit {
 
         // Создание клиента OkHttpClient с подключенным логгером
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+        httpClient.addInterceptor(new RetryInterceptor()); // 3 попытки
         httpClient.addInterceptor(loggingInterceptor);
         httpClient.connectTimeout(60, TimeUnit.SECONDS); // Тайм-аут для соединения
         httpClient.readTimeout(60, TimeUnit.SECONDS);    // Тайм-аут для чтения

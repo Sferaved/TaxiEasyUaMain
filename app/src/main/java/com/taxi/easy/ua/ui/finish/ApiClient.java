@@ -4,6 +4,7 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import java.util.concurrent.TimeUnit;
 
@@ -24,6 +25,8 @@ public class ApiClient {
         loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor()) // 3 попытки
+                .addInterceptor(loggingInterceptor)
                 .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут подключения
                 .writeTimeout(30, TimeUnit.SECONDS)  // Тайм-аут записи
                 .readTimeout(30, TimeUnit.SECONDS)   // Тайм-аут чтения

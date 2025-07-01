@@ -95,7 +95,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                         dismiss();
                         break;
                     case "visicom":
-                        VisicomFragment.btnVisible(View.INVISIBLE);
+                        VisicomFragment.btnStaticVisible(View.INVISIBLE);
                         VisicomFragment.btnOrder.performClick();
                         dismiss();
                         break;
@@ -152,7 +152,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         if (!verifyPhone()) {
             switch (page) {
                 case "visicom":
-                    VisicomFragment.btnVisible(View.VISIBLE);
+                    VisicomFragment.btnStaticVisible(View.VISIBLE);
                     break;
                 case "home":
                     HomeFragment.btnVisible(View.VISIBLE);

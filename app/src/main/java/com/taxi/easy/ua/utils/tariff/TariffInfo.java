@@ -7,6 +7,7 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import java.util.List;
 
@@ -38,6 +39,7 @@ public class TariffInfo {
 
         // Создание клиента OkHttpClient с подключенным логгером
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+        httpClient.addInterceptor(new RetryInterceptor());
         httpClient.addInterceptor(loggingInterceptor);
         String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") +"/" + MainActivity.api + "/android/";
         Retrofit retrofit = new Retrofit.Builder()

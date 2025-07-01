@@ -62,6 +62,7 @@ import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
@@ -1268,6 +1269,7 @@ public class CacheOrderFragment extends Fragment {
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor()) // 3 попытки
                 .addInterceptor(interceptor)
                 .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
                 .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных

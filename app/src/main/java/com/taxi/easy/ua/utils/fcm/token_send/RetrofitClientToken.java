@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.utils.fcm.token_send;
 
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
+
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
@@ -17,8 +19,8 @@ public class RetrofitClientToken {
             loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
             OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+            httpClient.addInterceptor(new RetryInterceptor());
             httpClient.addInterceptor(loggingInterceptor);
-
 
             retrofit = new Retrofit.Builder()
                     .baseUrl(baseUrl)

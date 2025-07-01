@@ -37,6 +37,7 @@ import com.taxi.easy.ua.ui.wfp.purchase.PurchaseService;
 import com.taxi.easy.ua.utils.hold.APIHoldService;
 import com.taxi.easy.ua.utils.hold.HoldResponse;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.uxcam.UXCam;
 
 import java.util.ArrayList;
@@ -344,6 +345,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
                 .addInterceptor(interceptor)
                 .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
                 .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
@@ -426,18 +428,19 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         // Создание клиента OkHttpClient с подключенным логгером
-        OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
-        httpClient.addInterceptor(loggingInterceptor);
-        httpClient.connectTimeout(60, TimeUnit.SECONDS); // Тайм-аут для соединения
-        httpClient.readTimeout(60, TimeUnit.SECONDS);    // Тайм-аут для чтения
-        httpClient.writeTimeout(60, TimeUnit.SECONDS);   // Тайм-аут для записи
-
+        OkHttpClient httpClient = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
+                .addInterceptor(loggingInterceptor)
+                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
+                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
+                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
+                .build();
         String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
-                .client(httpClient.build()) // Подключение клиента OkHttpClient с логгером
+                .client(httpClient) // Подключение клиента OkHttpClient с логгером
                 .build();
 
 

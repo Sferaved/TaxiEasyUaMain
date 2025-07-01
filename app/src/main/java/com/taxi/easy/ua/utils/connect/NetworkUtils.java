@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 
 import com.taxi.easy.ua.ui.finish.ApiService;
 import com.taxi.easy.ua.ui.finish.Status;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import java.util.concurrent.TimeUnit;
 
@@ -49,6 +50,7 @@ public class NetworkUtils {
     public static void isInternetStable(ApiCallback callback) {
 
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .build();

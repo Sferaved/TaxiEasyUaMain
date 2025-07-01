@@ -32,6 +32,7 @@ import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -556,6 +557,7 @@ public class CityFinder {
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
                 .addInterceptor(interceptor)
                 .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
                 .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных

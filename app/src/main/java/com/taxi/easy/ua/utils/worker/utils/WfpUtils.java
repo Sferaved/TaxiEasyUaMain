@@ -16,6 +16,7 @@ import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +42,7 @@ public class WfpUtils {
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
                 .addInterceptor(interceptor)
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)

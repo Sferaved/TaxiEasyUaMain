@@ -4,7 +4,6 @@ package com.taxi.easy.ua.ui.visicom.visicom_search;
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.GONE;
 import static com.taxi.easy.ua.MainActivity.button1;
-import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.Manifest;
@@ -652,7 +651,7 @@ public class VisicomSearchFragment extends Fragment {
                         .build());
             }
 
-            VisicomFragment.btnVisible(View.INVISIBLE);
+
             MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)
                     .build());
@@ -759,7 +758,7 @@ public class VisicomSearchFragment extends Fragment {
         });
         btn_ok.setOnClickListener(v -> {
 
-            NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+            NavController navController = Navigation.findNavController(MyApplication.getCurrentActivity(), R.id.nav_host_fragment_content_main);
             navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)
                     .build());

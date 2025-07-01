@@ -84,14 +84,6 @@
             </intent-filter>
         </activity>
 
-
-
-        <activity android:name=".ui.visicom.visicom_search.ActivityVisicomOnePage"
-            android:exported="true"
-            android:screenOrientation="portrait"
-            tools:ignore="DiscouragedApi,Instantiatable,LockedOrientationActivity"
-            android:theme="@style/Theme.TaxiEasyUa.NoActionBar"  />
-
         <activity android:name="com.taxi.easy.ua.ui.cities.check.CityCheckActivity"
             android:exported="true"
             android:screenOrientation="portrait"

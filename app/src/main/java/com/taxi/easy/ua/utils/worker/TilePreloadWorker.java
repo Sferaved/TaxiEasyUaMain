@@ -17,6 +17,7 @@ import com.google.common.net.HttpHeaders;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.modules.SqlTileWriter;
@@ -176,6 +177,7 @@ public class TilePreloadWorker extends Worker {
         }
         Cache cache = new Cache(httpCacheDir, 10 * 1024 * 1024);
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
                 .cache(cache)
                 .connectTimeout(Duration.ofSeconds(5))
                 .readTimeout(Duration.ofSeconds(5))

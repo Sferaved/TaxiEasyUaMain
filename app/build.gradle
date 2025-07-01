@@ -13,17 +13,17 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1830
-        versionName = '1.830'
+        versionCode = 1831
+        versionName = '1.831'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
-        multiDexEnabled true
+        multiDexEnabled = true
 // порядок элементов списка не имеет значения
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled = false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -33,9 +33,9 @@ android {
     }
 
     compileOptions {
-        coreLibraryDesugaringEnabled true
-        sourceCompatibility JavaVersion.VERSION_21 // Убедитесь, что используется JDK 21 или выше
-        targetCompatibility JavaVersion.VERSION_21 // Или используйте VERSION_23, если у вас JDK 23
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+        coreLibraryDesugaringEnabled = true
     }
     buildFeatures {
         dataBinding = true

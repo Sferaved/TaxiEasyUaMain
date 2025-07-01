@@ -50,6 +50,7 @@ import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.uxcam.UXCam;
 
 import java.util.ArrayList;
@@ -495,6 +496,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
                 .addInterceptor(interceptor)
                 .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
                 .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных

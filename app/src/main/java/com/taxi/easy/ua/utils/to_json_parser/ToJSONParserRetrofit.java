@@ -13,6 +13,7 @@ import com.google.gson.GsonBuilder;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,6 +44,7 @@ public class ToJSONParserRetrofit {
 
 
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
                 .readTimeout(60, TimeUnit.SECONDS)
                 .connectTimeout(60, TimeUnit.SECONDS)
                 .addInterceptor(loggingInterceptor)

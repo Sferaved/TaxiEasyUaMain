@@ -664,7 +664,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                     if (texViewCost != null) {
                         texViewCost.setText(newCost);
                         VisicomFragment.MIN_COST_VALUE = (long) (VisicomFragment.startCost * 0.6);
-                        VisicomFragment.btnVisible(View.VISIBLE);
+                        VisicomFragment.btnStaticVisible(View.VISIBLE);
                     }
 
                 } else {

@@ -3,11 +3,9 @@ package com.taxi.easy.ua.ui.visicom;
 
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.GONE;
-import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.activeCalls;
 import static com.taxi.easy.ua.MainActivity.button1;
-import static com.taxi.easy.ua.MainActivity.costMap;
 import static com.taxi.easy.ua.MainActivity.navController;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
@@ -109,6 +107,7 @@ import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
@@ -190,7 +189,6 @@ public class VisicomFragment extends Fragment {
     public static TextView textfrom;
     @SuppressLint("StaticFieldLeak")
     public static TextView num1;
-    private FusedLocationProviderClient fusedLocationProviderClient;
 
     @SuppressLint("StaticFieldLeak")
     static ConstraintLayout linearLayout;
@@ -401,44 +399,20 @@ public class VisicomFragment extends Fragment {
                     Logger.d(context, TAG, "onResume: 3");
                     firstLocation();
                 } else {
-                    try {
-                        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-                        if (!userEmail.equals("email")) {
-                            visicomCost();
-                            readTariffInfo();
-                        }
-
-                    } catch (MalformedURLException e) {
-                        FirebaseCrashlytics.getInstance().recordException(e);
-
-                        textfrom.setVisibility(VISIBLE);
-                        num1.setVisibility(VISIBLE);
-                        geoText.setVisibility(VISIBLE);
-
-                        binding.textwhere.setVisibility(VISIBLE);
-                        num2.setVisibility(VISIBLE);
-                        textViewTo.setVisibility(VISIBLE);
-                    }
-                }
-            }  else {
-                try {
                     String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
                     if (!userEmail.equals("email")) {
                         visicomCost();
                         readTariffInfo();
                     }
 
-                } catch (MalformedURLException e) {
-                    FirebaseCrashlytics.getInstance().recordException(e);
-
-                    textfrom.setVisibility(VISIBLE);
-                    num1.setVisibility(VISIBLE);
-                    geoText.setVisibility(VISIBLE);
-
-                    binding.textwhere.setVisibility(VISIBLE);
-                    num2.setVisibility(VISIBLE);
-                    textViewTo.setVisibility(VISIBLE);
                 }
+            }  else {
+                String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+                if (!userEmail.equals("email")) {
+                    visicomCost();
+                    readTariffInfo();
+                }
+
             }
 
         });
@@ -720,7 +694,32 @@ public class VisicomFragment extends Fragment {
     }
 
 
-    public static void btnVisible(int visible) {
+    public void btnVisible(int visible) {
+        if (text_view_cost != null) {
+            if (visible == View.INVISIBLE) {
+                binding.progressBar.setVisibility(VISIBLE);
+            } else {
+                binding.progressBar.setVisibility(GONE);
+            }
+
+
+            binding.linearLayoutButtons.setVisibility(visible);
+
+            binding.btnAdd.setVisibility(visible);
+
+            binding.btnBonus.setVisibility(visible);
+            binding.btnMinus.setVisibility(visible);
+            binding.textViewCost.setVisibility(visible);
+            binding.btnPlus.setVisibility(visible);
+            binding.btnOrder.setVisibility(visible);
+
+            binding.schedule.setVisibility(visible);
+
+            binding.shedDown.setVisibility(visible);
+        }
+    }
+
+    public static void btnStaticVisible(int visible) {
         if (text_view_cost != null) {
             if (visible == View.INVISIBLE) {
                 progressBar.setVisibility(VISIBLE);
@@ -738,6 +737,7 @@ public class VisicomFragment extends Fragment {
             text_view_cost.setVisibility(visible);
             btn_plus.setVisibility(visible);
             btnOrder.setVisibility(visible);
+
 
             schedule.setVisibility(visible);
 
@@ -1079,14 +1079,10 @@ public class VisicomFragment extends Fragment {
                     new String[]{"1"});
             database.close();
 
-            try {
-                String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-                if (!userEmail.equals("email")) {
-                    visicomCost();
-                    readTariffInfo();
-                }
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
+            String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+            if (!userEmail.equals("email")) {
+                visicomCost();
+                readTariffInfo();
             }
 
             frame_1.setBackgroundResource(R.drawable.input);
@@ -1111,14 +1107,10 @@ public class VisicomFragment extends Fragment {
                         new String[]{"1"});
                 database.close();
 
-                try {
-                    String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-                    if (!userEmail.equals("email")) {
-                        visicomCost();
-                        readTariffInfo();
-                    }
-                } catch (MalformedURLException e) {
-                    throw new RuntimeException(e);
+                String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+                if (!userEmail.equals("email")) {
+                    visicomCost();
+                    readTariffInfo();
                 }
                 frame_1.setBackgroundResource(R.drawable.buttons);
                 frame_2.setBackgroundResource(R.drawable.input);
@@ -1142,14 +1134,10 @@ public class VisicomFragment extends Fragment {
                         new String[]{"1"});
                 database.close();
 
-                try {
-                    String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-                    if (!userEmail.equals("email")) {
-                        visicomCost();
-                        readTariffInfo();
-                    }
-                } catch (MalformedURLException e) {
-                    throw new RuntimeException(e);
+                String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+                if (!userEmail.equals("email")) {
+                    visicomCost();
+                    readTariffInfo();
                 }
                 frame_1.setBackgroundResource(R.drawable.buttons);
                 frame_2.setBackgroundResource(R.drawable.buttons);
@@ -1958,11 +1946,7 @@ public class VisicomFragment extends Fragment {
 
         binding.clearButtonTo.setOnClickListener(v -> {
             updateRouteSettings();
-            try {
-                visicomCost();
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
-            }
+            visicomCost();
             textViewTo.setText("");
         });
 
@@ -2166,24 +2150,12 @@ public class VisicomFragment extends Fragment {
                 num1.setVisibility(View.INVISIBLE);
                 binding.textwhere.setVisibility(View.INVISIBLE);
             }
-            try {
-                String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-                if (!userEmail.equals("email")) {
-                    visicomCost();
-                    readTariffInfo();
-                }
-
-            } catch (MalformedURLException e) {
-                FirebaseCrashlytics.getInstance().recordException(e);
-
-                textfrom.setVisibility(VISIBLE);
-                num1.setVisibility(VISIBLE);
-                geoText.setVisibility(VISIBLE);
-
-                binding.textwhere.setVisibility(VISIBLE);
-                num2.setVisibility(VISIBLE);
-                textViewTo.setVisibility(VISIBLE);
+            String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+            if (!userEmail.equals("email")) {
+                visicomCost();
+                readTariffInfo();
             }
+
         } else {
             binding.textwhere.setVisibility(View.INVISIBLE);
             progressBar.setVisibility(GONE);
@@ -2308,7 +2280,7 @@ public class VisicomFragment extends Fragment {
 
         Toast.makeText(context, context.getString(R.string.search), Toast.LENGTH_SHORT).show();
 
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context);
+        FusedLocationProviderClient fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context);
 
         gpsBtn.setText(R.string.change);
         gpsBtn.setOnClickListener(v1 -> {
@@ -2440,63 +2412,73 @@ public class VisicomFragment extends Fragment {
 
     }
 
-    private void visicomCost() throws MalformedURLException {
+    private void visicomCost() {
+        Logger.d(context, TAG, "=== visicomCost() started ===");
+
         constr2.setVisibility(View.INVISIBLE);
         MainActivity.costMap = null;
-        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+
+        // Получаем координаты маршрута
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
         Cursor cursor = database.rawQuery(query, null);
 
         if (!cursor.moveToFirst()) {
+            Logger.w(context, TAG, "Маршрут не найден — cursor пуст");
             cursor.close();
             database.close();
             return;
         }
 
-        @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-        @SuppressLint("Range") double toLat = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-        @SuppressLint("Range") String start = cursor.getString(cursor.getColumnIndex("start"));
-        @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
+        double originLatitude = cursor.getDouble(cursor.getColumnIndexOrThrow("startLat"));
+        double toLat = cursor.getDouble(cursor.getColumnIndexOrThrow("to_lat"));
+        String start = cursor.getString(cursor.getColumnIndexOrThrow("start"));
+        String finish = cursor.getString(cursor.getColumnIndexOrThrow("finish"));
 
         cursor.close();
         database.close();
 
-        String cityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
+        String cityCheckActivity = String.valueOf(sharedPreferencesHelperMain.getValue("CityCheckActivity", "**"));
 
         Logger.d(context, TAG, "orderCost1 cityCheckActivity=" + cityCheckActivity);
-        Logger.d(context, TAG, "orderCost1 origin=" + originLatitude + ", to=" + toLat);
+        Logger.d(context, TAG, "originLatitude = " + originLatitude + ", toLat = " + toLat);
 
-        if (cityCheckActivity.equals("run") && originLatitude != 0.0 && toLat != 0.0) {
-            progressBar.setVisibility(VISIBLE);
+        // Проверяем необходимость запроса стоимости
+        if ("run".equals(cityCheckActivity) && originLatitude != 0.0 && toLat != 0.0) {
+            progressBar.setVisibility(View.VISIBLE);
             Toast.makeText(context, context.getString(R.string.check_cost_message), Toast.LENGTH_SHORT).show();
+
+            // Показываем элементы интерфейса
             gpsBtn.setVisibility(View.VISIBLE);
             svButton.setVisibility(View.VISIBLE);
             btnCallAdmin.setVisibility(View.VISIBLE);
-            textfrom.setVisibility(VISIBLE);
-            num1.setVisibility(VISIBLE);
-            textwhere.setVisibility(VISIBLE);
-            num2.setVisibility(VISIBLE);
-            textViewTo.setVisibility(VISIBLE);
-            MainActivity.costMap = null;
-            btnVisible(INVISIBLE);
+            textfrom.setVisibility(View.VISIBLE);
+            num1.setVisibility(View.VISIBLE);
+            textwhere.setVisibility(View.VISIBLE);
+            num2.setVisibility(View.VISIBLE);
+            textViewTo.setVisibility(View.VISIBLE);
+            btnVisible(View.INVISIBLE);
 
+            // Асинхронная верификация
             verifyOrderAsync(context, blackListYes -> {
                 sharedPreferencesHelperMain.saveValue("black_list", String.valueOf(blackListYes));
-
-                String blackListCity = sharedPreferencesHelperMain.getValue("black_list", "cache").toString();
-                Log.d("black_list_city", "black_list_city 1 " + blackListCity);
+                String blackListCity = String.valueOf(sharedPreferencesHelperMain.getValue("black_list", "cache"));
+                Logger.d(context, TAG, "blackListYes = " + blackListYes + ", blackListCity = " + blackListCity);
 
                 String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context, blackListYes);
-                Logger.d(context, TAG, "orderCost1 URL: " + urlCost);
+                Logger.d(context, TAG, "cost URL = " + urlCost);
 
                 CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
+
                 try {
                     parser.sendURL(urlCost, new Callback<>() {
                         @Override
                         public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
-                            // Обновляем UI только на главном потоке:
                             new Handler(Looper.getMainLooper()).post(() -> {
-                                if (!isAdded() || binding == null) return;
+                                if (!isAdded() || binding == null) {
+                                    Logger.w(context, TAG, "Фрагмент отсоединён или binding null — выходим");
+                                    return;
+                                }
 
                                 geoText.setText(start);
                                 if (finish.trim().equals(start.trim())) {
@@ -2505,52 +2487,63 @@ public class VisicomFragment extends Fragment {
                                     binding.textTo.setText(finish);
                                 }
 
-                                Map<String, String> sendUrlMapCost = response.body();
-                                if (sendUrlMapCost == null) return;
-
-                                Logger.d(context, TAG, "orderCost1 RESPONSE: " + sendUrlMapCost);
-                                String orderCost = sendUrlMapCost.get("order_cost");
-
-                                if (blackListYes && "cards only".equals(blackListCity)) {
-                                    orderCost = addCostBlackList(orderCost);
+                                Map<String, String> responseMap = response.body();
+                                if (responseMap == null) {
+                                    Logger.e(context, TAG, "Ответ с сервера — null");
+                                    return;
                                 }
 
-                                String orderMessage = sendUrlMapCost.get("Message");
-                                Logger.d(context, TAG, "orderCost1 MESSAGE: " + orderMessage);
+                                Logger.d(context, TAG, "Ответ: " + responseMap);
+                                String orderCost = responseMap.get("order_cost");
+                                String orderMessage = responseMap.get("Message");
 
                                 if ("0".equals(orderCost) || "Ошибка создания заказа".equals(orderMessage)) {
+                                    Logger.w(context, TAG, "Ошибка расчета или нулевая стоимость");
                                     binding.textViewCost.setText("");
+                                    btnVisible(View.VISIBLE);
                                 } else {
-                                    if(costMap != null) {
+                                    if (MainActivity.costMap != null) {
                                         applyDiscountAndUpdateUI(orderCost, context);
-                                        binding.linearLayoutButtons.setVisibility(View.VISIBLE);
+                                    } else {
+                                        btnVisible(View.VISIBLE);
+                                        Logger.w(context, TAG, "costMap = null — обновление UI пропущено");
                                     }
-
                                 }
 
-                                progressBar.setVisibility(View.GONE);
+
                             });
                         }
 
                         @Override
                         public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
                             new Handler(Looper.getMainLooper()).post(() -> {
-                                btnVisible(VISIBLE);
                                 FirebaseCrashlytics.getInstance().recordException(t);
+                                Logger.e(context, TAG, "Ошибка подключения к серверу: " + t.getMessage());
                                 Toast.makeText(context, context.getString(R.string.server_error_connected), Toast.LENGTH_SHORT).show();
-                                progressBar.setVisibility(View.GONE);
+                                btnVisible(View.VISIBLE);
                             });
                         }
                     });
                 } catch (MalformedURLException e) {
+                    btnVisible(View.VISIBLE);
+                    Logger.e(context, TAG, "MalformedURLException: " + e.getMessage());
                     throw new RuntimeException(e);
                 }
             });
+
         } else {
+            // Навигация в случае неудачи
             sharedPreferencesHelperMain.saveValue("CityCheckActivity", "**");
-            NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
-            navController.navigate(R.id.nav_anr, null, new NavOptions.Builder().build());
+
+            try {
+                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(R.id.nav_anr);
+            } catch (Exception e) {
+                Logger.e(context, TAG, "Ошибка навигации: " + e.getMessage());
+            }
         }
+
+        Logger.d(context, TAG, "=== visicomCost() завершён ===");
     }
 
     private void clearTABLE_SERVICE_INFO () {
@@ -2565,26 +2558,41 @@ public class VisicomFragment extends Fragment {
         database.close();
     }
 
-    private static void applyDiscountAndUpdateUI(String orderCost, Context context) {
-        Logger.d(context, TAG, "orderCost1 " + orderCost);
+    private void applyDiscountAndUpdateUI(String orderCost, Context context) {
+        Logger.d(context, TAG, "applyDiscountAndUpdateUI() start — orderCost = " + orderCost);
+
+        if (orderCost == null || !orderCost.matches("\\d+")) {
+            Logger.e(context, TAG, "Invalid orderCost: " + orderCost);
+            return;
+        }
+
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
-        if (discountText.matches("[+-]?\\d+") || discountText.equals("0")) {
-            long discountInt = Integer.parseInt(discountText);
+        Logger.d(context, TAG, "Retrieved discountText = " + discountText);
+
+        if (discountText == null || !(discountText.matches("[+-]?\\d+") || discountText.equals("0"))) {
+            Logger.w(context, TAG, "Invalid or missing discountText: " + discountText);
+            return;
+        }
+
+        try {
+            long discountInt = Long.parseLong(discountText);
             long discount;
 
             firstCost = Long.parseLong(orderCost);
             discount = firstCost * discountInt / 100;
             firstCost = firstCost + discount;
+
+            Logger.d(context, TAG, "Calculated firstCost = " + firstCost + ", discount = " + discount);
+
             updateAddCost(String.valueOf(discount), context);
             text_view_cost.setText(String.valueOf(firstCost));
 
             startCost = firstCost;
             finalCost = firstCost;
-
-
             MIN_COST_VALUE = (long) (firstCost * 0.6);
             firstCostForMin = firstCost;
 
+            Logger.d(context, TAG, "Setting UI visibility and values");
 
             geoText.setVisibility(VISIBLE);
             progressBar.setVisibility(GONE);
@@ -2596,21 +2604,24 @@ public class VisicomFragment extends Fragment {
             textViewTo.setVisibility(VISIBLE);
 
             btnAdd.setVisibility(VISIBLE);
-
             buttonBonus.setVisibility(VISIBLE);
             btn_minus.setVisibility(VISIBLE);
             text_view_cost.setVisibility(VISIBLE);
             btn_plus.setVisibility(VISIBLE);
             btnOrder.setVisibility(VISIBLE);
-
-
             constr2.setVisibility(VISIBLE);
-
             schedule.setVisibility(VISIBLE);
             shed_down.setVisibility(VISIBLE);
 
+            Logger.d(context, TAG, "applyDiscountAndUpdateUI() completed successfully");
+
+        } catch (NumberFormatException e) {
+            Logger.e(context, TAG, "Number parsing failed: " + e.getMessage());
         }
+        btnVisible(View.VISIBLE);
     }
+
+
 
 
 
@@ -2984,6 +2995,7 @@ public class VisicomFragment extends Fragment {
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
                 .addInterceptor(interceptor)
                 .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
                 .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных

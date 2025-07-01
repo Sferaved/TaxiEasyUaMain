@@ -535,7 +535,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
                     String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
                     long discountInt = Integer.parseInt(discountText);
-//                    VisicomFragment.costMap = null;
+
                     CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
                     parser.sendURL(urlCost, new Callback<>() {
                         @Override
@@ -568,7 +568,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                                         Log.d(TAG, "onResponse:costUpdate " + costUpdate);
 
                                         VisicomFragment.text_view_cost.setText(costUpdate);
-                                        VisicomFragment.btnVisible(View.VISIBLE);
+                                        VisicomFragment.btnStaticVisible(View.VISIBLE);
 
                                     });
                                 } else {

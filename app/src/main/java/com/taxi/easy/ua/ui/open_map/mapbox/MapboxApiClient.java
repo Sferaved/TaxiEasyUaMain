@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.ui.open_map.mapbox;
 
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
+
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -18,6 +20,7 @@ public class MapboxApiClient {
 
         // Создаем клиент OkHttp с логгированием
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
                 .addInterceptor(loggingInterceptor)
                 .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
                 .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных

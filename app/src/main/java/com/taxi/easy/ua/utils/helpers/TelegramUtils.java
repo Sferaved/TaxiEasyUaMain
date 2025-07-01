@@ -4,6 +4,8 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
+
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
@@ -48,6 +50,7 @@ public class TelegramUtils {
 
         // Создаем клиент с тайм-аутами
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)

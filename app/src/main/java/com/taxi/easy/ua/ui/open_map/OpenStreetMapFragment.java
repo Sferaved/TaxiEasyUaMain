@@ -75,6 +75,7 @@ import com.taxi.easy.ua.ui.open_map.api.ApiService;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import org.json.JSONException;
 import org.osmdroid.api.IMapController;
@@ -752,6 +753,7 @@ public class OpenStreetMapFragment extends Fragment {
         loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
                 .addInterceptor(loggingInterceptor)
                 .connectTimeout(10, TimeUnit.SECONDS) // Уменьшить таймаут подключения
                 .readTimeout(10, TimeUnit.SECONDS) // Уменьшить таймаут чтения

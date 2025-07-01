@@ -51,6 +51,7 @@ import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.uxcam.UXCam;
 
 import java.util.ArrayList;
@@ -188,6 +189,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor()) // 3 попытки
                 .addInterceptor(interceptor)
                 .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
                 .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
@@ -299,6 +301,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor()) // 3 попытки
                 .addInterceptor(interceptor)
                 .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
                 .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
@@ -370,6 +373,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor()) // 3 попытки
                 .addInterceptor(interceptor)
                 .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
                 .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
@@ -457,6 +461,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor()) // 3 попытки
                 .addInterceptor(interceptor)
                 .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
                 .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных

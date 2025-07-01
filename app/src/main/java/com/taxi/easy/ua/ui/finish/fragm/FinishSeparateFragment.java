@@ -66,6 +66,7 @@ import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.hold.APIHoldService;
 import com.taxi.easy.ua.utils.hold.HoldResponse;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.pusher.events.CanceledStatusEvent;
 import com.taxi.easy.ua.utils.time_ut.TimeUtils;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
@@ -1810,6 +1811,7 @@ public class FinishSeparateFragment extends Fragment {
 
         // Создание клиента OkHttpClient с подключенным логгером
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+        httpClient.addInterceptor(new RetryInterceptor());
         httpClient.addInterceptor(loggingInterceptor);
         httpClient.connectTimeout(60, TimeUnit.SECONDS); // Тайм-аут для соединения
         httpClient.readTimeout(60, TimeUnit.SECONDS);    // Тайм-аут для чтения

@@ -3,6 +3,7 @@ package com.taxi.easy.ua.ui.visicom.visicom_search;
 import android.util.Log;
 
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import java.util.concurrent.TimeUnit;
 
@@ -24,6 +25,7 @@ public class RetrofitClientInstance {
             loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
             OkHttpClient client = new OkHttpClient.Builder()
+                    .addInterceptor(new RetryInterceptor())
                     .addInterceptor(loggingInterceptor)
                     .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
                     .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных

@@ -173,7 +173,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                  textViewInfo.setOnClickListener(view2 -> {
                      dismiss();
 
-                     VisicomFragment.btnVisible(View.VISIBLE);
+                     VisicomFragment.btnStaticVisible(View.VISIBLE);
                      HomeFragment.btnVisible(View.VISIBLE);
                  });
                 btn_ok.setText(getString(R.string.link_card));

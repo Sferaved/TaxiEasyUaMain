@@ -88,6 +88,7 @@ import com.taxi.easy.ua.utils.connect.NetworkMonitor;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
 import com.taxi.easy.ua.utils.pusher.PusherManager;
@@ -1464,6 +1465,7 @@ public class MainActivity extends AppCompatActivity {
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor()) // 3 попытки
                 .addInterceptor(interceptor)
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
