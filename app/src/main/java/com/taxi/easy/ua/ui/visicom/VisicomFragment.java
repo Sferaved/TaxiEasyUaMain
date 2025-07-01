@@ -78,6 +78,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
+import com.google.android.play.core.install.model.AppUpdateType;
+import com.google.android.play.core.install.model.InstallStatus;
 import com.google.android.play.core.install.model.UpdateAvailability;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
@@ -623,14 +625,33 @@ public class VisicomFragment extends Fragment {
         AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(context);
         Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
         appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
-            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
-                // Доступны обновления
-                showUpdateDialog();
-                if (isAdded()) {
-                    Logger.d(MyApplication.getContext(), TAG, "Available updates found");
+            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+                    && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) {
+
+                int installStatus = appUpdateInfo.installStatus();
+
+                if (installStatus == InstallStatus.PENDING || installStatus == InstallStatus.UNKNOWN
+                        || installStatus == InstallStatus.INSTALLED || installStatus == InstallStatus.FAILED
+                        || installStatus == InstallStatus.CANCELED || installStatus == InstallStatus.DOWNLOADED) {
+
+                    // Обновление доступно и можно начинать
+                    showUpdateDialog(); // Показываем диалог или запускаем update flow
+
+                    if (isAdded()) {
+                        Logger.d(MyApplication.getContext(), TAG, "Available updates found and ready to start");
+                    }
+
+                } else {
+                    // Установка уже в процессе (DOWNLOADING или INSTALLING)
+                    Logger.d(MyApplication.getContext(), TAG, "Update already in progress. Skipping start. Status: " + installStatus);
                 }
+
+            } else {
+                Logger.d(MyApplication.getContext(), TAG, "No updates available or type not allowed.");
             }
         });
+
+
 
 
     }

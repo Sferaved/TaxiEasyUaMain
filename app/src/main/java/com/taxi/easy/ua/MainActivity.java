@@ -1081,18 +1081,24 @@ public class MainActivity extends AppCompatActivity {
                     String message = getString(R.string.update_ok);
                     MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
                     bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-
                 } else {
                     if (NetworkUtils.isNetworkAvailable(this)) {
-                        appUpdater = new AppUpdater(
-                                this,
-                                this.getExactAlarmLauncher(),
-                                this.getBatteryOptimizationLauncher()
-                        );
-                        appUpdater.startUpdate();
+                        // 🛡️ Проверка статуса установки
+                        int status = appUpdateInfo.installStatus();
+                        if (status != InstallStatus.DOWNLOADING && status != InstallStatus.INSTALLING) {
+                            appUpdater = new AppUpdater(
+                                    this,
+                                    this.getExactAlarmLauncher(),
+                                    this.getBatteryOptimizationLauncher()
+                            );
+                            appUpdater.startUpdate();
+                        } else {
+                            Logger.d(MyApplication.getContext(), TAG, "Update already in progress. Skipping restart.");
+                        }
                     }
                 }
             });
+
 
 
 
@@ -1867,15 +1873,22 @@ public class MainActivity extends AppCompatActivity {
         Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
         appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
             if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
-                // Доступны обновления
-                Logger.d(MyApplication.getContext(), TAG, "Available updates found");
-                String title = MyApplication.getContext().getString(R.string.new_version);
-                String messageNotif = MyApplication.getContext().getString(R.string.news_of_version);
+                // Проверяем, не идёт ли уже установка
+                int status = appUpdateInfo.installStatus();
+                if (status != InstallStatus.DOWNLOADING && status != InstallStatus.INSTALLING) {
+                    Logger.d(MyApplication.getContext(), TAG, "Available updates found");
 
-                String urlStr = "https://play.google.com/store/apps/details?id=com.taxi.easy.ua";
-                NotificationHelper.showNotification(MyApplication.getContext(), title, messageNotif, urlStr);
+                    String title = MyApplication.getContext().getString(R.string.new_version);
+                    String messageNotif = MyApplication.getContext().getString(R.string.news_of_version);
+                    String urlStr = "https://play.google.com/store/apps/details?id=com.taxi.easy.ua";
+
+                    NotificationHelper.showNotification(MyApplication.getContext(), title, messageNotif, urlStr);
+                } else {
+                    Logger.d(MyApplication.getContext(), TAG, "Update is already in progress. Notification skipped.");
+                }
             }
         });
+
     }
     @Override
     protected void onPause() {
