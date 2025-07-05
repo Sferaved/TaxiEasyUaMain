@@ -20,31 +20,18 @@ import androidx.navigation.Navigation;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.card.CardInfo;
-import com.taxi.easy.ua.ui.cities.api.CityApiClient;
-import com.taxi.easy.ua.ui.cities.api.CityService;
-import com.taxi.easy.ua.ui.payment_system.PayApi;
-import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
-import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
-import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.log.Logger;
-import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 public class CityFinder {
     private static final String TAG = "CityFinder";
@@ -390,7 +377,6 @@ public class CityFinder {
                 sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
                 break;
             case "OdessaTest":
-//                sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
                 sharedPreferencesHelperMain.saveValue("baseUrl", "https://t.easy-order-taxi.site");
                 break;
             default:
@@ -398,36 +384,42 @@ public class CityFinder {
                 city = "foreign countries";
         }
 
+        List<String> stringList = logCursor(MainActivity.CITY_INFO);
+        String cityOld = stringList.get(1);
 
-//        pay_system(city);
+        if(!city.equals(cityOld)) {
 
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
-        ContentValues cv = new ContentValues();
+            ContentValues cv = new ContentValues();
 
-        cv.put("city", city);
-        cv.put("phone", phoneNumber);
-        database.update(MainActivity.CITY_INFO, cv, "id = ?", new String[]{"1"});
+            cv.put("city", city);
+            cv.put("phone", phoneNumber);
+            database.update(MainActivity.CITY_INFO, cv, "id = ?", new String[]{"1"});
 
-        cv = new ContentValues();
-        cv.put("startLat", startLat);
-        cv.put("startLan", startLan);
-        cv.put("position", position);
-        database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
-                new String[] { "1" });
+            cv = new ContentValues();
+            cv.put("startLat", startLat);
+            cv.put("startLan", startLan);
+            cv.put("position", position);
+            database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
+                    new String[]{"1"});
 
-        cv = new ContentValues();
-        cv.put("tarif", " ");
-        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                new String[] { "1" });
+            cv = new ContentValues();
+            cv.put("tarif", " ");
+            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                    new String[]{"1"});
 
-        cv = new ContentValues();
-        cv.put("payment_type", "nal_payment");
+            cv = new ContentValues();
+            cv.put("payment_type", "nal_payment");
 
-        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                new String[] { "1" });
-        database.close();
-
+            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                    new String[]{"1"});
+            database.close();
+            sharedPreferencesHelperMain.saveValue("time", "no_time");
+            sharedPreferencesHelperMain.saveValue("date", "no_date");
+            sharedPreferencesHelperMain.saveValue("comment", "no_comment");
+            sharedPreferencesHelperMain.saveValue("tarif", " ");
+        }
         List<String> settings = new ArrayList<>();
 
         settings.add(Double.toString(startLat));
@@ -439,19 +431,10 @@ public class CityFinder {
 
         updateRoutMarker(settings);
         clearTABLE_SERVICE_INFO();
-        sharedPreferencesHelperMain.saveValue("time", "no_time");
-        sharedPreferencesHelperMain.saveValue("date", "no_date");
-        sharedPreferencesHelperMain.saveValue("comment", "no_comment");
-        sharedPreferencesHelperMain.saveValue("tarif", " ");
+
         sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
-        MainActivity.costMap = null;
-//        if (context instanceof Activity) {
-//            ((Activity) context).finish();
-//        }
-//
-//        Intent intent = new Intent(context, MainActivity.class);
-//        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-//        getCurrentActivity().startActivity(intent);
+
+
         NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
         navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                 .setPopUpTo(R.id.nav_visicom, true)
@@ -488,201 +471,7 @@ public class CityFinder {
         database.close();
     }
 
-    private void pay_system(String city) {
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
 
-        PayApi apiService = retrofit.create(PayApi.class);
-        Call<ResponsePaySystem> call = apiService.getPaySystem();
-        call.enqueue(new Callback<ResponsePaySystem>() {
-            @Override
-            public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    // Обработка успешного ответа
-                    ResponsePaySystem responsePaySystem = response.body();
-                    assert responsePaySystem != null;
-                    String paymentCode = responsePaySystem.getPay_system();
-
-                    switch (paymentCode) {
-                        case "wfp":
-                            pay_method = "wfp_payment";
-                            cityMaxPay(city);
-                            Logger.d(context, TAG, "2");
-                            getCardTokenWfp(city);
-                            break;
-//                        case "fondy":
-//                            pay_method = "fondy_payment";
-//                            cityMaxPay(cityCodeNew);
-//                            Logger.d(context, TAG, "3");
-//                            merchantFondy(cityCodeNew, context);
-//                            break;
-//                        case "mono":
-//                            pay_method = "mono_payment";
-//                            break;
-                    }
-
-                        ContentValues cv = new ContentValues();
-                        cv.put("payment_type", pay_method);
-                        // обновляем по id
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                                new String[] { "1" });
-                        database.close();
-
-                    }
-
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
-                FirebaseCrashlytics.getInstance().recordException(t);
-                Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
-
-            }
-        });
-    }
-
-    private void getCardTokenWfp(String city) {
-        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        database.execSQL("DELETE FROM " + tableName + ";");
-        database.close();
-
-
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor())
-                .addInterceptor(interceptor)
-                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
-                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
-                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
-                .build();
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
-
-        // Создайте сервис
-        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
-        Logger.d(context, TAG, "getCardTokenWfp: ");
-        String email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
-        // Выполните запрос
-        Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
-                context.getString(R.string.application),
-                city,
-                email,
-                "wfp"
-        );
-        call.enqueue(new Callback<CallbackResponseWfp>() {
-            @Override
-            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
-                Logger.d(context, TAG, "onResponse: " + response.body());
-                if (response.isSuccessful() && response.body() != null) {
-                    CallbackResponseWfp callbackResponse = response.body();
-
-                        List<CardInfo> cards = callbackResponse.getCards();
-                        Logger.d(context, TAG, "onResponse: cards" + cards);
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
-                        if (cards != null && !cards.isEmpty()) {
-                            for (CardInfo cardInfo : cards) {
-                                String masked_card = cardInfo.getMasked_card(); // Маска карты
-                                String card_type = cardInfo.getCard_type(); // Тип карты
-                                String bank_name = cardInfo.getBank_name(); // Название банка
-                                String rectoken = cardInfo.getRectoken(); // Токен карты
-                                String merchant = cardInfo.getMerchant(); // Токен карты
-
-                                Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
-                                ContentValues cv = new ContentValues();
-                                cv.put("masked_card", masked_card);
-                                cv.put("card_type", card_type);
-                                cv.put("bank_name", bank_name);
-                                cv.put("rectoken", rectoken);
-                                cv.put("merchant", merchant);
-                                cv.put("rectoken_check", "0");
-                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
-                            }
-                            Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_WFP_CARDS + " ORDER BY id DESC LIMIT 1", null);
-                            if (cursor.moveToFirst()) {
-                                // Получаем значение ID последней записи
-                                @SuppressLint("Range") int lastId = cursor.getInt(cursor.getColumnIndex("id"));
-                                cursor.close();
-
-                                // Обновляем строку с найденным ID
-                                ContentValues cv = new ContentValues();
-                                cv.put("rectoken_check", "1");
-                                database.update(MainActivity.TABLE_WFP_CARDS, cv, "id = ?", new String[] { String.valueOf(lastId) });
-                            }
-
-                            database.close();
-                        }
-
-
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
-                // Обработка ошибки запроса
-                FirebaseCrashlytics.getInstance().recordException(t);
-                Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
-
-            }
-        });
-    }
-
-    private void cityMaxPay(String city) {
-
-
-        String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-        CityApiClient cityApiClient = new CityApiClient(BASE_URL);
-        CityService cityService = cityApiClient.getClient().create(CityService.class);
-
-        // Замените "your_city" на фактическое название города
-        Call<com.taxi.easy.ua.ui.cities.api.CityResponse> call = cityService.getMaxPayValues(city, context.getString(R.string.application));
-
-        call.enqueue(new Callback<com.taxi.easy.ua.ui.cities.api.CityResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<com.taxi.easy.ua.ui.cities.api.CityResponse> call, @NonNull Response<com.taxi.easy.ua.ui.cities.api.CityResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    com.taxi.easy.ua.ui.cities.api.CityResponse cityResponse = response.body();
-                    if (cityResponse != null) {
-                        int cardMaxPay = cityResponse.getCardMaxPay();
-                        int bonusMaxPay = cityResponse.getBonusMaxPay();
-                        String black_list = cityResponse.getBlack_list();
-
-                        ContentValues cv = new ContentValues();
-                        cv.put("card_max_pay", cardMaxPay);
-                        cv.put("bonus_max_pay", bonusMaxPay);
-                        sharedPreferencesHelperMain.saveValue("black_list", black_list);
-                        Logger.d(context, TAG, "black_list 2" + black_list);
-
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        database.update(MainActivity.CITY_INFO, cv, "id = ?",
-                                new String[]{"1"});
-
-                        database.close();
-                    }
-                } else {
-                    Logger.d(context, TAG, "Failed. Error code: " + response.code());
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<com.taxi.easy.ua.ui.cities.api.CityResponse> call, @NonNull Throwable t) {
-                FirebaseCrashlytics.getInstance().recordException(t);
-                Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
-            }
-        });
-    }
 
     public void getPublicIPAddress() {
         getCountryByIP();

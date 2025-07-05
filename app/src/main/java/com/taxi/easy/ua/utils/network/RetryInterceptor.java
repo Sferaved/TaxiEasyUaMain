@@ -14,7 +14,7 @@ import okhttp3.Response;
 public class RetryInterceptor implements Interceptor {
     private static final String TAG = "RetryInterceptor";
     private static final int MAX_RETRIES = 3;
-    private static final long RETRY_DELAY_MS = 2000;
+    private static final long RETRY_DELAY_MS = 15000;
 
     @NonNull
     @Override

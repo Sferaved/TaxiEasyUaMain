@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.utils.pusher;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -347,7 +348,7 @@ public class PusherManager {
 //        channel.bind(eventCanceled, event -> {
         bindEvent(eventOrderCost, event -> {
             Logger.d(context,"Pusher eventOrderCost", "Received event: " + event.toString());
-            MainActivity.costMap = null;
+
             try {
                 JSONObject eventData = new JSONObject(event.getData());
                 String order_cost = eventData.getString("order_cost");
@@ -356,8 +357,10 @@ public class PusherManager {
                 Map<String, String> eventValues = new HashMap<>();
                 // Добавляем данные в Map
                 eventValues.put("order_cost", eventData.optString("order_cost", "0"));
+                eventValues.put("Message", eventData.optString("Message", ""));
 
                 MainActivity.costMap = eventValues;
+                sharedPreferencesHelperMain.saveValue("order_cost", eventData.optString("order_cost", "0"));
 
             } catch(JSONException e){
                     Logger.e(context,"Pusher eventOrderCost", "JSON Parsing error for event: " + event.getData() +  e);

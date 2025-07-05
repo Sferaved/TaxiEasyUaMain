@@ -463,6 +463,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         }
         if (rout != null && rout.equals("visicom")) {
             VisicomFragment.setBtnBonusName(context);
+            VisicomFragment.tariffBtnColor();
         }
         UserPermissions.getPermissions(email, context);
 

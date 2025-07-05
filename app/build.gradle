@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1833
-        versionName = '1.833'
+        versionCode = 1834
+        versionName = '1.834'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled = true
@@ -43,6 +43,7 @@ android {
         buildConfig = true
     }
 }
+
 dependencies {
     // Основные зависимости
     implementation 'androidx.multidex:multidex:2.0.1'
@@ -99,8 +100,8 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.9.1'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.1'
-    implementation 'androidx.navigation:navigation-fragment:2.9.0'
-    implementation 'androidx.navigation:navigation-ui:2.9.0'
+    implementation 'androidx.navigation:navigation-fragment:2.9.1'
+    implementation 'androidx.navigation:navigation-ui:2.9.1'
 
     // Firebase UI для аутентификации
     implementation 'com.firebaseui:firebase-ui-auth:9.0.0'
@@ -155,5 +156,6 @@ dependencies {
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ["-Xlint:deprecation"]
 }
+
 
 

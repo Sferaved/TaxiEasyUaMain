@@ -89,11 +89,6 @@ public class VisicomOptionsFragment extends Fragment {
 
         sharedPreferencesHelperMain.saveValue("time", "no_time");
         sharedPreferencesHelperMain.saveValue("date", "no_date");
-//        ContentValues cv = new ContentValues();
-//        cv.put("time", "no_time");
-//        cv.put("date", "no_date");
-//        database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
-//                new String[] { "1" });
 
         arrayService = new String[]{
                 getString(R.string.BAGGAGE),
@@ -141,7 +136,6 @@ public class VisicomOptionsFragment extends Fragment {
         spinner.setPrompt("Title");
         spinner.setBackgroundResource(R.drawable.spinner_border);
 
-//        String tariffOld =  logCursor(MainActivity.TABLE_SETTINGS_INFO,context).get(2);
         String tariffOld = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
 
         switch (tariffOld) {
@@ -172,77 +166,6 @@ public class VisicomOptionsFragment extends Fragment {
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
         String city = stringList.get(1);
-        String cityMenu;
-//        switch (city){
-//            case "Kyiv City":
-//                cityMenu = getString(R.string.city_kyiv);
-//                break;
-//            case "Dnipropetrovsk Oblast":
-//                cityMenu = getString(R.string.city_dnipro);
-//                break;
-//            case "Odessa":
-//                cityMenu = getString(R.string.city_odessa);
-//                break;
-//            case "Zaporizhzhia":
-//                cityMenu = getString(R.string.city_zaporizhzhia);
-//                break;
-//            case "Cherkasy Oblast":
-//                cityMenu = getString(R.string.city_cherkassy);
-//                break;
-//            case "Lviv":
-//                cityMenu = getString(R.string.city_lviv);
-//                break;
-//            case "Ivano_frankivsk":
-//                cityMenu = getString(R.string.city_ivano_frankivsk);
-//                break;
-//            case "Vinnytsia":
-//                cityMenu = getString(R.string.city_vinnytsia);
-//                break;
-//            case "Poltava":
-//                cityMenu = getString(R.string.city_poltava);
-//                break;
-//            case "Sumy":
-//                cityMenu = getString(R.string.city_sumy);
-//                break;
-//            case "Kharkiv":
-//                cityMenu = getString(R.string.city_kharkiv);
-//                break;
-//            case "Chernihiv":
-//                cityMenu = getString(R.string.city_chernihiv);
-//                break;
-//            case "Rivne":
-//                cityMenu = getString(R.string.city_rivne);
-//                break;
-//            case "Ternopil":
-//                cityMenu = getString(R.string.city_ternopil);
-//                break;
-//            case "Khmelnytskyi":
-//                cityMenu = getString(R.string.city_khmelnytskyi);
-//                break;
-//            case "Zakarpattya":
-//                cityMenu = getString(R.string.city_zakarpattya);
-//                break;
-//            case "Zhytomyr":
-//                cityMenu = getString(R.string.city_zhytomyr);
-//                break;
-//            case "Kropyvnytskyi":
-//                cityMenu = getString(R.string.city_kropyvnytskyi);
-//                break;
-//            case "Mykolaiv":
-//                cityMenu = getString(R.string.city_mykolaiv);
-//                break;
-//            case "Chernivtsi":
-//                cityMenu = getString(R.string.city_chernivtsi);
-//                break;
-//            case "Lutsk":
-//                cityMenu = getString(R.string.city_lutsk);
-//                break;
-//            case "OdessaTest":
-//                cityMenu = "Test";
-//                break;
-//            default:
-//                cityMenu = getString(R.string.foreign_countries);
-//        }
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -512,6 +435,7 @@ public class VisicomOptionsFragment extends Fragment {
         Logger.d(context, TAG, "changeCost: tarif " + tarif);
 
         if (isAdded()) {
+            VisicomFragment.tariffBtnColor();
             NavController navController = NavHostFragment.findNavController(this);
             navController.navigate(R.id.nav_visicom);
         } else {

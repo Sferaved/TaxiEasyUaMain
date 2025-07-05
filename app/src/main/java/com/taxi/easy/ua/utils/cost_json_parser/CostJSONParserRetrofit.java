@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,9 +37,9 @@ public class CostJSONParserRetrofit {
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
         httpClient.addInterceptor(new RetryInterceptor()); // 3 попытки
         httpClient.addInterceptor(loggingInterceptor);
-        httpClient.connectTimeout(60, TimeUnit.SECONDS); // Тайм-аут для соединения
-        httpClient.readTimeout(60, TimeUnit.SECONDS);    // Тайм-аут для чтения
-        httpClient.writeTimeout(60, TimeUnit.SECONDS);   // Тайм-аут для записи
+        httpClient.connectTimeout(10, TimeUnit.SECONDS); // Тайм-аут для соединения
+        httpClient.readTimeout(10, TimeUnit.SECONDS);    // Тайм-аут для чтения
+        httpClient.writeTimeout(10, TimeUnit.SECONDS);   // Тайм-аут для записи
         // httpClient.addInterceptor(loggingInterceptor);
         String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
@@ -61,34 +62,66 @@ public class CostJSONParserRetrofit {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                Map<String, String> costMap = new HashMap<>();
+
                 if (eventReceived) {
-                    Log.d("API_CALL", "HTTP-ответ отменен, так как событие уже получено.");
-                    callback.onResponse(call, Response.success(costMap));
+                    Log.d(TAG, "HTTP-ответ отменен: событие уже получено.");
+                    callback.onResponse(call, Response.success(com.taxi.easy.ua.MainActivity.costMap));
                     return;
                 }
-                Map<String, String> costMap = new HashMap<>();
-                if (response.isSuccessful() && response.body() != null) {
-                    Map<String, String> jsonResponse = response.body();
-                    if (!"0".equals(jsonResponse.get("order_cost"))) {
-                        costMap.putAll(jsonResponse);
+
+                if (response.isSuccessful()) {
+                    Log.d(TAG, "HTTP-ответ успешный: код " + response.code());
+
+                    if (response.body() != null) {
+                        Map<String, String> jsonResponse = response.body();
+
+                        String orderCost = jsonResponse.get("order_cost");
+                        String message = jsonResponse.getOrDefault("Message", "Нет сообщения от сервера");
+                        Log.e(TAG, "orderCost" + orderCost);
+                        Log.e(TAG, "message" + message);
+                        if (!"0".equals(orderCost)) {
+                            costMap.putAll(jsonResponse);
+                            String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
+                            sharedPreferencesHelperMain.saveValue(tarif, orderCost);
+                        } else {
+                            costMap.put("order_cost", "0");
+                            costMap.put("Message", message);
+                        }
+
                     } else {
+                        Log.e(TAG, "Пустое тело ответа при успешном коде.");
                         costMap.put("order_cost", "0");
-                        costMap.put("Message", jsonResponse.get("Message"));
+                        costMap.put("Message", "Пустой ответ от сервера");
                     }
+
                 } else {
+                    Log.e(TAG, "HTTP-ошибка: код " + response.code());
+                    try {
+                        if (response.errorBody() != null) {
+                            Log.e(TAG, "Тело ошибки: " + response.errorBody().string());
+                        }
+                    } catch (IOException e) {
+                        Log.e(TAG, "Ошибка чтения errorBody", e);
+                    }
                     costMap.put("order_cost", "0");
-                    costMap.put("Message", "ErrorMessage");
+                    costMap.put("Message", "Ошибка от сервера: " + response.code());
                 }
+
                 callback.onResponse(call, Response.success(costMap));
             }
 
             @Override
             public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                Log.e(TAG, "Ошибка выполнения запроса: " + t.getMessage(), t);
+
                 Map<String, String> costMap = new HashMap<>();
                 costMap.put("order_cost", "0");
-                costMap.put("Message", "ErrorMessage");
+                costMap.put("Message", "Ошибка подключения: " + t.getLocalizedMessage());
+
                 callback.onResponse(call, Response.success(costMap));
             }
+
         });
 
 //        // Ожидаем событие

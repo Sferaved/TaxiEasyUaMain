@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.833</string>
-    <string name="version">Version: 1.833</string>
+    <string name="version_code">1.834</string>
+    <string name="version">Version: 1.834</string>
 
     <string name="app_name">Taxi Dostavka</string>
 
@@ -158,7 +158,7 @@
     <string name="Zaporizhzhia">Zaporizhzhia</string>
     <string name="Cherkasy">Cherkasy</string>
     <string name="OdessaTest">Odesa (Test)</string>
-    <string name="disc_text">% to cost</string>
+    <string name="disc_text">% +/- 💰🧾</string>
     <string name="email_sent">Message sent</string>
     <string name="send_like">Rate the app</string>
     <string name="send_email_admin">Report a problem</string>

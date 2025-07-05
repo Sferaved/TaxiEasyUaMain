@@ -190,6 +190,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static Map<String, String> costMap;
 
+
     public static final String PERMISSION_REQUEST_COUNT_KEY = "PermissionRequestCount";
     public static boolean location_update;
 
