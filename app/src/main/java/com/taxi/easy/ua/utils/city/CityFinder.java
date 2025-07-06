@@ -1,10 +1,10 @@
 package com.taxi.easy.ua.utils.city;
 
 import static android.content.Context.MODE_PRIVATE;
-import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -26,6 +26,7 @@ import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.log.Logger;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,22 +50,21 @@ public class CityFinder {
         // Пустой конструктор без аргументов
     }
 
-    public CityFinder (
-            Context context
-    ) {
-        this.context = context;
-    }
+    private WeakReference<Activity> activityRef;
+
 
     public CityFinder (
             Context context,
             double startLat,
             double startLan,
-            String position
+            String position,
+            Activity activity
     ) {
         this.context = context;
         this.startLat = startLat;
         this.startLan = startLan;
         this.position = position;
+        this.activityRef = new WeakReference<>(activity);
     }
 
     public void findCity(double latitude, double longitude) {
@@ -343,12 +343,14 @@ public class CityFinder {
 //        }
 
     }
-    private void updateMyPosition(
-            String city,
-            double startLat,
-            double startLan,
-            String position
-    ) {
+    private void updateMyPosition(String city, double startLat, double startLan, String position) {
+        Logger.d(context, TAG, "updateMyPosition:city " + city);
+
+        Activity activity = activityRef.get();
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) {
+            Logger.e(context, TAG, "Activity is null or destroyed, cannot navigate");
+            return;
+        }
 
         Logger.d(context, TAG, "updateMyPosition:city "+ city);
 
@@ -435,7 +437,7 @@ public class CityFinder {
         sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
 
 
-        NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+        NavController navController = Navigation.findNavController(activity, R.id.nav_host_fragment_content_main);
         navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                 .setPopUpTo(R.id.nav_visicom, true)
                 .build());

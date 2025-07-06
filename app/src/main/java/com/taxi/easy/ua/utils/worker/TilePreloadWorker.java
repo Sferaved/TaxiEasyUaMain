@@ -30,14 +30,16 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import okhttp3.Cache;
 import okhttp3.OkHttpClient;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -154,132 +156,134 @@ public class TilePreloadWorker extends Worker {
 
 
     private void preloadTiles(GeoPoint startPoint) {
-    SqlTileWriter tileWriter = null;
-    ExecutorService executor = null;
+        SqlTileWriter tileWriter = null;
+        ExecutorService executor = null;
+        Set<Long> loadingTiles = Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>());
 
-    try {
-        File cacheDir = new File(getApplicationContext().getCacheDir(), "osmdroid");
-        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
-            Logger.e(getApplicationContext(), TAG, "Не удалось создать директорию кэша: " + cacheDir.getAbsolutePath());
-            return;
-        }
-        Configuration.getInstance().setOsmdroidTileCache(cacheDir);
-        Configuration.getInstance().setUserAgentValue(getApplicationContext().getPackageName());
+        try {
+            File cacheDir = new File(getApplicationContext().getCacheDir(), "osmdroid");
+            if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+                Logger.e(getApplicationContext(), TAG, "Не удалось создать директорию кэша: " + cacheDir.getAbsolutePath());
+                return;
+            }
+            Configuration.getInstance().setOsmdroidTileCache(cacheDir);
+            Configuration.getInstance().setUserAgentValue(getApplicationContext().getPackageName());
 
-        if (!isConnected()) {
-            Logger.e(getApplicationContext(), TAG, "Нет интернет-соединения");
-            return;
-        }
+            if (isConnected()) {
+                Logger.e(getApplicationContext(), TAG, "Нет интернет-соединения");
+                return;
+            }
 
-        File httpCacheDir = new File(getApplicationContext().getCacheDir(), "http_cache");
-        if (!httpCacheDir.exists() && !httpCacheDir.mkdirs()) {
-            Logger.e(getApplicationContext(), TAG, "Не удалось создать директорию кэша HTTP: " + httpCacheDir.getAbsolutePath());
-        }
-        Cache cache = new Cache(httpCacheDir, 10 * 1024 * 1024);
-        OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor())
-                .cache(cache)
-                .connectTimeout(Duration.ofSeconds(5))
-                .readTimeout(Duration.ofSeconds(5))
-                .addInterceptor(chain -> chain.proceed(
-                        chain.request().newBuilder()
-                                .header(HttpHeaders.USER_AGENT, getApplicationContext().getPackageName())
-                                .build()))
-                .build();
+            // Удалено .cache(...) — чтобы избежать конфликта при сохранении тайлов вручную
+            OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                    .addInterceptor(new RetryInterceptor())
+                    .connectTimeout(Duration.ofSeconds(5))
+                    .readTimeout(Duration.ofSeconds(5))
+                    .addInterceptor(chain -> chain.proceed(
+                            chain.request().newBuilder()
+                                    .header(HttpHeaders.USER_AGENT, getApplicationContext().getPackageName())
+                                    .build()))
+                    .build();
 
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(TileSourceFactory.MAPNIK.getBaseUrl())
-                .client(okHttpClient)
-                .build();
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl(TileSourceFactory.MAPNIK.getBaseUrl())
+                    .client(okHttpClient)
+                    .build();
 
-        TileService tileService = retrofit.create(TileService.class);
-        tileWriter = new SqlTileWriter();
+            TileService tileService = retrofit.create(TileService.class);
+            tileWriter = new SqlTileWriter();
 
-        GeoPoint topLeft = new GeoPoint(startPoint.getLatitude() + OFFSET, startPoint.getLongitude() - OFFSET);
-        GeoPoint bottomRight = new GeoPoint(startPoint.getLatitude() - OFFSET, startPoint.getLongitude() + OFFSET);
+            GeoPoint topLeft = new GeoPoint(startPoint.getLatitude() + OFFSET, startPoint.getLongitude() - OFFSET);
+            GeoPoint bottomRight = new GeoPoint(startPoint.getLatitude() - OFFSET, startPoint.getLongitude() + OFFSET);
 
-        double n = Math.pow(2, OPTIMAL_ZOOM); // Зум 16
-        long xMin = (long) ((topLeft.getLongitude() + 180.0) / 360.0 * n);
-        long xMax = (long) ((bottomRight.getLongitude() + 180.0) / 360.0 * n);
-        long yMin = (long) ((1.0 - Math.log(Math.tan(Math.toRadians(topLeft.getLatitude())) + 1.0 / Math.cos(Math.toRadians(topLeft.getLatitude()))) / Math.PI) / 2.0 * n);
-        long yMax = (long) ((1.0 - Math.log(Math.tan(Math.toRadians(bottomRight.getLatitude())) + 1.0 / Math.cos(Math.toRadians(bottomRight.getLatitude()))) / Math.PI) / 2.0 * n);
+            double n = Math.pow(2, OPTIMAL_ZOOM);
+            long xMin = (long) ((topLeft.getLongitude() + 180.0) / 360.0 * n);
+            long xMax = (long) ((bottomRight.getLongitude() + 180.0) / 360.0 * n);
+            long yMin = (long) ((1.0 - Math.log(Math.tan(Math.toRadians(topLeft.getLatitude())) + 1.0 / Math.cos(Math.toRadians(topLeft.getLatitude()))) / Math.PI) / 2.0 * n);
+            long yMax = (long) ((1.0 - Math.log(Math.tan(Math.toRadians(bottomRight.getLatitude())) + 1.0 / Math.cos(Math.toRadians(bottomRight.getLatitude()))) / Math.PI) / 2.0 * n);
 
-        if (xMin > xMax) { long t = xMin; xMin = xMax; xMax = t; }
-        if (yMin > yMax) { long t = yMin; yMin = yMax; yMax = t; }
+            if (xMin > xMax) { long t = xMin; xMin = xMax; xMax = t; }
+            if (yMin > yMax) { long t = yMin; yMin = yMax; yMax = t; }
 
-        int threadCount = 4; // Уменьшен для стабильности
-        executor = Executors.newFixedThreadPool(threadCount);
-        List<Future<?>> futures = new ArrayList<>();
-        AtomicBoolean cancelFlag = new AtomicBoolean(false);
-        int maxTiles = 50; // Ограничение на 50 тайлов
-        int tileCount = 0;
+            executor = Executors.newFixedThreadPool(4);
+            List<Future<?>> futures = new ArrayList<>();
+            AtomicBoolean cancelFlag = new AtomicBoolean(false);
+            int maxTiles = 50;
+            int tileCount = 0;
 
-        for (long x = xMin; x <= xMax && tileCount < maxTiles; x += TAIL) {
-            for (long y = yMin; y <= yMax && tileCount < maxTiles; y += TAIL) {
-                final long tileX = x;
-                final long tileY = y;
-                tileCount++;
+            for (long x = xMin; x <= xMax && tileCount < maxTiles; x += TAIL) {
+                for (long y = yMin; y <= yMax && tileCount < maxTiles; y += TAIL) {
+                    final long tileX = x;
+                    final long tileY = y;
+                    final long tileIndex = MapTileIndex.getTileIndex(OPTIMAL_ZOOM, (int) tileX, (int) tileY);
 
-                long tileIndex = MapTileIndex.getTileIndex(OPTIMAL_ZOOM, (int) tileX, (int) tileY);
-                if (tileWriter.exists(TileSourceFactory.MAPNIK, tileIndex)) {
-                    Logger.d(getApplicationContext(), TAG, "Тайл уже в кэше: Z=OPTIMAL_ZOOM, X=" + tileX + ", Y=" + tileY);
-                    continue;
-                }
-
-                SqlTileWriter finalTileWriter = tileWriter;
-                Future<?> future = executor.submit(() -> {
-                    if (cancelFlag.get()) return;
-
-                    if (!isConnected()) {
-                        Logger.e(getApplicationContext(), TAG, "Потеряно соединение, отмена загрузки");
-                        cancelFlag.set(true);
-                        return;
+                    if (tileWriter.exists(TileSourceFactory.MAPNIK, tileIndex)) {
+                        Logger.d(getApplicationContext(), TAG, "Тайл уже в кэше: Z=" + OPTIMAL_ZOOM + ", X=" + tileX + ", Y=" + tileY);
+                        continue;
                     }
 
-                    try {
-                        Response<ResponseBody> response = tileService.downloadTile(OPTIMAL_ZOOM, tileX, tileY).execute();
-                        if (response.isSuccessful() && response.body() != null) {
-                            byte[] data = response.body().bytes();
-                            try (ByteArrayInputStream stream = new ByteArrayInputStream(data)) {
-                                finalTileWriter.saveFile(TileSourceFactory.MAPNIK, tileIndex, stream,
-                                        System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000);
-                                Logger.d(getApplicationContext(), TAG, "Сохранен тайл: Z=16, X=" + tileX + ", Y=" + tileY);
-                            }
-                        } else {
-                            Logger.w(getApplicationContext(), TAG, "Ошибка загрузки: Z=16, X=" + tileX + ", Y=" + tileY);
+                    if (!loadingTiles.add(tileIndex)) {
+                        Logger.d(getApplicationContext(), TAG, "Пропущен дубликат тайла: " + tileIndex);
+                        continue;
+                    }
+
+                    tileCount++;
+
+                    SqlTileWriter finalTileWriter = tileWriter;
+                    Future<?> future = executor.submit(() -> {
+                        if (cancelFlag.get()) return;
+
+                        if (isConnected()) {
+                            Logger.e(getApplicationContext(), TAG, "Потеряно соединение, отмена загрузки");
+                            cancelFlag.set(true);
+                            return;
                         }
-                    } catch (IOException e) {
-                        Logger.e(getApplicationContext(), TAG, "Ошибка при загрузке тайла: " + e.getMessage());
-                        FirebaseCrashlytics.getInstance().recordException(e);
-                    }
-                });
-                futures.add(future);
+
+                        try {
+                            Response<ResponseBody> response = tileService.downloadTile(OPTIMAL_ZOOM, tileX, tileY).execute();
+                            if (response.isSuccessful() && response.body() != null) {
+                                byte[] data = response.body().bytes();
+                                try (ByteArrayInputStream stream = new ByteArrayInputStream(data)) {
+                                    finalTileWriter.saveFile(TileSourceFactory.MAPNIK, tileIndex, stream,
+                                            System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000);
+                                    Logger.d(getApplicationContext(), TAG, "Сохранен тайл: Z=16, X=" + tileX + ", Y=" + tileY);
+                                }
+                            } else {
+                                Logger.w(getApplicationContext(), TAG, "Ошибка загрузки: Z=16, X=" + tileX + ", Y=" + tileY);
+                            }
+                        } catch (IOException e) {
+                            Logger.e(getApplicationContext(), TAG, "Ошибка при загрузке тайла: " + e.getMessage());
+                            FirebaseCrashlytics.getInstance().recordException(e);
+                        } finally {
+                            loadingTiles.remove(tileIndex);
+                        }
+                    });
+
+                    futures.add(future);
+                }
             }
-        }
 
-        for (Future<?> f : futures) {
-            try {
-                f.get();
-            } catch (Exception e) {
-                Logger.e(getApplicationContext(), TAG, "Ошибка ожидания завершения загрузки: " + e.getMessage());
+            for (Future<?> f : futures) {
+                try {
+                    f.get();
+                } catch (Exception e) {
+                    Logger.e(getApplicationContext(), TAG, "Ошибка ожидания завершения загрузки: " + e.getMessage());
+                }
             }
-        }
 
-        Logger.i(getApplicationContext(), TAG, "✅ Все тайлы успешно загружены и сохранены.");
-        Logger.d(getApplicationContext(), TAG, "Пропущено " + (tileCount - futures.size()) + " тайлов, так как они уже в кэше");
+            Logger.i(getApplicationContext(), TAG, "✅ Все тайлы успешно загружены и сохранены.");
+            Logger.d(getApplicationContext(), TAG, "Пропущено " + (tileCount - futures.size()) + " тайлов, так как они уже в кэше");
 
-    } catch (Exception e) {
-        Logger.e(getApplicationContext(), TAG, "❌ Ошибка preloadTiles: " + e.getMessage());
-        FirebaseCrashlytics.getInstance().recordException(e);
-    } finally {
-        if (tileWriter != null) {
-            tileWriter.onDetach();
-        }
-        if (executor != null && !executor.isShutdown()) {
-            executor.shutdown();
+        } catch (Exception e) {
+            Logger.e(getApplicationContext(), TAG, "❌ Ошибка preloadTiles: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
+        } finally {
+            if (tileWriter != null) tileWriter.onDetach();
+            if (executor != null && !executor.isShutdown()) executor.shutdown();
         }
     }
-}
+
+
     private void saveLastStartPoint(GeoPoint startPoint) {
         sharedPreferencesHelperMain.saveValue("lastStartPointLat", String.valueOf(startPoint.getLatitude()));
         sharedPreferencesHelperMain.saveValue("lastStartPointLon", String.valueOf(startPoint.getLongitude()));
@@ -288,6 +292,6 @@ public class TilePreloadWorker extends Worker {
     private boolean isConnected() {
         ConnectivityManager cm = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+        return activeNetwork == null || !activeNetwork.isConnectedOrConnecting();
     }
 }

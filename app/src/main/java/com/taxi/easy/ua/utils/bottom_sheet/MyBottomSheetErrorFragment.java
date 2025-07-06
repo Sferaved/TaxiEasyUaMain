@@ -48,6 +48,7 @@ import com.uxcam.UXCam;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
 import retrofit2.Call;
@@ -173,8 +174,13 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                  textViewInfo.setOnClickListener(view2 -> {
                      dismiss();
 
-                     VisicomFragment.btnStaticVisible(View.VISIBLE);
-                     HomeFragment.btnVisible(View.VISIBLE);
+                     if (Objects.requireNonNull(navController.getCurrentDestination()).getId() == R.id.nav_visicom) {
+                         VisicomFragment.btnStaticVisible(View.VISIBLE);
+                     }
+                     if (Objects.requireNonNull(navController.getCurrentDestination()).getId() == R.id.nav_home) {
+                         HomeFragment.btnVisible(View.VISIBLE);
+                     }
+
                  });
                 btn_ok.setText(getString(R.string.link_card));
                 btn_ok.setOnClickListener(v -> {

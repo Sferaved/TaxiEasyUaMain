@@ -2326,50 +2326,13 @@ public class VisicomFragment extends Fragment {
                                     FromAdressString = context.getString(R.string.startPoint);
                                 }
 
-                                new CityFinder(context, latitude, longitude, FromAdressString).findCity(latitude, longitude);
-//                                updateMyPosition(latitude, longitude, FromAdressString, context);
-//                                geoText.setText(FromAdressString);
-//                                progressBar.setVisibility(View.GONE);
-//
-//                                // Работа с базой
-//                                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-//                                SQLiteDatabase db = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-//                                Cursor cursor = db.rawQuery(query, null);
-//
-//                                if (cursor.moveToFirst()) {
-//                                    @SuppressLint("Range") double startLat = cursor.getDouble(cursor.getColumnIndex("startLat"));
-//                                    @SuppressLint("Range") double to_lat = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-//                                    @SuppressLint("Range") double to_lng = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-//                                    @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
-//
-//                                    List<String> settings = new ArrayList<>();
-//                                    if (startLat == to_lat) {
-//                                        textViewTo.setText("");
-//                                        finish = "";
-//                                    }
-//
-//                                    settings.add(String.valueOf(latitude));
-//                                    settings.add(String.valueOf(longitude));
-//                                    settings.add(String.valueOf(to_lat));
-//                                    settings.add(String.valueOf(to_lng));
-//                                    settings.add(FromAdressString);
-//                                    settings.add(finish);
-//                                    updateRoutMarker(settings);
-//                                }
-//
-//                                cursor.close();
-//                                db.close();
-//
-//                                try {
-//                                    String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-//                                    if (!userEmail.equals("email")) {
-//                                        visicomCost();
-//                                        readTariffInfo();
-//                                    }
-//                                } catch (MalformedURLException e) {
-//                                    FirebaseCrashlytics.getInstance().recordException(e);
-//                                    throw new RuntimeException(e);
-//                                }
+                                new CityFinder(
+                                        context,
+                                        latitude,
+                                        longitude,
+                                        FromAdressString,
+                                        context
+                                ).findCity(latitude, longitude);
 
                             } else {
                                 Logger.d(context, TAG, "Ошибка при получении адреса");

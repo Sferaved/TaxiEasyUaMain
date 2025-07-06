@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1834
-        versionName = '1.834'
+        versionCode = 1835
+        versionName = '1.835'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled = true
@@ -43,7 +43,6 @@ android {
         buildConfig = true
     }
 }
-
 dependencies {
     // Основные зависимости
     implementation 'androidx.multidex:multidex:2.0.1'
@@ -156,6 +155,7 @@ dependencies {
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ["-Xlint:deprecation"]
 }
+
 
 
 
