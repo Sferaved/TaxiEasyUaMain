@@ -102,7 +102,10 @@ public class CityCheckFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentCityCheckBinding.inflate(inflater, container, false);
         root = binding.getRoot();
-        button1.setVisibility(View.VISIBLE);
+        if (button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
+
         sharedPreferencesHelper = new SharedPreferencesHelper(requireActivity());
         sharedPreferencesHelperMain.saveValue("visible_shed", "ok");
 
@@ -349,7 +352,7 @@ public class CityCheckFragment extends Fragment {
         });
         btn_city_20.setOnClickListener(view20 -> {
             sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Сhernivtsi";
+            city = "Chernivtsi";
             phoneNumber = Kyiv_City_phone;
             cityMenu = getString(R.string.city_chernivtsi);
             String newTitle =  getString(R.string.menu_city) + " " + cityMenu;

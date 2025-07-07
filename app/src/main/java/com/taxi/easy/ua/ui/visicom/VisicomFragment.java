@@ -2476,12 +2476,12 @@ public class VisicomFragment extends Fragment {
                         applyDiscountAndUpdateUI(cost, context);
                     } else {
 
-                        if (Objects.equals(map.get("Message"), "Повторный запрос")) {
+                        if (map != null && Objects.equals(map.get("Message"), "Повторный запрос")) {
                             String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
                             cost = (String) sharedPreferencesHelperMain.getValue(tarif, "0");
                             applyDiscountAndUpdateUI(cost, context);
                         } else {
-                            cost =  "0";
+                            cost = "0";
                             applyDiscountAndUpdateUI(cost, context);
                         }
 
@@ -2498,27 +2498,6 @@ public class VisicomFragment extends Fragment {
         });
     }
 
-//    private void scheduleRetry(String start, String finish) {
-//        retryCount++;
-//        if (retryCount <= MAX_RETRY) {
-//            Logger.w(context, TAG, "Повторная попытка через " + RETRY_DELAY_MS + " мс (попытка " + retryCount + ")");
-//            retryHandler.postDelayed(() -> {
-//                try {
-//                    requestCostFromServer(start, finish);
-//                } catch (MalformedURLException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }, RETRY_DELAY_MS);
-//        } else {
-//            Logger.e(context, TAG, "Превышено количество попыток запроса стоимости");
-//            Toast.makeText(context, context.getString(R.string.server_error_connected), Toast.LENGTH_SHORT).show();
-//            binding.textViewCost.setVisibility(View.VISIBLE);
-//            binding.textViewCost.setText("\uD83D\uDCB0 \uD83D\uDD01");
-//            binding.textViewCost.setOnClickListener(view -> visicomCost());
-//            progressBar.setVisibility(GONE);
-//            retryCount = 0;
-//        }
-//    }
 
     private void clearTABLE_SERVICE_INFO () {
         String[] arrayServiceCode = DataArr.arrayServiceCode();

@@ -56,7 +56,7 @@ import retrofit2.Response;
 
 public class HistoryFragment extends Fragment {
 
-    private static final String TAG = "UIDFragment";
+    private static final String TAG = "HistoryFragment";
     private FragmentHistoryBinding binding;
     private ListView listView;
     private String[] array;

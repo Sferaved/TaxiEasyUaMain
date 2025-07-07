@@ -153,7 +153,7 @@ public class CityFinder {
                 cityResult = "Mykolaiv";
                 break;
             case "city_chernivtsi":
-                cityResult = "Сhernivtsi";
+                cityResult = "Chernivtsi";
                 break;
             case "city_lutsk":
                 cityResult = "Lutsk";

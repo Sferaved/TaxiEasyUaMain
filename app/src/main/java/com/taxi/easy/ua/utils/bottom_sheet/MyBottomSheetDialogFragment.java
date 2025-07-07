@@ -87,7 +87,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         context = requireActivity();
         
         listView = view.findViewById(R.id.list);
-        
+
         database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         ContentValues cv = new ContentValues();
         cv.put("time", "no_time");
@@ -683,7 +683,8 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         cv.put("addCost", addCost);
 
         // обновляем по id
-
+        SQLiteDatabase database;
+        database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
                 new String[] { "1" });
         database.close();

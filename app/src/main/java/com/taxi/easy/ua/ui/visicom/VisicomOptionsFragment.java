@@ -301,20 +301,17 @@ public class VisicomOptionsFragment extends Fragment {
 
     public void onDismissBtn() {
 
-        SparseBooleanArray booleanArray = listView.getCheckedItemPositions();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        SparseBooleanArray checkedItems = listView.getCheckedItemPositions();
 
-        for (int i = 0; i < booleanArray.size(); i++) {
-            int position = booleanArray.keyAt(i);
-            if (booleanArray.get(position)) {
-                if (position >= 0 && position < arrayServiceCode.length) {
-                    ContentValues cv = new ContentValues();
-                    cv.put(arrayServiceCode[position], "1");
-
-                    database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?", new String[]{"1"});
-                } else {
-                    Logger.e(context, TAG, "Индекс вне диапазона: " + position);
-                }
+        for (int i = 0; i < checkedItems.size(); i++) {
+            int position = checkedItems.keyAt(i);
+            if (position >= 0 && position < arrayServiceCode.length) {
+                ContentValues cv = new ContentValues();
+                cv.put(arrayServiceCode[position], checkedItems.get(position) ? "1" : "0");
+                database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?", new String[]{"1"});
+            } else {
+                Logger.e(context, TAG, "Индекс вне диапазона: " + position);
             }
         }
 
