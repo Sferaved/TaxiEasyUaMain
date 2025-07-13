@@ -833,26 +833,30 @@ public class FinishSeparateFragment extends Fragment {
                             }
                         }
 
-                        requireActivity().runOnUiThread(() -> closeReasonReactNal(
-                                closeReason,
-                                executionStatus,
-                                driverPhone,
-                                time_to_start_point,
-                                orderCarInfo
-                        ));
+                        if (isAdded() && context != null) {
+                                context.runOnUiThread(() -> closeReasonReactNal(
+                                    closeReason,
+                                    executionStatus,
+                                    driverPhone,
+                                    time_to_start_point,
+                                    orderCarInfo
+                            ));
+                            }
                     } else {
                         int closeReason = -1;
                         String executionStatus = "*";
                         String driverPhone = "*";
                         String time_to_start_point = "*";
                         String orderCarInfo = "*";
-                        requireActivity().runOnUiThread(() -> closeReasonReactNal(
-                                closeReason,
-                                executionStatus,
-                                driverPhone,
-                                time_to_start_point,
-                                orderCarInfo
-                        ));
+                        if (isAdded() && context != null) {
+                            context.runOnUiThread(() -> closeReasonReactNal(
+                                    closeReason,
+                                    executionStatus,
+                                    driverPhone,
+                                    time_to_start_point,
+                                    orderCarInfo
+                            ));
+                        }
                     }
                 }
 

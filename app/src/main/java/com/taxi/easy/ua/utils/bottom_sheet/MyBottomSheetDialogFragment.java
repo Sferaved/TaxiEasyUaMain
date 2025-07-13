@@ -690,7 +690,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         database.close();
     }
 
-    private String getTaxiUrlSearch(String urlAPI, Context context) throws UnsupportedEncodingException {
+    private String getTaxiUrlSearch(String urlAPI, Context context) {
         List<String> stringListRout = logCursor(MainActivity.ROUT_HOME, context);
 
         String originalString = stringListRout.get(1);

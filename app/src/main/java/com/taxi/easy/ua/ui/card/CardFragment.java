@@ -305,12 +305,6 @@ public class CardFragment extends Fragment {
                         .build());
             }
 
-//
-//            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-//                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-//                        .setPopUpTo(R.id.nav_visicom, true)
-//                        .build());
-//            }
 
             else {
                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getActivity());

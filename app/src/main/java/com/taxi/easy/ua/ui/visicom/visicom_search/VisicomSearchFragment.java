@@ -415,7 +415,7 @@ public class VisicomSearchFragment extends Fragment {
         }
 
         countryState = (String) sharedPreferencesHelperMain.getValue("countryState", "**");
-
+        Logger.d(context,TAG, "processAddressData: citySearch  " + stringList.get(1));
         switch (LocaleHelper.getLocale()) {
             case "ru":
                 switch (stringList.get(1)) {
@@ -480,6 +480,9 @@ public class VisicomSearchFragment extends Fragment {
                         break;
                     case "Lutsk":
                         citySearch = "Луцк";
+                        break;
+                    case "Lviv":
+                        citySearch = "Львов";
                         break;
                     default:
                         citySearch = "FC";
@@ -550,6 +553,8 @@ public class VisicomSearchFragment extends Fragment {
                     case "Lutsk":
                         citySearch = "Lutsk";
                         break;
+                    case "Lviv":
+                        citySearch = "Lviv";
                     default:
                         citySearch = "FC";
                         break;
@@ -618,6 +623,9 @@ public class VisicomSearchFragment extends Fragment {
                         break;
                     case "Lutsk":
                         citySearch = "Луцьк";
+                        break;
+                    case "Lviv":
+                        citySearch = "Львів";
                         break;
                     default:
                         citySearch = "FC";
@@ -1119,6 +1127,7 @@ public class VisicomSearchFragment extends Fragment {
                 JSONArray features = jsonResponse.getJSONArray("features");
 
                 Logger.d(context, TAG, "processAddressData: features" + features.length());
+                Logger.d(context, TAG, "processAddressData: citySearch" + citySearch);
 
                 // В массиве есть элементы, обрабатываем результат
                 // Ваши дополнительные действия с features

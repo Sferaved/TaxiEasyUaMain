@@ -870,9 +870,13 @@ public class VisicomFragment extends Fragment {
 
         if (finish.equals(context.getString(R.string.on_city_tv)) || finish.trim().isEmpty()) {
             finish = start;
+            toLatitude = originLatitude;
+            toLongitude = originLongitude;
         }
         if (finish.trim().equals(start.trim())) {
             textViewTo.setText("");
+            toLatitude = originLatitude;
+            toLongitude = originLongitude;
         }
 
         Logger.d(context, TAG, "getTaxiUrlSearchMarkers: start " + start);
@@ -2827,10 +2831,16 @@ public class VisicomFragment extends Fragment {
         Logger.d(context, TAG, "processRouteList: array " + Arrays.toString(array));
         if (array != null) {
             String message = context.getString(R.string.order_to_cancel_true);
-            MyBottomSheetErrorFragment myBottomSheetMessageFragment = new MyBottomSheetErrorFragment(message);
-            fragmentManager.beginTransaction()
-                    .add(myBottomSheetMessageFragment, myBottomSheetMessageFragment.getTag())
-                    .commitAllowingStateLoss();
+            NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
+            int currentDestination = navController.getCurrentDestination().getId();
+
+            if (currentDestination == R.id.nav_visicom) {
+                MyBottomSheetErrorFragment myBottomSheetMessageFragment = new MyBottomSheetErrorFragment(message);
+                fragmentManager.beginTransaction()
+                        .add(myBottomSheetMessageFragment, myBottomSheetMessageFragment.getTag())
+                        .commitAllowingStateLoss();
+            }
+
         } else {
             databaseHelper.clearTableCancel();
             databaseHelperUid.clearTableCancel();

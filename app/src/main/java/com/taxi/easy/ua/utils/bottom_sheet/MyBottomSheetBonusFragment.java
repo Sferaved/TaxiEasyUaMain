@@ -29,6 +29,9 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
+import androidx.navigation.NavController;
+import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -178,6 +181,10 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 }
                 fistItem();
                 break;
+            default:
+                listView.setItemChecked(0, true);
+                adapter.setItemEnabled(1, false);
+                fistItem();
 
         }
 
@@ -385,12 +392,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     listView.setItemChecked(1, true);
                     Logger.d(context, TAG, "paymentType: 3 ");
                     pos = 1;
-//                    try {
-////                        paymentType(arrayCode [pos], context);
-//                    } catch (MalformedURLException | UnsupportedEncodingException e) {
-//                        FirebaseCrashlytics.getInstance().recordException(e);
-//                        throw new RuntimeException(e);
-//                    }
                 }
 
                 adapter.setItemEnabled(2, !userPayPermissions[1].equals("0"));
@@ -531,69 +532,73 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
             timeVerify();
             Toast.makeText(context, context.getString(R.string.check_cost_message), Toast.LENGTH_SHORT).show();
-            try {
-
-                    String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
-                    String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
-                    long discountInt = Integer.parseInt(discountText);
-
-                    CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
-                    parser.sendURL(urlCost, new Callback<>() {
-                        @Override
-                        public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
-                            Map<String, String> sendUrlMapCost = response.body();
-                            if (sendUrlMapCost != null) {
-                                String orderCost = sendUrlMapCost.get("order_cost");
-                                Log.d(TAG, "onDismiss: orderCost " + orderCost);
-                                assert orderCost != null;
-                                if (!orderCost.equals("0")) {
-                                    new Handler(Looper.getMainLooper()).post(() -> {
-
-                                        String costUpdate;
-
-                                        long discount;
-                                        long firstCost = Long.parseLong(orderCost);
-                                        discount = firstCost * discountInt / 100;
-                                        firstCost = firstCost + discount;
-                                        //                                updateAddCost(String.valueOf(discount));
-
-                                        VisicomFragment.firstCostForMin = firstCost;
-
-                                        VisicomFragment.startCost = firstCost;
-                                        VisicomFragment.finalCost = firstCost;
-
-                                        Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: startCost " + VisicomFragment.startCost);
-                                        Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: finalCost " + VisicomFragment.finalCost);
-
-                                        costUpdate = String.valueOf(firstCost);
-                                        Log.d(TAG, "onResponse:costUpdate " + costUpdate);
-
-                                        VisicomFragment.text_view_cost.setText(costUpdate);
-                                        VisicomFragment.btnStaticVisible(View.VISIBLE);
-
-                                    });
-                                } else {
-                                    new Handler(Looper.getMainLooper()).post(() -> {
-                                        progressBar.setVisibility(View.INVISIBLE);
-                                        if (pos == 1 || pos == 2) {
-                                            changePayMethodToNal();
-                                        }
-                                    });
-
-                                }
-                            }
-                        }
-
-                        @Override
-                        public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
-                            FirebaseCrashlytics.getInstance().recordException(t);
-                            Logger.d(getActivity(), TAG, " onFailure visicom" + t);
-                        }
-                    });
-
-            } catch (MalformedURLException e) {
-                FirebaseCrashlytics.getInstance().recordException(e);
-            }
+            NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_visicom, true)
+                    .build());
+//            try {
+//
+//                    String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
+//                    String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO).get(3);
+//                    long discountInt = Integer.parseInt(discountText);
+//
+//                    CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
+//                    parser.sendURL(urlCost, new Callback<>() {
+//                        @Override
+//                        public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+//                            Map<String, String> sendUrlMapCost = response.body();
+//                            if (sendUrlMapCost != null) {
+//                                String orderCost = sendUrlMapCost.get("order_cost");
+//                                Log.d(TAG, "onDismiss: orderCost " + orderCost);
+//                                assert orderCost != null;
+//                                if (!orderCost.equals("0")) {
+//                                    new Handler(Looper.getMainLooper()).post(() -> {
+//
+//                                        String costUpdate;
+//
+//                                        long discount;
+//                                        long firstCost = Long.parseLong(orderCost);
+//                                        discount = firstCost * discountInt / 100;
+//                                        firstCost = firstCost + discount;
+//                                        //                                updateAddCost(String.valueOf(discount));
+//
+//                                        VisicomFragment.firstCostForMin = firstCost;
+//
+//                                        VisicomFragment.startCost = firstCost;
+//                                        VisicomFragment.finalCost = firstCost;
+//
+//                                        Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: startCost " + VisicomFragment.startCost);
+//                                        Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: finalCost " + VisicomFragment.finalCost);
+//
+//                                        costUpdate = String.valueOf(firstCost);
+//                                        Log.d(TAG, "onResponse:costUpdate " + costUpdate);
+//
+//                                        VisicomFragment.text_view_cost.setText(costUpdate);
+//                                        VisicomFragment.btnStaticVisible(View.VISIBLE);
+//
+//                                    });
+//                                } else {
+//                                    new Handler(Looper.getMainLooper()).post(() -> {
+//                                        progressBar.setVisibility(View.INVISIBLE);
+//                                        if (pos == 1 || pos == 2) {
+//                                            changePayMethodToNal();
+//                                        }
+//                                    });
+//
+//                                }
+//                            }
+//                        }
+//
+//                        @Override
+//                        public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+//                            FirebaseCrashlytics.getInstance().recordException(t);
+//                            Logger.d(getActivity(), TAG, " onFailure visicom" + t);
+//                        }
+//                    });
+//
+//            } catch (MalformedURLException e) {
+//                FirebaseCrashlytics.getInstance().recordException(e);
+//            }
 
         }
         if (rout != null && rout.equals("marker")) {

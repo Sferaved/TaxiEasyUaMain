@@ -54,6 +54,7 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.uxcam.UXCam;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -286,7 +287,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         if (checkoutUrl != null && URLUtil.isValidUrl(checkoutUrl)) {
             webView.loadUrl(checkoutUrl);
         } else {
-            Log.e("MyBottomSheetCardVerification", "Checkout URL is null or invalid");
+            Logger.e(context,"MyBottomSheetCardVerification", "Checkout URL is null or invalid");
             // Handle the error appropriately, e.g., show an error message to the user
         }
     }
@@ -457,41 +458,81 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
 
     }
     private void getReversWfp(String city) {
+        // Log method entry with input parameter
+        Logger.i(context,"ReversWfp", "Starting getReversWfp with city: " + city);
+
+        // Set up HTTP logging interceptor
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor()) // 3 попытки
-                .addInterceptor(interceptor)
-                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
-                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
-                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
-                .build();
+        Log.d("ReversWfp", "HttpLoggingInterceptor configured with level: BODY");
 
+        // Retrieve base URL from SharedPreferences
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        Log.d("ReversWfp", "Base URL retrieved: " + baseUrl);
+
+        // Build OkHttpClient with interceptors and timeouts
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor()) // 3 retries
+                .addInterceptor(interceptor)
+                .connectTimeout(30, TimeUnit.SECONDS) // Connection timeout
+                .readTimeout(30, TimeUnit.SECONDS)    // Read timeout
+                .writeTimeout(30, TimeUnit.SECONDS)   // Write timeout
+                .build();
+        Logger.d(context,"ReversWfp", "OkHttpClient built with retry interceptor and 30s timeouts");
+
+        // Build Retrofit instance
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl + "/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
+        Logger.d(context,"ReversWfp", "Retrofit instance created with base URL: " + baseUrl + "/");
 
+        // Create ReversService
         ReversService service = retrofit.create(ReversService.class);
+        Logger.d(context,"ReversWfp", "ReversService created");
 
-        Call<ReversResponse> call = service.refundVerifyCards(
-                context.getString(R.string.application),
-                city,
-                order_id,
-                amount
-        );
+        // Prepare API call parameters
+        String application = context.getString(R.string.application);
+        Logger.i(context,"ReversWfp", "Preparing refundVerifyCards API call with parameters: " +
+                "application=" + application + ", city=" + city + ", order_id=" + order_id + ", amount=" + amount);
+
+        // Make asynchronous API call
+        Call<ReversResponse> call = service.refundVerifyCards(application, city, order_id, amount);
+        Logger.d(context,"ReversWfp", "API call initiated for refundVerifyCards");
+
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<ReversResponse> call, @NonNull Response<ReversResponse> response) {
+                if (response.isSuccessful()) {
+                    ReversResponse reversResponse = response.body();
+                    if (reversResponse != null) {
+                        Logger.i(context, "ReversWfp", "API call successful. Response: " + reversResponse.toString());
+                    } else {
+                        Logger.w(context, "ReversWfp", "API call successful but response body is null");
+                    }
+                } else {
+                    Logger.w(context, "ReversWfp", "API call failed with HTTP code: " + response.code() +
+                            ", message: " + response.message());
+                    try {
+                        String errorBody = response.errorBody() != null ? response.errorBody().string() : "null";
+                        Logger.d(context, "ReversWfp", "Error body: " + errorBody);
+                    } catch (IOException e) {
+                        Logger.e(context, "ReversWfp", "Failed to read error body: " + e.getMessage() + e);
+                        FirebaseCrashlytics.getInstance().recordException(e);
+                    }
+                }
             }
 
             @Override
             public void onFailure(@NonNull Call<ReversResponse> call, @NonNull Throwable t) {
+                Logger.e(context, "ReversWfp", "API call failed: " + t.getMessage() + t);
                 FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
+
+        // Log dismissal
+        Logger.d(context,"ReversWfp", "Dismissing (likely UI dialog)");
         dismiss();
     }
     @Override
