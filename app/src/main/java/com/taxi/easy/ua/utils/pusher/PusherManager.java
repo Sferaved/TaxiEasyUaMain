@@ -5,7 +5,6 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -383,11 +382,7 @@ public class PusherManager {
                 Logger.d(context,"Pusher eventCanceled", "userEmail: " + userEmail);
 
                 if (email.equals(userEmail)) {
-                    ContentValues cv = new ContentValues();
-                    cv.put("verifyOrder", active);
-                    SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                    database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-                    database.close();
+                    sharedPreferencesHelperMain.saveValue("verifyUserOrder", active);
                 }
                 new Handler(Looper.getMainLooper()).post(() -> {
                     MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()

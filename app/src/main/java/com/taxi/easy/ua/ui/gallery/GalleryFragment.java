@@ -49,7 +49,6 @@ import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
-import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 import com.uxcam.UXCam;
 
 import org.json.JSONException;
@@ -451,15 +450,9 @@ public class GalleryFragment extends Fragment {
                     .build());
             return false;
         }
-//        if (!NetworkUtils.isNetworkAvailable(context)) {
-//
-//            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                    .setPopUpTo(R.id.nav_restart, true)
-//                    .build());
-//            return false;
-//        }
+
         else {
-            if (!verifyOrder(context)) {
+            if (verifyOrder()) {
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.black_list_message));
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 progressbar.setVisibility(View.INVISIBLE);
@@ -473,20 +466,8 @@ public class GalleryFragment extends Fragment {
         }
     }
 
-    private boolean verifyOrder(Context context) {
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-
-        boolean verify = true;
-        if (cursor.getCount() == 1) {
-
-            if (logCursor(MainActivity.TABLE_USER_INFO, context).get(1).equals("0")) {
-                verify = false;Logger.d(getActivity(), TAG, "verifyOrder:verify " +verify);
-            }
-            cursor.close();
-        }
-        database.close();
-        return verify;
+    private boolean verifyOrder() {
+        return (boolean) sharedPreferencesHelperMain.getValue("verifyUserOrder", false);
     }
 
     private void orderFinished() {
@@ -1169,7 +1150,7 @@ public class GalleryFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        new VerifyUserTask(context).execute();
+        
 
         Logger.d(getActivity(), TAG, "onResume: selectedItem " + selectedItem);
         listView.clearChoices();

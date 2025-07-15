@@ -112,7 +112,6 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
-import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 import com.uxcam.UXCam;
 
 import org.json.JSONException;
@@ -1078,7 +1077,7 @@ public class HomeFragment extends Fragment {
 
 
 
-        new VerifyUserTask(context).execute();
+        
 
         progressBar.setVisibility(GONE);
         pay_method =  logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
@@ -1103,7 +1102,7 @@ public class HomeFragment extends Fragment {
 
             // После завершения обновления, уберите индикатор загрузки
             swipeRefreshLayout.setRefreshing(false);
-            new VerifyUserTask(context).execute();
+            
 
             // Эмулируем окончание обновления с задержкой
             swipeRefreshLayout.postDelayed(() -> {
@@ -1438,7 +1437,7 @@ public class HomeFragment extends Fragment {
         assert orderCostStr != null;
         long orderCostLong = Long.parseLong(orderCostStr);
 
-        boolean black_list_yes = verifyOrder(context);
+        boolean black_list_yes = verifyOrder();
 
         String orderCost = String.valueOf(orderCostLong + addCost);
         if(black_list_yes) {
@@ -1449,13 +1448,7 @@ public class HomeFragment extends Fragment {
         }
         if (!orderCost.equals("0")) {
             scheduleUpdate();
-//
-//            text_view_cost.setVisibility(VISIBLE);
-//            btn_minus.setVisibility(VISIBLE);
-//            btn_plus.setVisibility(VISIBLE);
-//            buttonAddServices.setVisibility(VISIBLE);
-//            buttonBonus.setVisibility(VISIBLE);
-//            btn_order.setVisibility(VISIBLE);
+
 
             String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
             long discountInt = Integer.parseInt(discountText);
@@ -1796,36 +1789,11 @@ public class HomeFragment extends Fragment {
 
 
 
-    private boolean verifyOrder(Context context) {
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-
-        boolean verify = false;
-        if (cursor.getCount() == 1) {
-
-            if (logCursor(MainActivity.TABLE_USER_INFO, context).get(1).equals("0")) {
-                verify = true;
-                Logger.d(context, TAG, "verifyOrder:verify " +verify);
-            }
-            cursor.close();
-        }
-        database.close();
-        return verify;
+    private boolean verifyOrder() {
+        return (boolean) sharedPreferencesHelperMain.getValue("verifyUserOrder", false);
     }
 
-    private void updateRecordsUser(String result, Context context) {
-        ContentValues cv = new ContentValues();
 
-        cv.put("phone_number", result);
-
-        // обновляем по id
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        int updCount = database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
-                new String[] { "1" });
-        Logger.d(context, TAG, "updated rows count = " + updCount);
-        database.close();
-
-    }
 
     @Override
     public void onDestroyView() {
@@ -2006,7 +1974,7 @@ public class HomeFragment extends Fragment {
         String phoneNumber = "no phone";
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
-        boolean black_list_yes = verifyOrder(context);
+        boolean black_list_yes = verifyOrder();
 
         if(black_list_yes) {
             payment_type = "wfp_payment";
@@ -2645,16 +2613,6 @@ public class HomeFragment extends Fragment {
         blacklistManager.addToBlacklist(email);
         Log.d("blockUserBlackList", "Request to add email to blacklist sent: " + email);
 
-        // Update database entry to set "verifyOrder" to "0"
-        ContentValues cv = new ContentValues();
-        cv.put("verifyOrder", "0");
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        int rowsUpdated = database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-        Log.d("blockUserBlackList", "Updated 'verifyOrder' in database. Rows affected: " + rowsUpdated);
-
-        // Close the database
-        database.close();
-        Log.d("blockUserBlackList", "Database connection closed.");
     }
 
     private void createBlackList() {

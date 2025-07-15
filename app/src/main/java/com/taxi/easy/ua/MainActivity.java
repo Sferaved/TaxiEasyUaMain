@@ -96,6 +96,7 @@ import com.taxi.easy.ua.utils.user.del_server.ApiUserService;
 import com.taxi.easy.ua.utils.user.del_server.CallbackUser;
 import com.taxi.easy.ua.utils.user.del_server.RetrofitClient;
 import com.taxi.easy.ua.utils.user.del_server.UserFindResponse;
+import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 import com.taxi.easy.ua.utils.worker.AddUserNoNameWorker;
 import com.taxi.easy.ua.utils.worker.GetCardTokenWfpWorker;
 import com.taxi.easy.ua.utils.worker.InsertPushDateWorker;
@@ -1359,6 +1360,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, R.string.checking, Toast.LENGTH_SHORT).show();
                 startFireBase();
             } else {
+                new VerifyUserTask(this).execute();
                 String sityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
                 Logger.d(this, TAG, "CityCheckActivity: " + sityCheckActivity);
 
@@ -1610,9 +1612,6 @@ public class MainActivity extends AppCompatActivity {
             }
         } catch (Exception e) {
             handleException(e, cv);
-        } finally {
-            // Убедимся, что индикатор прогресса скрыт и данные обновлены в базе
-//            hideProgressBarAndUpdateDatabase(cv);
         }
     }
 
@@ -1637,65 +1636,13 @@ public class MainActivity extends AppCompatActivity {
     // Метод для скрытия индикатора прогресса и обновления базы данных
     private void hideProgressBarAndUpdateDatabase(ContentValues cv) {
         VisicomFragment.progressBar.setVisibility(GONE);
-        cv.put("verifyOrder", "0");
-        SQLiteDatabase database = null;
-        try {
-            database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-        } catch (Exception e) {
-            Logger.e(this, TAG, "Database update error");
-        } finally {
-            if (database != null) {
-                database.close();
-            }
-            VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-        }
+
+
     }
 
-//    private void settingsNewUser (String emailUser) {
-//        // Assuming this code is inside a method or a runnable block
-//
-//// Task 1: Update user info in a separate thread
-//        Thread updateUserInfoThread = new Thread(() -> {
-//            ContentValues cv = new ContentValues();
-//            updateRecordsUserInfo("email", emailUser, getApplicationContext());
-//            cv.put("verifyOrder", "1");
-//            SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-//            database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-//            database.close();
-//            Logger.d(this, TAG, "settingsNewUser" + emailUser);
-//        });
-//        updateUserInfoThread.start();
-//
-//        Thread sendTokenThread = new Thread(() -> {
-//            sendToken(emailUser);
-//        });
-//        sendTokenThread.start();
-//
-//// Task 2: Add user with no name in a separate thread
-//        Thread addUserNoNameThread = new Thread(() -> {
-//            addUserNoName(emailUser, getApplicationContext());
-//        });
-//        addUserNoNameThread.start();
-//
-//// Task 3: Fetch user phone information from the server in a separate thread
-//        //            userPhoneFromServer(emailUser);
-//        new Thread(this::userPhoneFromFb).start();
-//
-//
-//// Wait for all threads to finish (optional)
-//        try {
-//            updateUserInfoThread.join();
-//            addUserNoNameThread.join();
-////            fondyCardThread.join();
-////            monoCardThread.join();
-//        } catch (InterruptedException e) {
-//            FirebaseCrashlytics.getInstance().recordException(e);
-//        }
-//
-//    }
-    private void settingsNewUser(String emailUser) {
 
+    private void settingsNewUser(String emailUser) {
+        new VerifyUserTask(this).execute();
            // Создание запросов для задач settingsNewUser
         OneTimeWorkRequest updateUserInfoRequest = new OneTimeWorkRequest.Builder(UpdateUserInfoWorker.class)
                 .setConstraints(constraints)

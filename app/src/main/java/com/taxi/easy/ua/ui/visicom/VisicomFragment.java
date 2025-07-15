@@ -90,8 +90,6 @@ import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
-import com.taxi.easy.ua.ui.payment_system.PayApi;
-import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
 import com.taxi.easy.ua.utils.auth.FirebaseConsentManager;
 import com.taxi.easy.ua.utils.blacklist.BlacklistManager;
@@ -109,10 +107,8 @@ import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
-import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
-import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 import com.taxi.easy.ua.utils.worker.TilePreloadWorker;
 import com.uxcam.UXCam;
 
@@ -127,19 +123,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
-import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 public class VisicomFragment extends Fragment {
 
@@ -218,7 +206,6 @@ public class VisicomFragment extends Fragment {
     @SuppressLint("StaticFieldLeak")
     public static TextView text_full_message, textCostMessage, textStatusCar;
 
-    //    private final String baseUrl = "https://m.easy-order-taxi.site";
     private static String baseUrl;
 
     private CarProgressBar carProgressBar;
@@ -233,12 +220,7 @@ public class VisicomFragment extends Fragment {
     LocationManager locationManager;
     public static int currentNavDestination = -1; // ID текущего экрана
 
-    private static final int MAX_RETRY = 3;
-    private static final long RETRY_DELAY_MS = 3000; // 3 секунды
-    private int retryCount = 0;
-    private final Handler retryHandler = new Handler(Looper.getMainLooper());
 
-    private boolean blackListYes = false;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -410,7 +392,11 @@ public class VisicomFragment extends Fragment {
                 } else {
                     String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
                     if (!userEmail.equals("email")) {
-                        visicomCost();
+                        try {
+                            visicomCost();
+                        } catch (MalformedURLException e) {
+                            throw new RuntimeException(e);
+                        }
                         readTariffInfo();
                     }
 
@@ -418,7 +404,11 @@ public class VisicomFragment extends Fragment {
             }  else {
                 String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
                 if (!userEmail.equals("email")) {
-                    visicomCost();
+                    try {
+                        visicomCost();
+                    } catch (MalformedURLException e) {
+                        throw new RuntimeException(e);
+                    }
                     readTariffInfo();
                 }
 
@@ -852,7 +842,7 @@ public class VisicomFragment extends Fragment {
 
 
     @SuppressLint("Range")
-    public String getTaxiUrlSearchMarkers(String urlAPI, Context context, boolean black_list_yes) {
+    public String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
         Logger.d(context, TAG, "getTaxiUrlSearchMarkers: " + urlAPI);
         startTilePreloadWorker();
 
@@ -915,22 +905,31 @@ public class VisicomFragment extends Fragment {
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
 
-        if (black_list_yes) {
-            payment_type = "wfp_payment";
-            ContentValues cv = new ContentValues();
-            cv.put("payment_type", payment_type);
-
-            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?", new String[]{"1"});
-
-            buttonBonus.setText(context.getString(R.string.card_payment));
-            buttonBonus.setOnClickListener(v -> {
-                String message = context.getString(R.string.black_list_message_err);
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-            });
-        }
+        pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
 
         if (urlAPI.equals("costSearchMarkersTime")) {
+            boolean black_list_yes = verifyOrder();
+            Logger.d(context, TAG, "getTaxiUrlSearchMarkers: black_list_yes " + black_list_yes);
+
+            if (black_list_yes) {
+
+
+                if (!pay_method.equals("wfp_payment")) {
+                    payment_type = "wfp_payment";
+                    ContentValues cv = new ContentValues();
+                    cv.put("payment_type", payment_type);
+
+                    database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?", new String[]{"1"});
+
+                    buttonBonus.setText(context.getString(R.string.card_payment));
+
+                    String message = context.getString(R.string.black_list_message_err);
+
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+
+                }
+             }
+
             Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
             if (c.getCount() == 1) {
                 phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
@@ -943,6 +942,8 @@ public class VisicomFragment extends Fragment {
         }
 
         if (urlAPI.equals("orderClientCost")) {
+            boolean black_list_yes = verifyOrder();
+
             Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: startCost " + startCost);
             Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: finalCost " + finalCost);
 
@@ -952,7 +953,7 @@ public class VisicomFragment extends Fragment {
 
             String wfpInvoice = "*";
             if (payment_type.equals("wfp_payment")) {
-                String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS, context);
+                String rectoken = getCheckRectoken(context);
                 Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
                 if (!rectoken.isEmpty()) {
                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
@@ -967,8 +968,9 @@ public class VisicomFragment extends Fragment {
                 String lastCharacter = phoneNumber.substring(phoneNumber.length() - 1);
                 phoneNumber = phoneNumber.substring(0, phoneNumber.length() - 1).replace(" ", "");
                 comment = "цифра номера " + lastCharacter + ", Оплатили службе 45грн. " + comment;
-                addCost = addCostBlackList(addCost);
-            }
+
+//                addCost = addCostBlackList(addCost);
+           }
 
             boolean doubleOrder = (boolean) sharedPreferencesHelperMain.getValue("doubleOrderPref", false);
             if (doubleOrder) {
@@ -977,6 +979,12 @@ public class VisicomFragment extends Fragment {
             }
 
             String clientCost = text_view_cost.getText().toString();
+            if((boolean)sharedPreferencesHelperMain.getValue("black_list_45", false)) {
+                long cost = Long.parseLong(clientCost); // Convert string to double
+                cost += 45; // Add 45
+                clientCost = String.valueOf(cost); // Convert back to string
+            }
+            sharedPreferencesHelperMain.saveValue("black_list_45", false);
 
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
                     + clientCost + "/" + paramsUserArr + "/" + addCost + "/"
@@ -1031,7 +1039,7 @@ public class VisicomFragment extends Fragment {
     }
 
     @SuppressLint("Range")
-    private static String getCheckRectoken(String table, Context context) {
+    private static String getCheckRectoken(Context context) {
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
         String[] columns = {"rectoken"}; // Указываем нужное поле
@@ -1039,7 +1047,7 @@ public class VisicomFragment extends Fragment {
         String[] selectionArgs = {"1"};
         String result = "";
 
-        Cursor cursor = database.query(table, columns, selection, selectionArgs, null, null, null);
+        Cursor cursor = database.query(MainActivity.TABLE_WFP_CARDS, columns, selection, selectionArgs, null, null, null);
 
         if (cursor.moveToFirst()) {
             do {
@@ -1082,7 +1090,11 @@ public class VisicomFragment extends Fragment {
 
             String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
             if (!userEmail.equals("email")) {
-                visicomCost();
+                try {
+                    visicomCost();
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                }
                 readTariffInfo();
             }
 
@@ -1105,7 +1117,11 @@ public class VisicomFragment extends Fragment {
                 // обновляем по id
                 String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
                 if (!userEmail.equals("email")) {
-                    visicomCost();
+                    try {
+                        visicomCost();
+                    } catch (MalformedURLException e) {
+                        throw new RuntimeException(e);
+                    }
                     readTariffInfo();
                 }
                 frame_1.setBackgroundResource(R.drawable.buttons);
@@ -1128,7 +1144,11 @@ public class VisicomFragment extends Fragment {
 
                 String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
                 if (!userEmail.equals("email")) {
-                    visicomCost();
+                    try {
+                        visicomCost();
+                    } catch (MalformedURLException e) {
+                        throw new RuntimeException(e);
+                    }
                     readTariffInfo();
                 }
                 frame_1.setBackgroundResource(R.drawable.buttons);
@@ -1163,11 +1183,7 @@ public class VisicomFragment extends Fragment {
 
     @SuppressLint("ResourceAsColor")
     public boolean orderRout() {
-        Context context = MyApplication.getContext();
-        boolean black_list_yes = verifyOrder(context); // вызываем до передачи
-
-        urlOrder = getTaxiUrlSearchMarkers("orderClientCost", context, black_list_yes);
-
+        urlOrder = getTaxiUrlSearchMarkers("orderClientCost", context );
         Logger.d(context, TAG, "order: urlOrder " + urlOrder);
         return true;
     }
@@ -1549,32 +1565,11 @@ public class VisicomFragment extends Fragment {
         return val;
     }
 
-    private static boolean verifyOrder(Context context) {
-
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-
-        boolean verify = false;
-        if (cursor.getCount() == 1) {
-
-            if (logCursor(MainActivity.TABLE_USER_INFO, context).get(1).equals("0")) {
-                verify = true;
-                Log.d(TAG, "verifyOrder:verify " + verify);
-            }
-            cursor.close();
-        }
-        database.close();
-        return verify;
+    private static boolean verifyOrder() {
+        Object value = sharedPreferencesHelperMain.getValue("verifyUserOrder", false);
+        return Boolean.parseBoolean(String.valueOf(value));
     }
-    public void verifyOrderAsync(Context context, Consumer<Boolean> callback) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Handler mainHandler = new Handler(Looper.getMainLooper());
 
-        executor.execute(() -> {
-            boolean result = verifyOrder(context);
-            mainHandler.post(() -> callback.accept(result));
-        });
-    }
 
 
     private void changePayMethodMax(String textCost, String paymentType) {
@@ -1693,7 +1688,7 @@ public class VisicomFragment extends Fragment {
                     .build());
         }
 
-        new VerifyUserTask(context).execute();
+        
 
         VisicomFragment.sendUrlMap = null;
         MainActivity.uid = null;
@@ -1932,6 +1927,8 @@ public class VisicomFragment extends Fragment {
         Logger.d(context, TAG, "onCreateView: geo_marker " + geo_marker);
 
         buttonBonus.setOnClickListener(v -> {
+            boolean black_list_yes = verifyOrder();
+            Logger.d(context, TAG, "buttonBonus 2 " + black_list_yes);
             btnVisible(View.INVISIBLE);
             String costText = text_view_cost.getText().toString().trim();
 
@@ -1958,7 +1955,11 @@ public class VisicomFragment extends Fragment {
 
         binding.clearButtonTo.setOnClickListener(v -> {
             updateRouteSettings();
-            visicomCost();
+            try {
+                visicomCost();
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
             textViewTo.setText("");
         });
 
@@ -2164,7 +2165,11 @@ public class VisicomFragment extends Fragment {
             }
             String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
             if (!userEmail.equals("email")) {
-                visicomCost();
+                try {
+                    visicomCost();
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                }
                 readTariffInfo();
             }
 
@@ -2201,15 +2206,15 @@ public class VisicomFragment extends Fragment {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                             // Обработка отсутствия необходимых разрешений
-                            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION);
+                            checkPermission( );
                         }
                     } else {
                         // Для версий Android ниже 10
                         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                                 || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                             // Обработка отсутствия необходимых разрешений
-                            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION);
-                            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION);
+                            checkPermission();
+                            checkPermission();
                         }
                     }
                 }
@@ -2255,7 +2260,7 @@ public class VisicomFragment extends Fragment {
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
         }
     }
-    private void checkPermission(String permission) {
+    private void checkPermission() {
 
         requestLocationPermissions();
     }
@@ -2387,7 +2392,7 @@ public class VisicomFragment extends Fragment {
 
     }
 
-    private void visicomCost() {
+    private void visicomCost() throws MalformedURLException {
         Logger.d(context, TAG, "=== visicomCost() started ===");
 
         constr2.setVisibility(View.INVISIBLE);
@@ -2431,17 +2436,7 @@ public class VisicomFragment extends Fragment {
             textViewTo.setVisibility(View.VISIBLE);
             btnVisible(View.INVISIBLE);
 
-            verifyOrderAsync(context, result -> {
-                blackListYes = result;
-                sharedPreferencesHelperMain.saveValue("black_list", String.valueOf(result));
-                try {
-
-                    requestCostFromServer(start, finish);
-                } catch (MalformedURLException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-
+            requestCostFromServer(start, finish);
         } else {
             sharedPreferencesHelperMain.saveValue("CityCheckActivity", "**");
 
@@ -2457,8 +2452,8 @@ public class VisicomFragment extends Fragment {
     }
 
     private void requestCostFromServer(String start, String finish) throws MalformedURLException {
-        String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context, blackListYes);
-        Logger.d(context, TAG, "Попытка #" + (retryCount + 1) + ", URL: " + urlCost);
+        String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
+        Logger.d(context, TAG, "Попытка #" + ( 1) + ", URL: " + urlCost);
 
         CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
         parser.sendURL(urlCost, new Callback<>() {
@@ -2536,8 +2531,16 @@ public class VisicomFragment extends Fragment {
             long discount;
 
             firstCost = Long.parseLong(orderCost);
+            if ( firstCost != 0) {
+
+                if((boolean) sharedPreferencesHelperMain.getValue("verifyUserOrder", false)){
+                    firstCost = firstCost +45;
+                }
+            }
             discount = firstCost * discountInt / 100;
             firstCost = firstCost + discount;
+
+
 
             Logger.d(context, TAG, "Calculated firstCost = " + firstCost + ", discount = " + discount);
 
@@ -2607,16 +2610,7 @@ public class VisicomFragment extends Fragment {
         blacklistManager.addToBlacklist(email);
         Log.d("blockUserBlackList", "Request to add email to blacklist sent: " + email);
 
-        // Update database entry to set "verifyOrder" to "0"
-        ContentValues cv = new ContentValues();
-        cv.put("verifyOrder", "0");
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        int rowsUpdated = database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-        Log.d("blockUserBlackList", "Updated 'verifyOrder' in database. Rows affected: " + rowsUpdated);
 
-        // Close the database
-        database.close();
-        Log.d("blockUserBlackList", "Database connection closed.");
     }
 
     private void fetchRoutesCancel() {
@@ -2954,82 +2948,95 @@ public class VisicomFragment extends Fragment {
     }
 
     private void createBlackList() {
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        sharedPreferencesHelperMain.saveValue("black_list_45", true);
+        pay_method = "wfp_payment";
+        ContentValues cv = new ContentValues();
+        cv.put("payment_type", pay_method);
+        // обновляем по id
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                new String[] { "1" });
+        database.close();
 
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor())
-                .addInterceptor(interceptor)
-                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
-                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
-                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
-                .build();
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
+        orderRout();
 
-        PayApi apiService = retrofit.create(PayApi.class);
-        Call<ResponsePaySystem> call = apiService.getPaySystem();
-        call.enqueue(new Callback<ResponsePaySystem>() {
-            @Override
-            public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    // Обработка успешного ответа
-                    ResponsePaySystem responsePaySystem = response.body();
-                    assert responsePaySystem != null;
-                    String paymentCode = responsePaySystem.getPay_system();
-                    switch (paymentCode) {
-                        case "wfp":
-                            pay_method = "wfp_payment";
-                            break;
-                        case "fondy":
-                            pay_method = "fondy_payment";
-                            break;
-                        case "mono":
-                            pay_method = "mono_payment";
-                            break;
-                    }
-                    if(isAdded()){
-                        ContentValues cv = new ContentValues();
-                        cv.put("payment_type", pay_method);
-                        // обновляем по id
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                                new String[] { "1" });
+        googleVerifyAccount();
 
-                        cv = new ContentValues();
-                        cv.put("verifyOrder", "0");
-
-                        database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-                        database.close();
-
-                        orderRout();
-
-                        googleVerifyAccount();
-                    }
-
-
-                } else {
-                    if (isAdded()) { //
-                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                    }
-
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
-                FirebaseCrashlytics.getInstance().recordException(t);
-                if (isAdded()) { //
-                    navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
-                }
-            }
-        });
+//        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+//        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+//
+//        OkHttpClient client = new OkHttpClient.Builder()
+//                .addInterceptor(new RetryInterceptor())
+//                .addInterceptor(interceptor)
+//                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
+//                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
+//                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
+//                .build();
+//        Retrofit retrofit = new Retrofit.Builder()
+//                .baseUrl(baseUrl)
+//                .addConverterFactory(GsonConverterFactory.create())
+//                .client(client)
+//                .build();
+//
+//        PayApi apiService = retrofit.create(PayApi.class);
+//        Call<ResponsePaySystem> call = apiService.getPaySystem();
+//        call.enqueue(new Callback<ResponsePaySystem>() {
+//            @Override
+//            public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
+//                if (response.isSuccessful() && response.body() != null) {
+//                    // Обработка успешного ответа
+//                    ResponsePaySystem responsePaySystem = response.body();
+//                    String paymentCode = responsePaySystem.getPay_system();
+//                    switch (paymentCode) {
+//                        case "wfp":
+//                            pay_method = "wfp_payment";
+//                            break;
+//                        case "fondy":
+//                            pay_method = "fondy_payment";
+//                            break;
+//                        case "mono":
+//                            pay_method = "mono_payment";
+//                            break;
+//                    }
+//                    if(isAdded()){
+//                        ContentValues cv = new ContentValues();
+//                        cv.put("payment_type", pay_method);
+//                        // обновляем по id
+//                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//                        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+//                                new String[] { "1" });
+//
+//                        cv = new ContentValues();
+//                        cv.put("verifyOrder", "0");
+//
+//                        database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+//                        database.close();
+//
+//                        orderRout();
+//
+//                        googleVerifyAccount();
+//                    }
+//
+//
+//                } else {
+//                    if (isAdded()) { //
+//                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
+//                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+//                    }
+//
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
+//                FirebaseCrashlytics.getInstance().recordException(t);
+//                if (isAdded()) { //
+//                    navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                            .setPopUpTo(R.id.nav_restart, true)
+//                            .build());
+//                }
+//            }
+//        });
     }
 
     public void createDoubleOrder() {
@@ -3051,6 +3058,7 @@ public class VisicomFragment extends Fragment {
     }
 
     private void googleVerifyAccount() {
+
         FirebaseConsentManager consentManager = new FirebaseConsentManager(context);
 
         consentManager.checkUserConsent(new FirebaseConsentManager.ConsentCallback() {
@@ -3059,7 +3067,29 @@ public class VisicomFragment extends Fragment {
                 Logger.d(context, TAG, "Согласие пользователя действительное.");
                 new Handler(Looper.getMainLooper()).post(() -> {
                     try {
-                        orderFinished();
+                        if(!verifyOrder()) {
+                            orderFinished();
+                        } else {
+                            if (pay_method.equals("wfp_payment")) {
+                                String rectoken = getCheckRectoken(context);
+                                Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
+                                if (rectoken.isEmpty()) {
+                                    String message = context.getString(R.string.no_cards_info);
+                                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                                    bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
+
+                                } else {
+                                    orderFinished();
+                                }
+
+                            } else {
+                                String message = context.getString(R.string.black_list_message_err);
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+
+                                btnVisible(VISIBLE);
+                            }
+                        }
+
                     } catch (MalformedURLException e) {
                         throw new RuntimeException(e);
                     }

@@ -18,7 +18,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -56,7 +55,6 @@ import com.taxi.easy.ua.ui.payment_system.PayApi;
 import com.taxi.easy.ua.ui.payment_system.ResponsePaySystem;
 import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
 import com.taxi.easy.ua.utils.auth.FirebaseConsentManager;
-import com.taxi.easy.ua.utils.blacklist.BlacklistManager;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.data.DataArr;
@@ -65,7 +63,6 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
-import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 import com.uxcam.UXCam;
 
 import java.io.IOException;
@@ -350,7 +347,7 @@ public class CacheOrderFragment extends Fragment {
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
 
-        boolean black_list_yes = verifyOrder(context);
+        boolean black_list_yes = verifyOrder();
 
         Logger.d(context, TAG, "black_list_yes 1 " + black_list_yes);
         if(black_list_yes) {
@@ -509,22 +506,9 @@ public class CacheOrderFragment extends Fragment {
 
         return result;
     }
-    private boolean verifyOrder(Context context) {
+    private boolean verifyOrder() {
 
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-
-        boolean verify = false;
-        if (cursor.getCount() == 1) {
-
-            if (logCursor(MainActivity.TABLE_USER_INFO, context).get(1).equals("0")) {
-                verify = true;
-                Log.d(TAG, "verifyOrder:verify " + verify);
-            }
-            cursor.close();
-        }
-        database.close();
-        return verify;
+        return (boolean) sharedPreferencesHelperMain.getValue("verifyUserOrder", false);
     }
     private boolean orderRout() {
 //        urlOrder = getTaxiUrlSearchMarkers("orderClientCost", MyApplication.getContext());
@@ -963,7 +947,7 @@ public class CacheOrderFragment extends Fragment {
     public void onResume() {
         super.onResume();
         Logger.d(context, TAG, "onResume 1" );
-        new VerifyUserTask(context).execute();
+
 
         sendUrlMap = null;
         MainActivity.uid = null;
@@ -1085,32 +1069,7 @@ public class CacheOrderFragment extends Fragment {
     }
 
 
-    private void blockUserBlackList() {
-        // Log the start of the block process
-        Logger.d(context, TAG, "Starting the block process for user.");
-         // Retrieve email from the database
-        String email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-        Logger.d(context, TAG, "Retrieved email from database: " + email);
 
-        // Add email to the blacklist
-        BlacklistManager blacklistManager = new BlacklistManager();
-        blacklistManager.addToBlacklist(email);
-        Logger.d(context, TAG, "Request to add email to blacklist sent: " + email);
-
-        // Update database entry to set "verifyOrder" to "0"
-        ContentValues cv = new ContentValues();
-        cv.put("verifyOrder", "0");
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        int rowsUpdated = database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-        Logger.d(context, TAG, "Updated 'verifyOrder' in database. Rows affected: " + rowsUpdated);
-
-        // Close the database
-        database.close();
-        Logger.d(context, TAG, "Database connection closed.");
-        MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                .setPopUpTo(R.id.nav_visicom, true)
-                .build());
-    }
 
 
 

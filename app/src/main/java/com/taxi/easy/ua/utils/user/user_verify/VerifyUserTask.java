@@ -1,119 +1,85 @@
 package com.taxi.easy.ua.utils.user.user_verify;
 
-import static android.content.Context.MODE_PRIVATE;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
-import android.annotation.SuppressLint;
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-
-import androidx.annotation.NonNull;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.taxi.easy.ua.MainActivity;
-import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.log.Logger;
 
-import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class VerifyUserTask {
     private static final String TAG = "VerifyUserTask";
-    @SuppressLint("StaticFieldLeak")
     private final Context context;
+
+    private static ListenerRegistration listenerRegistration;
 
     public VerifyUserTask(Context context) {
         this.context = context;
     }
 
     public void execute() {
-        Logger.d(context, TAG, "execute() started");
+        Logger.d(context, TAG, "execute() started with Firestore");
 
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, this.context).get(3);
-        Logger.d(context, TAG, "Fetched user email: " + userEmail);
+        Map<String, String> userInfo = getUserInfoFromCursor();
+        String userEmail = userInfo.get("email");
 
-        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-        Logger.d(context, TAG, "Base URL: " + baseUrl);
-
-        String url = baseUrl + "/android/verifyBlackListUser/" + userEmail + "/" + context.getString(R.string.application);
-        Logger.d(context, TAG, "Constructed URL: " + url);
-
-        CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
-
-        try {
-            parser.sendURL(url, new Callback<>() {
-                @Override
-                public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
-                    Logger.d(context, TAG, "HTTP Response received: " + response.code());
-
-                    if (response.isSuccessful() && response.body() != null) {
-                        Logger.d(context, TAG, "Response body: " + response.body().toString());
-                        Map<String, String> sendUrlMap = response.body();
-                        onPostExecute(sendUrlMap);
-                    }
-                }
-
-                @Override
-                public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
-                    FirebaseCrashlytics.getInstance().recordException(t);
-                    Logger.e(context, TAG, "Failed to fetch data: " + t.getMessage());
-                }
-            });
-        } catch (MalformedURLException e) {
-            Logger.e(context, TAG, "MalformedURLException: " + e.getMessage());
-        }
-    }
-
-
-    protected void onPostExecute(Map<String, String> sendUrlMap) {
-        if (sendUrlMap == null) {
-            Logger.e(context, TAG, "Result is null");
+        if (userEmail == null || userEmail.isEmpty()) {
+            Logger.e(context, TAG, "User email not found in DB");
             return;
         }
+        Logger.d(context, TAG, "User is " + userEmail);
+        listenerRegistration = FirebaseFirestore.getInstance().collection("blackList")
+                .whereEqualTo("email", userEmail)
+                .addSnapshotListener((QuerySnapshot snapshots, FirebaseFirestoreException e) -> {
+                    Logger.d(context, TAG, "🔥 Firestore listener triggered");
+                    if (e != null) {
+                        FirebaseCrashlytics.getInstance().recordException(e);
+                        Logger.e(context, TAG, "Firestore listener error: " + e.getMessage());
+                        return;
+                    }
 
-        String message = sendUrlMap.get("Message");
-        ContentValues cv = new ContentValues();
+                    boolean inBlackList = snapshots != null && !snapshots.isEmpty();
+                    Logger.d(context, TAG, "User is " + (inBlackList ? "in" : "not in") + " blackList");
 
+                    // ✅ Сохраняем в SharedPreferences
+                    sharedPreferencesHelperMain.saveValue("verifyUserOrder", inBlackList);
+                    Logger.d(context, TAG, "sharedPreferencesHelperMain " + sharedPreferencesHelperMain.getValue("verifyUserOrder", false));
 
+                });
+    }
 
-        if (message != null && message.equals("В черном списке")) {
-            cv.put("verifyOrder", "0");
-            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-            database.close();
-        }
-
-        if (message != null && !message.equals("В черном списке")) {
-            cv.put("verifyOrder", "1");
-            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-            database.close();
+    public static void stopListener() {
+        if (listenerRegistration != null) {
+            listenerRegistration.remove();
+            listenerRegistration = null;
         }
     }
 
-    @SuppressLint("Range")
-    public static List<String> logCursor(String table, Context context) {
-        List<String> list = new ArrayList<>();
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor c = database.query(table, null, null, null, null, null, null);
-        if (c.moveToFirst()) {
-            do {
-                for (String cn : c.getColumnNames()) {
-                    list.add(c.getString(c.getColumnIndex(cn)));
+    private Map<String, String> getUserInfoFromCursor() {
+        Map<String, String> result = new HashMap<>();
+        try (var database = context.openOrCreateDatabase(MainActivity.DB_NAME, Context.MODE_PRIVATE, null);
+             var cursor = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null)) {
+
+            if (cursor.moveToFirst()) {
+                for (String column : cursor.getColumnNames()) {
+                    result.put(column, cursor.getString(cursor.getColumnIndex(column)));
                 }
-            } while (c.moveToNext());
+            } else {
+                Logger.w(context, TAG, "Cursor is empty for table: " + MainActivity.TABLE_USER_INFO);
+            }
+        } catch (Exception e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+            Logger.e(context, TAG, "Error while reading user info: " + e.getMessage());
         }
-        c.close();
-        database.close();
-        return list;
+
+        return result;
     }
 }

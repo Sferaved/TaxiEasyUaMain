@@ -160,8 +160,8 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         });
 
         btn_ok = view.findViewById(R.id.btn_ok);
-        boolean black_list_yes = verifyOrder(requireContext());
-        if (!black_list_yes) {
+        boolean black_list_yes = verifyOrder();
+        if (black_list_yes) {
             btn_ok.setVisibility(View.GONE);
         }
         btn_ok.setOnClickListener(v -> {
@@ -229,21 +229,8 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         return view;
     }
 
-    private boolean verifyOrder(Context context) {
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor cursor = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
-
-        boolean verify = true;
-        if (cursor.getCount() == 1) {
-
-            if (logCursor(MainActivity.TABLE_USER_INFO, context).get(1).equals("0")) {
-                verify = false;
-                Log.d("TAG", "verifyOrder:verify " + verify);
-            }
-            cursor.close();
-        }
-        database.close();
-        return verify;
+    private boolean verifyOrder() {
+        return (boolean) sharedPreferencesHelperMain.getValue("verifyUserOrder", false);
     }
 
     private void getUrlToPaymentWfp() {

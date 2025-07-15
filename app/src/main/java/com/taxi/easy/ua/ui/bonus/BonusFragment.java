@@ -100,14 +100,7 @@ public class BonusFragment extends Fragment {
 
         in_but = binding.btnInAccount;
         in_but.setOnClickListener(v -> {
-            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            ContentValues cv = new ContentValues();
-            cv.put("email", "email");
-            cv.put("verifyOrder", "1");
-            // обновляем по id
-            database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
-                    new String[] { "1" });
-            database.close();
+
 
             Intent intent = new Intent(getActivity(), MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

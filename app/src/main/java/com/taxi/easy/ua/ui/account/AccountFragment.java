@@ -48,8 +48,8 @@ import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
-import com.taxi.easy.ua.utils.user.del_server.UserRepository;
 import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
+import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 import com.uxcam.UXCam;
 
 import java.util.ArrayList;
@@ -80,7 +80,7 @@ public class AccountFragment extends Fragment {
     AppCompatButton btnCallAdmin;
     AppCompatButton btnOrder;
     View root;
-    UserRepository userRepository;
+
     String userEmail;
     DatabaseHelper dbH;
     DatabaseHelperUid dbHUid;
@@ -130,6 +130,9 @@ public class AccountFragment extends Fragment {
         out_but = binding.outBut;
         consentManager = new FirebaseConsentManager(requireActivity());
         out_but.setOnClickListener(v -> {
+            // ⛔️ Отключаем Firestore listener перед выходом
+            VerifyUserTask.stopListener();
+
             consentManager.revokeTokenAndSignOut();
             Toast.makeText(context, R.string.out_account, Toast.LENGTH_SHORT).show();
             NavController navController = MainActivity.navController;
@@ -142,14 +145,8 @@ public class AccountFragment extends Fragment {
 
         in_but = binding.btnInAccount;
         in_but.setOnClickListener(v -> {
-            SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            ContentValues cv = new ContentValues();
-            cv.put("email", "email");
-            cv.put("verifyOrder", "1");
-            // обновляем по id
-            database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
-                    new String[] { "1" });
-            database.close();
+
+
 
             Intent intent = new Intent(getActivity(), MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -208,22 +205,7 @@ public class AccountFragment extends Fragment {
 
         del_but.setOnClickListener(v -> {
             Logger.d(context, TAG, "Delete button clicked");
-//            del_but.setVisibility(View.GONE);
-//            progressBar.setVisibility(View.VISIBLE);
-//
-//            // Запустить указанный код
-//
-//            KeyboardUtils.hideKeyboard(requireActivity(), root);
-//            userManager.deleteUserPhone();
-//            userRepository = new UserRepository();
-//            userRepository.destroyEmail(userEmail);
-//
-//            sharedPreferencesHelperMain.saveValue("CityCheckActivity", "**");
-//            updateRecordsUserInfo("email", "email", context);
-//            resetUserInfo();
-//            consentManager.revokeTokenAndSignOut();
-//            Toast.makeText(context, R.string.out_account, Toast.LENGTH_SHORT).show();
-//            Toast.makeText(getActivity(), R.string.del_info, Toast.LENGTH_SHORT).show();
+
             startActivity(new Intent(getActivity(), ExitActivity.class));
         });
 
@@ -245,12 +227,6 @@ public class AccountFragment extends Fragment {
                         .build());
             }
 
-//            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-//
-//                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                        .setPopUpTo(R.id.nav_restart, true)
-//                        .build());
-//            }
 
             sharedPreferencesHelperMain.saveValue("gps_upd", true);
             // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту

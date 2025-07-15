@@ -37,9 +37,6 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.cities.api.CityApiClient;
-import com.taxi.easy.ua.ui.cities.api.CityResponse;
-import com.taxi.easy.ua.ui.cities.api.CityService;
 import com.taxi.easy.ua.ui.gallery.GalleryFragment;
 import com.taxi.easy.ua.ui.home.CustomArrayAdapter;
 import com.taxi.easy.ua.ui.home.HomeFragment;
@@ -222,7 +219,18 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                     }
                 }
 
-            } else {
+            } else if ((boolean) sharedPreferencesHelperMain.getValue("verifyUserOrder", false)) {
+                String message = context.getString(R.string.black_list_message_err);
+
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+                try {
+                    reCount();
+                } catch (UnsupportedEncodingException | MalformedURLException e) {
+                    throw new RuntimeException(e);
+                }
+                dismiss();
+            }
+                else {
                 try {
                     Logger.d(context, TAG, "paymentType: 2 ");
                     paymentType(arrayCode [pos], context);
@@ -313,45 +321,6 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             database.close();
             Logger.d(context, TAG, "База данных закрыта");
         }
-    }
-    private void cityMaxPay(String $city) {
-
-
-        String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-        CityApiClient cityApiClient = new CityApiClient(BASE_URL);
-        CityService cityService = cityApiClient.getClient().create(CityService.class);
-
-        // Замените "your_city" на фактическое название города
-        Call<CityResponse> call = cityService.getMaxPayValues($city, getString(R.string.application));
-
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<CityResponse> call, @NonNull Response<CityResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    CityResponse cityResponse = response.body();
-                    int cardMaxPay = cityResponse.getCardMaxPay();
-                    int bonusMaxPay = cityResponse.getBonusMaxPay();
-                    String black_list = cityResponse.getBlack_list();
-
-                    ContentValues cv = new ContentValues();
-                    cv.put("card_max_pay", cardMaxPay);
-                    cv.put("bonus_max_pay", bonusMaxPay);
-                    sharedPreferencesHelperMain.saveValue("black_list", black_list);
-
-                    database.update(MainActivity.CITY_INFO, cv, "id = ?",
-                            new String[]{"1"});
-
-                } else {
-                    Logger.d(getActivity(), TAG, "Failed. Error code: " + response.code());
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<CityResponse> call, @NonNull Throwable t) {
-                FirebaseCrashlytics.getInstance().recordException(t);
-                Logger.d(getActivity(), TAG, "Failed. Error message: " + t.getMessage());
-            }
-        });
     }
 
 
