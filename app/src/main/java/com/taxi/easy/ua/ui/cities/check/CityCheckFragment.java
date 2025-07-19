@@ -103,7 +103,9 @@ public class CityCheckFragment extends Fragment {
         binding = FragmentCityCheckBinding.inflate(inflater, container, false);
         root = binding.getRoot();
         if (button1 != null) {
+            if(button1 != null) {
             button1.setVisibility(View.VISIBLE);
+        }
         }
 
         sharedPreferencesHelper = new SharedPreferencesHelper(requireActivity());

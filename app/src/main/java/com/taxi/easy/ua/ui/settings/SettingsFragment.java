@@ -38,7 +38,9 @@ public class SettingsFragment extends Fragment {
         FragmentSettingsBinding binding = FragmentSettingsBinding.inflate(inflater, container, false);
 
         View root = binding.getRoot();
-        button1.setVisibility(View.VISIBLE);
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
         // Настройка выпадающего списка
         Spinner languageSpinner = binding.languageSpinner;
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(

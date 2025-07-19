@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.utils.cost_json_parser;
+package com.taxi.easy.ua.utils.retrofit.cost_json_parser;
 
 import static com.taxi.easy.ua.MainActivity.costMap;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
@@ -8,6 +8,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
+import com.taxi.easy.ua.utils.retrofit.APIService;
 
 import java.io.IOException;
 import java.net.MalformedURLException;

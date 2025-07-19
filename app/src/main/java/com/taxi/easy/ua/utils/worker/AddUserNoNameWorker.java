@@ -20,6 +20,7 @@ public class AddUserNoNameWorker extends Worker {
     @Override
     public Result doWork() {
         String emailUser = getInputData().getString("emailUser");
+        Logger.e(getApplicationContext(), TAG, "AddUserNoNameWorker started with emailUser: " + emailUser);
 
         try {
             boolean result = UserUtils.addUserNoName(emailUser, getApplicationContext(), this);

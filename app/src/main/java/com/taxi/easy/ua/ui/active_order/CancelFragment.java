@@ -92,7 +92,9 @@ public class CancelFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
-        button1.setVisibility(View.VISIBLE);
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
         binding = FragmentCancelBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
         context = requireActivity();

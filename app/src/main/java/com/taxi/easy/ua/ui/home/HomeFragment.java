@@ -71,6 +71,9 @@ import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 import androidx.room.Room;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -104,12 +107,13 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
-import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
+import com.taxi.easy.ua.utils.retrofit.cost_json_parser.CostJSONParserRetrofit;
+import com.taxi.easy.ua.utils.retrofit.worker.RetrofitWorker;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.uxcam.UXCam;
@@ -139,6 +143,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+
 
 public class HomeFragment extends Fragment {
 
@@ -234,7 +239,9 @@ public class HomeFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
-        button1.setVisibility(View.VISIBLE);
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
@@ -1347,82 +1354,176 @@ public class HomeFragment extends Fragment {
     });
 
     }
-    @SuppressLint("ResourceAsColor")
-    private void cost() {
+//    @SuppressLint("ResourceAsColor")
+//    private void cost() {
+//
+//        constr2.setVisibility(INVISIBLE);
+//        textViewTo.setVisibility(VISIBLE);
+//        binding.textwhere.setVisibility(VISIBLE);
+//        binding.num2.setVisibility(VISIBLE);
+//        btn_clear.setVisibility(VISIBLE);
+//
+//
+//
+//        from = textViewFrom.getText().toString();
+//
+//        if (numberFlagFrom.equals("1") && from_number.getText().toString().equals(" ")) {
+//            setEditTextBackgroundTint(from_number, R.color.selected_text_color);
+//            from_numberCost = "1";
+//        } else {
+//            if (numberFlagFrom.equals("0")) {
+//                from_numberCost = " ";
+//            } else {
+//                from_numberCost = from_number.getText().toString();
+//            }
+//        }
+//
+//        if (numberFlagTo.equals("1") && to_number.getText().toString().equals(" ")) {
+//            setEditTextBackgroundTint(to_number, R.color.selected_text_color);
+//            to_numberCost = "1";
+//        } else {
+//            if (numberFlagTo.equals("0")) {
+//                to_numberCost = " ";
+//            } else {
+//                to_numberCost = to_number.getText().toString();
+//            }
+//        }
+//
+//        Logger.d(context, TAG, "cost: numberFlagTo " + numberFlagTo);
+//
+//        if (to == null) {
+//            toCost = from;
+//            to_numberCost = from_numberCost;
+//        } else {
+//            toCost = to;
+//        }
+//        List<String> settings = new ArrayList<>();
+//        String urlCost;
+//        try {
+//
+//            settings.add(from);
+//            settings.add(from_numberCost);
+//            settings.add(toCost);
+//            settings.add(to_numberCost);
+//            updateRoutHome(settings);
+//            urlCost = getTaxiUrlSearch("costSearchTime", context);
+//
+//            CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
+//            parser.sendURL(urlCost, new Callback<>() {
+//                @Override
+//                public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+//                    Map<String, String> sendUrlMapCost = response.body();
+//                    assert sendUrlMapCost != null;
+//                    handleCostResponse(sendUrlMapCost);
+//                }
+//
+//                @Override
+//                public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+//                    FirebaseCrashlytics.getInstance().recordException(t);
+//                }
+//            });
+//
+//        } catch (MalformedURLException | UnsupportedEncodingException e) {
+//            resetRoutHome();
+//            FirebaseCrashlytics.getInstance().recordException(e);
+//            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+//                    .setPopUpTo(R.id.nav_restart, true)
+//                    .build());
+//        }
+//    }
+@SuppressLint("SetTextI18n")
+private void cost() {
 
-        constr2.setVisibility(INVISIBLE);
-        textViewTo.setVisibility(VISIBLE);
-        binding.textwhere.setVisibility(VISIBLE);
-        binding.num2.setVisibility(VISIBLE);
-        btn_clear.setVisibility(VISIBLE);
+    constr2.setVisibility(INVISIBLE);
+    textViewTo.setVisibility(VISIBLE);
+    binding.textwhere.setVisibility(VISIBLE);
+    binding.num2.setVisibility(VISIBLE);
+    btn_clear.setVisibility(VISIBLE);
 
+    from = textViewFrom.getText().toString();
 
+    // FROM номер
+    if (numberFlagFrom.equals("1") && from_number.getText().toString().equals(" ")) {
+        setEditTextBackgroundTint(from_number, R.color.selected_text_color);
+        from_numberCost = "1";
+    } else {
+        from_numberCost = numberFlagFrom.equals("0") ? " " : from_number.getText().toString();
+    }
 
-        from = textViewFrom.getText().toString();
+    // TO номер
+    if (numberFlagTo.equals("1") && to_number.getText().toString().equals(" ")) {
+        setEditTextBackgroundTint(to_number, R.color.selected_text_color);
+        to_numberCost = "1";
+    } else {
+        to_numberCost = numberFlagTo.equals("0") ? " " : to_number.getText().toString();
+    }
 
-        if (numberFlagFrom.equals("1") && from_number.getText().toString().equals(" ")) {
-            setEditTextBackgroundTint(from_number, R.color.selected_text_color);
-            from_numberCost = "1";
-        } else {
-            if (numberFlagFrom.equals("0")) {
-                from_numberCost = " ";
-            } else {
-                from_numberCost = from_number.getText().toString();
-            }
-        }
+    Logger.d(context, TAG, "cost: numberFlagTo " + numberFlagTo);
 
-        if (numberFlagTo.equals("1") && to_number.getText().toString().equals(" ")) {
-            setEditTextBackgroundTint(to_number, R.color.selected_text_color);
-            to_numberCost = "1";
-        } else {
-            if (numberFlagTo.equals("0")) {
-                to_numberCost = " ";
-            } else {
-                to_numberCost = to_number.getText().toString();
-            }
-        }
+    if (to == null) {
+        toCost = from;
+        to_numberCost = from_numberCost;
+    } else {
+        toCost = to;
+    }
 
-        Logger.d(context, TAG, "cost: numberFlagTo " + numberFlagTo);
-
-        if (to == null) {
-            toCost = from;
-            to_numberCost = from_numberCost;
-        } else {
-            toCost = to;
-        }
+    try {
         List<String> settings = new ArrayList<>();
-        String urlCost;
-        try {
+        settings.add(from);
+        settings.add(from_numberCost);
+        settings.add(toCost);
+        settings.add(to_numberCost);
+        updateRoutHome(settings);
 
-            settings.add(from);
-            settings.add(from_numberCost);
-            settings.add(toCost);
-            settings.add(to_numberCost);
-            updateRoutHome(settings);
-            urlCost = getTaxiUrlSearch("costSearchTime", context);
+        String urlCost = getTaxiUrlSearch("costSearchTime", context);
 
-            CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
-            parser.sendURL(urlCost, new Callback<>() {
-                @Override
-                public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
-                    Map<String, String> sendUrlMapCost = response.body();
-                    assert sendUrlMapCost != null;
-                    handleCostResponse(sendUrlMapCost);
-                }
+        // === WorkManager Start ===
+        Data inputData = new Data.Builder()
+                .putString("taskType", "costRequest")
+                .putString("url", urlCost)
+                .build();
 
-                @Override
-                public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
-                    FirebaseCrashlytics.getInstance().recordException(t);
-                }
-            });
+        OneTimeWorkRequest costRequest = new OneTimeWorkRequest.Builder(RetrofitWorker.class)
+                .setInputData(inputData)
+                .build();
 
-        } catch (MalformedURLException | UnsupportedEncodingException e) {
-            resetRoutHome();
-            FirebaseCrashlytics.getInstance().recordException(e);
-            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_restart, true)
-                    .build());
-        }
+        WorkManager.getInstance(requireContext()).enqueue(costRequest);
+
+        WorkManager.getInstance(requireContext())
+                .getWorkInfoByIdLiveData(costRequest.getId())
+                .observe(getViewLifecycleOwner(), workInfo -> {
+                    if (workInfo != null && workInfo.getState().isFinished()) {
+                        Data output = workInfo.getOutputData();
+
+                        if (output.getString("error") != null) {
+                            String error = output.getString("error");
+                            FirebaseCrashlytics.getInstance().log("Ошибка costRequest: " + error);
+                            resetRoutHome();
+                            showErrorSheet(getString(R.string.server_error_connected));
+                            return;
+                        }
+
+                        Map<String, String> resultMap = new HashMap<>();
+                        resultMap.put("order_cost", output.getString("order_cost"));
+                        resultMap.put("Message", output.getString("Message"));
+
+                        handleCostResponse(resultMap);
+                    }
+                });
+        // === WorkManager End ===
+
+    } catch (UnsupportedEncodingException e) {
+        resetRoutHome();
+        FirebaseCrashlytics.getInstance().recordException(e);
+        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
+                .setPopUpTo(R.id.nav_restart, true)
+                .build());
+    }
+}
+
+    private void showErrorSheet(String message) {
+        MyBottomSheetErrorFragment bottomSheet = new MyBottomSheetErrorFragment(message);
+        bottomSheet.show(fragmentManager, bottomSheet.getTag());
     }
 
     @SuppressLint("SetTextI18n")

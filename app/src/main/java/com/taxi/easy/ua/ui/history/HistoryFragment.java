@@ -84,7 +84,9 @@ public class HistoryFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
-        button1.setVisibility(View.VISIBLE);
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
         binding = FragmentHistoryBinding.inflate(inflater, container, false);
 
         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {

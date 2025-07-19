@@ -83,7 +83,10 @@ public class VisicomOptionsFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_visicom_options, container, false);
         listView = view.findViewById(R.id.list);
-        button1.setVisibility(View.VISIBLE);
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
+
         context = requireActivity();
         database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 

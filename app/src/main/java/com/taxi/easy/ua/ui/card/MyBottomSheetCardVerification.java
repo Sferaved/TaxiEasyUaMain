@@ -110,7 +110,9 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
-        button1.setVisibility(View.VISIBLE);
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
         View view = inflater.inflate(R.layout.activity_fondy_payment, container, false);
         fragmentManager = getParentFragmentManager();
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");

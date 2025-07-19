@@ -1,8 +1,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.838</string>
-    <string name="version">Версія: 1.838</string>
+    <string name="version_code">1.839</string>
+    <string name="version">Версія: 1.839</string>
 
     <string name="app_name">Таксі Доставка</string>
 
@@ -426,7 +426,7 @@
     <string name="upd_app">Оновити додаток</string>
     <string name="time_to_order">Час подачі</string>
     <string name="data_order">Виберіть дату</string>
-    <string name="on_now">На даний момент</string>
+    <string name="on_now">Найближчим часом</string>
     <string name="on">На</string>
     <string name="time_order">" Подача автомобіля на "</string>
     <string name="pos_l">пл. Міцкевича, 8, м.Львів\n</string>

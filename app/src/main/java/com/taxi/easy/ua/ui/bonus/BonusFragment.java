@@ -20,7 +20,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
@@ -29,18 +31,23 @@ import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 
+import com.firebase.ui.auth.AuthUI;
+import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract;
+import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentBonusBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.BonusResponse;
+import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.auth.FirebaseConsentManager;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.uxcam.UXCam;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -67,7 +74,9 @@ public class BonusFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
-        button1.setVisibility(View.VISIBLE);
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
         binding = FragmentBonusBinding.inflate(inflater, container, false);
         root = binding.getRoot();
         context = requireActivity();
@@ -100,11 +109,7 @@ public class BonusFragment extends Fragment {
 
         in_but = binding.btnInAccount;
         in_but.setOnClickListener(v -> {
-
-
-            Intent intent = new Intent(getActivity(), MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
+            startFireBase();
 
         });
         btnBonus  = binding.btnBonus;
@@ -133,16 +138,7 @@ public class BonusFragment extends Fragment {
                 navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_visicom, true)
                         .build());
-            }
-//
-//
-//            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-//
-//                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-//                    .setPopUpTo(R.id.nav_visicom, true)
-//                    .build());
-//            }
-            else {
+            } else {
                 @SuppressLint("UseRequireInsteadOfGet")
                 String email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(context)).get(3);
                 progressBar.setVisibility(View.VISIBLE);
@@ -291,5 +287,56 @@ public class BonusFragment extends Fragment {
         }
         btnBonus.setVisibility(visible);
     }
+    private void startFireBase() {
+        Toast.makeText(context, R.string.account_verify, Toast.LENGTH_SHORT).show();
+        startSignIn();
+    }
 
+    private void startSignIn() {
+        try {
+            Logger.d(context, TAG, "run: ");
+            List<AuthUI.IdpConfig> providers = Collections.singletonList(
+                    new AuthUI.IdpConfig.GoogleBuilder().build());
+
+            Intent signInIntent = AuthUI.getInstance()
+                    .createSignInIntentBuilder()
+                    .setAvailableProviders(providers)
+                    .build();
+
+            signInLauncher.launch(signInIntent);
+        } catch (Exception e) {
+            Logger.e(context, TAG, "Exception during sign-in launch " + e);
+            FirebaseCrashlytics.getInstance().recordException(e);
+            VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+        }
+    }
+    private final ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
+
+            new FirebaseAuthUIActivityResultContract(),
+            this::onSignInResult
+    );
+
+    private void onSignInResult(FirebaseAuthUIAuthenticationResult result) {
+        ContentValues cv = new ContentValues();
+        Logger.d(context, TAG, "onSignInResult: ");
+
+        // Попробуем выполнить вход
+        try {
+            int resultCode = result.getResultCode();
+            Logger.d(context, TAG, "onSignInResult: result.getResultCode() " + resultCode);
+            if (result.getResultCode() == Activity.RESULT_OK) {
+                Logger.d(context,"SignIn", "Успешная авторизация!");
+                NavController navController = MainActivity.navController;
+                navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true)
+                        .build());
+            } else {
+                Toast.makeText(context, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
+                Logger.w(context,"SignIn", "Авторизация отменена или ошибка. Код: " + result.getResultCode());
+            }
+
+        } catch (Exception e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
+    }
 }

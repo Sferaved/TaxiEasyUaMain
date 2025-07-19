@@ -56,6 +56,40 @@ public class VerifyUserTask {
                 });
     }
 
+    public void checkUserBlacklist() {
+        Logger.d(context, TAG, "checkUserBlacklist() started with Firestore");
+
+        Map<String, String> userInfo = getUserInfoFromCursor();
+        String userEmail = userInfo.get("email");
+
+        if (userEmail == null || userEmail.isEmpty()) {
+            Logger.e(context, TAG, "User email not found in DB");
+            return;
+        }
+        Logger.d(context, TAG, "Checking user: " + userEmail);
+
+        FirebaseFirestore.getInstance().collection("blackList")
+                .whereEqualTo("email", userEmail)
+                .get()
+                .addOnCompleteListener(task -> {
+                    Logger.d(context, TAG, "Firestore query completed");
+                    if (task.isSuccessful()) {
+                        boolean inBlackList = task.getResult() != null && !task.getResult().isEmpty();
+                        Logger.d(context, TAG, "User is " + (inBlackList ? "in" : "not in") + " blackList");
+
+                        // Save to SharedPreferences
+                        sharedPreferencesHelperMain.saveValue("verifyUserOrder", inBlackList);
+                        Logger.d(context, TAG, "sharedPreferencesHelperMain " +
+                                sharedPreferencesHelperMain.getValue("verifyUserOrder", false));
+                    } else {
+                        Exception e = task.getException();
+                        if (e != null) {
+                            FirebaseCrashlytics.getInstance().recordException(e);
+                            Logger.e(context, TAG, "Firestore query error: " + e.getMessage());
+                        }
+                    }
+                });
+    }
     public static void stopListener() {
         if (listenerRegistration != null) {
             listenerRegistration.remove();

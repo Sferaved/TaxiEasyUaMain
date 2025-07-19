@@ -48,7 +48,9 @@ public class AnrFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentAnrBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-        button1.setVisibility(View.VISIBLE);
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
         btn_enter = binding.btnEnter;
         btnCallAdmin = binding.btnCallAdmin;
         btn_exit = binding.btnExit; 

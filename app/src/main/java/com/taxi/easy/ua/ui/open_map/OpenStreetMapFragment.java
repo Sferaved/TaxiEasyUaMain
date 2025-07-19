@@ -164,7 +164,9 @@ public class OpenStreetMapFragment extends Fragment {
         map = binding.map;
         View root = binding.getRoot();
         ctx = requireContext();
-        button1.setVisibility(View.VISIBLE);
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
         // Настройка конфигурации OSMDroid
         try {
             File cacheDir = new File(ctx.getCacheDir(), "osmdroid");

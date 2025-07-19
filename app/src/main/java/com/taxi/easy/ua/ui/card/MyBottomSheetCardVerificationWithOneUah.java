@@ -89,7 +89,9 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
-        button1.setVisibility(View.VISIBLE);
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
         View view = inflater.inflate(R.layout.activity_fondy_payment, container, false);
         context = requireActivity();
         webView = view.findViewById(R.id.webView);

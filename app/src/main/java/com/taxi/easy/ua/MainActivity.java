@@ -1434,6 +1434,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void findUserFromServer(String userEmail, CallbackUser<Boolean> resultCallback) {
+        new VerifyUserTask(this).checkUserBlacklist();
         ApiUserService apiService = RetrofitClient.getRetrofitInstance().create(ApiUserService.class);
 
         Call<UserFindResponse> call = apiService.findUser(userEmail);
@@ -1686,27 +1687,6 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    private void insertCard(List<String> settings) {
-        String sql = "INSERT INTO " + MainActivity.TABLE_FONDY_CARDS + " VALUES(?,?,?,?,?);";
-
-        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        SQLiteStatement statement = database.compileStatement(sql);
-        database.beginTransaction();
-        try {
-            statement.clearBindings();
-            statement.bindString(2, settings.get(0));
-            statement.bindString(3, settings.get(1));
-            statement.bindString(4, settings.get(2));
-            statement.bindString(5, settings.get(3));
-
-            statement.execute();
-            database.setTransactionSuccessful();
-
-        } finally {
-            database.endTransaction();
-        }
-        database.close();
-    }
     private void insertRoutHome() {
         String sql = "INSERT INTO " + MainActivity.ROUT_HOME + " VALUES(?,?,?,?,?);";
 

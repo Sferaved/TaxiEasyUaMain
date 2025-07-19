@@ -190,25 +190,28 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                 });
             } else if (errorMessage.equals(getString(R.string.google_verify_mes))){
                  textViewInfo.setOnClickListener(view2 -> {
-                     navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                             .setPopUpTo(R.id.nav_visicom, true)
+                     navController.navigate(R.id.nav_account, null, new NavOptions.Builder()
+                             .setPopUpTo(R.id.nav_account, true)
                              .build());
                      dismiss();
                  });
                 btn_ok.setText(R.string.in_account);
                 btn_ok.setOnClickListener(v -> {
-                    SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                    ContentValues cv = new ContentValues();
-                    cv.put("email", "email");
-                    // обновляем по id
-                    database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
-                            new String[] { "1" });
-                    database.close();
-
-                    Intent intent = new Intent(getActivity(), MainActivity.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-
+//                    SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+//                    ContentValues cv = new ContentValues();
+//                    cv.put("email", "email");
+//                    // обновляем по id
+//                    database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
+//                            new String[] { "1" });
+//                    database.close();
+//
+//                    Intent intent = new Intent(getActivity(), MainActivity.class);
+//                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+//                    startActivity(intent);
+                    navController.navigate(R.id.nav_account, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_account, true)
+                            .build());
+                    dismiss();
                 });
             } else {
                 btn_ok.setOnClickListener(v -> dismiss());

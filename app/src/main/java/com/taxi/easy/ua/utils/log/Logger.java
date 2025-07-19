@@ -60,7 +60,7 @@ public class Logger {
     }
     public static void w(Context context, String tag, String message) {
         Log.w(tag, message);
-        writeLog(context, "INFO: " + tag + ": " + message);
+        writeLog(context, "WARN: " + tag + ": " + message);
     }
 
     public static String getLogcat() {

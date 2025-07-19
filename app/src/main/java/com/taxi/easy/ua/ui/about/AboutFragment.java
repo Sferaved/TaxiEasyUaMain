@@ -37,7 +37,9 @@ public class AboutFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
-        button1.setVisibility(View.VISIBLE);
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
         AboutViewModel aboutViewModel =
                 new ViewModelProvider(this).get(AboutViewModel.class);
 

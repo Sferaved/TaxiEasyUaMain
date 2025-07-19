@@ -41,10 +41,10 @@ import com.taxi.easy.ua.ui.gallery.GalleryFragment;
 import com.taxi.easy.ua.ui.home.CustomArrayAdapter;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
-import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
+import com.taxi.easy.ua.utils.retrofit.cost_json_parser.CostJSONParserRetrofit;
 import com.uxcam.UXCam;
 
 import java.io.UnsupportedEncodingException;

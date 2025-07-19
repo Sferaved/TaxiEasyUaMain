@@ -155,7 +155,9 @@ public class VisicomSearchFragment extends Fragment {
         binding = FragmentVisicomSearchBinding.inflate(inflater, container, false);
         root = binding.getRoot();
         context = requireActivity();
-        button1.setVisibility(View.VISIBLE);
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
 
         permissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestMultiplePermissions(),

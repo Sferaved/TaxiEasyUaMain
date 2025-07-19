@@ -35,9 +35,9 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.home.CustomListAdapter;
 import com.taxi.easy.ua.ui.home.HomeFragment;
-import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.retrofit.cost_json_parser.CostJSONParserRetrofit;
 import com.uxcam.UXCam;
 
 import java.io.UnsupportedEncodingException;

@@ -1,12 +1,14 @@
 package com.taxi.easy.ua.ui.account;
 
 import static android.content.Context.MODE_PRIVATE;
+import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.button1;
 import static com.taxi.easy.ua.R.string.format_phone;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -26,6 +28,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
@@ -33,6 +36,9 @@ import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 
+import com.firebase.ui.auth.AuthUI;
+import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract;
+import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.redmadrobot.inputmask.MaskedTextChangedListener;
 import com.taxi.easy.ua.MainActivity;
@@ -42,6 +48,7 @@ import com.taxi.easy.ua.ui.exit.ExitActivity;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.keyboard.KeyboardUtils;
+import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.auth.FirebaseConsentManager;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
@@ -54,6 +61,7 @@ import com.uxcam.UXCam;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -94,7 +102,9 @@ public class AccountFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
-        button1.setVisibility(View.VISIBLE);
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
         binding = FragmentAccountBinding.inflate(inflater, container, false);
 
 
@@ -104,7 +114,7 @@ public class AccountFragment extends Fragment {
 
         upd_but = binding.updBut;
         del_but = binding.delBut;
-        del_but.setVisibility(View.GONE);
+        del_but.setVisibility(GONE);
         btnCallAdmin = binding.btnCallAdmin;
 
         String model = Build.MODEL;
@@ -145,16 +155,12 @@ public class AccountFragment extends Fragment {
 
         in_but = binding.btnInAccount;
         in_but.setOnClickListener(v -> {
+             startFireBase();
 
+         });
 
-
-            Intent intent = new Intent(getActivity(), MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-
-        });
-
-
+        out_but.setVisibility(GONE);
+        del_but.setVisibility(GONE);
 
         userName.addTextChangedListener(new TextWatcher() {
             @Override
@@ -273,16 +279,15 @@ public class AccountFragment extends Fragment {
         if (visible == View.INVISIBLE) {
             in_but.setVisibility(VISIBLE);
         } else {
-            in_but.setVisibility(View.GONE);
+            in_but.setVisibility(GONE);
         }
         phoneNumber.setVisibility(visible);
         userName.setVisibility(visible);
         email.setVisibility(visible);
         upd_but.setVisibility(visible);
-        del_but.setVisibility(visible);
-        out_but.setVisibility(visible);
+
         btnOrder.setVisibility(visible);
-        del_but.setVisibility(visible);
+
 
         root.findViewById(R.id.text_name).setVisibility(visible);
         root.findViewById(R.id.text_phone).setVisibility(visible);
@@ -326,7 +331,7 @@ public class AccountFragment extends Fragment {
         call.enqueue(new Callback<List<RouteResponseCancel>>() {
             @Override
             public void onResponse(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Response<List<RouteResponseCancel>> response) {
-                progressBar.setVisibility(View.GONE);
+                progressBar.setVisibility(GONE);
                 if (response.isSuccessful() && response.body() != null) {
                     List<RouteResponseCancel> routes = response.body();
                     Logger.d(context, TAG, "onResponse: " + routes);
@@ -338,7 +343,8 @@ public class AccountFragment extends Fragment {
                                 Logger.d(context, TAG, "Route with asterisk found, performing delete actions");
                                 // Выполняем действия удаления
                                 Logger.d(context, TAG, "processRouteList: Array is empty, showing delete button");
-                                del_but.setVisibility(View.VISIBLE);
+                                out_but.setVisibility(VISIBLE);
+                                del_but.setVisibility(VISIBLE);
                             } else {
                                 routeList.addAll(routes);
                                 processCancelList();
@@ -518,10 +524,13 @@ public class AccountFragment extends Fragment {
         array = dbH.readRouteCancel();
         Logger.d(context, TAG, "processRouteList: array " + Arrays.toString(array));
         if (array != null) {
+            out_but.setVisibility(GONE);
+            del_but.setVisibility(GONE);
             String message = getString(R.string.order_to_cancel_true);
             MyBottomSheetErrorFragment myBottomSheetMessageFragment = new MyBottomSheetErrorFragment(message);
             myBottomSheetMessageFragment.show(getChildFragmentManager(), myBottomSheetMessageFragment.getTag());
         } else {
+
             dbH.clearTableCancel();
             dbHUid.clearTableCancel();
         }
@@ -641,6 +650,60 @@ public class AccountFragment extends Fragment {
         }
         database.close();
     }
+
+    private void startFireBase() {
+        Toast.makeText(context, R.string.account_verify, Toast.LENGTH_SHORT).show();
+        startSignIn();
+    }
+
+    private void startSignIn() {
+        try {
+            Logger.d(context, TAG, "run: ");
+            List<AuthUI.IdpConfig> providers = Collections.singletonList(
+                    new AuthUI.IdpConfig.GoogleBuilder().build());
+
+            Intent signInIntent = AuthUI.getInstance()
+                    .createSignInIntentBuilder()
+                    .setAvailableProviders(providers)
+                    .build();
+
+            signInLauncher.launch(signInIntent);
+        } catch (Exception e) {
+            Logger.e(context, TAG, "Exception during sign-in launch " + e);
+            FirebaseCrashlytics.getInstance().recordException(e);
+            VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+        }
+    }
+    private final ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
+
+            new FirebaseAuthUIActivityResultContract(),
+            this::onSignInResult
+    );
+
+    private void onSignInResult(FirebaseAuthUIAuthenticationResult result) {
+        ContentValues cv = new ContentValues();
+        Logger.d(context, TAG, "onSignInResult: ");
+
+        // Попробуем выполнить вход
+        try {
+            int resultCode = result.getResultCode();
+            Logger.d(context, TAG, "onSignInResult: result.getResultCode() " + resultCode);
+            if (result.getResultCode() == Activity.RESULT_OK) {
+                Logger.d(context,"SignIn", "Успешная авторизация!");
+                NavController navController = MainActivity.navController;
+                navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true)
+                        .build());
+            } else {
+                Toast.makeText(context, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
+                Logger.w(context,"SignIn", "Авторизация отменена или ошибка. Код: " + result.getResultCode());
+            }
+
+        } catch (Exception e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
+    }
+
 
 
 }

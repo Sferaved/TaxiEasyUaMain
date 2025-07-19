@@ -88,7 +88,9 @@ public class CardFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
 
         UXCam.tagScreenName(TAG);
-        button1.setVisibility(View.VISIBLE);
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
+        }
         binding = FragmentCardBinding.inflate(inflater, container, false);
         root = binding.getRoot();
 

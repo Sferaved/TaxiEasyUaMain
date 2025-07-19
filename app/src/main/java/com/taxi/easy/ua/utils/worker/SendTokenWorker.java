@@ -28,10 +28,14 @@ public class SendTokenWorker extends ListenableWorker {
             String userEmail = getInputData().getString("userEmail");
             Log.d(TAG, "startWork: " + userEmail);
 
-            // Удаляем старый FID, чтобы избежать ошибки "Invalid argument for the given fid"
             com.google.firebase.installations.FirebaseInstallations.getInstance().delete()
                     .addOnCompleteListener(deleteTask -> {
-                        // После удаления пытаемся получить токен
+                        if (!deleteTask.isSuccessful()) {
+                            Log.e(TAG, "Failed to delete Firebase installation");
+                            completer.set(Result.failure());
+                            return;
+                        }
+
                         FirebaseMessaging.getInstance().getToken()
                                 .addOnSuccessListener(token -> {
                                     Log.d(TAG, "FCM Token: " + token);
@@ -47,4 +51,5 @@ public class SendTokenWorker extends ListenableWorker {
             return "SendTokenWorker-getToken";
         });
     }
+
 }

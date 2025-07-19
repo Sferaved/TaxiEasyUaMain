@@ -99,7 +99,6 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
 import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
-import com.taxi.easy.ua.utils.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
@@ -107,6 +106,7 @@ import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.retrofit.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.taxi.easy.ua.utils.worker.TilePreloadWorker;
@@ -367,7 +367,9 @@ public class VisicomFragment extends Fragment {
         viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
 
         if(button1 != null) {
+            if(button1 != null) {
             button1.setVisibility(View.VISIBLE);
+        }
         }
 
 
@@ -1229,9 +1231,9 @@ public class VisicomFragment extends Fragment {
                 }
 
 
-                String messagePayment = text_view_cost.getText().toString() + " " + context.getString(R.string.UAH) + " " + pay_method_message;
-
-                textCostMessage.setText(messagePayment);
+//                String messagePayment = text_view_cost.getText().toString() + " " + context.getString(R.string.UAH) + " " + pay_method_message;
+//
+//                textCostMessage.setText(messagePayment);
                 carProgressBar.resumeAnimation();
                 constraintLayoutVisicomFinish.setVisibility(VISIBLE);
 
@@ -2497,7 +2499,63 @@ public class VisicomFragment extends Fragment {
         });
     }
 
-
+//    private long lastRequestTime = 0;
+//    private static final long MIN_REQUEST_INTERVAL_MS = 2000; // минимальный интервал между запросами (2 секунды)
+//
+//    private void requestCostFromServer(String start, String finish) throws MalformedURLException {
+//        long now = System.currentTimeMillis();
+//        if (now - lastRequestTime < MIN_REQUEST_INTERVAL_MS) {
+//            Logger.w(context, TAG, "Пропускаем повторный вызов requestCostFromServer (слишком часто)");
+//            return;
+//        }
+//        lastRequestTime = now;
+//
+//        String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
+//        Logger.d(context, TAG, "Попытка #1, URL: " + urlCost);
+//
+//        // Создаем и запускаем WorkRequest
+//        OneTimeWorkRequest request = WorkManagerHelper.scheduleCostRequest(context, urlCost);
+//        WorkManager.getInstance(context).enqueue(request);
+//
+//        // Наблюдаем за результатом
+//        WorkManager.getInstance(context)
+//                .getWorkInfoByIdLiveData(request.getId())
+//                .observe(getViewLifecycleOwner(), workInfo -> {
+//                    if (workInfo != null && workInfo.getState().isFinished()) {
+//                        new Handler(Looper.getMainLooper()).post(() -> {
+//                            if (!isAdded() || binding == null) {
+//                                Logger.w(context, TAG, "Фрагмент отсоединён или binding null — выходим");
+//                                return;
+//                            }
+//
+//                            geoText.setText(start);
+//                            binding.textTo.setText(finish.trim().equals(start.trim()) ? "" : finish);
+//
+//                            Data outputData = workInfo.getOutputData();
+//
+//                            if (outputData.getString("error") != null) {
+//                                FirebaseCrashlytics.getInstance().log("Ошибка costRequest: " + outputData.getString("error"));
+//                                Logger.e(context, TAG, "Ошибка costRequest: " + outputData.getString("error"));
+//                                applyDiscountAndUpdateUI("0", context);
+//                                return;
+//                            }
+//
+//                            String orderCost = outputData.getString("order_cost");
+//                            String message = outputData.getString("Message");
+//
+//                            if (orderCost != null && !"0".equals(orderCost)) {
+//                                applyDiscountAndUpdateUI(orderCost, context);
+//                            } else if ("Повторный запрос".equals(message)) {
+//                                String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
+//                                String cost = (String) sharedPreferencesHelperMain.getValue(tarif, "0");
+//                                applyDiscountAndUpdateUI(cost, context);
+//                            } else {
+//                                applyDiscountAndUpdateUI("0", context);
+//                            }
+//                        });
+//                    }
+//                });
+//    }
     private void clearTABLE_SERVICE_INFO () {
         String[] arrayServiceCode = DataArr.arrayServiceCode();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -2510,6 +2568,8 @@ public class VisicomFragment extends Fragment {
         database.close();
     }
 
+//    private String lastAppliedCost = null;
+
     private void applyDiscountAndUpdateUI(String orderCost, Context context) {
         Logger.d(context, TAG, "applyDiscountAndUpdateUI() start — orderCost = " + orderCost);
 
@@ -2517,6 +2577,13 @@ public class VisicomFragment extends Fragment {
             Logger.e(context, TAG, "Invalid orderCost: " + orderCost);
             return;
         }
+
+        // Проверяем, не совпадает ли стоимость с предыдущей
+//        if (orderCost.equals(lastAppliedCost)) {
+//            Logger.d(context, TAG, "Стоимость не изменилась, обновление UI пропущено: " + orderCost);
+//            return;
+//        }
+//        lastAppliedCost = orderCost;
 
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
         Logger.d(context, TAG, "Retrieved discountText = " + discountText);
@@ -2531,16 +2598,13 @@ public class VisicomFragment extends Fragment {
             long discount;
 
             firstCost = Long.parseLong(orderCost);
-            if ( firstCost != 0) {
-
-                if((boolean) sharedPreferencesHelperMain.getValue("verifyUserOrder", false)){
-                    firstCost = firstCost +45;
+            if (firstCost != 0) {
+                if ((boolean) sharedPreferencesHelperMain.getValue("verifyUserOrder", false)) {
+                    firstCost = firstCost + 45;
                 }
             }
             discount = firstCost * discountInt / 100;
             firstCost = firstCost + discount;
-
-
 
             Logger.d(context, TAG, "Calculated firstCost = " + firstCost + ", discount = " + discount);
 
@@ -2554,35 +2618,32 @@ public class VisicomFragment extends Fragment {
 
             Logger.d(context, TAG, "Setting UI visibility and values");
 
-            geoText.setVisibility(VISIBLE);
-            progressBar.setVisibility(GONE);
+            geoText.setVisibility(View.VISIBLE);
+            progressBar.setVisibility(View.GONE);
 
-            textfrom.setVisibility(VISIBLE);
-            num1.setVisibility(VISIBLE);
-            textwhere.setVisibility(VISIBLE);
-            num2.setVisibility(VISIBLE);
-            textViewTo.setVisibility(VISIBLE);
+            textfrom.setVisibility(View.VISIBLE);
+            num1.setVisibility(View.VISIBLE);
+            textwhere.setVisibility(View.VISIBLE);
+            num2.setVisibility(View.VISIBLE);
+            textViewTo.setVisibility(View.VISIBLE);
 
-            btnAdd.setVisibility(VISIBLE);
-            buttonBonus.setVisibility(VISIBLE);
-            btn_minus.setVisibility(VISIBLE);
-            text_view_cost.setVisibility(VISIBLE);
-            btn_plus.setVisibility(VISIBLE);
-            btnOrder.setVisibility(VISIBLE);
-            constr2.setVisibility(VISIBLE);
-            schedule.setVisibility(VISIBLE);
-            shed_down.setVisibility(VISIBLE);
-
-
+            btnAdd.setVisibility(View.VISIBLE);
+            buttonBonus.setVisibility(View.VISIBLE);
+            btn_minus.setVisibility(View.VISIBLE);
+            text_view_cost.setVisibility(View.VISIBLE);
+            btn_plus.setVisibility(View.VISIBLE);
+            btnOrder.setVisibility(View.VISIBLE);
+            constr2.setVisibility(View.VISIBLE);
+            schedule.setVisibility(View.VISIBLE);
+            shed_down.setVisibility(View.VISIBLE);
 
         } catch (NumberFormatException e) {
             FirebaseCrashlytics.getInstance().recordException(e);
+            Logger.e(context, TAG, "NumberFormatException в applyDiscountAndUpdateUI: " + e.getMessage());
         }
+
         btnVisible(View.VISIBLE);
     }
-
-
-
 
 
     private void blockUserBlackList() {
