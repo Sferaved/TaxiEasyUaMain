@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.utils.clear.ClearTaskActivity;
 
 public class IdleTimeoutManager {
@@ -35,7 +36,7 @@ public class IdleTimeoutManager {
                     System.exit(0);
                 }, 100); // Задержка 100 мс для завершения очистки
             } catch (Exception e) {
-                e.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(e);
                 // В случае ошибки принудительно завершаем процесс
                 android.os.Process.killProcess(android.os.Process.myPid());
                 System.exit(0);

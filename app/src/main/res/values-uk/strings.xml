@@ -1,18 +1,4 @@
 <resources>
-    <string name="application">PAS1</string>
-
-    <string name="version_code">1.839</string>
-    <string name="version">Версія: 1.839</string>
-
-    <string name="app_name">Таксі Доставка</string>
-
-
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Попутчик таксі Україна дешево</string>
-    <string name="nav_header_subtitle">Швидкі поїздки по містам України</string>
-    <string name="nav_header_desc">Navigation header</string>
-    <string name="action_settings">Налаштування</string>
 
     <string name="menu_maps">Мапа</string>
     <string name="menu_home">За адресою (Старе)</string>
@@ -522,12 +508,13 @@
     <string name="err_nal_reoder_mes">На жаль, замовлення за готівку в даний момент не можливе. Виберіть інший спосіб оплати.</string>
     <string name="clearApp">Очистити дані</string>
     <string name="clearAppMess">Увага! Очищення даних програми видаляє всі налаштування, бази даних, внутрішній та зовнішній кеш, після чого програма буде перезапущена. Ця дія необоротна і може вплинути на роботу програми. Переконайтеся, що перед продовженням зберегли важливі дані. Продовжити?</string>
-    <string name="email_history_order">Запросить историю</string>
+    <string name="email_history_order">Запитати історію</string>
     <string name="SA_message_history">Прошу прислати мені історію моїх поїздок за період з ..... по .....</string>
-    <string name="anr_detected">Виявлена помілка</string>
+    <string name="anr_detected">Виявлено помілка</string>
     <string name="application_is_not_responding">Додаток не відповідає.</string>
     <string name="check_permition">Будь ласка, увімкніть геолокацію або надайте дозвіл на доступ до місцеположення.</string>
     <string name="map_loading">Мапа ще завантажується...</string>
     <string name="cost_error">Помилка створення замовлення. Спробуйте змінити адресу або наберіть оператора</string>
     <string name="google_maps">Google Maps не встановлені</string>
+    <string name="sentNotifyMessage">Дозвольте застосунку надсилати Вам повідомлення</string>
 </resources>

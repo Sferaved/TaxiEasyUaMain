@@ -103,13 +103,15 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             if (message == null) {
                 message = data.get("message_uk"); // fallback
             }
-
+            String uid = data.get("uid");
             Logger.d(getApplicationContext(), TAG, "Message: " + message);
-            notifyUser(message);
+            Logger.d(getApplicationContext(), TAG, "uid " + uid);
+
+            notifyUser(message, uid);
         }
     }
 
-    private void notifyUser(String message) {
+    private void notifyUser(String message,String uid) {
         Context context = getApplicationContext();
         String localeCode = LocaleHelper.getLocale();
 
@@ -117,7 +119,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         Context localizedContext = getLocalizedContext(context, localeCode);
 
         // Показ уведомления
-        NotificationHelper.showNotificationFindAutoMessage(localizedContext, message);
+        NotificationHelper.showNotificationFindAutoMessage(localizedContext, message, uid);
     }
 
     private Context getLocalizedContext(Context context, String localeCode) {

@@ -17,6 +17,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -67,6 +68,8 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
     final String Zaporizhzhia_phone = "tel:0687257070";
     final String Cherkasy_Oblast_phone = "tel:0962294243";
     String phoneNumber;
+    private Runnable onDismissListener;
+
     public MyBottomSheetErrorFragment() {
     }
 
@@ -139,6 +142,19 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                 TelegramUtils.sendErrorToTelegram(generateEmailBody(errorMessage), logFilePath);
 
 
+            } else if(errorMessage.equals(getString(R.string.sentNotifyMessage))) {
+                textViewInfo.setOnClickListener(v -> dismiss());
+                btn_ok.setText(getString(R.string.ok_add_cost));
+                btn_ok.setOnClickListener(v -> {
+
+                    Intent intent;
+                    intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, requireActivity().getPackageName());
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    requireActivity().startActivity(intent);
+                    dismiss();
+                });
+
             } else if (errorMessage.equals(getString(R.string.order_to_cancel_true))){
                 textViewInfo.setOnClickListener(v -> dismiss());
                 btn_ok.setText(getString(R.string.order_to_cancel_review));
@@ -163,6 +179,12 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                     }
 
                     dismiss();
+                });
+            } else if (errorMessage.equals(getString(R.string.ex_st_2))){
+                textViewInfo.setOnClickListener(v -> dismiss());
+                btn_ok.setText(getString(R.string.ok_error));
+                btn_ok.setOnClickListener(v -> {
+                    startActivity(new Intent(requireContext(), MainActivity.class));
                 });
             } else if (errorMessage.equals(getString(R.string.cost_error))){
                 textViewInfo.setOnClickListener(v -> dismiss());
@@ -197,17 +219,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                  });
                 btn_ok.setText(R.string.in_account);
                 btn_ok.setOnClickListener(v -> {
-//                    SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-//                    ContentValues cv = new ContentValues();
-//                    cv.put("email", "email");
-//                    // обновляем по id
-//                    database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
-//                            new String[] { "1" });
-//                    database.close();
-//
-//                    Intent intent = new Intent(getActivity(), MainActivity.class);
-//                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-//                    startActivity(intent);
+
                     navController.navigate(R.id.nav_account, null, new NavOptions.Builder()
                             .setPopUpTo(R.id.nav_account, true)
                             .build());
@@ -521,6 +533,9 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {
         super.onDismiss(dialog);
+        if (onDismissListener != null) {
+            onDismissListener.run();
+        }
 
     }
 
@@ -683,6 +698,12 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         }
 
         return randomString.toString();
+    }
+    /**
+     * Устанавливает слушатель, который будет вызван при закрытии диалога
+     */
+    public void setOnDismissListener(Runnable listener) {
+        this.onDismissListener = listener;
     }
 
 }

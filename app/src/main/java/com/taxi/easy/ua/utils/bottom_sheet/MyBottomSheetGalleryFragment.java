@@ -366,7 +366,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
             numberPicker.requestLayout();
 
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
     }
 
@@ -384,7 +384,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
     }
     // Метод для обновления отображаемой даты

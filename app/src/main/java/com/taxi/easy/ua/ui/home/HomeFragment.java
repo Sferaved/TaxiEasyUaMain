@@ -2523,7 +2523,7 @@ private void cost() {
                     required_time_text = " " + context.getString(R.string.time_order) + " " + outputFormat.format(date) + ".";
 
                 } catch (ParseException e) {
-                    e.printStackTrace();
+                    FirebaseCrashlytics.getInstance().recordException(e);
                     required_time_text = ""; // Если ошибка парсинга, задаём пустое значение
                 }
             }

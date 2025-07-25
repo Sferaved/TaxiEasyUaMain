@@ -111,6 +111,18 @@
             tools:ignore="DiscouragedApi,Instantiatable,LockedOrientationActivity"
             android:launchMode="singleTask"
             android:theme="@style/Theme.AppCompat.NoActionBar" />
+        <activity android:name="com.taxi.easy.ua.utils.worker.utils.DialogHostActivity"
+            android:excludeFromRecents="true"
+            android:screenOrientation="portrait"
+            tools:ignore="DiscouragedApi,Instantiatable,LockedOrientationActivity"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+        <activity android:name="com.taxi.easy.ua.utils.worker.utils.OrderStatusDialogActivity"
+            android:excludeFromRecents="true"
+            android:screenOrientation="portrait"
+            tools:ignore="DiscouragedApi,Instantiatable,LockedOrientationActivity"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
 
 
         <provider

@@ -205,7 +205,10 @@ public class FinishSeparateFragment extends Fragment {
         backPressBlocker.setBackButtonBlocked(true);
         backPressBlocker.blockBackButtonWithCallback(this);
 
-        button1.setVisibility(GONE);
+        if(button1 != null) {
+            button1.setVisibility(GONE);
+        }
+
 
         fragmentManager = getParentFragmentManager();
 
@@ -594,8 +597,13 @@ public class FinishSeparateFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        timeUtils.stopTimer();
+        if (timeUtils != null) {
+            timeUtils.stopTimer();
+        }
         stopCycle();
+        if (handlerAddcost != null) {
+            handlerAddcost.removeCallbacks(showDialogAddcost);
+        }
         if (handlerAddcost != null ) {
             handlerAddcost.removeCallbacks(showDialogAddcost);
         }
@@ -1563,14 +1571,16 @@ public class FinishSeparateFragment extends Fragment {
                 Logger.d(context, "startFinishPage","StatusNalUpdate changed: " + aBoolean);
 
                 if (!aBoolean) {
-                    handlerStatus.removeCallbacks(myTaskStatus);
-                    try {
-                        statusOrder();
-                    } catch (ParseException e) {
-                        throw new RuntimeException(e);
-                    }
+//                    handlerStatus.removeCallbacks(myTaskStatus);
+//                    try {
+//                        statusOrder();
+//                    } catch (ParseException e) {
+//                        throw new RuntimeException(e);
+//                    }
+                    stopCycle();
                 } else {
-                    handlerStatus.post(myTaskStatus);
+//                    handlerStatus.post(myTaskStatus);
+                    startCycle();
                 }
             });
 
@@ -2005,7 +2015,7 @@ public class FinishSeparateFragment extends Fragment {
                         } else{
                             try {
                                 cancelOrder(uid, context);
-                                statusOrder();
+//                                statusOrder();
                             } catch (ParseException e) {
                                 throw new RuntimeException(e);
                             }

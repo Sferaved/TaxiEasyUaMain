@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1839
-        versionName = '1.839'
+        versionCode = 1840
+        versionName = '1.840'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled = true
@@ -43,6 +43,7 @@ android {
         buildConfig = true
     }
 }
+
 dependencies {
     // Основные зависимости
     implementation 'androidx.multidex:multidex:2.0.1'
@@ -61,11 +62,11 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2"
 
     // Firebase зависимости (с использованием BOM)
-    implementation platform('com.google.firebase:firebase-bom:33.16.0')
+    implementation platform('com.google.firebase:firebase-bom:34.0.0')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-crashlytics'
     implementation 'com.google.firebase:firebase-messaging'
-    implementation 'com.google.firebase:firebase-firestore-ktx'
+    implementation "com.google.firebase:firebase-firestore-ktx:25.1.4"
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.android.datatransport:transport-runtime:4.0.0'
 
@@ -136,7 +137,7 @@ dependencies {
     implementation 'org.greenrobot:eventbus:3.3.1'
 
     // тепловой след
-    implementation 'com.uxcam:uxcam:3.6.43'
+    implementation 'com.uxcam:uxcam:3.7.0'
 
     //security
     implementation "androidx.security:security-crypto:1.1.0-beta01"
@@ -156,6 +157,7 @@ dependencies {
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ["-Xlint:deprecation"]
 }
+
 
 
 

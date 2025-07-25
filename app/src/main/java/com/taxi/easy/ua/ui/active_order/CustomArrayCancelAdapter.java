@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.navigation.NavOptions;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
@@ -242,7 +243,7 @@ public class CustomArrayCancelAdapter extends ArrayAdapter<String> {
                 required_time = " " + context.getString(R.string.time_order)  + " " +  outputFormat.format(date)  + ".";
 
             } catch (ParseException e) {
-                e.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(e);
                 required_time = ""; // Если ошибка парсинга, задаём пустое значение
             }
         } else {

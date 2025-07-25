@@ -15,6 +15,7 @@ import android.util.Log;
 
 import androidx.navigation.NavOptions;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.pusher.client.Pusher;
 import com.pusher.client.PusherOptions;
 import com.pusher.client.channel.Channel;
@@ -144,9 +145,7 @@ public class PusherManager {
             @Override
             public void onError(String message, String code, Exception e) {
                 Logger.e(context,"Pusher", "Error connecting: " + message + " (Code: " + code + ")" +  e);
-                if (e != null) {
-                    e.printStackTrace();
-                }
+                FirebaseCrashlytics.getInstance().recordException(e);
             }
         }, ConnectionState.ALL);
     }
@@ -205,10 +204,8 @@ public class PusherManager {
                 new Handler(Looper.getMainLooper()).post(() -> {
 
                     // Update ViewModel
-                    if(orderUid != null) {
-                        viewModel.updateUid(orderUid);
-                        viewModel.updatePaySystemStatus(paySystemStatus);
-                    }
+                    viewModel.updateUid(orderUid);
+                    viewModel.updatePaySystemStatus(paySystemStatus);
 
                 });
 
@@ -238,13 +235,6 @@ public class PusherManager {
 
                     MainActivity.paySystemStatus = paySystemStatus;
 
-//                    if (FinishSeparateFragment.btn_cancel_order != null ) {
-//                        FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
-//                        FinishSeparateFragment.btn_cancel_order.setEnabled(true);
-//                        FinishSeparateFragment.btn_cancel_order.setClickable(true);
-//                    } else {
-//                        Logger.e(context,"Pusher", "btn_cancel_order is null!");
-//                    }
                 });
 
             } catch (JSONException e) {
@@ -330,9 +320,7 @@ public class PusherManager {
                 Logger.d(context,"Pusher eventCanceled", " MainActivity.uid: " +  MainActivity.uid);
 
                 // Проверка, что uid существует и не null
-                if (uid == null) {
-                    Logger.d(context,"Pusher eventCanceled", "UID is null in orderResponse: " + eventData);
-                } else if (MainActivity.uid != null && MainActivity.uid.equals(uid)) {
+                if (MainActivity.uid != null && MainActivity.uid.equals(uid)) {
                     // Проверка на null перед переключением на главный поток
                     viewModel.setCanceledStatus(canceled);
                 }

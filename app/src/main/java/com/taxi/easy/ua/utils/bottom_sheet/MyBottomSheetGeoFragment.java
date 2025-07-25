@@ -1063,7 +1063,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             numberPicker.requestLayout();
 
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
     }
 
@@ -1079,7 +1079,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
     }
 

@@ -380,7 +380,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
             numberPicker.requestLayout();
 
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
     }
     private void setNumberPickerTextSize(NumberPicker numberPicker, float textSize) {
@@ -394,7 +394,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
     }
     @Override

@@ -640,7 +640,7 @@ public class CacheOrderFragment extends Fragment {
                     }
 
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    FirebaseCrashlytics.getInstance().recordException(e);
                     required_time = "";
                 }
 

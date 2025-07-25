@@ -4,6 +4,7 @@ package com.taxi.easy.ua.ui.visicom;
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
+import static com.taxi.easy.ua.MainActivity.CITY_INFO;
 import static com.taxi.easy.ua.MainActivity.activeCalls;
 import static com.taxi.easy.ua.MainActivity.button1;
 import static com.taxi.easy.ua.MainActivity.navController;
@@ -86,6 +87,7 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentVisicomBinding;
+import com.taxi.easy.ua.service.OrderServiceResponse;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
@@ -112,6 +114,7 @@ import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.taxi.easy.ua.utils.worker.TilePreloadWorker;
 import com.uxcam.UXCam;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -367,9 +370,7 @@ public class VisicomFragment extends Fragment {
         viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
 
         if(button1 != null) {
-            if(button1 != null) {
-            button1.setVisibility(View.VISIBLE);
-        }
+          button1.setVisibility(View.VISIBLE);
         }
 
 
@@ -1555,11 +1556,20 @@ public class VisicomFragment extends Fragment {
     }
 
     private boolean verifyPhone() {
-
-        List<String> stringList = logCursor(MainActivity.TABLE_USER_INFO, requireActivity());
-
+        if (!isAdded() || getActivity() == null) {
+            Logger.d(null, TAG, "Fragment not attached, skipping phone verification");
+            return false; // Or handle appropriately
+        }
+        List<String> stringList = logCursor(MainActivity.TABLE_USER_INFO, context);
+        if (stringList.size() < 3) {
+            Logger.d(requireActivity(), TAG, "Invalid or empty stringList");
+            return false;
+        }
         String phone = stringList.get(2);
-
+        if (phone == null || phone.isEmpty()) {
+            Logger.d(requireActivity(), TAG, "Phone number is null or empty");
+            return false;
+        }
         Logger.d(requireActivity(), TAG, "onClick befor validate: ");
         String PHONE_PATTERN = "\\+38 \\d{3} \\d{3} \\d{2} \\d{2}";
         boolean val = Pattern.compile(PHONE_PATTERN).matcher(phone).matches();
@@ -1793,8 +1803,12 @@ public class VisicomFragment extends Fragment {
         databaseHelper = new DatabaseHelper(context);
         databaseHelperUid = new DatabaseHelperUid(context);
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-        new Thread(this::fetchRoutesCancel).start();
-
+//        new Thread(this::fetchRoutesCancel).start();
+        try {
+            statusOrder();
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
 
 
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
@@ -2479,10 +2493,10 @@ public class VisicomFragment extends Fragment {
 
                         if (map != null && Objects.equals(map.get("Message"), "Повторный запрос")) {
                             String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
-                            cost = (String) sharedPreferencesHelperMain.getValue(tarif, "0");
+                            cost = (String) sharedPreferencesHelperMain.getValue(tarif, "100");
                             applyDiscountAndUpdateUI(cost, context);
                         } else {
-                            cost = "0";
+                            cost = "100";
                             applyDiscountAndUpdateUI(cost, context);
                         }
 
@@ -3306,5 +3320,60 @@ public class VisicomFragment extends Fragment {
             gpsBtn.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
         }
     }
+    private void statusOrder() throws ParseException {
+        String uid =  (String) sharedPreferencesHelperMain.getValue("uid_fcm", "");
+        if(uid.isEmpty()) {
+            new Thread(this::fetchRoutesCancel).start();
+            return;
+        }
+        Logger.d(context, "Pusher", "statusCacheOrder: " + uid);
 
+        List<String> listCity = logCursor(CITY_INFO, context);
+        String api = listCity.get(2);
+
+        String baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        String url = baseUrl  + api + "/android/searchAutoOrderService/" + uid +"/no_mes";
+
+        Call<OrderServiceResponse> call = ApiClient.getApiService().searchAutoOrderService(url);
+        Logger.d(context, TAG, "statusOrder url: " + url);
+
+        // Выполняем запрос асинхронно
+        call.enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<OrderServiceResponse> call, @NonNull Response<OrderServiceResponse> response) {
+
+                Logger.i(context, TAG, "Response received: HTTP " + response.code() + ", Success: " + response.isSuccessful());
+
+                if (response.isSuccessful() && response.body() != null) {
+                    OrderServiceResponse orderResponse = response.body();
+                    Logger.d(context, TAG, "Response body: status=" + orderResponse.getStatus() + ", message=" + orderResponse.getMessage());
+
+                    // Проверяем, что статус success и сообщение содержит информацию об автомобиле
+                    if ("success".equals(orderResponse.getStatus()) && orderResponse.getMessage() != null) {
+                        String message = orderResponse.getMessage();
+                        // Проверяем, что сообщение не "Заказ снят" или "Заказ не найден"
+                        if (!message.equals("Заказ снят") && !message.equals("Заказ не найден") && !message.equals("Автоматический заказ не найден")) {
+                            sharedPreferencesHelperMain.saveValue("uid_fcm", "");
+                        }
+                    }
+                } else {
+                    Logger.w(context, TAG, "Unsuccessful response or no body: HTTP " + response.code());
+                    if (response.errorBody() != null) {
+                        try {
+                            String errorBody = response.errorBody().string();
+                            Logger.w(context, TAG, "Error body: " + errorBody);
+                        } catch (IOException e) {
+                            Logger.e(context, TAG, "Failed to read error body: " + e.getMessage()+ e);
+                            FirebaseCrashlytics.getInstance().recordException(e);
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<OrderServiceResponse> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
+            }
+        });
+    }
 }

@@ -1,5 +1,8 @@
 package com.taxi.easy.ua.ui.finish;
 
+import com.taxi.easy.ua.service.AutoOrderResponse;
+import com.taxi.easy.ua.service.OrderServiceResponse;
+
 import java.util.List;
 
 import retrofit2.Call;
@@ -15,6 +18,11 @@ public interface ApiService {
 
     @GET
     Call<OrderResponse> statusOrder(@Url String url);
+
+    @GET
+    Call<OrderServiceResponse> searchAutoOrderService(@Url String url);
+    @GET
+    Call<AutoOrderResponse> searchAutoOrderServiceAll(@Url String url);
     @GET
     Call<OrderResponse> getOrderStatusMessageResultPush(@Url String url);
     @GET

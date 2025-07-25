@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.utils.notify;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -18,6 +20,7 @@ import androidx.core.app.NotificationManagerCompat;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.log.Logger;
 
 
 public class NotificationHelper {
@@ -96,10 +99,28 @@ public class NotificationHelper {
         notificationManager.notify(notificationId, builder.build());
     }
 
-    public static void showNotificationFindAutoMessage(Context context, String message) {
-        // Создание интента для открытия приложения
-        Intent intent = new Intent(context, MainActivity.class); // Замените на стартовую активность
+    public static void showNotificationFindAutoMessage(Context context, String message, String uid) {
+        Logger.d(context, TAG, "Вызван showNotificationFindAutoMessage()");
+        Logger.d(context, TAG, "Текст уведомления: " + message);
+        Logger.d(context, TAG, "uid: " + uid);
+
+        String uidOld = (String) sharedPreferencesHelperMain.getValue("uid_fcm", "");
+
+        if (uidOld.equals(uid)) {
+            Logger.d(context, TAG, "UID совпадает с предыдущим, уведомление не показывается.");
+            return;
+        } else {
+            sharedPreferencesHelperMain.saveValue("uid_fcm", uid);
+        }
+
+        // Генерация уникального ID уведомления
+        int notificationId = generateUniqueNotificationId();
+
+        // Создаем Intent для MainActivity и передаем notificationId
+        Intent intent = new Intent(context, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        intent.putExtra("notification_id", notificationId);
+        Logger.d(context, TAG, "Создан Intent для MainActivity с notification_id = " + notificationId);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context,
@@ -107,32 +128,54 @@ public class NotificationHelper {
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
+        Logger.d(context, TAG, "Создан PendingIntent");
 
-        // Получаем картинку (можно загрузить по URL, здесь используется локальная)
-        Bitmap largeIcon = BitmapFactory.decodeResource(context.getResources(), R.drawable.notification_image); // замените на своё изображение
+        // Загружаем иконку
+        Bitmap largeIcon = BitmapFactory.decodeResource(context.getResources(), R.drawable.notification_image);
+        Logger.d(context, TAG, "largeIcon загружен: " + (largeIcon != null));
 
-        // Построение уведомления с big picture
+        // Строим уведомление
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentText(message)
                 .setLargeIcon(largeIcon)
                 .setStyle(new NotificationCompat.BigPictureStyle()
                         .bigPicture(largeIcon)
-                        .bigLargeIcon((Bitmap) null)) // скрыть большую иконку при bigPicture
+                        .bigLargeIcon((Bitmap) null))
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true);
 
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-        int notificationId = generateUniqueNotificationId();
+        Logger.d(context, TAG, "NotificationCompat.Builder создан с CHANNEL_ID = " + CHANNEL_ID);
 
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
+
+        // Проверяем разрешение
         if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
+            Logger.d(context, TAG, "Разрешение POST_NOTIFICATIONS не предоставлено. Уведомление не будет показано.");
             return;
         }
 
+        Logger.d(context, TAG, "Показываем уведомление...");
         notificationManager.notify(notificationId, builder.build());
+        Logger.d(context, TAG, "notificationManager.notify() вызван.");
     }
+
+    /**
+     * Удаляет уведомление, если в Intent передан notification_id.
+     */
+    public static void cancelNotificationFromIntent(Context context, Intent intent) {
+        if (intent != null && intent.hasExtra("notification_id")) {
+            int notificationId = intent.getIntExtra("notification_id", -1);
+            if (notificationId != -1) {
+                NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
+                notificationManager.cancel(notificationId);
+                Logger.d(context, TAG, "Уведомление с ID " + notificationId + " удалено через cancelNotificationFromIntent()");
+            }
+        }
+    }
+
 
     public static void showNotificationMessageOpen(Context context, String title, String message, PendingIntent pendingIntent) {
         // Создание канала уведомлений для Android 8.0 (API level 26) и выше

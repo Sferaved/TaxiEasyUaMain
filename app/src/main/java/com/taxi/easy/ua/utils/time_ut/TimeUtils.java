@@ -7,6 +7,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 
 import java.text.ParseException;
@@ -125,7 +126,7 @@ public class TimeUtils {
                 }
 
             } catch (ParseException e) {
-                e.printStackTrace();
+                FirebaseCrashlytics.getInstance().recordException(e);
             }
         }
     }

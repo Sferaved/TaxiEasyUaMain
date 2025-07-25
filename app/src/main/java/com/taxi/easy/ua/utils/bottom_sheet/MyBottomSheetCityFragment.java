@@ -8,12 +8,10 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,7 +22,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
-import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.FragmentManager;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
@@ -1235,7 +1232,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             VisicomFragment.num1.setVisibility(View.VISIBLE);
         }
 
-        checkNotificationPermissionAndRequestIfNeeded();
+//        checkNotificationPermissionAndRequestIfNeeded();
         startActivity(new Intent(context, MainActivity.class));
     }
 
@@ -1254,27 +1251,25 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             public void onResponse(@NonNull Call<CityResponse> call, @NonNull Response<CityResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     CityResponse cityResponse = response.body();
-                    if (cityResponse != null) {
-                        int cardMaxPay = cityResponse.getCardMaxPay();
-                        int bonusMaxPay = cityResponse.getBonusMaxPay();
-                        String black_list = cityResponse.getBlack_list();
+                    int cardMaxPay = cityResponse.getCardMaxPay();
+                    int bonusMaxPay = cityResponse.getBonusMaxPay();
+                    String black_list = cityResponse.getBlack_list();
 
-                        ContentValues cv = new ContentValues();
-                        cv.put("card_max_pay", cardMaxPay);
-                        cv.put("bonus_max_pay", bonusMaxPay);
-                        sharedPreferencesHelperMain.saveValue("black_list", black_list);
-                        Logger.d(context, TAG, "black_list 2" + black_list);
-                        if (isAdded()) {
-                            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                            database.update(MainActivity.CITY_INFO, cv, "id = ?",
-                                    new String[]{"1"});
+                    ContentValues cv = new ContentValues();
+                    cv.put("card_max_pay", cardMaxPay);
+                    cv.put("bonus_max_pay", bonusMaxPay);
+                    sharedPreferencesHelperMain.saveValue("black_list", black_list);
+                    Logger.d(context, TAG, "black_list 2" + black_list);
+                    if (isAdded()) {
+                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        database.update(MainActivity.CITY_INFO, cv, "id = ?",
+                                new String[]{"1"});
 
-                            database.close();
-                        }
-
-
-                        // Добавьте здесь код для обработки полученных значений
+                        database.close();
                     }
+
+
+                    // Добавьте здесь код для обработки полученных значений
                 } else {
                     Logger.d(context, TAG, "Failed. Error code: " + response.code());
                     MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.error_message));
@@ -1535,37 +1530,37 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         });
     }
 
-    void checkNotificationPermissionAndRequestIfNeeded() {
-        if (isAdded()) {
-            // Получаем доступ к настройкам приложения
-            SharedPreferences sharedPreferences = requireActivity().getPreferences(MODE_PRIVATE);
+//    void checkNotificationPermissionAndRequestIfNeeded() {
+//        if (isAdded()) {
+//            // Получаем доступ к настройкам приложения
+//            SharedPreferences sharedPreferences = requireActivity().getPreferences(MODE_PRIVATE);
+//
+//            // Проверяем, было ли уже запрошено разрешение
+//            boolean isNotificationPermissionRequested = sharedPreferences.getBoolean("notification_permission_requested", false);
+//
+//            // Проверяем версию Android
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // API 33 и выше
+//                NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
+//                boolean areNotificationsEnabled = notificationManager.areNotificationsEnabled();
+//
+//                // Если уведомления не разрешены и разрешение еще не запрашивалось
+//                if (!areNotificationsEnabled && !isNotificationPermissionRequested) {
+//                    openNotificationSettings(context);
+//                    // Сохраняем информацию о том, что разрешение было запрошено
+//                    SharedPreferences.Editor editor = sharedPreferences.edit();
+//                    editor.putBoolean("notification_permission_requested", true);
+//                    editor.apply();
+//                }
+//            }
+//        }
+//    }
 
-            // Проверяем, было ли уже запрошено разрешение
-            boolean isNotificationPermissionRequested = sharedPreferences.getBoolean("notification_permission_requested", false);
-
-            // Проверяем версию Android
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // API 33 и выше
-                NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-                boolean areNotificationsEnabled = notificationManager.areNotificationsEnabled();
-
-                // Если уведомления не разрешены и разрешение еще не запрашивалось
-                if (!areNotificationsEnabled && !isNotificationPermissionRequested) {
-                    openNotificationSettings(context);
-                    // Сохраняем информацию о том, что разрешение было запрошено
-                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                    editor.putBoolean("notification_permission_requested", true);
-                    editor.apply();
-                }
-            }
-        }
-    }
-
-    public void openNotificationSettings(Context context) {
-        Intent intent = new Intent();
-        intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-        intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.getPackageName());
-        context.startActivity(intent);
-    }
+//    public void openNotificationSettings(Context context) {
+//        Intent intent = new Intent();
+//        intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+//        intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.getPackageName());
+//        context.startActivity(intent);
+//    }
 
     private void lastAddressUser(String cityString) {
 

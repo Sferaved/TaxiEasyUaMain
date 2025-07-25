@@ -1,18 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="application">PAS1</string>
-
-    <string name="version_code">1.839</string>
-    <string name="version">Версия: 1.839</string>
-
-    <string name="app_name">Такси Доставка</string>
-
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Такси Украина заказ онлайн Лайт</string>
-    <string name="nav_header_subtitle">Быстрые поездки по городам Украины</string>
-    <string name="nav_header_desc">Navigation header</string>
-    <string name="action_settings">Настройки</string>
 
     <string name="menu_maps">Карта</string>
     <string name="menu_home">По адресу (Старое)</string>
@@ -529,5 +516,6 @@
     <string name="map_loading">Карта всё ещё загружается...</string>
     <string name="cost_error">Ошибка создания заказа. Попробуйте изменить адрес или наберите оператора</string>
     <string name="google_maps">Google Maps не установлены</string>
+    <string name="sentNotifyMessage">Разрешите приложению отправлять Вам уведомления</string>
 
 </resources>

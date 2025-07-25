@@ -1,0 +1,16 @@
+<resources>
+    <string name="application">PAS1</string>
+
+    <string name="version_code">1.840</string>
+    <string name="version">Версія: 1.840</string>
+
+    <string name="app_name">Таксі Доставка</string>
+
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Попутчик таксі Україна дешево</string>
+    <string name="nav_header_subtitle">Швидкі поїздки по містам України</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Налаштування</string>
+</resources>

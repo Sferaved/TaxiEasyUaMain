@@ -8,6 +8,7 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -756,23 +757,41 @@ public class VisicomSearchFragment extends Fragment {
             bundle.putString("startMarker", start);
             bundle.putString("finishMarker", end);
             Log.e("setStatusX 3", "start:" + start);
-
-            MainActivity.navController.navigate(
-                    R.id.nav_map,
-                    bundle,
-                    new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_map, true)
-                            .build()
-            );
+            Activity activity = getActivity();
+            if (activity == null) {
+                Log.e(TAG, "Activity is null, cannot navigate");
+                return;
+            }
+            try {
+                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(
+                        R.id.nav_map,
+                        bundle,
+                        new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_map, true)
+                                .build()
+                );
+            } catch (IllegalStateException e) {
+                Log.e(TAG, "Fragment not attached to an Activity", e);
+                // Handle the case where the Fragment is not attached
+            }
 
         });
         btn_ok.setOnClickListener(v -> {
-
-            NavController navController = Navigation.findNavController(MyApplication.getCurrentActivity(), R.id.nav_host_fragment_content_main);
-            navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_visicom, true)
-                    .build());
-
+            Activity activity = getActivity();
+            if (activity == null) {
+                Log.e(TAG, "Activity is null, cannot navigate");
+                return;
+            }
+            try {
+                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true)
+                        .build());
+            } catch (IllegalStateException e) {
+                Log.e(TAG, "Fragment not attached to an Activity", e);
+                // Handle the case where the Fragment is not attached
+            }
 //            startActivity(new Intent(context, MainActivity.class));
         });
 
