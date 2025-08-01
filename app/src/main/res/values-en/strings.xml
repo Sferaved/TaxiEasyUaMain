@@ -122,12 +122,12 @@
     <string name="textStatus">Order status</string>
     <string name="cancel_order">Cancel order</string>
     <string name="ex_st_1">Waiting for machine search (for pre-order)</string>
-    <string name="ex_st_2">Found machine.</string>
+    <string name="ex_st_2">Found car</string>
     <string name="ex_st_2_1">The car is ready to board. Get out, the driver is waiting for you.</string>
     <string name="ex_st_3">" Car number: "</string>
     <string name="ex_st_4">" Driver's phone: "</string>
     <string name="ex_st_5">" Estimated submission time: "</string>
-    <string name="ex_st_0">Searching for machine</string>
+    <string name="ex_st_0">Searching for car</string>
     <string name="your_city">"Your city"</string>
     <string name="Kyiv_city">Kyiv</string>
     <string name="Odessa">Odesa</string>
@@ -512,4 +512,7 @@
     <string name="cost_error">Error creating order. Try changing the address or dial the operator</string>
     <string name="google_maps">Google Maps not installed</string>
     <string name="sentNotifyMessage">Allow the app to send you notifications</string>
+    <string name="no_start_point_message">Sending location not specified</string>
+    <string name="error_5_min_message">Вы не можете отменить после нахождения авто</string>
+    <string name="error_5_min_cancel_card_order">Вы не можете отменить после нахождения авто. Обратитесь к оператору.</string>
 </resources>

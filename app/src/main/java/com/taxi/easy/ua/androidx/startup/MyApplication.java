@@ -159,6 +159,11 @@ public class MyApplication extends Application {
                 if (currentActivity == activity) {
                     currentActivity = null;
                 }
+                // Проверяем, что все активности уничтожены и приложение закрыто
+                if (activityReferences == 0 && !isActivityChangingConfigurations) {
+                    Logger.d(getApplicationContext(), TAG, "Приложение полностью закрыто");
+                    stopOrderStatusWorker(); // останавливаем воркер
+                }
             }
         });
     }

@@ -91,23 +91,26 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
-
         Map<String, String> data = remoteMessage.getData();
-
+        Logger.d(this, TAG, "Получено сообщение: " + data);
         if (!data.isEmpty()) {
             String locale = LocaleHelper.getLocale();
             Logger.d(this, TAG, "Locale: " + locale);
-
-            // Пример: передаём разные тексты в зависимости от локали
             String message = data.get("message_" + locale);
             if (message == null) {
-                message = data.get("message_uk"); // fallback
+                message = data.get("message_uk");
+                Logger.d(this, TAG, "Fallback to message_uk: " + message);
             }
             String uid = data.get("uid");
+            if (message == null || message.isEmpty()) {
+                message = "Найдено авто (по умолчанию)";
+                Logger.d(this, TAG, "Сообщение пустое, установлено значение по умолчанию");
+            }
             Logger.d(getApplicationContext(), TAG, "Message: " + message);
-            Logger.d(getApplicationContext(), TAG, "uid " + uid);
-
+            Logger.d(getApplicationContext(), TAG, "uid: " + uid);
             notifyUser(message, uid);
+        } else {
+            Logger.d(this, TAG, "Данные пуш-уведомления пусты");
         }
     }
 

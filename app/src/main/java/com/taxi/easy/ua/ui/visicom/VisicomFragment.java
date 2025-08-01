@@ -844,7 +844,7 @@ public class VisicomFragment extends Fragment {
     }
 
 
-    @SuppressLint("Range")
+    @SuppressLint({"Range", "ResourceAsColor"})
     public String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
         Logger.d(context, TAG, "getTaxiUrlSearchMarkers: " + urlAPI);
         startTilePreloadWorker();
@@ -861,6 +861,15 @@ public class VisicomFragment extends Fragment {
         String start = cursor.getString(cursor.getColumnIndex("start"));
         String finish = cursor.getString(cursor.getColumnIndex("finish"));
 
+        if (start.trim().isEmpty() || geoText.getText().toString().trim().isEmpty()) {
+            start = context.getString(R.string.startPoint);
+            geoText.setText(start);
+        }
+        if (originLatitude == 0.0 || originLatitude == 0.0) {
+            geoText.setText("");
+            geoText.setBackgroundColor(R.color.selected_text_color);
+            return "error";
+        }
         if (finish.equals(context.getString(R.string.on_city_tv)) || finish.trim().isEmpty()) {
             finish = start;
             toLatitude = originLatitude;
@@ -1188,6 +1197,10 @@ public class VisicomFragment extends Fragment {
     public boolean orderRout() {
         urlOrder = getTaxiUrlSearchMarkers("orderClientCost", context );
         Logger.d(context, TAG, "order: urlOrder " + urlOrder);
+        if(urlOrder.equals("error")) {
+            Toast.makeText(context, R.string.no_start_point_message, Toast.LENGTH_SHORT).show();
+            return false;
+        }
         return true;
     }
 
@@ -1687,7 +1700,7 @@ public class VisicomFragment extends Fragment {
     }
 
 
-    @SuppressLint("UseCompatLoadingForDrawables")
+    @SuppressLint({"UseCompatLoadingForDrawables", "ResourceAsColor"})
     @Override
     public void onResume() {
         super.onResume();
@@ -1912,7 +1925,7 @@ public class VisicomFragment extends Fragment {
         geoText = binding.textGeo;
         geoText.setOnClickListener(v -> {
             gpsBtn.setText(R.string.change);
-
+            geoText.setBackgroundColor(689194);
 
             Bundle bundle = new Bundle();
             bundle.putString("start", "ok");

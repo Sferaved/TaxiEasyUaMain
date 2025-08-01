@@ -2,6 +2,7 @@ package com.taxi.easy.ua.utils.user.user_verify;
 
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -97,6 +98,7 @@ public class VerifyUserTask {
         }
     }
 
+    @SuppressLint("Range")
     private Map<String, String> getUserInfoFromCursor() {
         Map<String, String> result = new HashMap<>();
         try (var database = context.openOrCreateDatabase(MainActivity.DB_NAME, Context.MODE_PRIVATE, null);

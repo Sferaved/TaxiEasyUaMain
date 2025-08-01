@@ -228,7 +228,7 @@ public class MainActivity extends AppCompatActivity {
         String localeCode = (String) MyApplication.sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().getLanguage());
         applyLocale(localeCode);
         super.onCreate(savedInstanceState);
-        NotificationHelper.cancelNotificationFromIntent(this, getIntent());
+
         // Инициализация View Binding
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);

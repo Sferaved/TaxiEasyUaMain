@@ -27,6 +27,16 @@ public interface PurchaseService {
             @Path("clientEmail") String clientEmail,
             @Path("clientPhone") String clientPhone
     );
+    @GET("/wfp/chargeActiveTokenAddCost/{application}/{city}/{orderReference}/{amount}/{productName}/{clientEmail}/{clientPhone}")
+    Call<PurchaseResponse> chargeActiveTokenAddCost(
+            @Path("application") String application,
+            @Path("city") String city,
+            @Path("orderReference") String orderReference,
+            @Path("amount") String amount,
+            @Path("productName") String productName,
+            @Path("clientEmail") String clientEmail,
+            @Path("clientPhone") String clientPhone
+    );
 
     @GET("/wfp/chargeActiveTokenWithChangeToken/{application}/{city}/{orderReference}/{uid}/{productName}/{clientEmail}/{clientPhone}")
     Call<PurchaseResponse> purchaseWithChangeToken(

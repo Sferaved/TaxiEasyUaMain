@@ -168,4 +168,29 @@ public class ExecutionStatusViewModel extends ViewModel {
             statusGpsUpdate.postValue(statusGps);
         }
     }
+
+
+    //Кнопак отмены
+    private final MutableLiveData<Boolean> cancelButtonVisible = new MutableLiveData<>(true); // true = видно
+
+    public LiveData<Boolean> getCancelButtonVisible() {
+        return cancelButtonVisible;
+    }
+
+    public void showCancelButton() {
+        if (Looper.getMainLooper().isCurrentThread()) {
+            cancelButtonVisible.setValue(true);
+        } else {
+            cancelButtonVisible.postValue(true);
+        }
+    }
+
+    public void hideCancelButton() {
+        if (Looper.getMainLooper().isCurrentThread()) {
+            cancelButtonVisible.setValue(false);
+        } else {
+            cancelButtonVisible.postValue(false);
+        }
+    }
+
 }

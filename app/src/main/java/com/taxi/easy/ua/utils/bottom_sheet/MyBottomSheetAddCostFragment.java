@@ -10,8 +10,6 @@ import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -366,7 +364,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         String email = stringList.get(3);
         String phoneNumber = stringList.get(2);
 
-        Call<PurchaseResponse> call = service.purchase(
+        Call<PurchaseResponse> call = service.chargeActiveTokenAddCost(
                 context.getString(R.string.application),
                 city,
                 order_id,
@@ -388,11 +386,13 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                     switch (orderStatus) {
                         case "Approved":
                         case "WaitingAuthComplete":
-                            Logger.d(context, TAG, "onResponse: Positive status received: " + orderStatus);
-                            sharedPreferencesHelperMain.saveValue("pay_error", "**");
-                            new Handler(Looper.getMainLooper()).post(() -> {
-                                newOrderCardPayAdd20(amount);
-                            });
+                            viewModel.setAddCostViewUpdate(amount);
+                            viewModel.setCancelStatus(true);
+//                            Logger.d(context, TAG, "onResponse: Positive status received: " + orderStatus);
+//                            sharedPreferencesHelperMain.saveValue("pay_error", "**");
+//                            new Handler(Looper.getMainLooper()).post(() -> {
+//                                newOrderCardPayAdd20(amount);
+//                            });
                             break;
                        default:
                            deleteInvoice(order_id);

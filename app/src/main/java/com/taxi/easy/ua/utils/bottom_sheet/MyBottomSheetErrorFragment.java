@@ -26,6 +26,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.NavDestination;
@@ -79,6 +80,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
     // Публичный безаргументный конструктор
 
      
+    @SuppressLint("UseCompatLoadingForDrawables")
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -103,153 +105,179 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
 
         textViewInfo = view.findViewById(R.id.textViewInfo);
         Logger.d(getActivity(), TAG, "onCreateView:errorMessage " + errorMessage);
+        String errorMessageKey = "";
+
+        if (errorMessage != null && !errorMessage.equals("null")) {
+            if (errorMessage.equals(getString(R.string.verify_internet))) {
+                errorMessageKey = "verify_internet";
+            } else if (errorMessage.equals(getString(R.string.error_message))) {
+                errorMessageKey = "error_message";
+            } else if (errorMessage.equals(getString(R.string.server_error_connected))) {
+                errorMessageKey = "server_error_connected";
+            } else if (errorMessage.equals(getString(R.string.sentNotifyMessage))) {
+                errorMessageKey = "sentNotifyMessage";
+            } else if (errorMessage.equals(getString(R.string.order_to_cancel_true))) {
+                errorMessageKey = "order_to_cancel_true";
+            } else if (errorMessage.equals(getString(R.string.black_list_message))) {
+                errorMessageKey = "black_list_message";
+            } else if (errorMessage.equals(getString(R.string.ex_st_2))) {
+                errorMessageKey = "ex_st_2";
+            } else if (errorMessage.equals(getString(R.string.cost_error))) {
+                errorMessageKey = "cost_error";
+            } else if (errorMessage.equals(getString(R.string.no_cards_info))) {
+                errorMessageKey = "no_cards_info";
+            } else if (errorMessage.equals(getString(R.string.google_verify_mes))) {
+                errorMessageKey = "google_verify_mes";
+            } else if (errorMessage.equals(getString(R.string.verify_address))) {
+                errorMessageKey = "verify_address";
+            } else if (errorMessage.equals(getString(R.string.error_5_min_cancel_card_order))) {
+                errorMessageKey = "error_5_min_cancel_card_order";
+            }
+        }
+
+
+
         if (errorMessage != null && !errorMessage.equals("null")) {
             textViewInfo.setText(errorMessage);
-            if (errorMessage.equals(getString(R.string.verify_internet))
-                || errorMessage.equals(getString(R.string.error_message))
-            ) {
-                btn_ok.setVisibility(View.GONE);
-                textViewInfo.setOnClickListener(v -> {
-                    SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                    ContentValues cv = new ContentValues();
+            switch (errorMessageKey) {
+                case "verify_internet":
+                case "error_message":
+                    textViewInfo.setText(errorMessage);
+                    btn_ok.setVisibility(View.GONE);
+                    textViewInfo.setOnClickListener(v -> {
+                        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                        ContentValues cv = new ContentValues();
+                        cv.put("email", "email");
+                        database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
+                        database.close();
+                        dismiss();
+                        if (NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
+                            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                            navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder().setPopUpTo(R.id.nav_visicom, true).build());
+                        }
+                    });
+                    break;
 
-                    cv.put("email", "email");
+                case "server_error_connected":
+                    textViewInfo.setOnClickListener(v -> dismiss());
+                    btn_ok.setText(getString(R.string.send_email_admin));
+                    btn_ok.setOnClickListener(v -> {
+                        sendEmailAdmin(errorMessage);
+                        dismiss();
+                    });
 
-                    // обновляем по id
-                    database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
-                            new String[] { "1" });
-                    database.close();
-                    dismiss();
+                    String logFilePath = requireActivity().getExternalFilesDir(null) + "/app_log.txt";
+                    TelegramUtils.sendErrorToTelegram(generateEmailBody(errorMessage), logFilePath);
+                    break;
 
-                    if (NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-                        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-                        navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_visicom, true)
-                                .build());
-                    }
-//                    startActivity(new Intent(requireContext(), MainActivity.class));
-                });
-            } else if(errorMessage.equals(getString(R.string.server_error_connected))) {
-                textViewInfo.setOnClickListener(v -> dismiss());
-                btn_ok.setText(getString(R.string.send_email_admin));
-                btn_ok.setOnClickListener(v -> {
-                    sendEmailAdmin (errorMessage);
-                    dismiss();
-                });
+                case "sentNotifyMessage":
+                    textViewInfo.setOnClickListener(v -> dismiss());
+                    btn_ok.setText(getString(R.string.ok_add_cost));
+                    btn_ok.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.btn_accents));
+                    btn_ok.setBackgroundTintList(ContextCompat.getColorStateList(requireContext(), R.color.colorAccent));
+                    btn_ok.setOnClickListener(v -> {
+                        Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                .putExtra(Settings.EXTRA_APP_PACKAGE, requireActivity().getPackageName());
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        requireActivity().startActivity(intent);
+                        dismiss();
+                    });
 
+                    btn_help.setText(getString(R.string.cancel_button));
+                    btn_help.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_red));
+                    btn_help.setBackgroundTintList(ContextCompat.getColorStateList(requireContext(), R.color.selected_text_color_2));
+                    btn_help.setOnClickListener(v -> dismiss());
+                    break;
 
-                String logFilePath = requireActivity().getExternalFilesDir(null) + "/app_log.txt"; // Путь к лог-файлу
-                TelegramUtils.sendErrorToTelegram(generateEmailBody(errorMessage), logFilePath);
+                case "order_to_cancel_true":
+                    textViewInfo.setOnClickListener(v -> dismiss());
+                    btn_ok.setText(getString(R.string.order_to_cancel_review));
+                    btn_ok.setOnClickListener(v -> {
+                        navController.navigate(R.id.nav_cancel, null, new NavOptions.Builder().setPopUpTo(R.id.nav_visicom, true).build());
+                        dismiss();
+                    });
+                    break;
 
+                case "black_list_message":
+                    textViewInfo.setOnClickListener(v -> dismiss());
+                    btn_ok.setText(getString(R.string.ok_error));
+                    btn_ok.setOnClickListener(v -> {
+                        NavDestination currentDestination = navController.getCurrentDestination();
+                        if (currentDestination == null || currentDestination.getId() != R.id.nav_visicom) {
+                            navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder().setPopUpTo(R.id.nav_visicom, true).build());
+                        }
+                        dismiss();
+                    });
+                    break;
 
-            } else if(errorMessage.equals(getString(R.string.sentNotifyMessage))) {
-                textViewInfo.setOnClickListener(v -> dismiss());
-                btn_ok.setText(getString(R.string.ok_add_cost));
-                btn_ok.setOnClickListener(v -> {
+                case "ex_st_2":
+                    textViewInfo.setOnClickListener(v -> dismiss());
+                    btn_ok.setText(getString(R.string.ok_error));
+                    btn_ok.setOnClickListener(v -> startActivity(new Intent(requireContext(), MainActivity.class)));
+                    break;
 
-                    Intent intent;
-                    intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                            .putExtra(Settings.EXTRA_APP_PACKAGE, requireActivity().getPackageName());
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    requireActivity().startActivity(intent);
-                    dismiss();
-                });
+                case "cost_error":
+                case "error_5_min_cancel_card_order":
+                    textViewInfo.setOnClickListener(v -> dismiss());
+                    btn_ok.setText(getString(R.string.ok_error));
+                    btn_ok.setOnClickListener(v -> dismiss());
+                    break;
 
-            } else if (errorMessage.equals(getString(R.string.order_to_cancel_true))){
-                textViewInfo.setOnClickListener(v -> dismiss());
-                btn_ok.setText(getString(R.string.order_to_cancel_review));
-                btn_ok.setOnClickListener(v -> {
-                    navController.navigate(R.id.nav_cancel, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_visicom, true)
-                            .build());
+                case "no_cards_info":
+                    textViewInfo.setOnClickListener(v -> {
+                        dismiss();
+                        int currentId = Objects.requireNonNull(navController.getCurrentDestination()).getId();
+                        if (currentId == R.id.nav_visicom) {
+                            VisicomFragment.btnStaticVisible(View.VISIBLE);
+                        } else if (currentId == R.id.nav_home) {
+                            HomeFragment.btnVisible(View.VISIBLE);
+                        }
+                    });
 
+                    btn_ok.setText(getString(R.string.link_card));
+                    btn_ok.setOnClickListener(v -> {
+                        navController.navigate(R.id.nav_card, null, new NavOptions.Builder().build());
+                        dismiss();
+                    });
+                    break;
 
-                    dismiss();
-                });
-            } else if (errorMessage.equals(getString(R.string.black_list_message))){
-                textViewInfo.setOnClickListener(v -> dismiss());
-                btn_ok.setText(getString(R.string.ok_error));
-                btn_ok.setOnClickListener(v -> {
-                    NavDestination currentDestination = navController.getCurrentDestination();
+                case "google_verify_mes":
+                    textViewInfo.setOnClickListener(v -> {
+                        navController.navigate(R.id.nav_account, null, new NavOptions.Builder().setPopUpTo(R.id.nav_account, true).build());
+                        dismiss();
+                    });
 
-                    if (currentDestination == null || currentDestination.getId() != R.id.nav_visicom) {
-                        navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_visicom, true)
-                                .build());
-                    }
+                    btn_ok.setText(R.string.in_account);
+                    btn_ok.setOnClickListener(v -> {
+                        navController.navigate(R.id.nav_account, null, new NavOptions.Builder().setPopUpTo(R.id.nav_account, true).build());
+                        dismiss();
+                    });
+                    break;
 
-                    dismiss();
-                });
-            } else if (errorMessage.equals(getString(R.string.ex_st_2))){
-                textViewInfo.setOnClickListener(v -> dismiss());
-                btn_ok.setText(getString(R.string.ok_error));
-                btn_ok.setOnClickListener(v -> {
-                    startActivity(new Intent(requireContext(), MainActivity.class));
-                });
-            } else if (errorMessage.equals(getString(R.string.cost_error))){
-                textViewInfo.setOnClickListener(v -> dismiss());
-                btn_ok.setText(getString(R.string.ok_error));
-                btn_ok.setOnClickListener(v -> {
-                    dismiss();
-                });
-            } else if (errorMessage.equals(getString(R.string.no_cards_info))){
-                 textViewInfo.setOnClickListener(view2 -> {
-                     dismiss();
+                case "verify_address":
+                    textViewInfo.setOnClickListener(view1 -> {
+                        List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+                        String city = stringList.get(1);
+                        updateMyPosition(city);
+                        restartApplication(requireActivity());
+                    });
 
-                     if (Objects.requireNonNull(navController.getCurrentDestination()).getId() == R.id.nav_visicom) {
-                         VisicomFragment.btnStaticVisible(View.VISIBLE);
-                     }
-                     if (Objects.requireNonNull(navController.getCurrentDestination()).getId() == R.id.nav_home) {
-                         HomeFragment.btnVisible(View.VISIBLE);
-                     }
-
-                 });
-                btn_ok.setText(getString(R.string.link_card));
-                btn_ok.setOnClickListener(v -> {
-                     navController.navigate(R.id.nav_card, null, new NavOptions.Builder().build());
-                     dismiss();
-
-                });
-            } else if (errorMessage.equals(getString(R.string.google_verify_mes))){
-                 textViewInfo.setOnClickListener(view2 -> {
-                     navController.navigate(R.id.nav_account, null, new NavOptions.Builder()
-                             .setPopUpTo(R.id.nav_account, true)
-                             .build());
-                     dismiss();
-                 });
-                btn_ok.setText(R.string.in_account);
-                btn_ok.setOnClickListener(v -> {
-
-                    navController.navigate(R.id.nav_account, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_account, true)
-                            .build());
-                    dismiss();
-                });
-            } else {
-                btn_ok.setOnClickListener(v -> dismiss());
-            }
-        } else {
-            assert errorMessage != null;
-            if (errorMessage.equals(getString(R.string.verify_address))){
-                     textViewInfo.setOnClickListener(view1 -> {
-                         List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
-                         String city = stringList.get(1);
-                         updateMyPosition(city);
-                         restartApplication(requireActivity());
-                     });
                     btn_ok.setText(getString(R.string.ok_error));
                     btn_ok.setOnClickListener(v -> {
                         List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
                         String city = stringList.get(1);
                         updateMyPosition(city);
                         restartApplication(requireActivity());
-
                     });
-            } else {
-                textViewInfo.setText(getString(R.string.error_message));
-                btn_ok.setText(getString(R.string.try_again));
-                btn_ok.setOnClickListener(v -> startActivity(new Intent(requireContext(), MainActivity.class)));
+                    break;
+
+                default:
+                    textViewInfo.setText(getString(R.string.error_message));
+                    btn_ok.setText(getString(R.string.try_again));
+                    btn_ok.setOnClickListener(v -> startActivity(new Intent(requireContext(), MainActivity.class)));
+                    break;
             }
+
         }
 
         return view;

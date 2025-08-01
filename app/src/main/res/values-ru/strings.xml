@@ -126,7 +126,7 @@
     <string name="textStatus">Статус заказа</string>
     <string name="cancel_order">Отменить заказ</string>
     <string name="ex_st_1">Ожидается поиск машины (для предварительного заказа)</string>
-    <string name="ex_st_2">Найденная машина.</string>
+    <string name="ex_st_2">Найденна машина</string>
     <string name="ex_st_2_1">Машина подана на посадку. Выходите Вас ждет водитель. </string>
     <string name="ex_st_3">" Номер авто: "</string>
     <string name="ex_st_4">" Телефон водителя: "</string>
@@ -517,5 +517,8 @@
     <string name="cost_error">Ошибка создания заказа. Попробуйте изменить адрес или наберите оператора</string>
     <string name="google_maps">Google Maps не установлены</string>
     <string name="sentNotifyMessage">Разрешите приложению отправлять Вам уведомления</string>
+    <string name="no_start_point_message">Не указано место отправки</string>
+    <string name="error_5_min_message">Вы не можете отменить после нахождения авто</string>
+    <string name="error_5_min_cancel_card_order">Вы не можете отменить после нахождения авто. Обратитесь к оператору.</string>
 
 </resources>

@@ -59,6 +59,7 @@ import com.taxi.easy.ua.ui.finish.Status;
 import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetAddCostFragment;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetFinishOptionFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
@@ -181,7 +182,8 @@ public class FinishSeparateFragment extends Fragment {
 
     private ExecutionStatusViewModel viewModel;
     private String action;
-
+    long delayMillis = 5 * 60 * 1000;
+//    long delayMillis = 30 * 1000;
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -345,7 +347,7 @@ public class FinishSeparateFragment extends Fragment {
 
 
 
-        long delayMillis = 5 * 60 * 1000;
+
 
         if (pay_method.equals("wfp_payment")) {
             amount = receivedMap.get("order_cost");
@@ -361,28 +363,28 @@ public class FinishSeparateFragment extends Fragment {
 
         handler = new Handler(Looper.getMainLooper());
 
-        if (pay_method.equals("bonus_payment") || pay_method.equals("wfp_payment") || pay_method.equals("fondy_payment") || pay_method.equals("mono_payment") ) {
-            handlerBonusBtn = new Handler(Looper.getMainLooper());
-
-            runnableBonusBtn = () -> {
-                MainActivity.order_id = null;
-                String newStatus = text_status.getText().toString();
-                if(!newStatus.contains( context.getString(R.string.time_out_text))
-                        || !newStatus.contains( context.getString(R.string.error_payment_card))
-                        || !newStatus.contains( context.getString(R.string.double_order_error))
-                        || !newStatus.contains( context.getString(R.string.call_btn_cancel))
-                        || !newStatus.contains( context.getString(R.string.ex_st_canceled))
-                ) {
-                    String cancelText = context.getString(R.string.status_checkout_message);
-                    text_status.setText(cancelText);
-
-                } else {
-                    text_status.setText(newStatus);
-                }
-
-            };
-            handlerBonusBtn.postDelayed(runnableBonusBtn, delayMillis);
-        }
+//        if (pay_method.equals("bonus_payment") || pay_method.equals("wfp_payment") || pay_method.equals("fondy_payment") || pay_method.equals("mono_payment") ) {
+//            handlerBonusBtn = new Handler(Looper.getMainLooper());
+//
+//            runnableBonusBtn = () -> {
+//                MainActivity.order_id = null;
+//                String newStatus = text_status.getText().toString();
+//                if(!newStatus.contains( context.getString(R.string.time_out_text))
+//                        || !newStatus.contains( context.getString(R.string.error_payment_card))
+//                        || !newStatus.contains( context.getString(R.string.double_order_error))
+//                        || !newStatus.contains( context.getString(R.string.call_btn_cancel))
+//                        || !newStatus.contains( context.getString(R.string.ex_st_canceled))
+//                ) {
+//                    String cancelText = context.getString(R.string.status_checkout_message);
+//                    text_status.setText(cancelText);
+//
+//                } else {
+//                    text_status.setText(newStatus);
+//                }
+//
+//            };
+//            handlerBonusBtn.postDelayed(runnableBonusBtn, delayMillis);
+//        }
 
         handlerStatus = new Handler(Looper.getMainLooper());
         delayMillisStatus = 10 * 1000;
@@ -564,6 +566,7 @@ public class FinishSeparateFragment extends Fragment {
             btn_open.setTextColor(colorDefault);
             btn_add_cost.setVisibility(View.VISIBLE);
             btn_add_cost.setAlpha(0f);
+            btn_add_cost.setEnabled(true);
             btn_add_cost.animate().alpha(1f).setDuration(300);
 
             if (btn_again.getVisibility() != View.VISIBLE || btn_again.getVisibility() != GONE) {
@@ -781,7 +784,6 @@ public class FinishSeparateFragment extends Fragment {
 
     public void statusOrder() throws ParseException {
 
-//        btn_cancel_order.setVisibility(VISIBLE);
         btn_cancel_order.setEnabled(true);
         btn_cancel_order.setClickable(true);
         Logger.d(context, TAG, "statusOrder");
@@ -931,7 +933,8 @@ public class FinishSeparateFragment extends Fragment {
 
             // Скрываем элементы
         if (btn_cancel_order.getVisibility() != GONE) {
-            btn_cancel_order.setVisibility(GONE);
+//            btn_cancel_order.setVisibility(GONE);
+            viewModel.hideCancelButton();
         }
         // Показываем кнопку "Повторить"
         if (btn_again.getVisibility() != View.VISIBLE || btn_again.getVisibility() != GONE) {
@@ -964,7 +967,8 @@ public class FinishSeparateFragment extends Fragment {
 
         // Скрываем элементы
         if (btn_cancel_order.getVisibility() == View.VISIBLE) {
-            btn_cancel_order.setVisibility(GONE);
+//            btn_cancel_order.setVisibility(GONE);
+            viewModel.hideCancelButton();
         }
 
         setVisibility(GONE, btn_add_cost, btn_open, btn_options, btn_cancel_order,
@@ -972,7 +976,8 @@ public class FinishSeparateFragment extends Fragment {
                 textCostMessage, carProgressBar, progressSteps);
 
         btn_again.setVisibility(GONE);
-        btn_cancel_order.setVisibility(GONE);
+//        btn_cancel_order.setVisibility(GONE);
+        viewModel.hideCancelButton();
 
         if (handler != null) {
             Logger.d(context, TAG, "Removing myRunnable handler");
@@ -993,15 +998,20 @@ public class FinishSeparateFragment extends Fragment {
 
     private void carSearch() {
         sharedPreferencesHelperMain.saveValue("carFound", false);
+        viewModel.showCancelButton();
+        sharedPreferencesHelperMain.saveValue("bonusExecuted", false);
 //        new Handler(Looper.getMainLooper()).post(() -> {
             Logger.d(context, TAG, "carSearch() started");
             if (btn_cancel_order.getVisibility() != View.VISIBLE) {
-                btn_cancel_order.setVisibility(VISIBLE);
+//                btn_cancel_order.setVisibility(VISIBLE);
+                viewModel.showCancelButton();
             }
 
             btnAddCost (timeCheckOutAddCost);
 
         btn_add_cost.setVisibility(View.VISIBLE);
+        btn_add_cost.setEnabled(true);
+        btn_add_cost.setAlpha(1f);
             if (cancel_btn_click) {
                 Logger.d(context, TAG, "Order cancellation detected, stopping search...");
                 if (handler != null) {
@@ -1085,7 +1095,23 @@ public class FinishSeparateFragment extends Fragment {
 
 
         text_status.clearAnimation();
-        setVisibility(View.VISIBLE, textCost, textCostMessage, btn_cancel_order);
+
+        boolean bonusAlreadyCalled = (boolean) sharedPreferencesHelperMain.getValue("bonusExecuted", false);
+
+        if (!bonusAlreadyCalled && (
+                pay_method.equals("bonus_payment") ||
+                        pay_method.equals("wfp_payment") ||
+                        pay_method.equals("fondy_payment") ||
+                        pay_method.equals("mono_payment")
+        )) {
+            sharedPreferencesHelperMain.saveValue("bonusExecuted", true);
+            handlerBonusBtn = new Handler(Looper.getMainLooper());
+            runnableBonusBtn = () -> viewModel.hideCancelButton();
+            handlerBonusBtn.postDelayed(runnableBonusBtn, delayMillis);
+        }
+
+
+        setVisibility(View.VISIBLE, textCost, textCostMessage);
 
         btn_again.setVisibility(GONE);
 
@@ -1116,8 +1142,11 @@ public class FinishSeparateFragment extends Fragment {
                         context.startActivity(intent);
                     });
                     btn_add_cost.setVisibility(View.VISIBLE);
+                    btn_add_cost.setEnabled(true);
+                    btn_add_cost.setAlpha(1f);
                 } else {
-                    btn_add_cost.setVisibility(GONE);
+                    btn_add_cost.setEnabled(false);
+                    btn_add_cost.setAlpha(0.5f);
                 }
 
                 if (!TextUtils.isEmpty(time_to_start_point)) {
@@ -1151,7 +1180,8 @@ public class FinishSeparateFragment extends Fragment {
         sharedPreferencesHelperMain.saveValue("carFound", true);
 
         if (btn_cancel_order.getVisibility() != GONE) {
-            btn_cancel_order.setVisibility(GONE);
+//            btn_cancel_order.setVisibility(GONE);
+            viewModel.hideCancelButton();
         }
 
         if (handler != null) {
@@ -1188,8 +1218,11 @@ public class FinishSeparateFragment extends Fragment {
                 context.startActivity(intent);
             });
             btn_add_cost.setVisibility(View.VISIBLE);
+            btn_add_cost.setEnabled(true);
+            btn_add_cost.setAlpha(1f);
         } else {
-            btn_add_cost.setVisibility(GONE);
+            btn_add_cost.setEnabled(false);
+            btn_add_cost.setAlpha(0.5f);
         }
 
 
@@ -1616,6 +1649,31 @@ public class FinishSeparateFragment extends Fragment {
             // Update UI or perform other actions
             MainActivity.paySystemStatus = newPaySystemStatus;
         });
+//наблюдение на кнопкой отмены
+        viewModel.getCancelButtonVisible().observe(getViewLifecycleOwner(), isVisible -> {
+            btn_cancel_order.setVisibility(View.VISIBLE); // всегда видима (если хочешь)
+            if (isVisible != null) {
+//                btn_cancel_order.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+                btn_cancel_order.setOnClickListener(v -> {
+                    if (isVisible) {
+                        // Действие 1
+                        showCancelDialog();
+                    } else {
+                        // Действие 2
+                        showCancelErrorDialog();
+                    }
+                });
+            }
+        });
+
+    }
+
+    private void showCancelErrorDialog() {
+        if (isAdded()) {
+            String message = getString(R.string.error_5_min_cancel_card_order);
+            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+        }
     }
 
     private void addCostView (String addCost) {
@@ -1657,8 +1715,8 @@ public class FinishSeparateFragment extends Fragment {
         timeUtils = new TimeUtils(required_time, viewModel);
         timeUtils.startTimer();
 
-        btn_cancel_order.setOnClickListener(v ->
-                showCancelDialog());
+//        btn_cancel_order.setOnClickListener(v ->
+//                showCancelDialog());
 
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
         if(pay_method.equals("nal_payment")) {

@@ -4,6 +4,7 @@ import static android.content.Context.MODE_PRIVATE;
 import static com.taxi.easy.ua.MainActivity.CITY_INFO;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -138,7 +139,7 @@ public class OrderStatusUtils {
         if (c.moveToFirst()) {
             do {
                 for (String cn : c.getColumnNames()) {
-                    String value = c.getString(c.getColumnIndex(cn));
+                    @SuppressLint("Range") String value = c.getString(c.getColumnIndex(cn));
                     list.add(value);
                     Logger.d(context, TAG, "Column: " + cn + " = " + value);
                 }

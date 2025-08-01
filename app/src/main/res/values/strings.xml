@@ -517,4 +517,7 @@
     <string name="cost_error">Помилка створення замовлення. Спробуйте змінити адресу або наберіть оператора</string>
     <string name="google_maps">Google Maps не встановлені</string>
     <string name="sentNotifyMessage">Дозвольте застосунку надсилати Вам повідомлення</string>
+    <string name="no_start_point_message">Не вказано місце відправлення</string>
+    <string name="error_5_min_message">Вы не можете отменить после нахождения авто</string>
+    <string name="error_5_min_cancel_card_order">Вы не можете отменить после нахождения авто. Обратитесь к оператору.</string>
 </resources>
