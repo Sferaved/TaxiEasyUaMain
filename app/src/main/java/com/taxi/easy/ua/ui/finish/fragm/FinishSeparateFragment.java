@@ -41,6 +41,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.content.ContextCompat;
+import androidx.core.os.HandlerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Observer;
@@ -184,6 +185,9 @@ public class FinishSeparateFragment extends Fragment {
     private String action;
     long delayMillis = 5 * 60 * 1000;
 //    long delayMillis = 30 * 1000;
+
+    private boolean isTaskScheduled = false; // Флаг для отслеживания
+    
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -386,7 +390,8 @@ public class FinishSeparateFragment extends Fragment {
 //            handlerBonusBtn.postDelayed(runnableBonusBtn, delayMillis);
 //        }
 
-        handlerStatus = new Handler(Looper.getMainLooper());
+//        handlerStatus = new Handler(Looper.getMainLooper());
+        handlerStatus = HandlerCompat.createAsync(Looper.getMainLooper());
         delayMillisStatus = 10 * 1000;
         myTaskStatus = new Runnable() {
             @Override
@@ -400,8 +405,14 @@ public class FinishSeparateFragment extends Fragment {
                 } finally {
                     isTaskRunning = false; // Сбрасываем флаг после выполнения
                     // Планируем следующий запуск, если не отменено
+//                    if (!isTaskCancelled && isAdded()) {
+//                        handlerStatus.postDelayed(this, delayMillisStatus);
+//                    }
+//                    HandlerCompat.postDelayed(handlerAddcost, showDialogAddcost, null, timeCheckOutAddCost);
+//                    startCycle();
                     if (!isTaskCancelled && isAdded()) {
-                        handlerStatus.postDelayed(this, delayMillisStatus);
+                        // Планируем следующий запуск с задержкой
+                        HandlerCompat.postDelayed(handlerStatus, this, null, delayMillisStatus);
                     }
                 }
             }
@@ -587,13 +598,25 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     private void startCycle() {
+        Log.d("HandlerDebug startCycle", "startCycle called from: " + new Exception().getStackTrace()[1]);
         if (isAdded() && handlerStatus != null && myTaskStatus != null && !isTaskRunning && !isTaskCancelled) {
+//        if (isAdded() && handlerStatus != null && myTaskStatus != null) {
+//            if (isTaskRunning) {
+//                Log.d("HandlerDebug", "Task startCycle is already scheduled, skipping");
+//                return; // Не добавляем, если задача уже в очереди
+//            }
             Log.d("FinishSeparateFragment", "Starting cycle with delay: " + delayMillisStatus);
-            handlerStatus.postDelayed(myTaskStatus, delayMillisStatus);
-            delayMillisStatus = 10 * 1000; // Устанавливаем задержку 10 секунд
+//            handlerStatus.postDelayed(myTaskStatus, delayMillisStatus);
+            delayMillisStatus = 10 * 1000; // Set delay to 10 seconds
+            HandlerCompat.postDelayed(handlerStatus, myTaskStatus, null, delayMillisStatus);
             isTaskRunning = true;
         } else {
-            Log.e("FinishSeparateFragment", "Cannot start cycle: fragment not added, handler/task null, or task running/cancelled");
+            Log.e("FinishSeparateFragment", "Cannot start cycle: " +
+                    "isAdded=" + isAdded() +
+                    ", handlerStatus=" + (handlerStatus != null) +
+                    ", myTaskStatus=" + (myTaskStatus != null) +
+                    ", isTaskRunning=" + isTaskRunning +
+                    ", isTaskCancelled=" + isTaskCancelled);
         }
     }
 
@@ -604,12 +627,13 @@ public class FinishSeparateFragment extends Fragment {
             timeUtils.stopTimer();
         }
         stopCycle();
-        if (handlerAddcost != null) {
-            handlerAddcost.removeCallbacks(showDialogAddcost);
-        }
-        if (handlerAddcost != null ) {
-            handlerAddcost.removeCallbacks(showDialogAddcost);
-        }
+//        if (handlerAddcost != null) {
+//            handlerAddcost.removeCallbacks(showDialogAddcost);
+//        }
+//        if (handlerAddcost != null ) {
+//            handlerAddcost.removeCallbacks(showDialogAddcost);
+//        }
+        cancelShowDialogAddCost();
         if (handlerCheckTask != null) {
             handlerCheckTask.removeCallbacks(checkTask);
         }
@@ -630,9 +654,11 @@ public class FinishSeparateFragment extends Fragment {
         // Отменяем выполнение Runnable, если активити остановлена
 
         stopCycle();
-        if (handlerAddcost != null ) {
-            handlerAddcost.removeCallbacks(showDialogAddcost);
-        }
+//        if (handlerAddcost != null ) {
+//            handlerAddcost.removeCallbacks(showDialogAddcost);
+//        }
+        cancelShowDialogAddCost();
+
         if (handlerCheckTask != null) {
             handlerCheckTask.removeCallbacks(checkTask);
         }
@@ -705,9 +731,10 @@ public class FinishSeparateFragment extends Fragment {
     }
     private void cancelOrder(String value, Context context) throws ParseException {
 
-        if (handlerAddcost != null) {
-            handlerAddcost.removeCallbacks(showDialogAddcost);
-        }
+//        if (handlerAddcost != null) {
+//            handlerAddcost.removeCallbacks(showDialogAddcost);
+//        }
+        cancelShowDialogAddCost();
 
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         String city = listCity.get(1);
@@ -744,9 +771,11 @@ public class FinishSeparateFragment extends Fragment {
 
     }
     private void cancelOrderDouble(Context context) {
-        if (handlerAddcost != null) {
-            handlerAddcost.removeCallbacks(showDialogAddcost);
-        }
+//        if (handlerAddcost != null) {
+//            handlerAddcost.removeCallbacks(showDialogAddcost);
+//        }
+
+        cancelShowDialogAddCost();
 
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         String city = listCity.get(1);
@@ -827,7 +856,7 @@ public class FinishSeparateFragment extends Fragment {
                         Logger.d(context, TAG, "OrderResponse: orderCarInfo " + orderCarInfo);
                         Logger.d(context, TAG, "OrderResponse: driverPhone " + time_to_start_point);
                         Logger.d(context, TAG, "OrderResponse: time_to_start_point " + time_to_start_point);
-                        Logger.d(context, TAG, "OrderResponse: executionStatus " + executionStatus);
+
 
 
                         if (time_to_start_point != null && !time_to_start_point.isEmpty()) {
@@ -987,10 +1016,11 @@ public class FinishSeparateFragment extends Fragment {
             Logger.d(context, TAG, "Removing runnableBonusBtn handler");
             handlerBonusBtn.removeCallbacks(runnableBonusBtn);
         }
-        if (handlerAddcost != null) {
-            Logger.d(context, TAG, "Removing showDialogAddcost handler");
-            handlerAddcost.removeCallbacks(showDialogAddcost);
-        }
+//        if (handlerAddcost != null) {
+//            Logger.d(context, TAG, "Removing showDialogAddcost handler");
+//            handlerAddcost.removeCallbacks(showDialogAddcost);
+//        }
+        cancelShowDialogAddCost();
 //        stopCycle();
 
 
@@ -1022,10 +1052,11 @@ public class FinishSeparateFragment extends Fragment {
                     Logger.d(context, TAG, "Removing runnableBonusBtn handler");
                     handlerBonusBtn.removeCallbacks(runnableBonusBtn);
                 }
-                if (handlerAddcost != null) {
-                    Logger.d(context, TAG, "Removing showDialogAddcost handler");
-                    handlerAddcost.removeCallbacks(showDialogAddcost);
-                }
+//                if (handlerAddcost != null) {
+//                    Logger.d(context, TAG, "Removing showDialogAddcost handler");
+//                    handlerAddcost.removeCallbacks(showDialogAddcost);
+//                }
+                cancelShowDialogAddCost();
                 setVisibility(GONE, btn_add_cost, carProgressBar);
                 text_status.setText(context.getString(R.string.checkout_status));
 
@@ -1034,7 +1065,10 @@ public class FinishSeparateFragment extends Fragment {
 
         if (need_20_add && handlerAddcost != null && showDialogAddcost != null) {
             Logger.d(context, TAG, "Triggering add cost delay: " + timeCheckOutAddCost);
-            handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost);
+//            handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost);
+
+            setShowDialogAddCost();
+
             setVisibility(View.VISIBLE, textCost, textCostMessage, carProgressBar, progressSteps, btn_options, btn_open);
         }
 
@@ -1062,10 +1096,11 @@ public class FinishSeparateFragment extends Fragment {
             Logger.d(context, TAG, "Removing runnableBonusBtn handler");
             handlerBonusBtn.removeCallbacks(runnableBonusBtn);
         }
-        if (handlerAddcost != null) {
-            Logger.d(context, TAG, "Removing showDialogAddcost handler");
-            handlerAddcost.removeCallbacks(showDialogAddcost);
-        }
+//        if (handlerAddcost != null) {
+//            Logger.d(context, TAG, "Removing showDialogAddcost handler");
+//            handlerAddcost.removeCallbacks(showDialogAddcost);
+//        }
+        cancelShowDialogAddCost();
         if (handlerCheckTask != null) {
             Logger.d(context, TAG, "Removing checkTask handler");
             handlerCheckTask.removeCallbacks(checkTask);
@@ -1089,10 +1124,10 @@ public class FinishSeparateFragment extends Fragment {
     ) {
 
         sharedPreferencesHelperMain.saveValue("carFound", true);
-        if (handlerAddcost != null) {
-            handlerAddcost.removeCallbacks(showDialogAddcost);
-        }
-
+//        if (handlerAddcost != null) {
+//            handlerAddcost.removeCallbacks(showDialogAddcost);
+//        }
+        cancelShowDialogAddCost();
 
         text_status.clearAnimation();
 
@@ -1192,10 +1227,11 @@ public class FinishSeparateFragment extends Fragment {
             Logger.d(context, TAG, "Removing runnableBonusBtn handler");
             handlerBonusBtn.removeCallbacks(runnableBonusBtn);
         }
-        if (handlerAddcost != null) {
-            Logger.d(context, TAG, "Removing showDialogAddcost handler");
-            handlerAddcost.removeCallbacks(showDialogAddcost);
-        }
+//        if (handlerAddcost != null) {
+//            Logger.d(context, TAG, "Removing showDialogAddcost handler");
+//            handlerAddcost.removeCallbacks(showDialogAddcost);
+//        }
+        cancelShowDialogAddCost();
 
         text_status.clearAnimation();
 
@@ -1240,9 +1276,10 @@ public class FinishSeparateFragment extends Fragment {
              if ("nal_payment".equals(pay_method)) {
 
                  // Запускаем выполнение через 1 минуты (60 000 миллисекунд)
-                 if (handlerAddcost != null) {
-                     handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
-                 }
+//                 if (handlerAddcost != null) {
+//                     handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
+//                 }
+                 setShowDialogAddCost();
 
                  String text = textCostMessage.getText().toString();
                  Logger.d(getActivity(), TAG, "textCostMessage.getText().toString() " + text);
@@ -1304,9 +1341,11 @@ public class FinishSeparateFragment extends Fragment {
             if (handlerBonusBtn != null) {
                 handlerBonusBtn.removeCallbacks(runnableBonusBtn);
             }
-            if (handlerAddcost != null) {
-                handlerAddcost.removeCallbacks(showDialogAddcost);
-            }
+//            if (handlerAddcost != null) {
+//                handlerAddcost.removeCallbacks(showDialogAddcost);
+//            }
+            cancelShowDialogAddCost();
+
             if (handlerCheckTask != null) {
                 handlerCheckTask.removeCallbacks(checkTask);
             }
@@ -1743,9 +1782,11 @@ public class FinishSeparateFragment extends Fragment {
         EventBus.getDefault().unregister(this); // Удаление подписчика
         stopCycle();
 
-        if (handlerAddcost != null) {
-            handlerAddcost.removeCallbacks(showDialogAddcost);
-        }
+//        if (handlerAddcost != null) {
+//            handlerAddcost.removeCallbacks(showDialogAddcost);
+//        }
+        cancelShowDialogAddCost();
+
         if (retrofitCall != null && !retrofitCall.isCanceled()) {
             retrofitCall.cancel(); // Отмена вызова Retrofit
         }
@@ -1771,6 +1812,8 @@ public class FinishSeparateFragment extends Fragment {
                 if (!status) {
                     String message = context.getString(R.string.recounting_order) + ". " + context.getString(R.string.cancel_btn_enable);
                     text_status.setText(message);
+                } else {
+                    startCycle();
                 }
             }
         });
@@ -1861,19 +1904,44 @@ public class FinishSeparateFragment extends Fragment {
             }
             Logger.e(context, TAG, "status pay_method" + pay_method);
             Logger.e(context, TAG, "status need_20_add" + need_20_add);
-            handlerAddcost = new Handler(Looper.getMainLooper());
+//            handlerAddcost = new Handler(Looper.getMainLooper());
+            handlerAddcost = HandlerCompat.createAsync(Looper.getMainLooper());
             if (need_20_add) {
                 if ("nal_payment".equals(pay_method) || "wfp_payment".equals(pay_method)) {
                     Logger.e(context, TAG, "status pay_method" + pay_method);
                     Logger.e(context, TAG, "status need_20_add" + need_20_add);
         
                     // Запускаем выполнение через 1 минуты (60 000 миллисекунд)
-                    handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
+//                    handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
+                    setShowDialogAddCost();
                 }
             }
         }
 
         btnAddCost (timeCheckOutAddCost);
+    }
+
+    private void setShowDialogAddCost() {
+        if (handlerAddcost != null && showDialogAddcost != null) {
+            if (isTaskScheduled) {
+                Log.d("HandlerDebug", "Task is already scheduled, skipping");
+                return; // Не добавляем, если задача уже в очереди
+            }
+            Log.d("HandlerDebug", "Scheduling Runnable with delay: " + timeCheckOutAddCost);
+            HandlerCompat.postDelayed(handlerAddcost, showDialogAddcost, null, timeCheckOutAddCost);
+            isTaskScheduled = true; // Устанавливаем флаг
+        } else {
+            Log.e("HandlerDebug", "Handler or Runnable is null");
+        }
+    }
+    private void cancelShowDialogAddCost() {
+        if (handlerAddcost != null && showDialogAddcost != null) {
+            Log.d("HandlerDebug", "Removing Runnable");
+            handlerAddcost.removeCallbacks(showDialogAddcost);
+            isTaskScheduled = false; // Сбрасываем флаг
+        } else {
+            Log.e("HandlerDebug", "Handler or Runnable is null");
+        }
     }
 
     private void verifyOldHold() {
@@ -1912,9 +1980,10 @@ public class FinishSeparateFragment extends Fragment {
                             // Обработка неуспешного ответа
                             new Handler(Looper.getMainLooper()).post(() -> {
                                 // Запускаем выполнение через 1 минуты (60 000 миллисекунд)
-                                if (handlerAddcost != null) {
-                                    handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost);
-                                }
+//                                if (handlerAddcost != null) {
+//                                    handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost);
+//                                }
+                                setShowDialogAddCost();
 
                                 String text = textCostMessage.getText().toString();
                                 Logger.d(getActivity(), TAG, "textCostMessage.getText().toString() " + text);
@@ -1964,10 +2033,10 @@ public class FinishSeparateFragment extends Fragment {
 
     private void showAddCostDialog(int timeCheckout) {
         // Убедитесь, что handlerAddcost не null и очищаем предыдущие задачи
-        if (handlerAddcost != null) {
-            handlerAddcost.removeCallbacks(showDialogAddcost);
-        }
-
+//        if (handlerAddcost != null) {
+//            handlerAddcost.removeCallbacks(showDialogAddcost);
+//        }
+        cancelShowDialogAddCost();
         stopCycle();
         // Убедитесь, что фрагмент добавлен
 
@@ -1989,9 +2058,10 @@ public class FinishSeparateFragment extends Fragment {
                     if ("nal_payment".equals(pay_method)) {
                         viewModel.setCancelStatus(false);
                         // Перезапускаем задачу
-                        if (handlerAddcost != null) {
-                            handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
-                        }
+//                        if (handlerAddcost != null) {
+//                            handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
+//                        }
+                        setShowDialogAddCost();
                         dialog.dismiss();
                         String text = textCostMessage.getText().toString();
                         Logger.d(getActivity(), TAG, "textCostMessage.getText().toString() " + text);
@@ -2018,10 +2088,12 @@ public class FinishSeparateFragment extends Fragment {
                 })
                 .setNegativeButton(R.string.cancel_button, (dialog, which) -> {
                     // Действие для кнопки "Отмена"
-                    if (handlerAddcost != null) {
-                        handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
-                    }
-                    handlerStatus.post(myTaskStatus);
+//                    if (handlerAddcost != null) {
+//                        handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
+//                    }
+                    setShowDialogAddCost();
+                    isTaskCancelled = false; // Сбрасываем флаг
+                    startCycle();
                      dialog.dismiss();
                 });
 
@@ -2055,9 +2127,11 @@ public class FinishSeparateFragment extends Fragment {
             Toast.makeText(context, R.string.cancel_btn_enable, Toast.LENGTH_LONG).show();
         } else {
             viewModel.setStatusNalUpdate(true);
-            if (handlerAddcost != null) {
-                handlerAddcost.removeCallbacks(showDialogAddcost);
-            }
+//            if (handlerAddcost != null) {
+//                handlerAddcost.removeCallbacks(showDialogAddcost);
+//            }
+            cancelShowDialogAddCost();
+
             MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context);
             LayoutInflater inflater = requireActivity().getLayoutInflater();
             View dialogView = inflater.inflate(R.layout.dialog_add_cost, null);

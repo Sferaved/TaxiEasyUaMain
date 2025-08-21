@@ -48,7 +48,7 @@ import retrofit2.Response;
 public class CityCheckActivity extends AppCompatActivity {
 
     private static final String TAG = "CityCheckActivity";
-    AppCompatButton btn_city_1;
+    public AppCompatButton btn_city_1;
     AppCompatButton btn_city_2;
     AppCompatButton btn_city_3;
     AppCompatButton btn_city_4;

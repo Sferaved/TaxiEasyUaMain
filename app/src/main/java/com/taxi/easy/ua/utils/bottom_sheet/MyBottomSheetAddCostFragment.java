@@ -287,50 +287,6 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             }
         });
     }
-    private void newOrderCardPayAdd20 (
-            String addCost
-    ) {
-
-        viewModel.setAddCostViewUpdate(addCost);
-        String  baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        ApiService apiService = retrofit.create(ApiService.class);
-        List<String> stringList = logCursor(MainActivity.CITY_INFO);
-        String city = stringList.get(1);
-        if( MainActivity.order_id == null) {
-            MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-        }
-        Call<Status> call = apiService.startAddCostCardBottomUpdate(
-                uid,
-                uid_Double,
-                pay_method,
-                MainActivity.order_id,
-                city,
-                addCost
-
-        );
-        String url = call.request().url().toString();
-        Logger.d(context, TAG, "URL запроса wfp_payment: " + url);
-
-
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
-                viewModel.setCancelStatus(true);
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
-                FirebaseCrashlytics.getInstance().recordException(t);
-                viewModel.setCancelStatus(true);
-            }
-        });
-    }
 
     private void paymentByTokenWfp(
             String orderDescription,

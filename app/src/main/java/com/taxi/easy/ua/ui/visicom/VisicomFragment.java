@@ -3335,10 +3335,12 @@ public class VisicomFragment extends Fragment {
     }
     private void statusOrder() throws ParseException {
         String uid =  (String) sharedPreferencesHelperMain.getValue("uid_fcm", "");
-        if(uid.isEmpty()) {
-            new Thread(this::fetchRoutesCancel).start();
-            return;
-        }
+        Logger.d(context, TAG, "statusOrder: " + uid);
+        new Thread(this::fetchRoutesCancel).start();
+//        if(uid.isEmpty()) {
+//
+//            return;
+//        }
         Logger.d(context, "Pusher", "statusCacheOrder: " + uid);
 
         List<String> listCity = logCursor(CITY_INFO, context);

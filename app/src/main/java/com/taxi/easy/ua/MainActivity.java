@@ -173,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
      * Api section
      */
 
-    public static final String  api = "apiTest";
+    public static final String api = "apiTest";
 
     /**
      * Phone section
@@ -200,8 +200,8 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("StaticFieldLeak")
     public static NavController navController;
 
-    private String city;
-    private String newTitle;
+    String city;
+    public String newTitle;
     public static List<Call<?>> activeCalls = new ArrayList<>();
     NavigationView navigationView;
 
@@ -218,9 +218,10 @@ public class MainActivity extends AppCompatActivity {
     public ActivityResultLauncher<Intent> batteryOptimizationLauncher;
     private NetworkMonitor networkMonitor;
 
-//    ExecutorService executor;
+    //    ExecutorService executor;
     Constraints constraints;
     public static ImageButton button1;
+
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -397,12 +398,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void setCityAppbar()
-    {
+    public void setCityAppbar() {
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         city = stringList.get(1);
         String cityMenu;
-        switch (city){
+        switch (city) {
             case "Kyiv City":
                 cityMenu = getString(R.string.city_kyiv);
                 break;
@@ -472,7 +472,7 @@ public class MainActivity extends AppCompatActivity {
             default:
                 cityMenu = getString(R.string.foreign_countries);
         }
-        newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+        newTitle = getString(R.string.menu_city) + " " + cityMenu;
         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
     }
 
@@ -486,8 +486,6 @@ public class MainActivity extends AppCompatActivity {
             visicomFragment.requestPermissions();
         }
     }
-
-
 
 
     @Override
@@ -510,11 +508,10 @@ public class MainActivity extends AppCompatActivity {
         sharedPreferencesHelperMain.saveValue("pay_error", "**");
 
 
-
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
         boolean gps_upd;
-        if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+        if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             gps_upd = getIntent().getBooleanExtra("gps_upd", true);
         } else {
@@ -528,10 +525,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onRestart() {
         super.onRestart();
-        if(HomeFragment.progressBar != null) {
+        if (HomeFragment.progressBar != null) {
             HomeFragment.progressBar.setVisibility(View.INVISIBLE);
         }
-        if(VisicomFragment.progressBar != null) {
+        if (VisicomFragment.progressBar != null) {
             VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
         }
 
@@ -664,7 +661,7 @@ public class MainActivity extends AppCompatActivity {
             if (MainActivity.navVisicomMenuItem != null) {
                 // Новый текст элемента меню
                 String cityMenu = getString(R.string.city_kyiv);
-                String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
+                String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                 // Изменяем текст элемента меню
                 MainActivity.navVisicomMenuItem.setTitle(newTitle);
             }
@@ -750,7 +747,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void cityMaxPay() {
 
-        String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        String BASE_URL = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
 
         CityApiClient cityApiClient = new CityApiClient(BASE_URL);
         CityService cityService = cityApiClient.getClient().create(CityService.class);
@@ -792,7 +789,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
 
 
     public void updatePushDate(Context context) {
@@ -866,12 +862,12 @@ public class MainActivity extends AppCompatActivity {
             statement.bindString(7, "0");
             statement.bindString(8, "0");
             statement.bindString(9, "0");
-            statement.bindString(10,"0");
-            statement.bindString(11,"0");
-            statement.bindString(12,"0");
-            statement.bindString(13,"0");
-            statement.bindString(14,"0");
-            statement.bindString(15,"0");
+            statement.bindString(10, "0");
+            statement.bindString(11, "0");
+            statement.bindString(12, "0");
+            statement.bindString(13, "0");
+            statement.bindString(14, "0");
+            statement.bindString(15, "0");
 
             statement.execute();
             database.setTransactionSuccessful();
@@ -881,6 +877,7 @@ public class MainActivity extends AppCompatActivity {
         }
         database.close();
     }
+
     private void insertAddServices() {
         String sql = "INSERT INTO " + TABLE_ADD_SERVICE_INFO + " VALUES(?,?,?,?);";
         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -900,6 +897,7 @@ public class MainActivity extends AppCompatActivity {
         }
         database.close();
     }
+
     private void insertUserInfo() {
 
         String sql = "INSERT INTO " + TABLE_USER_INFO + " VALUES(?,?,?,?,?,?,?,?);";
@@ -924,6 +922,7 @@ public class MainActivity extends AppCompatActivity {
         }
         database.close();
     }
+
     public void resetRecordsAddServices() {
         ContentValues cv = new ContentValues();
 
@@ -934,7 +933,7 @@ public class MainActivity extends AppCompatActivity {
         // обновляем по id
         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(TABLE_ADD_SERVICE_INFO, cv, "id = ?",
-                new String[] { "1" });
+                new String[]{"1"});
         database.close();
     }
 
@@ -962,6 +961,7 @@ public class MainActivity extends AppCompatActivity {
         database.close();
 
     }
+
     private void insertMyPosition() {
         String sql = "INSERT INTO " + MainActivity.TABLE_POSITION_INFO + " VALUES(?,?,?,?,?);";
 
@@ -972,7 +972,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             statement.clearBindings();
             statement.bindDouble(2, 0);
-            statement.bindDouble(3,0 );
+            statement.bindDouble(3, 0);
             statement.bindString(4, "вул.Хрещатик, буд.22, місто Київ");
             statement.bindDouble(5, 19.0);
 
@@ -1000,6 +1000,7 @@ public class MainActivity extends AppCompatActivity {
         return NavigationUI.navigateUp(navController, mAppBarConfiguration)
                 || super.onSupportNavigateUp();
     }
+
     public ActivityResultLauncher<Intent> getExactAlarmLauncher() {
         return exactAlarmLauncher;
     }
@@ -1103,8 +1104,6 @@ public class MainActivity extends AppCompatActivity {
             });
 
 
-
-
         }
         if (item.getItemId() == R.id.nav_driver) {
             if (NetworkUtils.isNetworkAvailable(this)) {
@@ -1127,10 +1126,6 @@ public class MainActivity extends AppCompatActivity {
         }
         return false;
     }
-
-
-
-
 
 
     @Override
@@ -1160,10 +1155,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressLint("IntentReset")
-    private void sendEmailAdmin () {
+    private void sendEmailAdmin() {
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         String city;
-        switch (stringList.get(1)){
+        switch (stringList.get(1)) {
             case "Dnipropetrovsk Oblast":
                 city = getString(R.string.Dnipro_city);
                 break;
@@ -1238,15 +1233,17 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        } catch(Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         try {
             network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-        } catch(Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         Logger.d(this, TAG, "onOptionsItemSelected gps_enabled: " + gps_enabled);
         Logger.d(this, TAG, "onOptionsItemSelected network_enabled: " + network_enabled);
-        if(!gps_enabled) {
+        if (!gps_enabled) {
             MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
             bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
         } else {
@@ -1269,6 +1266,7 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{permission}, LOCATION_PERMISSION_REQUEST_CODE);
         }
     }
+
     private void updateRecordsUser(String field, String result) {
         ContentValues cv = new ContentValues();
 
@@ -1277,13 +1275,11 @@ public class MainActivity extends AppCompatActivity {
         // обновляем по id
         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
-                new String[] { "1" });
+                new String[]{"1"});
         database.close();
 
 
-
     }
-
 
 
     @Override
@@ -1354,7 +1350,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "User exists: " + findUser);
             Logger.d(MainActivity.this, TAG, "CityCheckActivity: " + sharedPreferencesHelperMain.getValue("CityCheckActivity", "**"));
 
-            if(userEmail.equals("email") || !findUser) {
+            if (userEmail.equals("email") || !findUser) {
                 firstStart = true;
 
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
@@ -1434,7 +1430,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
 
 
     }
@@ -1544,8 +1539,8 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             Logger.d(getApplicationContext(), TAG, "onResponse: failure " + e.getMessage());
             FirebaseCrashlytics.getInstance().recordException(e);
+        }
     }
-}
 
     private void startFireBase() {
         Toast.makeText(this, R.string.account_verify, Toast.LENGTH_SHORT).show();
@@ -1594,6 +1589,10 @@ public class MainActivity extends AppCompatActivity {
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
                 if (user != null) {
+
+                    userEmailForTest = user.getEmail();
+                    usernameForTest = "username";
+
                     settingsNewUser(user.getEmail());
 
                     String sityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
@@ -1650,7 +1649,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void settingsNewUser(String emailUser) {
         new VerifyUserTask(this).execute();
-           // Создание запросов для задач settingsNewUser
+        // Создание запросов для задач settingsNewUser
         OneTimeWorkRequest updateUserInfoRequest = new OneTimeWorkRequest.Builder(UpdateUserInfoWorker.class)
                 .setConstraints(constraints)
                 .setInputData(new Data.Builder()
@@ -1764,7 +1763,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
 //    public void userPhoneFromFb()
 //    {
 //        FirebaseUserManager userManager = new FirebaseUserManager();
@@ -1824,6 +1822,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
+
     @Override
     protected void onPause() {
         super.onPause();
@@ -1840,6 +1839,7 @@ public class MainActivity extends AppCompatActivity {
 
         getResources().updateConfiguration(config, getResources().getDisplayMetrics());
     }
+
     void clearApplication(Context context) {
         Logger.d(context, TAG, "Starting clearApplication");
         clearAllSharedPreferences(context);
@@ -2020,6 +2020,7 @@ public class MainActivity extends AppCompatActivity {
         }
         return success;
     }
+
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -2028,5 +2029,25 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    //ТЕСТЫ
+// Поля для теста
+    private String userEmailForTest;
+    private String usernameForTest;
 
+    // Геттеры для теста
+    public String getUserEmailForTest() {
+        return userEmailForTest;
+    }
+
+    public String getUsernameForTest() {
+        return usernameForTest;
+    }
+
+    // Метод для теста, чтобы подставить мок-пользователя
+    public void setCurrentUserForTest(FirebaseUser user) {
+        if (user != null) {
+            this.userEmailForTest = user.getEmail();
+            this.usernameForTest = "username"; // можно любое тестовое имя
+        }
+    }
 }
