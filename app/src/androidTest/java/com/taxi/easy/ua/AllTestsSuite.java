@@ -12,6 +12,7 @@ import org.junit.runners.Suite;
         CityCheckActivityLaunchTest.class,
         NavigationViewTest.class,
         MainActivityLoginTest.class,
+        DialogHostActivityTest.class,
 })
 public class AllTestsSuite {
     // Класс остается пустым, так как он только организует запуск тестов

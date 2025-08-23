@@ -1,11 +1,21 @@
 <resources>
 
-    <style name="Widget.Theme.TaxiEasyUa.ActionBar.Fullscreen" parent="Widget.AppCompat.ActionBar">
+    <style name="Widget.Theme.TaxiEasyUaBack4App.ActionBar.Fullscreen" parent="Widget.AppCompat.ActionBar">
         <item name="android:background">@color/black_overlay</item>
     </style>
 
-    <style name="Widget.Theme.TaxiEasyUa.ButtonBar.Fullscreen" parent="">
+    <style name="Widget.Theme.TaxiEasyUaBack4App.ButtonBar.Fullscreen" parent="">
         <item name="android:background">@color/black_overlay</item>
         <item name="android:buttonBarStyle">?android:attr/buttonBarStyle</item>
     </style>
+
+    <style name="CircularImageView" parent="">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.Circular</item>
+    </style>
+
+    <style name="ShapeAppearanceOverlay.Circular" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
 </resources>

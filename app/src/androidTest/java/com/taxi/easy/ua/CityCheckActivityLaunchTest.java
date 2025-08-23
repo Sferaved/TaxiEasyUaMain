@@ -52,12 +52,6 @@ public class CityCheckActivityLaunchTest {
                 cityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 activity.startActivity(cityIntent);
             });
-
-            // Можно подождать, чтобы Activity успела стартовать
-            Thread.sleep(20000);
-
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         }
     }
 

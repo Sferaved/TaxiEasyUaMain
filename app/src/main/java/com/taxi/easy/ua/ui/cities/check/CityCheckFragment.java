@@ -103,9 +103,9 @@ public class CityCheckFragment extends Fragment {
         binding = FragmentCityCheckBinding.inflate(inflater, container, false);
         root = binding.getRoot();
         if (button1 != null) {
-            if(button1 != null) {
+
             button1.setVisibility(View.VISIBLE);
-        }
+
         }
 
         sharedPreferencesHelper = new SharedPreferencesHelper(requireActivity());
@@ -160,238 +160,537 @@ public class CityCheckFragment extends Fragment {
         btn_city_23.setText(R.string.foreign_countries); // 
 
 
-        btn_city_1.setOnClickListener(view1 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Kyiv City";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_kyiv);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
-        });
-        btn_city_2.setOnClickListener(view2 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Dnipropetrovsk Oblast";
-            phoneNumber = Dnipropetrovsk_Oblast_phone;
-            cityMenu = getString(R.string.city_dnipro);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
-        });
-        btn_city_3.setOnClickListener(view3 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Odessa";
-            phoneNumber = Odessa_phone;
-            cityMenu = getString(R.string.city_odessa);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
-        });
-        btn_city_4.setOnClickListener(view4 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Zaporizhzhia";
-            phoneNumber = Zaporizhzhia_phone;
-            cityMenu = getString(R.string.city_zaporizhzhia);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
-        });
-        btn_city_5.setOnClickListener(view5 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Cherkasy Oblast";
-            phoneNumber = Cherkasy_Oblast_phone;
-            cityMenu = getString(R.string.city_cherkassy);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
-        });
-        btn_city_6.setOnClickListener(view6 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Lviv";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_lviv);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
-        });
-       btn_city_7.setOnClickListener(view7 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Ivano_frankivsk";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_ivano_frankivsk);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
-        });
-        btn_city_8.setOnClickListener(view8 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Vinnytsia";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_vinnytsia);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
+        btn_city_1.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f) // Scale down to 90% on X
+                    .scaleY(0.9f) // Scale down to 90% on Y
+                    .setDuration(100) // Animation duration
+                    .withEndAction(() -> {
+                        // Return to original size
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        // Original button logic
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Kyiv City";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_kyiv);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
         });
 
-        btn_city_9.setOnClickListener(view9 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Poltava";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_poltava);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
-        });
-        btn_city_10.setOnClickListener(view10 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Sumy";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_sumy);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
-        });
-        btn_city_11.setOnClickListener(view11 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Kharkiv";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_kharkiv);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
-        });
-        btn_city_12.setOnClickListener(view12 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Chernihiv";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_chernihiv);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
+        btn_city_2.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Dnipropetrovsk Oblast";
+                        phoneNumber = Dnipropetrovsk_Oblast_phone;
+                        cityMenu = getString(R.string.city_dnipro);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
         });
 
-        btn_city_13.setOnClickListener(view13 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Rivne";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_rivne);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
+        btn_city_3.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Odessa";
+                        phoneNumber = Odessa_phone;
+                        cityMenu = getString(R.string.city_odessa);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
         });
-        btn_city_14.setOnClickListener(view14 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Ternopil";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_ternopil);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
+
+        btn_city_4.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Zaporizhzhia";
+                        phoneNumber = Zaporizhzhia_phone;
+                        cityMenu = getString(R.string.city_zaporizhzhia);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
         });
-        btn_city_15.setOnClickListener(view15 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Khmelnytskyi";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_khmelnytskyi);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
+
+        btn_city_5.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Cherkasy Oblast";
+                        phoneNumber = Cherkasy_Oblast_phone;
+                        cityMenu = getString(R.string.city_cherkassy);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
         });
-        btn_city_16.setOnClickListener(view16 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Zakarpattya";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_zakarpattya);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
+
+        btn_city_6.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Lviv";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_lviv);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
         });
-        btn_city_17.setOnClickListener(view17 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Zhytomyr";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_zhytomyr);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
+
+        btn_city_7.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Ivano_frankivsk";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_ivano_frankivsk);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
         });
-        btn_city_18.setOnClickListener(view18 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Kropyvnytskyi";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_kropyvnytskyi);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
+
+        btn_city_8.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Vinnytsia";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_vinnytsia);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
         });
-        btn_city_19.setOnClickListener(view19 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Mykolaiv";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_mykolaiv);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
+
+        btn_city_9.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Poltava";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_poltava);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
         });
-        btn_city_20.setOnClickListener(view20 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Chernivtsi";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.city_chernivtsi);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
+
+        btn_city_10.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Sumy";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_sumy);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
         });
-        btn_city_21.setOnClickListener(view21 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "Lutsk";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = "Lutsk";
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
+
+        btn_city_11.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Kharkiv";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_kharkiv);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
         });
-        btn_city_22.setOnClickListener(view21 -> {
-            sharedPreferencesHelperMain.saveValue("countryState", "UA");
-            city = "OdessaTest";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = "Test";
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-//            sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://t.easy-order-taxi.site");
-            lastAddressUser(city);
+
+        btn_city_12.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Chernihiv";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_chernihiv);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
         });
-        btn_city_23.setOnClickListener(view22 -> {
-            getCountryByIP();
-            city = "foreign countries";
-            phoneNumber = Kyiv_City_phone;
-            cityMenu = getString(R.string.foreign_countries);
-            String newTitle =  getString(R.string.menu_city) + " " + cityMenu;
-            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-            lastAddressUser(city);
+
+        btn_city_13.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Rivne";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_rivne);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
+        });
+
+        btn_city_14.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Ternopil";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_ternopil);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
+        });
+
+        btn_city_15.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Khmelnytskyi";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_khmelnytskyi);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
+        });
+
+        btn_city_16.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Zakarpattya";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_zakarpattya);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
+        });
+
+        btn_city_17.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Zhytomyr";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_zhytomyr);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
+        });
+
+        btn_city_18.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Kropyvnytskyi";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_kropyvnytskyi);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
+        });
+
+        btn_city_19.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Mykolaiv";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_mykolaiv);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
+        });
+
+        btn_city_20.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Сhernivtsi";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.city_chernivtsi);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
+        });
+
+        btn_city_21.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "Lutsk";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = "Lutsk";
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
+        });
+
+
+
+        btn_city_22.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        sharedPreferencesHelperMain.saveValue("countryState", "UA");
+                        city = "OdessaTest";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = "Test";
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://t.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
+        });
+
+        btn_city_23.setOnClickListener(v -> {
+            v.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction(() -> {
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        new Thread(this::getCountryByIP).start();
+                        city = "foreign countries";
+                        phoneNumber = Kyiv_City_phone;
+                        cityMenu = getString(R.string.foreign_countries);
+                        String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+                        sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        lastAddressUser(city);
+                    })
+                    .start();
         });
 
         return root;

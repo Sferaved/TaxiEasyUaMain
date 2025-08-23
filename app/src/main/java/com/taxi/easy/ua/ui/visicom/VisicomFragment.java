@@ -2157,20 +2157,35 @@ public class VisicomFragment extends Fragment {
         });
 
         gpsBtn.setOnClickListener(v -> {
-            gpsButSetOnClickListener (locationManager);
-            schedule.setVisibility(VISIBLE);
-            shed_down.setVisibility(VISIBLE);
+            v.animate()
+                    .scaleX(0.9f) // Уменьшить до 90% по X
+                    .scaleY(0.9f) // Уменьшить до 90% по Y
+                    .setDuration(100) // Длительность анимации
+                    .withEndAction(() -> {
+                        // Возврат к исходному размеру
+                        v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(100)
+                                .start();
+                        // Логика нажатия
+                        gpsButSetOnClickListener (locationManager);
+                        schedule.setVisibility(VISIBLE);
+                        shed_down.setVisibility(VISIBLE);
+                    })
+                    .start();
+
         });
 
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                     || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.btn_yellow));
+                gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_yellow));
 
                 gpsBtn.setTextColor(Color.BLACK);
                 viewModel.setStatusX(false);
             } else {
-                gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.btn_green));
+                gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_green));
                 gpsBtn.setTextColor(Color.WHITE);
 
                 viewModel.setStatusX((boolean) sharedPreferencesHelperMain.getValue("setStatusX", true));
@@ -2215,8 +2230,8 @@ public class VisicomFragment extends Fragment {
     }
 
     private void gpsButSetOnClickListener (LocationManager locationManager) {
-        viewModel.setStatusX(false);
-        sharedPreferencesHelperMain.saveValue("setStatusX", false);
+//        viewModel.setStatusX(false);
+//        sharedPreferencesHelperMain.saveValue("setStatusX", false);
         if (locationManager != null) {
             if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
 
@@ -2287,6 +2302,27 @@ public class VisicomFragment extends Fragment {
             // Например, показать диалоговое окно с предупреждением о включении GPS
             MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+        }
+        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_yellow));
+
+                gpsBtn.setTextColor(Color.BLACK);
+                viewModel.setStatusX(false);
+            } else {
+                gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_green));
+                gpsBtn.setTextColor(Color.WHITE);
+
+                viewModel.setStatusX((boolean) sharedPreferencesHelperMain.getValue("setStatusX", true));
+                Boolean statusX = viewModel.getStatusX().getValue(); // Get the boolean value
+                Log.e("setStatusX 4", "setStatusXUpdate: " + (statusX != null ? statusX.toString() : "null"));
+            }
+        } else {
+            gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.btn_red));
+            gpsBtn.setTextColor(Color.WHITE);
+            viewModel.setStatusX(false);
+            viewModel.setStatusGpsUpdate(false);
         }
     }
     private void checkPermission() {
@@ -3327,10 +3363,13 @@ public class VisicomFragment extends Fragment {
     private void updateGpsButtonDrawable(boolean xShow) {
         if (xShow) {
             // Показываем крест
-            gpsBtn.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.x_image, 0);
+//            gpsBtn.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.x_image, 0);
+            gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_green_cross));
+
         } else {
             // Убираем крест
-            gpsBtn.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+//            gpsBtn.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+//            gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_green));
         }
     }
     private void statusOrder() throws ParseException {

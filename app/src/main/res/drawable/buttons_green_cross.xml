@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Верхняя половина с закруглением сверху -->
+    <item android:gravity="top">
+        <shape>
+            <size android:height="22dp"/>
+            <solid android:color="@color/colorAccent"/>
+            <corners
+                android:topLeftRadius="10dp"
+                android:topRightRadius="10dp"/>
+        </shape>
+    </item>
+
+    <!-- Нижняя половина с закруглением снизу -->
+    <item android:gravity="bottom">
+        <shape>
+            <size android:height="22dp"/>
+            <solid android:color="@color/colorAccent"/>
+            <corners
+                android:bottomLeftRadius="10dp"
+                android:bottomRightRadius="10dp"/>
+        </shape>
+    </item>
+
+    <!-- Красный крест поверх (через вектор) -->
+    <item android:drawable="@drawable/ic_cross_fullscreen"/>
+
+</layer-list>

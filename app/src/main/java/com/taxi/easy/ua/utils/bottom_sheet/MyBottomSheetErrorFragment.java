@@ -116,6 +116,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                 errorMessageKey = "server_error_connected";
             } else if (errorMessage.equals(getString(R.string.sentNotifyMessage))) {
                 errorMessageKey = "sentNotifyMessage";
+                errorMessage = getString(R.string.app_name) + ": " + getString(R.string.sentNotifyMessage);
             } else if (errorMessage.equals(getString(R.string.order_to_cancel_true))) {
                 errorMessageKey = "order_to_cancel_true";
             } else if (errorMessage.equals(getString(R.string.black_list_message))) {

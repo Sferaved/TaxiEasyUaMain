@@ -26,14 +26,18 @@
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/gpsbut"
                 android:layout_width="105dp"
-                android:layout_height="37dp"
+                android:layout_height="42dp"
                 android:layout_marginTop="4dp"
-                android:background="@drawable/buttons"
+                android:background="@drawable/buttons_green_cross"
 
                 android:text="@string/change"
-                android:textColor="#D9D9D9"
+                android:textSize="20sp"
+                android:textColor="@color/black"
                 app:layout_constraintEnd_toEndOf="@+id/textGeo"
                 app:layout_constraintTop_toTopOf="parent" />
+
+
+
             <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
                 android:id="@+id/swipeRefreshLayout"
                 android:layout_width="39dp"
@@ -221,11 +225,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/light"
+                android:layout_marginTop="24dp"
                 android:text="@string/from_text"
                 android:textColor="#9DA0A8"
                 android:textSize="14sp"
                 app:layout_constraintStart_toStartOf="@+id/textGeo"
-                app:layout_constraintTop_toBottomOf="@+id/gpsbut" />
+                app:layout_constraintTop_toTopOf="@+id/progress_bar" />
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/change"
