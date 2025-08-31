@@ -425,6 +425,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
                     FinishSeparateFragment.textCostMessage.setText(messagePayment);
                     MainActivity.uid = sendUrlMap.get("dispatching_order_uid");
+                    Logger.d(context, "MainActivity.uid", "MainActivity.uid 7 " + MainActivity.uid);
                     uid_Double = " ";
 
                     pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
@@ -516,9 +517,9 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
         List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
         String time = stringList.get(1);
-        String comment = stringList.get(2);
+//        String comment = stringList.get(2);
         String date = stringList.get(3);
-
+        String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
         List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
         String tarif = stringListInfo.get(2);
         String payment_type = stringListInfo.get(4);

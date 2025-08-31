@@ -601,16 +601,17 @@ public class VisicomFragment extends Fragment {
 
         schedule.setOnClickListener(v -> {
             btnVisible(View.INVISIBLE);
-
+            sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
             NavController navController = NavHostFragment.findNavController(this);
-            navController.navigate(R.id.nav_visicom_options);
+            navController.navigate(R.id.nav_options);
         });
 
 
         shed_down.setOnClickListener(v -> {
             btnVisible(View.INVISIBLE);
+            sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
             NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
-            navController.navigate(R.id.nav_visicom_options, null, new NavOptions.Builder()
+            navController.navigate(R.id.nav_options, null, new NavOptions.Builder()
                     .build());
 //            MyBottomSheetGeoFragment bottomSheetDialogFragment = new MyBottomSheetGeoFragment(text_view_cost);
 //            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -693,8 +694,9 @@ public class VisicomFragment extends Fragment {
         if (!tarif.equals(" ")) {
             newCheck++;
         }
-        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
-        String comment = stringList.get(2);
+//        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
+//        String comment = stringList.get(2);
+        String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
         Logger.d(context, TAG, "comment" + comment);
 
         if (!comment.equals("no_comment")) {
@@ -892,7 +894,7 @@ public class VisicomFragment extends Fragment {
         cursor.close();
 
         String time = (String) sharedPreferencesHelperMain.getValue("time", "no_time");
-        String comment = (String) sharedPreferencesHelperMain.getValue("coment", "no_comment");
+        String comment = (String) sharedPreferencesHelperMain.getValue("comment", "no_comment");
         String date = (String) sharedPreferencesHelperMain.getValue("date", "no_date");
 
         Logger.d(context, TAG, "getTaxiUrlSearchMarkers: time " + time);
@@ -1004,7 +1006,7 @@ public class VisicomFragment extends Fragment {
 
             sharedPreferencesHelperMain.saveValue("time", "no_time");
             sharedPreferencesHelperMain.saveValue("date", "no_date");
-            sharedPreferencesHelperMain.saveValue("comment", "no_comment");
+//            sharedPreferencesHelperMain.saveValue("comment", "no_comment");
         }
 
         // Сервисы
@@ -1411,8 +1413,9 @@ public class VisicomFragment extends Fragment {
             Logger.d(context, TAG, "orderFinished: messageResult " + messageResult);
             Logger.d(context, TAG, "orderFinished: to_name " + to_name);
 
-            List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
-            String comment = stringList.get(2);
+//            List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
+//            String comment = stringList.get(2);
+            String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
             sendUrlMap.put("comment_info", comment);
 
             List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
@@ -1444,6 +1447,7 @@ public class VisicomFragment extends Fragment {
             Logger.d(context, TAG, "sendUrlMap: extra_charge_codes " + sendUrlMap.get("extra_charge_codes"));
 
             MainActivity.uid = sendUrlMap.get("dispatching_order_uid");
+            Logger.d(context, "MainActivity.uid", "MainActivity.uid 1 " + MainActivity.uid);
 
             Bundle bundle = new Bundle();
             bundle.putString("messageResult_key", messageResult);
@@ -1717,7 +1721,7 @@ public class VisicomFragment extends Fragment {
 
         VisicomFragment.sendUrlMap = null;
         MainActivity.uid = null;
-
+        Logger.d(context, "MainActivity.uid", "MainActivity.uid 2 " + MainActivity.uid);
 
         MainActivity.orderResponse = null;
         viewModel.updateOrderResponse(null);
@@ -1999,9 +2003,9 @@ public class VisicomFragment extends Fragment {
 
         btnAdd.setOnClickListener(v -> {
             btnVisible(View.INVISIBLE);
-
+            sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
             NavController navController = NavHostFragment.findNavController(this);
-            navController.navigate(R.id.nav_visicom_options);
+            navController.navigate(R.id.nav_options);
         });
 
 

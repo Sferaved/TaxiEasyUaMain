@@ -836,7 +836,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         String displayName = logCursor(MainActivity.TABLE_USER_INFO).get(4);
 
         String time = (String) sharedPreferencesHelperMain.getValue("time", "no_time");
-        String comment = (String) sharedPreferencesHelperMain.getValue("coment", "no_comment");
+        String comment = (String) sharedPreferencesHelperMain.getValue("comment", "no_comment");
         String date = (String) sharedPreferencesHelperMain.getValue("date", "no_date");
 
         Logger.d(context, TAG, "getTaxiUrlSearchMarkers: time " + time);

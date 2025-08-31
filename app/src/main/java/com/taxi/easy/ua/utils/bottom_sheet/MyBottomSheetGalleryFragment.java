@@ -229,9 +229,10 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
         komenterinp = view.findViewById(R.id.komenterinp);
         discount = view.findViewById(R.id.discinp);
 
-        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
-
-        String comment = stringList.get(2);
+//        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
+//
+//        String comment = stringList.get(2);
+        String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
         if (!comment.equals("no_comment")) {
             komenterinp.setText(comment);
         }
@@ -712,7 +713,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
 
         List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
         String time = stringList.get(1);
-        String comment = stringList.get(2);
+//        String comment = stringList.get(2);
         String date = stringList.get(3);
 
         List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);

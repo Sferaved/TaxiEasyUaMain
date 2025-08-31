@@ -20,7 +20,24 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Предполагаемый фрагмент layout-файла, добавьте это в нужное место -->
+
     <!-- Текст "Тариф" -->
+    <androidx.appcompat.widget.AppCompatButton
+
+        android:id="@+id/btn_clear"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/btn_accents"
+        android:text="@string/clear_all"
+        android:textColor="@color/black"
+        app:layout_constraintBottom_toBottomOf="@+id/okButton"
+        app:layout_constraintEnd_toEndOf="@+id/list_tariff"
+        app:layout_constraintStart_toStartOf="@+id/list_tariff"
+        app:layout_constraintTop_toTopOf="@+id/okButton"
+        app:layout_constraintVertical_bias="0.0" />
+
     <TextView
         android:id="@+id/textView4"
         android:layout_width="80dp"
@@ -178,7 +195,7 @@
 
     <EditText
         android:id="@+id/discinp"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="40dp"
 
         android:layout_marginTop="16dp"
@@ -194,7 +211,7 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toEndOf="@+id/btn_minus"
         app:layout_constraintTop_toBottomOf="@+id/tv_selected_date"
-        app:layout_constraintWidth_max="60dp"
+        app:layout_constraintWidth_max="80dp"
         app:layout_constraintWidth_percent="0.15" />
 
     <androidx.appcompat.widget.AppCompatButton

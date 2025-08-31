@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.visicom;
+package com.taxi.easy.ua.ui.options_order;
 
 import static android.content.Context.MODE_PRIVATE;
 import static com.taxi.easy.ua.MainActivity.button1;
@@ -29,6 +29,7 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
@@ -37,6 +38,7 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.home.CustomListAdapter;
+import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.uxcam.UXCam;
@@ -54,8 +56,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
-
-public class VisicomOptionsFragment extends Fragment {
+public class OptionsFragment extends Fragment {
     ListView listView;
     public String[] arrayService;
     public static String[] arrayServiceCode;
@@ -63,17 +64,16 @@ public class VisicomOptionsFragment extends Fragment {
     private Calendar calendar;
     private EditText komenterinp, discount;
     Button btn_min, btn_plus;
+    AppCompatButton btn_clear;
     long discountFist;
     final static long MIN_VALUE = -90;
     final static long MAX_VALUE = 200;
 
-    private final String TAG = "VisicomOptionsFragment";
+    private final String TAG = "OptionsFragment";
     TimeZone timeZone;
     SQLiteDatabase database;
     Activity context;
 
-
-     
     @SuppressLint("MissingInflatedId")
     @Nullable
     @Override
@@ -208,7 +208,6 @@ public class VisicomOptionsFragment extends Fragment {
                         tariff_to_server = " ";
                 }
                 sharedPreferencesHelperMain.saveValue("tarif", tariff_to_server);
-
             }
 
             @Override
@@ -217,9 +216,7 @@ public class VisicomOptionsFragment extends Fragment {
         });
         tvSelectedTime = view.findViewById(R.id.tv_selected_time);
 
-
         calendar = Calendar.getInstance();
-        // Добавим 10 минут к текущему времени
         calendar.add(Calendar.MINUTE, 10);
         timeZone = TimeZone.getDefault();
         updateSelectedTime();
@@ -240,10 +237,8 @@ public class VisicomOptionsFragment extends Fragment {
         try {
             discountFist = Long.parseLong(discountText);
         } catch (NumberFormatException e) {
-            // Handle the case where the expression cannot be evaluated
             FirebaseCrashlytics.getInstance().recordException(e);
         }
-
 
         btn_min = view.findViewById(R.id.btn_minus);
         btn_min.setOnClickListener(v -> {
@@ -254,7 +249,7 @@ public class VisicomOptionsFragment extends Fragment {
             if(discountFist > 0) {
                 discount.setText("+" + discountFist);
             } else {
-                discount.setText( String.valueOf(discountFist));
+                discount.setText(String.valueOf(discountFist));
             }
         });
         btn_plus = view.findViewById(R.id.btn_plus);
@@ -266,10 +261,13 @@ public class VisicomOptionsFragment extends Fragment {
             if(discountFist > 0) {
                 discount.setText("+" + discountFist);
             } else {
-                discount.setText( String.valueOf(discountFist));
+                discount.setText(String.valueOf(discountFist));
             }
         });
 
+        // Initialize Clear Button
+        btn_clear = view.findViewById(R.id.btn_clear);
+        btn_clear.setOnClickListener(v -> clearAllData());
 
         view.findViewById(R.id.okButton).setOnClickListener(v -> {
             onDismissBtn();
@@ -292,7 +290,45 @@ public class VisicomOptionsFragment extends Fragment {
         return view;
     }
 
+    private void clearAllData() {
+        // Clear ListView selections (services)
+        listView.clearChoices();
+        for (int i = 0; i < arrayServiceCode.length; i++) {
+            ContentValues cv = new ContentValues();
+            cv.put(arrayServiceCode[i], "0");
+            database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?", new String[]{"1"});
+        }
+        listView.setAdapter(new CustomListAdapter(context, arrayService, arrayService.length)); // Refresh ListView
 
+        // Clear tariff selection
+        Spinner spinner = getView().findViewById(R.id.list_tariff);
+        spinner.setSelection(0);
+        sharedPreferencesHelperMain.saveValue("tarif", " ");
+
+        // Clear comment
+        komenterinp.setText("");
+        sharedPreferencesHelperMain.saveValue("comment", "no_comment");
+
+        // Clear discount
+        discount.setText("0");
+        discountFist = 0;
+        ContentValues cv = new ContentValues();
+        cv.put("discount", "0");
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?", new String[]{"1"});
+
+        // Clear date and time
+        calendar = Calendar.getInstance();
+        calendar.add(Calendar.MINUTE, 10);
+        updateSelectedTime();
+        LocalDate currentDate = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+        tvSelectedDate.setText(currentDate.format(formatter));
+        sharedPreferencesHelperMain.saveValue("time", "no_time");
+        sharedPreferencesHelperMain.saveValue("date", "no_date");
+
+        Toast.makeText(context, R.string.all_data_clear, Toast.LENGTH_SHORT).show();
+        Logger.d(context, TAG, "All data cleared");
+    }
 
     // Метод для обновления отображаемой даты
     private void updateSelectedDate(Calendar calendar) {
@@ -303,7 +339,6 @@ public class VisicomOptionsFragment extends Fragment {
     }
 
     public void onDismissBtn() {
-
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         SparseBooleanArray checkedItems = listView.getCheckedItemPositions();
 
@@ -320,7 +355,6 @@ public class VisicomOptionsFragment extends Fragment {
 
         database.close();
 
-
         String commentText = komenterinp.getText().toString();
         if (!commentText.isEmpty()) {
             sharedPreferencesHelperMain.saveValue("comment", commentText);
@@ -328,54 +362,42 @@ public class VisicomOptionsFragment extends Fragment {
         }
         String discountText = discount.getText().toString();
         if (!discountText.isEmpty()) {
-
             sharedPreferencesHelperMain.saveValue("discount", discountText);
 
             ContentValues cv = new ContentValues();
-
             cv.put("discount", discountText);
-
-            // обновляем по id
             database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                    new String[]{"1"});
+            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?", new String[]{"1"});
             database.close();
-
         }
-        //Проверка даты времени
         timeVerify();
         changeCost();
     }
 
     private void timeVerify() {
-        String TAG = "TimeVerify"; // Тег для логирования
+        String TAG = "TimeVerify";
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
         DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
-        // Текущие дата и время в Киеве
         LocalDateTime currentDateTimeInKyiv = LocalDateTime.now(ZoneId.of("Europe/Kiev"));
         LocalDate currentDate = LocalDate.now(ZoneId.of("Europe/Kiev"));
         Logger.d(context, TAG, "Текущая дата и время в Киеве: " + currentDateTimeInKyiv);
 
-        // Получение сохраненных значений
         String time = (String) sharedPreferencesHelperMain.getValue("time", "no_time");
         String date = (String) sharedPreferencesHelperMain.getValue("date", "no_date");
         Logger.d(context, TAG, "Сохраненные значения -> время: " + time + ", дата: " + date);
 
-        // Если дата не выбрана, используем текущую дату с экрана
         if (date.equals("no_date")) {
             date = tvSelectedDate.getText().toString();
             Logger.d(context, TAG, "Дата не выбрана, взята с экрана: " + date);
         }
 
-        // Если время не выбрано, используем время с экрана
         if (time.equals("no_time")) {
             time = tvSelectedTime.getText().toString();
             Logger.d(context, TAG, "Время не выбрано, взято с экрана: " + time);
         }
 
         try {
-            // Проверка, если дата или время все еще не определены
             if (date.equals("no_date") || time.equals("no_time")) {
                 Logger.d(context, TAG, "Дата или время не определены, сброс значений");
                 sharedPreferencesHelperMain.saveValue("time", "no_time");
@@ -383,11 +405,9 @@ public class VisicomOptionsFragment extends Fragment {
                 return;
             }
 
-            // Преобразование строки в LocalDateTime
             LocalDateTime dateTimeFromString = LocalDateTime.parse(date + " " + time, formatter);
             Logger.d(context, TAG, "Преобразованная дата и время: " + dateTimeFromString);
 
-            // Проверка, если выбранное время раньше текущего
             if (dateTimeFromString.isBefore(currentDateTimeInKyiv)) {
                 Logger.d(context, TAG, "Выбранное время в прошлом, сброс значений");
                 Toast.makeText(context, context.getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
@@ -396,18 +416,15 @@ public class VisicomOptionsFragment extends Fragment {
                 return;
             }
 
-            // Вычисление разницы во времени
             long minutesDifference = Duration.between(currentDateTimeInKyiv, dateTimeFromString).toMinutes();
             Logger.d(context, TAG, "Разница во времени: " + minutesDifference + " минут");
 
-            // Если разница меньше или равна 10 минут, сбрасываем
             if (minutesDifference <= 10 && minutesDifference >= 0) {
                 Logger.d(context, TAG, "Разница <= 10 минут, сброс значений");
                 sharedPreferencesHelperMain.saveValue("time", "no_time");
                 sharedPreferencesHelperMain.saveValue("date", "no_date");
                 Toast.makeText(context, context.getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
             } else {
-                // Сохраняем валидные значения
                 sharedPreferencesHelperMain.saveValue("time", time);
                 sharedPreferencesHelperMain.saveValue("date", date);
                 Logger.d(context, TAG, "Сохранены значения -> время: " + time + ", дата: " + date);
@@ -434,18 +451,25 @@ public class VisicomOptionsFragment extends Fragment {
         Logger.d(context, TAG, "changeCost: date " + date);
         Logger.d(context, TAG, "changeCost: tarif " + tarif);
 
+        String initial_page = (String) sharedPreferencesHelperMain.getValue("initial_page", "visicom");
+
+
         if (isAdded()) {
-            VisicomFragment.tariffBtnColor();
-            NavController navController = NavHostFragment.findNavController(this);
-            navController.navigate(R.id.nav_visicom);
+            if(initial_page.equals("visicom")){
+                VisicomFragment.tariffBtnColor();
+                NavController navController = NavHostFragment.findNavController(this);
+                navController.navigate(R.id.nav_visicom);
+            } else {
+                NavController navController = NavHostFragment.findNavController(this);
+                navController.navigate(R.id.nav_home);
+            }
+
         } else {
             Logger.e(context,TAG, "Fragment не присоединён к активности — навигация невозможна");
         }
     }
 
-
     private void showDataPickerDialog() {
-
         Dialog dataPickerDialog = new Dialog(context);
         dataPickerDialog.setContentView(R.layout.custom_date_picker);
 
@@ -453,13 +477,12 @@ public class VisicomOptionsFragment extends Fragment {
         NumberPicker npMonth = dataPickerDialog.findViewById(R.id.npMonth);
         NumberPicker npDay = dataPickerDialog.findViewById(R.id.npDay);
 
-        float textSize = 24f; // Размер текста в sp
+        float textSize = 24f;
 
         setNumberPickerTextSize(npYear, textSize);
         setNumberPickerTextSize(npMonth, textSize);
         setNumberPickerTextSize(npDay, textSize);
 
-        // Установка значений для NumberPicker
         npYear.setMinValue(2024);
         npYear.setMaxValue(2100);
         npYear.setValue(calendar.get(Calendar.YEAR));
@@ -478,14 +501,12 @@ public class VisicomOptionsFragment extends Fragment {
 
         Button okButton = dataPickerDialog.findViewById(R.id.okButton);
 
-
         okButton.setOnClickListener(v -> {
             calendar.set(npYear.getValue(), npMonth.getValue() - 1, npDay.getValue());
             updateSelectedDate(calendar);
             dataPickerDialog.dismiss();
         });
 
-        // Show the dialog
         dataPickerDialog.show();
     }
 
@@ -496,33 +517,27 @@ public class VisicomOptionsFragment extends Fragment {
     }
 
     private void showTimePickerDialog() {
-        // Initialize the dialog
         Dialog timePickerDialog = new Dialog(context);
         timePickerDialog.setContentView(R.layout.dialog_time_picker);
 
-        // Initialize the NumberPickers
         NumberPicker hourPicker = timePickerDialog.findViewById(R.id.hourPicker);
         NumberPicker minutePicker = timePickerDialog.findViewById(R.id.minutePicker);
 
-
-        float textSize = 24f; // Размер текста в sp
+        float textSize = 24f;
 
         setNumberPickerTextSize(hourPicker, textSize);
         setNumberPickerTextSize(minutePicker, textSize);
 
-        // Set the range for the hour and minute pickers
         hourPicker.setMinValue(0);
         hourPicker.setMaxValue(23);
         minutePicker.setMinValue(0);
         minutePicker.setMaxValue(59);
 
-        // Set the current time
         Calendar calendar = Calendar.getInstance();
         hourPicker.setValue(calendar.get(Calendar.HOUR_OF_DAY));
         Logger.d(context, TAG, "calendar.get(Calendar.HOUR_OF_DAY)" + calendar.get(Calendar.HOUR_OF_DAY));
         minutePicker.setValue(calendar.get(Calendar.MINUTE) +10);
 
-        // Set the OK button click listener
         Button okButton = timePickerDialog.findViewById(R.id.okButton);
         okButton.setOnClickListener(v -> {
             int hourOfDay = hourPicker.getValue();
@@ -535,34 +550,26 @@ public class VisicomOptionsFragment extends Fragment {
             Logger.d(context, TAG, "formattedTime: " + formattedTime);
             tvSelectedTime.setText(formattedTime);
 
-            // Perform the required updates
-
             sharedPreferencesHelperMain.saveValue("time", formattedTime);
 
             timePickerDialog.dismiss();
         });
 
-        // Show the dialog
         timePickerDialog.show();
     }
 
-
-
     private void setNumberPickerTextSize(NumberPicker numberPicker, float textSize) {
         try {
-            // Найти все EditText внутри NumberPicker
             for (int i = 0; i < numberPicker.getChildCount(); i++) {
                 View child = numberPicker.getChildAt(i);
                 if (child instanceof EditText) {
                     ((EditText) child).setTextSize(textSize);
-                    numberPicker.invalidate(); // Обновить NumberPicker
+                    numberPicker.invalidate();
                 }
             }
         } catch (Exception ignored) {
-
         }
     }
-
 
     private void updateSelectedTime() {
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
@@ -571,6 +578,7 @@ public class VisicomOptionsFragment extends Fragment {
         sharedPreferencesHelperMain.saveValue("time", formattedTime);
         tvSelectedTime.setText(formattedTime);
     }
+
     @SuppressLint("Range")
     public static List<String> logCursor(String table, Context context) {
         List<String> list = new ArrayList<>();
@@ -583,13 +591,10 @@ public class VisicomOptionsFragment extends Fragment {
                 for (String cn : c.getColumnNames()) {
                     str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
                     list.add(c.getString(c.getColumnIndex(cn)));
-
                 }
-
             } while (c.moveToNext());
         }
         database.close();
         return list;
     }
 }
-

@@ -808,7 +808,8 @@ public class GalleryFragment extends Fragment {
 
         List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
         String time = stringList.get(1);
-        String comment = stringList.get(2);
+//        String comment = stringList.get(2);
+        String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
         String date = stringList.get(3);
 
 

@@ -103,8 +103,8 @@
         tools:layout="@layout/fragment_settings" />
 
     <fragment
-        android:id="@+id/nav_visicom_options"
-        android:name="com.taxi.easy.ua.ui.visicom.VisicomOptionsFragment"
+        android:id="@+id/nav_options"
+        android:name="com.taxi.easy.ua.ui.options_order.OptionsFragment"
         android:label="@string/search_address"
         tools:layout="@layout/fragment_visicom_options" />
 

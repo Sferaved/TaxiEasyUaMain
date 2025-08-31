@@ -113,7 +113,7 @@
     <string name="from_text">Звідки</string>
     <string name="to_text">Куди</string>
     <string name="serve">Подача</string>
-    <string name="coment">Введіть повідомлення для водія</string>
+    <string name="coment">Повідомлення для водія</string>
     <string name="services">ПОСЛУГИ</string>
     <string name="resettimetoorder">Перевірте дату або час для попереднього замовлення</string>
     <string name="my_routs">Оберіть маршрут</string>
@@ -518,6 +518,8 @@
     <string name="google_maps">Google Maps не встановлені</string>
     <string name="sentNotifyMessage">Дозвольте застосунку надсилати Вам повідомлення</string>
     <string name="no_start_point_message">Не вказано місце відправлення</string>
-    <string name="error_5_min_message">Вы не можете отменить после нахождения авто</string>
-    <string name="error_5_min_cancel_card_order">Вы не можете отменить после нахождения авто. Обратитесь к оператору.</string>
+    <string name="error_5_min_message">Ви не можете скасувати після знаходження авто</string>
+    <string name="error_5_min_cancel_card_order">Ви не можете скасувати після знаходження авто. Зверніться до свого оператора.</string>
+    <string name="clear_all">Очищення</string>
+    <string name="all_data_clear">Всі дані скинуті</string>
 </resources>

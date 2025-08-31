@@ -1673,14 +1673,15 @@ public class FinishSeparateFragment extends Fragment {
         viewModel.isTenMinutesRemaining.observe(getViewLifecycleOwner(), observer);
 
 // Observe uid changes
-        viewModel.getUid().observe(requireActivity(), newUid -> {
-            Log.d("UID 11123", "UID updated: " + newUid);
-            // Update UI or perform other actions
-            if(newUid != null)  {
-                MainActivity.uid = newUid;
-            }
-
-        });
+//        viewModel.getUid().observe(requireActivity(), newUid -> {
+//            Log.d("UID 11123", "UID updated: " + newUid);
+//            // Update UI or perform other actions
+//            if(newUid != null)  {
+//                MainActivity.uid = newUid;
+//                Logger.d(context, "MainActivity.uid", "MainActivity.uid 5 " + MainActivity.uid);
+//            }
+//
+//        });
 
         // Observe paySystemStatus changes
         viewModel.getPaySystemStatus().observe(requireActivity(), newPaySystemStatus -> {

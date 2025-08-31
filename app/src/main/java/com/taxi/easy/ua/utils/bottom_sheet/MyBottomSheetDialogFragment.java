@@ -227,9 +227,10 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         });
 
         komenterinp = view.findViewById(R.id.komenterinp);
-        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
-
-        String comment = stringList.get(2);
+//        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
+//
+//        String comment = stringList.get(2);
+        String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
         if (!comment.equals("no_comment")) {
             komenterinp.setText(comment);
         }
@@ -713,9 +714,9 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
         String time = stringList.get(1);
-        String comment = stringList.get(2);
+//        String comment = stringList.get(2);
         String date = stringList.get(3);
-
+        String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
         List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
         String tarif =  stringListInfo.get(2);
         String payment_type =  stringListInfo.get(4);

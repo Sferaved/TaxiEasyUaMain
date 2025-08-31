@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
+import static android.view.View.GONE;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -76,13 +77,13 @@ public class MyBottomSheetFinishOptionFragment extends BottomSheetDialogFragment
                 options = true;
                 komenterinp.setOnClickListener(view1 -> dismiss());
             } else {
-                view.findViewById(R.id.komentar).setVisibility(View.GONE);
-                komenterinp.setVisibility(View.GONE);
+                view.findViewById(R.id.komentar).setVisibility(GONE);
+                komenterinp.setVisibility(GONE);
             }
 
         } else {
-            view.findViewById(R.id.komentar).setVisibility(View.GONE);
-            komenterinp.setVisibility(View.GONE);
+            view.findViewById(R.id.komentar).setVisibility(GONE);
+            komenterinp.setVisibility(GONE);
         }
 
         listView = view.findViewById(R.id.list);
@@ -158,16 +159,16 @@ public class MyBottomSheetFinishOptionFragment extends BottomSheetDialogFragment
 
 
 // Передайте только отмеченные услуги в адаптер
-        if (selectedServices.size() !=0) {
+        if (!selectedServices.isEmpty()) {
             CustomListFinishAdapter adapterSet = new CustomListFinishAdapter(context, selectedServices.toArray(new String[0]), selectedServices.size());
             view.findViewById(R.id.maintext).setVisibility(View.VISIBLE);
             listView.setVisibility(View.VISIBLE);
             listView.setAdapter(adapterSet);
             options = true;
         } else {
-            view.findViewById(R.id.maintext).setVisibility(View.GONE);
-            view.findViewById(R.id.maintext).setVisibility(View.GONE);
-            listView.setVisibility(View.GONE);
+            view.findViewById(R.id.maintext).setVisibility(GONE);
+            view.findViewById(R.id.maintext).setVisibility(GONE);
+            listView.setVisibility(GONE);
         }
 
 
@@ -220,19 +221,24 @@ public class MyBottomSheetFinishOptionFragment extends BottomSheetDialogFragment
                 default:
                     spinner.setSelection(0);
             }
-        } else {
-            spinner.setVisibility(View.GONE);
-            view.findViewById(R.id.textView4).setVisibility(View.GONE);
         }
+//        else {
+//            spinner.setVisibility(GONE);
+//            view.findViewById(R.id.textView4).setVisibility(GONE);
+//        }
         Log.d(TAG, "options: " + options);
 
 
         Logger.d(context, TAG, "commentInfo:" + commentInfo);
 
-        if(!options || commentInfo.equals("no_comment")) {
-
+//        if(!options || commentInfo.equals("no_comment")) {
+        if(!options) {
             komenterinp.setVisibility(View.VISIBLE);
             komenterinp.setText(R.string.no_options);
+        }
+        if(commentInfo.equals("no_comment")) {
+            view.findViewById(R.id.komentar).setVisibility(GONE);
+            komenterinp.setVisibility(GONE);
         }
         return view;
     }

@@ -8,6 +8,7 @@ import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.button1;
 import static com.taxi.easy.ua.R.string.address_error_message;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.Manifest;
@@ -102,7 +103,6 @@ import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
 import com.taxi.easy.ua.utils.auth.FirebaseConsentManager;
 import com.taxi.easy.ua.utils.blacklist.BlacklistManager;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetDialogFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
@@ -535,8 +535,11 @@ public class HomeFragment extends Fragment {
 
         buttonAddServices = binding.btnAdd;
         buttonAddServices.setOnClickListener(v -> {
-            MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
-            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+            sharedPreferencesHelperMain.saveValue("initial_page", "home");
+            NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_options, null, new NavOptions.Builder().build());
+//            MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
+//            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         });
         buttonBonus.setOnClickListener(v -> {
             HomeFragment.btnVisible(INVISIBLE);
@@ -634,14 +637,20 @@ public class HomeFragment extends Fragment {
 
         schedule.setOnClickListener(v -> {
             btnVisible(INVISIBLE);
-            MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
-            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+            sharedPreferencesHelperMain.saveValue("initial_page", "home");
+            NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_options, null, new NavOptions.Builder().build());
+//            MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
+//            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         });
 
         shed_down.setOnClickListener(v -> {
             btnVisible(INVISIBLE);
-            MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
-            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+            sharedPreferencesHelperMain.saveValue("initial_page", "home");
+            NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_options, null, new NavOptions.Builder().build());
+//            MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
+//            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         });
         constr2.setVisibility(VISIBLE);
         addCheck(context);
@@ -760,8 +769,9 @@ public class HomeFragment extends Fragment {
 
                         String messagePayment = orderWeb + " " + getString(R.string.UAH) + " " + pay_method_message;
 
-                        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
-                        String comment = stringList.get(2);
+//                        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
+//                        String comment = stringList.get(2);
+                        String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
                         sendUrlMap.put("comment_info", comment);
 
                         List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
@@ -1073,7 +1083,7 @@ public class HomeFragment extends Fragment {
         VisicomFragment.sendUrlMap = null;
         MainActivity.uid = null;
 
-
+        Logger.d(context, "MainActivity.uid", "MainActivity.uid 6 " + MainActivity.uid);
 
         constraintLayoutHomeMain.setVisibility(VISIBLE);
         constraintLayoutHomeFinish.setVisibility(GONE);
@@ -1966,8 +1976,9 @@ private void cost() {
             }
         }
 
-        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
-        String comment = stringList.get(2);
+//        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
+//        String comment = stringList.get(2);
+        String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
         Logger.d(context, TAG, "comment" + comment);
 
 
@@ -2042,9 +2053,9 @@ private void cost() {
 
         List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
         String time = stringList.get(1);
-        String comment = stringList.get(2);
+//        String comment = stringList.get(2);
         String date = stringList.get(3);
-
+        String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
 
         // Origin of route
         String str_origin = from + "/" + from_number;

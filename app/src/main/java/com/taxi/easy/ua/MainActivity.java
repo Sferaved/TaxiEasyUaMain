@@ -265,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
                 R.id.nav_map,
                 R.id.nav_city,
                 R.id.nav_settings,
-                R.id.nav_visicom_options,
+                R.id.nav_options,
                 R.id.nav_anr
         ).setOpenableLayout(drawer).build();
 

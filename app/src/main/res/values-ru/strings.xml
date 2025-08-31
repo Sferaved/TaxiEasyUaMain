@@ -114,7 +114,7 @@
     <string name="from_text">Откуда</string>
     <string name="to_text">Куда</string>
     <string name="serve">Подача</string>
-    <string name="coment">Введите сообщение для водителя</string>
+    <string name="coment">Cообщение для водителя</string>
     <string name="services">УСЛУГИ</string>
     <string name="resettimetoorder">Проверьте дату или время для предварительного заказа</string>
     <string name="my_routs">Выберите маршрут</string>
@@ -520,5 +520,7 @@
     <string name="no_start_point_message">Не указано место отправки</string>
     <string name="error_5_min_message">Вы не можете отменить после нахождения авто</string>
     <string name="error_5_min_cancel_card_order">Вы не можете отменить после нахождения авто. Обратитесь к оператору.</string>
+    <string name="clear_all">Очистка</string>
+    <string name="all_data_clear">Все данные сброшены</string>
 
 </resources>

@@ -110,7 +110,7 @@
     <string name="from_text">From</string>
     <string name="to_text">To</string>
     <string name="serve">Serve</string>
-    <string name="coment">Enter a message for the driver</string>
+    <string name="coment">Message for the driver</string>
     <string name="services">SERVICES</string>
     <string name="resettimetoorder">Check the date or time for pre-order</string>
     <string name="my_routs">Choose a route</string>
@@ -513,6 +513,8 @@
     <string name="google_maps">Google Maps not installed</string>
     <string name="sentNotifyMessage">Allow the app to send you notifications</string>
     <string name="no_start_point_message">Sending location not specified</string>
-    <string name="error_5_min_message">Вы не можете отменить после нахождения авто</string>
-    <string name="error_5_min_cancel_card_order">Вы не можете отменить после нахождения авто. Обратитесь к оператору.</string>
+    <string name="error_5_min_message">You can\'t cancel after finding the car</string>
+    <string name="error_5_min_cancel_card_order">You can\'t cancel after finding the car. Contact the operator.</string>
+    <string name="clear_all">Clearing</string>
+    <string name="all_data_clear">All data cleared</string>
 </resources>

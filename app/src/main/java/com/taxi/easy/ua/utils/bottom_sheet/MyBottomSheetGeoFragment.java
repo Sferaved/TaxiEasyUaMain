@@ -245,9 +245,10 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
 
         komenterinp = view.findViewById(R.id.komenterinp);
         discount = view.findViewById(R.id.discinp);
-        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
-
-        String comment = stringList.get(2);
+//        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
+//
+//        String comment = stringList.get(2);
+        String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
         if (!comment.equals("no_comment")) {
             komenterinp.setText(comment);
         }
@@ -427,9 +428,9 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                     new String[]{"1"});
             database.close();
         }
-        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
-        String comment = stringList.get(2);
-
+//        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
+//        String comment = stringList.get(2);
+        String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
         Logger.d(context, TAG, "comment " + comment);
 
         String discountText = discount.getText().toString();
@@ -834,9 +835,10 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
 
         List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
         String time = stringList.get(1);
-        String comment = stringList.get(2);
+//        String comment = stringList.get(2);
         String date = stringList.get(3);
 
+        String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
         Logger.d(context, TAG, "getTaxiUrlSearchMarkers comment" + comment);
 
 

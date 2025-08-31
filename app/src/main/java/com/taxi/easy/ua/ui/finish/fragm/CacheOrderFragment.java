@@ -334,9 +334,9 @@ public class CacheOrderFragment extends Fragment {
 
         List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
         String time = stringList.get(1);
-        String comment = stringList.get(2);
+//        String comment = stringList.get(2);
         String date = stringList.get(3);
-
+        String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
         List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
         String tarif = stringListInfo.get(2);
         String payment_type = stringListInfo.get(4);
@@ -684,8 +684,9 @@ public class CacheOrderFragment extends Fragment {
             Logger.d(context, TAG, "orderFinished: messageResult " + messageResult);
             Logger.d(context, TAG, "orderFinished: to_name " + to_name);
 
-            List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
-            String comment = stringList.get(2);
+//            List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
+//            String comment = stringList.get(2);
+            String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
             sendUrlMap.put("comment_info", comment);
 
             List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
@@ -717,7 +718,7 @@ public class CacheOrderFragment extends Fragment {
             Logger.d(context, TAG, "sendUrlMap: extra_charge_codes " + sendUrlMap.get("extra_charge_codes"));
 
             MainActivity.uid = sendUrlMap.get("dispatching_order_uid");
-
+            Logger.d(context, "MainActivity.uid", "MainActivity.uid 3 " + MainActivity.uid);
             Bundle bundle = new Bundle();
             bundle.putString("messageResult_key", messageResult);
             bundle.putString("messagePay_key", messagePayment);
@@ -954,7 +955,7 @@ public class CacheOrderFragment extends Fragment {
         sendUrlMap = null;
         MainActivity.uid = null;
 //        MainActivity.action = null;
-
+        Logger.d(context, "MainActivity.uid", "MainActivity.uid 4 " + MainActivity.uid);
         MainActivity.orderResponse = null;
         viewModel.updateOrderResponse(null);
         viewModel.setTransactionStatus(null);

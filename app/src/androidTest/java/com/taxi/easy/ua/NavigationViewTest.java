@@ -67,7 +67,7 @@ public class NavigationViewTest {
                                 R.id.nav_cacheOrder,
                                 R.id.nav_map,
                                 R.id.nav_city,
-                                R.id.nav_visicom_options,
+                                R.id.nav_options,
                                 R.id.nav_anr
                         };
 

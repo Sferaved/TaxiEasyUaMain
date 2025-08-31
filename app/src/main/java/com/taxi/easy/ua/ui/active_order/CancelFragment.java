@@ -257,6 +257,7 @@ public class CancelFragment extends Fragment {
         for (int i = 0; i < routeList.size(); i++) {
             RouteResponseCancel route = routeList.get(i);
             String uid = route.getUid();
+            Logger.d(getContext(), TAG, "uid processCancelList: " + uid);
             String routeFrom = route.getRouteFrom();
             String routeFromNumber = route.getRouteFromNumber();
             String routeTo = route.getRouteTo();
