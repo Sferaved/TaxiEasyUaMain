@@ -42,7 +42,11 @@
         android:name="com.taxi.easy.ua.ui.card.CardFragment"
         android:label="@string/my_card_pay"
         tools:layout="@layout/fragment_card" />
-
+    <fragment
+        android:id="@+id/nav_account"
+        android:name="com.taxi.easy.ua.ui.account.AccountFragment"
+        android:label="@string/account_menu"
+        tools:layout="@layout/fragment_account" />
     <fragment
         android:id="@+id/nav_about"
         android:name="com.taxi.easy.ua.ui.about.AboutFragment"
@@ -53,12 +57,6 @@
         android:name="com.taxi.easy.ua.ui.author.AuthorFragment"
         android:label="@string/author_about"
         tools:layout="@layout/fragment_about" />
-
-    <fragment
-        android:id="@+id/nav_account"
-        android:name="com.taxi.easy.ua.ui.account.AccountFragment"
-        android:label="@string/account_menu"
-        tools:layout="@layout/fragment_account" />
 
     <fragment
         android:id="@+id/nav_finish_separate"

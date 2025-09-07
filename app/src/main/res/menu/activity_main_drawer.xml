@@ -33,12 +33,6 @@
             android:id="@+id/nav_card"
             android:icon="@drawable/ic_menu_gallery"
             android:title="@string/my_card_pay" />
-
-        <item
-            android:id="@+id/nav_about"
-            android:icon="@drawable/ic_menu_gallery"
-            android:title="@string/conf" />
-
         <item
             android:id="@+id/nav_account"
             android:icon="@drawable/ic_menu_gallery"
@@ -47,6 +41,10 @@
             android:id="@+id/nav_author"
             android:icon="@android:drawable/ic_menu_info_details"
             android:title="@string/author_about" />
+        <item
+            android:id="@+id/nav_about"
+            android:icon="@drawable/ic_menu_gallery"
+            android:title="@string/conf" />
 
     </group>
 

@@ -18,6 +18,8 @@ public interface ApiService {
 
     @GET
     Call<OrderResponse> statusOrder(@Url String url);
+    @GET
+    Call<FinishCostResponse> showFinishCost(@Url String url);
 
     @GET
     Call<OrderServiceResponse> searchAutoOrderService(@Url String url);

@@ -55,6 +55,7 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentFinishSeparateBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.BonusResponse;
+import com.taxi.easy.ua.ui.finish.FinishCostResponse;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
 import com.taxi.easy.ua.ui.finish.Status;
 import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
@@ -981,7 +982,7 @@ public class FinishSeparateFragment extends Fragment {
 
         Logger.d(context, TAG, "orderComplete " + canceled);
 
-        stopCycle();
+        showFinishCost(context);
     }
 
     private void orderInRout() {
@@ -2323,5 +2324,45 @@ public class FinishSeparateFragment extends Fragment {
         }
 
     }
+    private void showFinishCost(Context context) {
+        pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
+        if(pay_method.equals("nal_payment")) {
+            String api = logCursor(MainActivity.CITY_INFO, context).get(2);
 
+            baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") +"/";
+
+            String url = baseUrl + api + "/android/showFinishCost/" + uid;
+
+            Call<FinishCostResponse> call = ApiClient.getApiService().showFinishCost(url);
+            Logger.d(context, TAG, "showFinishCost: " + url);
+            call.enqueue(new Callback<>() {
+                @Override
+                public void onResponse(@NonNull Call<FinishCostResponse> call, @NonNull Response<FinishCostResponse> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        FinishCostResponse finishCostResponse = response.body();
+                        Logger.d(context, TAG, "showFinishCost finishCostResponse: " + finishCostResponse);
+                        if(finishCostResponse.getFinishCost() != 0) {
+                            String finishCost = String.valueOf((int) finishCostResponse.getFinishCost());
+                            String messageResultCost = getString(R.string.lbl_amount_finish) + " " + finishCost + getString(R.string.UAH);
+                            textCostMessage.setText(messageResultCost);
+                            textCostMessage.setVisibility(VISIBLE);
+                        }
+                    } else {
+                        Logger.d(context, TAG, "Ошибка ответа: " + response.code());
+                    }
+                }
+
+
+                @Override
+                public void onFailure(@NonNull Call<FinishCostResponse> call, @NonNull Throwable t) {
+                    // Обработка ошибок сети или других ошибок
+                    String errorMessage = t.getMessage();
+                    FirebaseCrashlytics.getInstance().recordException(t);
+                    Logger.d(context, TAG, "onFailure: " + errorMessage);
+                }
+            });
+
+        }
+
+    }
 }

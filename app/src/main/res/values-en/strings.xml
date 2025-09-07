@@ -223,7 +223,8 @@
     <string name="e_invalid_mm">Invalid month</string>
     <string name="e_invalid_date">Invalid expiration date</string>
     <string name="e_invalid_cvv">Invalid cvv</string>
-    <string name="lbl_amount">Amount to be paid (UAH):</string>
+    <string name="lbl_amount">Amount to pay (UAH):</string>
+    <string name="lbl_amount_finish">Amount to pay:</string>
     <string name="lbl_ccy">Currency:</string>
     <string name="lbl_email">Email address:</string>
     <string name="lbl_description">Description:</string>

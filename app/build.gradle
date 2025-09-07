@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1844
-        versionName = '1.844'
+        versionCode = 1845
+        versionName = '1.845'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled = true
@@ -43,14 +43,7 @@ android {
         buildConfig = true
     }
     testOptions {
-        unitTests {
-            includeAndroidResources = true
-            animationsDisabled = true
-            all {
-                // Переопределяем targetSdkVersion для Robolectric
-                systemProperty 'robolectric.enabledSdks', '28,29,30,31,32,33,34,35'
-            }
-        }
+
     }
 }
 
@@ -59,12 +52,12 @@ dependencies {
     implementation 'androidx.multidex:multidex:2.0.1'
     implementation 'androidx.core:core:1.17.0'
     implementation 'androidx.appcompat:appcompat:1.7.1'
-    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'com.google.android.material:material:1.13.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
     implementation 'androidx.datastore:datastore-preferences:1.1.7'
     implementation 'com.github.anrwatchdog:anrwatchdog:1.4.0'
-    implementation 'androidx.databinding:databinding-runtime:8.12.2'
+    implementation 'androidx.databinding:databinding-runtime:8.13.0'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     implementation "androidx.preference:preference:1.2.1"
 
@@ -161,7 +154,7 @@ dependencies {
     implementation 'org.greenrobot:eventbus:3.3.1'
 
     // тепловой след
-    implementation 'com.uxcam:uxcam:3.7.1'
+    implementation 'com.uxcam:uxcam:3.7.2'
 
     //security
     implementation "androidx.security:security-crypto:1.1.0"
@@ -176,12 +169,6 @@ dependencies {
 
 
 }
-
-
-tasks.withType(JavaCompile).configureEach {
-    options.compilerArgs += ["-Xlint:deprecation"]
-}
-
 
 
 

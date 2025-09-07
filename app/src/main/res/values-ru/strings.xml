@@ -228,7 +228,8 @@
     <string name="e_invalid_date">Неверный срок действия</string>
     <string name="e_invalid_cvv">Неверный cvv</string>
 
-    <string name="lbl_amount">Сумма для оплаты (грн):</string>
+    <string name="lbl_amount">Сумма к оплате (грн):</string>
+    <string name="lbl_amount_finish">Сумма к оплате:</string>
     <string name="lbl_ccy">Валюта:</string>
     <string name="lbl_email">Электронный адрес:</string>
     <string name="lbl_description">Описание:</string>

@@ -856,6 +856,8 @@ public class VisicomSearchFragment extends Fragment {
             KeyboardUtils.showKeyboard(context, toEditAddress);
         }
 
+        String city = logCursor(MainActivity.CITY_INFO).get(1);
+        String cityFC = getString(R.string.foreign_countries);
 
         fromEditAddress.addTextChangedListener(new TextWatcher() {
             @Override
@@ -887,13 +889,14 @@ public class VisicomSearchFragment extends Fragment {
                     Logger.d(context, TAG, "onTextChanged:countryState " + countryState);
 
                     if (startPoint == null) {
-                        if(countryState.equals("UA")) {
+//                        if(countryState.equals("UA")) {
+                        if(!city.equals(cityFC)) {
                             performAddressSearch(inputString, "start");
                         } else {
                             mapBoxSearch(inputString, "start");
                         }
                     } else if (!startPoint.equals(inputString)) {
-                        if(countryState.equals("UA")) {
+                        if(!city.equals(cityFC)) {
                             performAddressSearch(inputString, "start");
                         } else {
                             mapBoxSearch(inputString, "start");
@@ -932,13 +935,13 @@ public class VisicomSearchFragment extends Fragment {
                 if (charCount > 2) {
 
                     if (finishPoint == null) {
-                        if(countryState.equals("UA")) {
+                        if(!city.equals(cityFC)) {
                             performAddressSearch(inputString, "finish");
                         } else {
                             mapBoxSearch(inputString, "finish");
                         }
                     } else if (!finishPoint.equals(inputString)) {
-                        if(countryState.equals("UA")) {
+                        if(!city.equals(cityFC)) {
                             performAddressSearch(inputString, "finish");
                         } else {
                             mapBoxSearch(inputString, "finish");
