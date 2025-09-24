@@ -14,7 +14,7 @@
     <string name="invalid_username">Not a valid username</string>
     <string name="invalid_password">Password must be >5 characters</string>
     <string name="login_failed">"Login failed"</string>
-    <string name="action_exit">Вихід</string>
+    <string name="action_exit">🚪 Вихід</string>
     <string name="delete_record">видалити?</string>
     <string name="make_rout">Створити маршрут</string>
     <string name="call_admin">Дзвінок оператору</string>
@@ -22,8 +22,8 @@
 
     <string name="my_phone">Мій телефон</string>
     <string name="open_maps">Замовити по мапе</string>
-    <string name="driver">Робота водієм (реклама)</string>
-    <string name="send_email">Поділитися</string>
+    <string name="driver">🚖 ‍Робота водієм (реклама)</string>
+    <string name="send_email">📧 Поділитися</string>
     <string name="gps_ok">Визначення геопозиції включено</string>
     <string name="cancel_button">Ні, дякую</string>
     <string name="gps_on">Увімкнути</string>
@@ -147,8 +147,8 @@
     <string name="OdessaTest">Одеса (Тест)</string>
     <string name="disc_text">% +/- 💰🧾</string>
     <string name="email_sent">Повідомлення відправлено</string>
-    <string name="send_like">Оцінити додаток</string>
-    <string name="send_email_admin">Повідомити про проблему</string>
+    <string name="send_like">👍 Оцінити додаток</string>
+    <string name="send_email_admin">📧 Повідомити про проблему</string>
     <string name="SA_subject">Повідомлення № I-</string>
     <string name="SA_message_start">Текст Вашого повідомленя: </string>
     <string name="SA_info_pas">Інформація про додаток: </string>
@@ -333,7 +333,7 @@
     <string name="id_phone_text">Надайте доступ до вбудованого ідентифікатора пристрою, щоб отримувати персоналізовані рекламні пропозиції та покращений досвід користування партнерськими сервісами. Будь-коли Ви можете запросити видалення цієї інформації.</string>
     <string name="item_state_phone">Персоналізація</string>
     <string name="update_rout">Оновити історію</string>
-    <string name="update_app">Оновити додаток</string>
+    <string name="update_app">🆙 Оновити додаток</string>
     <string name="upload">Завантаження оновлення...</string>
     <string name="update_ok">У Вас встановлена актуальна версія. Немає необхідності оновлювати програму.</string>
     <string name="phone_driver">Звонок водію</string>
@@ -405,7 +405,7 @@
     <string name="del_info">Дані акаунта видалені з сервера</string>
     <string name="user_name">Ім\'я користувача</string>
     <string name="phone_number">Телефон</string>
-    <string name="uninstal">Видалити додаток</string>
+    <string name="uninstal">🗑️ Видалити додаток</string>
     <string name="your_order">Ваше замовлення</string>
     <string name="sedan">седан</string>
     <string name="universal">універсал</string>
@@ -469,7 +469,7 @@
     <string name="update_canceled">Оновлення було скасовано.</string>
     <string name="restart_error">Помилка при перезапуску програми.</string>
     <string name="btn_option_text">Дії</string>
-    <string name="language">Мова</string>
+    <string name="language">⌨️ Мова</string>
     <string name="item_settings">Налаштування</string>
     <string name="save_btn">Зберегти</string>
     <string name="close">Закрити</string>
@@ -507,7 +507,7 @@
     <string name="anr_mes">Упс... Щось пішло не так 😓. Спробуйте ще раз чи трохи згодом 🔄</string>
     <string name="search_address">Пошук адреси</string>
     <string name="err_nal_reoder_mes">На жаль, замовлення за готівку в даний момент не можливе. Виберіть інший спосіб оплати.</string>
-    <string name="clearApp">Очистити дані</string>
+    <string name="clearApp">🧹 Очистити дані</string>
     <string name="clearAppMess">Увага! Очищення даних програми видаляє всі налаштування, бази даних, внутрішній та зовнішній кеш, після чого програма буде перезапущена. Ця дія необоротна і може вплинути на роботу програми. Переконайтеся, що перед продовженням зберегли важливі дані. Продовжити?</string>
     <string name="email_history_order">Запросить историю</string>
     <string name="SA_message_history">Прошу прислати мені історію моїх поїздок за період з ..... по .....</string>
@@ -523,4 +523,5 @@
     <string name="error_5_min_cancel_card_order">Ви не можете скасувати після знаходження авто. Зверніться до свого оператора.</string>
     <string name="clear_all">Очищення</string>
     <string name="all_data_clear">Всі дані скинуті</string>
+    <string name="email_admin">Повідомити про проблему по email</string>
 </resources>

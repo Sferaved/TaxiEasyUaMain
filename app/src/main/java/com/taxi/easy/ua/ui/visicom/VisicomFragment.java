@@ -8,6 +8,7 @@ import static com.taxi.easy.ua.MainActivity.CITY_INFO;
 import static com.taxi.easy.ua.MainActivity.activeCalls;
 import static com.taxi.easy.ua.MainActivity.button1;
 import static com.taxi.easy.ua.MainActivity.navController;
+import static com.taxi.easy.ua.MainActivity.orderViewModel;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
@@ -90,7 +91,6 @@ import com.taxi.easy.ua.databinding.FragmentVisicomBinding;
 import com.taxi.easy.ua.service.OrderServiceResponse;
 import com.taxi.easy.ua.ui.finish.ApiClient;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
-import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
 import com.taxi.easy.ua.utils.auth.FirebaseConsentManager;
@@ -107,7 +107,9 @@ import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
+import com.taxi.easy.ua.utils.kafka.KafkaRequest;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.retrofit.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
@@ -848,6 +850,7 @@ public class VisicomFragment extends Fragment {
 
     @SuppressLint({"Range", "ResourceAsColor"})
     public String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
+
         Logger.d(context, TAG, "getTaxiUrlSearchMarkers: " + urlAPI);
         startTilePreloadWorker();
 
@@ -867,7 +870,7 @@ public class VisicomFragment extends Fragment {
             start = context.getString(R.string.startPoint);
             geoText.setText(start);
         }
-        if (originLatitude == 0.0 || originLatitude == 0.0) {
+        if (originLatitude == 0.0) {
             geoText.setText("");
             geoText.setBackgroundColor(R.color.selected_text_color);
             return "error";
@@ -1047,6 +1050,13 @@ public class VisicomFragment extends Fragment {
 
         String url = "/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application);
+
+        String urlKafka = "/" + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application);
+
+        Log.e("KafkaRequest", "urlKafka: " + urlKafka);
+        KafkaRequest costRequest = new KafkaRequest();
+        costRequest.sendCostMessage(urlKafka);
+//        btnVisible(GONE);
 
         database.close();
         return url;
@@ -2503,7 +2513,7 @@ public class VisicomFragment extends Fragment {
             textwhere.setVisibility(View.VISIBLE);
             num2.setVisibility(View.VISIBLE);
             textViewTo.setVisibility(View.VISIBLE);
-            btnVisible(View.INVISIBLE);
+
 
             requestCostFromServer(start, finish);
         } else {
@@ -2522,6 +2532,31 @@ public class VisicomFragment extends Fragment {
 
     private void requestCostFromServer(String start, String finish) throws MalformedURLException {
         String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
+        Logger.d(context, TAG, "Попытка #" + ( 1) + ", URL: " + urlCost);
+        orderViewModel.getOrderCost().observe(requireActivity(), cost -> {
+            Logger.d(context, "OrderViewModel", "Updated order_cost: " + cost);
+            // Тут можно обновлять UI автоматически
+            if (binding != null) {
+                btnVisible(VISIBLE);
+                geoText.setText(start);
+                binding.textTo.setText(finish.trim().equals(start.trim()) ? "" : finish);
+                applyDiscountAndUpdateUI(cost, context);
+            }
+            if (cost.isEmpty()) {
+                try {
+                    reserveCost(start, finish, urlCost);
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
+
+    }
+
+
+    private void reserveCost(String start, String finish, String urlCost) throws MalformedURLException {
+
         Logger.d(context, TAG, "Попытка #" + ( 1) + ", URL: " + urlCost);
 
         CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
@@ -2565,64 +2600,6 @@ public class VisicomFragment extends Fragment {
             }
         });
     }
-
-//    private long lastRequestTime = 0;
-//    private static final long MIN_REQUEST_INTERVAL_MS = 2000; // минимальный интервал между запросами (2 секунды)
-//
-//    private void requestCostFromServer(String start, String finish) throws MalformedURLException {
-//        long now = System.currentTimeMillis();
-//        if (now - lastRequestTime < MIN_REQUEST_INTERVAL_MS) {
-//            Logger.w(context, TAG, "Пропускаем повторный вызов requestCostFromServer (слишком часто)");
-//            return;
-//        }
-//        lastRequestTime = now;
-//
-//        String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
-//        Logger.d(context, TAG, "Попытка #1, URL: " + urlCost);
-//
-//        // Создаем и запускаем WorkRequest
-//        OneTimeWorkRequest request = WorkManagerHelper.scheduleCostRequest(context, urlCost);
-//        WorkManager.getInstance(context).enqueue(request);
-//
-//        // Наблюдаем за результатом
-//        WorkManager.getInstance(context)
-//                .getWorkInfoByIdLiveData(request.getId())
-//                .observe(getViewLifecycleOwner(), workInfo -> {
-//                    if (workInfo != null && workInfo.getState().isFinished()) {
-//                        new Handler(Looper.getMainLooper()).post(() -> {
-//                            if (!isAdded() || binding == null) {
-//                                Logger.w(context, TAG, "Фрагмент отсоединён или binding null — выходим");
-//                                return;
-//                            }
-//
-//                            geoText.setText(start);
-//                            binding.textTo.setText(finish.trim().equals(start.trim()) ? "" : finish);
-//
-//                            Data outputData = workInfo.getOutputData();
-//
-//                            if (outputData.getString("error") != null) {
-//                                FirebaseCrashlytics.getInstance().log("Ошибка costRequest: " + outputData.getString("error"));
-//                                Logger.e(context, TAG, "Ошибка costRequest: " + outputData.getString("error"));
-//                                applyDiscountAndUpdateUI("0", context);
-//                                return;
-//                            }
-//
-//                            String orderCost = outputData.getString("order_cost");
-//                            String message = outputData.getString("Message");
-//
-//                            if (orderCost != null && !"0".equals(orderCost)) {
-//                                applyDiscountAndUpdateUI(orderCost, context);
-//                            } else if ("Повторный запрос".equals(message)) {
-//                                String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
-//                                String cost = (String) sharedPreferencesHelperMain.getValue(tarif, "0");
-//                                applyDiscountAndUpdateUI(cost, context);
-//                            } else {
-//                                applyDiscountAndUpdateUI("0", context);
-//                            }
-//                        });
-//                    }
-//                });
-//    }
     private void clearTABLE_SERVICE_INFO () {
         String[] arrayServiceCode = DataArr.arrayServiceCode();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -3380,10 +3357,9 @@ public class VisicomFragment extends Fragment {
         String uid =  (String) sharedPreferencesHelperMain.getValue("uid_fcm", "");
         Logger.d(context, TAG, "statusOrder: " + uid);
         new Thread(this::fetchRoutesCancel).start();
-//        if(uid.isEmpty()) {
-//
-//            return;
-//        }
+        if(uid.isEmpty()) {
+            uid = " ";
+        }
         Logger.d(context, "Pusher", "statusCacheOrder: " + uid);
 
         List<String> listCity = logCursor(CITY_INFO, context);

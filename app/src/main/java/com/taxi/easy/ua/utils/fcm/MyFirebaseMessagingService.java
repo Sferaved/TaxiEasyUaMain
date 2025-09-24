@@ -24,6 +24,8 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.worker.SendTokenWorker;
 
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -88,12 +90,42 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         db.close();
         return list;
     }
+//    @Override
+//    public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
+//        super.onMessageReceived(remoteMessage);
+//        Map<String, String> data = remoteMessage.getData();
+//        Logger.d(this, TAG, "Получено сообщение: " + data);
+//        if (!data.isEmpty()) {
+//            String locale = LocaleHelper.getLocale();
+//            Logger.d(this, TAG, "Locale: " + locale);
+//            String message = data.get("message_" + locale);
+//            if (message == null) {
+//                message = data.get("message_uk");
+//                Logger.d(this, TAG, "Fallback to message_uk: " + message);
+//            }
+//            String uid = data.get("uid");
+//            if (message == null || message.isEmpty()) {
+//                message = "Найдено авто (по умолчанию)";
+//                Logger.d(this, TAG, "Сообщение пустое, установлено значение по умолчанию");
+//            }
+//            Logger.d(getApplicationContext(), TAG, "Message: " + message);
+//            Logger.d(getApplicationContext(), TAG, "uid: " + uid);
+//            notifyUser(message, uid);
+//        } else {
+//            Logger.d(this, TAG, "Данные пуш-уведомления пусты");
+//        }
+//    }
+
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
         Map<String, String> data = remoteMessage.getData();
         Logger.d(this, TAG, "Получено сообщение: " + data);
-        if (!data.isEmpty()) {
+
+        // Check if the message contains order cost data
+        if (data.containsKey("order_cost")) {
+            handleOrderCostMessage(data);
+        } else if (!data.isEmpty()) {
             String locale = LocaleHelper.getLocale();
             Logger.d(this, TAG, "Locale: " + locale);
             String message = data.get("message_" + locale);
@@ -133,6 +165,23 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         config.setLocale(locale);
 
         return context.createConfigurationContext(config);
+    }
+    private void handleOrderCostMessage(Map<String, String> data) {
+        Context context = getApplicationContext();
+        Logger.d(context, TAG, "Received order cost message: " + data.toString());
+
+        JSONObject eventData = new JSONObject(data);
+        String orderCost = eventData.optString("order_cost", "0");
+        Logger.d(context, TAG, "order_cost: " + orderCost);
+
+        // Проверяем, инициализирован ли OrderViewModel
+        if (MainActivity.orderViewModel != null) {
+            MainActivity.orderViewModel.setOrderCost(orderCost);
+            Logger.d(context, TAG, "Order cost updated in ViewModel");
+        } else {
+            // Если ViewModel ещё нет — сохраняем в SharedPreferences на будущее
+            Logger.e(context, TAG, "OrderViewModel is null, saving order cost for later");
+        }
     }
 
 }

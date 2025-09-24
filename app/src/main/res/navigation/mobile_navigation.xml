@@ -17,7 +17,7 @@
         tools:layout="@layout/fragment_home" />
     <fragment
         android:id="@+id/nav_cancel"
-        android:name="com.taxi.easy.ua.ui.active_order.CancelFragment"
+        android:name="com.taxi.easy.ua.ui.active_order.ActiveOrderFragment"
         android:label="@string/order_to_cancel"
         tools:layout="@layout/fragment_cancel" />
 <!--    <fragment-->
@@ -111,5 +111,11 @@
         android:name="com.taxi.easy.ua.ui.exit.AnrFragment"
         android:label="@string/search_address"
         tools:layout="@layout/fragment_anr" />
+
+    <fragment
+        android:id="@+id/nav_card_ver"
+        android:name="com.taxi.easy.ua.ui.card.CardVerificationFragment"
+        android:label="@string/search_address"
+        tools:layout="@layout/activity_fondy_payment" />
 
 </navigation>

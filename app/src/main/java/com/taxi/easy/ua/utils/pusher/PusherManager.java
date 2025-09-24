@@ -25,9 +25,9 @@ import com.pusher.client.connection.ConnectionState;
 import com.pusher.client.connection.ConnectionStateChange;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -149,10 +149,6 @@ public class PusherManager {
             }
         }, ConnectionState.ALL);
     }
-
-
-
-
 
     // Приватный метод для проверки, привязано ли событие
     private boolean isEventBound(String eventName) {
@@ -333,26 +329,46 @@ public class PusherManager {
         });
         // Получение стоимости
 //        channel.bind(eventCanceled, event -> {
+//        bindEvent(eventOrderCost, event -> {
+//            Logger.d(context,"Pusher eventOrderCost", "Received event: " + event.toString());
+//
+//            try {
+//                JSONObject eventData = new JSONObject(event.getData());
+//                String order_cost = eventData.getString("order_cost");
+//                Logger.d(context,"Pusher eventOrderCost", "order_cost: " + order_cost);
+//
+//                Map<String, String> eventValues = new HashMap<>();
+//                // Добавляем данные в Map
+//                eventValues.put("order_cost", eventData.optString("order_cost", "0"));
+//                eventValues.put("Message", eventData.optString("Message", ""));
+//
+//                MainActivity.costMap = eventValues;
+//                sharedPreferencesHelperMain.saveValue("order_cost", eventData.optString("order_cost", "0"));
+//
+//            } catch(JSONException e){
+//                    Logger.e(context,"Pusher eventOrderCost", "JSON Parsing error for event: " + event.getData() +  e);
+//            }
+//
+//        });
+
         bindEvent(eventOrderCost, event -> {
             Logger.d(context,"Pusher eventOrderCost", "Received event: " + event.toString());
 
             try {
                 JSONObject eventData = new JSONObject(event.getData());
-                String order_cost = eventData.getString("order_cost");
+                String order_cost = eventData.optString("order_cost", "0");
                 Logger.d(context,"Pusher eventOrderCost", "order_cost: " + order_cost);
 
-                Map<String, String> eventValues = new HashMap<>();
-                // Добавляем данные в Map
-                eventValues.put("order_cost", eventData.optString("order_cost", "0"));
-                eventValues.put("Message", eventData.optString("Message", ""));
+                // Обновляем ViewModel вместо прямого сохранения
+                MainActivity.orderViewModel.setOrderCost(order_cost); // для LiveData
+                // orderViewModel.updateOrderCost(order_cost); // если StateFlow
 
-                MainActivity.costMap = eventValues;
-                sharedPreferencesHelperMain.saveValue("order_cost", eventData.optString("order_cost", "0"));
+                // Если нужно — сохраняем в SharedPreferences
+                sharedPreferencesHelperMain.saveValue("order_cost", order_cost);
 
             } catch(JSONException e){
-                    Logger.e(context,"Pusher eventOrderCost", "JSON Parsing error for event: " + event.getData() +  e);
+                Logger.e(context,"Pusher eventOrderCost", "JSON Parsing error for event: " + event.getData() +  e);
             }
-
         });
 
         bindEvent(eventBlackUserStatus, event -> {

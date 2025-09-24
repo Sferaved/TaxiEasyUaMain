@@ -19,9 +19,6 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
-import androidx.navigation.NavController;
-import androidx.navigation.NavOptions;
-import androidx.navigation.Navigation;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
@@ -31,6 +28,7 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.exit.AnrActivity;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.keys.SecurePrefs;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -191,23 +189,38 @@ public class MyApplication extends Application {
 
     private void setupCrashHandler() {
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            // Логируем крэш
             FirebaseCrashlytics.getInstance().recordException(throwable);
             Logger.e(getApplicationContext(), "CrashHandler", "Crash: " + throwable.getMessage());
             Logger.e(getApplicationContext(), "CrashHandler", Log.getStackTraceString(throwable));
 
+            // Сохраняем стек крэша
             sharedPreferencesHelperMain.saveValue("last_crash", Log.getStackTraceString(throwable));
+
+            // Пытаемся запустить AnrActivity
             new Handler(Looper.getMainLooper()).post(() -> {
-                NavController navController = Navigation.findNavController(
-                        getCurrentActivity(), R.id.nav_host_fragment_content_main
-                );
-                navController.navigate(R.id.nav_anr, null, new NavOptions.Builder().build());
+                try {
+                    Intent intent = new Intent(getApplicationContext(), AnrActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    getApplicationContext().startActivity(intent);
+                } catch (Exception e) {
+                    Logger.e(getApplicationContext(),"CrashHandler", "Cannot start AnrActivity: " + e.getMessage());
+                    FirebaseCrashlytics.getInstance().recordException(e);
+
+                    // Если не удалось — показать уведомление или другой fallback
+                    showNotification(getApplicationContext());
+                }
             });
+
+            // Через секунду убиваем процесс
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 android.os.Process.killProcess(android.os.Process.myPid());
                 System.exit(1);
             }, 1000);
         });
     }
+
+
 
     private void setupANRWatchDog() {
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
@@ -233,21 +246,23 @@ public class MyApplication extends Application {
                 .setANRListener(error -> {
                     Logger.e(context, TAG, "ANR occurred: " + error);
                     FirebaseCrashlytics.getInstance().recordException(error);
-                    if (context instanceof Activity && !((Activity) context).isFinishing()) {
-                        try {
-                            NavController navController = Navigation.findNavController(
-                                    getCurrentActivity(), R.id.nav_host_fragment_content_main
-                            );
-                            navController.navigate(R.id.nav_anr, null, new NavOptions.Builder().build());
-                        } catch (Exception e) {
-                            Logger.e(context, TAG, "Failed to start AnrActivity: " + e.getMessage());
-                            FirebaseCrashlytics.getInstance().recordException(e);
-                            showNotification(context);
-                        }
+
+                    try {
+                        // Запуск AnrActivity напрямую
+                        Intent intent = new Intent(context.getApplicationContext(), AnrActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        context.getApplicationContext().startActivity(intent);
+                    } catch (Exception e) {
+                        Logger.e(context, TAG, "Failed to start AnrActivity: " + e.getMessage());
+                        FirebaseCrashlytics.getInstance().recordException(e);
+
+                        // Если не удалось запустить активность, показываем уведомление
+                        showNotification(context);
                     }
                 })
                 .start();
     }
+
 
     private void showNotification(Context context) {
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);

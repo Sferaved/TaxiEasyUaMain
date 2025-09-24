@@ -15,7 +15,7 @@
     <string name="invalid_username">Не valid username</string>
     <string name="invalid_password">Password must be >5 characters</string>
     <string name="login_failed">"Login failed"</string>
-    <string name="action_exit">Выход</string>
+    <string name="action_exit">🚪 Выход</string>
     <string name="delete_record">удалить?</string>
     <string name="make_rout">Создать маршрут</string>
     <string name="call_admin">Звонок оператору</string>
@@ -23,8 +23,8 @@
 
     <string name="my_phone">Мой телефон</string>
     <string name="open_maps">Заказать по карте</string>
-    <string name="driver">Работа водителем (реклама)</string>
-    <string name="send_email">Поделиться</string>
+    <string name="driver">🚖 Работа водителем (реклама)</string>
+    <string name="send_email">📧 Поделиться</string>
     <string name="gps_ok">Определение геопозиции включено</string>
     <string name="cancel_button">Нет, спасибо</string>
     <string name="gps_on">Включить</string>
@@ -148,8 +148,8 @@
     <string name="OdessaTest">Одесса (Тест)</string>
     <string name="disc_text">% +/- 💰🧾</string>
     <string name="email_sent">Сообщение отправлено</string>
-    <string name="send_like">Оценить приложение</string>
-    <string name="send_email_admin">Сообщить о проблеме</string>
+    <string name="send_like">👍 Оценить приложение</string>
+    <string name="send_email_admin">📧 Сообщить о проблеме</string>
     <string name="SA_subject">Сообщение № I-</string>
     <string name="SA_message_start">Текст вашего сообщения: </string>
     <string name="SA_info_pas">Информация о приложении: </string>
@@ -334,7 +334,7 @@
     <string name="id_phone_text">Предоставьте доступ к встроенному идентификатору устройства, чтобы получить персонализированные рекламные предложения и улучшенный опыт пользования партнерскими сервисами.</string>
     <string name="item_state_phone">Персонализация</string>
     <string name="update_rout">Обновить историю</string>
-    <string name="update_app">Обновить приложение</string>
+    <string name="update_app">🆙 Обновить приложение</string>
     <string name="upload">Загрузка обновления...</string>
     <string name="update_ok">У Вас установлена ​​актуальная версия. Нет необходимости обновлять программу.</string>
     <string name="phone_driver">Звонок водителю</string>
@@ -406,7 +406,7 @@
     <string name="del_info">Данные аккаунта удалены с сервера</string>
     <string name="user_name">Имя пользователя</string>
     <string name="phone_number">Телефон</string>
-    <string name="uninstal">Удалить приложение</string>
+    <string name="uninstal">🗑️ Удалить приложение</string>
     <string name="your_order">Ваш заказ</string>
     <string name="sedan">седан</string>
     <string name="universal">универсал</string>
@@ -469,7 +469,7 @@
     <string name="update_canceled">Обновление было отменено.</string>
     <string name="restart_error">Ошибка при перезапуске приложения.</string>
     <string name="btn_option_text">Действия</string>
-    <string name="language">Язык</string>
+    <string name="language">⌨️ Язык</string>
     <string name="item_settings">Настройки</string>
     <string name="save_btn">Сохранить</string>
     <string name="close">Закрыть</string>
@@ -507,7 +507,7 @@
     <string name="anr_mes">Упс... Что-то пошло не так 😓. Попробуйте ещё раз или чуть позже 🔄</string>
     <string name="search_address">Поиск адреса</string>
     <string name="err_nal_reoder_mes">К сожалению заказ за наличные в данный момент не возможен. Выберите другой способ оплаты.</string>
-    <string name="clearApp">Очистить данные</string>
+    <string name="clearApp">🧹 Очистить данные</string>
     <string name="clearAppMess">Внимание! Очистка данных приложения удалит все настройки, базы данных, внутренний и внешний кэш, после чего приложение будет перезапущено. Это действие необратимо и может повлиять на работу приложения. Убедитесь, что вы сохранили важные данные перед продолжением. Продолжить?</string>
     <string name="email_history_order">Запросить историю</string>
     <string name="SA_message_history">Прошу прислать мне историю моих поездок за период с ..... по .....</string>
@@ -523,5 +523,6 @@
     <string name="error_5_min_cancel_card_order">Вы не можете отменить после нахождения авто. Обратитесь к оператору.</string>
     <string name="clear_all">Очистка</string>
     <string name="all_data_clear">Все данные сброшены</string>
+    <string name="email_admin">Сообщить о проблеме по email</string>
 
 </resources>

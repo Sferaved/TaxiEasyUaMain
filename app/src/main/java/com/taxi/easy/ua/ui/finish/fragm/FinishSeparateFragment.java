@@ -58,7 +58,6 @@ import com.taxi.easy.ua.ui.finish.BonusResponse;
 import com.taxi.easy.ua.ui.finish.FinishCostResponse;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
 import com.taxi.easy.ua.ui.finish.Status;
-import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetAddCostFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
@@ -69,6 +68,7 @@ import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.hold.APIHoldService;
 import com.taxi.easy.ua.utils.hold.HoldResponse;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.pusher.events.CanceledStatusEvent;
 import com.taxi.easy.ua.utils.time_ut.TimeUtils;
@@ -79,6 +79,7 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -393,7 +394,7 @@ public class FinishSeparateFragment extends Fragment {
 
 //        handlerStatus = new Handler(Looper.getMainLooper());
         handlerStatus = HandlerCompat.createAsync(Looper.getMainLooper());
-        delayMillisStatus = 10 * 1000;
+        delayMillisStatus = 5 * 1000;
         myTaskStatus = new Runnable() {
             @Override
             public void run() {
@@ -784,7 +785,13 @@ public class FinishSeparateFragment extends Fragment {
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
 
         baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") +"/";
-        String url = baseUrl + api + "/android/webordersCancelDouble/" + uid + "/" + uid_Double + "/" + pay_method + "/" + city  + "/" +  context.getString(R.string.application);
+        boolean order_in_my_vod = (boolean) sharedPreferencesHelperMain.getValue("order_in_my_vod", false);
+        String url = baseUrl + api;
+        if(!order_in_my_vod) {
+            url += "/android/webordersCancelDouble/" + uid + "/" + uid_Double + "/" + pay_method + "/" + city  + "/" +  context.getString(R.string.application);
+        } else {
+            url += "/android/webordersCancelVod/" + uid;
+        }
 
         Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
         Logger.d(context, TAG, "cancelOrderDouble: " + url);
@@ -816,7 +823,8 @@ public class FinishSeparateFragment extends Fragment {
 
         btn_cancel_order.setEnabled(true);
         btn_cancel_order.setClickable(true);
-        Logger.d(context, TAG, "statusOrder");
+        Logger.d(context, "RetrofitCall", "statusOrder");
+        Logger.d(context, "RetrofitCall", "pay_method " + pay_method);
         if(pay_method.equals("nal_payment")) {
 
 
@@ -923,17 +931,36 @@ public class FinishSeparateFragment extends Fragment {
 
 //            Call<OrderResponse> call = ApiClient.getApiService().getOrderStatusMessageResultPush(url);
             retrofitCall = ApiClient.getApiService().getOrderStatusMessageResultPush(url);
-            Logger.d(context, TAG, "/getOrderStatusMessageResultPush/: " + url);
+            Logger.d(context, "RetrofitCall", "/getOrderStatusMessageResultPush/: " + url);
 
             // Выполняем запрос асинхронно
-            retrofitCall.enqueue(new Callback<>() {
+            retrofitCall.enqueue(new Callback<OrderResponse>() {
                 @Override
                 public void onResponse(@NonNull Call<OrderResponse> call, @NonNull Response<OrderResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        OrderResponse orderResponse = response.body();
-                        Activity activity = activityRef.get();
-                        if (activity != null && isAdded()) {
-                            activity.runOnUiThread(() -> updateUICardPayStatus(orderResponse));
+                    Log.d("RetrofitCall", "Request URL: " + call.request().url());
+                    if (response.isSuccessful()) {
+                        if (response.body() != null) {
+                            OrderResponse orderResponse = response.body();
+                            Log.i("RetrofitCall", "Response successful. OrderResponse: " + orderResponse.toString());
+                            Activity activity = activityRef.get();
+                            if (activity != null && isAdded()) {
+                                Log.d("RetrofitCall", "Updating UI for orderResponse: " );
+                                activity.runOnUiThread(() -> updateUICardPayStatus(orderResponse));
+                            } else {
+                                Log.w("RetrofitCall", "Activity is null or fragment not added. Cannot update UI.");
+                            }
+                        } else {
+                            Log.w("RetrofitCall", "Response successful but body is null or empty.");
+                            // Handle empty response case (e.g., update UI to show "no data" or retry)
+                        }
+                    } else {
+                        Log.w("RetrofitCall", "Response unsuccessful. Code: " + response.code() + ", Message: " + response.message());
+                        if (response.errorBody() != null) {
+                            try {
+                                Log.e("RetrofitCall", "Error body: " + response.errorBody().string());
+                            } catch (IOException e) {
+                                Log.e("RetrofitCall", "Failed to parse error body", e);
+                            }
                         }
                     }
                 }
@@ -941,8 +968,10 @@ public class FinishSeparateFragment extends Fragment {
                 @Override
                 public void onFailure(@NonNull Call<OrderResponse> call, @NonNull Throwable t) {
                     if (!call.isCanceled()) {
-                        // Обработка ошибки
+                        Log.e("RetrofitCall", "Request failed: " + t.getMessage(), t);
                         FirebaseCrashlytics.getInstance().recordException(t);
+                    } else {
+                        Log.d("RetrofitCall", "Request was canceled.");
                     }
                 }
             });
@@ -1463,23 +1492,59 @@ public class FinishSeparateFragment extends Fragment {
             String action
     ) {
         Logger.d(context, TAG, "closeReasonReactCard: " + action);
+        Logger.d(context, TAG, "closeReasonReactCard: " + closeReason);
         String message;
-        switch (action) {
-            case "Авто найдено":
-                carFound(closeReason, driverPhone, time_to_start_point, orderCarInfo);
-                break;
-            case "Заказ выполнен":
-                orderComplete();
-                break;
-            case "Заказ снят":
 
-                message = context.getString(R.string.ex_st_canceled);
-                orderCanceled(message);
-                break;
-            default:
-                carSearch();
-                break;
+        if(closeReason ==101 || closeReason ==102 || closeReason ==103 || closeReason ==104) {
+            sharedPreferencesHelperMain.saveValue("order_in_my_vod", true);
+            switch (closeReason) {
+                case 101:
+                    action = "Авто найдено";
+                    carFound (
+                            closeReason,
+                            driverPhone,
+                            time_to_start_point,
+                            orderCarInfo
+                    );
+                    break;
+                case 102:
+                    action = "На месте";
+                    orderInStartPoint(
+                            driverPhone,
+                            orderCarInfo
+                    );
+                    break;
+                case 103:
+                    action = "В пути";
+                    orderInRout();
+                    break;
+                case 104:
+                    action = "Заказ выполнен";
+                    orderComplete();
+                    break;
+            }
+        } else {
+            sharedPreferencesHelperMain.saveValue("order_in_my_vod", false);
+            switch (action) {
+                case "Авто найдено":
+                    carFound(closeReason, driverPhone, time_to_start_point, orderCarInfo);
+                    break;
+                case "Заказ выполнен":
+                    orderComplete();
+                    break;
+                case "Заказ снят":
+
+                    message = context.getString(R.string.ex_st_canceled);
+                    orderCanceled(message);
+                    break;
+                default:
+                    carSearch();
+                    break;
+            }
         }
+
+
+
     }
 
     void drivercarposition(String value, String city, String api,  Context context) {
@@ -2144,6 +2209,8 @@ public class FinishSeparateFragment extends Fragment {
                     .setPositiveButton(R.string.ok_button, (dialog, which) -> {
                         // Действие для кнопки "OK"
                         cancel_btn_click = true;
+                        String message = context.getString(R.string.ex_st_canceled);
+                        orderCanceled(message);
                         if(!uid_Double.equals(" ")) {
                             cancelOrderDouble(context);
                         } else{
@@ -2326,43 +2393,51 @@ public class FinishSeparateFragment extends Fragment {
     }
     private void showFinishCost(Context context) {
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
-        if(pay_method.equals("nal_payment")) {
-            String api = logCursor(MainActivity.CITY_INFO, context).get(2);
 
-            baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") +"/";
+        String api = logCursor(MainActivity.CITY_INFO, context).get(2);
 
-            String url = baseUrl + api + "/android/showFinishCost/" + uid;
+        baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") +"/";
 
-            Call<FinishCostResponse> call = ApiClient.getApiService().showFinishCost(url);
-            Logger.d(context, TAG, "showFinishCost: " + url);
-            call.enqueue(new Callback<>() {
-                @Override
-                public void onResponse(@NonNull Call<FinishCostResponse> call, @NonNull Response<FinishCostResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        FinishCostResponse finishCostResponse = response.body();
-                        Logger.d(context, TAG, "showFinishCost finishCostResponse: " + finishCostResponse);
-                        if(finishCostResponse.getFinishCost() != 0) {
-                            String finishCost = String.valueOf((int) finishCostResponse.getFinishCost());
-                            String messageResultCost = getString(R.string.lbl_amount_finish) + " " + finishCost + getString(R.string.UAH);
-                            textCostMessage.setText(messageResultCost);
-                            textCostMessage.setVisibility(VISIBLE);
+        String url = baseUrl + api + "/android/showFinishCost/" + uid;
+
+        Call<FinishCostResponse> call = ApiClient.getApiService().showFinishCost(url);
+        Logger.d(context, TAG, "showFinishCost: " + url);
+        call.enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<FinishCostResponse> call, @NonNull Response<FinishCostResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    FinishCostResponse finishCostResponse = response.body();
+                    Logger.d(context, TAG, "showFinishCost finishCostResponse: " + finishCostResponse);
+                    if(finishCostResponse.getFinishCost() != 0) {
+                        String finishCost = String.valueOf((int) finishCostResponse.getFinishCost());
+                        String messageResultCost = getString(R.string.lbl_amount_finish) + " " + finishCost + getString(R.string.UAH);
+                        if(pay_method.equals("nal_payment")) {
+                            messageResultCost += " " + getString(R.string.pay_method_message_nal);
                         }
-                    } else {
-                        Logger.d(context, TAG, "Ошибка ответа: " + response.code());
+                        if(pay_method.equals("wfp_payment")) {
+                            messageResultCost += " " + getString(R.string.pay_method_message_card);
+                        }
+                        if(pay_method.equals("bonus_payment")) {
+                            messageResultCost += " " + getString(R.string.pay_method_message_bonus);
+                        }
+                        textCostMessage.setText(messageResultCost);
+                        textCostMessage.setVisibility(VISIBLE);
                     }
+                } else {
+                    Logger.d(context, TAG, "Ошибка ответа: " + response.code());
                 }
+            }
 
 
-                @Override
-                public void onFailure(@NonNull Call<FinishCostResponse> call, @NonNull Throwable t) {
-                    // Обработка ошибок сети или других ошибок
-                    String errorMessage = t.getMessage();
-                    FirebaseCrashlytics.getInstance().recordException(t);
-                    Logger.d(context, TAG, "onFailure: " + errorMessage);
-                }
-            });
+            @Override
+            public void onFailure(@NonNull Call<FinishCostResponse> call, @NonNull Throwable t) {
+                // Обработка ошибок сети или других ошибок
+                String errorMessage = t.getMessage();
+                FirebaseCrashlytics.getInstance().recordException(t);
+                Logger.d(context, TAG, "onFailure: " + errorMessage);
+            }
+        });
 
         }
 
-    }
 }

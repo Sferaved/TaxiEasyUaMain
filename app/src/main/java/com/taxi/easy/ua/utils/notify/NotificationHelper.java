@@ -110,7 +110,13 @@ public class NotificationHelper {
             Logger.d(context, TAG, "UID совпадает с предыдущим, уведомление не показывается.");
             return;
         } else {
-            sharedPreferencesHelperMain.saveValue("uid_fcm", uid);
+            if (uid != null) {
+                sharedPreferencesHelperMain.saveValue("uid_fcm", uid);
+            } else {
+                Logger.d(context, TAG,  "uid is null, skipping save");
+                // Optionally, save a default value or skip saving
+                sharedPreferencesHelperMain.saveValue("uid_fcm", "");
+            }
         }
 
         // Генерация уникального ID уведомления

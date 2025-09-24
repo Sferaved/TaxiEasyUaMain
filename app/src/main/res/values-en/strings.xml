@@ -13,7 +13,7 @@
     <string name="invalid_username">Not a valid username</string>
     <string name="invalid_password">Password must be >5 characters</string>
     <string name="login_failed">"Login failed"</string>
-    <string name="action_exit">Exit</string>
+    <string name="action_exit">🚪 Exit</string>
     <string name="delete_record">delete?</string>
     <string name="make_rout">Make route</string>
     <string name="call_admin">Call operator</string>
@@ -21,8 +21,8 @@
 
     <string name="my_phone">My phone</string>
     <string name="open_maps">Order by map</string>
-    <string name="driver">Work as a driver (advertisement)</string>
-    <string name="send_email">Share</string>
+    <string name="driver">🚖 Work as a driver (advertisement)</string>
+    <string name="send_email">📧 Share</string>
     <string name="gps_ok">Geopositioning is enabled</string>
     <string name="cancel_button">No thanks</string>
     <string name="gps_on">Enable</string>
@@ -144,8 +144,8 @@
     <string name="OdessaTest">Odesa (Test)</string>
     <string name="disc_text">% +/- 💰🧾</string>
     <string name="email_sent">Message sent</string>
-    <string name="send_like">Rate the app</string>
-    <string name="send_email_admin">Report a problem</string>
+    <string name="send_like">👍 Rate the app</string>
+    <string name="send_email_admin">📧 Report a problem</string>
     <string name="SA_subject">Message No. I-</string>
     <string name="SA_message_start">The text of your message: </string>
     <string name="SA_info_pas">App info: </string>
@@ -328,7 +328,7 @@
     <string name="id_phone_text">Give access to your device\'s embedded ID to receive personalized advertising offers and an enhanced experience with partner services. You can request the deletion of this information at any time.</string>
     <string name="item_state_phone">Personalization</string>
     <string name="update_rout">Update history</string>
-    <string name="update_app">Update App</string>
+    <string name="update_app">🆙 Update App</string>
     <string name="upload">Uploading update...</string>
     <string name="update_ok">You have the latest version installed. No need to update the app.</string>
     <string name="phone_driver">Call the driver</string>
@@ -400,7 +400,7 @@
     <string name="del_info">Account data deleted from server</string>
     <string name="user_name">Username</string>
     <string name="phone_number">Phone</string>
-    <string name="uninstal">Uninstall application</string>
+    <string name="uninstal">🗑️ Uninstall application</string>
     <string name="your_order">Your order</string>
     <string name="sedan">sedan</string>
     <string name="universal">station wagon</string>
@@ -464,7 +464,7 @@
     <string name="update_canceled">Update cancelled.</string>
     <string name="restart_error">Error restarting the application.</string>
     <string name="btn_option_text">Actions</string>
-    <string name="language">Language</string>
+    <string name="language">⌨️ Language</string>
     <string name="item_settings">Settings</string>
     <string name="save_btn">Save</string>
     <string name="close">Close</string>
@@ -502,7 +502,7 @@
     <string name="anr_mes">Oops... Something went wrong 😓. Try again or later 🔄</string>
     <string name="search_address">Address search</string>
     <string name="err_nal_reoder_mes">Unfortunately, cash orders are currently unavailable. Please select another payment method.</string>
-    <string name="clearApp">Clear data</string>
+    <string name="clearApp">🧹 Clear data</string>
     <string name="clearAppMess">Warning! Clearing app data will delete all settings, databases, internal and external cache, and the app will be restarted. This action is irreversible and may affect the functionality of the app. Make sure you have saved important data before continuing. Continue?</string>
     <string name="email_history_order">Request history</string>
     <string name="SA_message_history">Please send me the history of my trips for the period from ..... to .....</string>
@@ -518,4 +518,5 @@
     <string name="error_5_min_cancel_card_order">You can\'t cancel after finding the car. Contact the operator.</string>
     <string name="clear_all">Clearing</string>
     <string name="all_data_clear">All data cleared</string>
+    <string name="email_admin">Report a problem by email</string>
 </resources>

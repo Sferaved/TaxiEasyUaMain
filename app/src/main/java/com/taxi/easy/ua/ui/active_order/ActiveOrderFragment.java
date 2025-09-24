@@ -48,8 +48,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,7 +60,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 
-public class CancelFragment extends Fragment {
+public class ActiveOrderFragment extends Fragment {
 
     private static final String TAG = "CancelFragment";
     private @NonNull FragmentCancelBinding binding = null;
@@ -84,7 +86,7 @@ public class CancelFragment extends Fragment {
     private Handler handler;
     private Runnable taskRunnable;
 
-    public CancelFragment() {
+    public ActiveOrderFragment() {
     }
 
     @SuppressLint("SourceLockedOrientationActivity")
@@ -247,7 +249,9 @@ public class CancelFragment extends Fragment {
     }
 
     private void processCancelList() {
-        // В этом методе вы можете использовать routeList для выполнения дополнительных действий с данными.
+        // Фильтрация дубликатов по уникальному uid
+        Set<String> uniqueUids = new HashSet<>();
+        routeList.removeIf(route -> !uniqueUids.add(route.getUid())); // Удаляем дубликаты
 
         // Создайте массив строк
         array = new String[routeList.size()];
@@ -275,6 +279,7 @@ public class CancelFragment extends Fragment {
             String comment_info = route.getComment_info();
             String extra_charge_codes = route.getExtra_charge_codes();
 
+            // Логика обработки closeReason
             switch (closeReason) {
                 case "101":
                 case "-1":
@@ -318,80 +323,71 @@ public class CancelFragment extends Fragment {
                     closeReasonText = context.getString(R.string.close_resone_9);
                     break;
                 default:
-                    // ничего не меняем или задаём значение по умолчанию
                     break;
             }
 
-
-            if(routeFrom.equals("Місце відправлення")) {
+            if (routeFrom.equals("Місце відправлення")) {
                 routeFrom = context.getString(R.string.start_point_text);
             }
 
-
-            if(routeTo.equals("Точка на карте")) {
+            if (routeTo.equals("Точка на карте")) {
                 routeTo = context.getString(R.string.end_point_marker);
             }
-            if(routeTo.contains("по городу")) {
+            if (routeTo.contains("по городу") || routeTo.contains("по місту")) {
                 routeTo = context.getString(R.string.on_city);
             }
-            if(routeTo.contains("по місту")) {
-                routeTo = context.getString(R.string.on_city);
-            }
-            String routeInfo = "";
 
-            if(auto == null) {
+            String required_time_text = "";
+            if (required_time != null && !required_time.contains("01.01.1970")) {
+                required_time_text = requireActivity().getString(R.string.ex_st_5) + required_time;
+            }
+
+            String routeInfo = "";
+            if (auto == null) {
                 auto = "??";
             }
 
-            String required_time_text = requireActivity().getString(R.string.ex_st_5) + required_time;
-
-            if(required_time.contains("01.01.1970")) {
-                required_time_text = "";
-            }
             if (routeFrom.equals(routeTo)) {
                 routeInfo = routeFrom + ", " + routeFromNumber
                         + getString(R.string.close_resone_to)
                         + getString(R.string.on_city)
-                        + required_time_text  + "#"
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)  + "#"
+                        + required_time_text + "#"
+                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH) + "#"
                         + getString(R.string.auto_info) + " " + auto + "#"
-                        + getString(R.string.close_resone_time)
-                        + createdAt  + "#"
+                        + getString(R.string.close_resone_time) + createdAt + "#"
                         + getString(R.string.close_resone_text) + closeReasonText;
             } else {
                 routeInfo = routeFrom + ", " + routeFromNumber
                         + getString(R.string.close_resone_to) + routeTo + " " + routeToNumber + "."
                         + required_time_text + "#"
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)  + "#"
+                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH) + "#"
                         + getString(R.string.auto_info) + " " + auto + "#"
-                        + getString(R.string.close_resone_time) + createdAt  + "#"
+                        + getString(R.string.close_resone_time) + createdAt + "#"
                         + getString(R.string.close_resone_text) + closeReasonText;
             }
 
-//                array[i] = routeInfo;
-            databaseHelper.addRouteCancel(uid, routeInfo);
-            List<String> settings = new ArrayList<>();
+            array[i] = routeInfo;
+            databaseHelper.addRouteCancel(uid, routeInfo); // Добавляем только уникальные записи
 
-             settings.add(uid);
-             settings.add(webCost);
-             settings.add(routeFrom);
-             settings.add(routeFromNumber);
-             settings.add(routeTo);
-             settings.add(routeToNumber);
-             settings.add(dispatchingOrderUidDouble);
-             settings.add(pay_method);
-             settings.add(takeData(required_time));
-             settings.add(flexible_tariff_name);
-             settings.add(comment_info);
-             settings.add(extra_charge_codes);
+            List<String> settings = new ArrayList<>();
+            settings.add(uid);
+            settings.add(webCost);
+            settings.add(routeFrom);
+            settings.add(routeFromNumber);
+            settings.add(routeTo);
+            settings.add(routeToNumber);
+            settings.add(dispatchingOrderUidDouble);
+            settings.add(pay_method);
+            settings.add(takeData(required_time));
+            settings.add(flexible_tariff_name);
+            settings.add(comment_info);
+            settings.add(extra_charge_codes);
 
             Logger.d(context, TAG, settings.toString());
             databaseHelperUid.addCancelInfoUid(settings);
         }
-        array = databaseHelper.readRouteCancel();
-        Logger.d(context, TAG, "processRouteList: array " + Arrays.toString(array));
 
-        if(array != null) {
+        if (array != null && array.length > 0) {
             List<String> itemList = Arrays.asList(array); // Преобразование в List
 
             CustomArrayCancelAdapter adapter = new CustomArrayCancelAdapter(
@@ -406,15 +402,11 @@ public class CancelFragment extends Fragment {
             );
             listView.setAdapter(adapter);
 
-
             listView.setVisibility(VISIBLE);
             scrollButtonDown.setVisibility(VISIBLE);
             scrollButtonUp.setVisibility(VISIBLE);
             progressBar.setVisibility(View.GONE);
             upd_but.setVisibility(VISIBLE);
-
-            listView.setAdapter(adapter);
-
 
             ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
             layoutParams.height = desiredHeight;
@@ -433,12 +425,10 @@ public class CancelFragment extends Fragment {
                     scrollButtonUp.setVisibility(View.GONE);
                     scrollButtonDown.setVisibility(View.GONE);
                 }
-
-                // Убираем слушатель, чтобы он не срабатывал многократно
-//                    listView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
             });
 
-
+            // Останавливаем автообновление после получения данных
+            stopRepeatingTask();
         } else {
             listView.setVisibility(View.GONE);
             scrollButtonDown.setVisibility(View.GONE);

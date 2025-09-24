@@ -64,7 +64,6 @@ import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentVisicomSearchBinding;
 import com.taxi.easy.ua.ui.cities.Kyiv.KyivRegion;
 import com.taxi.easy.ua.ui.cities.Kyiv.KyivRegionRu;
-import com.taxi.easy.ua.ui.finish.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.ui.keyboard.KeyboardUtils;
 import com.taxi.easy.ua.ui.open_map.mapbox.Feature;
 import com.taxi.easy.ua.ui.open_map.mapbox.Geometry;
@@ -79,6 +78,7 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 
 import org.json.JSONArray;
 import org.json.JSONException;

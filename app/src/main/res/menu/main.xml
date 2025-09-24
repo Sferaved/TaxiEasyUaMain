@@ -22,7 +22,7 @@
     <item
         android:id="@+id/gps"
         android:orderInCategory="100"
-        android:title="GPS"
+        android:title="🌐 GPS"
         android:paddingLeft="0dp"
         android:paddingTop="0dp"
         android:paddingRight="0dp"

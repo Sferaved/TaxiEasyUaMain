@@ -1,6 +1,5 @@
 package com.taxi.easy.ua.ui.exit;
 
-
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -10,68 +9,60 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 
-import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
 import com.taxi.easy.ua.MainActivity;
-import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.databinding.FragmentAnrBinding;
 import com.taxi.easy.ua.utils.connect.NetworkMonitor;
+import com.taxi.easy.ua.utils.log.LogEmailSender;
 
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class AnrActivity extends AppCompatActivity {
-
-    private static final String TAG = "AnrActivity";
-    AppCompatButton btn_enter;
-    AppCompatButton btnCallAdmin;
-    AppCompatButton btn_exit;
-    AppCompatButton btn_ok;
 
     private NetworkMonitor networkMonitor;
 
     @SuppressLint("MissingInflatedId")
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
-
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.anr_activity_layout);
-        btn_enter = findViewById(R.id.btn_enter);
-        btnCallAdmin = findViewById(R.id.btnCallAdmin);
-        btn_exit = findViewById(R.id.btn_exit);
-        btn_ok = findViewById(R.id.btn_ok);
 
-        // Регистрируем обработчик нажатия кнопки "назад"
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                // Блокируем действие кнопки назад и вызываем вашу логику
-                closeApplication();
-            }
+        com.taxi.easy.ua.databinding.FragmentAnrBinding binding = FragmentAnrBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
+        AppCompatButton btn_enter = binding.btnEnter;
+        AppCompatButton btnCallAdmin = binding.btnCallAdmin;
+        AppCompatButton btn_exit = binding.btnExit;
+        AppCompatButton btnEmailAdmin = binding.btnEmailAdmin;
+
+        btn_enter.setOnClickListener(v -> {
+            startActivity(new Intent(AnrActivity.this, MainActivity.class));
+            finish();
         });
-        btn_enter.setOnClickListener(view15 -> {
-            startActivity(new Intent(getApplicationContext(), MainActivity.class));
-        });
-        btnCallAdmin.setOnClickListener(view16 -> {
+
+        btnCallAdmin.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_DIAL);
-            String phone = logCursor(MainActivity.CITY_INFO, getApplicationContext()).get(3);
+            String phone = logCursor(MainActivity.CITY_INFO, AnrActivity.this).get(3);
             intent.setData(Uri.parse(phone));
             startActivity(intent);
+            finish();
         });
-        btn_exit.setOnClickListener(view16 -> {
-            closeApplication();
+
+        btnEmailAdmin.setOnClickListener(v -> {
+            new LogEmailSender(this).sendLog();
         });
+
+        btn_exit.setOnClickListener(v -> closeApplication());
 
         networkMonitor = new NetworkMonitor(this);
         networkMonitor.startMonitoring(this);
-
     }
 
     private void closeApplication() {
-        // Полный выход из приложения
         if (networkMonitor != null) {
             networkMonitor.stopMonitoring();
         }
@@ -85,48 +76,14 @@ public class AnrActivity extends AppCompatActivity {
         SQLiteDatabase db = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         Cursor c = db.query(table, null, null, null, null, null, null);
         if (c.moveToFirst()) {
-            String str;
             do {
-                str = "";
                 for (String cn : c.getColumnNames()) {
-                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
                     list.add(c.getString(c.getColumnIndex(cn)));
-
                 }
-
             } while (c.moveToNext());
         }
         c.close();
         db.close();
         return list;
     }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        // Проверяем, идет ли приложение в фон
-        if (networkMonitor != null) {
-            networkMonitor.stopMonitoring();
-        }
-        if (isFinishing()) {
-            // Закрываем приложение полностью
-            closeApplication();
-        }
-
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (networkMonitor != null) {
-            networkMonitor.stopMonitoring();
-        }
-        // Проверяем, идет ли приложение в фон
-        if (isFinishing()) {
-            // Закрываем приложение полностью
-            closeApplication();
-        }
-    }
-
 }
-

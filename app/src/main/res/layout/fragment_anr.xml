@@ -59,9 +59,25 @@
         app:layout_constraintTop_toBottomOf="@+id/btn_enter" />
 
     <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnEmailAdmin"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+
+        android:background="@drawable/buttons"
+        android:fontFamily="@font/regular"
+        android:text="@string/email_admin"
+        android:textAlignment="center"
+        android:textColor="#D9D9D9"
+        android:textSize="15sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnCallAdmin"
+        app:layout_constraintWidth_percent="@dimen/button_width" />
+
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_exit"
-       android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
 
@@ -73,6 +89,7 @@
         android:textSize="15sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btnCallAdmin" />
+        app:layout_constraintTop_toBottomOf="@+id/btnEmailAdmin"
+        app:layout_constraintWidth_percent="@dimen/button_width" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,4 +1,4 @@
-package com.taxi.easy.ua.ui.finish.model;
+package com.taxi.easy.ua.utils.model;
 
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;

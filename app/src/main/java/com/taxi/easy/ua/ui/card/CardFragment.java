@@ -2,6 +2,7 @@ package com.taxi.easy.ua.ui.card;
 
 import static android.content.Context.MODE_PRIVATE;
 import static com.taxi.easy.ua.MainActivity.button1;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -311,8 +312,11 @@ public class CardFragment extends Fragment {
             else {
                 MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(getActivity());
 
-                MyBottomSheetCardVerificationWithOneUah bottomSheetDialogFragment = new MyBottomSheetCardVerificationWithOneUah();
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(R.id.nav_card_ver, null, new NavOptions.Builder().build());
+
+//                MyBottomSheetCardVerificationWithOneUah bottomSheetDialogFragment = new MyBottomSheetCardVerificationWithOneUah();
+//                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                 progressBar.setVisibility(View.GONE);
             }
         });
