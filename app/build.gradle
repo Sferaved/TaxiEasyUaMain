@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1846
-        versionName = '1.846'
+        versionCode = 1847
+        versionName = '1.847'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled = true

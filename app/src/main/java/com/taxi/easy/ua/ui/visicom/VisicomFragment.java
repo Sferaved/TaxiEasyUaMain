@@ -225,7 +225,9 @@ public class VisicomFragment extends Fragment {
     LocationManager locationManager;
     public static int currentNavDestination = -1; // ID текущего экрана
 
-
+    private Handler costHandler;
+    private Runnable reserveRunnable;
+    private String lastCost = null;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -1050,12 +1052,13 @@ public class VisicomFragment extends Fragment {
 
         String url = "/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application);
+        if (urlAPI.equals("costSearchMarkersTime")) {
+            String urlKafka = "/" + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application);
 
-        String urlKafka = "/" + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application);
-
-        Log.e("KafkaRequest", "urlKafka: " + urlKafka);
-        KafkaRequest costRequest = new KafkaRequest();
-        costRequest.sendCostMessage(urlKafka);
+            Log.e("KafkaRequest", "urlKafka: " + urlKafka);
+            KafkaRequest costRequest = new KafkaRequest();
+            costRequest.sendCostMessage(urlKafka);
+        }
 //        btnVisible(GONE);
 
         database.close();
@@ -2533,29 +2536,55 @@ public class VisicomFragment extends Fragment {
     private void requestCostFromServer(String start, String finish) throws MalformedURLException {
         String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
         Logger.d(context, TAG, "Попытка #" + ( 1) + ", URL: " + urlCost);
-        orderViewModel.getOrderCost().observe(requireActivity(), cost -> {
-            Logger.d(context, "OrderViewModel", "Updated order_cost: " + cost);
-            // Тут можно обновлять UI автоматически
+
+        reserveCost(start, finish, urlCost);
+
+        if (costHandler == null) costHandler = new Handler(Looper.getMainLooper());
+        reserveRunnable = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Logger.d(context, TAG, "Таймер сработал: вызываем reserveCost");
+                    reserveCost(start, finish, urlCost);
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        orderViewModel.getOrderCost().observe(getViewLifecycleOwner(), cost -> {
+            if (cost != null && cost.equals(lastCost)) {
+                // Игнорируем повтор
+                return;
+            }
+            lastCost = cost;
+
+            Logger.d(context, TAG, "Updated order_cost: " + cost);
+
             if (binding != null) {
-                btnVisible(VISIBLE);
+                btnVisible(View.VISIBLE);
                 geoText.setText(start);
                 binding.textTo.setText(finish.trim().equals(start.trim()) ? "" : finish);
                 applyDiscountAndUpdateUI(cost, context);
             }
+
             if (cost.isEmpty()) {
-                try {
-                    reserveCost(start, finish, urlCost);
-                } catch (MalformedURLException e) {
-                    throw new RuntimeException(e);
-                }
+                costHandler.postDelayed(reserveRunnable, 10_000);
+            } else {
+                costHandler.removeCallbacks(reserveRunnable);
             }
         });
-
 
     }
 
 
     private void reserveCost(String start, String finish, String urlCost) throws MalformedURLException {
+        if (costHandler != null && reserveRunnable != null) {
+            costHandler.removeCallbacks(reserveRunnable);
+        }
+
+        // здесь твоя логика запроса
+        Logger.d(context, TAG, "reserveCost вызван -> start: " + start + ", finish: " + finish);
 
         Logger.d(context, TAG, "Попытка #" + ( 1) + ", URL: " + urlCost);
 
