@@ -22,7 +22,6 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.db.RouteInfo;
-import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -93,16 +92,17 @@ public class CustomArrayUidAdapter extends ArrayAdapter<String> {
             textView1.setText(parts[0]); // Первая часть
         }
         if (parts.length > 1) {
-            textView2.setText(parts[1]); // Вторая часть
+            String cost_info = getContext().getString(R.string.close_resone_cost) + parts[1] + " " + getContext().getString(R.string.UAH);
+            textView2.setText(cost_info);
         }
         if (parts.length > 2) {
-            textView3.setText(parts[2]); // Вторая часть
+            textView3.setText(parts[2]);
         }
         if (parts.length > 3) {
-            textView4.setText(parts[3]); // Вторая часть
+            textView4.setText(parts[3]);
         }
         if (parts.length > 4) {
-            textView5.setText(parts[4]); // Вторая часть
+            textView5.setText(parts[4]);
         }
 
         textView1.setOnClickListener(v -> {
@@ -121,13 +121,14 @@ public class CustomArrayUidAdapter extends ArrayAdapter<String> {
             settings.add(routeInfo.getFinish());
 
             updateRoutMarker(settings);
+            Log.d(TAG, "onContextItemSelected: " + routeInfo);
+            Log.d(TAG, "onContextItemSelected parts[1]: " + parts[1]);
 
+            sharedPreferencesHelperMain.saveValue("gps_upd", false);
+            sharedPreferencesHelperMain.saveValue("old_cost", parts[1]);
             MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)
                     .build());
-            SharedPreferencesHelper sharedPreferencesHelper = new SharedPreferencesHelper(context);
-            sharedPreferencesHelper.saveValue("gps_upd", false);
-
         });
         // Получаем кнопку и устанавливаем обработчик нажатия
         AppCompatButton button = view.findViewById(R.id.button);
@@ -149,6 +150,7 @@ public class CustomArrayUidAdapter extends ArrayAdapter<String> {
 
             updateRoutMarker(settings);
             sharedPreferencesHelperMain.saveValue("gps_upd", false);
+            sharedPreferencesHelperMain.saveValue("old_cost", parts[1]);
             MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)
                     .build());

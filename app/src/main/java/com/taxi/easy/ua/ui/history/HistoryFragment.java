@@ -430,14 +430,16 @@ public class HistoryFragment extends Fragment {
                 routeInfo = routeFrom + " " + routefromnumber
                         + context.getString(R.string.close_resone_to)
                         + context.getString(R.string.on_city)  + "#"
-                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)  + "#"
+                        + webCost  + "#"
+                     //   + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)  + "#"
                         + context.getString(R.string.auto_info) + " " + auto + "#"
                         + context.getString(R.string.close_resone_time) + createdAt + "#"
                         + context.getString(R.string.close_resone_text) + closeReasonText;
             } else {
                 routeInfo = routeFrom + " " + routefromnumber
                         + context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber  + "#"
-                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)  + "#"
+                        + webCost + "#"
+//                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH)  + "#"
                         + context.getString(R.string.auto_info) + " " + auto + "#"
                         + context.getString(R.string.close_resone_time) + createdAt + "#"
                         + context.getString(R.string.close_resone_text) + closeReasonText;
@@ -551,7 +553,8 @@ public class HistoryFragment extends Fragment {
                     R.id.text3,  // ID TextView в вашем макете
                     R.id.text4,  // ID TextView в вашем макете
                     R.id.text5,  // ID TextView в вашем макете
-                    itemList  // Список строк
+                    itemList //// Список строк
+
             );
             listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                 @Override

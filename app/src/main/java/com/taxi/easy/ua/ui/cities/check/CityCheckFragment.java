@@ -110,6 +110,7 @@ public class CityCheckFragment extends Fragment {
 
         sharedPreferencesHelper = new SharedPreferencesHelper(requireActivity());
         sharedPreferencesHelperMain.saveValue("visible_shed", "ok");
+        sharedPreferencesHelperMain.saveValue("old_cost", "0");
 
         btn_city_1 = binding.btnCity1;
         btn_city_2 = binding.btnCity2;

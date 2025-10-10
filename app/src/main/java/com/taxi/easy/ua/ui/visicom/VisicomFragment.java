@@ -232,7 +232,7 @@ public class VisicomFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentVisicomBinding.inflate(inflater, container, false);
-        setupImages();
+//        setupImages();
         UXCam.tagScreenName(TAG);
 
         View root = binding.getRoot();
@@ -289,6 +289,7 @@ public class VisicomFragment extends Fragment {
             sharedPreferencesHelperMain.saveValue("tarif", " ");
             sharedPreferencesHelperMain.saveValue("setStatusX", true);
             svButton.setVisibility(GONE);
+            sharedPreferencesHelperMain.saveValue("old_cost", "0");
 
             // Выполняем необходимое действие (например, запуск новой активности)
             startActivity(new Intent(context, MainActivity.class));
@@ -559,6 +560,11 @@ public class VisicomFragment extends Fragment {
 
 
     private void setupImages() {
+        Activity activity = requireActivity();
+        if (activity == null || activity.isFinishing()) {
+            Logger.e(context, "NetworkMonitor", "Activity is null or finishing, skipping navigation");
+            return;
+        }
         // Загрузка изображений с помощью Glide с отложенным выполнением
         binding.getRoot().post(() -> {
             Glide.with(this)
@@ -1004,7 +1010,7 @@ public class VisicomFragment extends Fragment {
                 clientCost = String.valueOf(cost); // Convert back to string
             }
             sharedPreferencesHelperMain.saveValue("black_list_45", false);
-
+            sharedPreferencesHelperMain.saveValue("old_cost", clientCost);
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
                     + clientCost + "/" + paramsUserArr + "/" + addCost + "/"
                     + time + "/" + comment + "/" + date + "/" + start + "/" + finish + "/" + wfpInvoice;
@@ -2017,6 +2023,7 @@ public class VisicomFragment extends Fragment {
         btnAdd.setOnClickListener(v -> {
             btnVisible(View.INVISIBLE);
             sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
+            sharedPreferencesHelperMain.saveValue("old_cost", "0");
             NavController navController = NavHostFragment.findNavController(this);
             navController.navigate(R.id.nav_options);
         });
@@ -2163,6 +2170,7 @@ public class VisicomFragment extends Fragment {
 
         gpsBtn.setOnLongClickListener(v -> {
             sharedPreferencesHelperMain.saveValue("setStatusX", true);
+            sharedPreferencesHelperMain.saveValue("old_cost", "0");
             viewModel.setStatusX(true);
             Boolean statusX = viewModel.getStatusX().getValue(); // Get the boolean value
             Log.e("setStatusX 45", "setStatusXUpdate: " + (statusX != null ? statusX.toString() : "null"));
@@ -2174,6 +2182,7 @@ public class VisicomFragment extends Fragment {
         });
 
         gpsBtn.setOnClickListener(v -> {
+            sharedPreferencesHelperMain.saveValue("old_cost", "0");
             v.animate()
                     .scaleX(0.9f) // Уменьшить до 90% по X
                     .scaleY(0.9f) // Уменьшить до 90% по Y
@@ -2383,6 +2392,7 @@ public class VisicomFragment extends Fragment {
 
         gpsBtn.setText(R.string.change);
         gpsBtn.setOnClickListener(v1 -> {
+            sharedPreferencesHelperMain.saveValue("old_cost", "0");
             LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
             gpsButSetOnClickListener(locationManager);
         });
@@ -2506,7 +2516,6 @@ public class VisicomFragment extends Fragment {
 
         if ("run".equals(cityCheckActivity) && originLatitude != 0.0 && toLat != 0.0) {
             progressBar.setVisibility(View.VISIBLE);
-            Toast.makeText(context, context.getString(R.string.check_cost_message), Toast.LENGTH_SHORT).show();
 
             gpsBtn.setVisibility(View.VISIBLE);
             svButton.setVisibility(View.VISIBLE);
@@ -2517,8 +2526,14 @@ public class VisicomFragment extends Fragment {
             num2.setVisibility(View.VISIBLE);
             textViewTo.setVisibility(View.VISIBLE);
 
-
-            requestCostFromServer(start, finish);
+            String cost = (String) sharedPreferencesHelperMain.getValue("old_cost","0");
+            Log.d(TAG, "onContextItemSelected parts[1] cost: " + cost);
+            if(!cost.equals("0")) {
+                applyDiscountAndUpdateUI(cost, context);
+            } else {
+                Toast.makeText(context, context.getString(R.string.check_cost_message), Toast.LENGTH_SHORT).show();
+                requestCostFromServer(start, finish);
+            }
         } else {
             sharedPreferencesHelperMain.saveValue("CityCheckActivity", "**");
 
@@ -2618,6 +2633,8 @@ public class VisicomFragment extends Fragment {
                         }
 
                     }
+
+
                 });
             }
 
@@ -2667,6 +2684,25 @@ public class VisicomFragment extends Fragment {
         }
 
         try {
+           SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1", null);
+
+            if (!cursor.moveToFirst()) {
+                Logger.w(context, TAG, "Маршрут не найден — cursor пуст");
+                cursor.close();
+                database.close();
+                return;
+            }
+
+            //double originLatitude = cursor.getDouble(cursor.getColumnIndexOrThrow("startLat"));
+            //double toLat = cursor.getDouble(cursor.getColumnIndexOrThrow("to_lat"));
+            String start = cursor.getString(cursor.getColumnIndexOrThrow("start"));
+            String finish = cursor.getString(cursor.getColumnIndexOrThrow("finish"));
+            Logger.d(context, TAG, "Retrieved  = " + start);
+            Logger.d(context, TAG, "Retrieved  = " + finish);
+
+            cursor.close();
+            database.close();
             long discountInt = Long.parseLong(discountText);
             long discount;
 
@@ -2691,14 +2727,21 @@ public class VisicomFragment extends Fragment {
 
             Logger.d(context, TAG, "Setting UI visibility and values");
 
-            geoText.setVisibility(View.VISIBLE);
             progressBar.setVisibility(View.GONE);
+
+            geoText.setVisibility(View.VISIBLE);
+            geoText.setText(start);
 
             textfrom.setVisibility(View.VISIBLE);
             num1.setVisibility(View.VISIBLE);
             textwhere.setVisibility(View.VISIBLE);
+
             num2.setVisibility(View.VISIBLE);
             textViewTo.setVisibility(View.VISIBLE);
+
+            if(!finish.isEmpty()) {
+                textViewTo.setText(finish);
+            }
 
             btnAdd.setVisibility(View.VISIBLE);
             buttonBonus.setVisibility(View.VISIBLE);

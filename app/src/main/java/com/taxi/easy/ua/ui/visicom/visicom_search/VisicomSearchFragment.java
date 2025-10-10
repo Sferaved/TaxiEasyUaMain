@@ -159,7 +159,7 @@ public class VisicomSearchFragment extends Fragment {
         if(button1 != null) {
             button1.setVisibility(View.VISIBLE);
         }
-
+        sharedPreferencesHelperMain.saveValue("old_cost", "0");
         permissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestMultiplePermissions(),
                 result -> {

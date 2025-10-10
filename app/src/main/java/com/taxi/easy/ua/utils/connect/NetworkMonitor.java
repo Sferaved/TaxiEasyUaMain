@@ -8,6 +8,7 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.navigation.NavController;
@@ -106,13 +107,23 @@ public class NetworkMonitor {
             Logger.d(context, "NetworkMonitor", "Ignoring network change due to debounce delay");
             return;
         }
-
         mainHandler.post(() -> {
+            if (activity == null || activity.isFinishing() || activity.isDestroyed()) {
+                Logger.e(context, "NetworkMonitor", "Activity is not valid for navigation");
+                return;
+            }
+
+            View navHostView = activity.findViewById(R.id.nav_host_fragment_content_main);
+            if (navHostView == null) {
+                Logger.e(context, "NetworkMonitor", "nav_host_fragment_content_main not found in this Activity: " + activity.getClass().getSimpleName());
+                return;
+            }
+
             NavController navController;
             try {
-                navController = Navigation.findNavController(activity, R.id.nav_host_fragment_content_main);
-            } catch (IllegalStateException e) {
-                Logger.e(context, "NetworkMonitor", "Failed to find NavController: " + e.getMessage());
+                navController = Navigation.findNavController(navHostView);
+            } catch (Exception e) {
+                Logger.e(context, "NetworkMonitor", "Failed to get NavController: " + e.getMessage());
                 return;
             }
 
@@ -136,5 +147,6 @@ public class NetworkMonitor {
                 lastNavigationTime = currentTime;
             }
         });
+
     }
 }

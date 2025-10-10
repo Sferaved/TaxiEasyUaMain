@@ -2,8 +2,8 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.847</string>
-    <string name="version">Версия: 1.847</string>
+    <string name="version_code">1.848</string>
+    <string name="version">Версия: 1.848</string>
 
     <string name="app_name">Такси Доставка</string>
 

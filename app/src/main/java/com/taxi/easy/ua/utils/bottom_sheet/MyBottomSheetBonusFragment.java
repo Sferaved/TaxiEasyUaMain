@@ -113,7 +113,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         view = inflater.inflate(R.layout.bonus_list_layout, container, false);
         context = requireActivity();
-
+        sharedPreferencesHelperMain.saveValue("old_cost", "0");
         try {
             database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         } catch (Exception e) {
