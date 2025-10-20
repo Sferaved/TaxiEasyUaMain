@@ -68,7 +68,7 @@
     <string name="good_day">Мои приветствия. Нашел великолепное приложение для поездок на такси. \n \n Советую попробовать по ссылке в официальном магазине Google: \n\n https://play.google.com/store/apps/details?id=com.taxi.easy.ua \n\n Хорошего дня. \n Еще увидимся.</string>
     <string name="share">Посоветовать другу приложение...</string>
     <string name="no_email_agent">Почтовый клиент не установлен.</string>
-    <string name="check_position">ПодоОжидайте, происходит определение Вашего местоположения...</string>
+    <string name="check_position">Ожидайте, происходит определение Вашего местоположения...</string>
     <string name="my_adresses">Избранные</string>
     <string name="make_order_message">Совершите хотя бы одну поездку</string>
     <string name="to_adress_message">Куда едем?</string>

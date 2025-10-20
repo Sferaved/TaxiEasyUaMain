@@ -1751,7 +1751,7 @@ public class VisicomFragment extends Fragment {
 
         constraintLayoutVisicomMain.setVisibility(GONE);
  
-        binding.svButton.setVisibility(GONE);
+//        binding.svButton.setVisibility(GONE);
         binding.btnCallAdmin.setVisibility(GONE);
 
         String cityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
@@ -1786,7 +1786,7 @@ public class VisicomFragment extends Fragment {
 
             binding.textwhere.setVisibility(View.INVISIBLE);
  
-            binding.svButton.setVisibility(View.INVISIBLE);
+//            binding.svButton.setVisibility(View.INVISIBLE);
             binding.btnCallAdmin.setVisibility(View.INVISIBLE);
 
         } else  {
@@ -1811,7 +1811,7 @@ public class VisicomFragment extends Fragment {
                 shed_down.setVisibility(VISIBLE);
 
 
-                binding.svButton.setVisibility(View.VISIBLE);
+//                binding.svButton.setVisibility(View.VISIBLE);
                 binding.btnCallAdmin.setVisibility(View.VISIBLE);
 
             } else {
@@ -1826,8 +1826,8 @@ public class VisicomFragment extends Fragment {
                 progressBar.setVisibility(VISIBLE);
 
               
-       
-                binding.svButton.setVisibility(GONE);
+//
+//                binding.svButton.setVisibility(GONE);
                 binding.btnCallAdmin.setVisibility(GONE);
 
             }
@@ -2530,6 +2530,8 @@ public class VisicomFragment extends Fragment {
             Log.d(TAG, "onContextItemSelected parts[1] cost: " + cost);
             if(!cost.equals("0")) {
                 applyDiscountAndUpdateUI(cost, context);
+                sharedPreferencesHelperMain.saveValue("old_cost","0");
+                requestCostFromServer(start, finish);
             } else {
                 Toast.makeText(context, context.getString(R.string.check_cost_message), Toast.LENGTH_SHORT).show();
                 requestCostFromServer(start, finish);

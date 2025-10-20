@@ -40,24 +40,23 @@
 
             <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
                 android:id="@+id/swipeRefreshLayout"
-                android:layout_width="39dp"
-                android:layout_height="273dp"
-
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginTop="5dp"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="1.0"
-                app:layout_constraintStart_toEndOf="@+id/text_to"
-                app:layout_constraintTop_toBottomOf="@+id/text_to"
-                tools:ignore="MissingConstraints">
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintHeight_percent="0.8">
 
                 <TextView
                     android:id="@+id/sv_button"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:gravity="center"
-                    android:text="⬇️"
+                    android:visibility="gone"
+                    android:text=""
                     android:textColor="#000"
                     android:textSize="20sp" />
-
             </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
             <ProgressBar

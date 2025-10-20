@@ -23,19 +23,21 @@
 
             <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
                 android:id="@+id/swipeRefreshLayout"
-                android:layout_width="40dp"
-                android:layout_height="580dp"
-                android:layout_marginTop="16dp"
-
-                app:layout_constraintStart_toEndOf="@+id/btnCallAdmin"
-                app:layout_constraintTop_toTopOf="parent">
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginTop="5dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintHeight_percent="0.8">
 
                 <TextView
                     android:id="@+id/sv_button"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:gravity="center"
-                    android:text="⬇️"
+                    android:visibility="gone"
+                    android:text=""
                     android:textColor="#000"
                     android:textSize="20sp" />
             </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

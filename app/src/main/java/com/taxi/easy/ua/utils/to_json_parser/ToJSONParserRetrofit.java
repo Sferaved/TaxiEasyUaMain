@@ -147,6 +147,8 @@ public class ToJSONParserRetrofit {
                     Map<String, String> costMap = new HashMap<>();
                     if (response.isSuccessful() && response.body() != null) {
                         JsonResponse json = response.body();
+                        // Логирование JSON ответа
+                        Log.d("API_RESPONSE", "Ответ API: " + new Gson().toJson(response.body()));
                         if (!"0".equals(json.getOrderCost())) {
                             costMap.put("from_lat", json.getFromLat());
                             costMap.put("from_lng", json.getFromLng());
