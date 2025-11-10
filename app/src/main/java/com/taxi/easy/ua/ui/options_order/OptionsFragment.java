@@ -377,54 +377,34 @@ public class OptionsFragment extends Fragment {
     private void timeVerify() {
         String TAG = "TimeVerify";
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
-        DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
         LocalDateTime currentDateTimeInKyiv = LocalDateTime.now(ZoneId.of("Europe/Kiev"));
-        LocalDate currentDate = LocalDate.now(ZoneId.of("Europe/Kiev"));
         Logger.d(context, TAG, "Текущая дата и время в Киеве: " + currentDateTimeInKyiv);
 
-        String time = (String) sharedPreferencesHelperMain.getValue("time", "no_time");
-        String date = (String) sharedPreferencesHelperMain.getValue("date", "no_date");
-        Logger.d(context, TAG, "Сохраненные значения -> время: " + time + ", дата: " + date);
-
-        if (date.equals("no_date")) {
-            date = tvSelectedDate.getText().toString();
-            Logger.d(context, TAG, "Дата не выбрана, взята с экрана: " + date);
-        }
-
-        if (time.equals("no_time")) {
-            time = tvSelectedTime.getText().toString();
-            Logger.d(context, TAG, "Время не выбрано, взято с экрана: " + time);
-        }
+        // Всегда берем актуальные значения с экрана
+        String time = tvSelectedTime.getText().toString();
+        String date = tvSelectedDate.getText().toString();
+        Logger.d(context, TAG, "Текущие значения с экрана -> время: " + time + ", дата: " + date);
 
         try {
-            if (date.equals("no_date") || time.equals("no_time")) {
-                Logger.d(context, TAG, "Дата или время не определены, сброс значений");
-                sharedPreferencesHelperMain.saveValue("time", "no_time");
-                sharedPreferencesHelperMain.saveValue("date", "no_date");
-                return;
-            }
-
             LocalDateTime dateTimeFromString = LocalDateTime.parse(date + " " + time, formatter);
             Logger.d(context, TAG, "Преобразованная дата и время: " + dateTimeFromString);
+
+            long minutesDifference = Duration.between(currentDateTimeInKyiv, dateTimeFromString).toMinutes();
+            Logger.d(context, TAG, "Разница во времени: " + minutesDifference + " минут");
 
             if (dateTimeFromString.isBefore(currentDateTimeInKyiv)) {
                 Logger.d(context, TAG, "Выбранное время в прошлом, сброс значений");
                 Toast.makeText(context, context.getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
                 sharedPreferencesHelperMain.saveValue("time", "no_time");
                 sharedPreferencesHelperMain.saveValue("date", "no_date");
-                return;
-            }
-
-            long minutesDifference = Duration.between(currentDateTimeInKyiv, dateTimeFromString).toMinutes();
-            Logger.d(context, TAG, "Разница во времени: " + minutesDifference + " минут");
-
-            if (minutesDifference <= 10 && minutesDifference >= 0) {
+            } else if (minutesDifference <= 10) {
                 Logger.d(context, TAG, "Разница <= 10 минут, сброс значений");
                 sharedPreferencesHelperMain.saveValue("time", "no_time");
                 sharedPreferencesHelperMain.saveValue("date", "no_date");
                 Toast.makeText(context, context.getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
             } else {
+                // Сохраняем выбранные значения
                 sharedPreferencesHelperMain.saveValue("time", time);
                 sharedPreferencesHelperMain.saveValue("date", date);
                 Logger.d(context, TAG, "Сохранены значения -> время: " + time + ", дата: " + date);
@@ -434,9 +414,6 @@ public class OptionsFragment extends Fragment {
             sharedPreferencesHelperMain.saveValue("time", "no_time");
             sharedPreferencesHelperMain.saveValue("date", "no_date");
             Toast.makeText(context, "Неверный формат даты или времени", Toast.LENGTH_SHORT).show();
-        } finally {
-            database.close();
-            Logger.d(context, TAG, "База данных закрыта");
         }
     }
 
@@ -504,6 +481,7 @@ public class OptionsFragment extends Fragment {
         okButton.setOnClickListener(v -> {
             calendar.set(npYear.getValue(), npMonth.getValue() - 1, npDay.getValue());
             updateSelectedDate(calendar);
+            timeVerify(); // Добавьте эту строку
             dataPickerDialog.dismiss();
         });
 
@@ -533,23 +511,24 @@ public class OptionsFragment extends Fragment {
         minutePicker.setMinValue(0);
         minutePicker.setMaxValue(59);
 
-        Calendar calendar = Calendar.getInstance();
-        hourPicker.setValue(calendar.get(Calendar.HOUR_OF_DAY));
-        Logger.d(context, TAG, "calendar.get(Calendar.HOUR_OF_DAY)" + calendar.get(Calendar.HOUR_OF_DAY));
-        minutePicker.setValue(calendar.get(Calendar.MINUTE) +10);
+        // Убедитесь, что используем поле класса this.calendar
+        hourPicker.setValue(this.calendar.get(Calendar.HOUR_OF_DAY));
+        Logger.d(context, TAG, "calendar.get(Calendar.HOUR_OF_DAY)" + this.calendar.get(Calendar.HOUR_OF_DAY));
+        minutePicker.setValue(this.calendar.get(Calendar.MINUTE));
 
         Button okButton = timePickerDialog.findViewById(R.id.okButton);
         okButton.setOnClickListener(v -> {
             int hourOfDay = hourPicker.getValue();
             int minute = minutePicker.getValue();
 
-            calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
-            calendar.set(Calendar.MINUTE, minute);
+            this.calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
+            this.calendar.set(Calendar.MINUTE, minute);
             SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
-            String formattedTime = sdf.format(calendar.getTime());
+            String formattedTime = sdf.format(this.calendar.getTime());
             Logger.d(context, TAG, "formattedTime: " + formattedTime);
             tvSelectedTime.setText(formattedTime);
 
+            // Сохраняем время сразу при выборе
             sharedPreferencesHelperMain.saveValue("time", formattedTime);
 
             timePickerDialog.dismiss();

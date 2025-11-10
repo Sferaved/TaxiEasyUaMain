@@ -1324,7 +1324,8 @@ public class FinishSeparateFragment extends Fragment {
                              matcher.group(1),
                              uid,
                              uid_Double,
-                             pay_method
+                             pay_method,
+                             viewModel
                      );
     // Устанавливаем слушатель для обработки закрытия
                      bottomSheetDialogFragment.setOnDismissListener(() -> {
@@ -2065,7 +2066,8 @@ public class FinishSeparateFragment extends Fragment {
                                             matcher.group(1),
                                             uid,
                                             uid_Double,
-                                            pay_method
+                                            pay_method,
+                                            viewModel
                                     );
                                     bottomSheetDialogFragment.setOnDismissListener(() -> {
                                         isTaskCancelled = false; // Сбрасываем флаг
@@ -2143,7 +2145,8 @@ public class FinishSeparateFragment extends Fragment {
                                     matcher.group(1),
                                     uid,
                                     uid_Double,
-                                    pay_method
+                                    pay_method,
+                                    viewModel
                             );
                             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                         } else {

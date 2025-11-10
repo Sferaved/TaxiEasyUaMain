@@ -617,43 +617,41 @@ public class HomeFragment extends Fragment {
         buttonBonus.setText(btnBonusName);
     }
     private void scheduleUpdate() {
-        (MyApplication.getCurrentActivity()).runOnUiThread(() -> {
-        schedule.setVisibility(VISIBLE);
-        shed_down.setVisibility(VISIBLE);
-        schedule.setText(R.string.on_now);
-        });
+        // Читаем сохранённые значения из SharedPreferences
+        String savedTime = (String) sharedPreferencesHelperMain.getValue("time", "no_time");
+        String savedDate = (String) sharedPreferencesHelperMain.getValue("date", "no_date");
 
-        if(!MainActivity.firstStart) {
+        // Если время и дата установлены, отображаем их
+        if (!"no_time".equals(savedTime) && !"no_date".equals(savedDate)) {
+            schedule.setText(savedDate + " " + savedTime);  // Формат: "dd.MM.yyyy HH:mm"
+        } else {
+            schedule.setText(R.string.on_now);  // Дефолт: "Сейчас"
+        }
+
+        // Существующий код сброса в БД (если нужно; иначе удалите)
+        if (!MainActivity.firstStart) {
             ContentValues cv = new ContentValues();
             cv.put("time", "no_time");
             cv.put("date", "no_date");
-
-            // обновляем по id
             SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
-                    new String[] { "1" });
+            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[]{"1"});
             database.close();
         }
 
+        // Существующие слушатели кликов (на опции)
         schedule.setOnClickListener(v -> {
-            btnVisible(INVISIBLE);
-            sharedPreferencesHelperMain.saveValue("initial_page", "home");
+            btnVisible(View.INVISIBLE);
+            sharedPreferencesHelperMain.saveValue("initial_page", "home");  // Адаптировано для HomeFragment
             NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
             navController.navigate(R.id.nav_options, null, new NavOptions.Builder().build());
-//            MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
-//            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         });
 
         shed_down.setOnClickListener(v -> {
-            btnVisible(INVISIBLE);
-            sharedPreferencesHelperMain.saveValue("initial_page", "home");
+            btnVisible(View.INVISIBLE);
+            sharedPreferencesHelperMain.saveValue("initial_page", "home");  // Адаптировано
             NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
             navController.navigate(R.id.nav_options, null, new NavOptions.Builder().build());
-//            MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
-//            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         });
-        constr2.setVisibility(VISIBLE);
-        addCheck(context);
     }
     private void orderFinished() {
 

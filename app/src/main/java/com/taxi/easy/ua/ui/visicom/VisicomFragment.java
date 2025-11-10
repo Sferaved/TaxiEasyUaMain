@@ -596,19 +596,28 @@ public class VisicomFragment extends Fragment {
     }
 
     private void scheduleUpdate() {
-        schedule.setText(R.string.on_now);
+        // Читаем сохранённые значения
+        String savedTime = (String) sharedPreferencesHelperMain.getValue("time", "no_time");
+        String savedDate = (String) sharedPreferencesHelperMain.getValue("date", "no_date");
+
+        // Если время и дата установлены, отображаем их
+        if (!"no_time".equals(savedTime) && !"no_date".equals(savedDate)) {
+            schedule.setText(savedDate + " " + savedTime);  // Формат: "dd.MM.yyyy HH:mm"
+        } else {
+            schedule.setText(R.string.on_now);  // Дефолт: "Сейчас"
+        }
+
+        // С existing код (сброс в БД, если нужно)
         if (!MainActivity.firstStart) {
             ContentValues cv = new ContentValues();
             cv.put("time", "no_time");
             cv.put("date", "no_date");
-
-            // обновляем по id
             SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?",
-                    new String[]{"1"});
+            database.update(MainActivity.TABLE_ADD_SERVICE_INFO, cv, "id = ?", new String[]{"1"});
             database.close();
         }
 
+        // С existing слушатели кликов
         schedule.setOnClickListener(v -> {
             btnVisible(View.INVISIBLE);
             sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
@@ -616,15 +625,11 @@ public class VisicomFragment extends Fragment {
             navController.navigate(R.id.nav_options);
         });
 
-
         shed_down.setOnClickListener(v -> {
             btnVisible(View.INVISIBLE);
             sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
             NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
-            navController.navigate(R.id.nav_options, null, new NavOptions.Builder()
-                    .build());
-//            MyBottomSheetGeoFragment bottomSheetDialogFragment = new MyBottomSheetGeoFragment(text_view_cost);
-//            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+            navController.navigate(R.id.nav_options, null, new NavOptions.Builder().build());
         });
     }
 

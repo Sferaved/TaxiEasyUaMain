@@ -19,7 +19,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
-import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -65,12 +64,14 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             String cost,
             String uid,
             String uid_Double,
-            String pay_method
+            String pay_method,
+            ExecutionStatusViewModel viewModel
     ) {
         this.cost = cost;
         this.uid = uid;
         this.uid_Double = uid_Double;
         this.pay_method = pay_method;
+        this.viewModel = viewModel;
     }
 
 
@@ -78,7 +79,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Инициализация ViewModel
-        viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
+
     }
 
     @Nullable
