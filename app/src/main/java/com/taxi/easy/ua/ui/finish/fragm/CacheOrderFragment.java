@@ -513,7 +513,7 @@ public class CacheOrderFragment extends Fragment {
         return (boolean) sharedPreferencesHelperMain.getValue("verifyUserOrder", false);
     }
     private boolean orderRout() {
-//        urlOrder = getTaxiUrlSearchMarkers("orderClientCost", MyApplication.getContext());
+//        urlOrder = getTaxiUrlSearchMarkers("orderClientCostMyApi", MyApplication.getContext());
         urlOrder = getTaxiUrlSearchMarkers("orderCacheReorder", MyApplication.getContext());
         Logger.d(MyApplication.getContext(), TAG, "order:  urlOrder " + urlOrder);
         return true;

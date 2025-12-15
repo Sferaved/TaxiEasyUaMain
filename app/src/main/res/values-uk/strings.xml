@@ -524,4 +524,5 @@
     <string name="clear_all">Очищення</string>
     <string name="all_data_clear">Всі дані скинуті</string>
     <string name="email_admin">Повідомити про проблему по email</string>
+    <string name="no_access_to_phone_admin">Номер телефону недоступний</string>
 </resources>

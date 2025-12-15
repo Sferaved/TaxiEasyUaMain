@@ -45,7 +45,6 @@ import androidx.core.os.HandlerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavOptions;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -194,7 +193,7 @@ public class FinishSeparateFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Инициализация ViewModel
-        viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
+        viewModel = MainActivity.viewModel;
     }
 
 
@@ -527,6 +526,7 @@ public class FinishSeparateFragment extends Fragment {
             Context context
     ) {
         Logger.d(context, TAG, "Transaction Status: " + status);
+        Logger.d(context, TAG, "Transaction Status amount: " + amount);
 
         if ("Declined".equals(status)) {
 
@@ -934,7 +934,7 @@ public class FinishSeparateFragment extends Fragment {
             Logger.d(context, "RetrofitCall", "/getOrderStatusMessageResultPush/: " + url);
 
             // Выполняем запрос асинхронно
-            retrofitCall.enqueue(new Callback<OrderResponse>() {
+            retrofitCall.enqueue(new Callback<>() {
                 @Override
                 public void onResponse(@NonNull Call<OrderResponse> call, @NonNull Response<OrderResponse> response) {
                     Log.d("RetrofitCall", "Request URL: " + call.request().url());
@@ -944,7 +944,7 @@ public class FinishSeparateFragment extends Fragment {
                             Log.i("RetrofitCall", "Response successful. OrderResponse: " + orderResponse.toString());
                             Activity activity = activityRef.get();
                             if (activity != null && isAdded()) {
-                                Log.d("RetrofitCall", "Updating UI for orderResponse: " );
+                                Log.d("RetrofitCall", "Updating UI for orderResponse: ");
                                 activity.runOnUiThread(() -> updateUICardPayStatus(orderResponse));
                             } else {
                                 Log.w("RetrofitCall", "Activity is null or fragment not added. Cannot update UI.");
@@ -1496,7 +1496,7 @@ public class FinishSeparateFragment extends Fragment {
         Logger.d(context, TAG, "closeReasonReactCard: " + closeReason);
         String message;
 
-        if(closeReason ==101 || closeReason ==102 || closeReason ==103 || closeReason ==104) {
+        if(closeReason == 100 ||closeReason ==101 || closeReason ==102 || closeReason ==103 || closeReason ==104) {
             sharedPreferencesHelperMain.saveValue("order_in_my_vod", true);
             switch (closeReason) {
                 case 101:
@@ -1522,6 +1522,9 @@ public class FinishSeparateFragment extends Fragment {
                 case 104:
                     action = "Заказ выполнен";
                     orderComplete();
+                    break;
+                default:
+                    carSearch();
                     break;
             }
         } else {
@@ -1677,12 +1680,9 @@ public class FinishSeparateFragment extends Fragment {
         }
         cancel_btn_click = false;
         // Наблюдение за статусом транзакции
-
-        if(!paySystemStatus.equals("nal_payment")) {
-            // Инициализация ViewModel
-
-            viewModel.getTransactionStatus().removeObservers(getViewLifecycleOwner());
-            viewModel.getTransactionStatus().observe(getViewLifecycleOwner(), status -> {
+        viewModel.getTransactionStatus().removeObservers(getViewLifecycleOwner());
+        viewModel.getTransactionStatus().observe(getViewLifecycleOwner(), status -> {
+            if (status != null) {
                 Logger.d(context,"Pusher eventTransactionStatus", "Finish transaction status set: " + status);
                 String declined_invoice = (String) sharedPreferencesHelperMain.getValue("declined_invoice", "**");
                 Logger.d(context,"Pusher eventTransactionStatus", "Finish declined_invoice: " + declined_invoice);
@@ -1692,7 +1692,14 @@ public class FinishSeparateFragment extends Fragment {
                     handleTransactionStatusDeclined(status, context);
                     viewModel.setCancelStatus(true);
                 }
-            });
+            }
+
+        });
+
+        if(!paySystemStatus.equals("nal_payment")) {
+            // Инициализация ViewModel
+
+
 
             viewModel.getCanceledStatus().removeObservers(getViewLifecycleOwner());
             viewModel.getCanceledStatus().observe(getViewLifecycleOwner(), status -> {
@@ -1916,7 +1923,7 @@ public class FinishSeparateFragment extends Fragment {
         boolean carfound = (boolean) sharedPreferencesHelperMain.getValue("carFound", false);
         if(!carfound) {
             Logger.e(context, TAG, "required_time +++" + required_time);
-            if(required_time.contains("01.01.1970") || required_time.contains("1970-01-01") || required_time.isEmpty()) {
+            if(required_time == null  || required_time.contains("01.01.1970") || required_time.contains("1970-01-01") || required_time.isEmpty()) {
                 need_20_add = true;
             } else {
                 // Регулярное выражение для проверки формата даты "dd.MM.yyyy HH:mm"

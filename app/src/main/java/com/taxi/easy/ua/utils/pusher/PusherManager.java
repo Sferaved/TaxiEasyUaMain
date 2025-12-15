@@ -65,7 +65,7 @@ public class PusherManager {
     Channel channel;
    Activity context;
     private final ExecutionStatusViewModel viewModel;
-
+    private String lastProcessedCost = "";
     private final Set<String> boundEvents = new HashSet<>();
     public PusherManager(String eventSuffix, String userEmail, Activity context, ExecutionStatusViewModel viewModel) {
         this.eventUid = "order-status-updated-" + eventSuffix + "-" + userEmail;
@@ -359,15 +359,18 @@ public class PusherManager {
                 String order_cost = eventData.optString("order_cost", "0");
                 Logger.d(context,"Pusher eventOrderCost", "order_cost: " + order_cost);
 
-                // Обновляем ViewModel вместо прямого сохранения
-                MainActivity.orderViewModel.setOrderCost(order_cost); // для LiveData
-                // orderViewModel.updateOrderCost(order_cost); // если StateFlow
+                // Игнорируем если то же самое значение
+                if (order_cost.equals(lastProcessedCost)) {
+                    Logger.d(context,"Pusher eventOrderCost", "Дубликат, игнорируем: " + order_cost);
+                    return;
+                }
 
-                // Если нужно — сохраняем в SharedPreferences
+                lastProcessedCost = order_cost;
+                MainActivity.orderViewModel.setOrderCost(order_cost);
                 sharedPreferencesHelperMain.saveValue("order_cost", order_cost);
 
             } catch(JSONException e){
-                Logger.e(context,"Pusher eventOrderCost", "JSON Parsing error for event: " + event.getData() +  e);
+                Logger.e(context,"Pusher eventOrderCost", "JSON Parsing error: " + e.getMessage());
             }
         });
 

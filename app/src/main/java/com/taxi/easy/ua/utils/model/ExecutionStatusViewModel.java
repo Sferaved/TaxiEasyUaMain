@@ -23,7 +23,7 @@ public class ExecutionStatusViewModel extends ViewModel {
     public final LiveData<Boolean> isTenMinutesRemaining = _isTenMinutesRemaining;
 
     //
-    private final SingleLiveEvent<String> transactionStatus = new SingleLiveEvent<>();
+    private final MutableLiveData<String> transactionStatus = new MutableLiveData<>();
     public LiveData<String> getTransactionStatus() {
         return transactionStatus;
     }

@@ -24,6 +24,7 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
+
 public class CostJSONParserRetrofit {
 
     private static final String TAG = "CostJSONParser";
@@ -60,6 +61,21 @@ public class CostJSONParserRetrofit {
         Call<Map<String, String>> call = apiService.getData(urlString);
         activeCall = call;
 
+        // --- ТАЙМАУТ НА 30 СЕК --- НИЧЕГО НЕ ЛОМАЕТ
+//        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+//            if (activeCall != null && !activeCall.isCanceled() && !eventReceived) {
+//                activeCall.cancel();
+//                Log.e(TAG, "Таймаут: 15 сек — запрос отменён автоматически");
+//
+//                Map<String, String> timeoutMap = new HashMap<>();
+//                timeoutMap.put("order_cost", "0");
+//                timeoutMap.put("Message", "Таймаут: нет ответа от сервера");
+//
+//                callback.onResponse(activeCall, Response.success(timeoutMap));
+//            }
+//        }, 15_000);
+        // --------------------------
+
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
@@ -81,6 +97,7 @@ public class CostJSONParserRetrofit {
                         String message = jsonResponse.getOrDefault("Message", "Нет сообщения от сервера");
                         Log.e(TAG, "orderCost" + orderCost);
                         Log.e(TAG, "message" + message);
+
                         if (!"0".equals(orderCost)) {
                             costMap.putAll(jsonResponse);
                             String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
@@ -125,24 +142,24 @@ public class CostJSONParserRetrofit {
 
         });
 
-//        // Ожидаем событие
+        // твой поток — не трогаю
         new Thread(() -> {
             while (!eventReceived) {
                 if (costMap != null && !costMap.isEmpty()) {
                     eventReceived = true;
                     if (activeCall != null && !activeCall.isExecuted()) {
-                        activeCall.cancel(); // Прерываем запрос
+                        activeCall.cancel();
                         Log.d("API_CALL", "HTTP-запрос прерван из-за события.");
                     }
                     callback.onResponse(call, Response.success(costMap));
                 }
                 try {
-                    Thread.sleep(100); // Ожидание события с минимальной задержкой
+                    Thread.sleep(100);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-
             }
         }).start();
     }
+
 }

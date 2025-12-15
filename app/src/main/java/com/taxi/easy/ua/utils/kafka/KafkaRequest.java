@@ -70,7 +70,7 @@ public class KafkaRequest {
                 .build();
 
         Request request = new Request.Builder()
-                .url("https://t.easy-order-taxi.site/kafka/sendCostMessage")
+                .url("https://t.easy-order-taxi.site/kafka/sendCostMessageMyApi")
                 .post(body)
                 .build();
 

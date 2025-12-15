@@ -216,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
     String baseUrl;
     @SuppressLint("StaticFieldLeak")
     public static PusherManager pusherManager;
-    public ExecutionStatusViewModel viewModel;
+    public static ExecutionStatusViewModel viewModel;
     public static OrderResponse orderResponse;
 
     public static int currentNavDestination = -1; // ID текущего экрана

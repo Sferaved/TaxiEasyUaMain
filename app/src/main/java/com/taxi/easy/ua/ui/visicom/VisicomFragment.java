@@ -3,6 +3,7 @@ package com.taxi.easy.ua.ui.visicom;
 
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.GONE;
+import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.CITY_INFO;
 import static com.taxi.easy.ua.MainActivity.activeCalls;
@@ -228,6 +229,7 @@ public class VisicomFragment extends Fragment {
     private Handler costHandler;
     private Runnable reserveRunnable;
     private String lastCost = null;
+    static SwipeRefreshLayout swipeRefreshLayout;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -276,9 +278,9 @@ public class VisicomFragment extends Fragment {
         context = requireActivity();
         binding.textwhere.setVisibility(VISIBLE);
 
-        SwipeRefreshLayout swipeRefreshLayout = root.findViewById(R.id.swipeRefreshLayout);
+        swipeRefreshLayout = root.findViewById(R.id.swipeRefreshLayout);
         svButton = root.findViewById(R.id.sv_button);
-
+        text_view_cost = binding.textViewCost;
 // Устанавливаем слушатель для распознавания жеста свайпа вниз
         swipeRefreshLayout.setOnRefreshListener(() -> {
             // Скрываем TextView (⬇️) сразу после появления индикатора свайпа
@@ -311,13 +313,7 @@ public class VisicomFragment extends Fragment {
 
 
         btnCallAdmin = binding.btnCallAdmin;
-        btnCallAdmin.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_DIAL);
-            List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
-            String phone = stringList.get(3);
-            intent.setData(Uri.parse(phone));
-            startActivity(intent);
-        });
+
         btnCallAdminFin = binding.btnCallAdminFin;
         btnCallAdmin.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_DIAL);
@@ -348,7 +344,7 @@ public class VisicomFragment extends Fragment {
         btnAdd = binding.btnAdd;
         constr2 = binding.constr2;
 
-        constr2.setVisibility(View.INVISIBLE);
+        constr2.setVisibility(INVISIBLE);
 
         requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true) {
             @Override
@@ -389,12 +385,13 @@ public class VisicomFragment extends Fragment {
             Logger.d(context, TAG,"StatusGpsUpdate changed: " + aBoolean);
             if (aBoolean) {
                 if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                    binding.textfrom.setVisibility(VISIBLE);
-                    num1.setVisibility(VISIBLE);
-                    binding.textGeo.setVisibility(VISIBLE);
-                    binding.textwhere.setVisibility(VISIBLE);
-                    binding.num2.setVisibility(VISIBLE);
-                    binding.textTo.setVisibility(VISIBLE);
+                    btnVisible(VISIBLE);
+//                    binding.textfrom.setVisibility(VISIBLE);
+//                    num1.setVisibility(VISIBLE);
+//                    binding.textGeo.setVisibility(VISIBLE);
+//                    binding.textwhere.setVisibility(VISIBLE);
+//                    binding.num2.setVisibility(VISIBLE);
+//                    binding.textTo.setVisibility(VISIBLE);
                     Logger.d(context, TAG, "onResume: 3");
                     firstLocation();
                 } else {
@@ -410,15 +407,15 @@ public class VisicomFragment extends Fragment {
 
                 }
             }  else {
-                String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-                if (!userEmail.equals("email")) {
-                    try {
-                        visicomCost();
-                    } catch (MalformedURLException e) {
-                        throw new RuntimeException(e);
-                    }
-                    readTariffInfo();
-                }
+//                String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+//                if (!userEmail.equals("email")) {
+//                    try {
+//                        visicomCost();
+//                    } catch (MalformedURLException e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                    readTariffInfo();
+//                }
 
             }
 
@@ -619,14 +616,14 @@ public class VisicomFragment extends Fragment {
 
         // С existing слушатели кликов
         schedule.setOnClickListener(v -> {
-            btnVisible(View.INVISIBLE);
+            btnVisible(INVISIBLE);
             sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
             NavController navController = NavHostFragment.findNavController(this);
             navController.navigate(R.id.nav_options);
         });
 
         shed_down.setOnClickListener(v -> {
-            btnVisible(View.INVISIBLE);
+            btnVisible(INVISIBLE);
             sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
             NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
             navController.navigate(R.id.nav_options, null, new NavOptions.Builder().build());
@@ -727,40 +724,217 @@ public class VisicomFragment extends Fragment {
 
     }
 
-
     public void btnVisible(int visible) {
+        // Логирование начала работы метода
+        Log.d("BTN_VISIBLE", "Метод btnVisible вызван с параметром visible = " + visible +
+                " (" + getVisibilityString(visible) + ")");
+        Log.d("BTN_VISIBLE", "text_view_cost != null: " + (text_view_cost != null));
+        schedule.setVisibility(visible);
+        shed_down.setVisibility(visible);
+        // Всегда отображаемые элементы (независимо от параметра)
+        Log.d("BTN_VISIBLE", "Установка всегда видимых элементов:");
+        binding.textfrom.setVisibility(View.VISIBLE);
+        binding.num1.setVisibility(View.VISIBLE);
+        binding.clearButtonFrom.setVisibility(View.VISIBLE);
+        binding.textGeo.setVisibility(View.VISIBLE);
+        binding.textwhere.setVisibility(View.VISIBLE);
+        binding.num2.setVisibility(VISIBLE);
+        binding.textTo.setVisibility(VISIBLE);
+        binding.clearButtonTo.setVisibility(VISIBLE);
+
+        binding.btnCallAdmin.setVisibility(View.VISIBLE);
+
+        if (visible == INVISIBLE || visible == GONE) {
+            binding.fabCallAdmin.setVisibility(VISIBLE);
+            binding.btnCallAdmin.setText(R.string.try_again);
+            binding.btnCallAdmin.setOnClickListener(v -> {
+                Log.d("BTN_VISIBLE", "Клик: Попробовать снова - запуск SwipeRefresh");
+                clearTABLE_SERVICE_INFO();
+                sharedPreferencesHelperMain.saveValue("time", "no_time");
+                sharedPreferencesHelperMain.saveValue("date", "no_date");
+                sharedPreferencesHelperMain.saveValue("comment", "no_comment");
+                sharedPreferencesHelperMain.saveValue("tarif", " ");
+                sharedPreferencesHelperMain.saveValue("setStatusX", true);
+                svButton.setVisibility(GONE);
+                sharedPreferencesHelperMain.saveValue("old_cost", "0");
+
+                // Выполняем необходимое действие (например, запуск новой активности)
+                startActivity(new Intent(context, MainActivity.class));                //
+            });
+
+            binding.fabCallAdmin.setOnClickListener(v -> {
+                Logger.d(context,"BTN_VISIBLE", "Клик: Позвонить админу");
+                Logger.d(context,"BTN_VISIBLE", "Клик: Позвонить админу");
+                try {
+                    Intent intent = new Intent(Intent.ACTION_DIAL);
+                    List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+                    if (stringList.size() > 3) {
+                        String phone = stringList.get(3);
+                        Logger.d(context,"BTN_VISIBLE", "Телефон для звонка: " + phone);
+                        if (phone != null && !phone.trim().isEmpty()) {
+                            intent.setData(Uri.parse(phone));
+                            startActivity(intent);
+                        } else {
+                            Logger.e(context,"BTN_VISIBLE", "Номер телефона пустой или null");
+                            Toast.makeText(requireContext(), R.string.no_access_to_phone_admin, Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Logger.e(context,"BTN_VISIBLE", "Не удалось получить данные телефона");
+                        Toast.makeText(requireContext(), R.string.no_access_to_phone_admin, Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Logger.e(context,"BTN_VISIBLE", "Ошибка при звонке: " + e.getMessage());
+                    Toast.makeText(requireContext(), R.string.no_access_to_phone_admin, Toast.LENGTH_SHORT).show();
+                }
+            });
+
+        } else {
+            binding.fabCallAdmin.setVisibility(GONE);
+            btnCallAdmin.setText(R.string.call_admin);
+            btnCallAdmin.setOnClickListener(v -> {
+                Logger.d(context,"BTN_VISIBLE", "Клик: Позвонить админу");
+                try {
+                    Intent intent = new Intent(Intent.ACTION_DIAL);
+                    List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+                    if (stringList.size() > 3) {
+                        String phone = stringList.get(3);
+                        Logger.d(context,"BTN_VISIBLE", "Телефон для звонка: " + phone);
+                        if (phone != null && !phone.trim().isEmpty()) {
+                            intent.setData(Uri.parse(phone));
+                            startActivity(intent);
+                        } else {
+                            Logger.e(context,"BTN_VISIBLE", "Номер телефона пустой или null");
+                            Toast.makeText(requireContext(), R.string.no_access_to_phone_admin, Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Logger.e(context,"BTN_VISIBLE", "Не удалось получить данные телефона");
+                        Toast.makeText(requireContext(), R.string.no_access_to_phone_admin, Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Logger.e(context,"BTN_VISIBLE", "Ошибка при звонке: " + e.getMessage());
+                    Toast.makeText(requireContext(), R.string.no_access_to_phone_admin, Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+
+        // Проверка на null для text_view_cost
         if (text_view_cost != null) {
+            Log.d("BTN_VISIBLE", "text_view_cost не null, продолжаем выполнение");
+
+            // Управление ProgressBar - ТОЛЬКО для состояния INVISIBLE
             if (visible == View.INVISIBLE) {
-                binding.progressBar.setVisibility(VISIBLE);
-            } else {
-                binding.progressBar.setVisibility(GONE);
+                Log.d("BTN_VISIBLE", "Режим INVISIBLE - показываем ProgressBar");
+                binding.progressBar.setVisibility(View.VISIBLE);
+            }
+            // Режим VISIBLE - обычное состояние
+            else if (visible == View.VISIBLE) {
+                Log.d("BTN_VISIBLE", "Режим VISIBLE - скрываем ProgressBar");
+                binding.progressBar.setVisibility(View.GONE);
+
+            }
+            // Режим GONE - все скрыто
+            else if (visible == View.GONE) {
+                Log.d("BTN_VISIBLE", "Режим GONE - скрываем ProgressBar и настраиваем кнопку");
+                binding.progressBar.setVisibility(View.GONE);
+
+            }
+            // Неизвестное значение
+            else {
+                Log.w("BTN_VISIBLE", "Неизвестное значение visible: " + visible);
+                // По умолчанию используем режим VISIBLE
+                binding.progressBar.setVisibility(View.GONE);
+                btnCallAdmin.setVisibility(View.VISIBLE);
             }
 
-
+            // Установка видимости для группы элементов LinearLayout
+            Log.d("BTN_VISIBLE", "Установка видимости для linearLayoutButtons: " + getVisibilityString(visible));
             binding.linearLayoutButtons.setVisibility(visible);
 
+            // Установка видимости для кнопок и элементов управления
+            Log.d("BTN_VISIBLE", "Установка видимости кнопок и элементов:");
             binding.btnAdd.setVisibility(visible);
-
             binding.btnBonus.setVisibility(visible);
             binding.btnMinus.setVisibility(visible);
             binding.textViewCost.setVisibility(visible);
             binding.btnPlus.setVisibility(visible);
             binding.btnOrder.setVisibility(visible);
-
             binding.schedule.setVisibility(visible);
-
             binding.shedDown.setVisibility(visible);
+
+
+        } else {
+            Log.e("BTN_VISIBLE", "text_view_cost is null! Основные элементы не будут отображаться");
+
+            // Даже если text_view_cost null, покажем хотя бы основные элементы
+            binding.linearLayoutButtons.setVisibility(View.GONE);
+            binding.progressBar.setVisibility(View.GONE);
+
+            // ВАЖНО: Делаем кнопку видимой
+            btnCallAdmin.setVisibility(View.VISIBLE);
+
+            btnCallAdmin.setText("Ошибка загрузки");
+            btnCallAdmin.setOnClickListener(v -> {
+                Toast.makeText(requireContext(), "Повторите попытку", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        Log.d("BTN_VISIBLE", "Метод btnVisible завершен. Текущий режим: " + getVisibilityString(visible));
+
+        // Дополнительное логирование для отладки
+        Log.d("BTN_VISIBLE_DEBUG", "Состояние кнопки btnCallAdmin: " +
+                "видимость=" + getVisibilityString(btnCallAdmin.getVisibility()) +
+                ", текст=" + btnCallAdmin.getText());
+    }
+
+
+
+    // Вспомогательный метод для логирования (добавьте в класс)
+    private String getVisibilityString(int visibility) {
+        switch (visibility) {
+            case View.VISIBLE:
+                return "VISIBLE";
+            case View.INVISIBLE:
+                return "INVISIBLE";
+            case View.GONE:
+                return "GONE";
+            default:
+                return "UNKNOWN (" + visibility + ")";
         }
     }
 
+
+
+
     public static void btnStaticVisible(int visible) {
+        Activity activity = MyApplication.getCurrentActivity();
+
+
         if (text_view_cost != null) {
-            if (visible == View.INVISIBLE) {
+            if (visible == INVISIBLE) {
                 progressBar.setVisibility(VISIBLE);
             } else {
                 progressBar.setVisibility(GONE);
             }
+            if (visible == INVISIBLE) {
+                if (swipeRefreshLayout != null) {
+                    btnCallAdmin.setText(R.string.try_again);
+                    btnCallAdmin.setOnClickListener(v -> {
+                        swipeRefreshLayout.setRefreshing(true);
+                    });
 
+                }
+            } else {
+
+                btnCallAdmin.setText(R.string.call_admin);
+                btnCallAdmin.setOnClickListener(v -> {
+                    Intent intent = new Intent(Intent.ACTION_DIAL);
+                    List<String> stringList = logCursor(MainActivity.CITY_INFO, activity);
+                    String phone = stringList.get(3);
+                    intent.setData(Uri.parse(phone));
+                    activity.startActivity(intent);
+                });
+            }
 
             linearLayout.setVisibility(visible);
 
@@ -937,7 +1111,7 @@ public class VisicomFragment extends Fragment {
 
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
 
-        if (urlAPI.equals("costSearchMarkersTime")) {
+        if (urlAPI.equals("costSearchMarkersTimeMyApi")) {
             boolean black_list_yes = verifyOrder();
             Logger.d(context, TAG, "getTaxiUrlSearchMarkers: black_list_yes " + black_list_yes);
 
@@ -971,7 +1145,7 @@ public class VisicomFragment extends Fragment {
                     + time + "/" + date;
         }
 
-        if (urlAPI.equals("orderClientCost")) {
+        if (urlAPI.equals("orderClientCostMyApi")) {
             boolean black_list_yes = verifyOrder();
 
             Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: startCost " + startCost);
@@ -1063,14 +1237,14 @@ public class VisicomFragment extends Fragment {
 
         String url = "/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application);
-        if (urlAPI.equals("costSearchMarkersTime")) {
+        if (urlAPI.equals("costSearchMarkersTimeMyApi")) {
             String urlKafka = "/" + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application);
 
             Log.e("KafkaRequest", "urlKafka: " + urlKafka);
             KafkaRequest costRequest = new KafkaRequest();
             costRequest.sendCostMessage(urlKafka);
         }
-//        btnVisible(GONE);
+        btnVisible(GONE);
 
         database.close();
         return url;
@@ -1221,7 +1395,7 @@ public class VisicomFragment extends Fragment {
 
     @SuppressLint("ResourceAsColor")
     public boolean orderRout() {
-        urlOrder = getTaxiUrlSearchMarkers("orderClientCost", context );
+        urlOrder = getTaxiUrlSearchMarkers("orderClientCostMyApi", context );
         Logger.d(context, TAG, "order: urlOrder " + urlOrder);
         if(urlOrder.equals("error")) {
             Toast.makeText(context, R.string.no_start_point_message, Toast.LENGTH_SHORT).show();
@@ -1232,6 +1406,7 @@ public class VisicomFragment extends Fragment {
 
 
     public void orderFinished() throws MalformedURLException {
+
         if (!verifyPhone()) {
             MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment(context, "visicom");
             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -1239,6 +1414,7 @@ public class VisicomFragment extends Fragment {
         } else {
 
                 constraintLayoutVisicomMain.setVisibility(GONE);
+
                 if (textViewTo.getText().equals("")) {
                     textViewTo.setText(context.getString(R.string.on_city_tv));
                 }
@@ -1755,21 +1931,12 @@ public class VisicomFragment extends Fragment {
         textfrom = binding.textfrom;
 
         constraintLayoutVisicomMain.setVisibility(GONE);
- 
-//        binding.svButton.setVisibility(GONE);
-        binding.btnCallAdmin.setVisibility(GONE);
 
         String cityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
         Logger.d(context, TAG, "CityCheckActivity: " + cityCheckActivity);
-        progressBar.setVisibility(View.INVISIBLE);
+        progressBar.setVisibility(INVISIBLE);
         if (cityCheckActivity.equals("run")) {
-            binding.textfrom.setVisibility(VISIBLE);
-            binding.num1.setVisibility(VISIBLE);
-            binding.textGeo.setVisibility(VISIBLE);
-            binding.clearButtonFrom.setVisibility(VISIBLE);
-            binding.num2.setVisibility(VISIBLE);
-            binding.textTo.setVisibility(VISIBLE);
-            binding.clearButtonTo.setVisibility(VISIBLE);
+            btnVisible(VISIBLE);
         }
         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
             NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
@@ -1782,58 +1949,61 @@ public class VisicomFragment extends Fragment {
         String visible_shed = (String) sharedPreferencesHelperMain.getValue("visible_shed", "no");
         if(visible_shed.equals("no")) {
             Logger.d(context, TAG, "onResume 2" );
-            schedule.setVisibility(View.INVISIBLE);
-            shed_down.setVisibility(View.INVISIBLE);
-
-            gpsBtn.setVisibility(View.INVISIBLE);
-            binding.num1.setVisibility(View.INVISIBLE);
-            binding.textfrom.setVisibility(View.INVISIBLE);
-
-            binding.textwhere.setVisibility(View.INVISIBLE);
- 
-//            binding.svButton.setVisibility(View.INVISIBLE);
-            binding.btnCallAdmin.setVisibility(View.INVISIBLE);
+            btnVisible(INVISIBLE);
+//            schedule.setVisibility(INVISIBLE);
+//            shed_down.setVisibility(INVISIBLE);
+//
+//            gpsBtn.setVisibility(View.INVISIBLE);
+//            binding.num1.setVisibility(View.INVISIBLE);
+//            binding.textfrom.setVisibility(View.INVISIBLE);
+//
+//            binding.textwhere.setVisibility(View.INVISIBLE);
+//
+////            binding.svButton.setVisibility(View.INVISIBLE);
+//            binding.btnCallAdmin.setVisibility(View.INVISIBLE);
 
         } else  {
             if (NetworkUtils.isNetworkAvailable(context)) {
                 Logger.d(context, TAG, "onResume 3" );
+                btnVisible(VISIBLE);
+//                binding.textfrom.setVisibility(VISIBLE);
+//                binding.num1.setVisibility(VISIBLE);
+//                binding.clearButtonFrom.setVisibility(VISIBLE);
+//
+//
+//                binding.clearButtonTo.setVisibility(VISIBLE);
+//
+//                binding.textGeo.setVisibility(VISIBLE);
+//                binding.clearButtonFrom.setVisibility(VISIBLE);
+//
+//                binding.num2.setVisibility(VISIBLE);
+//                binding.textTo.setVisibility(VISIBLE);
+//                binding.clearButtonTo.setVisibility(VISIBLE);
 
-                binding.textfrom.setVisibility(VISIBLE);
-                binding.num1.setVisibility(VISIBLE);
-                binding.clearButtonFrom.setVisibility(VISIBLE);
-
-
-                binding.clearButtonTo.setVisibility(VISIBLE);
-
-                binding.textGeo.setVisibility(VISIBLE);
-                binding.clearButtonFrom.setVisibility(VISIBLE);
-
-                binding.num2.setVisibility(VISIBLE);
-                binding.textTo.setVisibility(VISIBLE);
-                binding.clearButtonTo.setVisibility(VISIBLE);
-
-                schedule.setVisibility(VISIBLE);
-                shed_down.setVisibility(VISIBLE);
+//                schedule.setVisibility(VISIBLE);
+//                shed_down.setVisibility(VISIBLE);
 
 
 //                binding.svButton.setVisibility(View.VISIBLE);
-                binding.btnCallAdmin.setVisibility(View.VISIBLE);
+//                binding.btnCallAdmin.setVisibility(View.VISIBLE);
 
             } else {
                 Logger.d(context, TAG, "onResume 4" );
-                schedule.setVisibility(View.INVISIBLE);
-                shed_down.setVisibility(View.INVISIBLE);
-                gpsBtn.setVisibility(View.INVISIBLE);
-                binding.num1.setVisibility(View.INVISIBLE);
-                binding.textfrom.setVisibility(View.INVISIBLE);
+                btnVisible(INVISIBLE);
+//                schedule.setVisibility(INVISIBLE);
+//                shed_down.setVisibility(INVISIBLE);
 
-                binding.textwhere.setVisibility(VISIBLE);
-                progressBar.setVisibility(VISIBLE);
-
-              
+//                gpsBtn.setVisibility(INVISIBLE);
+//                binding.num1.setVisibility(INVISIBLE);
+//                binding.textfrom.setVisibility(INVISIBLE);
 //
-//                binding.svButton.setVisibility(GONE);
-                binding.btnCallAdmin.setVisibility(GONE);
+//                binding.textwhere.setVisibility(VISIBLE);
+//                progressBar.setVisibility(VISIBLE);
+//
+//
+////
+////                binding.svButton.setVisibility(GONE);
+//                binding.btnCallAdmin.setVisibility(GONE);
 
             }
         }
@@ -1977,7 +2147,7 @@ public class VisicomFragment extends Fragment {
 
         });
 
-        text_view_cost = binding.textViewCost;
+
 
         geo_marker = "visicom";
 
@@ -1986,7 +2156,7 @@ public class VisicomFragment extends Fragment {
         buttonBonus.setOnClickListener(v -> {
             boolean black_list_yes = verifyOrder();
             Logger.d(context, TAG, "buttonBonus 2 " + black_list_yes);
-            btnVisible(View.INVISIBLE);
+            btnVisible(INVISIBLE);
             String costText = text_view_cost.getText().toString().trim();
 
             text_view_cost.setText("***");
@@ -2026,7 +2196,7 @@ public class VisicomFragment extends Fragment {
 
 
         btnAdd.setOnClickListener(v -> {
-            btnVisible(View.INVISIBLE);
+            btnVisible(INVISIBLE);
             sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
             sharedPreferencesHelperMain.saveValue("old_cost", "0");
             NavController navController = NavHostFragment.findNavController(this);
@@ -2099,7 +2269,7 @@ public class VisicomFragment extends Fragment {
             }
 
             linearLayout.setVisibility(GONE);
-            btnVisible(View.INVISIBLE);
+            btnVisible(INVISIBLE);
             List<String> stringList1 = logCursor(MainActivity.CITY_INFO, context);
 
             pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
@@ -2234,9 +2404,9 @@ public class VisicomFragment extends Fragment {
         if (NetworkUtils.isNetworkAvailable(context)) {
             if (geoText.getText().toString().isEmpty()) {
 
-                binding.textfrom.setVisibility(View.INVISIBLE);
-                num1.setVisibility(View.INVISIBLE);
-                binding.textwhere.setVisibility(View.INVISIBLE);
+                binding.textfrom.setVisibility(INVISIBLE);
+                num1.setVisibility(INVISIBLE);
+                binding.textwhere.setVisibility(INVISIBLE);
             }
             String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
             if (!userEmail.equals("email")) {
@@ -2249,7 +2419,7 @@ public class VisicomFragment extends Fragment {
             }
 
         } else {
-            binding.textwhere.setVisibility(View.INVISIBLE);
+            binding.textwhere.setVisibility(INVISIBLE);
             progressBar.setVisibility(GONE);
         }
 
@@ -2492,7 +2662,7 @@ public class VisicomFragment extends Fragment {
     private void visicomCost() throws MalformedURLException {
         Logger.d(context, TAG, "=== visicomCost() started ===");
 
-        constr2.setVisibility(View.INVISIBLE);
+        constr2.setVisibility(INVISIBLE);
 
 
         MainActivity.costMap = null;
@@ -2523,13 +2693,14 @@ public class VisicomFragment extends Fragment {
             progressBar.setVisibility(View.VISIBLE);
 
             gpsBtn.setVisibility(View.VISIBLE);
-            svButton.setVisibility(View.VISIBLE);
-            btnCallAdmin.setVisibility(View.VISIBLE);
-            textfrom.setVisibility(View.VISIBLE);
-            num1.setVisibility(View.VISIBLE);
-            textwhere.setVisibility(View.VISIBLE);
-            num2.setVisibility(View.VISIBLE);
-            textViewTo.setVisibility(View.VISIBLE);
+            btnVisible(VISIBLE);
+//            svButton.setVisibility(View.VISIBLE);
+//            btnCallAdmin.setVisibility(View.VISIBLE);
+//            textfrom.setVisibility(View.VISIBLE);
+//            num1.setVisibility(View.VISIBLE);
+//            textwhere.setVisibility(View.VISIBLE);
+//            num2.setVisibility(View.VISIBLE);
+//            textViewTo.setVisibility(View.VISIBLE);
 
             String cost = (String) sharedPreferencesHelperMain.getValue("old_cost","0");
             Log.d(TAG, "onContextItemSelected parts[1] cost: " + cost);
@@ -2556,7 +2727,7 @@ public class VisicomFragment extends Fragment {
     }
 
     private void requestCostFromServer(String start, String finish) throws MalformedURLException {
-        String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
+        String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTimeMyApi", context);
         Logger.d(context, TAG, "Попытка #" + ( 1) + ", URL: " + urlCost);
 
         reserveCost(start, finish, urlCost);
@@ -2669,11 +2840,9 @@ public class VisicomFragment extends Fragment {
 
     private void applyDiscountAndUpdateUI(String orderCost, Context context) {
         Logger.d(context, TAG, "applyDiscountAndUpdateUI() start — orderCost = " + orderCost);
+        double costValue = Double.parseDouble(orderCost);
+        orderCost = String.valueOf(Math.round(costValue));
 
-        if (orderCost == null || !orderCost.matches("\\d+")) {
-            Logger.e(context, TAG, "Invalid orderCost: " + orderCost);
-            return;
-        }
 
         // Проверяем, не совпадает ли стоимость с предыдущей
 //        if (orderCost.equals(lastAppliedCost)) {
@@ -2733,18 +2902,18 @@ public class VisicomFragment extends Fragment {
             firstCostForMin = firstCost;
 
             Logger.d(context, TAG, "Setting UI visibility and values");
-
-            progressBar.setVisibility(View.GONE);
-
-            geoText.setVisibility(View.VISIBLE);
-            geoText.setText(start);
-
-            textfrom.setVisibility(View.VISIBLE);
-            num1.setVisibility(View.VISIBLE);
-            textwhere.setVisibility(View.VISIBLE);
-
-            num2.setVisibility(View.VISIBLE);
-            textViewTo.setVisibility(View.VISIBLE);
+            btnVisible(VISIBLE);
+//            progressBar.setVisibility(View.GONE);
+//
+//            geoText.setVisibility(View.VISIBLE);
+//            geoText.setText(start);
+//
+//            textfrom.setVisibility(View.VISIBLE);
+//            num1.setVisibility(View.VISIBLE);
+//            textwhere.setVisibility(View.VISIBLE);
+//
+//            num2.setVisibility(View.VISIBLE);
+//            textViewTo.setVisibility(View.VISIBLE);
 
             if(!finish.isEmpty()) {
                 textViewTo.setText(finish);
@@ -3242,7 +3411,7 @@ public class VisicomFragment extends Fragment {
     }
 
     private void googleVerifyAccount() {
-
+        binding.fabCallAdmin.setVisibility(GONE);
         FirebaseConsentManager consentManager = new FirebaseConsentManager(context);
 
         consentManager.checkUserConsent(new FirebaseConsentManager.ConsentCallback() {

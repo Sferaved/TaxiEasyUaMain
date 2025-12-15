@@ -89,7 +89,7 @@ public class TimeUtils {
     private void isTenMinutesRemainingFunction() {
 
 
-        if (!this.required_time.isEmpty()) {
+        if (this.required_time != null && !this.required_time.isEmpty()) {
             Log.e(TAG, "required_time " + required_time);
 
             @SuppressLint("SimpleDateFormat")

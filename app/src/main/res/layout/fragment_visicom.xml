@@ -744,6 +744,19 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/text_status" />
 
+
     </androidx.constraintlayout.widget.ConstraintLayout>
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_call_admin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="16dp"
+            android:visibility="gone"
+            app:srcCompat="@drawable/outline_call_24"
+            app:tint="@android:color/white"
+            android:backgroundTint="@color/colorAccent"
+            tools:ignore="MissingConstraints" />
     </LinearLayout>
+
 </ScrollView>
