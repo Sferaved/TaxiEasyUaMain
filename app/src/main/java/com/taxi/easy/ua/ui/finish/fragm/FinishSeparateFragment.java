@@ -45,6 +45,7 @@ import androidx.core.os.HandlerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavOptions;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -193,7 +194,7 @@ public class FinishSeparateFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Инициализация ViewModel
-        viewModel = MainActivity.viewModel;
+        viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
     }
 
 
@@ -1670,7 +1671,7 @@ public class FinishSeparateFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         Log.d("LifecycleCheck 1", "Current lifecycle state: " + getViewLifecycleOwner().getLifecycle().getCurrentState());
-//        viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
+
         viewModelReviewer();
     }
     public void viewModelReviewer() {
@@ -1679,6 +1680,28 @@ public class FinishSeparateFragment extends Fragment {
             return;
         }
         cancel_btn_click = false;
+
+        viewModel.getAddCostViewUpdate().observe(getViewLifecycleOwner(), addCost -> {
+            Logger.d(context,"Pusher addCostViewUpdate", "Finish addCostViewUpdate status set: " + addCost);
+            if (!addCost.equals("0")) {
+//                viewModel.getAddCostViewUpdate().removeObservers(getViewLifecycleOwner());
+                addCostView(addCost);
+            }
+        });
+
+        viewModel.getCancelStatus().observe(getViewLifecycleOwner(), status -> {
+            Logger.d(context,"Pusher getCancelStatus", "Finish getCancelStatus status set: " + status);
+            if (status != null) {
+                btn_cancel_order.setEnabled(status);
+                if (!status) {
+                    String message = context.getString(R.string.recounting_order) + ". " + context.getString(R.string.cancel_btn_enable);
+                    text_status.setText(message);
+                } else {
+                    startCycle();
+                }
+            }
+        });
+
         // Наблюдение за статусом транзакции
         viewModel.getTransactionStatus().removeObservers(getViewLifecycleOwner());
         viewModel.getTransactionStatus().observe(getViewLifecycleOwner(), status -> {
@@ -1872,26 +1895,6 @@ public class FinishSeparateFragment extends Fragment {
     public void onStart() {
         super.onStart();
         Log.d("LifecycleCheck", "Current lifecycle state: " + getViewLifecycleOwner().getLifecycle().getCurrentState());
-        viewModel.getAddCostViewUpdate().observe(getViewLifecycleOwner(), addCost -> {
-            Logger.d(context,"Pusher addCostViewUpdate", "Finish addCostViewUpdate status set: " + addCost);
-            if (!addCost.equals("0")) {
-//                viewModel.getAddCostViewUpdate().removeObservers(getViewLifecycleOwner());
-                addCostView(addCost);
-            }
-        });
-
-        viewModel.getCancelStatus().observe(getViewLifecycleOwner(), status -> {
-            Logger.d(context,"Pusher getCancelStatus", "Finish getCancelStatus status set: " + status);
-            if (status != null) {
-                btn_cancel_order.setEnabled(status);
-                if (!status) {
-                    String message = context.getString(R.string.recounting_order) + ". " + context.getString(R.string.cancel_btn_enable);
-                    text_status.setText(message);
-                } else {
-                    startCycle();
-                }
-            }
-        });
 
         EventBus.getDefault().register(this); // Регистрация подписчика
         // Повторный запуск Runnable при возвращении активности
