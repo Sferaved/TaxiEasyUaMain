@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.utils.fcm.token_send.ApiServiceToken;
 import com.taxi.easy.ua.utils.fcm.token_send.RetrofitClientToken;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
@@ -23,10 +24,12 @@ public class TokenUtils {
     private static final String TAG = "TokenUtils";
 
     public static void sendToken(Context context, String email, String token) {
+        String lastToken = (String) MyApplication.sharedPreferencesHelperMain.getValue("last_fcm_token", "no_email");
+
         Logger.d(context, TAG, "sendToken email " + email);
         Logger.d(context, TAG, "sendToken token " + token);
 
-        if (!token.isEmpty()) {
+        if (!email.isEmpty() && !token.equals(lastToken) && !email.equals("no_email")) {
             String baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
             ApiServiceToken apiService = RetrofitClientToken.getClient(baseUrl).create(ApiServiceToken.class);
             String app = context.getString(R.string.application);

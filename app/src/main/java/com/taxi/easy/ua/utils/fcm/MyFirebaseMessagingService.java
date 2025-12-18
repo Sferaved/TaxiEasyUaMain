@@ -1,19 +1,9 @@
 package com.taxi.easy.ua.utils.fcm;
 
-import static com.taxi.easy.ua.MainActivity.TABLE_USER_INFO;
-
-import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.work.Constraints;
-import androidx.work.Data;
-import androidx.work.NetworkType;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.WorkManager;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
@@ -22,138 +12,107 @@ import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
-import com.taxi.easy.ua.utils.worker.SendTokenWorker;
+import com.taxi.easy.ua.utils.worker.utils.TokenUtils;
 
-import org.json.JSONObject;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
-    private static final String TAG = "MyFirebaseMessagingService";
-    private static final String PREFS_NAME = "UserTokenPrefs";
-    private static final String TOKEN_KEY = "token";
-    Constraints constraints;
+    private static final String TAG = "MyFCMService";
 
+    // ============================================================
+    // 1. Обработка нового FCM-токена
+    // ============================================================
     @Override
     public void onNewToken(@NonNull String token) {
         super.onNewToken(token);
-        Logger.d(this, TAG, "New token: " + token);
-        updateUserTokenPrefs(token);
-    }
+        Log.d(TAG, "Новый FCM-токен получен: " + token);
+        Logger.d(this, TAG, "Новый FCM-токен: " + token);
 
-    private void updateUserTokenPrefs(String token) {
-        SharedPreferences prefs = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString(TOKEN_KEY, token);
-        editor.apply();
+        String userEmail = getSavedUserEmail();
 
-        constraints = new Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build();
+        // Если пользователь уже залогинен — отправляем сразу
+        if (userEmail != null && !userEmail.isEmpty() && !userEmail.equals("no_email")) {
+            String lastToken = (String) MyApplication.sharedPreferencesHelperMain.getValue("last_fcm_token", "");
 
-        String userEmail = logCursor(TABLE_USER_INFO).get(3);
-        Logger.d(this, TAG, "newUser: " + userEmail);
-
-        OneTimeWorkRequest sendTokenRequest = new OneTimeWorkRequest.Builder(SendTokenWorker.class)
-                .setConstraints(constraints)
-                .setInputData(new Data.Builder()
-                        .putString("userEmail", userEmail)
-                        .build())
-                .build();
-
-        // Запуск задач через WorkManager
-        WorkManager.getInstance(this)
-                .beginWith(sendTokenRequest)
-                .enqueue();
-    }
-    @SuppressLint("Range")
-    public List<String> logCursor(String table) {
-        List<String> list = new ArrayList<>();
-        SQLiteDatabase db = MyApplication.getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        @SuppressLint("Recycle") Cursor c = db.query(table, null, null, null, null, null, null);
-        if (c.moveToFirst()) {
-            String str;
-            do {
-                str = "";
-                for (String cn : c.getColumnNames()) {
-                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                    list.add(c.getString(c.getColumnIndex(cn)));
-
-                }
-
-            } while (c.moveToNext());
+            if (!token.equals(lastToken)) {
+                Log.d(TAG, "Отправляем новый токен на сервер для пользователя: " + userEmail);
+                TokenUtils.sendToken(this, userEmail, token);
+                saveLastSentToken(token);  // сохраняем ТОЛЬКО после успешной отправки
+            } else {
+                Log.d(TAG, "Токен не изменился — пропускаем отправку");
+            }
+        } else {
+            // Пользователь ещё не залогинен
+            Log.w(TAG, "Пользователь не залогинен — токен НЕ сохраняем как last_fcm_token, отправим после логина");
+            // ← НЕ вызываем saveLastSentToken(token)!
+            // Токен будет получен заново в MainActivity.sendCurrentFcmToken() после логина
         }
-        db.close();
-        return list;
     }
-//    @Override
-//    public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
-//        super.onMessageReceived(remoteMessage);
-//        Map<String, String> data = remoteMessage.getData();
-//        Logger.d(this, TAG, "Получено сообщение: " + data);
-//        if (!data.isEmpty()) {
-//            String locale = LocaleHelper.getLocale();
-//            Logger.d(this, TAG, "Locale: " + locale);
-//            String message = data.get("message_" + locale);
-//            if (message == null) {
-//                message = data.get("message_uk");
-//                Logger.d(this, TAG, "Fallback to message_uk: " + message);
-//            }
-//            String uid = data.get("uid");
-//            if (message == null || message.isEmpty()) {
-//                message = "Найдено авто (по умолчанию)";
-//                Logger.d(this, TAG, "Сообщение пустое, установлено значение по умолчанию");
-//            }
-//            Logger.d(getApplicationContext(), TAG, "Message: " + message);
-//            Logger.d(getApplicationContext(), TAG, "uid: " + uid);
-//            notifyUser(message, uid);
-//        } else {
-//            Logger.d(this, TAG, "Данные пуш-уведомления пусты");
-//        }
-//    }
 
+    private String getSavedUserEmail() {
+        return (String) MyApplication.sharedPreferencesHelperMain.getValue("userEmail", "no_email");
+
+    }
+
+    private void saveLastSentToken(String token) {
+        MyApplication.sharedPreferencesHelperMain.saveValue("last_fcm_token", token);
+    }
+
+    // ============================================================
+    // 2. Обработка входящих push-уведомлений (data messages)
+    // ============================================================
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
-        Map<String, String> data = remoteMessage.getData();
-        Logger.d(this, TAG, "Получено сообщение: " + data);
 
-        // Check if the message contains order cost data
+        Map<String, String> data = remoteMessage.getData();
+        Logger.d(this, TAG, "Получено data-сообщение: " + data);
+
+        if (data.isEmpty()) {
+            Logger.d(this, TAG, "Данные пуш-уведомления пусты");
+            return;
+        }
+
+        // Специальная обработка пуша с стоимостью заказа
         if (data.containsKey("order_cost")) {
             handleOrderCostMessage(data);
-        } else if (!data.isEmpty()) {
-            String locale = LocaleHelper.getLocale();
-            Logger.d(this, TAG, "Locale: " + locale);
-            String message = data.get("message_" + locale);
-            if (message == null) {
-                message = data.get("message_uk");
-                Logger.d(this, TAG, "Fallback to message_uk: " + message);
-            }
-            String uid = data.get("uid");
-            if (message == null || message.isEmpty()) {
-                message = "Найдено авто (по умолчанию)";
-                Logger.d(this, TAG, "Сообщение пустое, установлено значение по умолчанию");
-            }
-            Logger.d(getApplicationContext(), TAG, "Message: " + message);
-            Logger.d(getApplicationContext(), TAG, "uid: " + uid);
-            notifyUser(message, uid);
-        } else {
-            Logger.d(this, TAG, "Данные пуш-уведомления пусты");
+            // Можно продолжить обработку других полей, если нужно
         }
+
+        // Обычное уведомление "Найдено авто"
+        String locale = LocaleHelper.getLocale();
+        Logger.d(this, TAG, "Текущая локаль: " + locale);
+
+        String message = data.get("message_" + locale);
+        if (message == null) {
+            message = data.get("message_uk"); // fallback
+            Logger.d(this, TAG, "Fallback на message_uk: " + message);
+        }
+
+        String uid = data.get("uid");
+
+        if (message == null || message.isEmpty()) {
+            message = "Найдено авто (по умолчанию)";
+            Logger.d(this, TAG, "Сообщение пустое — использовано значение по умолчанию");
+        }
+
+        Logger.d(this, TAG, "Текст уведомления: " + message);
+        Logger.d(this, TAG, "uid: " + uid);
+
+        notifyUser(message, uid);
     }
 
-    private void notifyUser(String message,String uid) {
+    // ============================================================
+    // 3. Показ уведомления "Найдено авто"
+    // ============================================================
+    private void notifyUser(String message, String uid) {
         Context context = getApplicationContext();
         String localeCode = LocaleHelper.getLocale();
 
-        // Создание локализованного контекста
         Context localizedContext = getLocalizedContext(context, localeCode);
 
-        // Показ уведомления
         NotificationHelper.showNotificationFindAutoMessage(localizedContext, message, uid);
     }
 
@@ -166,22 +125,27 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         return context.createConfigurationContext(config);
     }
+
+    // ============================================================
+    // 4. Обработка пуша с order_cost
+    // ============================================================
     private void handleOrderCostMessage(Map<String, String> data) {
         Context context = getApplicationContext();
-        Logger.d(context, TAG, "Received order cost message: " + data.toString());
+        Logger.d(context, TAG, "Получено сообщение со стоимостью заказа: " + data);
 
-        JSONObject eventData = new JSONObject(data);
-        String orderCost = eventData.optString("order_cost", "0");
+        String orderCost = data.get("order_cost");
+        if (orderCost == null) {
+            orderCost = "0";
+        }
+
         Logger.d(context, TAG, "order_cost: " + orderCost);
 
-        // Проверяем, инициализирован ли OrderViewModel
         if (MainActivity.orderViewModel != null) {
             MainActivity.orderViewModel.setOrderCost(orderCost);
-            Logger.d(context, TAG, "Order cost updated in ViewModel");
+            Logger.d(context, TAG, "Стоимость заказа обновлена в OrderViewModel");
         } else {
-            // Если ViewModel ещё нет — сохраняем в SharedPreferences на будущее
-            Logger.e(context, TAG, "OrderViewModel is null, saving order cost for later");
+            Logger.w(context, TAG, "OrderViewModel ещё не инициализирован — стоимость будет обновлена позже");
+            // При необходимости можно временно сохранить в SharedPreferences
         }
     }
-
 }

@@ -67,6 +67,7 @@ import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
 import com.taxi.easy.ua.ui.card.CardInfo;
@@ -102,11 +103,11 @@ import com.taxi.easy.ua.utils.worker.AddUserNoNameWorker;
 import com.taxi.easy.ua.utils.worker.CheckPushPermissionWorker;
 import com.taxi.easy.ua.utils.worker.GetCardTokenWfpWorker;
 import com.taxi.easy.ua.utils.worker.InsertPushDateWorker;
-import com.taxi.easy.ua.utils.worker.SendTokenWorker;
 import com.taxi.easy.ua.utils.worker.UpdatePushDateWorker;
 import com.taxi.easy.ua.utils.worker.UpdateUserInfoWorker;
 import com.taxi.easy.ua.utils.worker.UserPhoneFromFbWorker;
 import com.taxi.easy.ua.utils.worker.VersionFromMarketWorker;
+import com.taxi.easy.ua.utils.worker.utils.TokenUtils;
 
 import org.json.JSONException;
 
@@ -228,6 +229,7 @@ public class MainActivity extends AppCompatActivity {
     public static OrderViewModel orderViewModel;
     //    ExecutorService executor;
     Constraints constraints;
+    @SuppressLint("StaticFieldLeak")
     public static ImageButton button1;
 
     @SuppressLint("SourceLockedOrientationActivity")
@@ -238,22 +240,13 @@ public class MainActivity extends AppCompatActivity {
         applyLocale(localeCode);
         super.onCreate(savedInstanceState);
 
-//        new Handler(Looper.getMainLooper()).post(() -> {
-//            try {
-//                // Блокируем главный поток на 10 секунд
-//                Thread.sleep(10000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        });
+
 
 
         orderViewModel = new ViewModelProvider(this).get(OrderViewModel.class);
 
 
         // Проверка, есть ли сохранённый "pending" orderCost
-
-
 
 
         // Инициализация View Binding
@@ -515,7 +508,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            sendCurrentFcmToken();
+        }
         costMap = null;
 
         appUpdateManager = AppUpdateManagerFactory.create(MainActivity.this);
@@ -1040,7 +1036,8 @@ public class MainActivity extends AppCompatActivity {
         if (item.getItemId() == R.id.action_exit) {
             FirebaseAnalytics firebaseAnalytics = FirebaseAnalytics.getInstance(MyApplication.getContext());
             firebaseAnalytics.setAnalyticsCollectionEnabled(false);
-
+            MyApplication.sharedPreferencesHelperMain.removeValue("userEmail");
+            MyApplication.sharedPreferencesHelperMain.removeValue("last_fcm_token");
             deleteOldLogFile();
 //            System.gc();
 
@@ -1075,8 +1072,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (item.getItemId() == R.id.send_email_admin) {
-//            sendEmailAdminFS();
-//            sendEmailAdmin();
             new LogEmailSender(this).sendLog();
         }
 
@@ -1391,7 +1386,6 @@ public class MainActivity extends AppCompatActivity {
 //    }
 
 
-
     private void deleteOldLogFile() {
         File logFile = new File(getExternalFilesDir(null), "app_log.txt");
         if (logFile.exists()) {
@@ -1518,93 +1512,89 @@ public class MainActivity extends AppCompatActivity {
         String userEmail = logCursor(TABLE_USER_INFO).get(3);
         Logger.d(this, TAG, "newUser: " + userEmail);
 
-        findUserFromServer(userEmail, findUser -> {
-            // Use the boolean result here
-            Log.d(TAG, "User exists: " + findUser);
-            Logger.d(MainActivity.this, TAG, "CityCheckActivity: " + sharedPreferencesHelperMain.getValue("CityCheckActivity", "**"));
+        if (userEmail.equals("email") || userEmail.equals("no_email") ||userEmail.isEmpty()) {
+            firstStart = true;
+            sharedPreferencesHelperMain.saveValue("CityCheckActivity", "**");
+            VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+            Toast.makeText(MainActivity.this, R.string.checking, Toast.LENGTH_SHORT).show();
+            startFireBase();
+        } else {
+            findUserFromServer(userEmail, findUser -> {
+                // Use the boolean result here
+                Log.d(TAG, "User exists: " + findUser);
+                Logger.d(MainActivity.this, TAG, "CityCheckActivity: " + sharedPreferencesHelperMain.getValue("CityCheckActivity", "**"));
 
-            if (userEmail.equals("email") || !findUser) {
-                firstStart = true;
+                if (!findUser) {
+                    firstStart = true;
 
-                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-                Toast.makeText(MainActivity.this, R.string.checking, Toast.LENGTH_SHORT).show();
-                startFireBase();
-            } else {
-                // Инициализация и подключение к Pusher
-                pusherManager = new PusherManager(
-                        getString(R.string.application),
-                        userEmail,
-                        MainActivity.this,
-                        viewModel
-                );
+                    VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+                    Toast.makeText(MainActivity.this, R.string.checking, Toast.LENGTH_SHORT).show();
+                    startFireBase();
+                } else {
+                    // Инициализация и подключение к Pusher
+                    pusherManager = new PusherManager(
+                            getString(R.string.application),
+                            userEmail,
+                            MainActivity.this,
+                            viewModel
+                    );
 
-                pusherManager.connect();
-                pusherManager.subscribeToChannel();
+                    pusherManager.connect();
+                    pusherManager.subscribeToChannel();
 
-                new VerifyUserTask(this).execute();
-                String sityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
-                Logger.d(this, TAG, "CityCheckActivity: " + sityCheckActivity);
+                    new VerifyUserTask(this).execute();
+                    String sityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
+                    Logger.d(this, TAG, "CityCheckActivity: " + sityCheckActivity);
 
-                if (sityCheckActivity.equals("**")) {
-                    // Запускаем CityCheckActivity, если состояние страны не задано
-                    Intent intent = new Intent(this, CityCheckActivity.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                    startActivity(intent);
+                    if (sityCheckActivity.equals("**")) {
+                        // Запускаем CityCheckActivity, если состояние страны не задано
+                        Intent intent = new Intent(this, CityCheckActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                        startActivity(intent);
+                    }
+                    firstStart = false;
+
+
+                    OneTimeWorkRequest versionFromMarketRequest = new OneTimeWorkRequest.Builder(VersionFromMarketWorker.class)
+                            .setConstraints(constraints)
+                            .build();
+
+                    OneTimeWorkRequest userPhoneFromFbRequest = new OneTimeWorkRequest.Builder(UserPhoneFromFbWorker.class)
+                            .setConstraints(constraints)
+                            .build();
+
+                    OneTimeWorkRequest updatePushDateRequest = new OneTimeWorkRequest.Builder(UpdatePushDateWorker.class)
+                            .setConstraints(constraints)
+                            .build();
+
+                    OneTimeWorkRequest getCardTokenWfpRequest = new OneTimeWorkRequest.Builder(GetCardTokenWfpWorker.class)
+                            .setConstraints(constraints)
+                            .setInputData(new Data.Builder()
+                                    .putString("city", city)
+                                    .build())
+                            .build();
+
+
+                    OneTimeWorkRequest immediatePushCheck =
+                            new OneTimeWorkRequest.Builder(CheckPushPermissionWorker.class)
+                                    .build();
+
+                    // Запуск задач через WorkManager
+                    WorkManager.getInstance(this)
+                            .beginWith(versionFromMarketRequest)
+                            .then(userPhoneFromFbRequest)
+                            .then(updatePushDateRequest)
+                            .then(getCardTokenWfpRequest)
+                            .then(immediatePushCheck)
+                            .enqueue();
+
+
+                    UserPermissions.getPermissions(userEmail, getApplicationContext());
+
                 }
-                firstStart = false;
+            });
+        }
 
-
-                OneTimeWorkRequest versionFromMarketRequest = new OneTimeWorkRequest.Builder(VersionFromMarketWorker.class)
-                        .setConstraints(constraints)
-                        .build();
-
-                OneTimeWorkRequest userPhoneFromFbRequest = new OneTimeWorkRequest.Builder(UserPhoneFromFbWorker.class)
-                        .setConstraints(constraints)
-                        .build();
-
-                OneTimeWorkRequest updatePushDateRequest = new OneTimeWorkRequest.Builder(UpdatePushDateWorker.class)
-                        .setConstraints(constraints)
-                        .build();
-
-                OneTimeWorkRequest getCardTokenWfpRequest = new OneTimeWorkRequest.Builder(GetCardTokenWfpWorker.class)
-                        .setConstraints(constraints)
-                        .setInputData(new Data.Builder()
-                                .putString("city", city)
-                                .build())
-                        .build();
-
-                OneTimeWorkRequest sendTokenRequest = new OneTimeWorkRequest.Builder(SendTokenWorker.class)
-                        .setConstraints(constraints)
-                        .setInputData(new Data.Builder()
-                                .putString("userEmail", userEmail)
-                                .build())
-                        .build();
-                OneTimeWorkRequest immediatePushCheck =
-                        new OneTimeWorkRequest.Builder(CheckPushPermissionWorker.class)
-                                .build();
-
-                // Запуск задач через WorkManager
-                WorkManager.getInstance(this)
-                        .beginWith(versionFromMarketRequest)
-                        .then(userPhoneFromFbRequest)
-                        .then(updatePushDateRequest)
-                        .then(getCardTokenWfpRequest)
-                        .then(sendTokenRequest)
-                        .then(immediatePushCheck)
-                        .enqueue();
-
-                // Отслеживание завершения задач
-                WorkManager.getInstance(this).getWorkInfoByIdLiveData(sendTokenRequest.getId())
-                        .observe(this, workInfo -> {
-                            if (workInfo != null && workInfo.getState().isFinished()) {
-                                Log.d(TAG, "Все задачи завершены, состояние: " + workInfo.getState());
-                            }
-                        });
-
-                UserPermissions.getPermissions(userEmail, getApplicationContext());
-
-            }
-        });
 
 
     }
@@ -1823,6 +1813,12 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void settingsNewUser(String emailUser) {
+        // Сохраняем email (если ещё не сохранён)
+        MyApplication.sharedPreferencesHelperMain.saveValue("userEmail", emailUser);
+
+// Отправляем актуальный токен
+        sendCurrentFcmToken();
+
         new VerifyUserTask(this).execute();
         // Создание запросов для задач settingsNewUser
         OneTimeWorkRequest updateUserInfoRequest = new OneTimeWorkRequest.Builder(UpdateUserInfoWorker.class)
@@ -1832,12 +1828,12 @@ public class MainActivity extends AppCompatActivity {
                         .build())
                 .build();
 
-        OneTimeWorkRequest sendTokenRequest = new OneTimeWorkRequest.Builder(SendTokenWorker.class)
-                .setConstraints(constraints)
-                .setInputData(new Data.Builder()
-                        .putString("userEmail", emailUser)
-                        .build())
-                .build();
+//        OneTimeWorkRequest sendTokenRequest = new OneTimeWorkRequest.Builder(SendTokenWorker.class)
+//                .setConstraints(constraints)
+//                .setInputData(new Data.Builder()
+//                        .putString("userEmail", emailUser)
+//                        .build())
+//                .build();
 
         OneTimeWorkRequest addUserNoNameRequest = new OneTimeWorkRequest.Builder(AddUserNoNameWorker.class)
                 .setConstraints(constraints)
@@ -1853,7 +1849,7 @@ public class MainActivity extends AppCompatActivity {
         // Запуск задач через WorkManager
         WorkManager.getInstance(this)
                 .beginWith(updateUserInfoRequest)
-                .then(sendTokenRequest)
+//                .then(sendTokenRequest)
                 .then(addUserNoNameRequest)
                 .then(userPhoneFromFbRequest)
                 .enqueue();
@@ -2017,25 +2013,48 @@ public class MainActivity extends AppCompatActivity {
 
     void clearApplication(Context context) {
         Logger.d(context, TAG, "Starting clearApplication");
+
+        // 1. Разлогиниваем пользователя из Firebase Auth
+        try {
+            AuthUI.getInstance().signOut(context)
+                    .addOnCompleteListener(task -> {
+                        Logger.d(context, TAG, "Firebase Auth sign out completed: " + task.isSuccessful());
+                    });
+            // Также можно FirebaseAuth.getInstance().signOut(); если не используешь FirebaseUI
+            FirebaseAuth.getInstance().signOut();
+            Logger.d(context, TAG, "Пользователь разлогинен из Firebase Auth");
+        } catch (Exception e) {
+            Logger.e(context, TAG, "Ошибка при выходе из Firebase Auth: " + e.toString());
+        }
+
+        // 2. Очищаем все данные
         clearAllSharedPreferences(context);
         clearAllDatabases(context);
         clearAllCache(context);
         clearAllExternalCache(context);
 
-        // Restart the application
+        // 3. Рестарт приложения
         try {
-            Logger.d(context, TAG, "Initiating application restart");
+            Logger.d(context, TAG, "Перезапускаем приложение как при первой установке");
             Intent intent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
             if (intent != null) {
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK |
+                                Intent.FLAG_ACTIVITY_CLEAR_TASK |  // Важно! Очищает весь back stack
+                                Intent.FLAG_ACTIVITY_CLEAR_TOP
+                );
                 context.startActivity(intent);
-                System.exit(0); // Terminate the current process
+
+                // Убиваем текущий процесс
+                android.os.Process.killProcess(android.os.Process.myPid());
+                System.exit(0);
             } else {
-                Logger.d(context, TAG, "Could not find launch intent for package: " + context.getPackageName());
+                Logger.e(context, TAG, "Не удалось найти launch intent");
             }
         } catch (Exception e) {
-            Logger.e(context, TAG, "Error during application restart: " + e.toString());
+            Logger.e(context, TAG, "Ошибка при рестарте приложения: " + e.toString());
         }
+
         Logger.d(context, TAG, "Completed clearApplication");
     }
 
@@ -2224,5 +2243,53 @@ public class MainActivity extends AppCompatActivity {
             this.userEmailForTest = user.getEmail();
             this.usernameForTest = "username"; // можно любое тестовое имя
         }
+    }
+
+    private void sendCurrentFcmToken() {
+        FirebaseMessaging.getInstance().getToken()
+                .addOnSuccessListener(token -> {
+                    Log.d(TAG, "Текущий FCM токен: " + token);
+
+                    String lastToken = (String) MyApplication.sharedPreferencesHelperMain.getValue("last_fcm_token", "no_email");
+                    String userEmail = getCurrentUserEmail();
+
+                    // Отправляем только если токен изменился ИЛИ если email есть
+                    if (!userEmail.isEmpty() && !token.equals(lastToken) && !userEmail.equals("no_email")) {
+                        Log.d(TAG, "Отправляем обновлённый токен на сервер");
+                        TokenUtils.sendToken(this, userEmail, token);
+                        MyApplication.sharedPreferencesHelperMain.saveValue("last_fcm_token", token);
+                    } else if (!userEmail.isEmpty()) {
+                        Log.d(TAG, "Токен не изменился — пропускаем отправку");
+                    } else {
+                        Log.w(TAG, "Пользователь не залогинен — токен не отправляем");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Не удалось получить FCM токен", e);
+                });
+    }
+
+    private String getCurrentUserEmail() {
+        // 1. Основной источник — SharedPreferences (как у тебя везде используется)
+        String emailFromPrefs = (String) sharedPreferencesHelperMain.getValue("userEmail", "no_email");
+        if (!Objects.equals(emailFromPrefs, "no_email") && !emailFromPrefs.isEmpty()) {
+            return emailFromPrefs.trim(); // на всякий случай убираем пробелы
+        }
+
+        // 2. Резервный источник — FirebaseAuth (если пользователь аутентифицирован через Firebase)
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null && currentUser.getEmail() != null && !currentUser.getEmail().isEmpty()) {
+            String emailFromFirebase = currentUser.getEmail().trim();
+            Log.d(TAG, "Email взят из FirebaseAuth: " + emailFromFirebase);
+
+            // Опционально: синхронизируем с SharedPreferences, чтобы в дальнейшем брать оттуда
+            sharedPreferencesHelperMain.saveValue("userEmail", emailFromFirebase);
+
+            return emailFromFirebase;
+        }
+
+        // 3. Если ничего не нашли — возвращаем пустую строку
+        Log.w(TAG, "Email пользователя не найден ни в SharedPreferences, ни в FirebaseAuth");
+        return "";
     }
 }
