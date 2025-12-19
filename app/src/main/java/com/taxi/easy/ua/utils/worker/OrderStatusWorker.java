@@ -32,21 +32,25 @@ public class OrderStatusWorker extends Worker {
             boolean success = OrderStatusUtils.checkOrders(getApplicationContext(), this);
             Logger.d(getApplicationContext(), TAG, "checkOrders result: " + success);
 
-            Logger.d(getApplicationContext(), TAG, "Планируем следующий запуск через 10 секунд");
+            if (success) {
+                Logger.d(getApplicationContext(), TAG, "Планируем следующий запуск через 10 секунд");
 
-            OneTimeWorkRequest nextRun = new OneTimeWorkRequest.Builder(OrderStatusWorker.class)
-                    .setInitialDelay(10, TimeUnit.SECONDS)
-                    .build();
+                OneTimeWorkRequest nextRun = new OneTimeWorkRequest.Builder(OrderStatusWorker.class)
+                        .setInitialDelay(10, TimeUnit.SECONDS)
+                        .build();
 
-            WorkManager.getInstance(getApplicationContext())
-                    .enqueueUniqueWork(
-                            TAG,  // уникальное имя работы — чтобы не создавать дубликаты
-                            ExistingWorkPolicy.REPLACE,  // заменяем старую, если есть
-                            nextRun
-                    );
+                WorkManager.getInstance(getApplicationContext())
+                        .enqueueUniqueWork(
+                                TAG,
+                                ExistingWorkPolicy.REPLACE,
+                                nextRun
+                        );
 
-            Logger.d(getApplicationContext(), TAG, "Следующий запуск успешно запланирован");
-
+                Logger.d(getApplicationContext(), TAG, "Следующий запуск успешно запланирован");
+            } else {
+                Logger.d(getApplicationContext(), TAG, "Заказов нет — опрос остановлен");
+                // Ничего не планируем → цепочка завершится
+            }
             return Result.success();
         } catch (Exception e) {
             Logger.e(getApplicationContext(), TAG, "Ошибка в OrderStatusWorker: " + e.getMessage());

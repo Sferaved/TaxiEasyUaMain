@@ -73,6 +73,7 @@ public class OrderStatusUtils {
                     try {
                         if (response.isSuccessful() && response.body() != null) {
                             AutoOrderResponse result = response.body();
+                            int totalOrders = result.getTotal_orders();
                             Logger.d(context, TAG, "Общее количество заказов: " + result.getTotal_orders());
 
                             if (result.getOrders() != null) {
@@ -80,7 +81,12 @@ public class OrderStatusUtils {
                                     Logger.d(context, TAG, "Номер заказа: " + item.getNumber() + ", UID: " + item.getDispatching_order_uid());
                                 }
                             }
-                            success[0] = true;
+                            if (totalOrders == 0) {
+                                Logger.d(context, TAG, "Заказов нет — останавливаем дальнейший опрос");
+                                success[0] = false;  // Важно: возвращаем false, чтобы не планировать следующий запуск
+                            } else {
+                                success[0] = true;   // Есть заказы — продолжаем опрос
+                            }
                         } else {
                             Logger.e(context, TAG, "Ответ не успешный: " + response.code() + ", " + response.message());
                             if (response.errorBody() != null) {
