@@ -36,13 +36,17 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         if (userEmail != null && !userEmail.isEmpty() && !userEmail.equals("no_email")) {
             String lastToken = (String) MyApplication.sharedPreferencesHelperMain.getValue("last_fcm_token", "");
 
-            if (!token.equals(lastToken)) {
-                Log.d(TAG, "Отправляем новый токен на сервер для пользователя: " + userEmail);
-                TokenUtils.sendToken(this, userEmail, token);
-                saveLastSentToken(token);  // сохраняем ТОЛЬКО после успешной отправки
-            } else {
-                Log.d(TAG, "Токен не изменился — пропускаем отправку");
-            }
+            Log.d(TAG, "Отправляем новый токен на сервер для пользователя: " + userEmail);
+            TokenUtils.sendToken(this, userEmail, token);
+            saveLastSentToken(token);
+//
+//            if (!token.equals(lastToken)) {
+//                Log.d(TAG, "Отправляем новый токен на сервер для пользователя: " + userEmail);
+//                TokenUtils.sendToken(this, userEmail, token);
+//                saveLastSentToken(token);  // сохраняем ТОЛЬКО после успешной отправки
+//            } else {
+//                Log.d(TAG, "Токен не изменился — пропускаем отправку");
+//            }
         } else {
             // Пользователь ещё не залогинен
             Log.w(TAG, "Пользователь не залогинен — токен НЕ сохраняем как last_fcm_token, отправим после логина");

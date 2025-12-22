@@ -1828,13 +1828,6 @@ public class MainActivity extends AppCompatActivity {
                         .build())
                 .build();
 
-//        OneTimeWorkRequest sendTokenRequest = new OneTimeWorkRequest.Builder(SendTokenWorker.class)
-//                .setConstraints(constraints)
-//                .setInputData(new Data.Builder()
-//                        .putString("userEmail", emailUser)
-//                        .build())
-//                .build();
-
         OneTimeWorkRequest addUserNoNameRequest = new OneTimeWorkRequest.Builder(AddUserNoNameWorker.class)
                 .setConstraints(constraints)
                 .setInputData(new Data.Builder()
@@ -2249,17 +2242,13 @@ public class MainActivity extends AppCompatActivity {
         FirebaseMessaging.getInstance().getToken()
                 .addOnSuccessListener(token -> {
                     Log.d(TAG, "Текущий FCM токен: " + token);
-
-                    String lastToken = (String) MyApplication.sharedPreferencesHelperMain.getValue("last_fcm_token", "no_email");
-                    String userEmail = getCurrentUserEmail();
+                   String userEmail = getCurrentUserEmail();
 
                     // Отправляем только если токен изменился ИЛИ если email есть
-                    if (!userEmail.isEmpty() && !token.equals(lastToken) && !userEmail.equals("no_email")) {
+                    if (!userEmail.isEmpty() && !userEmail.equals("no_email")) {
                         Log.d(TAG, "Отправляем обновлённый токен на сервер");
                         TokenUtils.sendToken(this, userEmail, token);
                         MyApplication.sharedPreferencesHelperMain.saveValue("last_fcm_token", token);
-                    } else if (!userEmail.isEmpty()) {
-                        Log.d(TAG, "Токен не изменился — пропускаем отправку");
                     } else {
                         Log.w(TAG, "Пользователь не залогинен — токен не отправляем");
                     }
