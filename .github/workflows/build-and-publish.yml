@@ -31,21 +31,6 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Create keystore directory
-        run: mkdir -p app/keystore
-
-      - name: Decode Keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > app/keystore/keystore.jks
-
-      - name: Create google-services.json
-        env:
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
-        run: |
-          echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
-
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -56,21 +41,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Make gradlew executable
-        run: chmod +x gradlew
-
-      - name: Build release bundle
+      - name: Prepare and build
         run: |
+          chmod +x gradlew
+          
+          # Проверка файлов
+          for file in app/google-services.json app/keystore/keystore.jks; do
+            if [ ! -f "$file" ]; then echo "❌ $file not found"; exit 1; fi
+          done
+          echo "✅ All required files present"
+          
           # Получение версии из тега
           TAG_NAME=${GITHUB_REF_NAME}
           CLEAN_VERSION=$(echo "$TAG_NAME" | sed 's/^v//')
-          
-          # Безопасное получение суффикса для versionCode
-          if [[ "$CLEAN_VERSION" =~ [0-9]+$ ]]; then
-            SUFFIX="${BASH_REMATCH[0]}"
-          else
-            SUFFIX="1000"
-          fi
+          SUFFIX=$(echo "$CLEAN_VERSION" | grep -oE '[0-9]+$' || echo "1000")
           VERSION_CODE="1${SUFFIX}"
           
           echo "version_name=$CLEAN_VERSION" >> $GITHUB_OUTPUT
@@ -94,6 +78,16 @@ jobs:
             exit 1
           fi
         id: build
+
+#      # Упрощенная публикация через готовый action
+#      - name: Publish to Google Play
+#        uses: r0adkll/upload-google-play@v1
+#        with:
+#          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+#          packageName: com.taxi.easy.ua
+#          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+#          track: internal
+#          whatsNewDirectory: app/src/main/play
 
       - name: Publish to Google Play
         run: |
