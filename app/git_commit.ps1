@@ -31,7 +31,7 @@ Write-Host ""
 
 # ===== 2. Increment version =====
 $newVersionCode = $currentVersionCode + 1
-$newVersionName = "4." + $newVersionCode.ToString().Substring($newVersionCode.ToString().Length - 3)
+$newVersionName = "1." + $newVersionCode.ToString().Substring($newVersionCode.ToString().Length - 3)
 
 Write-Host "New versionCode: $newVersionCode"
 Write-Host "New versionName: $newVersionName"
