@@ -1,0 +1,179 @@
+name: Android CI/CD to Google Play
+
+permissions:
+  contents: write
+  pull-requests: read
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build_and_publish:
+    name: Build and Publish to Google Play
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: master
+          clean: true
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Prepare and build
+        run: |
+          chmod +x gradlew
+          
+          # Проверка файлов
+          for file in app/google-services.json app/keystore/keystore.jks; do
+            if [ ! -f "$file" ]; then echo "❌ $file not found"; exit 1; fi
+          done
+          echo "✅ All required files present"
+          
+          # Получение версии из тега
+          TAG_NAME=${GITHUB_REF_NAME}
+          CLEAN_VERSION=$(echo "$TAG_NAME" | sed 's/^v//')
+          SUFFIX=$(echo "$CLEAN_VERSION" | grep -oE '[0-9]+$' || echo "1000")
+          VERSION_CODE="1${SUFFIX}"
+          
+          echo "version_name=$CLEAN_VERSION" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "📌 Version: $CLEAN_VERSION → versionCode: $VERSION_CODE"
+          
+          # Сборка
+          ./gradlew bundleRelease \
+            -Pandroid.injected.version.code="$VERSION_CODE" \
+            -Pandroid.injected.version.name="$CLEAN_VERSION" \
+            --stacktrace
+          
+          # Проверка AAB
+          AAB_PATH="app/build/outputs/bundle/release/app-release.aab"
+          if [ -f "$AAB_PATH" ]; then
+            echo "✅ Build successful!"
+            ls -la $(dirname "$AAB_PATH")
+            echo "AAB_PATH=$AAB_PATH" >> $GITHUB_ENV
+          else
+            echo "❌ Build failed - AAB not found"
+            exit 1
+          fi
+        id: build
+
+#      # Упрощенная публикация через готовый action
+#      - name: Publish to Google Play
+#        uses: r0adkll/upload-google-play@v1
+#        with:
+#          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+#          packageName: com.taxi.easy.ua
+#          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+#          track: internal
+#          whatsNewDirectory: app/src/main/play
+
+      - name: Publish to Google Play
+        run: |
+          set -e
+          PACKAGE_NAME="com.taxi.easy.ua"
+          AAB_PATH="${{ env.AAB_PATH }}"
+          
+          # Создаем JSON файл из секрета
+          echo '${{ secrets.SERVICE_ACCOUNT_JSON }}' > /tmp/service-account.json
+          JSON_FILE="/tmp/service-account.json"
+          
+          # Получение токена
+          CLIENT_EMAIL=$(jq -r '.client_email' "$JSON_FILE")
+          PRIVATE_KEY=$(jq -r '.private_key' "$JSON_FILE")
+          
+          NOW=$(date +%s)
+          EXP=$(($NOW + 3600))
+          
+          JWT_HEADER='{"alg":"RS256","typ":"JWT"}'
+          JWT_CLAIM="{\"iss\":\"$CLIENT_EMAIL\",\"scope\":\"https://www.googleapis.com/auth/androidpublisher\",\"aud\":\"https://oauth2.googleapis.com/token\",\"exp\":$EXP,\"iat\":$NOW}"
+          
+          B64_HEADER=$(echo -n "$JWT_HEADER" | base64 -w 0 | tr '/+' '_-' | tr -d '=')
+          B64_CLAIM=$(echo -n "$JWT_CLAIM" | base64 -w 0 | tr '/+' '_-' | tr -d '=')
+          
+          echo "$PRIVATE_KEY" > /tmp/private-key.pem
+          SIGNATURE=$(echo -n "$B64_HEADER.$B64_CLAIM" | openssl dgst -sha256 -sign /tmp/private-key.pem | base64 -w 0 | tr '/+' '_-' | tr -d '=')
+          
+          ACCESS_TOKEN=$(curl -s -X POST "https://oauth2.googleapis.com/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=$B64_HEADER.$B64_CLAIM.$SIGNATURE" \
+            | jq -r '.access_token // empty')
+          
+          [ -z "$ACCESS_TOKEN" ] && { echo "❌ Failed to get access token"; exit 1; }
+          
+          # Создание edit и загрузка
+          EDIT_ID=$(curl -s -X POST -H "Authorization: Bearer $ACCESS_TOKEN" \
+            "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits" \
+            | jq -r '.id // empty')
+          
+          [ -z "$EDIT_ID" ] && { echo "❌ Failed to create edit"; exit 1; }
+          
+          VERSION_CODE=$(curl -s -X POST \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@$AAB_PATH" \
+            "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID/bundles?uploadType=media" \
+            | jq -r '.versionCode // empty')
+          
+          [ -z "$VERSION_CODE" ] && { echo "❌ Upload failed"; exit 1; }
+          
+          # Release notes
+          EN_NOTES=$(jq -Rs . < "app/src/main/play/en-US/whatsnew.txt" 2>/dev/null || echo "\"Release ${{ steps.build.outputs.version_name }}\"")
+          RU_NOTES=$(jq -Rs . < "app/src/main/play/ru-RU/whatsnew.txt" 2>/dev/null || echo "\"Релиз ${{ steps.build.outputs.version_name }}\"")
+          UK_NOTES=$(jq -Rs . < "app/src/main/play/uk/whatsnew.txt" 2>/dev/null || echo "\"Реліз ${{ steps.build.outputs.version_name }}\"")
+          
+          # Обновление треков
+          for TRACK in internal alpha beta; do
+            curl -s -X PUT \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"releases\": [{
+                  \"versionCodes\": [$VERSION_CODE],
+                  \"status\": \"completed\",
+                  \"releaseNotes\": [
+                    {\"language\": \"en-US\", \"text\": $EN_NOTES},
+                    {\"language\": \"ru-RU\", \"text\": $RU_NOTES},
+                    {\"language\": \"uk\", \"text\": $UK_NOTES}
+                  ]
+                }]
+              }" \
+              "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID/tracks/$TRACK" > /dev/null
+          done
+          
+          # Commit
+          curl -s -X POST \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID:commit" \
+            | jq . && echo "✅ Published to internal, alpha, beta!"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.AAB_PATH }}
+          name: Release ${{ steps.build.outputs.version_name }}
+          body_path: app/src/main/play/en-US/whatsnew.txt
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

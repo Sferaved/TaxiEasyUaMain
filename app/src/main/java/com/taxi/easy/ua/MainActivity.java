@@ -1538,9 +1538,10 @@ public class MainActivity extends AppCompatActivity {
                             MainActivity.this,
                             viewModel
                     );
-
                     pusherManager.connect();
                     pusherManager.subscribeToChannel();
+                    Log.d("DEBUG", "Creating PusherManager instance. Hash: " + pusherManager.hashCode());
+                    Log.d("DEBUG", "ViewModel passed to PusherManager hash: " + viewModel.hashCode());
 
                     new VerifyUserTask(this).execute();
                     String sityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
@@ -1777,6 +1778,8 @@ public class MainActivity extends AppCompatActivity {
                     );
                     pusherManager.connect();
                     pusherManager.subscribeToChannel();
+                    Log.d("DEBUG", "Creating PusherManager instance. Hash: " + pusherManager.hashCode());
+                    Log.d("DEBUG", "ViewModel passed to PusherManager hash: " + viewModel.hashCode());
                 }
             } else {
                 handleSignInFailure(result);

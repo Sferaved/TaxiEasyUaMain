@@ -39,9 +39,9 @@ public class CostJSONParserRetrofit {
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
         httpClient.addInterceptor(new RetryInterceptor()); // 3 попытки
         httpClient.addInterceptor(loggingInterceptor);
-        httpClient.connectTimeout(10, TimeUnit.SECONDS); // Тайм-аут для соединения
-        httpClient.readTimeout(10, TimeUnit.SECONDS);    // Тайм-аут для чтения
-        httpClient.writeTimeout(10, TimeUnit.SECONDS);   // Тайм-аут для записи
+        httpClient.connectTimeout(30, TimeUnit.SECONDS); // Тайм-аут для соединения
+        httpClient.readTimeout(30, TimeUnit.SECONDS);    // Тайм-аут для чтения
+        httpClient.writeTimeout(30, TimeUnit.SECONDS);   // Тайм-аут для записи
         // httpClient.addInterceptor(loggingInterceptor);
         String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 

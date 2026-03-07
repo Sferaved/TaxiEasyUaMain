@@ -1,0 +1,1 @@
+In this release, the payment method for a taxi ride when ordering in Kyiv with payment by card has been improved. Added a dialog for changing the choice of payment method or linked card in case of unsuccessful payment due to card blocking or lack of funds, as well as when any negative payment information is delivered from the bank.

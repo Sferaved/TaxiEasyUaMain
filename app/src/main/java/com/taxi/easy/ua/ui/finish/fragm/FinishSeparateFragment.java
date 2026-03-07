@@ -12,12 +12,15 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -49,6 +52,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavOptions;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
@@ -71,6 +75,7 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.pusher.events.CanceledStatusEvent;
+import com.taxi.easy.ua.utils.pusher.events.TransactionStatusEvent;
 import com.taxi.easy.ua.utils.time_ut.TimeUtils;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.uxcam.UXCam;
@@ -330,6 +335,53 @@ public class FinishSeparateFragment extends Fragment {
         textStatusCar.setVisibility(GONE);
 
         textCarMessage = root.findViewById(R.id.text_status_car);
+        textCarMessage.setOnClickListener(v -> {
+            TextView textView = (TextView) v;
+            String textToCopy = textView.getText().toString();
+
+            if (!textToCopy.isEmpty()) {
+                // Анимация нажатия
+                v.animate()
+                        .scaleX(0.95f)
+                        .scaleY(0.95f)
+                        .setDuration(100)
+                        .withEndAction(new Runnable() {
+                            @Override
+                            public void run() {
+                                v.animate()
+                                        .scaleX(1f)
+                                        .scaleY(1f)
+                                        .setDuration(100)
+                                        .start();
+                            }
+                        }).start();
+
+                // Копирование в буфер обмена
+                ClipboardManager clipboard = (ClipboardManager) requireContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                ClipData clip = ClipData.newPlainText("CarStatus", textToCopy);
+                clipboard.setPrimaryClip(clip);
+
+                // Показываем Snackbar (если используете)
+                if (root != null) {
+                    Snackbar.make(root, R.string.save_text, Snackbar.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(requireContext(), R.string.save_text, Toast.LENGTH_SHORT).show();
+                }
+
+                // Временно меняем цвет текста для обратной связи
+                int originalColor = textView.getCurrentTextColor();
+                textView.setTextColor(Color.parseColor("#4CAF50")); // Зеленый цвет
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        textView.setTextColor(originalColor);
+                    }
+                }, 200);
+
+            } else {
+                Toast.makeText(requireContext(), R.string.no_text_to_save, Toast.LENGTH_SHORT).show();
+            }
+        });
         textCarMessage.setVisibility(GONE);
 
         uid = arguments.getString("UID_key");
@@ -530,7 +582,7 @@ public class FinishSeparateFragment extends Fragment {
         Logger.d(context, TAG, "Transaction Status amount: " + amount);
 
         if ("Declined".equals(status)) {
-
+            sharedPreferencesHelperMain.saveValue("add_show_flag", false);
             MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment =
                     new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, context);
             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
@@ -1675,6 +1727,10 @@ public class FinishSeparateFragment extends Fragment {
         viewModelReviewer();
     }
     public void viewModelReviewer() {
+        Log.d("DEBUG", "=== FRAGMENT VIEWMODEL CHECK ===");
+        Log.d("DEBUG", "ViewModel hash code: " + viewModel.hashCode());
+        Log.d("DEBUG", "ViewModel class: " + viewModel.getClass().getName());
+
         if (viewModel == null) {
             Log.e("ViewModelError", "viewModel is null in viewModelReviewer");
             return;
@@ -1703,21 +1759,36 @@ public class FinishSeparateFragment extends Fragment {
         });
 
         // Наблюдение за статусом транзакции
-        viewModel.getTransactionStatus().removeObservers(getViewLifecycleOwner());
-        viewModel.getTransactionStatus().observe(getViewLifecycleOwner(), status -> {
-            if (status != null) {
-                Logger.d(context,"Pusher eventTransactionStatus", "Finish transaction status set: " + status);
-                String declined_invoice = (String) sharedPreferencesHelperMain.getValue("declined_invoice", "**");
-                Logger.d(context,"Pusher eventTransactionStatus", "Finish declined_invoice: " + declined_invoice);
-                Logger.d(context,"Pusher eventTransactionStatus", "Finish MainActivity.order_id: " + MainActivity.order_id);
-                if ("Declined".equals(status) && !declined_invoice.equals(MainActivity.order_id)) {
-                    sharedPreferencesHelperMain.saveValue("declined_invoice", MainActivity.order_id);
-                    handleTransactionStatusDeclined(status, context);
-                    viewModel.setCancelStatus(true);
-                }
-            }
-
-        });
+// Проверяем текущее значение перед подпиской
+//        LiveData<String> currentLiveData = viewModel.getTransactionStatus();
+//        String currentValue = currentLiveData.getValue();
+//        Log.d("DEBUG", "Current LiveData value before observe: " + currentValue);
+//        viewModel.getTransactionStatus().observe(getViewLifecycleOwner(), status -> {
+//            Log.d("DEBUG", "🔔 OBSERVER TRIGGERED with status: '" + status + "'");
+//            Log.d("DEBUG", "Observer hash: " + this.hashCode());
+//            Log.d("DEBUG", "Fragment state: " + getLifecycle().getCurrentState());
+//            if (status == null) {
+//                Log.d("OBSERVER", "Status is null! This might be initial value");
+//                return; // Игнорируем null
+//            }
+//
+//            Log.d("OBSERVER", "Processing valid status: " + status);
+//
+//            if (!status.equals("null") && !status.isEmpty()) {
+//                Logger.d(context,"Pusher eventTransactionStatus", "Finish transaction status set: " + status);
+//                String declined_invoice = (String) sharedPreferencesHelperMain.getValue("declined_invoice", "**");
+//                Logger.d(context,"Pusher eventTransactionStatus", "Finish declined_invoice: " + declined_invoice);
+//                Logger.d(context,"Pusher eventTransactionStatus", "Finish MainActivity.order_id: " + MainActivity.order_id);
+//
+//                if ("Declined".equals(status) && !declined_invoice.equals(MainActivity.order_id)) {
+//                    sharedPreferencesHelperMain.saveValue("declined_invoice", MainActivity.order_id);
+//                    handleTransactionStatusDeclined(status, context);
+//                    viewModel.setCancelStatus(true);
+//                }
+//            } else {
+//                Log.d("OBSERVER", "Status is null!");
+//            }
+//        });
 
         if(!paySystemStatus.equals("nal_payment")) {
             // Инициализация ViewModel
@@ -1848,7 +1919,7 @@ public class FinishSeparateFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-
+        sharedPreferencesHelperMain.saveValue("add_show_flag", true);
         timeUtils = new TimeUtils(required_time, viewModel);
         timeUtils.startTimer();
 
@@ -1890,7 +1961,23 @@ public class FinishSeparateFragment extends Fragment {
         }
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onTransactionStatusEvent(TransactionStatusEvent event) {
+        Log.d("FRAGMENT", "🔔 EventBus received status: " + event.getStatus());
 
+        String status = event.getStatus();
+        // Ваша логика обработки статуса
+        if ("Declined".equals(status)) {
+            String declined_invoice = (String) sharedPreferencesHelperMain.getValue("declined_invoice", "**");
+            if (!declined_invoice.equals(MainActivity.order_id)) {
+                sharedPreferencesHelperMain.saveValue("declined_invoice", MainActivity.order_id);
+                handleTransactionStatusDeclined(status, getContext());
+                if (viewModel != null) {
+                    viewModel.setCancelStatus(true);
+                }
+            }
+        }
+    }
     @Override
     public void onStart() {
         super.onStart();
@@ -2000,6 +2087,7 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     private void setShowDialogAddCost() {
+
         if (handlerAddcost != null && showDialogAddcost != null) {
             if (isTaskScheduled) {
                 Log.d("HandlerDebug", "Task is already scheduled, skipping");
@@ -2115,6 +2203,12 @@ public class FinishSeparateFragment extends Fragment {
 //        if (handlerAddcost != null) {
 //            handlerAddcost.removeCallbacks(showDialogAddcost);
 //        }
+        boolean add_show_flag = (boolean) sharedPreferencesHelperMain.getValue("add_show_flag", true);
+        Log.d("add_show_flag", String.valueOf(add_show_flag));
+
+        if (!add_show_flag) {
+            return;
+        }
         cancelShowDialogAddCost();
         stopCycle();
         // Убедитесь, что фрагмент добавлен

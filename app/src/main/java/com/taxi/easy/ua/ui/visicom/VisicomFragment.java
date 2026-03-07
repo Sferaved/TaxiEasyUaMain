@@ -919,13 +919,14 @@ public class VisicomFragment extends Fragment {
             if (visible == INVISIBLE) {
                 if (swipeRefreshLayout != null) {
                     btnCallAdmin.setText(R.string.try_again);
+                    progressBar.setVisibility(VISIBLE);
                     btnCallAdmin.setOnClickListener(v -> {
                         swipeRefreshLayout.setRefreshing(true);
                     });
 
                 }
             } else {
-
+                progressBar.setVisibility(GONE);
                 btnCallAdmin.setText(R.string.call_admin);
                 btnCallAdmin.setOnClickListener(v -> {
                     Intent intent = new Intent(Intent.ACTION_DIAL);
@@ -2806,8 +2807,8 @@ public class VisicomFragment extends Fragment {
                             cost = (String) sharedPreferencesHelperMain.getValue(tarif, "100");
                             applyDiscountAndUpdateUI(cost, context);
                         } else {
-                            cost = "100";
-                            applyDiscountAndUpdateUI(cost, context);
+//                            cost = "100";
+//                            applyDiscountAndUpdateUI(cost, context);
                         }
 
                     }

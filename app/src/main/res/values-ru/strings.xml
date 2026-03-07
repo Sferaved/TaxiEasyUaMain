@@ -525,5 +525,7 @@
     <string name="all_data_clear">Все данные сброшены</string>
     <string name="email_admin">Сообщить о проблеме по email</string>
     <string name="no_access_to_phone_admin">Номер телефона недоступен</string>
+    <string name="save_text">Текст скопирован</string>
+    <string name="no_text_to_save">Нет текста для копирования</string>
 
 </resources>

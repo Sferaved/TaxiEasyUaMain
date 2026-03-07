@@ -525,4 +525,6 @@
     <string name="all_data_clear">Всі дані скинуті</string>
     <string name="email_admin">Повідомити про проблему по email</string>
     <string name="no_access_to_phone_admin">Номер телефону недоступний</string>
+    <string name="save_text">Текст скопійовано</string>
+    <string name="no_text_to_save">Немає тексту для копіювання</string>
 </resources>

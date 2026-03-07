@@ -520,4 +520,6 @@
     <string name="all_data_clear">All data cleared</string>
     <string name="email_admin">Report a problem by email</string>
     <string name="no_access_to_phone_admin">Phone number unavailable</string>
+    <string name="save_text">Text copied</string>
+    <string name="no_text_to_save">No text to copy</string>
 </resources>

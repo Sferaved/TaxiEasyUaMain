@@ -25,11 +25,15 @@ public class ExecutionStatusViewModel extends ViewModel {
     //
     private final MutableLiveData<String> transactionStatus = new MutableLiveData<>();
     public LiveData<String> getTransactionStatus() {
+        Log.d("VIEWMODEL", "getTransactionStatus() called, returning: " + transactionStatus.getValue());
         return transactionStatus;
     }
 
     public void setTransactionStatus(String status) {
-        transactionStatus.postValue(status);
+        Log.d("VIEWMODEL", "setTransactionStatus() called with: " + status);
+        Log.d("VIEWMODEL", "Previous value: " + transactionStatus.getValue());
+        Log.d("VIEWMODEL", "Call stack:", new Exception()); // Покажет кто вызывает
+        transactionStatus.setValue(status);
     }
 
 

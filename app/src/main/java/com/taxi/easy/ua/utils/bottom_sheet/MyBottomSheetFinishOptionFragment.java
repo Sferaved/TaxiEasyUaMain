@@ -174,7 +174,7 @@ public class MyBottomSheetFinishOptionFragment extends BottomSheetDialogFragment
 
         String[] tariffArr = new String[]{
                 context.getResources().getString(R.string.start_t),
-                context.getResources().getString(R.string.base_onl_t),
+//                context.getResources().getString(R.string.base_onl_t),
                 context.getResources().getString(R.string.base_t),
                 context.getResources().getString(R.string.univers_t),
                 context.getResources().getString(R.string.bisnes_t),
@@ -197,26 +197,23 @@ public class MyBottomSheetFinishOptionFragment extends BottomSheetDialogFragment
             options = true;
             String tariffOld =  flexibleTariffName;
             switch (tariffOld) {
-                case "Базовий онлайн":
+                case "Базовый":
                     spinner.setSelection(1);
                     break;
-                case "Базовый":
+                case "Универсал":
                     spinner.setSelection(2);
                     break;
-                case "Универсал":
+                case "Бизнес-класс":
                     spinner.setSelection(3);
                     break;
-                case "Бизнес-класс":
+                case "Премиум-класс":
                     spinner.setSelection(4);
                     break;
-                case "Премиум-класс":
+                case "Эконом-класс":
                     spinner.setSelection(5);
                     break;
-                case "Эконом-класс":
-                    spinner.setSelection(6);
-                    break;
                 case "Микроавтобус":
-                    spinner.setSelection(7);
+                    spinner.setSelection(6);
                     break;
                 default:
                     spinner.setSelection(0);

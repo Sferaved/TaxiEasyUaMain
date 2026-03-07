@@ -13,6 +13,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.navigation.NavOptions;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -28,27 +29,46 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
+import com.taxi.easy.ua.utils.pusher.events.TransactionStatusEvent;
 
+import org.greenrobot.eventbus.EventBus;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.lang.ref.WeakReference;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Управляет подключением к Pusher и обработкой событий в реальном времени
+ * Исправлена проблема с DNS, утечками памяти и дублированием событий
+ */
 public class PusherManager {
-    private static final String PUSHER_APP_KEY = "a10fb0bff91153d35f36"; // Ваш ключ
-    private static final String PUSHER_CLUSTER = "mt1"; // Ваш кластер
-    private static final String CHANNEL_NAME = "teal-towel-48"; // Канал
+    private static final String PUSHER_APP_KEY = "a10fb0bff91153d35f36";
+    private static final String PUSHER_CLUSTER = "mt1";
+    private static final String CHANNEL_NAME = "teal-towel-48";
     private static final String TAG = "PusherManager";
+
+    // Альтернативные хосты для резервного подключения
+    private static final String[] PUSHER_HOSTS = {
+            "ws-mt1.pusher.com",
+            "ws.pusherapp.com",
+            "ws-eu.pusher.com"
+    };
+
+    private static final int RECONNECT_DELAY_MS = 5000;
+    private static final int MAX_RECONNECT_ATTEMPTS = 10;
+    private static final int MAX_PROCESSED_EVENTS = 100;
 
     private final String eventUid;
     private final String eventUidDouble;
@@ -58,16 +78,63 @@ public class PusherManager {
     private final String eventCanceled;
     private final String eventBlackUserStatus;
     private final String eventOrderCost;
-//    private final String orderResponseEvent;
-//    private final String eventStartExecution;
+
     private static Pusher pusher = null;
-    private boolean isSubscribed = false;
-    Channel channel;
-   Activity context;
+    private Channel channel;
+    private final WeakReference<Activity> activityRef;
     private final ExecutionStatusViewModel viewModel;
+    private final Set<String> boundEvents = ConcurrentHashMap.newKeySet();
+    private final Set<String> processedEventIds = ConcurrentHashMap.newKeySet();
+    private final PusherHandler mainHandler;
+
     private String lastProcessedCost = "";
-    private final Set<String> boundEvents = new HashSet<>();
-    public PusherManager(String eventSuffix, String userEmail, Activity context, ExecutionStatusViewModel viewModel) {
+    private boolean isSubscribed = false;
+    private boolean isShuttingDown = false;
+    private int reconnectAttempts = 0;
+    private int currentHostIndex = 0;
+
+    // Кэш DNS для устранения проблем с разрешением имен
+    private static final Map<String, String> dnsCache = new ConcurrentHashMap<>();
+    private boolean isSubscribing = false;
+    /**
+     * Безопасный Handler с WeakReference для предотвращения утечек памяти
+     */
+    private static class PusherHandler extends Handler {
+        private final WeakReference<PusherManager> managerRef;
+
+        PusherHandler(PusherManager manager) {
+            super(Looper.getMainLooper());
+            this.managerRef = new WeakReference<>(manager);
+        }
+
+        @Override
+        public void handleMessage(@NonNull android.os.Message msg) {
+            PusherManager manager = managerRef.get();
+            if (manager != null && manager.isContextValid()) {
+                // Обработка сообщений если необходимо
+                super.handleMessage(msg);
+            }
+        }
+
+        public void postSafe(Runnable r) {
+            post(() -> {
+                PusherManager manager = managerRef.get();
+                if (manager != null && manager.isContextValid()) {
+                    r.run();
+                }
+            });
+        }
+    }
+
+    /**
+     * Интерфейс для обработки JSON событий
+     */
+    private interface JsonEventHandler {
+        void handle(JSONObject json) throws JSONException;
+    }
+
+    public PusherManager(String eventSuffix, String userEmail, Activity context,
+                         ExecutionStatusViewModel viewModel) {
         this.eventUid = "order-status-updated-" + eventSuffix + "-" + userEmail;
         this.eventUidDouble = "orderDouble-status-updated-" + eventSuffix + "-" + userEmail;
         this.eventOrder = "order-" + eventSuffix + "-" + userEmail;
@@ -76,652 +143,784 @@ public class PusherManager {
         this.eventCanceled = "eventCanceled-" + eventSuffix + "-" + userEmail;
         this.eventBlackUserStatus = "black-user-status--" + userEmail;
         this.eventOrderCost = "order-cost-" + eventSuffix + "-" + userEmail;
-//        this.orderResponseEvent = "orderResponseEvent-" + eventSuffix + "-" + userEmail;\
-        this.context = new WeakReference<>(context).get();
-//        this.context = context;
-//        this.eventStartExecution = "orderStartExecution-" + eventSuffix + "-" + userEmail;
 
+        this.activityRef = new WeakReference<>(context);
+        this.viewModel = viewModel;
+        this.mainHandler = new PusherHandler(this);
+
+        initializePusher();
+
+        // Попытка установить кастомные DNS серверы
+        configureDNS();
+    }
+
+    /**
+     * Настройка DNS для устранения проблем с разрешением имен
+     */
+    private void configureDNS() {
+        try {
+            // Попытка установить системные DNS (может не работать на всех устройствах)
+            System.setProperty("sun.net.spi.nameservice.nameservers", "8.8.8.8,8.8.4.4");
+            System.setProperty("sun.net.spi.nameservice.provider.1", "dns,sun");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to set custom DNS", e);
+        }
+    }
+
+    /**
+     * Инициализация Pusher с текущим хостом
+     */
+    private void initializePusher() {
         PusherOptions options = new PusherOptions();
         options.setCluster(PUSHER_CLUSTER);
-// Получение ViewModel из области видимости Activity
-        this.viewModel = viewModel;
+        options.setHost(PUSHER_HOSTS[currentHostIndex]);
+
+        // Настройка таймаутов
+        options.setActivityTimeout(60000);
+        options.setPongTimeout(30000);
+
         pusher = new Pusher(PUSHER_APP_KEY, options);
     }
 
-    // Подключение к Pusher с улучшенным логированием и обработкой ошибок
-    private final boolean isShuttingDown = false; // Флаг завершения работы приложения
+    /**
+     * Переключение на альтернативный хост при проблемах с подключением
+     */
+    private void switchToNextHost() {
+        currentHostIndex = (currentHostIndex + 1) % PUSHER_HOSTS.length;
+        Log.w(TAG, "Switching to alternative host: " + PUSHER_HOSTS[currentHostIndex]);
+        initializePusher();
+    }
 
+    /**
+     * Разрешение DNS с кэшированием
+     */
+    private String resolveHostWithCache(String host) {
+        if (dnsCache.containsKey(host)) {
+            return dnsCache.get(host);
+        }
 
+        try {
+            InetAddress address = InetAddress.getByName(host);
+            String ip = address.getHostAddress();
+            dnsCache.put(host, ip);
+            Log.d(TAG, "Resolved " + host + " to " + ip);
+            return ip;
+        } catch (UnknownHostException e) {
+            Log.e(TAG, "DNS resolution failed for " + host, e);
+            return host;
+        }
+    }
 
+    /**
+     * Проверка валидности контекста
+     */
+    private boolean isContextValid() {
+        Activity activity = activityRef != null ? activityRef.get() : null;
+        return activity != null && !activity.isFinishing() && !activity.isDestroyed();
+    }
+
+    /**
+     * Получение контекста с проверкой
+     */
+    private Context getContext() {
+        return activityRef != null ? activityRef.get() : null;
+    }
+
+    /**
+     * Подключение к Pusher
+     */
     public void connect() {
         if (pusher == null) {
-            Logger.d(context,"Pusher", "Pusher instance is not initialized!");
+            Log.e(TAG, "Pusher instance is not initialized!");
             return;
         }
+
+        if (!isContextValid()) {
+            Log.w(TAG, "Context is invalid, skipping connection");
+            return;
+        }
+
+        resetReconnectionAttempts();
 
         pusher.connect(new ConnectionEventListener() {
             @Override
             public void onConnectionStateChange(ConnectionStateChange change) {
-                Logger.d(context,"Pusher", "State changed from " + change.getPreviousState() + " to " + change.getCurrentState());
+                logToContext("Pusher", "State changed from " + change.getPreviousState() +
+                        " to " + change.getCurrentState());
 
-                // Обработка успешного подключения
-                if (change.getCurrentState() == ConnectionState.CONNECTED) {
-                    Logger.d(context,"Pusher", "Successfully connected to Pusher");
-                }
-
-                // Логика повторного подключения
-                if (change.getCurrentState() == ConnectionState.DISCONNECTED) {
-                    Log.w("Pusher", "Disconnected from Pusher. Attempting reconnection...");
-
-                    // Предотвращаем попытки подключения во время завершения приложения
-                    if (!isShuttingDown) {
-                        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                            try {
-                                Logger.d(context,"Pusher", "Attempting reconnection...");
-                                pusher.connect(new ConnectionEventListener() {
-                                    @Override
-                                    public void onConnectionStateChange(ConnectionStateChange innerChange) {
-                                        Logger.d(context,"Pusher", "Reconnect: State changed from " +
-                                                innerChange.getPreviousState() + " to " +
-                                                innerChange.getCurrentState());
-                                    }
-
-                                    @Override
-                                    public void onError(String message, String code, Exception e) {
-                                        Logger.e(context,"Pusher", "Reconnect error: " + message + " (Code: " + code + ")" + e);
-                                    }
-                                }, ConnectionState.ALL);
-
-                            } catch (Exception e) {
-                                Logger.e(context,"Pusher", "Reconnect attempt failed: " + e);
-                            }
-                        }, 5000); // Задержка перед попыткой повторного подключения
-                    } else {
-                        Log.w("Pusher", "Reconnect skipped: Application is shutting down");
-                    }
+                switch (change.getCurrentState()) {
+                    case CONNECTED:
+                        handleConnected();
+                        break;
+                    case DISCONNECTED:
+                        handleDisconnected();
+                        break;
                 }
             }
 
             @Override
             public void onError(String message, String code, Exception e) {
-                Logger.e(context,"Pusher", "Error connecting: " + message + " (Code: " + code + ")" +  e);
-                FirebaseCrashlytics.getInstance().recordException(e);
+                handleConnectionError(message, code, e);
             }
         }, ConnectionState.ALL);
     }
 
-    // Приватный метод для проверки, привязано ли событие
+    /**
+     * Обработка успешного подключения
+     */
+    private void handleConnected() {
+        logToContext("Pusher", "Successfully connected to Pusher");
+        reconnectAttempts = 0;
+
+        // Сбрасываем флаги при новом подключении
+        isSubscribed = false;
+        isSubscribing = false;
+
+        if (isContextValid()) {
+            subscribeToChannel();
+        }
+    }
+
+    /**
+     * Обработка отключения
+     */
+    private void handleDisconnected() {
+        Log.w(TAG, "Disconnected from Pusher");
+        attemptReconnection();
+    }
+
+    /**
+     * Обработка ошибок подключения
+     */
+    private void handleConnectionError(String message, String code, Exception e) {
+        String errorMsg = "Error connecting: " + message + " (Code: " + code + ")";
+        logErrorToContext("Pusher", errorMsg, e);
+
+        if (e != null) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+
+            // Специфическая обработка DNS ошибки
+            if (e instanceof UnknownHostException) {
+                logErrorToContext("Pusher", "DNS resolution failed. Switching host...", null);
+                switchToNextHost();
+            }
+        }
+
+        attemptReconnection();
+    }
+
+    /**
+     * Попытка переподключения с экспоненциальной задержкой
+     */
+    private void attemptReconnection() {
+        if (isShuttingDown || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            Log.w(TAG, "Max reconnection attempts reached or shutting down");
+            return;
+        }
+
+        reconnectAttempts++;
+
+        // Экспоненциальная задержка
+        long delay = (long) (RECONNECT_DELAY_MS * Math.pow(1.5, reconnectAttempts - 1));
+        delay = Math.min(delay, 30000); // Максимум 30 секунд
+
+        logToContext("Pusher", "Scheduling reconnection attempt " + reconnectAttempts +
+                " in " + delay + "ms");
+
+        mainHandler.postDelayed(() -> {
+            if (!isShuttingDown && isContextValid()) {
+                logToContext("Pusher", "Attempting reconnection...");
+                connect();
+            }
+        }, delay);
+    }
+
+    /**
+     * Сброс счетчика попыток переподключения
+     */
+    private void resetReconnectionAttempts() {
+        reconnectAttempts = 0;
+    }
+
+    /**
+     * Проверка, привязано ли событие
+     */
     private boolean isEventBound(String eventName) {
         return boundEvents.contains(eventName);
     }
 
-    // Метод для биндинга события с проверкой на дублирование
-    public void bindEvent(String eventName, SubscriptionEventListener listener) {
+    /**
+     * Безопасное привязывание события с проверкой на дублирование
+     */
+    private void bindEvent(String eventName, SubscriptionEventListener listener) {
+        if (channel == null) {
+            Log.w(TAG, "Cannot bind event " + eventName + " - channel is null");
+            return;
+        }
+
         if (!isEventBound(eventName)) {
-            channel.bind(eventName, listener);
-            boundEvents.add(eventName);
+            try {
+                channel.bind(eventName, listener);
+                boundEvents.add(eventName);
+                Log.d(TAG, "Bound event: " + eventName);
+            } catch (Exception e) {
+                Log.e(TAG, "Error binding event " + eventName, e);
+            }
+        } else {
+            Log.d(TAG, "Event already bound: " + eventName);
         }
     }
 
+    /**
+     * Общий метод для обработки JSON событий
+     */
+    private void handleJsonEvent(String eventName, String eventData, JsonEventHandler handler) {
+        logToContext("Pusher", "Received " + eventName + ": " + eventData);
 
-    // Подписка на канал и событие
+        try {
+            JSONObject jsonObject = new JSONObject(eventData);
 
+            // Создаем уникальный ключ для события
+            String uniqueKey = eventName + "_" + eventData.hashCode();
 
+            // Проверка на дубликаты
+            if (processedEventIds.contains(uniqueKey)) {
+                Log.d(TAG, "Duplicate event ignored: " + uniqueKey);
+                return;
+            }
+
+            processedEventIds.add(uniqueKey);
+            // Ограничиваем размер множества
+            if (processedEventIds.size() > MAX_PROCESSED_EVENTS) {
+                processedEventIds.clear();
+            }
+
+            handler.handle(jsonObject);
+        } catch (JSONException e) {
+            logErrorToContext("Pusher", "JSON Parsing error for " + eventName, e);
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
+    }
+
+    /**
+     * Подписка на канал и события
+     */
     public void subscribeToChannel() {
-        if (isSubscribed) return; // Предотвращает повторную подписку
-        isSubscribed = true;
+        if (!isContextValid() || pusher == null) {
+            return;
+        }
+        // Добавить эту проверку
+        if (isSubscribing) {
+            Log.d(TAG, "Already subscribing, skipping");
+            return;
+        }
 
+        if (isSubscribed) {
+            Log.d(TAG, "Already subscribed, skipping");
+            return;
+        }
 
-        channel = pusher.subscribe(CHANNEL_NAME);
-        Logger.d(context,"Pusher", "Subscribing to channel: " + CHANNEL_NAME);
-        Logger.d(context,"Pusher", "Subscribing to event: " + eventUid);
-        Logger.d(context,"Pusher", "Subscribing to eventOrder: " + eventOrder);
-        Logger.d(context,"Pusher", "Subscribing to eventStatus: " + eventTransactionStatus);
-        Logger.d(context,"Pusher", "Subscribing to eventCanceled: " + eventCanceled);
-        Logger.d(context,"Pusher", "Subscribing to eventBlackUserStatus: " + eventBlackUserStatus);
-//        Logger.d(context,"Pusher", "Subscribing to orderResponseEvent: " + orderResponseEvent);
-
-        // Обработка события получения номера заказа после регистрации на сервере и определения нал/безнал для выбора способа опроса статусов
-//        channel.bind(eventUid, event -> {
-        bindEvent(eventUid, event -> {
-            Logger.d(context,"UID 11123", "Received event: " + event.toString());
+        isSubscribing = true; // Установить в начале
+        // Проверяем, не подписаны ли мы уже на канал
+        if (channel != null) {
             try {
-                JSONObject eventData = new JSONObject(event.getData());
-                String orderUid = eventData.getString("order_uid");
-                String  paySystemStatus;
-                if (eventData.has("paySystemStatus")) {
-                    paySystemStatus = eventData.getString("paySystemStatus");
-                } else {
-                    paySystemStatus = "nal_payment";
-                }
-                Logger.d(context,"UID 11123", "Order UID: " + orderUid);
-                Logger.d(context,"UID 11123", "paySystemStatus: " + paySystemStatus);
-                // Переключаемся на главный поток для обновления UI и переменной
-                new Handler(Looper.getMainLooper()).post(() -> {
-
-                    // Update ViewModel
-                    viewModel.updateUid(orderUid);
-                    viewModel.updatePaySystemStatus(paySystemStatus);
-
-                });
-
-            } catch (JSONException e) {
-                Logger.e(context,"Pusher", "JSON Parsing error" +  e);
-            }
-        });
-
-        bindEvent(eventUidDouble, event -> {
-            Logger.d(context,"Pusher Double", "Received eventUidDouble: " + event.toString());
-            try {
-                JSONObject eventData = new JSONObject(event.getData());
-                String orderUid = eventData.getString("order_uid");
-                String  paySystemStatus;
-                if (eventData.has("paySystemStatus")) {
-                    paySystemStatus = eventData.getString("paySystemStatus");
-                } else {
-                    paySystemStatus = "nal_payment";
-                }
-                Logger.d(context,"Pusher Double", "Order UID Double: " + orderUid);
-                Logger.d(context,"Pusher Double", "paySystemStatus: " + paySystemStatus);
-                // Переключаемся на главный поток для обновления UI и переменной
-                new Handler(Looper.getMainLooper()).post(() -> {
-
-                    MainActivity.uid_Double = orderUid;
-                    Logger.d(context,"Pusher Double", "MainActivity.uid_Double: " + MainActivity.uid_Double);
-
-                    MainActivity.paySystemStatus = paySystemStatus;
-
-                });
-
-            } catch (JSONException e) {
-                Logger.e(context,"Pusher Double", "JSON Parsing error" +  e);
-            }
-        });
-
-        bindEvent(eventTransactionStatus, event -> {
-            Logger.d(context,"Pusher", "Received event: " + event.toString());
-
-            try {
-                JSONObject eventData = new JSONObject(event.getData());
-                String uid = eventData.getString("uid");
-                String transactionStatus = eventData.getString("transactionStatus");
-                Logger.d(context,"Pusher eventTransactionStatus", "Parsed uid: " + uid);
-                Logger.d(context,"Pusher eventTransactionStatus", "Parsed Main uid: " + MainActivity.uid);
-                Logger.d(context,"Pusher eventTransactionStatus", "Parsed transactionStatus: " + transactionStatus);
-
-                if(Objects.equals(MainActivity.uid, uid)) {
-                    // Проверка на null перед переключением на главный поток
-                    new Handler(Looper.getMainLooper()).post(() -> {
-                        Log.d("Pusher eventTransactionStatus", "Updating UI with status: " + transactionStatus);
-
-                        // Установка начального статуса транзакции
-                        viewModel.setTransactionStatus(transactionStatus);
-                        Logger.d(context,"Pusher eventTransactionStatus", "Initial transaction status set: " + transactionStatus);
-                        viewModel.setCancelStatus(true);
-                    });
-                }
-
-
-            } catch (JSONException e) {
-                Logger.e(context,"Pusher", "JSON Parsing error for event: " + event.getData() +  e);
-            } catch (Exception e) {
-                Logger.e(context,"Pusher", "Unexpected error processing Pusher event" +  e);
-            }
-        });
-
-
-        //Получение статуса холда
-//        channel.bind(eventStartExecution, event -> {
-//        bindEvent(eventStartExecution, event -> {
-//            Logger.d(context,"Pusher", "Received event: " + event.toString());
-//
-//            try {
-//                JSONObject eventData = new JSONObject(event.getData());
-//                String eventStartExecution = eventData.getString("eventStartExecution");
-//                Logger.d(context,"Pusher", "Parsed transactionStatus: " + eventStartExecution);
-//
-//                // Проверка на null перед переключением на главный поток
-//                new Handler(Looper.getMainLooper()).post(() -> {
-//                    Log.d("Pusher", "Updating UI with status: " + eventStartExecution);
-//
-//                    // Проверка UI элемента перед взаимодействием
-//                    if (FinishSeparateFragment.btn_cancel_order != null) {
-//                        FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
-//                        FinishSeparateFragment.btn_cancel_order.setEnabled(true);
-//                        FinishSeparateFragment.btn_cancel_order.setClickable(true);
-//                        Log.d("Pusher", "Cancel button enabled successfully");
-//                    } else {
-//                        Logger.e(context,"Pusher", "btn_cancel_order is null when updating status: " + eventStartExecution);
-//                    }
-//                });
-//
-//            } catch (JSONException e) {
-//                Logger.e(context,"Pusher", "JSON Parsing error for event: " + event.getData() +  e);
-//            } catch (Exception e) {
-//                Logger.e(context,"Pusher", "Unexpected error processing Pusher event" +  e);
-//            }
-//        });
-
-        // Получение статуса отмены заказа с сервера
-//        channel.bind(eventCanceled, event -> {
-        bindEvent(eventCanceled, event -> {
-            Logger.d(context,"Pusher eventCanceled", "Received event: " + event.toString());
-
-            try {
-                JSONObject eventData = new JSONObject(event.getData());
-                String canceled = eventData.getString("canceled");
-                String uid = eventData.getString("uid");
-                Logger.d(context,"Pusher eventCanceled", "canceled: " + canceled);
-                Logger.d(context,"Pusher eventCanceled", "uid: " + uid);
-                Logger.d(context,"Pusher eventCanceled", " MainActivity.uid: " +  MainActivity.uid);
-
-                // Проверка, что uid существует и не null
-                if (MainActivity.uid != null && MainActivity.uid.equals(uid)) {
-                    // Проверка на null перед переключением на главный поток
-                    viewModel.setCanceledStatus(canceled);
-                }
-                } catch(JSONException e){
-                    Logger.e(context,"Pusher eventCanceled", "JSON Parsing error for event: " + event.getData() +  e);
-                } catch(Exception e){
-                    Logger.e(context,"Pusher eventCanceled", "Unexpected error processing Pusher event" +  e);
-                }
-
-        });
-        // Получение стоимости
-//        channel.bind(eventCanceled, event -> {
-//        bindEvent(eventOrderCost, event -> {
-//            Logger.d(context,"Pusher eventOrderCost", "Received event: " + event.toString());
-//
-//            try {
-//                JSONObject eventData = new JSONObject(event.getData());
-//                String order_cost = eventData.getString("order_cost");
-//                Logger.d(context,"Pusher eventOrderCost", "order_cost: " + order_cost);
-//
-//                Map<String, String> eventValues = new HashMap<>();
-//                // Добавляем данные в Map
-//                eventValues.put("order_cost", eventData.optString("order_cost", "0"));
-//                eventValues.put("Message", eventData.optString("Message", ""));
-//
-//                MainActivity.costMap = eventValues;
-//                sharedPreferencesHelperMain.saveValue("order_cost", eventData.optString("order_cost", "0"));
-//
-//            } catch(JSONException e){
-//                    Logger.e(context,"Pusher eventOrderCost", "JSON Parsing error for event: " + event.getData() +  e);
-//            }
-//
-//        });
-
-        bindEvent(eventOrderCost, event -> {
-            Logger.d(context,"Pusher eventOrderCost", "Received event: " + event.toString());
-
-            try {
-                JSONObject eventData = new JSONObject(event.getData());
-                String order_cost = eventData.optString("order_cost", "0");
-                Logger.d(context,"Pusher eventOrderCost", "order_cost: " + order_cost);
-
-                // Игнорируем если то же самое значение
-                if (order_cost.equals(lastProcessedCost)) {
-                    Logger.d(context,"Pusher eventOrderCost", "Дубликат, игнорируем: " + order_cost);
+                // Проверяем состояние канала
+                Log.d(TAG, "Channel already exists, checking if subscribed: " + isSubscribed);
+                if (isSubscribed) {
+                    Log.d(TAG, "Already subscribed to channel, skipping");
                     return;
                 }
-
-                lastProcessedCost = order_cost;
-                MainActivity.orderViewModel.setOrderCost(order_cost);
-                sharedPreferencesHelperMain.saveValue("order_cost", order_cost);
-
-            } catch(JSONException e){
-                Logger.e(context,"Pusher eventOrderCost", "JSON Parsing error: " + e.getMessage());
+            } catch (Exception e) {
+                Log.e(TAG, "Error checking channel state", e);
             }
-        });
+        }
 
-        bindEvent(eventBlackUserStatus, event -> {
-            Logger.d(context,"Pusher eventBlackUserStatus", "Received event: " + event.toString());
+        try {
 
-            try {
-                JSONObject eventData = new JSONObject(event.getData());
-                String active = eventData.getString("active");
-                String email = eventData.getString("email");
+            channel = pusher.subscribe(CHANNEL_NAME);
+            isSubscribed = true;
 
-                Logger.d(context,"Pusher eventBlackUserStatus", "canceled: " + active);
-                Logger.d(context,"Pusher eventBlackUserStatus", "email: " + email);
+            logToContext("Pusher", "Subscribing to channel: " + CHANNEL_NAME);
+            logToContext("Pusher", "Subscribing to event: " + eventUid);
 
-                String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-                Logger.d(context,"Pusher eventCanceled", "userEmail: " + userEmail);
+            // Очищаем предыдущие привязки перед новыми
+            boundEvents.clear();
 
-                if (email.equals(userEmail)) {
-                    sharedPreferencesHelperMain.saveValue("verifyUserOrder", active);
+            bindEvent(eventUid, event -> handleUidEvent(event.getData()));
+            bindEvent(eventUidDouble, event -> handleUidDoubleEvent(event.getData()));
+            bindEvent(eventTransactionStatus, event -> handleTransactionStatusEvent(event.getData()));
+            bindEvent(eventCanceled, event -> handleCanceledEvent(event.getData()));
+            bindEvent(eventOrderCost, event -> handleOrderCostEvent(event.getData()));
+            bindEvent(eventBlackUserStatus, event -> handleBlackUserStatusEvent(event.getData()));
+            bindEvent(eventOrder, event -> handleOrderEvent(event.getData()));
+            bindEvent(eventAutoOrder, event -> handleAutoOrderEvent(event.getData()));
+            isSubscribing = false;
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Already subscribed")) {
+                Log.w(TAG, "Channel already subscribed, this is expected on reconnection");
+                isSubscribed = true;
+                // Даже если канал уже подписан, убедимся что события привязаны
+                if (channel != null && boundEvents.isEmpty()) {
+                    rebindAllEvents();
                 }
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_visicom, true)
-                            .build());
-                });
-
-            } catch(JSONException e){
-                Logger.e(context,"Pusher eventBlackUserStatus", "JSON Parsing error for event: " + event.getData() +  e);
-            } catch(Exception e){
-                Logger.e(context,"Pusher eventBlackUserStatus", "Unexpected error processing Pusher event" +  e);
+            } else {
+                logErrorToContext("Pusher", "Error subscribing to channel", e);
+                isSubscribed = false;
             }
-
-        });
-
-        //Получение заказа из вилки с действием для отображения на фнинишной
-//        channel.bind(orderResponseEvent, event -> {
-//        bindEvent(orderResponseEvent, event -> {
-//            Logger.d(context,"Pusher 1111 orderResponseEvent", "Received orderResponseEvent: " + event.toString());
-//
-//            try {
-//                Gson gson = new Gson();
-//
-//                // Сначала распарсим `event.getData()` как строку
-//                String jsonString = gson.fromJson(event.getData(), String.class);
-//
-//                // Теперь распарсим результат в объект OrderResponse
-//                MainActivity.orderResponse = gson.fromJson(jsonString, OrderResponse.class);
-//
-//                if(MainActivity.orderResponse != null) {
-//                    String uid = MainActivity.orderResponse.getUid();
-//                    String action = MainActivity.orderResponse.getAction();
-//
-//
-//                    Logger.d(context,"Pusher 1111 uid", "Received uid: " + uid);
-//                    Logger.d(context,"Pusher 1111 uid", "MainActivity.uid: " + MainActivity.uid);
-//                    Logger.d(context,"Pusher 1111 action", "Received action: " + action);
-//
-//                    // Проверка, что uid существует и не null
-//                    if (uid == null) {
-//                        Log.w("Pusher 1111 ", "UID is null in orderResponse: " + jsonString);
-//                    } else if (MainActivity.uid != null && MainActivity.uid.equals(uid)) {
-//
-//                        EventBus.getDefault().post(new OrderResponseEvent(MainActivity.orderResponse));
-////                        viewModel.updateOrderResponse(MainActivity.orderResponse);
-//          //              new Handler(Looper.getMainLooper()).post(() -> {
-//                            Logger.d(context,"Pusher 1111 orderResponseEvent", "Updating UI with orderResponse");
-//
-//                            if (FinishSeparateFragment.btn_cancel_order != null) {
-//                                FinishSeparateFragment.btn_cancel_order.setVisibility(View.VISIBLE);
-//                                FinishSeparateFragment.btn_cancel_order.setEnabled(true);
-//                                FinishSeparateFragment.btn_cancel_order.setClickable(true);
-//                            } else {
-//                                Logger.e(context,"Pusher 1111 ", "btn_cancel_order is null!");
-//                            }
-////                        });
-//                    } else {
-//                        Logger.d(context,"Pusher 1111 ", "UIDs do not match or MainActivity.uid is null. MainActivity.uid: " + MainActivity.uid + ", Response uid: " + uid);
-//                    }
-//                }
-//
-//
-//            } catch (JsonSyntaxException e) {
-//                Logger.e(context,"Pusher 1111 ", "JSON Parsing error for event: " + event.getData() +  e);
-//            } catch (Exception e) {
-//                Logger.e(context,"Pusher 1111 ", "Unexpected error processing Pusher event" +  e);
-//            }
-//
-//        });
-
-        // Получение заказа с сервера после регистрации
-//        channel.bind(eventOrder, event -> {
-        bindEvent(eventOrder, event -> {
-            Logger.d(context,"Pusher", "Received eventOrder: " + event.toString());
-            try {
-                // Преобразуем данные события в JSONObject
-                JSONObject eventData = new JSONObject(event.getData());
-
-                // Создаём Map для хранения данных
-                Map<String, String> eventValues = new HashMap<>();
-                // Добавляем данные в Map
-                eventValues.put("from_lat", eventData.optString("from_lat", "null"));
-                eventValues.put("from_lng", eventData.optString("from_lng", "null"));
-                eventValues.put("lat", eventData.optString("lat", "null"));
-                eventValues.put("lng", eventData.optString("lng", "null"));
-                eventValues.put("dispatching_order_uid", eventData.optString("dispatching_order_uid", "null"));
-                eventValues.put("order_cost", eventData.optString("order_cost", "0"));
-                eventValues.put("currency", eventData.optString("currency", "null"));
-                eventValues.put("routefrom", eventData.optString("routefrom", "null"));
-                eventValues.put("routefromnumber", eventData.optString("routefromnumber", "null"));
-                eventValues.put("routeto", eventData.optString("routeto", "null"));
-                eventValues.put("to_number", eventData.optString("to_number", "null"));
-                eventValues.put("required_time", eventData.optString("required_time", ""));
-                eventValues.put("flexible_tariff_name", eventData.optString("flexible_tariff_name", "null"));
-                eventValues.put("comment_info", eventData.optString("comment_info", ""));
-                eventValues.put("extra_charge_codes", eventData.optString("extra_charge_codes", ""));
-
-                // Добавляем дополнительные поля, если они существуют
-
-                String dispatchingOrderUidDouble = eventData.optString("dispatching_order_uid_Double", " ");
-                eventValues.put("dispatching_order_uid_Double", dispatchingOrderUidDouble.equals(" ") ? " " : dispatchingOrderUidDouble);
-
-
-                VisicomFragment.sendUrlMap = eventValues;
-                // Логируем успешный случай
-                    Logger.d(context,"Pusher", "Event Values: " + eventValues.toString());
-
-            } catch (JSONException e) {
-                // Логируем ошибку при парсинге JSON
-                Logger.e(context,"Pusher", "JSON Parsing error" +  e);
-
-                // Добавляем ошибку в Map
-                Map<String, String> errorValues = new HashMap<>();
-                errorValues.put("order_cost", "0");
-                errorValues.put("message", "JSON Parsing error");
-                Logger.e(context,"Pusher", "Error Values: " + errorValues.toString());
-            }
-        });
-
-        bindEvent(eventAutoOrder, event -> {
-            Logger.d(context,"Pusher", "Received eventAutoOrder: " + event.toString());
-
-//            if (MainActivity.currentNavDestination != R.id.nav_finish_separate) {
-                try {
-
-                    // Преобразуем данные события в JSONObject
-                    JSONObject eventData = new JSONObject(event.getData());
-
-                    // Создаём Map для хранения данных
-                    Map<String, String> eventValues = new HashMap<>();
-                    // Добавляем данные в Map
-
-                    eventValues.put("dispatching_order_uid", eventData.optString("dispatching_order_uid", "null"));
-                    eventValues.put("order_cost", eventData.optString("order_cost", "0"));
-                    eventValues.put("routefrom", eventData.optString("routefrom", "null"));
-                    eventValues.put("routefromnumber", eventData.optString("routefromnumber", "null"));
-                    eventValues.put("routeto", eventData.optString("routeto", "null"));
-                    eventValues.put("to_number", eventData.optString("to_number", "null"));
-
-                    eventValues.put("pay_method", eventData.optString("pay_method", "nal_payment"));
-                    eventValues.put("orderWeb", eventData.optString("order_cost", "0"));
-
-//                eventValues.put("currency", eventData.optString("currency", "null"));
-                    eventValues.put("required_time", eventData.optString("required_time", ""));
-                    eventValues.put("flexible_tariff_name", eventData.optString("flexible_tariff_name", "null"));
-                    eventValues.put("comment_info", eventData.optString("comment_info", ""));
-                    eventValues.put("extra_charge_codes", eventData.optString("extra_charge_codes", ""));
-
-                    // Добавляем дополнительные поля, если они существуют
-
-                    String dispatchingOrderUidDouble = eventData.optString("dispatching_order_uid_Double", " ");
-                    eventValues.put("dispatching_order_uid_Double", dispatchingOrderUidDouble.equals(" ") ? " " : dispatchingOrderUidDouble);
-
-                    Logger.d(context,"Pusher", "Received eventAutoOrder: " + eventValues.toString());
-
-                    startFinishPage(eventValues);
-
-                } catch (JSONException e) {
-                    // Логируем ошибку при парсинге JSON
-                    Logger.e(context,"Pusher", "JSON Parsing error" +  e);
-                } catch (ParseException e) {
-                    throw new RuntimeException(e);
-                }
-//            }
-        });
-
+        } catch (Exception e) {
+            logErrorToContext("Pusher", "Error subscribing to channel", e);
+            isSubscribed = false;
+        }
     }
 
+    /**
+     * Перепривязка всех событий (для случая когда канал уже существует)
+     */
+    private void rebindAllEvents() {
+        Log.d(TAG, "Rebinding all events to existing channel");
+        boundEvents.clear();
 
-    private void startFinishPage(Map<String, String> sendUrlMap) throws ParseException {
-    if (MainActivity.currentNavDestination == R.id.nav_finish_separate) {
-        String paySystemStatus = "nal_payment";
-        String orderUid = sendUrlMap.get("dispatching_order_uid");;
+        bindEvent(eventUid, event -> handleUidEvent(event.getData()));
+        bindEvent(eventUidDouble, event -> handleUidDoubleEvent(event.getData()));
+        bindEvent(eventTransactionStatus, event -> handleTransactionStatusEvent(event.getData()));
+        bindEvent(eventCanceled, event -> handleCanceledEvent(event.getData()));
+        bindEvent(eventOrderCost, event -> handleOrderCostEvent(event.getData()));
+        bindEvent(eventBlackUserStatus, event -> handleBlackUserStatusEvent(event.getData()));
+        bindEvent(eventOrder, event -> handleOrderEvent(event.getData()));
+        bindEvent(eventAutoOrder, event -> handleAutoOrderEvent(event.getData()));
+    }
 
-        Logger.e(context,"startFinishPage", "paySystemStatus" +  paySystemStatus);
-        Logger.e(context,"startFinishPage", "orderUid" +  orderUid);
-        new Handler(Looper.getMainLooper()).post(() -> {
-            if(orderUid != null){
+    /**
+     * Обработка UID события
+     */
+    private void handleUidEvent(String eventData) {
+        handleJsonEvent("UID", eventData, json -> {
+            String orderUid = json.getString("order_uid");
+            String paySystemStatus = json.optString("paySystemStatus", "nal_payment");
+
+            logToContext("UID", "Order UID: " + orderUid);
+
+            mainHandler.postSafe(() -> {
                 viewModel.updateUid(orderUid);
                 viewModel.updatePaySystemStatus(paySystemStatus);
-            }
-
-            viewModel.setStatusNalUpdate(false);
+            });
         });
-    } else {
-        String to_name;
+    }
 
-        if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))) {
-            to_name = context.getString(R.string.on_city_tv);
-            Logger.d(context, "startFinishPage", "startFinishPage: to_name 1 " + to_name);
+    /**
+     * Обработка UID Double события
+     */
+    private void handleUidDoubleEvent(String eventData) {
+        handleJsonEvent("UID Double", eventData, json -> {
+            String orderUid = json.getString("order_uid");
+            String paySystemStatus = json.optString("paySystemStatus", "nal_payment");
 
-        } else {
+            logToContext("Pusher Double", "Order UID Double: " + orderUid);
 
-            if(Objects.equals(sendUrlMap.get("routeto"), "Точка на карте")) {
-                to_name = context.getString(R.string.end_point_marker);
+            mainHandler.postSafe(() -> {
+                MainActivity.uid_Double = orderUid;
+                MainActivity.paySystemStatus = paySystemStatus;
+            });
+        });
+    }
+
+    /**
+     * Обработка статуса транзакции
+     */
+
+
+
+    // В методе handleTransactionStatusEvent:
+    private void handleTransactionStatusEvent(String eventData) {
+        handleJsonEvent("TransactionStatus", eventData, json -> {
+            String uid = json.getString("uid");
+            String transactionStatus = json.getString("transactionStatus");
+
+            Log.d("Pusher", "Processing TransactionStatus - uid: " + uid + ", status: " + transactionStatus);
+            Log.d("Pusher", "MainActivity.uid = " + MainActivity.uid);
+
+            if (Objects.equals(MainActivity.uid, uid)) {
+                // Отправляем событие через EventBus
+                EventBus.getDefault().post(new TransactionStatusEvent(transactionStatus));
+
+                if (isContextValid()) {
+                    mainHandler.postSafe(() -> {
+                        viewModel.setTransactionStatus(transactionStatus);
+                        Log.d("Pusher", "Transaction status set in ViewModel: " + transactionStatus);
+                    });
+                }
             } else {
-                to_name = sendUrlMap.get("routeto") + " " + sendUrlMap.get("to_number");
+                Log.d("Pusher", "UID mismatch. Event uid: " + uid + ", MainActivity.uid: " + MainActivity.uid);
             }
-            Logger.d(context, "startFinishPage", "startFinishPage: to_name 2 " + to_name);
+        });
+    }
+
+    /**
+     * Обработка отмены заказа
+     */
+    private void handleCanceledEvent(String eventData) {
+        handleJsonEvent("Canceled", eventData, json -> {
+            String canceled = json.getString("canceled");
+            String uid = json.getString("uid");
+
+            if (MainActivity.uid != null && MainActivity.uid.equals(uid) && isContextValid()) {
+                viewModel.setCanceledStatus(canceled);
+            }
+        });
+    }
+
+    /**
+     * Обработка стоимости заказа
+     */
+    private void handleOrderCostEvent(String eventData) {
+        handleJsonEvent("OrderCost", eventData, json -> {
+            String orderCost = json.optString("order_cost", "0");
+
+            if (orderCost.equals(lastProcessedCost)) {
+                Log.d(TAG, "Duplicate cost ignored: " + orderCost);
+                return;
+            }
+
+            lastProcessedCost = orderCost;
+
+            mainHandler.postSafe(() -> {
+                if (isContextValid()) {
+                    MainActivity.orderViewModel.setOrderCost(orderCost);
+                    sharedPreferencesHelperMain.saveValue("order_cost", orderCost);
+                }
+            });
+        });
+    }
+
+    /**
+     * Обработка статуса черного списка пользователя
+     */
+    private void handleBlackUserStatusEvent(String eventData) {
+        handleJsonEvent("BlackUserStatus", eventData, json -> {
+            String active = json.getString("active");
+            String email = json.getString("email");
+
+            if (!isContextValid()) return;
+
+            Context context = getContext();
+            if (context == null) return;
+
+            String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+
+            if (email.equals(userEmail)) {
+                sharedPreferencesHelperMain.saveValue("verifyUserOrder", active);
+            }
+
+            mainHandler.postSafe(() -> {
+                if (isContextValid()) {
+                    MainActivity.navController.navigate(
+                            R.id.nav_visicom,
+                            null,
+                            new NavOptions.Builder()
+                                    .setPopUpTo(R.id.nav_visicom, true)
+                                    .build()
+                    );
+                }
+            });
+        });
+    }
+
+    /**
+     * Обработка заказа
+     */
+    private void handleOrderEvent(String eventData) {
+        handleJsonEvent("Order", eventData, json -> {
+            Map<String, String> eventValues = new HashMap<>();
+            eventValues.put("from_lat", json.optString("from_lat", "null"));
+            eventValues.put("from_lng", json.optString("from_lng", "null"));
+            eventValues.put("lat", json.optString("lat", "null"));
+            eventValues.put("lng", json.optString("lng", "null"));
+            eventValues.put("dispatching_order_uid", json.optString("dispatching_order_uid", "null"));
+            eventValues.put("order_cost", json.optString("order_cost", "0"));
+            eventValues.put("currency", json.optString("currency", "null"));
+            eventValues.put("routefrom", json.optString("routefrom", "null"));
+            eventValues.put("routefromnumber", json.optString("routefromnumber", "null"));
+            eventValues.put("routeto", json.optString("routeto", "null"));
+            eventValues.put("to_number", json.optString("to_number", "null"));
+            eventValues.put("required_time", json.optString("required_time", ""));
+            eventValues.put("flexible_tariff_name", json.optString("flexible_tariff_name", "null"));
+            eventValues.put("comment_info", json.optString("comment_info", ""));
+            eventValues.put("extra_charge_codes", json.optString("extra_charge_codes", ""));
+
+            String dispatchingOrderUidDouble = json.optString("dispatching_order_uid_Double", " ");
+            eventValues.put("dispatching_order_uid_Double",
+                    dispatchingOrderUidDouble.equals(" ") ? " " : dispatchingOrderUidDouble);
+
+            VisicomFragment.sendUrlMap = eventValues;
+        });
+    }
+
+    /**
+     * Обработка авто-заказа
+     */
+    private void handleAutoOrderEvent(String eventData) {
+        handleJsonEvent("AutoOrder", eventData, json -> {
+            Map<String, String> eventValues = new HashMap<>();
+            eventValues.put("dispatching_order_uid", json.optString("dispatching_order_uid", "null"));
+            eventValues.put("order_cost", json.optString("order_cost", "0"));
+            eventValues.put("routefrom", json.optString("routefrom", "null"));
+            eventValues.put("routefromnumber", json.optString("routefromnumber", "null"));
+            eventValues.put("routeto", json.optString("routeto", "null"));
+            eventValues.put("to_number", json.optString("to_number", "null"));
+            eventValues.put("pay_method", json.optString("pay_method", "nal_payment"));
+            eventValues.put("orderWeb", json.optString("order_cost", "0"));
+            eventValues.put("required_time", json.optString("required_time", ""));
+            eventValues.put("flexible_tariff_name", json.optString("flexible_tariff_name", "null"));
+            eventValues.put("comment_info", json.optString("comment_info", ""));
+            eventValues.put("extra_charge_codes", json.optString("extra_charge_codes", ""));
+
+            String dispatchingOrderUidDouble = json.optString("dispatching_order_uid_Double", " ");
+            eventValues.put("dispatching_order_uid_Double",
+                    dispatchingOrderUidDouble.equals(" ") ? " " : dispatchingOrderUidDouble);
+
+            if (isContextValid()) {
+                try {
+                    startFinishPage(eventValues);
+                } catch (ParseException e) {
+                    logErrorToContext("Pusher", "Error starting finish page", e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Запуск финишной страницы
+     */
+    private void startFinishPage(Map<String, String> sendUrlMap) throws ParseException {
+        if (!isContextValid()) return;
+
+        Activity activity = activityRef.get();
+        if (activity == null) return;
+
+        if (MainActivity.currentNavDestination == R.id.nav_finish_separate) {
+            String paySystemStatus = "nal_payment";
+            String orderUid = sendUrlMap.get("dispatching_order_uid");
+
+            mainHandler.postSafe(() -> {
+                if (orderUid != null) {
+                    viewModel.updateUid(orderUid);
+                    viewModel.updatePaySystemStatus(paySystemStatus);
+                }
+                viewModel.setStatusNalUpdate(false);
+            });
+        } else {
+            String to_name = buildDestinationName(sendUrlMap, activity);
+            String pay_method_message = buildPaymentMessage(sendUrlMap, activity);
+
+            String routeFrom = cleanString(sendUrlMap.get("routefrom") + " " +
+                    sendUrlMap.get("routefromnumber"));
+            String toNameLocal = cleanString(to_name);
+            String orderWeb = cleanString(Objects.requireNonNull(sendUrlMap.get("orderWeb")));
+            String uah = cleanString(activity.getString(R.string.UAH));
+            String required_time = formatRequiredTime(sendUrlMap.get("required_time"), activity);
+
+            String messageResult = routeFrom + " " +
+                    activity.getString(R.string.to_message) + " " +
+                    toNameLocal + ". " + required_time;
+
+            String messagePayment = orderWeb + " " + uah + " " + pay_method_message;
+            String messageFondy = activity.getString(R.string.fondy_message) + " " +
+                    sendUrlMap.get("routefrom") + " " +
+                    activity.getString(R.string.to_message) + toNameLocal + ".";
+
+            Bundle bundle = new Bundle();
+            bundle.putString("messageResult_key", messageResult);
+            bundle.putString("messagePay_key", messagePayment);
+            bundle.putString("messageFondy_key", messageFondy);
+            bundle.putString("messageCost_key", Objects.requireNonNull(sendUrlMap.get("orderWeb")));
+            bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
+            bundle.putString("card_payment_key", "no");
+            bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+            bundle.putString("dispatching_order_uid_Double",
+                    Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid_Double")));
+
+            viewModel.setStatusNalUpdate(true);
+
+            mainHandler.postSafe(() -> {
+                if (isContextValid()) {
+                    MainActivity.navController.navigate(
+                            R.id.nav_finish_separate,
+                            bundle,
+                            new NavOptions.Builder()
+                                    .setPopUpTo(R.id.nav_visicom, true)
+                                    .build()
+                    );
+                }
+            });
         }
-        Logger.d(context, "startFinishPage", "startFinishPage: to_name 3" + to_name);
-        String to_name_local = to_name;
-        if(to_name.contains("по місту")
-                ||to_name.contains("по городу")
-                || to_name.contains("around the city")
-        ) {
-            to_name_local = context.getString(R.string.on_city_tv);
+    }
+
+    /**
+     * Формирование названия назначения
+     */
+    private String buildDestinationName(Map<String, String> sendUrlMap, Activity activity) {
+        String routeFrom = sendUrlMap.get("routefrom");
+        String routeTo = sendUrlMap.get("routeto");
+        String toNumber = sendUrlMap.get("to_number");
+
+        if (Objects.equals(routeFrom, routeTo)) {
+            return activity.getString(R.string.on_city_tv);
         }
-        Logger.d(context, "startFinishPage", "startFinishPage: to_name 4" + to_name_local);
-        String pay_method_message = context.getString(R.string.pay_method_message_main);
-        switch (Objects.requireNonNull(sendUrlMap.get("pay_method"))) {
+
+        String toName;
+        if (Objects.equals(routeTo, "Точка на карте")) {
+            toName = activity.getString(R.string.end_point_marker);
+        } else {
+            toName = routeTo + " " + toNumber;
+        }
+
+        if (toName.contains("по місту") || toName.contains("по городу") ||
+                toName.contains("around the city")) {
+            return activity.getString(R.string.on_city_tv);
+        }
+
+        return toName;
+    }
+
+    /**
+     * Формирование сообщения о способе оплаты
+     */
+    private String buildPaymentMessage(Map<String, String> sendUrlMap, Activity activity) {
+        String baseMessage = activity.getString(R.string.pay_method_message_main);
+        String payMethod = sendUrlMap.get("pay_method");
+
+        if (payMethod == null) {
+            return baseMessage + " " + activity.getString(R.string.pay_method_message_nal);
+        }
+
+        switch (payMethod) {
             case "bonus_payment":
-                pay_method_message += " " + context.getString(R.string.pay_method_message_bonus);
-                break;
+                return baseMessage + " " + activity.getString(R.string.pay_method_message_bonus);
             case "card_payment":
             case "fondy_payment":
             case "mono_payment":
             case "wfp_payment":
-                pay_method_message += " " + context.getString(R.string.pay_method_message_card);
-                break;
+                return baseMessage + " " + activity.getString(R.string.pay_method_message_card);
             default:
-                pay_method_message += " " + context.getString(R.string.pay_method_message_nal);
+                return baseMessage + " " + activity.getString(R.string.pay_method_message_nal);
+        }
+    }
+
+    /**
+     * Форматирование времени заказа
+     */
+    private String formatRequiredTime(String requiredTime, Activity activity) {
+        if (requiredTime == null || requiredTime.contains("1970-01-01")) {
+            return "";
         }
 
-        String routeFrom = cleanString(sendUrlMap.get("routefrom") + " " +sendUrlMap.get("routefromnumber"));
-        String toMessage = cleanString(context.getString(R.string.to_message));
-        String toNameLocal = cleanString(to_name_local);
-        String orderWeb = cleanString(Objects.requireNonNull(sendUrlMap.get("orderWeb")));
-        String uah = cleanString(context.getString(R.string.UAH));
-        String payMethodMessage = cleanString(pay_method_message);
-        String required_time = sendUrlMap.get("required_time");
-        Logger.d(context, "startFinishPage", "orderFinished: required_time " + required_time);
+        try {
+            @SuppressLint("SimpleDateFormat")
+            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
+            @SuppressLint("SimpleDateFormat")
+            SimpleDateFormat outputFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
 
-
-        if (required_time != null && !required_time.contains("1970-01-01")) {
-            try {
-                @SuppressLint("SimpleDateFormat")
-                SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
-                @SuppressLint("SimpleDateFormat")
-                SimpleDateFormat outputFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
-
-                // Преобразуем строку required_time в Date
-                Date date = inputFormat.parse(required_time);
-
-                // Преобразуем Date в строку нужного формата
-                assert date != null;
-                required_time = " " + context.getString(R.string.time_order)  + " " +  outputFormat.format(date)  + ".";
-
-            } catch (ParseException e) {
-                required_time = ""; // Если ошибка парсинга, задаём пустое значение
+            Date date = inputFormat.parse(requiredTime);
+            if (date != null) {
+                return " " + activity.getString(R.string.time_order) + " " +
+                        outputFormat.format(date) + ".";
             }
-        } else {
-            required_time = "";
+        } catch (ParseException e) {
+            Log.e(TAG, "Error parsing required_time", e);
         }
-
-        String messageResult =
-                routeFrom + " " +
-                        toMessage + " " +
-                        toNameLocal + ". " +
-                        required_time;
-        String messagePayment = orderWeb + " " + uah + " " + payMethodMessage;
-        Logger.d(context, TAG, "messageResult: " + messageResult);
-        Logger.d(context, TAG, "messagePayment: " + messagePayment);
-
-        String messageFondy = context.getString(R.string.fondy_message) + " " +
-                sendUrlMap.get("routefrom") + " " + context.getString(R.string.to_message) +
-                to_name_local + ".";
-        Logger.d(context, TAG, "startFinishPage: messageResult " + messageResult);
-        Logger.d(context, TAG, "startFinishPage: to_name " + to_name);
-
-        Logger.d(context, TAG, "orderWeb: " + orderWeb);
-        Logger.d(context, TAG, "uah: " + uah);
-        Logger.d(context, TAG, "payMethodMessage: " + payMethodMessage);
-
-
-        Bundle bundle = new Bundle();
-        bundle.putString("messageResult_key", messageResult);
-        bundle.putString("messagePay_key", messagePayment);
-        bundle.putString("messageFondy_key", messageFondy);
-        bundle.putString("messageCost_key", Objects.requireNonNull(sendUrlMap.get("orderWeb")));
-        bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
-        bundle.putString("card_payment_key", "no");
-        bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
-        bundle.putString("dispatching_order_uid_Double", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid_Double")));
-        viewModel.setStatusNalUpdate(true); //наюлюдение за опросом статусом нала
-        new Handler(Looper.getMainLooper()).post(() -> {
-
-            // Выполняем навигацию в главном потоке
-            MainActivity.navController.navigate(
-                    R.id.nav_finish_separate,
-                    bundle,
-                    new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_visicom, true)
-                            .build()
-            );
-        });
+        return "";
     }
 
-
-
-    }
+    /**
+     * Очистка строки от лишних пробелов
+     */
     private String cleanString(String input) {
         if (input == null) return "";
-        return input.trim().replaceAll("\\s+", " ").replaceAll("\\s{2,}$", " ");
+        return input.trim().replaceAll("\\s+", " ");
     }
 
+    /**
+     * Логирование в контекст
+     */
+    private void logToContext(String tag, String message) {
+        Log.d(tag, message);
+        Context context = getContext();
+        if (context != null) {
+            Logger.d(context, tag, message);
+        }
+    }
+
+    /**
+     * Логирование ошибки в контекст
+     */
+    private void logErrorToContext(String tag, String message, Exception e) {
+        Log.e(tag, message, e);
+        Context context = getContext();
+        if (context != null) {
+            Logger.e(context, tag, message + (e != null ? ": " + e.getMessage() : ""));
+        }
+    }
+
+    /**
+     * Чтение данных из SQLite
+     */
     @SuppressLint("Range")
     private static List<String> logCursor(String table, Context context) {
         List<String> list = new ArrayList<>();
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        Cursor c = database.query(table, null, null, null, null, null, null);
-        if (c.moveToFirst()) {
-            String str;
-            do {
-                str = "";
-                for (String cn : c.getColumnNames()) {
-                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                    list.add(c.getString(c.getColumnIndex(cn)));
+        SQLiteDatabase database = null;
+        Cursor c = null;
 
-                }
+        try {
+            database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            c = database.query(table, null, null, null, null, null, null);
 
-            } while (c.moveToNext());
+            if (c.moveToFirst()) {
+                do {
+                    for (String cn : c.getColumnNames()) {
+                        list.add(c.getString(c.getColumnIndex(cn)));
+                    }
+                } while (c.moveToNext());
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error reading database", e);
+        } finally {
+            if (c != null) {
+                c.close();
+            }
+            if (database != null) {
+                database.close();
+            }
         }
-        database.close();
-        c.close();
+
         return list;
     }
-    // Отключение
+    /**
+     * Отключение от Pusher
+     */
     public void disconnect() {
+        isShuttingDown = true;
+
         if (pusher != null) {
-            pusher.disconnect();
+            try {
+                pusher.disconnect();
+            } catch (Exception e) {
+                Log.e(TAG, "Error disconnecting", e);
+            }
         }
+
+        // Сбрасываем состояние
+        isSubscribed = false;
+        isSubscribing = false;
+        boundEvents.clear();
+        channel = null;
     }
 
+    /**
+     * Проверка состояния подключения
+     */
+    public boolean isConnected() {
+        return pusher != null &&
+                pusher.getConnection() != null &&
+                pusher.getConnection().getState() == ConnectionState.CONNECTED;
+    }
 }

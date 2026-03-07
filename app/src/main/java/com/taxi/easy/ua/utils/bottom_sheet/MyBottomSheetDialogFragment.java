@@ -126,7 +126,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
 
         String[] tariffArr = new String[]{
                 context.getResources().getString(R.string.start_t),
-                context.getResources().getString(R.string.base_onl_t),
+//                context.getResources().getString(R.string.base_onl_t),
                 context.getResources().getString(R.string.base_t),
                 context.getResources().getString(R.string.univers_t),
                 context.getResources().getString(R.string.bisnes_t),
@@ -143,26 +143,23 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
 
         String tariffOld =  logCursor(MainActivity.TABLE_SETTINGS_INFO,context).get(2);
         switch (tariffOld) {
-            case "Базовий онлайн":
+            case  "Базовый":
                 spinner.setSelection(1);
                 break;
-            case  "Базовый":
+            case "Универсал":
                 spinner.setSelection(2);
                 break;
-            case "Универсал":
+            case "Бизнес-класс":
                 spinner.setSelection(3);
                 break;
-            case "Бизнес-класс":
+            case "Премиум-класс":
                 spinner.setSelection(4);
                 break;
-            case "Премиум-класс":
+            case "Эконом-класс":
                 spinner.setSelection(5);
                 break;
-            case "Эконом-класс":
-                spinner.setSelection(6);
-                break;
             case "Микроавтобус":
-                spinner.setSelection(7);
+                spinner.setSelection(6);
                 break;
             default:
                 spinner.setSelection(0);
@@ -174,24 +171,21 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 String tariff_to_server;
                 switch (position) {
                     case 1:
-                        tariff_to_server = "Базовий онлайн";
-                        break;
-                    case 2:
                         tariff_to_server = "Базовый";
                         break;
-                    case 3:
+                    case 2:
                         tariff_to_server = "Универсал";
                         break;
-                    case 4:
+                    case 3:
                         tariff_to_server = "Бизнес-класс";
                         break;
-                    case 5:
+                    case 4:
                         tariff_to_server = "Премиум-класс";
                         break;
-                    case 6:
+                    case 5:
                         tariff_to_server = "Эконом-класс";
                         break;
-                    case 7:
+                    case 6:
                         tariff_to_server = "Микроавтобус";
                         break;
                     default:
