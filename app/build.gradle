@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1858
-        versionName = '1.858'
+        versionCode = 1859
+        versionName = '1.859'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled = true
@@ -22,7 +22,7 @@ android {
 
     signingConfigs {
         release {
-            storeFile file("app/keystore/keystore.jks")
+            storeFile file("keystore/keystore.jks")
             storePassword "180571"
             keyAlias "key0"
             keyPassword "180571"
