@@ -104,7 +104,7 @@ jobs:
       - name: Publish to Google Play
         run: |
           set -e
-          PACKAGE_NAME="com.taxi_pas_4"
+          PACKAGE_NAME="com.taxi.easy.ua"
           AAB_PATH="${{ env.AAB_PATH }}"
 
           # Создаем JSON файл из секрета
