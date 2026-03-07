@@ -107,13 +107,30 @@ jobs:
           PACKAGE_NAME="com.taxi.easy.ua"
           AAB_PATH="${{ env.AAB_PATH }}"
 
+          echo "🚀 Starting publication process..."
+
           # Создаем JSON файл из секрета
           echo '${{ secrets.SERVICE_ACCOUNT_JSON }}' > /tmp/service-account.json
           JSON_FILE="/tmp/service-account.json"
 
+          # Проверка наличия service account
+          if [ ! -f "$JSON_FILE" ]; then
+            echo "❌ Service account file not created"
+            exit 1
+          fi
+
+          echo "✅ Service account file created"
+
           # Получение токена
           CLIENT_EMAIL=$(jq -r '.client_email' "$JSON_FILE")
           PRIVATE_KEY=$(jq -r '.private_key' "$JSON_FILE")
+
+          if [ -z "$CLIENT_EMAIL" ] || [ -z "$PRIVATE_KEY" ]; then
+            echo "❌ Failed to extract client_email or private_key from service account"
+            exit 1
+          fi
+
+          echo "✅ Service account data extracted"
 
           NOW=$(date +%s)
           EXP=$(($NOW + 3600))
@@ -125,6 +142,7 @@ jobs:
           B64_CLAIM=$(echo -n "$JWT_CLAIM" | base64 -w 0 | tr '/+' '_-' | tr -d '=')
 
           echo "$PRIVATE_KEY" > /tmp/private-key.pem
+
           SIGNATURE=$(echo -n "$B64_HEADER.$B64_CLAIM" | openssl dgst -sha256 -sign /tmp/private-key.pem | base64 -w 0 | tr '/+' '_-' | tr -d '=')
 
           ACCESS_TOKEN=$(curl -s -X POST "https://oauth2.googleapis.com/token" \
@@ -132,79 +150,126 @@ jobs:
             -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=$B64_HEADER.$B64_CLAIM.$SIGNATURE" \
             | jq -r '.access_token // empty')
 
-          [ -z "$ACCESS_TOKEN" ] && { echo "❌ Failed to get access token"; exit 1; }
+          if [ -z "$ACCESS_TOKEN" ]; then
+            echo "❌ Failed to get access token"
+            ERROR_RESPONSE=$(curl -s -X POST "https://oauth2.googleapis.com/token" \
+              -H "Content-Type: application/x-www-form-urlencoded" \
+              -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=$B64_HEADER.$B64_CLAIM.$SIGNATURE")
+            echo "Error response: $ERROR_RESPONSE"
+            exit 1
+          fi
 
-          # Создание edit и загрузка
-          EDIT_ID=$(curl -s -X POST -H "Authorization: Bearer $ACCESS_TOKEN" \
-            "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits" \
-            | jq -r '.id // empty')
+          echo "✅ Access token obtained"
 
-          [ -z "$EDIT_ID" ] && { echo "❌ Failed to create edit"; exit 1; }
+          # Создание edit
+          EDIT_RESPONSE=$(curl -s -X POST -H "Authorization: Bearer $ACCESS_TOKEN" \
+            "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits")
 
-          VERSION_CODE=$(curl -s -X POST \
+          EDIT_ID=$(echo "$EDIT_RESPONSE" | jq -r '.id // empty')
+
+          if [ -z "$EDIT_ID" ]; then
+            echo "❌ Failed to create edit"
+            echo "Response: $EDIT_RESPONSE"
+            exit 1
+          fi
+
+          echo "✅ Edit created: $EDIT_ID"
+
+          # Загрузка AAB
+          echo "📦 Uploading AAB file..."
+
+          UPLOAD_RESPONSE=$(curl -s -X POST \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "Content-Type: application/octet-stream" \
             --data-binary "@$AAB_PATH" \
-            "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID/bundles?uploadType=media" \
-            | jq -r '.versionCode // empty')
+            "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID/bundles?uploadType=media")
 
-          [ -z "$VERSION_CODE" ] && { echo "❌ Upload failed"; exit 1; }
+          VERSION_CODE=$(echo "$UPLOAD_RESPONSE" | jq -r '.versionCode // empty')
 
-          # Release notes из папки app/src/main/play
+          if [ -z "$VERSION_CODE" ]; then
+            echo "❌ Upload failed"
+            echo "Response: $UPLOAD_RESPONSE"
+            exit 1
+          fi
+
+          echo "✅ AAB uploaded, versionCode: $VERSION_CODE"
+
+          # Загрузка release notes из файлов
           echo "📝 Loading release notes from app/src/main/play..."
-          
+
+          # Проверка наличия директории с release notes
+          if [ ! -d "app/src/main/play" ]; then
+            echo "❌ Directory app/src/main/play not found"
+            exit 1
+          fi
+
           # Английский
-          if [ -f "app/src/main/play/en-US/whatsnew.txt" ]; then
-            EN_NOTES=$(jq -Rs . < "app/src/main/play/en-US/whatsnew.txt")
-            echo "✅ English notes loaded"
+          EN_NOTES_FILE="app/src/main/play/en-US/whatsnew.txt"
+          if [ -f "$EN_NOTES_FILE" ]; then
+            EN_NOTES=$(cat "$EN_NOTES_FILE" | jq -Rs .)
+            echo "✅ English notes loaded:"
+            echo "$(cat "$EN_NOTES_FILE")"
           else
-            EN_NOTES="\"Release ${{ steps.build.outputs.version_name }}\""
-            echo "⚠️ English notes not found, using default"
+            echo "❌ English notes file not found: $EN_NOTES_FILE"
+            exit 1
           fi
-          
+
           # Русский
-          if [ -f "app/src/main/play/ru-RU/whatsnew.txt" ]; then
-            RU_NOTES=$(jq -Rs . < "app/src/main/play/ru-RU/whatsnew.txt")
-            echo "✅ Russian notes loaded"
+          RU_NOTES_FILE="app/src/main/play/ru-RU/whatsnew.txt"
+          if [ -f "$RU_NOTES_FILE" ]; then
+            RU_NOTES=$(cat "$RU_NOTES_FILE" | jq -Rs .)
+            echo "✅ Russian notes loaded:"
+            echo "$(cat "$RU_NOTES_FILE")"
           else
-            RU_NOTES="\"Релиз ${{ steps.build.outputs.version_name }}\""
-            echo "⚠️ Russian notes not found, using default"
+            echo "❌ Russian notes file not found: $RU_NOTES_FILE"
+            exit 1
           fi
-          
+
           # Украинский
-          if [ -f "app/src/main/play/uk/whatsnew.txt" ]; then
-            UK_NOTES=$(jq -Rs . < "app/src/main/play/uk/whatsnew.txt")
-            echo "✅ Ukrainian notes loaded"
+          UK_NOTES_FILE="app/src/main/play/uk/whatsnew.txt"
+          if [ -f "$UK_NOTES_FILE" ]; then
+            UK_NOTES=$(cat "$UK_NOTES_FILE" | jq -Rs .)
+            echo "✅ Ukrainian notes loaded:"
+            echo "$(cat "$UK_NOTES_FILE")"
           else
-            UK_NOTES="\"Реліз ${{ steps.build.outputs.version_name }}\""
-            echo "⚠️ Ukrainian notes not found, using default"
+            echo "❌ Ukrainian notes file not found: $UK_NOTES_FILE"
+            exit 1
           fi
+
+          echo "✅ All release notes loaded successfully"
 
           # Обновление треков
+          echo "🔄 Updating tracks (internal, alpha, beta)..."
+
           for TRACK in internal alpha beta; do
-            curl -s -X PUT \
+            echo "  Updating $TRACK track..."
+
+            # Создаем JSON payload
+            JSON_PAYLOAD=$(jq -n \
+              --argjson vc "$VERSION_CODE" \
+              --argjson en "$EN_NOTES" \
+              --argjson ru "$RU_NOTES" \
+              --argjson uk "$UK_NOTES" \
+              '{
+                releases: [
+                  {
+                    versionCodes: [$vc],
+                    status: "completed",
+                    releaseNotes: [
+                      {language: "en-US", text: $en},
+                      {language: "ru-RU", text: $ru},
+                      {language: "uk", text: $uk}
+                    ]
+                  }
+                ]
+              }')
+
+            # Отправляем запрос
+            TRACK_RESPONSE=$(curl -s -X PUT \
               -H "Authorization: Bearer $ACCESS_TOKEN" \
               -H "Content-Type: application/json" \
-              -d "{
-                \"releases\": [{
-                  \"versionCodes\": [$VERSION_CODE],
-                  \"status\": \"completed\",
-                  \"releaseNotes\": [
-                    {\"language\": \"en-US\", \"text\": $EN_NOTES},
-                    {\"language\": \"ru-RU\", \"text\": $RU_NOTES},
-                    {\"language\": \"uk\", \"text\": $UK_NOTES}
-                  ]
-                }]
-              }" \
-              "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID/tracks/$TRACK" > /dev/null
-          done
-
-          # Commit
-          curl -s -X POST \
-            -H "Authorization: Bearer $ACCESS_TOKEN" \
-            "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID:commit" \
-            | jq . && echo "✅ Published to internal, alpha, beta!"
-
+              -d "$JSON_PAYLOAD" \
+              "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
