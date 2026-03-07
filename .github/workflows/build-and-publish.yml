@@ -44,6 +44,7 @@ jobs:
       - name: Prepare and build
         run: |
           chmod +x gradlew
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
           
           # Проверка файлов
           for file in app/google-services.json app/keystore/keystore.jks; do
