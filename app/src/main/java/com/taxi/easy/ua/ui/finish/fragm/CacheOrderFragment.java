@@ -309,7 +309,7 @@ public class CacheOrderFragment extends Fragment {
         double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
         String start = cursor.getString(cursor.getColumnIndex("start"));
         String finish = cursor.getString(cursor.getColumnIndex("finish"));
-        if (finish.equals(context.getString(R.string.on_city_tv))) {
+        if (finish.equals(context.getString(R.string.on_city_tv)) || finish.isEmpty()) {
             finish = start;
         }
 
