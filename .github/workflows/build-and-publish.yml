@@ -101,118 +101,20 @@ jobs:
 #          track: internal
 #          whatsNewDirectory: app/src/main/play
 
-#      - name: Publish to Google Play
-#        run: |
-#          set -e
-#          PACKAGE_NAME="com.taxi.easy.ua"
-#          AAB_PATH="${{ env.AAB_PATH }}"
-#
-#          # Создаем JSON файл из секрета
-#          echo '${{ secrets.SERVICE_ACCOUNT_JSON }}' > /tmp/service-account.json
-#          JSON_FILE="/tmp/service-account.json"
-#
-#          # Получение токена
-#          CLIENT_EMAIL=$(jq -r '.client_email' "$JSON_FILE")
-#          PRIVATE_KEY=$(jq -r '.private_key' "$JSON_FILE")
-#
-#          NOW=$(date +%s)
-#          EXP=$(($NOW + 3600))
-#
-#          JWT_HEADER='{"alg":"RS256","typ":"JWT"}'
-#          JWT_CLAIM="{\"iss\":\"$CLIENT_EMAIL\",\"scope\":\"https://www.googleapis.com/auth/androidpublisher\",\"aud\":\"https://oauth2.googleapis.com/token\",\"exp\":$EXP,\"iat\":$NOW}"
-#
-#          B64_HEADER=$(echo -n "$JWT_HEADER" | base64 -w 0 | tr '/+' '_-' | tr -d '=')
-#          B64_CLAIM=$(echo -n "$JWT_CLAIM" | base64 -w 0 | tr '/+' '_-' | tr -d '=')
-#
-#          echo "$PRIVATE_KEY" > /tmp/private-key.pem
-#          SIGNATURE=$(echo -n "$B64_HEADER.$B64_CLAIM" | openssl dgst -sha256 -sign /tmp/private-key.pem | base64 -w 0 | tr '/+' '_-' | tr -d '=')
-#
-#          ACCESS_TOKEN=$(curl -s -X POST "https://oauth2.googleapis.com/token" \
-#            -H "Content-Type: application/x-www-form-urlencoded" \
-#            -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=$B64_HEADER.$B64_CLAIM.$SIGNATURE" \
-#            | jq -r '.access_token // empty')
-#
-#          [ -z "$ACCESS_TOKEN" ] && { echo "❌ Failed to get access token"; exit 1; }
-#
-#          # Создание edit и загрузка
-#          EDIT_ID=$(curl -s -X POST -H "Authorization: Bearer $ACCESS_TOKEN" \
-#            "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits" \
-#            | jq -r '.id // empty')
-#
-#          [ -z "$EDIT_ID" ] && { echo "❌ Failed to create edit"; exit 1; }
-#
-#          VERSION_CODE=$(curl -s -X POST \
-#            -H "Authorization: Bearer $ACCESS_TOKEN" \
-#            -H "Content-Type: application/octet-stream" \
-#            --data-binary "@$AAB_PATH" \
-#            "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID/bundles?uploadType=media" \
-#            | jq -r '.versionCode // empty')
-#
-#          [ -z "$VERSION_CODE" ] && { echo "❌ Upload failed"; exit 1; }
-#
-#          # Release notes
-#          EN_NOTES=$(jq -Rs . < "app/src/main/play/en-US/whatsnew.txt" 2>/dev/null || echo "\"Release ${{ steps.build.outputs.version_name }}\"")
-#          RU_NOTES=$(jq -Rs . < "app/src/main/play/ru-RU/whatsnew.txt" 2>/dev/null || echo "\"Релиз ${{ steps.build.outputs.version_name }}\"")
-#          UK_NOTES=$(jq -Rs . < "app/src/main/play/uk/whatsnew.txt" 2>/dev/null || echo "\"Реліз ${{ steps.build.outputs.version_name }}\"")
-#
-#          # Обновление треков
-#          for TRACK in internal alpha beta; do
-#            curl -s -X PUT \
-#              -H "Authorization: Bearer $ACCESS_TOKEN" \
-#              -H "Content-Type: application/json" \
-#              -d "{
-#                \"releases\": [{
-#                  \"versionCodes\": [$VERSION_CODE],
-#                  \"status\": \"completed\",
-#                  \"releaseNotes\": [
-#                    {\"language\": \"en-US\", \"text\": $EN_NOTES},
-#                    {\"language\": \"ru-RU\", \"text\": $RU_NOTES},
-#                    {\"language\": \"uk\", \"text\": $UK_NOTES}
-#                  ]
-#                }]
-#              }" \
-#              "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID/tracks/$TRACK" > /dev/null
-#          done
-#
-#          # Commit
-#          curl -s -X POST \
-#            -H "Authorization: Bearer $ACCESS_TOKEN" \
-#            "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID:commit" \
-#            | jq . && echo "✅ Published to internal, alpha, beta!"
-
       - name: Publish to Google Play
         run: |
           set -e
           PACKAGE_NAME="com.taxi.easy.ua"
           AAB_PATH="${{ env.AAB_PATH }}"
 
-          echo "📤 Starting Google Play publication process..."
-
           # Создаем JSON файл из секрета
           echo '${{ secrets.SERVICE_ACCOUNT_JSON }}' > /tmp/service-account.json
           JSON_FILE="/tmp/service-account.json"
 
-          # Проверка JSON файла
-          echo "🔍 Checking service account JSON..."
-          if [ ! -s "$JSON_FILE" ]; then
-            echo "❌ SERVICE_ACCOUNT_JSON is empty or not set"
-            exit 1
-          fi
-
-          # Получение email из JSON
+          # Получение токена
           CLIENT_EMAIL=$(jq -r '.client_email' "$JSON_FILE")
-          echo "🔍 Service account email: $CLIENT_EMAIL"
-
-          # Проверка private_key
           PRIVATE_KEY=$(jq -r '.private_key' "$JSON_FILE")
-          if [ -z "$PRIVATE_KEY" ] || [ "$PRIVATE_KEY" = "null" ]; then
-            echo "❌ Private key not found in JSON"
-            exit 1
-          fi
-          echo "✅ Private key found"
 
-          # Генерация JWT
-          echo "🔑 Generating JWT token..."
           NOW=$(date +%s)
           EXP=$(($NOW + 3600))
 
@@ -225,92 +127,37 @@ jobs:
           echo "$PRIVATE_KEY" > /tmp/private-key.pem
           SIGNATURE=$(echo -n "$B64_HEADER.$B64_CLAIM" | openssl dgst -sha256 -sign /tmp/private-key.pem | base64 -w 0 | tr '/+' '_-' | tr -d '=')
 
-          # Получение access token
-          echo "🔄 Getting access token from Google..."
-          TOKEN_RESPONSE=$(curl -s -X POST "https://oauth2.googleapis.com/token" \
+          ACCESS_TOKEN=$(curl -s -X POST "https://oauth2.googleapis.com/token" \
             -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=$B64_HEADER.$B64_CLAIM.$SIGNATURE")
+            -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=$B64_HEADER.$B64_CLAIM.$SIGNATURE" \
+            | jq -r '.access_token // empty')
 
-          ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token // empty')
-          ERROR=$(echo "$TOKEN_RESPONSE" | jq -r '.error // empty')
+          [ -z "$ACCESS_TOKEN" ] && { echo "❌ Failed to get access token"; exit 1; }
 
-          if [ -z "$ACCESS_TOKEN" ]; then
-            echo "❌ Failed to get access token"
-            echo "🔍 Error: $ERROR"
-            echo "🔍 Full response: $TOKEN_RESPONSE"
-            exit 1
-          fi
-          echo "✅ Access token obtained"
+          # Создание edit и загрузка
+          EDIT_ID=$(curl -s -X POST -H "Authorization: Bearer $ACCESS_TOKEN" \
+            "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits" \
+            | jq -r '.id // empty')
 
-          # Создание edit с диагностикой
-          echo "📝 Creating edit for package: $PACKAGE_NAME..."
-          EDIT_RESPONSE=$(curl -s -X POST -H "Authorization: Bearer $ACCESS_TOKEN" \
-            "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits")
+          [ -z "$EDIT_ID" ] && { echo "❌ Failed to create edit"; exit 1; }
 
-          # Выводим полный ответ для диагностики
-          echo "🔍 Edit response: $EDIT_RESPONSE"
-
-          EDIT_ID=$(echo "$EDIT_RESPONSE" | jq -r '.id // empty')
-
-          if [ -z "$EDIT_ID" ]; then
-            echo "❌ Failed to create edit"
-            # Проверяем код ошибки
-            ERROR_CODE=$(echo "$EDIT_RESPONSE" | jq -r '.error.code // empty')
-            ERROR_MESSAGE=$(echo "$EDIT_RESPONSE" | jq -r '.error.message // empty')
-            ERROR_STATUS=$(echo "$EDIT_RESPONSE" | jq -r '.error.status // empty')
-
-            echo "🔍 Error code: $ERROR_CODE"
-            echo "🔍 Error message: $ERROR_MESSAGE"
-            echo "🔍 Error status: $ERROR_STATUS"
-
-            # Диагностика по кодам ошибок
-            if [ "$ERROR_CODE" = "403" ]; then
-              echo "🔑 Это ошибка прав доступа. Решение:"
-              echo "   1. Убедитесь что аккаунт $CLIENT_EMAIL добавлен в Google Play Console"
-              echo "   2. Проверьте права доступа к приложению $PACKAGE_NAME"
-              echo "   3. После добавления прав подождите до 48 часов"
-            elif [ "$ERROR_CODE" = "404" ]; then
-              echo "📱 Приложение $PACKAGE_NAME не найдено. Проверьте package name."
-            elif [ "$ERROR_CODE" = "401" ]; then
-              echo "🔐 Ошибка авторизации. Проверьте JSON ключ."
-            fi
-            exit 1
-          fi
-          echo "✅ Edit created: $EDIT_ID"
-
-          # Загрузка AAB
-          echo "📦 Uploading AAB file: $AAB_PATH"
-          if [ ! -f "$AAB_PATH" ]; then
-            echo "❌ AAB file not found at $AAB_PATH"
-            exit 1
-          fi
-
-          UPLOAD_RESPONSE=$(curl -s -X POST \
+          VERSION_CODE=$(curl -s -X POST \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "Content-Type: application/octet-stream" \
             --data-binary "@$AAB_PATH" \
-            "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID/bundles?uploadType=media")
+            "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID/bundles?uploadType=media" \
+            | jq -r '.versionCode // empty')
 
-          VERSION_CODE=$(echo "$UPLOAD_RESPONSE" | jq -r '.versionCode // empty')
-
-          if [ -z "$VERSION_CODE" ]; then
-            echo "❌ Upload failed"
-            echo "🔍 Upload response: $UPLOAD_RESPONSE"
-            exit 1
-          fi
-          echo "✅ AAB uploaded with versionCode: $VERSION_CODE"
+          [ -z "$VERSION_CODE" ] && { echo "❌ Upload failed"; exit 1; }
 
           # Release notes
-          echo "📝 Preparing release notes..."
           EN_NOTES=$(jq -Rs . < "app/src/main/play/en-US/whatsnew.txt" 2>/dev/null || echo "\"Release ${{ steps.build.outputs.version_name }}\"")
           RU_NOTES=$(jq -Rs . < "app/src/main/play/ru-RU/whatsnew.txt" 2>/dev/null || echo "\"Релиз ${{ steps.build.outputs.version_name }}\"")
           UK_NOTES=$(jq -Rs . < "app/src/main/play/uk/whatsnew.txt" 2>/dev/null || echo "\"Реліз ${{ steps.build.outputs.version_name }}\"")
 
           # Обновление треков
-          echo "🔄 Updating tracks..."
           for TRACK in internal alpha beta; do
-            echo "  - Updating $TRACK track..."
-            TRACK_RESPONSE=$(curl -s -X PUT \
+            curl -s -X PUT \
               -H "Authorization: Bearer $ACCESS_TOKEN" \
               -H "Content-Type: application/json" \
               -d "{
@@ -324,33 +171,16 @@ jobs:
                   ]
                 }]
               }" \
-              "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID/tracks/$TRACK")
-
-            # Проверка успешности
-            TRACK_ERROR=$(echo "$TRACK_RESPONSE" | jq -r '.error // empty')
-            if [ "$TRACK_ERROR" != "empty" ] && [ ! -z "$TRACK_ERROR" ]; then
-              echo "  ⚠️ Warning updating $TRACK: $TRACK_ERROR"
-            else
-              echo "  ✅ $TRACK updated"
-            fi
+              "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID/tracks/$TRACK" > /dev/null
           done
 
           # Commit
-          echo "💾 Committing edit..."
-          COMMIT_RESPONSE=$(curl -s -X POST \
+          curl -s -X POST \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
-            "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID:commit")
+            "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID:commit" \
+            | jq . && echo "✅ Published to internal, alpha, beta!"
 
-          # Проверка результата
-          COMMIT_ERROR=$(echo "$COMMIT_RESPONSE" | jq -r '.error // empty')
-          if [ "$COMMIT_ERROR" != "empty" ] && [ ! -z "$COMMIT_ERROR" ]; then
-            echo "❌ Commit failed: $COMMIT_ERROR"
-            echo "🔍 Full response: $COMMIT_RESPONSE"
-            exit 1
-          fi
 
-          echo "✅ Successfully published to internal, alpha, beta tracks!"
-          echo "🎉 All done!"
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
