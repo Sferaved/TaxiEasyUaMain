@@ -244,32 +244,33 @@ jobs:
           for TRACK in internal alpha beta; do
             echo "  Updating $TRACK track..."
 
-            # Создаем JSON payload
-            JSON_PAYLOAD=$(jq -n \
-              --argjson vc "$VERSION_CODE" \
-              --argjson en "$EN_NOTES" \
-              --argjson ru "$RU_NOTES" \
-              --argjson uk "$UK_NOTES" \
-              '{
-                releases: [
-                  {
-                    versionCodes: [$vc],
-                    status: "completed",
-                    releaseNotes: [
-                      {language: "en-US", text: $en},
-                      {language: "ru-RU", text: $ru},
-                      {language: "uk", text: $uk}
-                    ]
-                  }
-                ]
-              }')
-
-            # Отправляем запрос
-            TRACK_RESPONSE=$(curl -s -X PUT \
+            curl -s -X PUT \
               -H "Authorization: Bearer $ACCESS_TOKEN" \
               -H "Content-Type: application/json" \
-              -d "$JSON_PAYLOAD" \
-              "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT
+              -d "{
+                \"releases\": [{
+                  \"versionCodes\": [$VERSION_CODE],
+                  \"status\": \"completed\",
+                  \"releaseNotes\": [
+                    {\"language\": \"en-US\", \"text\": $EN_NOTES},
+                    {\"language\": \"ru-RU\", \"text\": $RU_NOTES},
+                    {\"language\": \"uk\", \"text\": $UK_NOTES}
+                  ]
+                }]
+              }" \
+              "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID/tracks/$TRACK"
+
+            echo "  ✅ $TRACK track updated"
+          done
+
+          # Commit
+          echo "📝 Committing changes..."
+          COMMIT_RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID:commit")
+
+          echo "$COMMIT_RESPONSE" | jq '.'
+          echo "✅ Successfully published to Google Play (internal, alpha, beta)!"
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
