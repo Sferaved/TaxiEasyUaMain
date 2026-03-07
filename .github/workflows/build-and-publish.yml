@@ -195,16 +195,16 @@ jobs:
           echo "✅ AAB uploaded, versionCode: $VERSION_CODE"
 
           # Загрузка release notes из файлов
-          echo "📝 Loading release notes from app/src/main/play..."
+          echo "📝 Loading release notes from app/play..."
 
           # Проверка наличия директории с release notes
-          if [ ! -d "app/src/main/play" ]; then
-            echo "❌ Directory app/src/main/play not found"
+          if [ ! -d "app/play" ]; then
+            echo "❌ Directory app/play not found"
             exit 1
           fi
 
           # Английский
-          EN_NOTES_FILE="app/src/main/play/en-US/whatsnew.txt"
+          EN_NOTES_FILE="app/play/en-US/whatsnew.txt"
           if [ -f "$EN_NOTES_FILE" ]; then
             EN_NOTES=$(cat "$EN_NOTES_FILE" | jq -Rs .)
             echo "✅ English notes loaded:"
@@ -215,7 +215,7 @@ jobs:
           fi
 
           # Русский
-          RU_NOTES_FILE="app/src/main/play/ru-RU/whatsnew.txt"
+          RU_NOTES_FILE="app/play/ru-RU/whatsnew.txt"
           if [ -f "$RU_NOTES_FILE" ]; then
             RU_NOTES=$(cat "$RU_NOTES_FILE" | jq -Rs .)
             echo "✅ Russian notes loaded:"
@@ -226,7 +226,7 @@ jobs:
           fi
 
           # Украинский
-          UK_NOTES_FILE="app/src/main/play/uk/whatsnew.txt"
+          UK_NOTES_FILE="app/play/uk/whatsnew.txt"
           if [ -f "$UK_NOTES_FILE" ]; then
             UK_NOTES=$(cat "$UK_NOTES_FILE" | jq -Rs .)
             echo "✅ Ukrainian notes loaded:"
@@ -275,7 +275,7 @@ jobs:
         with:
           files: ${{ env.AAB_PATH }}
           name: Release ${{ steps.build.outputs.version_name }}
-          body_path: app/src/main/play/en-US/whatsnew.txt
+          body_path: app/play/en-US/whatsnew.txt
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
