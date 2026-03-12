@@ -83,6 +83,7 @@ import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
+import com.taxi.easy.ua.utils.centrifugo.CentrifugoManager;
 import com.taxi.easy.ua.utils.connect.NetworkMonitor;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.download.AppUpdater;
@@ -231,7 +232,7 @@ public class MainActivity extends AppCompatActivity {
     Constraints constraints;
     @SuppressLint("StaticFieldLeak")
     public static ImageButton button1;
-
+    private CentrifugoManager centrifugoManager;
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -309,10 +310,10 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Инициализация ViewModel
-        if (viewModel == null) {
-            viewModel = new ViewModelProvider(this).get(ExecutionStatusViewModel.class);
-            sharedPreferencesHelperMain.saveValue("setStatusX", true);
-        }
+        viewModel = new ViewModelProvider(this).get(ExecutionStatusViewModel.class);
+        sharedPreferencesHelperMain.saveValue("setStatusX", true);
+
+
 
         // Инициализация ActivityResultLauncher
         exactAlarmLauncher = registerForActivityResult(
@@ -1532,17 +1533,26 @@ public class MainActivity extends AppCompatActivity {
                     startFireBase();
                 } else {
                     // Инициализация и подключение к Pusher
-                    pusherManager = new PusherManager(
+//                    pusherManager = new PusherManager(
+//                            getString(R.string.application),
+//                            userEmail,
+//                            MainActivity.this,
+//                            viewModel
+//                    );
+//                    pusherManager.connect();
+//                    pusherManager.subscribeToChannel();
+//                    Log.d("DEBUG", "Creating PusherManager instance. Hash: " + pusherManager.hashCode());
+//                    Log.d("DEBUG", "ViewModel passed to PusherManager hash: " + viewModel.hashCode());
+                    centrifugoManager = new CentrifugoManager(
                             getString(R.string.application),
                             userEmail,
                             MainActivity.this,
                             viewModel
                     );
-                    pusherManager.connect();
-                    pusherManager.subscribeToChannel();
-                    Log.d("DEBUG", "Creating PusherManager instance. Hash: " + pusherManager.hashCode());
-                    Log.d("DEBUG", "ViewModel passed to PusherManager hash: " + viewModel.hashCode());
 
+                    centrifugoManager.connect();
+// subscribeToChannel() не обязателен, но можно вызвать для надежности
+                    centrifugoManager.subscribeToChannel();
                     new VerifyUserTask(this).execute();
                     String sityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
                     Logger.d(this, TAG, "CityCheckActivity: " + sityCheckActivity);
@@ -1770,17 +1780,24 @@ public class MainActivity extends AppCompatActivity {
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                         startActivity(intent);
                     }
-                    pusherManager = new PusherManager(
+//                    pusherManager = new PusherManager(
+//                            getString(R.string.application),
+//                            user.getEmail(),
+//                            this,
+//                            viewModel
+//                    );
+//                    pusherManager.connect();
+//                    pusherManager.subscribeToChannel();
+                    centrifugoManager = new CentrifugoManager(
                             getString(R.string.application),
                             user.getEmail(),
-                            this,
+                            MainActivity.this,
                             viewModel
                     );
-                    pusherManager.connect();
-                    pusherManager.subscribeToChannel();
-                    Log.d("DEBUG", "Creating PusherManager instance. Hash: " + pusherManager.hashCode());
-                    Log.d("DEBUG", "ViewModel passed to PusherManager hash: " + viewModel.hashCode());
-                }
+
+                    centrifugoManager.connect();
+// subscribeToChannel() не обязателен, но можно вызвать для надежности
+                    centrifugoManager.subscribeToChannel();     }
             } else {
                 handleSignInFailure(result);
             }

@@ -291,7 +291,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
         // Или показать сообщение (если фрагмент еще добавлен)
         if (isAdded() && getContext() != null) {
-            Toast.makeText(getContext(), context.getString(R.string.ex_st_canceled), Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), context.getString(R.string.ex_st_canceled_no_pay), Toast.LENGTH_SHORT).show();
         }
 
         // Уведомляем слушателя

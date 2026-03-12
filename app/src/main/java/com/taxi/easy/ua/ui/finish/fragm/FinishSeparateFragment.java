@@ -1759,36 +1759,20 @@ public class FinishSeparateFragment extends Fragment {
         });
 
         // Наблюдение за статусом транзакции
-// Проверяем текущее значение перед подпиской
-//        LiveData<String> currentLiveData = viewModel.getTransactionStatus();
-//        String currentValue = currentLiveData.getValue();
-//        Log.d("DEBUG", "Current LiveData value before observe: " + currentValue);
-//        viewModel.getTransactionStatus().observe(getViewLifecycleOwner(), status -> {
-//            Log.d("DEBUG", "🔔 OBSERVER TRIGGERED with status: '" + status + "'");
-//            Log.d("DEBUG", "Observer hash: " + this.hashCode());
-//            Log.d("DEBUG", "Fragment state: " + getLifecycle().getCurrentState());
-//            if (status == null) {
-//                Log.d("OBSERVER", "Status is null! This might be initial value");
-//                return; // Игнорируем null
-//            }
-//
-//            Log.d("OBSERVER", "Processing valid status: " + status);
-//
-//            if (!status.equals("null") && !status.isEmpty()) {
-//                Logger.d(context,"Pusher eventTransactionStatus", "Finish transaction status set: " + status);
-//                String declined_invoice = (String) sharedPreferencesHelperMain.getValue("declined_invoice", "**");
-//                Logger.d(context,"Pusher eventTransactionStatus", "Finish declined_invoice: " + declined_invoice);
-//                Logger.d(context,"Pusher eventTransactionStatus", "Finish MainActivity.order_id: " + MainActivity.order_id);
-//
-//                if ("Declined".equals(status) && !declined_invoice.equals(MainActivity.order_id)) {
-//                    sharedPreferencesHelperMain.saveValue("declined_invoice", MainActivity.order_id);
-//                    handleTransactionStatusDeclined(status, context);
-//                    viewModel.setCancelStatus(true);
-//                }
-//            } else {
-//                Log.d("OBSERVER", "Status is null!");
-//            }
-//        });
+        viewModel.getTransactionStatus().observe(getViewLifecycleOwner(), status -> {
+            if (status != null) {
+                Logger.d(context,"getTransactionStatus", "Finish transaction status set: " + status);
+                String declined_invoice = (String) sharedPreferencesHelperMain.getValue("declined_invoice", "**");
+                Logger.d(context,"getTransactionStatus", "Finish declined_invoice: " + declined_invoice);
+                Logger.d(context,"getTransactionStatus", "Finish MainActivity.order_id: " + MainActivity.order_id);
+                if ("Declined".equals(status) && !declined_invoice.equals(MainActivity.order_id)) {
+                    sharedPreferencesHelperMain.saveValue("declined_invoice", MainActivity.order_id);
+                    handleTransactionStatusDeclined(status, context);
+                    viewModel.setCancelStatus(true);
+                }
+            }
+
+        });
 
         if(!paySystemStatus.equals("nal_payment")) {
             // Инициализация ViewModel

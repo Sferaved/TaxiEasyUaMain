@@ -242,7 +242,7 @@ public class MyApplication extends Application {
     }
 
     private void startANRWatchDog(Context context) {
-        new ANRWatchDog(4000)
+        new ANRWatchDog(8000)
                 .setANRListener(error -> {
                     Logger.e(context, TAG, "ANR occurred: " + error);
                     FirebaseCrashlytics.getInstance().recordException(error);

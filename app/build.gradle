@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1871
-        versionName = '1.871'
+        versionCode = 1872
+        versionName = '1.872'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled = true
@@ -184,6 +184,8 @@ dependencies {
     annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
 
     implementation 'com.google.android.material:material:1.13.0'
+
+    implementation 'io.github.centrifugal:centrifuge-java:0.5.0'
 }
 
 

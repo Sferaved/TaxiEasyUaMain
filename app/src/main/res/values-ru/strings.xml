@@ -2,7 +2,7 @@
 <resources>
 
     <string name="menu_maps">Карта</string>
-    <string name="menu_home">По адресу (Старое)</string>
+    <string name="menu_home">По базе адресов</string>
     <string name="menu_gallery">Мои маршруты</string>
     <string name="menu_slideshow">Slideshow</string>
     <string name="menu_about">О приложении</string>
@@ -65,7 +65,7 @@
     <string name="from_edit">Откуда</string>
     <string name="sms_code">Код проверки со смс-сообщения</string>
     <string name="android">Андроид-приложение для скорых и дешевых поездок при заказе онлайн.</string>
-    <string name="good_day">Мои приветствия. Нашел великолепное приложение для поездок на такси. \n \n Советую попробовать по ссылке в официальном магазине Google: \n\n https://play.google.com/store/apps/details?id=com.taxi.easy.ua \n\n Хорошего дня. \n Еще увидимся.</string>
+    <string name="good_day">Приветствую. Нашел великолепное приложение для поездок на такси. \n \n Советую попробовать по ссылке в официальном магазине Google: \n\n https://play.google.com/store/apps/details?id=com.taxieasyua.back4app \n\n Хорошего дня. \n Еще увидимся.</string>
     <string name="share">Посоветовать другу приложение...</string>
     <string name="no_email_agent">Почтовый клиент не установлен.</string>
     <string name="check_position">Ожидайте, происходит определение Вашего местоположения...</string>
@@ -200,7 +200,7 @@
     <string name="block_mes">Заблокировано</string>
     <string name="bon">бонусов</string>
     <string name="my_bonus_menu">Мои бонусы</string>
-    <string name="update_bonus">получить бонусы</string>
+    <string name="update_bonus">Получить бонусы</string>
     <string name="upd_bonus_info">Обновите информацию о ваших бонусах</string>
     <string name="bonus_text_0">Не забудьте забрать бонус за следующие сутки.</string>
     <string name="bonus_text_1">Правила начисления бонусов:</string>
@@ -315,8 +315,7 @@
     <string name="gdpr3_1">Для обеспечения функциональности заказа такси в нашем приложении мы собираем и храним номера мобильных телефонов пользователей. Эти данные необходимы для связи с вами и предоставления услуги заказа такси.</string>
     <string name="gdpr3_2">Данные об устройстве пользователя выходят через процесс отправки токена устройства на защищенный сервер с использованием Firebase. </string>
     <string name="gdpr3_3">Мы прилагаем все усилия для обеспечения безопасности ваших данных. Вся информация, включая электронную почту и номер телефона, хранится в зашифрованном виде и доступ к ней ограничен только авторизованным сотрудникам.</string>
-    <string name="gdpr3_4">Используя нашу программу и предоставляя нам свои личные данные, вы выражаете свое согласие на сбор, использование и передачу данных в соответствии с этой политикой конфиденциальности. к ним. Наше приложение придерживается положений Общего регламента защиты персональных данных. (GDPR) Европейского Союза по сбору, использованию и обработке личных данных Вы можете в любое время пригласить доступ к вашим личным данным, внести изменения или удалить их из нашей базы данных. .easy.ua@gmail.com. Используя нашу программу, вы соглашаетесь с условиями нашей политики конфиденциальности. вносить изменения в эту политику, о чем вы будете сообщены. .ua@gmail.com. Если у вас есть дополнительные вопросы или запросы относительно конфиденциальности и данных, пожалуйста, свяжитесь с нами по указанной ниже контактным адресом.</string>
-
+    <string name="gdpr3_4">Используя наше приложение и предоставляя нам свои личные данные, вы соглашаетесь на сбор, использование и передачу данных в соответствии с настоящей политикой конфиденциальности. Мы принимаем все необходимые меры для обеспечения безопасности Ваших персональных данных и предотвращения несанкционированного доступа к ним. Наше приложение соответствует положениям Общего регламента защиты данных (GDPR) Европейского Союза о сборе, использовании и обработке персональных данных. Вы можете в любой момент запросить доступ к своим персональным данным, внести изменения или удалить их из нашей базы данных. Для этого свяжитесь с нами по адресу taxi.easy.ua.sup@gmail.com. Используя наше приложение, вы соглашаетесь с условиями нашей политики конфиденциальности. Мы оставляем за собой право вносить изменения в эту политику, о чем вы будете уведомлены. Вы можете в любой момент запросить доступ к своим персональным данным, внести изменения или удалить их из нашей базы данных. Для этого свяжитесь с нами по адресу Taxi.easy.ua@gmail.com. Если у вас есть дополнительные вопросы или запросы относительно конфиденциальности и данных, свяжитесь с нами по контактному адресу, указанному ниже.</string>
     <string name="my_name">Андрей Коржов</string>
     <string name="conf">Конфиденциальность</string>
     <string name="author_about">Об авторе</string>
@@ -326,6 +325,7 @@
     <string name="time_out_text">Отмена поездки по таймауту оплаты.</string>
     <string name="pay_cancel">Поездка отменена из-за отсутствия успешной  оплаты в течении отведенного тайминга. Попробуйте еще.</string>
     <string name="ex_st_canceled">Заказ отменен. Попробуйте еще.</string>
+    <string name="ex_st_canceled_no_pay">Заказ отправлен на отмену</string>
     <string name="search">Поиск адреса...</string>
     <string name="account_verify">Происходит проверка регистрации...</string>
     <string name="city_search">Определяется местоположение...</string>
@@ -525,7 +525,130 @@
     <string name="all_data_clear">Все данные сброшены</string>
     <string name="email_admin">Сообщить о проблеме по email</string>
     <string name="no_access_to_phone_admin">Номер телефона недоступен</string>
+    <string name="profill_title">Профиль</string>
+    <string name="change_cost_mess">Постоянное изменение стоимости</string>
+    <!-- strings.xml -->
+    <string name="history_title">История поездок</string>
+    <string name="history_subtitle">Все ваши предыдущие заказы</string>
+    <string name="order_new_ride">Новая поездка</string>
+    <string name="call_support">Связаться с поддержкой</string>
+    <string name="send_history">Запросить историю по почте</string>
+    <string name="ride_history">История поездок</string>
+    <string name="no_history">История пуста</string>
+    <string name="no_history_description">У вас еще не было поездок. Начните с первой!</string>
+    <string name="start_point">Место отправления</string>
+    <string name="end_point">Место назначения</string>
+    <string name="city_tour">По городу</string>
+    <string name="auto_not_specified">Не указано</string>
+    <string name="status_in_progress">В обработке</string>
+    <string name="status_at_start">Ожидание на месте</string>
+    <string name="status_on_route">В пути</string>
+    <string name="status_completed">Завершена</string>
+    <string name="status_cancelled">Отменена</string>
+    <string name="status_no_driver">Нет данных об авто</string>
+    <string name="status_client_cancelled">Отменена клиентом</string>
+    <string name="status_unknown">Неизвестно</string>
+    <string name="no_active_orders">Нет активных заказов</string>
+    <string name="no_active_orders_description">В настоящее время у вас нет активных поездок</string>
+
+    <string name="error_loading_orders">Ошибка загрузки заказов</string>
+    <string name="details">Детали</string>
+    <string name="open_details">Информация</string>
+
+    <string name="about_app">О приложении</string>
+    <string name="privacy_policy_info">Политика конфиденциальности</string>
+    <string name="view_privacy_policy">Посмотреть политику конфиденциальности</string>
+    <string name="data_collection">Сбор данных</string>
+    <string name="data_usage">Использование данных</string>
+    <string name="contact_info">Контактная информация</string>
+    <string name="share_app">Поделиться приложением</string>
+    <string name="app_version_format">%s • © %s</string>
+    <string name="bonus_program_info">Программа лояльности для наших клиентов</string>
+
+    <string name="author">Об авторе</string>
+    <string name="app_developer">Разработчик приложения</string>
+    <string name="contact_developer">Контактная информация</string>
+    <string name="view_other_apps">Другие приложения разработчика</string>
+    <string name="development_year">%s</string>
+    <string name="registration_year">На Google Play с 2023</string>
+
+    <string name="category_orders">Заказы</string>
+    <string name="category_account">Аккаунт и платежи</string>
+    <string name="category_about">О приложении</string>
+
+    <string name="my_cards">Мои карты</string>
+    <string name="cards_management_info">Управление привязанными картами</string>
+    <string name="payment_page">Оплата картой</string>
+    <string name="refresh_cards">Обновить карты</string>
+    <string name="webview_error_loading">Ошибка загрузки страницы</string>
+    <string name="payment_success">Платеж успешно завершен</string>
+    <string name="payment_failed">Платеж не удался</string>
+    <string name="payment_page_error">Ошибка загрузки платежной страницы</string>
+    <string name="chioise_tarrif">Выберите тариф</string>
+    <string name="day">День</string>
+    <string name="monthj">Месяц</string>
+    <string name="year">Год</string>
+    <string name="hours">Часы</string>
+    <string name="minutes_2">Минуты</string>
+    <string name="time_format_hint">Формат: 24 часа</string>
+    <string name="payment_type_select">Способ оплаты</string>
+    <string name="add_cost_motive">🔥 ПОВЫШЕННЫЙ СПРОС!\nДобавьте к текущей стоимости поездки для поиска лучшего водителя.</string>
+    <string name="confirm_cancel_order">Вы уверены, что хотите отменить заказ?</string>
+
+    <!-- Диалог ошибки локации -->
+    <string name="location_error_title">Проблема с геолокацией</string>
+    <string name="location_error_message">Не удалось определить ваше местоположение. Возможные причины:
+• GPS выключен
+• Приложение не имеет разрешения
+• Используется поддельная локация
+• Вы находитесь вне зоны покрытия
+
+Нажмите \"Настройки\" для проверки.</string>
+    <string name="settings">Настройки</string>
+    <string name="cancel">Отмена</string>
+
+    <!-- Предупреждение о подозрительной локации -->
+    <string name="suspicious_location_warning">Обнаружена подозрительная локация</string>
+    <string name="suspicious_location_details">Детали проблемы:</string>
+    <string name="location_mock_warning">• Используется поддельная локация</string>
+    <string name="location_accuracy_warning">• Низкая точность: %1$.0f метров</string>
+    <string name="location_speed_warning">• Нереальная скорость: %1$.0f км/ч</string>
+    <string name="location_zero_coordinates">• Неверные координаты (0,0)</string>
+    <string name="location_altitude_warning">• Нереальная высота: %1$.0f метров</string>
+    <string name="location_emulator_detected">• Обнаружен эмулятор</string>
+    <string name="location_root_detected">• Обнаружен ROOT доступ</string>
+
+    <!-- Кнопки и действия -->
+    <string name="check_settings">Проверить настройки</string>
+    <string name="continue_anyway">Продолжить</string>
+    <string name="use_manual_location">Ввести адрес вручную</string>
+
+    <string name="enable_gps">Включить GPS</string>
+    <string name="grant_permission">Предоставить разрешение</string>
+
+
+    <!-- Общие строки -->
+    <string name="warning">Внимание</string>
+    <string name="error">Ошибка</string>
+    <string name="info">Информация</string>
+    <string name="ok">OK</string>
+    <string name="yes">Да</string>
+    <string name="no">Нет</string>
+
+    <!-- Тосты -->
+    <string name="location_checking">Проверка локации...</string>
+    <string name="location_valid">Локация проверена</string>
+    <string name="location_invalid">Локация недостоверна</string>
+    <string name="location_blocked_title">Локация заблокирована</string>
+    <string name="location_blocked_message">Невозможно использовать текущую геолокацию по следующим причинам:</string>
+    <string name="mock_provider_detected">Обнаружен mock-провайдер (эмуляция GPS)</string>
+    <string name="zero_coordinates">Нулевые координаты (0,0)</string>
+    <string name="location_blocked_toast">Локация недоступна. Проверьте настройки GPS.</string>
+    <string name="risk_level_block">🚫 ВЫСОКАЯ УГРОЗА: Локация заблокирована!</string>
+    <string name="risk_level_suspicious">⚠️ СРЕДНЯЯ УГРОЗА: Подозрительная локация</string>
+    <string name="risk_level_safe">✅ БЕЗОПАСНО: Локация безопасна</string>
     <string name="save_text">Текст скопирован</string>
     <string name="no_text_to_save">Нет текста для копирования</string>
+    <string name="error_cancelling_order">Не удалось отменить заказ. Попробуйте снова</string>
 
 </resources>
