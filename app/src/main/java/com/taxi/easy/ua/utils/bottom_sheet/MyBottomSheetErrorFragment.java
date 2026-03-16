@@ -449,7 +449,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                 phoneNumber = Kyiv_City_phone; // Номер телефона по умолчанию
                 break;
         }
-
+        position = "";
         cityMaxPay(city);
         SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 

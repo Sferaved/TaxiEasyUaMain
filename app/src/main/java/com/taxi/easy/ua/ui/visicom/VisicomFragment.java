@@ -8,6 +8,7 @@ import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.CITY_INFO;
 import static com.taxi.easy.ua.MainActivity.activeCalls;
 import static com.taxi.easy.ua.MainActivity.button1;
+import static com.taxi.easy.ua.MainActivity.firstStart;
 import static com.taxi.easy.ua.MainActivity.navController;
 import static com.taxi.easy.ua.MainActivity.orderViewModel;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
@@ -63,6 +64,10 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleObserver;
+import androidx.lifecycle.OnLifecycleEvent;
+import androidx.lifecycle.ProcessLifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
@@ -229,7 +234,9 @@ public class VisicomFragment extends Fragment {
     private Handler costHandler;
     private Runnable reserveRunnable;
     private String lastCost = null;
+    @SuppressLint("StaticFieldLeak")
     static SwipeRefreshLayout swipeRefreshLayout;
+    private LifecycleObserver lifecycleObserver;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -337,7 +344,7 @@ public class VisicomFragment extends Fragment {
         schedule = binding.schedule;
 
         shed_down = binding.shedDown;
-        Logger.d(requireActivity(), TAG, "MainActivity.firstStart" + MainActivity.firstStart);
+        Logger.d(requireActivity(), TAG, "MainActivity.firstStart" + firstStart);
 
 
 
@@ -369,6 +376,58 @@ public class VisicomFragment extends Fragment {
         locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
 
         viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
+        // Инициализация нового VisicomViewModel для этого фрагмента
+        VisicomViewModel visicomViewModel = new ViewModelProvider(this).get(VisicomViewModel.class);
+
+        // ========== РЕШЕНИЕ ДЛЯ ОТСЛЕЖИВАНИЯ ВОЗВРАТА ИЗ ФОНА ==========
+        // Наблюдаем за сигналом перезагрузки стоимости
+        visicomViewModel.getShouldReloadCost().observe(getViewLifecycleOwner(), shouldReload -> {
+            if (shouldReload != null && shouldReload && isAdded()) {
+                Log.d(TAG, "Получен сигнал на перезагрузку стоимости после возврата из фона");
+
+                // Проверяем, авторизован ли пользователь
+                List<String> userInfo = logCursor(MainActivity.TABLE_USER_INFO, context);
+                if (userInfo.size() > 3 && !userInfo.get(3).equals("email")) {
+                    // Проверяем наличие интернета
+                    if (NetworkUtils.isNetworkAvailable(context)) {
+                        // Небольшая задержка для восстановления всех сервисов
+                        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                            if (isAdded()) {
+                                try {
+                                    Log.d(TAG, "Запускаем visicomCost после возврата из фона");
+                                    visicomCost();
+                                    // Сбрасываем флаг после выполнения
+                                    visicomViewModel.costReloaded();
+                                } catch (MalformedURLException e) {
+                                    Log.e(TAG, "Ошибка в visicomCost при возврате из фона: " + e.getMessage());
+                                    visicomViewModel.costReloaded();
+                                }
+                            }
+                        }, 500); // Задержка 500 мс
+                    } else {
+                        Log.d(TAG, "Нет интернета при возврате из фона");
+                        visicomViewModel.costReloaded();
+                    }
+                } else {
+                    Log.d(TAG, "Пользователь не авторизован, пропускаем перезагрузку");
+                    visicomViewModel.costReloaded();
+                }
+            }
+        });
+
+        // Создаем observer для жизненного цикла приложения
+        lifecycleObserver = new LifecycleObserver() {
+            @OnLifecycleEvent(Lifecycle.Event.ON_START)
+            public void onAppForegrounded() {
+                Log.d(TAG, "Приложение вернулось из фона - устанавливаем сигнал перезагрузки");
+                if (visicomViewModel != null) {
+                    visicomViewModel.onAppForegrounded();
+                }
+            }
+        };
+        // Добавляем observer к жизненному циклу приложения
+        ProcessLifecycleOwner.get().getLifecycle().addObserver(lifecycleObserver);
+        // ========== КОНЕЦ РЕШЕНИЯ ==========
 
         if(button1 != null) {
           button1.setVisibility(View.VISIBLE);
@@ -605,7 +664,7 @@ public class VisicomFragment extends Fragment {
         }
 
         // С existing код (сброс в БД, если нужно)
-        if (!MainActivity.firstStart) {
+        if (!firstStart) {
             ContentValues cv = new ContentValues();
             cv.put("time", "no_time");
             cv.put("date", "no_date");
@@ -986,6 +1045,10 @@ public class VisicomFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+// Удаляем observer жизненного цикла
+        if (lifecycleObserver != null) {
+            ProcessLifecycleOwner.get().getLifecycle().removeObserver(lifecycleObserver);
+        }
 
         RetrofitClient.getInstance().cancelAllRequests();
 
@@ -1910,6 +1973,14 @@ public class VisicomFragment extends Fragment {
     public void onResume() {
         super.onResume();
         Logger.d(context, TAG, "onResume 1" );
+
+        if (!firstStart) {
+            List<String> startList = logCursor(MainActivity.ROUT_MARKER, context);
+            String fromAddressString = startList.get(5);
+            Logger.d(context, TAG, "address onResume fromAddressString" + fromAddressString);
+
+            binding.textGeo.setText(fromAddressString);
+        }
 
         if (!NetworkUtils.isNetworkAvailable(requireActivity())) {
             NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);

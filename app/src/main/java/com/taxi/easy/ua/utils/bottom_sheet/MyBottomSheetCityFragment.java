@@ -769,6 +769,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 phoneNumber = Kyiv_City_phone; // Номер телефона по умолчанию
                 break;
         }
+        position = "";
         pay_system(city);
 
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);

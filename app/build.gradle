@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1872
-        versionName = '1.872'
+        versionCode = 1873
+        versionName = '1.873'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled = true
@@ -186,6 +186,8 @@ dependencies {
     implementation 'com.google.android.material:material:1.13.0'
 
     implementation 'io.github.centrifugal:centrifuge-java:0.5.0'
+    implementation "androidx.lifecycle:lifecycle-process:2.6.2"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.2"
 }
 
 

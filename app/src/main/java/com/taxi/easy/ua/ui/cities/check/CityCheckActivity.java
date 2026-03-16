@@ -873,7 +873,7 @@ public class CityCheckActivity extends AppCompatActivity {
                 phoneNumber = Kyiv_City_phone; // Номер телефона по умолчанию
                 break;
         }
-
+        position = "";
         cityMaxPay(city);
         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
