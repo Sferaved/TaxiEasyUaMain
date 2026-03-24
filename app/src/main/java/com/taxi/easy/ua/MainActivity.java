@@ -17,6 +17,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -57,6 +58,7 @@ import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract;
 import com.firebase.ui.auth.IdpResponse;
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult;
 import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
@@ -123,7 +125,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -515,16 +519,28 @@ public class MainActivity extends AppCompatActivity {
         }
         costMap = null;
 
-        appUpdateManager = AppUpdateManagerFactory.create(MainActivity.this);
+//        appUpdateManager = AppUpdateManagerFactory.create(MainActivity.this);
+//
+//        appUpdateManager.getAppUpdateInfo().addOnSuccessListener(appUpdateInfo -> {
+//            if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+//                appUpdateManager.completeUpdate();
+//            }
+//        }).addOnFailureListener(e -> {
+//            Logger.e(this, TAG, "Ошибка проверки обновлений: " + e.getMessage());
+//        });
 
-        appUpdateManager.getAppUpdateInfo().addOnSuccessListener(appUpdateInfo -> {
-            if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
-                appUpdateManager.completeUpdate();
-            }
-        }).addOnFailureListener(e -> {
-            Logger.e(this, TAG, "Ошибка проверки обновлений: " + e.getMessage());
-        });
+        new Thread(() -> {
+            appUpdateManager = AppUpdateManagerFactory.create(MainActivity.this);
 
+            appUpdateManager.getAppUpdateInfo().addOnSuccessListener(appUpdateInfo -> {
+                if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+                    // Возвращаемся на главный поток для завершения
+                    runOnUiThread(() -> appUpdateManager.completeUpdate());
+                }
+            }).addOnFailureListener(e -> {
+                Logger.e(MainActivity.this, TAG, "Ошибка проверки обновлений: " + e.getMessage());
+            });
+        }).start();
 
         sharedPreferencesHelperMain.saveValue("pay_error", "**");
 
@@ -1099,32 +1115,72 @@ public class MainActivity extends AppCompatActivity {
         if (item.getItemId() == R.id.update) {
             Logger.d(this, TAG, "onOptionsItemSelected: " + getString(R.string.version));
 
-//            AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(MainActivity.this);
-            Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
-            appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
-                if (appUpdateInfo.updateAvailability() != UpdateAvailability.UPDATE_AVAILABLE) {
-                    String message = getString(R.string.update_ok);
-                    MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
-                    bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
-                } else {
-                    if (NetworkUtils.isNetworkAvailable(this)) {
-                        // 🛡️ Проверка статуса установки
-                        int status = appUpdateInfo.installStatus();
-                        if (status != InstallStatus.DOWNLOADING && status != InstallStatus.INSTALLING) {
-                            appUpdater = new AppUpdater(
-                                    this,
-                                    this.getExactAlarmLauncher(),
-                                    this.getBatteryOptimizationLauncher()
-                            );
-                            appUpdater.startUpdate();
-                        } else {
-                            Logger.d(MyApplication.getContext(), TAG, "Update already in progress. Skipping restart.");
-                        }
+            // Показываем индикатор загрузки
+            Toast.makeText(this, getString(R.string.checking_updates), Toast.LENGTH_SHORT).show();
+
+            // Запускаем проверку в фоновом потоке
+            new Thread(() -> {
+                try {
+                    // Проверяем и инициализируем appUpdateManager если нужно
+                    if (appUpdateManager == null) {
+                        appUpdateManager = AppUpdateManagerFactory.create(MainActivity.this);
                     }
+
+                    // Получаем информацию об обновлениях синхронно с таймаутом
+                    Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
+                    AppUpdateInfo appUpdateInfo = Tasks.await(appUpdateInfoTask, 5, TimeUnit.SECONDS);
+
+                    // Возвращаемся на главный поток для обновления UI
+                    runOnUiThread(() -> {
+                        if (appUpdateInfo.updateAvailability() != UpdateAvailability.UPDATE_AVAILABLE) {
+                            String message = getString(R.string.update_ok);
+                            MyBottomSheetMessageFragment bottomSheetDialogFragment =
+                                    new MyBottomSheetMessageFragment(message);
+                            bottomSheetDialogFragment.show(getSupportFragmentManager(),
+                                    bottomSheetDialogFragment.getTag());
+                        } else {
+                            if (NetworkUtils.isNetworkAvailable(MainActivity.this)) {
+                                int status = appUpdateInfo.installStatus();
+                                if (status != InstallStatus.DOWNLOADING &&
+                                        status != InstallStatus.INSTALLING) {
+
+                                    // AppUpdater создаем в том же фоновом потоке
+                                    new Thread(() -> {
+                                        AppUpdater updater = new AppUpdater(
+                                                MainActivity.this,
+                                                getExactAlarmLauncher(),
+                                                getBatteryOptimizationLauncher()
+                                        );
+                                        runOnUiThread(() -> {
+                                            appUpdater = updater;
+                                            appUpdater.startUpdate();
+                                        });
+                                    }).start();
+
+                                } else {
+                                    Logger.d(MyApplication.getContext(), TAG,
+                                            "Update already in progress. Skipping restart.");
+                                    Toast.makeText(MainActivity.this,
+                                            getString(R.string.update_in_progress), Toast.LENGTH_SHORT).show();
+                                }
+                            } else {
+                                Toast.makeText(MainActivity.this,
+                                        getString(R.string.no_internet), Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    });
+
+                } catch (Exception e) {
+                    Logger.e(MainActivity.this, TAG, "Ошибка проверки обновлений: " + e.getMessage());
+                    FirebaseCrashlytics.getInstance().recordException(e);
+                    runOnUiThread(() ->
+                            Toast.makeText(MainActivity.this,
+                                    getString(R.string.update_check_failed), Toast.LENGTH_SHORT).show()
+                    );
                 }
-            });
+            }).start();
 
-
+            return true;
         }
         if (item.getItemId() == R.id.nav_driver) {
             if (NetworkUtils.isNetworkAvailable(this)) {
@@ -1974,37 +2030,125 @@ public class MainActivity extends AppCompatActivity {
 //        }
 //    }
 
+    @SuppressLint("StaticFieldLeak")
     public static void checkForUpdateForPush(
-            SharedPreferences SharedPreferences,
+            SharedPreferences sharedPreferences,
             long currentTime,
             String LAST_NOTIFICATION_TIME_KEY
-
     ) {
         // Обновляем время последней отправки уведомления
-        SharedPreferences.Editor editor = SharedPreferences.edit();
+        SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putLong(LAST_NOTIFICATION_TIME_KEY, currentTime);
         editor.apply();
 
+        // Используем AsyncTask для фоновой работы
+        new AsyncTask<Void, Void, AppUpdateInfo>() {
+            private Exception error = null;
 
-        Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
-        appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
-            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
-                // Проверяем, не идёт ли уже установка
-                int status = appUpdateInfo.installStatus();
-                if (status != InstallStatus.DOWNLOADING && status != InstallStatus.INSTALLING) {
-                    Logger.d(MyApplication.getContext(), TAG, "Available updates found");
+            @Override
+            protected void onPreExecute() {
+                super.onPreExecute();
+                Logger.d(MyApplication.getContext(), TAG,
+                        "Начинаем проверку обновлений для push-уведомления");
+            }
 
-                    String title = MyApplication.getContext().getString(R.string.new_version);
-                    String messageNotif = MyApplication.getContext().getString(R.string.news_of_version);
-                    String urlStr = "https://play.google.com/store/apps/details?id=com.taxi.easy.ua";
+            @Override
+            protected AppUpdateInfo doInBackground(Void... params) {
+                try {
+                    // Проверяем, инициализирован ли appUpdateManager
+                    if (appUpdateManager == null) {
+                        appUpdateManager = AppUpdateManagerFactory.create(MyApplication.getContext());
+                    }
 
-                    NotificationHelper.showNotification(MyApplication.getContext(), title, messageNotif, urlStr);
+                    // Получаем информацию об обновлениях
+                    Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
+
+                    // Ждем результат не более 5 секунд
+                    return Tasks.await(appUpdateInfoTask, 5, TimeUnit.SECONDS);
+
+                } catch (TimeoutException e) {
+                    error = e;
+                    Logger.e(MyApplication.getContext(), TAG,
+                            "Таймаут при проверке обновлений: " + e.getMessage());
+                } catch (ExecutionException e) {
+                    error = e;
+                    Logger.e(MyApplication.getContext(), TAG,
+                            "Ошибка выполнения при проверке обновлений: " + e.getMessage());
+                    FirebaseCrashlytics.getInstance().recordException(e);
+                } catch (InterruptedException e) {
+                    error = e;
+                    Logger.e(MyApplication.getContext(), TAG,
+                            "Проверка обновлений прервана: " + e.getMessage());
+                    Thread.currentThread().interrupt();
+                } catch (Exception e) {
+                    error = e;
+                    Logger.e(MyApplication.getContext(), TAG,
+                            "Неожиданная ошибка при проверке обновлений: " + e.getMessage());
+                    FirebaseCrashlytics.getInstance().recordException(e);
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(AppUpdateInfo appUpdateInfo) {
+                super.onPostExecute(appUpdateInfo);
+
+                if (error != null) {
+                    Logger.e(MyApplication.getContext(), TAG,
+                            "Ошибка проверки обновлений: " + error.getMessage());
+                    return;
+                }
+
+                if (appUpdateInfo == null) {
+                    Logger.d(MyApplication.getContext(), TAG,
+                            "Не удалось получить информацию об обновлениях");
+                    return;
+                }
+
+                int updateAvailability = appUpdateInfo.updateAvailability();
+                int installStatus = appUpdateInfo.installStatus();
+
+                Logger.d(MyApplication.getContext(), TAG,
+                        "checkForUpdateForPush - updateAvailability: " + updateAvailability +
+                                ", installStatus: " + installStatus);
+
+                // Проверяем, доступно ли обновление и не идет ли уже установка
+                if (updateAvailability == UpdateAvailability.UPDATE_AVAILABLE) {
+                    if (installStatus != InstallStatus.DOWNLOADING &&
+                            installStatus != InstallStatus.INSTALLING) {
+
+                        Logger.d(MyApplication.getContext(), TAG,
+                                "Доступно обновление, показываем уведомление");
+
+                        try {
+                            String title = MyApplication.getContext()
+                                    .getString(R.string.new_version);
+                            String messageNotif = MyApplication.getContext()
+                                    .getString(R.string.news_of_version);
+                            String urlStr = "https://play.google.com/store/apps/details?id=" +
+                                    MyApplication.getContext().getPackageName();
+
+                            NotificationHelper.showNotification(
+                                    MyApplication.getContext(),
+                                    title,
+                                    messageNotif,
+                                    urlStr
+                            );
+                        } catch (Exception e) {
+                            Logger.e(MyApplication.getContext(), TAG,
+                                    "Ошибка показа уведомления: " + e.getMessage());
+                            FirebaseCrashlytics.getInstance().recordException(e);
+                        }
+                    } else {
+                        Logger.d(MyApplication.getContext(), TAG,
+                                "Обновление уже загружается или устанавливается");
+                    }
                 } else {
-                    Logger.d(MyApplication.getContext(), TAG, "Update is already in progress. Notification skipped.");
+                    Logger.d(MyApplication.getContext(), TAG,
+                            "Обновлений не найдено или недоступны");
                 }
             }
-        });
-
+        }.execute();
     }
 
     @Override

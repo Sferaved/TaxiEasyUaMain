@@ -643,4 +643,10 @@ Tap "Settings" to check.</string>
     <string name="save_text">Text copied</string>
     <string name="no_text_to_save">No text to copy</string>
     <string name="error_cancelling_order">Could not cancel your order. Please try again.</string>
+    <string name="checking_updates">Checking for updates...</string>
+    <string name="update_check_failed">Failed to check for updates</string>
+    <string name="update_in_progress">Update already in progress</string>
+    <string name="no_internet">No internet connection</string>
+
+
 </resources>

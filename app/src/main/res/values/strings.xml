@@ -655,4 +655,9 @@
     <string name="save_text">Текст скопійовано</string>
     <string name="no_text_to_save">Немає тексту для копіювання</string>
     <string name="error_cancelling_order">Не вдалося скасувати замовлення. Спробуйте ще раз</string>
+    <string name="checking_updates">Перевірка оновлень...</string>
+    <string name="update_check_failed">Не вдалося перевірити оновлення</string>
+    <string name="update_in_progress">Оновлення вже виконується</string>
+    <string name="no_internet">Немає підключення до інтернету</string>
+
 </resources>

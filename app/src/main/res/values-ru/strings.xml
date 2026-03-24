@@ -650,5 +650,9 @@
     <string name="save_text">Текст скопирован</string>
     <string name="no_text_to_save">Нет текста для копирования</string>
     <string name="error_cancelling_order">Не удалось отменить заказ. Попробуйте снова</string>
+    <string name="checking_updates">Проверка обновлений...</string>
+    <string name="update_check_failed">Не удалось проверить обновления</string>
+    <string name="update_in_progress">Обновление уже выполняется</string>
+    <string name="no_internet">Нет подключения к интернету</string>
 
 </resources>
