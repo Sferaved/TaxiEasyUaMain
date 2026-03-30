@@ -659,5 +659,7 @@
     <string name="update_check_failed">Не вдалося перевірити оновлення</string>
     <string name="update_in_progress">Оновлення вже виконується</string>
     <string name="no_internet">Немає підключення до інтернету</string>
-
+    <string name="city_change_dialog">Зміна міста</string>
+    <string name="find_new_city_mes">"Визначено нове місто: "</string>
+    <string name="turn_mes">. Переключити?</string>
 </resources>

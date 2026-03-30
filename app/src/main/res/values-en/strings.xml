@@ -647,6 +647,9 @@ Tap "Settings" to check.</string>
     <string name="update_check_failed">Failed to check for updates</string>
     <string name="update_in_progress">Update already in progress</string>
     <string name="no_internet">No internet connection</string>
+    <string name="city_change_dialog">Change City</string>
+    <string name="find_new_city_mes">"New city detected: "</string>
+    <string name="turn_mes">. Switch?</string>
 
 
 </resources>

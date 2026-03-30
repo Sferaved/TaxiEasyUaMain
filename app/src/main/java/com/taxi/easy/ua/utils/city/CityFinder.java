@@ -1,6 +1,7 @@
 package com.taxi.easy.ua.utils.city;
 
 import static android.content.Context.MODE_PRIVATE;
+import static android.view.View.GONE;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -51,9 +52,9 @@ public class CityFinder {
     }
 
     private WeakReference<Activity> activityRef;
+    String cityMenu;
 
-
-    public CityFinder (
+    public CityFinder(
             Context context,
             double startLat,
             double startLan,
@@ -178,7 +179,7 @@ public class CityFinder {
             String Zaporizhzhia_phone = "tel:0687257070";
             String Cherkasy_Oblast_phone = "tel:0962294243";
 
-            String cityMenu;
+
 
             switch (cityResult){
                 case "Kyiv City":
@@ -343,6 +344,7 @@ public class CityFinder {
 //        }
 
     }
+    @SuppressLint("SetTextI18n")
     private void updateMyPosition(String city, double startLat, double startLan, String position) {
         Logger.d(context, TAG, "updateMyPosition:city " + city);
 
@@ -352,8 +354,7 @@ public class CityFinder {
             return;
         }
 
-        Logger.d(context, TAG, "updateMyPosition:city "+ city);
-
+        // 🔽 установка baseUrl как и было
         switch (city){
             case "Dnipropetrovsk Oblast":
             case "Odessa":
@@ -389,41 +390,64 @@ public class CityFinder {
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         String cityOld = stringList.get(1);
 
-        if(!city.equals(cityOld)) {
+// ✅ создаём final копию
+        final String finalCity = city;
 
-            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-
-            ContentValues cv = new ContentValues();
-
-            cv.put("city", city);
-            cv.put("phone", phoneNumber);
-            database.update(MainActivity.CITY_INFO, cv, "id = ?", new String[]{"1"});
-
-            cv = new ContentValues();
-            cv.put("startLat", startLat);
-            cv.put("startLan", startLan);
-            cv.put("position", position);
-            database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?",
-                    new String[]{"1"});
-
-            cv = new ContentValues();
-            cv.put("tarif", " ");
-            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                    new String[]{"1"});
-
-            cv = new ContentValues();
-            cv.put("payment_type", "nal_payment");
-
-            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                    new String[]{"1"});
-            database.close();
-            sharedPreferencesHelperMain.saveValue("time", "no_time");
-            sharedPreferencesHelperMain.saveValue("date", "no_date");
-            sharedPreferencesHelperMain.saveValue("comment", "no_comment");
-            sharedPreferencesHelperMain.saveValue("tarif", " ");
+        if (!finalCity.equals(cityOld)) {
+            new androidx.appcompat.app.AlertDialog.Builder(activity)
+                    .setTitle(R.string.city_change_dialog) // добавьте соответствующий заголовок в strings.xml
+                    .setMessage(activity.getString(R.string.find_new_city_mes) + cityMenu + activity.getString(R.string.turn_mes))
+                    .setPositiveButton(R.string.ok, (dialog, which) -> {
+                        applyCityChange(finalCity, startLat, startLan, position);
+                    })
+                    .setNegativeButton(R.string.cancel, (dialog, which) -> {
+                        VisicomFragment.progressBar.setVisibility(View.GONE);
+                        Logger.d(context, TAG, "User declined city change");
+                    })
+                    .setCancelable(false)
+                    .show();
+            return;
         }
-        List<String> settings = new ArrayList<>();
 
+// и тут тоже используем finalCity
+        applyCityChange(finalCity, startLat, startLan, position);
+    }
+    private void applyCityChange(String city, double startLat, double startLan, String position) {
+
+        Logger.d(context, TAG, "applyCityChange: " + city);
+
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+
+        ContentValues cv = new ContentValues();
+
+        cv.put("city", city);
+        cv.put("phone", phoneNumber);
+        database.update(MainActivity.CITY_INFO, cv, "id = ?", new String[]{"1"});
+
+        cv = new ContentValues();
+        cv.put("startLat", startLat);
+        cv.put("startLan", startLan);
+        cv.put("position", position);
+        database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?", new String[]{"1"});
+
+        cv = new ContentValues();
+        cv.put("tarif", " ");
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?", new String[]{"1"});
+
+        cv = new ContentValues();
+        cv.put("payment_type", "nal_payment");
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?", new String[]{"1"});
+
+        database.close();
+
+        // 🔽 очистка состояний
+        sharedPreferencesHelperMain.saveValue("time", "no_time");
+        sharedPreferencesHelperMain.saveValue("date", "no_date");
+        sharedPreferencesHelperMain.saveValue("comment", "no_comment");
+        sharedPreferencesHelperMain.saveValue("tarif", " ");
+
+        // 🔽 обновление маршрута
+        List<String> settings = new ArrayList<>();
         settings.add(Double.toString(startLat));
         settings.add(Double.toString(startLan));
         settings.add(Double.toString(startLat));
@@ -436,12 +460,14 @@ public class CityFinder {
 
         sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
 
-
-        NavController navController = Navigation.findNavController(activity, R.id.nav_host_fragment_content_main);
-        navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                .setPopUpTo(R.id.nav_visicom, true)
-                .build());
-
+        // 🔽 навигация
+        Activity activity = activityRef.get();
+        if (activity != null && !activity.isFinishing() && !activity.isDestroyed()) {
+            NavController navController = Navigation.findNavController(activity, R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_visicom, true)
+                    .build());
+        }
     }
     private void clearTABLE_SERVICE_INFO () {
         String[] arrayServiceCode = DataArr.arrayServiceCode();
@@ -480,7 +506,7 @@ public class CityFinder {
     }
 
     private void getCountryByIP() {
-        ApiServiceCountry apiService = com.taxi.easy.ua.utils.ip.RetrofitClient.getClient().create(ApiServiceCountry.class);
+        ApiServiceCountry apiService =  com.taxi.easy.ua.utils.ip.RetrofitClient.getClient().create(ApiServiceCountry.class);
         Call<CountryResponse> call = apiService.getCountryByIP("ipAddress");
         call.enqueue(new Callback<CountryResponse>() {
             @Override
@@ -499,7 +525,7 @@ public class CityFinder {
             public void onFailure(@NonNull Call<CountryResponse> call, @NonNull Throwable t) {
                 Logger.d(context, TAG, "Error: " + t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
-                VisicomFragment.progressBar.setVisibility(View.GONE);;
+                VisicomFragment.progressBar.setVisibility(GONE);;
                 sharedPreferencesHelperMain.saveValue("countryState", "UA");
             }
         });
