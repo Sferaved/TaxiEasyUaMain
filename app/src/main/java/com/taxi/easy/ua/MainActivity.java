@@ -5,12 +5,15 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -22,11 +25,14 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,12 +41,14 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.navigation.NavController;
 import androidx.navigation.NavDestination;
 import androidx.navigation.NavOptions;
@@ -60,6 +68,7 @@ import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
@@ -89,7 +98,7 @@ import com.taxi.easy.ua.utils.centrifugo.CentrifugoManager;
 import com.taxi.easy.ua.utils.connect.NetworkMonitor;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.download.AppUpdater;
-import com.taxi.easy.ua.utils.log.LogEmailSender;
+import com.taxi.easy.ua.utils.helpers.TelegramUtils;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.model.OrderViewModel;
@@ -105,11 +114,13 @@ import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 import com.taxi.easy.ua.utils.worker.AddUserNoNameWorker;
 import com.taxi.easy.ua.utils.worker.CheckPushPermissionWorker;
 import com.taxi.easy.ua.utils.worker.GetCardTokenWfpWorker;
+import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
 import com.taxi.easy.ua.utils.worker.InsertPushDateWorker;
 import com.taxi.easy.ua.utils.worker.UpdatePushDateWorker;
 import com.taxi.easy.ua.utils.worker.UpdateUserInfoWorker;
 import com.taxi.easy.ua.utils.worker.UserPhoneFromFbWorker;
 import com.taxi.easy.ua.utils.worker.VersionFromMarketWorker;
+import com.taxi.easy.ua.utils.worker.utils.SaveIPWithEmailUtils;
 import com.taxi.easy.ua.utils.worker.utils.TokenUtils;
 
 import org.json.JSONException;
@@ -154,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
     public static String order_id;
     public static String invoiceId;
 
-    public static final String DB_NAME = "data_09022025_9";
+    public static final String DB_NAME = "data_21042026_0";
 
     /**
      * Table section
@@ -200,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static String apiKeyMapBox;
     public static String apiKey;
-
+    public static String weatherKey;
 
     VisicomFragment visicomFragment;
 
@@ -237,6 +248,7 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("StaticFieldLeak")
     public static ImageButton button1;
     private CentrifugoManager centrifugoManager;
+
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -244,9 +256,28 @@ public class MainActivity extends AppCompatActivity {
         String localeCode = (String) MyApplication.sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().getLanguage());
         applyLocale(localeCode);
         super.onCreate(savedInstanceState);
+        if (getIntent() != null && getIntent().hasExtra("shortcut_action")) {
+            String action = getIntent().getStringExtra("shortcut_action");
+
+            switch (action) {
+                case "order":
+                    openOrderScreen();
+                    break;
+                case "driver":
+                    openDriverScreen();
+                    break;
+
+            }
+        }
 
 
-
+        IntentFilter filter = new IntentFilter("ACTION_REQUEST_INCLUSIVE_TRANSPORT");
+        LocalBroadcastManager.getInstance(this).registerReceiver(inclusiveTransportReceiver, filter);
+        Logger.d(this, TAG, "Inclusive transport receiver registered");
+//            Thread.sleep(8000);
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
 
         orderViewModel = new ViewModelProvider(this).get(OrderViewModel.class);
 
@@ -290,13 +321,16 @@ public class MainActivity extends AppCompatActivity {
                 R.id.nav_city,
                 R.id.nav_settings,
                 R.id.nav_options,
-                R.id.nav_anr
+                R.id.nav_anr,
+                R.id.nav_weather
         ).setOpenableLayout(drawer).build();
 
         // Связывание Navigation с UI
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
-
+        if (getIntent() != null && getIntent().getBooleanExtra("open_weather", false)) {
+            navController.navigate(R.id.nav_visicom);
+        }
         // Инициализация меню и элементов
         navMenu = navigationView.getMenu();
         navVisicomMenuItem = navMenu.findItem(R.id.nav_visicom);
@@ -314,9 +348,9 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Инициализация ViewModel
+
         viewModel = new ViewModelProvider(this).get(ExecutionStatusViewModel.class);
         sharedPreferencesHelperMain.saveValue("setStatusX", true);
-
 
 
         // Инициализация ActivityResultLauncher
@@ -409,7 +443,17 @@ public class MainActivity extends AppCompatActivity {
         sharedPreferencesHelperMain.saveValue("date", "no_date");
         sharedPreferencesHelperMain.saveValue("comment", "no_comment");
     }
+    private void openOrderScreen() {
+        // Открыть экран заказа такси
+    }
 
+    private void openDriverScreen() {
+        // Открыть экран для водителей
+        if (NetworkUtils.isNetworkAvailable(this)) {
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.taxieasyua.job"));
+            startActivity(browserIntent);
+        }
+    }
     // Вспомогательный метод для проверки разрешений
     private boolean checkLocationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -513,6 +557,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
+        if (!InclusiveTransportPreferenceWorker.hasBeenAsked()) {
+            Logger.d(this, TAG, "Нужно показать диалог инклюзивного транспорта");
+            new Handler(Looper.getMainLooper()).postDelayed(this::showInclusiveTransportDialog, 5000);
+        }
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
             sendCurrentFcmToken();
@@ -1080,18 +1129,98 @@ public class MainActivity extends AppCompatActivity {
         if (item.getItemId() == R.id.gps) {
             eventGps();
         }
-
+        if (item.getItemId() == R.id.inclusiveTransport) {
+            showInclusiveTransportDialog();
+        }
         if (item.getItemId() == R.id.settings) {
 
             navController.navigate(R.id.nav_settings, null, new NavOptions.Builder()
                     .build());
 
         }
+        if (item.getItemId() == R.id.weather) {
 
-        if (item.getItemId() == R.id.send_email_admin) {
-            new LogEmailSender(this).sendLog();
+            navController.navigate(R.id.nav_weather, null, new NavOptions.Builder()
+                    .build());
+
         }
+        if (item.getItemId() == R.id.send_email_admin) {
+            // Инфлейтим кастомный layout
+            View dialogView = getLayoutInflater().inflate(R.layout.dialog_send_report, null);
 
+            // Находим все элементы
+            TextInputEditText etMessage = dialogView.findViewById(R.id.discinp);
+//            TextView tvLogInfo = dialogView.findViewById(R.id.dialogMessage);
+            ProgressBar progressBar = dialogView.findViewById(R.id.progressBar);
+            TextView tvCharCounter = dialogView.findViewById(R.id.charCounter);
+            AppCompatButton negativeButton = dialogView.findViewById(R.id.negativeButton);
+            AppCompatButton positiveButton = dialogView.findViewById(R.id.positiveButton);
+
+
+
+            // Устанавливаем начальное значение счетчика
+            tvCharCounter.setText(String.format(getString(R.string.char_counter), 0));
+
+            // Счетчик символов
+            etMessage.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    int length = s.length();
+                    tvCharCounter.setText(String.format(getString(R.string.char_counter), length));
+                    progressBar.setProgress(Math.min(length, 500));
+
+                    if (length > 500) {
+                        tvCharCounter.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.error_red));
+                        progressBar.setProgressTintList(ColorStateList.valueOf(ContextCompat.getColor(MainActivity.this, R.color.error_red)));
+                    } else if (length > 450) {
+                        tvCharCounter.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.warning_orange));
+                        progressBar.setProgressTintList(ColorStateList.valueOf(ContextCompat.getColor(MainActivity.this, R.color.warning_orange)));
+                    } else {
+                        tvCharCounter.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.gray_500));
+                        progressBar.setProgressTintList(ColorStateList.valueOf(ContextCompat.getColor(MainActivity.this, R.color.colorPrimaryDark)));
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+
+            // Создаем диалог
+            AlertDialog.Builder builder =
+                    new AlertDialog.Builder(this, R.style.CustomAlertDialogTheme);
+            builder.setView(dialogView);
+
+            AlertDialog dialog = builder.create();
+            dialog.setCancelable(true);
+
+            // Обработка кнопок
+            positiveButton.setOnClickListener(v -> {
+                String message = etMessage.getText().toString().trim();
+
+                if (message.length() > 500) {
+                    Toast.makeText(this, getString(R.string.error_message_too_long), Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (message.isEmpty()) {
+                    Toast.makeText(this, getString(R.string.error_message_empty), Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                String logFilePath = getExternalFilesDir(null) + "/app_log.txt";
+                TelegramUtils.sendErrorToTelegram(generateEmailBody(message), logFilePath);
+
+                Toast.makeText(this, getString(R.string.report_sent), Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+            });
+
+            negativeButton.setOnClickListener(v -> dialog.dismiss());
+
+            dialog.show();
+        }
         if (item.getItemId() == R.id.send_email) {
             String subject = getString(R.string.android);
             String body = getString(R.string.good_day);
@@ -1204,7 +1333,96 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    public String generateEmailBody(String errorMessage) {
 
+        List<String> stringList = logCursor(MainActivity.CITY_INFO);
+        List<String> userList = logCursor(MainActivity.TABLE_USER_INFO);
+
+
+        // Определение города
+
+        String city;
+        String input = stringList.get(1);
+
+        switch (input) {
+            case "Dnipropetrovsk Oblast":
+                city = getString(R.string.Dnipro_city);
+                break;
+            case "OdessaTest":
+                city = getString(R.string.OdessaTest);
+                break;
+            case "Odessa":
+                city = getString(R.string.city_odessa);
+                break;
+            case "Zaporizhzhia":
+                city = getString(R.string.city_zaporizhzhia);
+                break;
+            case "Cherkasy Oblast":
+                city = getString(R.string.city_cherkassy);
+                break;
+            case "Lviv":
+                city = getString(R.string.city_lviv);
+                break;
+            case "Ivano_frankivsk":
+                city = getString(R.string.city_ivano_frankivsk);
+                break;
+            case "Vinnytsia":
+                city = getString(R.string.city_vinnytsia);
+                break;
+            case "Poltava":
+                city = getString(R.string.city_poltava);
+                break;
+            case "Sumy":
+                city = getString(R.string.city_sumy);
+                break;
+            case "Kharkiv":
+                city = getString(R.string.city_kharkiv);
+                break;
+            case "Chernihiv":
+                city = getString(R.string.city_chernihiv);
+                break;
+            case "Rivne":
+                city = getString(R.string.city_rivne);
+                break;
+            case "Ternopil":
+                city = getString(R.string.city_ternopil);
+                break;
+            case "Khmelnytskyi":
+                city = getString(R.string.city_khmelnytskyi);
+                break;
+            case "Zakarpattya":
+                city = getString(R.string.city_zakarpattya);
+                break;
+            case "Zhytomyr":
+                city = getString(R.string.city_zhytomyr);
+                break;
+            case "Kropyvnytskyi":
+                city = getString(R.string.city_kropyvnytskyi);
+                break;
+            case "Mykolaiv":
+                city = getString(R.string.city_mykolaiv);
+                break;
+            case "Chernivtsi":
+                city = getString(R.string.city_chernivtsi);
+                break;
+            case "Lutsk":
+                city = getString(R.string.city_lutsk);
+                break;
+            default:
+                city = getString(R.string.Kyiv_city);
+                break;
+        }
+
+        // Формирование тела сообщения
+
+        return errorMessage + "\n"+
+                getString(R.string.SA_info_pas) + "\n" +
+                getString(R.string.SA_info_city) + " " + city + "\n" +
+                getString(R.string.SA_pas_text) + " " + getString(R.string.version) + "\n" +
+                getString(R.string.SA_user_text) + " " + userList.get(4) + "\n" +
+                getString(R.string.SA_email) + " " + userList.get(3) + "\n";
+//                + getString(R.string.SA_phone_text) + " " + userList.get(2) + "\n" + "\n";
+    }
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -1597,8 +1815,7 @@ public class MainActivity extends AppCompatActivity {
 //                    );
 //                    pusherManager.connect();
 //                    pusherManager.subscribeToChannel();
-//                    Log.d("DEBUG", "Creating PusherManager instance. Hash: " + pusherManager.hashCode());
-//                    Log.d("DEBUG", "ViewModel passed to PusherManager hash: " + viewModel.hashCode());
+
                     centrifugoManager = new CentrifugoManager(
                             getString(R.string.application),
                             userEmail,
@@ -1609,6 +1826,7 @@ public class MainActivity extends AppCompatActivity {
                     centrifugoManager.connect();
 // subscribeToChannel() не обязателен, но можно вызвать для надежности
                     centrifugoManager.subscribeToChannel();
+
                     new VerifyUserTask(this).execute();
                     String sityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
                     Logger.d(this, TAG, "CityCheckActivity: " + sityCheckActivity);
@@ -1844,6 +2062,8 @@ public class MainActivity extends AppCompatActivity {
 //                    );
 //                    pusherManager.connect();
 //                    pusherManager.subscribeToChannel();
+//                    Log.d("DEBUG", "Creating PusherManager instance. Hash: " + pusherManager.hashCode());
+//                    Log.d("DEBUG", "ViewModel passed to PusherManager hash: " + viewModel.hashCode());
                     centrifugoManager = new CentrifugoManager(
                             getString(R.string.application),
                             user.getEmail(),
@@ -1853,7 +2073,8 @@ public class MainActivity extends AppCompatActivity {
 
                     centrifugoManager.connect();
 // subscribeToChannel() не обязателен, но можно вызвать для надежности
-                    centrifugoManager.subscribeToChannel();     }
+                    centrifugoManager.subscribeToChannel();
+                }
             } else {
                 handleSignInFailure(result);
             }
@@ -1889,6 +2110,9 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void settingsNewUser(String emailUser) {
+        // Пример 2: Запуск с указанием страницы информации об IP клиента
+        String app = getString(R.string.application) + getString(R.string.version);
+        SaveIPWithEmailUtils.startWorker(emailUser, app, getApplicationContext());
         // Сохраняем email (если ещё не сохранён)
         MyApplication.sharedPreferencesHelperMain.saveValue("userEmail", emailUser);
 
@@ -2154,7 +2378,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-
+        LocalBroadcastManager.getInstance(this)
+                .unregisterReceiver(inclusiveTransportReceiver);
 
     }
 
@@ -2444,5 +2669,60 @@ public class MainActivity extends AppCompatActivity {
         // 3. Если ничего не нашли — возвращаем пустую строку
         Log.w(TAG, "Email пользователя не найден ни в SharedPreferences, ни в FirebaseAuth");
         return "";
+    }
+
+    private final BroadcastReceiver inclusiveTransportReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Logger.d(MainActivity.this, TAG, "onReceive: получили broadcast!");
+            if ("ACTION_REQUEST_INCLUSIVE_TRANSPORT".equals(intent.getAction())) {
+                Logger.d(MainActivity.this, TAG, "ACTION_MATCH: показываем диалог");
+                showInclusiveTransportDialog();
+            } else {
+                Logger.d(MainActivity.this, TAG, "Action не совпадает: " + intent.getAction());
+            }
+        }
+    };
+
+    private void showInclusiveTransportDialog() {
+        Logger.d(this, TAG, "showInclusiveTransportDialog вызван");
+
+        // Проверяем, что Activity не destroyed и не finishing
+        if (isFinishing() || isDestroyed()) {
+            Logger.e(this, TAG, "Activity is finishing or destroyed, cannot show dialog");
+            return;
+        }
+
+        // Запускаем на UI потоке с небольшой задержкой
+        runOnUiThread(() -> {
+            try {
+                Logger.d(this, TAG, "Создаем диалог");
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle(getString(R.string.inclusive_transport_title));
+
+                String currentInclusiveState = getString(R.string.inclusive_transport_no);
+                if (InclusiveTransportPreferenceWorker.needsInclusiveTransport()){
+                    currentInclusiveState = getString(R.string.inclusive_transport_yes);
+                }
+                builder.setMessage(getString(R.string.inclusive_transport_message) + "\n"+ "\n"+ getString(R.string.currentInclusiveState) + currentInclusiveState);
+
+                builder.setPositiveButton(getString(R.string.inclusive_transport_yes), (dialog, which) -> {
+                    Logger.d(this, TAG, "Пользователь выбрал ДА");
+                    InclusiveTransportPreferenceWorker.saveUserPreference(this, true);
+                });
+                builder.setNegativeButton(getString(R.string.inclusive_transport_no), (dialog, which) -> {
+                    Logger.d(this, TAG, "Пользователь выбрал НЕТ");
+                    InclusiveTransportPreferenceWorker.saveUserPreference(this, false);
+                });
+                builder.setCancelable(false);
+
+                AlertDialog dialog = builder.create();
+                dialog.show();
+                Logger.d(this, TAG, "Диалог показан");
+            } catch (Exception e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
+                Logger.e(this, TAG, "Ошибка при показе диалога: " + e.getMessage());
+            }
+        });
     }
 }

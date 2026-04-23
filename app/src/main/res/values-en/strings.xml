@@ -22,7 +22,7 @@
     <string name="my_phone">My phone</string>
     <string name="open_maps">Order by map</string>
     <string name="driver">🚖 Work as a driver (advertisement)</string>
-    <string name="send_email">📧 Share</string>
+    <string name="send_email">✉️ Share</string>
     <string name="gps_ok">Geopositioning is enabled</string>
     <string name="cancel_button">No thanks</string>
     <string name="gps_on">Enable</string>
@@ -63,7 +63,7 @@
     <string name="from_edit">From</string>
     <string name="sms_code">Verification code from SMS message</string>
     <string name="android">Android application for fast and cheap trips when ordering online.</string>
-    <string name="good_day">My greetings. \n \n Found a great app for taxi rides. \n \n I advise you to try the link in the official Google store: \n\n https://play.google.com/store/apps/details?id=com.taxieasyua.back4app \n\n Have a nice day. \n See you later.</string>
+    <string name="good_day">My greetings. \n \n Found a great app for taxi rides. \n \n I advise you to try the link in the official Google store: \n\n https://play.google.com/store/apps/details?id=com.taxi.easy.ua \n\n Have a nice day. \n See you later.</string>
     <string name="share">Recommend the app to a friend...</string>
     <string name="no_email_agent">Email client is not installed.</string>
     <string name="check_position">Wait, your location is being determined...</string>
@@ -145,7 +145,7 @@
     <string name="disc_text">% +/- 💰🧾</string>
     <string name="email_sent">Message sent</string>
     <string name="send_like">👍 Rate the app</string>
-    <string name="send_email_admin">📧 Report a problem</string>
+    <string name="send_email_admin">📢 Report a problem</string>
     <string name="SA_subject">Message No. I-</string>
     <string name="SA_message_start">The text of your message: </string>
     <string name="SA_info_pas">App info: </string>
@@ -465,7 +465,7 @@
     <string name="update_canceled">Update cancelled.</string>
     <string name="restart_error">Error restarting the application.</string>
     <string name="btn_option_text">Actions</string>
-    <string name="language">⌨️ Language</string>
+    <string name="language">🌐️ Language</string>
     <string name="item_settings">Settings</string>
     <string name="save_btn">Save</string>
     <string name="close">Close</string>
@@ -650,6 +650,59 @@ Tap "Settings" to check.</string>
     <string name="city_change_dialog">Change City</string>
     <string name="find_new_city_mes">"New city detected: "</string>
     <string name="turn_mes">. Switch?</string>
+    <!-- Weather -->
+    <string name="weather_title">Weather</string>
+    <string name="weather_subtitle">Current forecast for your city</string>
+    <string name="weather_details">Detailed forecast</string>
+    <string name="show_weather_map">Weather map</string>
+    <string name="forecast_5_days">5-day forecast</string>
+    <string name="no_weather_data">No weather data</string>
+    <string name="no_weather_description">Check your internet connection and try again</string>
+    <string name="update_weather">Update weather</string>
+    <string name="weather_map_coming_soon">Weather map will be available in the next update</string>
+    <string name="weather_load_error">Failed to load weather data Weather</string>
+    <string name="loading">Loading...</string>
+    <string name="humidity">Humidity</string>
+    <string name="wind">Wind</string>
+    <string name="pressure">Pressure</string>
+    <string name="no_connection">No internet connection</string>
+    <string name="weather">🌤️ Weather</string>
+    <string name="speed"> m/s</string>
+    <string name="pressure_high"> mm</string>
+    <!-- Shortcut labels -->
+    <string name="shortcut_order_short">🚕 Order</string>
+    <string name="shortcut_order_long">Order a taxi</string>
 
+    <string name="shortcut_driver_short">👨‍✈️ Work</string>
+    <string name="shortcut_driver_long">Work as a driver</string>
 
+    <string name="shortcut_weather_short">🌤 Weather</string>
+    <string name="shortcut_weather_long">Check the weather</string>
+    <string name="shortcut_disabled">Function temporarily unavailable</string>
+    <string name="shortcut_city_short">Change city</string>
+    <string name="shortcut_city_long">Select another city</string>
+    <string name="updated_at">updated at</string>
+    <string name="wait_update">Wait for update...</string>
+    <string name="send_gmail">Send to Gmail</string>
+    <string name="error_send_email">"Error sending email: "</string>
+    <string name="send_report_title">Send Report</string>
+    <string name="message_hint">Describe the problem...</string>
+    <string name="log_file_info">app_log.txt (%s)</string>
+    <string name="log_file_not_found">Log file not found</string>
+    <string name="char_counter">%d/500</string>
+
+    <string name="send_button">Send</string>
+    <string name="error_message_too_long">Message is too long (max 500 characters)</string>
+    <string name="error_message_empty">Enter a message</string>
+    <string name="report_sent">Report sent</string>
+    <string name="card_payment_false">"Currently, you can only pay in cash for your route. Card payments will be restored soon; we\'re already working on it."</string>
+    <!-- Inclusive transport -->
+    <string name="inclusive_transport_title">Inclusive Transport</string>
+    <string name="inclusive_transport_message">Do you need vehicles adapted for people with disabilities?</string>
+    <string name="inclusive_transport_message_yes">Attention!!! We need a vehicle adapted for people with disabilities.</string>
+    <string name="inclusive_transport_yes">Yes</string>
+    <string name="inclusive_transport_no">No</string>
+    <string name="inclusiveTransport">♿ Inclusive</string>
+    <string name="currentInclusiveState">"Currently set to: "</string>
+    <string name="server_error_card_payment">Currently, card payments are unavailable. Please change your payment method to cash to the driver.</string>
 </resources>

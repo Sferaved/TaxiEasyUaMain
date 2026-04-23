@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="28dp"
+    android:background="@color/background_color_new"
+    android:gravity="center_horizontal">
+
+    <!-- Иконка -->
+
+    <!-- Заголовок -->
+    <TextView
+        android:id="@+id/dialogTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/send_report_title"
+        android:textColor="@color/white"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:fontFamily="@font/medium"
+        android:letterSpacing="0.02"
+        android:paddingBottom="12dp" />
+
+    <!-- Декоративная линия -->
+    <View
+        android:layout_width="80dp"
+        android:layout_height="3dp"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/gradient_line"
+        android:gravity="center_horizontal" />
+
+    <!-- Поле ввода -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/textInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="16dp"
+        app:hintTextColor="@color/white"
+        app:boxStrokeColor="@color/white"
+        app:boxStrokeWidth="2dp"
+        app:boxStrokeWidthFocused="3dp"
+        app:boxBackgroundMode="outline"
+        app:hintAnimationEnabled="true">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/discinp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/regular"
+            android:gravity="top"
+            android:hint="@string/message_hint"
+            android:inputType="textMultiLine"
+            android:maxLines="5"
+            android:minHeight="100dp"
+            android:padding="16dp"
+            android:textColor="@color/white"
+            android:textColorHint="@color/white"
+            android:textSize="18sp"
+            android:background="@drawable/input"
+            />
+        <!-- 33FFFFFF = 20% белый, 80% прозрачный -->
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+
+
+    <!-- Прогресс-бар -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="4dp"
+        android:progressTint="@color/colorPrimaryDark"
+        android:max="500" />
+
+    <!-- Счетчик символов -->
+    <TextView
+        android:id="@+id/charCounter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text='@string/char_counter'
+        android:textSize="11sp"
+        android:fontFamily="@font/regular"
+        android:textColor="@color/gray_500"
+        android:gravity="end"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Кнопки -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:divider="@drawable/button_divider"
+        android:showDividers="middle"
+        android:dividerPadding="12dp">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/negativeButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:text="@string/cancel_button"
+            android:textColor="@color/white"
+            android:background="@drawable/button_bg"
+            android:textAllCaps="false"
+            android:fontFamily="@font/medium" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/positiveButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:text="@string/send_button"
+            android:textColor="@color/white"
+            android:background="@drawable/buttons_green"
+            android:textAllCaps="false"
+            android:fontFamily="@font/medium" />
+
+    </LinearLayout>
+
+</LinearLayout>

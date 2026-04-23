@@ -28,6 +28,8 @@ public class FirestoreHelper {
     private final Context context;
     ListenerRegistration listenerVisicomKey;
     ListenerRegistration listenerMapboxKey;
+    ListenerRegistration listenerWeatherKey;
+    ListenerRegistration listenerCardPaymentKey;
     ListenerRegistration listenerUixCamKey;
 
     public FirestoreHelper(Context context) {
@@ -60,8 +62,104 @@ public class FirestoreHelper {
                 }
             }
         });
+
+
     }
 
+    private static final String TAG = "FirestoreHelper";
+
+    public void getCardPaymentKeyForCity(
+            OnCardPaymentKeyFetchedListener listener,
+            String city
+    ) {
+        Log.d(TAG, "=== getCardPaymentKeyForCity вызван ===");
+        Log.d(TAG, "Город: '" + city + "'");
+
+        // Проверка входных параметров
+        if (city == null || city.isEmpty()) {
+            Log.e(TAG, "ОШИБКА: название города null или пустое");
+            if (listener != null) {
+                listener.onFailure(new IllegalArgumentException("City name cannot be null or empty"));
+            }
+            return;
+        }
+
+        Log.d(TAG, "Создание ссылки на документ: city/" + city);
+        DocumentReference docRef = firestore.collection("city").document(city);
+
+        Log.d(TAG, "Добавление snapshot listener для города: " + city);
+        listenerCardPaymentKey = docRef.addSnapshotListener((documentSnapshot, e) -> {
+
+            if (e != null) {
+                Log.e(TAG, "Ошибка Firestore: " + e.getMessage(), e);
+                if (listener != null) {
+                    listener.onFailure(e);
+                }
+                return;
+            }
+
+            Log.d(TAG, "Получен snapshot документа");
+
+            if (documentSnapshot != null && documentSnapshot.exists()) {
+                Log.d(TAG, "Документ существует, ID: " + documentSnapshot.getId());
+
+                // Логируем все поля документа для отладки
+                Log.d(TAG, "Все поля документа: " + documentSnapshot.getData());
+
+                Boolean cardPayment = documentSnapshot.getBoolean("card_payment");
+                Log.d(TAG, "Значение card_payment: " + cardPayment);
+
+                if (cardPayment != null && listener != null) {
+                    Log.d(TAG, "УСПЕХ: получено значение card_payment = " + cardPayment);
+                    try {
+                        listener.onSuccess(cardPayment);
+                        Log.d(TAG, "Callback onSuccess выполнен успешно");
+                    } catch (GeneralSecurityException | IOException ex) {
+                        Log.e(TAG, "Исключение в onSuccess: " + ex.getMessage(), ex);
+                        throw new RuntimeException(ex);
+                    }
+                } else if (listener != null) {
+                    Log.w(TAG, "ПРЕДУПРЕЖДЕНИЕ: поле card_payment отсутствует в документе");
+                    listener.onFailure(new Exception("Поле card_payment не найдено в документе"));
+                }
+            } else if (listener != null) {
+                Log.w(TAG, "Документ для города '" + city + "' не существует или равен null");
+                listener.onFailure(new Exception("Документ для города " + city + " не найден"));
+            }
+
+            Log.d(TAG, "=== Завершение обработки snapshot ===");
+        });
+
+        Log.d(TAG, "Snapshot listener добавлен, ожидание данных...");
+    }
+
+    public void getWeatherKey(OnVisicomKeyFetchedListener listener) {
+        DocumentReference docRef = firestore.collection("keys").document("weather_key");
+
+        listenerWeatherKey = docRef.addSnapshotListener((documentSnapshot, e) -> {
+            if (e != null) {
+                if (listener != null) {
+                    listener.onFailure(e);
+                }
+                return;
+            }
+
+            if (documentSnapshot != null && documentSnapshot.exists() && documentSnapshot.contains("weather_key")) {
+                String vKey = documentSnapshot.getString("weather_key");
+                if (listener != null) {
+                    try {
+                        listener.onSuccess(vKey);
+                    } catch (GeneralSecurityException | IOException ex) {
+                        listener.onFailure(new RuntimeException(ex));
+                    }
+                }
+            } else {
+                if (listener != null) {
+                    listener.onFailure(new Exception("Поле weather_key не найдено в документе или документ отсутствует."));
+                }
+            }
+        });
+    }
     public void getMapboxKey(OnMapboxKeyFetchedListener listener) {
         DocumentReference docRef = firestore.collection("keys").document("mapbox_key");
 
@@ -195,11 +293,19 @@ public class FirestoreHelper {
             listenerUixCamKey.remove();
             listenerUixCamKey = null;
         }
+        if (listenerCardPaymentKey != null) {
+            listenerCardPaymentKey.remove();
+            listenerCardPaymentKey = null;
+        }
     }
 
     // Интерфейс для передачи результатов через callback
     public interface OnVisicomKeyFetchedListener {
         void onSuccess(String vKey) throws GeneralSecurityException, IOException;
+        void onFailure(Exception e);
+    }
+    public interface OnCardPaymentKeyFetchedListener {
+        void onSuccess(Boolean vKey) throws GeneralSecurityException, IOException;
         void onFailure(Exception e);
     }
 

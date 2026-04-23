@@ -23,7 +23,7 @@
     <string name="my_phone">Мій телефон</string>
     <string name="open_maps">Замовити по мапе</string>
     <string name="driver">🚖 ‍Робота водієм (реклама)</string>
-    <string name="send_email">📧 Поділитися</string>
+    <string name="send_email">✉️ Поділитися</string>
     <string name="gps_ok">Визначення геопозиції включено</string>
     <string name="cancel_button">Ні, дякую</string>
     <string name="gps_on">Увімкнути</string>
@@ -64,7 +64,7 @@
     <string name="from_edit">Звідки</string>
     <string name="sms_code">Код перевіркі зі смс-повідомлення</string>
     <string name="android">Андроїд-додаток для швидких та дешевих поїздок при замовленні онлайн.</string>
-    <string name="good_day">Мої вітання. \n \n Знайшов чудовий додаток для поїздок на таксі. \n \n Раджу спробувати за посиланням в офіційному магазині Google: \n\n https://play.google.com/store/apps/details?id=com.taxieasyua.back4app \n\n Гарного дня. \n Ще побачимось.</string>
+    <string name="good_day">Мої вітання. \n \n Знайшов чудовий додаток для поїздок на таксі. \n \n Раджу спробувати за посиланням в офіційному магазині Google: \n\n https://play.google.com/store/apps/details?id=com.taxi.easy.ua \n\n Гарного дня. \n Ще побачимось.</string>
     <string name="share">Порадити другові додаток...</string>
     <string name="no_email_agent">Поштовий клієнт не встановлено.</string>
     <string name="check_position">Зачекайте, відбувається визначення Вашого розташування...</string>
@@ -148,7 +148,7 @@
     <string name="disc_text">% +/- 💰🧾</string>
     <string name="email_sent">Повідомлення відправлено</string>
     <string name="send_like">👍 Оцінити додаток</string>
-    <string name="send_email_admin">📧 Повідомити про проблему</string>
+    <string name="send_email_admin">📢 Повідомити про проблему</string>
     <string name="SA_subject">Повідомлення № I-</string>
     <string name="SA_message_start">Текст Вашого повідомленя: </string>
     <string name="SA_info_pas">Інформація про додаток: </string>
@@ -470,7 +470,7 @@
     <string name="update_canceled">Оновлення було скасовано.</string>
     <string name="restart_error">Помилка при перезапуску програми.</string>
     <string name="btn_option_text">Дії</string>
-    <string name="language">⌨️ Мова</string>
+    <string name="language">🌐️ Мова</string>
     <string name="item_settings">Налаштування</string>
     <string name="save_btn">Зберегти</string>
     <string name="close">Закрити</string>
@@ -662,4 +662,60 @@
     <string name="city_change_dialog">Зміна міста</string>
     <string name="find_new_city_mes">"Визначено нове місто: "</string>
     <string name="turn_mes">. Переключити?</string>
+
+    <!-- Погода -->
+    <string name="weather_title">Погода</string>
+    <string name="weather_subtitle">Актуальний прогноз для вашого міста</string>
+    <string name="weather_details">Докладний прогноз</string>
+    <string name="show_weather_map">Карта погоди</string>
+    <string name="forecast_5_days">Прогноз на 5 днів</string>
+    <string name="no_weather_data">Немає даних про погоду</string>
+    <string name="no_weather_description">Перевірте підключення до інтернету та спробуйте знову</string>
+    <string name="update_weather">Оновити погоду</string>
+    <string name="weather_map_coming_soon">Карта погоди буде доступна в наступному оновленні</string>
+    <string name="weather_load_error">Неможливо завантажити дані про погоду</string>
+    <string name="loading">Завантаження...</string>
+    <string name="humidity">Вологість</string>
+    <string name="wind">Вітер</string>
+    <string name="pressure">Тиск</string>
+    <string name="no_connection">Немає підключення до інтернету</string>
+    <string name="weather">🌤️ Погода</string>
+    <string name="speed"> м/с</string>
+    <string name="pressure_high"> мм</string>
+    <!-- Shortcut labels -->
+    <string name="shortcut_order_short">🚕 Замовити</string>
+    <string name="shortcut_order_long">Замовити таксі</string>
+
+    <string name="shortcut_driver_short">👨‍✈️ Робота</string>
+    <string name="shortcut_driver_long">Робота водієм</string>
+
+    <string name="shortcut_weather_short">🌤 Погода</string>
+    <string name="shortcut_weather_long">Дізнатися погоду</string>
+    <string name="shortcut_disabled">Функція тимчасово недоступна</string>
+    <string name="shortcut_city_short">Змінити місто</string>
+    <string name="shortcut_city_long">Вибрати інше місто</string>
+    <string name="updated_at">оновлено о</string>
+    <string name="wait_update">Зачекайте оновлення...</string>
+    <string name="send_gmail">Надіслати на Gmail</string>
+    <string name="error_send_email">"Помилка надсилання email: "</string>
+    <string name="send_report_title">Надіслати звіт</string>
+    <string name="message_hint">Опишіть проблему...</string>
+    <string name="log_file_info">app_log.txt (%s)</string>
+    <string name="log_file_not_found">Лог-файл не знайдено</string>
+    <string name="char_counter">%d/500</string>
+
+    <string name="send_button">Надіслати</string>
+    <string name="error_message_too_long">Повідомлення занадто довге (макс. 500 символів)</string>
+    <string name="error_message_empty">Введіть повідомлення</string>
+    <string name="report_sent">Звіт надіслано</string>
+    <string name="card_payment_false">" На даний момент сплатити можливо лише готівкою за Ваш маршрут. Оплата карткою відновиться найближчим часом, ми вже працюємо над цим"</string>
+    <!-- Інклюзивний транспорт -->
+    <string name="inclusive_transport_title">Інклюзивний транспорт</string>
+    <string name="inclusive_transport_message">Чи потрібні вам автомобілі, адаптовані для людей з обмеженими можливостями?</string>
+    <string name="inclusive_transport_message_yes">Увага !!! Потрібен автомобіль адаптований для людей з обмеженими можливостями</string>
+    <string name="inclusive_transport_yes">Так</string>
+    <string name="inclusive_transport_no">Ні</string>
+    <string name="inclusiveTransport">♿ Інклюзивність</string>
+    <string name="currentInclusiveState">"Зараз встановлено: "</string>
+    <string name="server_error_card_payment">На даний момент оплата карткою неможлива. Змініть спосіб оплати за готівку водію.</string>
 </resources>

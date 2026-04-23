@@ -74,6 +74,7 @@ import com.taxi.easy.ua.utils.hold.HoldResponse;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
+import com.taxi.easy.ua.utils.pusher.events.AddCostUpdateEvent;
 import com.taxi.easy.ua.utils.pusher.events.CanceledStatusEvent;
 import com.taxi.easy.ua.utils.pusher.events.TransactionStatusEvent;
 import com.taxi.easy.ua.utils.time_ut.TimeUtils;
@@ -192,7 +193,7 @@ public class FinishSeparateFragment extends Fragment {
     private String action;
     long delayMillis = 5 * 60 * 1000;
 //    long delayMillis = 30 * 1000;
-
+    private String pendingAddCost = "0";
     private boolean isTaskScheduled = false; // Флаг для отслеживания
     
     @Override
@@ -678,6 +679,7 @@ public class FinishSeparateFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        EventBus.getDefault().unregister(this);
         if (timeUtils != null) {
             timeUtils.stopTimer();
         }
@@ -1723,7 +1725,18 @@ public class FinishSeparateFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         Log.d("LifecycleCheck 1", "Current lifecycle state: " + getViewLifecycleOwner().getLifecycle().getCurrentState());
+        textCostMessage = view.findViewById(R.id.text_cost_message);
+        textCost = view.findViewById(R.id.textCost);
+        text_status = view.findViewById(R.id.text_status);
+        textStatusCar = view.findViewById(R.id.textStatusCar);
+        textCarMessage = view.findViewById(R.id.text_status_car);
+        countdownTextView = view.findViewById(R.id.countdownTextView);
+        carProgressBar = view.findViewById(R.id.carProgressBar);
+        progressSteps = view.findViewById(R.id.progressSteps);
 
+        btn_cancel_order = view.findViewById(R.id.btn_cancel_order);
+        btn_again = view.findViewById(R.id.btn_again);
+        btn_add_cost = view.findViewById(R.id.btn_add_cost);
         viewModelReviewer();
     }
     public void viewModelReviewer() {
@@ -1737,13 +1750,13 @@ public class FinishSeparateFragment extends Fragment {
         }
         cancel_btn_click = false;
 
-        viewModel.getAddCostViewUpdate().observe(getViewLifecycleOwner(), addCost -> {
-            Logger.d(context,"Pusher addCostViewUpdate", "Finish addCostViewUpdate status set: " + addCost);
-            if (!addCost.equals("0")) {
-//                viewModel.getAddCostViewUpdate().removeObservers(getViewLifecycleOwner());
-                addCostView(addCost);
-            }
-        });
+//        viewModel.getAddCostViewUpdate().observe(getViewLifecycleOwner(), addCost -> {
+//            Logger.d(context,"Pusher addCostViewUpdate", "Finish addCostViewUpdate status set: " + addCost);
+//            if (!addCost.equals("0")) {
+////                viewModel.getAddCostViewUpdate().removeObservers(getViewLifecycleOwner());
+//                addCostView(addCost);
+//            }
+//        });
 
         viewModel.getCancelStatus().observe(getViewLifecycleOwner(), status -> {
             Logger.d(context,"Pusher getCancelStatus", "Finish getCancelStatus status set: " + status);
@@ -1860,6 +1873,50 @@ public class FinishSeparateFragment extends Fragment {
 
     }
 
+    // Добавьте этот метод в класс FinishSeparateFragment
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onAddCostUpdateEvent(AddCostUpdateEvent event) {
+        String addCost = event.getAddCost();
+        Logger.d(context, "EventBus", "Received addCost update: " + addCost);
+
+        if (!addCost.equals("0")) {
+            // Сохраняем для восстановления после фона
+            pendingAddCost = addCost;
+            sharedPreferencesHelperMain.saveValue("pendingAddCost", addCost);
+
+            // Обновляем UI
+            addCostView(addCost);
+        }
+    }
+
+    // Добавьте этот метод для восстановления после возврата из фона
+    private void applyPendingAddCostIfNeeded() {
+        // Проверяем сохраненное значение из SharedPreferences
+        String savedAddCost = (String) sharedPreferencesHelperMain.getValue("pendingAddCost", "0");
+
+        String costToApply = "0";
+
+        if (!pendingAddCost.equals("0")) {
+            costToApply = pendingAddCost;
+        } else if (!savedAddCost.equals("0")) {
+            costToApply = savedAddCost;
+            pendingAddCost = savedAddCost;
+        }
+
+        // Если есть необработанное обновление - применяем его
+        if (!costToApply.equals("0")) {
+            final String finalCostToApply = costToApply; // ✅ Создаем final переменную
+
+            Logger.d(context, TAG, "applyPendingAddCostIfNeeded: Applying pending cost update: " + finalCostToApply);
+
+            // Небольшая задержка, чтобы UI успел полностью восстановиться
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (isAdded() && getActivity() != null) {
+                    addCostView(finalCostToApply); // ✅ Используем final переменную
+                }
+            }, 200);
+        }
+    }
     private void showCancelErrorDialog() {
         if (isAdded()) {
             String message = getString(R.string.error_5_min_cancel_card_order);
@@ -1895,6 +1952,10 @@ public class FinishSeparateFragment extends Fragment {
 
             viewModel.setAddCostViewUpdate("0");
 
+            // ✅ ДОБАВЬТЕ ЭТИ ДВЕ СТРОКИ - очищаем pending
+            pendingAddCost = "0";
+            sharedPreferencesHelperMain.saveValue("pendingAddCost", "0");
+
         } else {
             Logger.d(context, TAG, "Число не найдено в строке.");
         }
@@ -1926,13 +1987,15 @@ public class FinishSeparateFragment extends Fragment {
 
         btn_open.setOnClickListener(v -> btnOpen());
         startAddCostDialog (timeCheckOutAddCost);
+
+        applyPendingAddCostIfNeeded();
     }
 
     @Override
     public void onStop() {
         super.onStop();
         // Отменяем выполнение Runnable, если фрагмент уходит в фон
-        EventBus.getDefault().unregister(this); // Удаление подписчика
+//        EventBus.getDefault().unregister(this); // Удаление подписчика
         stopCycle();
 
 //        if (handlerAddcost != null) {
@@ -1967,12 +2030,19 @@ public class FinishSeparateFragment extends Fragment {
         super.onStart();
         Log.d("LifecycleCheck", "Current lifecycle state: " + getViewLifecycleOwner().getLifecycle().getCurrentState());
 
-        EventBus.getDefault().register(this); // Регистрация подписчика
+        // ✅ ПРОВЕРЯЕМ, ЗАРЕГИСТРИРОВАН ЛИ УЖЕ
+        if (!EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().register(this);
+            Log.d(TAG, "EventBus registered");
+        } else {
+            Log.d(TAG, "EventBus already registered, skipping");
+        }
+
         // Повторный запуск Runnable при возвращении активности
         if(action != null) {
             if(action.equals("Поиск авто")) {
                 if (handler != null && myRunnable != null) {
-                    handler.postDelayed(myRunnable, 10000); // Устанавливаем нужную задержку
+                    handler.postDelayed(myRunnable, 10000);
                 }
 
                 isTaskRunning = false;
@@ -1980,7 +2050,7 @@ public class FinishSeparateFragment extends Fragment {
                 startCycle();
 
                 if (handlerBonusBtn != null && runnableBonusBtn != null) {
-                    handlerBonusBtn.postDelayed(runnableBonusBtn, 10000); // Устанавливаем нужную задержку
+                    handlerBonusBtn.postDelayed(runnableBonusBtn, 10000);
                 }
             }
         }

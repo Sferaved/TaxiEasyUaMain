@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Заказать такси -->
+    <shortcut
+        android:shortcutId="order_taxi"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_order"
+        android:shortcutShortLabel="@string/shortcut_order_short"
+        android:shortcutLongLabel="@string/shortcut_order_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.taxi.easy.ua"
+            android:targetClass="com.taxi.easy.ua.MainActivity">
+            <extra android:name="shortcut_action" android:value="order" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+    <!-- Работа водителем -->
+    <shortcut
+        android:shortcutId="driver_work"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_driver"
+        android:shortcutShortLabel="@string/shortcut_driver_short"
+        android:shortcutLongLabel="@string/shortcut_driver_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.taxi.easy.ua"
+            android:targetClass="com.taxi.easy.ua.MainActivity">
+            <extra android:name="shortcut_action" android:value="driver" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+
+
+</shortcuts>

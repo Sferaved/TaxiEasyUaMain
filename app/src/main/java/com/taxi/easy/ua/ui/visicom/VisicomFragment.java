@@ -114,11 +114,13 @@ import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.kafka.KafkaRequest;
+import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.retrofit.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
+import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
 import com.taxi.easy.ua.utils.worker.TilePreloadWorker;
 import com.uxcam.UXCam;
 
@@ -234,10 +236,8 @@ public class VisicomFragment extends Fragment {
     private Handler costHandler;
     private Runnable reserveRunnable;
     private String lastCost = null;
-    @SuppressLint("StaticFieldLeak")
     static SwipeRefreshLayout swipeRefreshLayout;
     private LifecycleObserver lifecycleObserver;
-
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentVisicomBinding.inflate(inflater, container, false);
@@ -344,7 +344,7 @@ public class VisicomFragment extends Fragment {
         schedule = binding.schedule;
 
         shed_down = binding.shedDown;
-        Logger.d(requireActivity(), TAG, "MainActivity.firstStart" + firstStart);
+        Logger.d(requireActivity(), TAG, "MainActivity.firstStart" + MainActivity.firstStart);
 
 
 
@@ -372,10 +372,14 @@ public class VisicomFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         Log.d("LifecycleCheck 1", "Current lifecycle state: " + getViewLifecycleOwner().getLifecycle().getCurrentState());
+
+        // Инициализация базовых компонентов
         setupActionBar();
         locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
 
+        // Инициализация существующего ExecutionStatusViewModel (из MainActivity)
         viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
+
         // Инициализация нового VisicomViewModel для этого фрагмента
         VisicomViewModel visicomViewModel = new ViewModelProvider(this).get(VisicomViewModel.class);
 
@@ -425,59 +429,48 @@ public class VisicomFragment extends Fragment {
                 }
             }
         };
+
         // Добавляем observer к жизненному циклу приложения
         ProcessLifecycleOwner.get().getLifecycle().addObserver(lifecycleObserver);
         // ========== КОНЕЦ РЕШЕНИЯ ==========
 
-        if(button1 != null) {
-          button1.setVisibility(View.VISIBLE);
+        // Обработка кнопки button1
+        if (button1 != null) {
+            button1.setVisibility(View.VISIBLE);
         }
 
-
-
+        // Наблюдение за статусом GPS (X-кнопка)
         viewModel.getStatusX().observe(getViewLifecycleOwner(), aBoolean -> {
-            Logger.d(context, TAG,"StatusXUpdate changed: " + aBoolean);
+            Logger.d(context, TAG, "StatusXUpdate changed: " + aBoolean);
             updateGpsButtonDrawable(aBoolean);
         });
 
+        // Наблюдение за обновлением GPS
         viewModel.getStatusGpsUpdate().observe(getViewLifecycleOwner(), aBoolean -> {
-            Logger.d(context, TAG,"StatusGpsUpdate changed: " + aBoolean);
+            Logger.d(context, TAG, "StatusGpsUpdate changed: " + aBoolean);
+
             if (aBoolean) {
+                // Если GPS обновление активно
                 if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                    // GPS включен - показываем интерфейс и получаем первую локацию
                     btnVisible(VISIBLE);
-//                    binding.textfrom.setVisibility(VISIBLE);
-//                    num1.setVisibility(VISIBLE);
-//                    binding.textGeo.setVisibility(VISIBLE);
-//                    binding.textwhere.setVisibility(VISIBLE);
-//                    binding.num2.setVisibility(VISIBLE);
-//                    binding.textTo.setVisibility(VISIBLE);
                     Logger.d(context, TAG, "onResume: 3");
                     firstLocation();
                 } else {
+                    // GPS выключен - пытаемся получить стоимость без GPS
                     String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
                     if (!userEmail.equals("email")) {
                         try {
                             visicomCost();
                         } catch (MalformedURLException e) {
+                            Log.e(TAG, "Ошибка в visicomCost: " + e.getMessage());
                             throw new RuntimeException(e);
                         }
                         readTariffInfo();
                     }
-
                 }
-            }  else {
-//                String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-//                if (!userEmail.equals("email")) {
-//                    try {
-//                        visicomCost();
-//                    } catch (MalformedURLException e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                    readTariffInfo();
-//                }
-
             }
-
+            // Если aBoolean == false - ничего не делаем
         });
     }
 
@@ -664,7 +657,7 @@ public class VisicomFragment extends Fragment {
         }
 
         // С existing код (сброс в БД, если нужно)
-        if (!firstStart) {
+        if (!MainActivity.firstStart) {
             ContentValues cv = new ContentValues();
             cv.put("time", "no_time");
             cv.put("date", "no_date");
@@ -1045,13 +1038,16 @@ public class VisicomFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-// Удаляем observer жизненного цикла
+
+        // Удаляем observer жизненного цикла
         if (lifecycleObserver != null) {
             ProcessLifecycleOwner.get().getLifecycle().removeObserver(lifecycleObserver);
         }
 
+        // Отмена всех запросов
         RetrofitClient.getInstance().cancelAllRequests();
 
+        // Очистка binding
         binding = null;
     }
 
@@ -1203,7 +1199,13 @@ public class VisicomFragment extends Fragment {
                 phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
             }
             c.close();
-
+            if (InclusiveTransportPreferenceWorker.needsInclusiveTransport()) {
+                Logger.d(context, TAG, "Нужно добавить информацию в заказ что нужен инклюзивный  транспорт");
+                // Проверяем, содержит ли уже комментарий эту фразу
+                if (!comment.contains(context.getString(R.string.inclusive_transport_message_yes))) {
+                    comment += context.getString(R.string.inclusive_transport_message_yes);
+                }
+            }
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
                     + displayName + " (" + context.getString(R.string.version_code) + ") *" + userEmail + "*" + payment_type + "/"
                     + time + "/" + date;
@@ -1254,6 +1256,13 @@ public class VisicomFragment extends Fragment {
             }
             sharedPreferencesHelperMain.saveValue("black_list_45", false);
             sharedPreferencesHelperMain.saveValue("old_cost", clientCost);
+            if (InclusiveTransportPreferenceWorker.needsInclusiveTransport()) {
+                Logger.d(context, TAG, "Нужно добавить информацию в заказ что нужен инклюзивный  транспорт");
+                // Проверяем, содержит ли уже комментарий эту фразу
+                if (!comment.contains(context.getString(R.string.inclusive_transport_message_yes))) {
+                    comment += context.getString(R.string.inclusive_transport_message_yes);
+                }
+            }
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
                     + clientCost + "/" + paramsUserArr + "/" + addCost + "/"
                     + time + "/" + comment + "/" + date + "/" + start + "/" + finish + "/" + wfpInvoice;
@@ -1679,8 +1688,8 @@ public class VisicomFragment extends Fragment {
 
 //            List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
 //            String comment = stringList.get(2);
-            String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
-            sendUrlMap.put("comment_info", comment);
+//            String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
+//            sendUrlMap.put("comment_info", comment);
 
             List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
             List<String> servicesChecked = new ArrayList<>();
@@ -1758,7 +1767,12 @@ public class VisicomFragment extends Fragment {
                 message = getResources().getString(R.string.server_error_connected);
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
                 bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
+            } else if (message.equals("ErrorCardPayment")) {
+                message = getResources().getString(R.string.server_error_card_payment);
+                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
             } else {
+                Logger.d(context, TAG, "pay_method " + pay_method);
                 switch (pay_method) {
                     case "bonus_payment":
                     case "card_payment":
@@ -1982,6 +1996,7 @@ public class VisicomFragment extends Fragment {
             binding.textGeo.setText(fromAddressString);
         }
 
+
         if (!NetworkUtils.isNetworkAvailable(requireActivity())) {
             NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
             navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
@@ -2010,73 +2025,18 @@ public class VisicomFragment extends Fragment {
         if (cityCheckActivity.equals("run")) {
             btnVisible(VISIBLE);
         }
-        if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_restart, true)
-                    .build());
-        }
-
 
         String visible_shed = (String) sharedPreferencesHelperMain.getValue("visible_shed", "no");
         if(visible_shed.equals("no")) {
             Logger.d(context, TAG, "onResume 2" );
             btnVisible(INVISIBLE);
-//            schedule.setVisibility(INVISIBLE);
-//            shed_down.setVisibility(INVISIBLE);
-//
-//            gpsBtn.setVisibility(View.INVISIBLE);
-//            binding.num1.setVisibility(View.INVISIBLE);
-//            binding.textfrom.setVisibility(View.INVISIBLE);
-//
-//            binding.textwhere.setVisibility(View.INVISIBLE);
-//
-////            binding.svButton.setVisibility(View.INVISIBLE);
-//            binding.btnCallAdmin.setVisibility(View.INVISIBLE);
-
         } else  {
             if (NetworkUtils.isNetworkAvailable(context)) {
                 Logger.d(context, TAG, "onResume 3" );
                 btnVisible(VISIBLE);
-//                binding.textfrom.setVisibility(VISIBLE);
-//                binding.num1.setVisibility(VISIBLE);
-//                binding.clearButtonFrom.setVisibility(VISIBLE);
-//
-//
-//                binding.clearButtonTo.setVisibility(VISIBLE);
-//
-//                binding.textGeo.setVisibility(VISIBLE);
-//                binding.clearButtonFrom.setVisibility(VISIBLE);
-//
-//                binding.num2.setVisibility(VISIBLE);
-//                binding.textTo.setVisibility(VISIBLE);
-//                binding.clearButtonTo.setVisibility(VISIBLE);
-
-//                schedule.setVisibility(VISIBLE);
-//                shed_down.setVisibility(VISIBLE);
-
-
-//                binding.svButton.setVisibility(View.VISIBLE);
-//                binding.btnCallAdmin.setVisibility(View.VISIBLE);
-
             } else {
                 Logger.d(context, TAG, "onResume 4" );
                 btnVisible(INVISIBLE);
-//                schedule.setVisibility(INVISIBLE);
-//                shed_down.setVisibility(INVISIBLE);
-
-//                gpsBtn.setVisibility(INVISIBLE);
-//                binding.num1.setVisibility(INVISIBLE);
-//                binding.textfrom.setVisibility(INVISIBLE);
-//
-//                binding.textwhere.setVisibility(VISIBLE);
-//                progressBar.setVisibility(VISIBLE);
-//
-//
-////
-////                binding.svButton.setVisibility(GONE);
-//                binding.btnCallAdmin.setVisibility(GONE);
-
             }
         }
         Logger.d(context, TAG, "onResume 5" );
@@ -2670,6 +2630,7 @@ public class VisicomFragment extends Fragment {
                         FromJSONParserRetrofit.sendURL(urlFrom, result -> {
                             if (result != null) {
                                 String FromAdressString = result.get("route_address_from");
+                                Logger.d(context, TAG, "FromAdressString: " + FromAdressString);
                                 if (FromAdressString != null && FromAdressString.contains("Точка на карте")) {
                                     FromAdressString = context.getString(R.string.startPoint);
                                 }
@@ -2681,7 +2642,7 @@ public class VisicomFragment extends Fragment {
                                         FromAdressString,
                                         context
                                 ).findCity(latitude, longitude);
-
+                                Logger.d(context, TAG, "ToAdressString: " + textViewTo.getText().toString());
                             } else {
                                 Logger.d(context, TAG, "Ошибка при получении адреса");
                             }
@@ -3015,14 +2976,14 @@ public class VisicomFragment extends Fragment {
         Log.d("blockUserBlackList", "Starting the block process for user.");
 
         // Update button text and make it non-clickable
-        buttonBonus.setText(context.getString(R.string.card_payment));
+//        buttonBonus.setText(context.getString(R.string.card_payment));
 //        buttonBonus.setClickable(false);
-        buttonBonus.setOnClickListener(v -> {
-            String message = context.getString(R.string.black_list_message_err);
-            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-
-        });
+//        buttonBonus.setOnClickListener(v -> {
+//            String message = context.getString(R.string.black_list_message_err);
+//            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+//            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+//
+//        });
 
         Log.d("blockUserBlackList", "Button text set and made non-clickable.");
 
@@ -3334,10 +3295,13 @@ public class VisicomFragment extends Fragment {
                 .setCancelable(false)
                 .setPositiveButton(R.string.ok_button, (dialog, which) -> {
                     dialog.dismiss();
+
                     if ("60".equals(addType)) {
                         createDoubleOrder();
+
                     } else if ("45".equals(addType)) {
-                        createBlackList();
+                        checkCardPaymentForCity();
+//                        createBlackList();
                     }
                 })
                 .setNegativeButton(R.string.cancel_button, (dialog, which) -> {
@@ -3371,6 +3335,40 @@ public class VisicomFragment extends Fragment {
 
         }
     }
+    private void checkCardPaymentForCity() {
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
+        String cityName = stringList.get(1);
+        FirestoreHelper firestoreHelper = new FirestoreHelper(context);
+        firestoreHelper.getCardPaymentKeyForCity(
+                new FirestoreHelper.OnCardPaymentKeyFetchedListener() {
+                    @Override
+                    public void onSuccess(Boolean cardPaymentEnabled) {
+                        Logger.d(context, TAG, "Успешно получено значение: " + cardPaymentEnabled);
+
+                        if (cardPaymentEnabled) {
+                            Logger.d(context, TAG, "Оплата картой ДОСТУПНА для города " + cityName);
+                            createBlackList();
+                        } else {
+                            Logger.d(context, TAG, "Оплата картой НЕДОСТУПНА для города " + cityName);
+                            String message = context.getString(R.string.card_payment_false);
+                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        Logger.e(context,TAG, "Ошибка получения настроек: " + e.getMessage());
+
+                        // Показываем ошибку пользователю
+                        Toast.makeText(context,
+                                "Ошибка загрузки настроек: " + e.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                    }
+                },
+                cityName
+        );
+    }
 
     private void createBlackList() {
         sharedPreferencesHelperMain.saveValue("black_list_45", true);
@@ -3387,81 +3385,6 @@ public class VisicomFragment extends Fragment {
 
         googleVerifyAccount();
 
-//        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-//        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-//
-//        OkHttpClient client = new OkHttpClient.Builder()
-//                .addInterceptor(new RetryInterceptor())
-//                .addInterceptor(interceptor)
-//                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
-//                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
-//                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
-//                .build();
-//        Retrofit retrofit = new Retrofit.Builder()
-//                .baseUrl(baseUrl)
-//                .addConverterFactory(GsonConverterFactory.create())
-//                .client(client)
-//                .build();
-//
-//        PayApi apiService = retrofit.create(PayApi.class);
-//        Call<ResponsePaySystem> call = apiService.getPaySystem();
-//        call.enqueue(new Callback<ResponsePaySystem>() {
-//            @Override
-//            public void onResponse(@NonNull Call<ResponsePaySystem> call, @NonNull Response<ResponsePaySystem> response) {
-//                if (response.isSuccessful() && response.body() != null) {
-//                    // Обработка успешного ответа
-//                    ResponsePaySystem responsePaySystem = response.body();
-//                    String paymentCode = responsePaySystem.getPay_system();
-//                    switch (paymentCode) {
-//                        case "wfp":
-//                            pay_method = "wfp_payment";
-//                            break;
-//                        case "fondy":
-//                            pay_method = "fondy_payment";
-//                            break;
-//                        case "mono":
-//                            pay_method = "mono_payment";
-//                            break;
-//                    }
-//                    if(isAdded()){
-//                        ContentValues cv = new ContentValues();
-//                        cv.put("payment_type", pay_method);
-//                        // обновляем по id
-//                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-//                        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-//                                new String[] { "1" });
-//
-//                        cv = new ContentValues();
-//                        cv.put("verifyOrder", "0");
-//
-//                        database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
-//                        database.close();
-//
-//                        orderRout();
-//
-//                        googleVerifyAccount();
-//                    }
-//
-//
-//                } else {
-//                    if (isAdded()) { //
-//                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.verify_internet));
-//                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-//                    }
-//
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
-//                FirebaseCrashlytics.getInstance().recordException(t);
-//                if (isAdded()) { //
-//                    navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                            .setPopUpTo(R.id.nav_restart, true)
-//                            .build());
-//                }
-//            }
-//        });
     }
 
     public void createDoubleOrder() {

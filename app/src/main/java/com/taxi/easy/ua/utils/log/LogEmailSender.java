@@ -113,11 +113,11 @@ public class LogEmailSender {
             // Разрешаем временный доступ к файлу
             emailIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-            context.startActivity(Intent.createChooser(emailIntent, "Send log via email"));
+            context.startActivity(Intent.createChooser(emailIntent, context.getString(R.string.send_gmail)));
         } catch (Exception e) {
             Logger.e(context, TAG, "Failed to send log email: " + e);
             FirebaseCrashlytics.getInstance().recordException(e);
-            Toast.makeText(context, "Ошибка отправки email: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(context, context.getString(R.string.error_send_email) + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 

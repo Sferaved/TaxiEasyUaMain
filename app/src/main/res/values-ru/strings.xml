@@ -24,7 +24,7 @@
     <string name="my_phone">Мой телефон</string>
     <string name="open_maps">Заказать по карте</string>
     <string name="driver">🚖 Работа водителем (реклама)</string>
-    <string name="send_email">📧 Поделиться</string>
+    <string name="send_email">✉️ Поделиться</string>
     <string name="gps_ok">Определение геопозиции включено</string>
     <string name="cancel_button">Нет, спасибо</string>
     <string name="gps_on">Включить</string>
@@ -65,7 +65,7 @@
     <string name="from_edit">Откуда</string>
     <string name="sms_code">Код проверки со смс-сообщения</string>
     <string name="android">Андроид-приложение для скорых и дешевых поездок при заказе онлайн.</string>
-    <string name="good_day">Приветствую. Нашел великолепное приложение для поездок на такси. \n \n Советую попробовать по ссылке в официальном магазине Google: \n\n https://play.google.com/store/apps/details?id=com.taxieasyua.back4app \n\n Хорошего дня. \n Еще увидимся.</string>
+    <string name="good_day">Приветствую. Нашел великолепное приложение для поездок на такси. \n \n Советую попробовать по ссылке в официальном магазине Google: \n\n https://play.google.com/store/apps/details?id=com.taxi.easy.ua \n\n Хорошего дня. \n Еще увидимся.</string>
     <string name="share">Посоветовать другу приложение...</string>
     <string name="no_email_agent">Почтовый клиент не установлен.</string>
     <string name="check_position">Ожидайте, происходит определение Вашего местоположения...</string>
@@ -149,7 +149,7 @@
     <string name="disc_text">% +/- 💰🧾</string>
     <string name="email_sent">Сообщение отправлено</string>
     <string name="send_like">👍 Оценить приложение</string>
-    <string name="send_email_admin">📧 Сообщить о проблеме</string>
+    <string name="send_email_admin">📢 Сообщить о проблеме</string>
     <string name="SA_subject">Сообщение № I-</string>
     <string name="SA_message_start">Текст вашего сообщения: </string>
     <string name="SA_info_pas">Информация о приложении: </string>
@@ -469,7 +469,7 @@
     <string name="update_canceled">Обновление было отменено.</string>
     <string name="restart_error">Ошибка при перезапуске приложения.</string>
     <string name="btn_option_text">Действия</string>
-    <string name="language">⌨️ Язык</string>
+    <string name="language">🌐️ Язык</string>
     <string name="item_settings">Настройки</string>
     <string name="save_btn">Сохранить</string>
     <string name="close">Закрыть</string>
@@ -657,4 +657,58 @@
     <string name="city_change_dialog">Смена города</string>
     <string name="find_new_city_mes">"Определён новый город: "</string>
     <string name="turn_mes">. Переключить?</string>
+    <!-- Погода -->
+    <string name="weather_title">Погода</string>
+    <string name="weather_subtitle">Актуальный прогноз для вашего города</string>
+    <string name="weather_details">Подробный прогноз</string>
+    <string name="show_weather_map">Карта погоды</string>
+    <string name="forecast_5_days">Прогноз на 5 дней</string>
+    <string name="no_weather_data">Нет данных о погоде</string>
+    <string name="no_weather_description">Проверьте подключение к интернету и попробуйте снова</string>
+    <string name="update_weather">Обновить погоду</string>
+    <string name="weather_map_coming_soon">Карта погоды будет доступна в следующем обновлении</string>
+    <string name="weather_load_error">Не удалось загрузить данные о погоде</string>
+    <string name="loading">Загрузка...</string>
+    <string name="humidity">Влажность</string>
+    <string name="wind">Ветер</string>
+    <string name="pressure">Давление</string>
+    <string name="no_connection">Нет подключения к интернету</string>
+    <string name="weather">🌤️ Погода</string>
+    <string name="speed"> м/с</string>
+    <string name="pressure_high"> мм</string>
+    <string name="shortcut_order_short">🚕 Заказать</string>
+    <string name="shortcut_order_long">Заказать такси</string>
+
+    <string name="shortcut_driver_short">👨‍✈️ Работа</string>
+    <string name="shortcut_driver_long">Работа водителем</string>
+
+    <string name="shortcut_weather_short">🌤 Погода</string>
+    <string name="shortcut_weather_long">Узнать погоду</string>
+    <string name="shortcut_disabled">Функция временно недоступна</string>
+    <string name="shortcut_city_short">Сменить город</string>
+    <string name="shortcut_city_long">Выбрать другой город</string>
+    <string name="updated_at">обновлено в</string>
+    <string name="wait_update">Подождите обновления...</string>
+    <string name="send_gmail">Отправить на Gmail</string>
+    <string name="error_send_email">"Ошибка отправки email: "</string>
+    <string name="send_report_title">Отправить отчет</string>
+    <string name="message_hint">Опишите проблему...</string>
+    <string name="log_file_info">app_log.txt (%s)</string>
+    <string name="log_file_not_found">Лог-файл не найден</string>
+    <string name="char_counter">%d/500</string>
+
+    <string name="send_button">Отправить</string>
+    <string name="error_message_too_long">Сообщение слишком длинное (макс. 500 символов)</string>
+    <string name="error_message_empty">Введите сообщение</string>
+    <string name="report_sent">Отчет отправлен</string>
+    <string name="card_payment_false">" На сейчас оплатить возможно только наличными за Ваш маршрут. Оплата картой восстановиться в ближайшее время, мы уже работаем над этим"</string>
+    <!-- Инклюзивный транспорт -->
+    <string name="inclusive_transport_title">Инклюзивный транспорт</string>
+    <string name="inclusive_transport_message">Нужны ли Вам автомобили, адаптированные для людей с ограниченными возможностями?</string>
+    <string name="inclusive_transport_message_yes">Внимание !!! Нужен автомобиль, адаптированный для людей с ограниченными возможностями</string>
+    <string name="inclusive_transport_yes">Да</string>
+    <string name="inclusive_transport_no">Нет</string>
+    <string name="inclusiveTransport">♿ Инклюзивность</string>
+    <string name="currentInclusiveState">"Сейчас установлено: "</string>
+    <string name="server_error_card_payment">В данный момент оплата картой невозможна. Смените способ оплаты за наличные водителю.</string>
 </resources>

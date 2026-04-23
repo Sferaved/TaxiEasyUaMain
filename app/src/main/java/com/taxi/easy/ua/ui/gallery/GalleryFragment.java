@@ -49,6 +49,7 @@ import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
+import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
 import com.uxcam.UXCam;
 
 import org.json.JSONException;
@@ -832,6 +833,13 @@ public class GalleryFragment extends Fragment {
                 phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
                 c.close();
             }
+            if (InclusiveTransportPreferenceWorker.needsInclusiveTransport()) {
+                Logger.d(context, TAG, "Нужно добавить информацию в заказ что нужен инклюзивный  транспорт");
+                // Проверяем, содержит ли уже комментарий эту фразу
+                if (!comment.contains(context.getString(R.string.inclusive_transport_message_yes))) {
+                    comment += context.getString(R.string.inclusive_transport_message_yes);
+                }
+            }
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
                     + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "*" + payment_type+ "/"
                     + time + "/" + date ;
@@ -839,7 +847,13 @@ public class GalleryFragment extends Fragment {
         if(urlAPI.equals("orderSearchMarkersVisicom")) {
             phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
 
-
+            if (InclusiveTransportPreferenceWorker.needsInclusiveTransport()) {
+                Logger.d(context, TAG, "Нужно добавить информацию в заказ что нужен инклюзивный  транспорт");
+                // Проверяем, содержит ли уже комментарий эту фразу
+                if (!comment.contains(context.getString(R.string.inclusive_transport_message_yes))) {
+                    comment += context.getString(R.string.inclusive_transport_message_yes);
+                }
+            }
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
                     + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "*" + payment_type + "/" + addCost + "/"
                     + time + "/" + comment + "/" + date+ "/" + start + "/" + finish;

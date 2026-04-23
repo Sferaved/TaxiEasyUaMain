@@ -21,6 +21,7 @@ import android.webkit.WebView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
@@ -38,7 +39,9 @@ import com.taxi.easy.ua.databinding.FragmentCardBinding;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.uxcam.UXCam;
@@ -93,8 +96,43 @@ public class CardFragment extends Fragment {
         }
         binding = FragmentCardBinding.inflate(inflater, container, false);
         root = binding.getRoot();
-
+        context = requireActivity();
+        checkCardPaymentForCity();
         return root;
+    }
+
+    private void checkCardPaymentForCity() {
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
+        String cityName = stringList.get(1);
+        FirestoreHelper firestoreHelper = new FirestoreHelper(context);
+        firestoreHelper.getCardPaymentKeyForCity(
+                new FirestoreHelper.OnCardPaymentKeyFetchedListener() {
+                    @Override
+                    public void onSuccess(Boolean cardPaymentEnabled) {
+                        Logger.d(context, TAG, "Успешно получено значение: " + cardPaymentEnabled);
+
+                        if (cardPaymentEnabled) {
+                            Logger.d(context, TAG, "Оплата картой ДОСТУПНА для города " + cityName);
+                        } else {
+                            Logger.d(context, TAG, "Оплата картой НЕДОСТУПНА для города " + cityName);
+                            String message = context.getString(R.string.card_payment_false);
+                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        Logger.e(context,TAG, "Ошибка получения настроек: " + e.getMessage());
+
+                        // Показываем ошибку пользователю
+                        Toast.makeText(context,
+                                "Ошибка загрузки настроек: " + e.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                    }
+                },
+                cityName
+        );
     }
 
     private void cardViews() throws MalformedURLException, UnsupportedEncodingException {

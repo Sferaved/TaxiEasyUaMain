@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:animateLayoutChanges="true">
+
+    <!-- Верхняя строка: город и время обновления -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="2">
+
+        <TextView
+            android:id="@+id/tv_widget_city"
+            style="@style/WidgetWeatherText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Kyiv"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_widget_update_time"
+            style="@style/WidgetWeatherText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:text="Updated: --:--"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <!-- Основная информация о погоде -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal"
+        android:weightSum="3">
+
+        <!-- Иконка погоды -->
+        <ImageView
+            android:id="@+id/iv_widget_weather_icon"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_weather_default"
+            android:contentDescription="weather_icon" />
+
+        <!-- Температура -->
+        <TextView
+            android:id="@+id/tv_widget_temp"
+            style="@style/WidgetWeatherText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="--°C"
+            android:textSize="32sp"
+            android:textStyle="bold" />
+
+        <!-- Влажность -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_humidity"
+                android:contentDescription="@string/humidity" />
+
+            <TextView
+                android:id="@+id/tv_widget_humidity"
+                style="@style/WidgetWeatherText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/humidity"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Описание погоды -->
+    <TextView
+        android:id="@+id/tv_widget_description"
+        style="@style/WidgetWeatherText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="@string/loading"
+        android:textSize="12sp" />
+
+</LinearLayout>

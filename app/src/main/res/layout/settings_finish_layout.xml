@@ -24,7 +24,7 @@
     <TextView
         android:id="@+id/komenterinp"
         android:layout_width="0sp"
-        android:layout_height="43sp"
+        android:layout_height="wrap_content"
 
         android:layout_margin="16dp"
         android:layout_marginTop="8dp"

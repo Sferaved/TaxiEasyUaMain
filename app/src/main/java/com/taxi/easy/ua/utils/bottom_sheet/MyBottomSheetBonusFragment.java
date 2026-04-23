@@ -42,6 +42,7 @@ import com.taxi.easy.ua.ui.home.CustomArrayAdapter;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.data.DataArr;
+import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
 import com.taxi.easy.ua.utils.retrofit.cost_json_parser.CostJSONParserRetrofit;
@@ -93,7 +94,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
 //    private final String baseUrl = "https://m.easy-order-taxi.site";
     private final  String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-
+    private FirestoreHelper firestoreHelper;
 
     public MyBottomSheetBonusFragment(long cost, String rout, String api, TextView textView) {
         this.cost = cost;
@@ -152,7 +153,10 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         city = stringList.get(1);
         Log.d(TAG, "onCreateView: " + city);
+        firestoreHelper = new FirestoreHelper(context);
 
+        // Получение настройки оплаты для Киева
+        checkCardPaymentForCity(city);
         switch (city) {
             case "foreign countries":
             case "Dnipropetrovsk Oblast":
@@ -242,6 +246,103 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         });
         return view;
+    }
+
+    private void checkCardPaymentForCity(String cityName) {
+        String TAG = "checkCardPaymentForCity";
+
+        Logger.d(context, TAG, "Проверка оплаты картой для города: " + cityName);
+
+
+        firestoreHelper.getCardPaymentKeyForCity(
+                new FirestoreHelper.OnCardPaymentKeyFetchedListener() {
+                    @Override
+                    public void onSuccess(Boolean cardPaymentEnabled) {
+                        Logger.d(context, TAG, "Успешно получено значение: " + cardPaymentEnabled);
+
+                        if (cardPaymentEnabled) {
+                            Logger.d(context, TAG, "Оплата картой ДОСТУПНА для города " + cityName);
+                            adapter.setItemEnabled(2, true);
+
+                        } else {
+                            Logger.d(context, TAG, "Оплата картой НЕДОСТУПНА для города " + cityName);
+                            adapter.setItemEnabled(2, false);
+
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        Logger.e(context,TAG, "Ошибка получения настроек: " + e.getMessage());
+
+                        // Показываем ошибку пользователю
+                        Toast.makeText(context,
+                                "Ошибка загрузки настроек: " + e.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                    }
+                },
+                cityName
+        );
+    }
+    private void checkCardPaymentForCityFistItem(String cityName) {
+        String TAG = "checkCardPaymentForCity";
+
+        Logger.d(context, TAG, "Проверка оплаты картой для города: " + cityName);
+
+
+        firestoreHelper.getCardPaymentKeyForCity(
+                new FirestoreHelper.OnCardPaymentKeyFetchedListener() {
+                    @Override
+                    public void onSuccess(Boolean cardPaymentEnabled) {
+                        Logger.d(context, TAG, "Успешно получено значение: " + cardPaymentEnabled);
+
+
+                        if (cardPaymentEnabled) {
+                            Logger.d(context, TAG, "Оплата картой ДОСТУПНА для города " + cityName);
+                            adapter.setItemEnabled(2, true);
+                            String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS, context);
+                            Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
+                            if (rectoken.isEmpty()) {
+                                pos = 0;
+                                listView.setItemChecked(0, true);
+                                try {
+                                    Logger.d(context, TAG, "paymentType: 4 ");
+                                    paymentType("nal_payment", context);
+                                } catch (MalformedURLException | UnsupportedEncodingException e) {
+                                    throw new RuntimeException(e);
+                                }
+                                String message = context.getString(R.string.no_cards_info);
+                                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+                                bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
+                                dismiss();
+                            } else  {
+                                if(userPayPermissions[1].equals("0")) {
+                                    adapter.setItemEnabled(2, false);
+                                } else  {
+                                    listView.setItemChecked(2, true);
+                                    pos = 2;
+                                }
+                            }
+
+                        } else {
+                            Logger.d(context, TAG, "Оплата картой НЕДОСТУПНА для города " + cityName);
+                            adapter.setItemEnabled(2, false);
+
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        Logger.e(context,TAG, "Ошибка получения настроек: " + e.getMessage());
+
+                        // Показываем ошибку пользователю
+                        Toast.makeText(context,
+                                "Ошибка загрузки настроек: " + e.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                    }
+                },
+                cityName
+        );
     }
     private void timeVerify() {
         String TAG = "TimeVerify"; // Тег для логирования
@@ -369,30 +470,30 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             case "card_payment":
             case "mono_payment":
             case "wfp_payment":
-                String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS, context);
-                Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
-                if (rectoken.isEmpty()) {
-                    pos = 0;
-                    listView.setItemChecked(0, true);
-                    try {
-                        Logger.d(context, TAG, "paymentType: 4 ");
-                        paymentType("nal_payment", context);
-                    } catch (MalformedURLException | UnsupportedEncodingException e) {
-                        throw new RuntimeException(e);
-                    }
-                    String message = context.getString(R.string.no_cards_info);
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                    bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
-                    dismiss();
-                } else  {
-                    if(userPayPermissions[1].equals("0")) {
-                        adapter.setItemEnabled(2, false);
-                    } else  {
-                        listView.setItemChecked(2, true);
-                        pos = 2;
-                    }
-                }
-
+//                String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS, context);
+//                Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
+//                if (rectoken.isEmpty()) {
+//                    pos = 0;
+//                    listView.setItemChecked(0, true);
+//                    try {
+//                        Logger.d(context, TAG, "paymentType: 4 ");
+//                        paymentType("nal_payment", context);
+//                    } catch (MalformedURLException | UnsupportedEncodingException e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                    String message = context.getString(R.string.no_cards_info);
+//                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
+//                    bottomSheetDialogFragment.show(getParentFragmentManager(), bottomSheetDialogFragment.getTag());
+//                    dismiss();
+//                } else  {
+//                    if(userPayPermissions[1].equals("0")) {
+//                        adapter.setItemEnabled(2, false);
+//                    } else  {
+//                        listView.setItemChecked(2, true);
+//                        pos = 2;
+//                    }
+//                }
+                checkCardPaymentForCityFistItem(city);
 
                 break;
         }
@@ -719,6 +820,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
                 phoneNumber = logCursor(MainActivity.TABLE_USER_INFO).get(2);
                 c.close();
             }
+
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
                     + displayName + " (" + context.getString(R.string.version_code) + ") " + "*" + userEmail  + "*" + payment_type;
         }

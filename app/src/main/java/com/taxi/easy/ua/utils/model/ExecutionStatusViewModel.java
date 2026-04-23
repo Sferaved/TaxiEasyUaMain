@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
+import com.taxi.easy.ua.utils.pusher.events.AddCostUpdateEvent;
 import com.taxi.easy.ua.utils.pusher.events.CanceledStatusEvent;
 import com.taxi.easy.ua.utils.pusher.events.OrderResponseEvent;
 
@@ -32,7 +33,7 @@ public class ExecutionStatusViewModel extends ViewModel {
     public void setTransactionStatus(String status) {
         Log.d("VIEWMODEL", "setTransactionStatus() called with: " + status);
         Log.d("VIEWMODEL", "Previous value: " + transactionStatus.getValue());
-        Log.d("VIEWMODEL", "Call stack:", new Exception()); // Покажет кто вызывает
+        Log.d("VIEWMODEL", "Call stack:", new Exception());
         transactionStatus.setValue(status);
     }
 
@@ -51,12 +52,20 @@ public class ExecutionStatusViewModel extends ViewModel {
 
     private final MutableLiveData<String> addCostViewUpdate = new MutableLiveData<>();
     public LiveData<String> getAddCostViewUpdate() {return addCostViewUpdate;}
+
+    // ✅ ИЗМЕНЕННЫЙ МЕТОД
     public void setAddCostViewUpdate(String addCost) {
         Log.e("Pusher addCostViewUpdate", "addCostViewUpdate:" + addCost);
         if (Looper.getMainLooper().isCurrentThread()) {
             addCostViewUpdate.setValue(addCost);
         } else {
             addCostViewUpdate.postValue(addCost);
+        }
+
+        // Отправляем событие через EventBus только для значимых обновлений
+        if (addCost != null && !addCost.equals("0")) {
+            Log.d("EventBus", "Posting AddCostUpdateEvent with value: " + addCost);
+            EventBus.getDefault().post(new AddCostUpdateEvent(addCost));
         }
     }
 
@@ -83,12 +92,12 @@ public class ExecutionStatusViewModel extends ViewModel {
         Log.i("ViewModel", "Updating order response: " + response.getDispatchingOrderUid());
 
         // Обновляем LiveData
-        orderResponse.postValue(response); // Затем установка значения
+        orderResponse.postValue(response);
         Log.i("ViewModel", "Updating order response: " + response.getDispatchingOrderUid());
-        EventBus.getDefault().post(new OrderResponseEvent(response)); // Публикация события
+        EventBus.getDefault().post(new OrderResponseEvent(response));
     }
     public void clearOrderResponse() {
-        orderResponse.setValue(null); // Сбрасываем в null
+        orderResponse.setValue(null);
     }
 
     public void setIsTenMinutesRemaining(boolean value) {
@@ -97,7 +106,7 @@ public class ExecutionStatusViewModel extends ViewModel {
 
     // Метод установки значения с учётом выполнения на главном потоке
     public void setIsTenMinutesRemainingFromBackground(boolean value) {
-        _isTenMinutesRemaining.postValue(value); // Для вызовов из фонового потока
+        _isTenMinutesRemaining.postValue(value);
     }
 
     // Метод чтения значения (getter)
@@ -175,7 +184,7 @@ public class ExecutionStatusViewModel extends ViewModel {
 
 
     //Кнопак отмены
-    private final MutableLiveData<Boolean> cancelButtonVisible = new MutableLiveData<>(true); // true = видно
+    private final MutableLiveData<Boolean> cancelButtonVisible = new MutableLiveData<>(true);
 
     public LiveData<Boolean> getCancelButtonVisible() {
         return cancelButtonVisible;
