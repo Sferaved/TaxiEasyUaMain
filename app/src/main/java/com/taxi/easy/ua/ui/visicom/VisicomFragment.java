@@ -758,6 +758,11 @@ public class VisicomFragment extends Fragment {
         if (!tarif.equals(" ")) {
             newCheck++;
         }
+        boolean isInclusive = InclusiveTransportPreferenceWorker.needsInclusiveTransport();
+        if (isInclusive) {
+            newCheck++;
+        }
+
 //        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
 //        String comment = stringList.get(2);
         String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();

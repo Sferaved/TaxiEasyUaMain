@@ -2,14 +2,15 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.876</string>
-    <string name="version"># 1.876</string>
+    <string name="version_code">1.877</string>
+    <string name="version"># 1.877</string>
 
-    <string name="app_name">Такси Доставка</string>
+    <string name="app_name">Попутчик такси Украина дешево</string>
+
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Такси Украина заказ онлайн Лайт</string>
+    <string name="nav_header_title">Попутчик такси Украина дешево</string>
     <string name="nav_header_subtitle">Быстрые поездки по городам Украины</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Настройки</string>

@@ -705,4 +705,5 @@ Tap "Settings" to check.</string>
     <string name="inclusiveTransport">♿ Inclusive</string>
     <string name="currentInclusiveState">"Currently set to: "</string>
     <string name="server_error_card_payment">Currently, card payments are unavailable. Please change your payment method to cash to the driver.</string>
+    <string name="ibclusive">Inclusiveness</string>
 </resources>

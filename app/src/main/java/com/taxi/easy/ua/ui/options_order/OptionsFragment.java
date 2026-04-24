@@ -19,6 +19,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.NumberPicker;
@@ -41,6 +42,7 @@ import com.taxi.easy.ua.ui.home.CustomListAdapter;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
 import com.uxcam.UXCam;
 
 import java.text.SimpleDateFormat;
@@ -73,6 +75,7 @@ public class OptionsFragment extends Fragment {
     TimeZone timeZone;
     SQLiteDatabase database;
     Activity context;
+    private CheckBox cbInclusive;
 
     @SuppressLint("MissingInflatedId")
     @Nullable
@@ -114,6 +117,22 @@ public class OptionsFragment extends Fragment {
         CustomListAdapter adapterSet = new CustomListAdapter(context, arrayService, arrayService.length);
         listView.setAdapter(adapterSet);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+        cbInclusive = view.findViewById(R.id.cb_inclusive);
+
+// Загрузка сохраненного состояния инклюзивности через Worker
+// Метод needsInclusiveTransport() возвращает boolean, по умолчанию false
+        boolean isInclusive = InclusiveTransportPreferenceWorker.needsInclusiveTransport();
+        cbInclusive.setChecked(isInclusive);
+
+// Синхронизируем с SharedPreferences для единообразия
+        sharedPreferencesHelperMain.saveValue("inclusive", isInclusive ? "1" : "0");
+
+// Обработчик изменения состояния
+        cbInclusive.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            sharedPreferencesHelperMain.saveValue("inclusive", isChecked ? "1" : "0");
+            InclusiveTransportPreferenceWorker.saveUserPreference(context, isChecked);
+            Logger.d(context, TAG, "Инклюзивность: " + (isChecked ? "включена" : "выключена"));
+        });
 
         List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
         for (int i = 0; i < arrayServiceCode.length; i++) {
@@ -315,6 +334,9 @@ public class OptionsFragment extends Fragment {
 
         Toast.makeText(context, R.string.all_data_clear, Toast.LENGTH_SHORT).show();
         Logger.d(context, TAG, "All data cleared");
+        cbInclusive.setChecked(false);
+        sharedPreferencesHelperMain.saveValue("inclusive", "0");
+        InclusiveTransportPreferenceWorker.saveUserPreference(context, false);
     }
 
     // Метод для обновления отображаемой даты
@@ -409,6 +431,8 @@ public class OptionsFragment extends Fragment {
         String date = (String) sharedPreferencesHelperMain.getValue("date", "no_date");
         String comment = (String) sharedPreferencesHelperMain.getValue("comment", "no_comment");
         String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
+        String inclusive = (String) sharedPreferencesHelperMain.getValue("inclusive", "0");
+        Logger.d(context, TAG, "changeCost: inclusive " + inclusive);
 
         Logger.d(context, TAG, "changeCost: time " + time);
         Logger.d(context, TAG, "changeCost: comment " + comment);

@@ -2505,6 +2505,7 @@ public class FinishSeparateFragment extends Fragment {
             newCheck++;
         }
         Log.d("addCheck", "newCheck 3: " + newCheck);
+
         String mes = context.getString(R.string.add_services);
         if (newCheck != 0) {
             mes = context.getString(R.string.add_services) + " (" + newCheck + ")";

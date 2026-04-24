@@ -1,10 +1,10 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.876</string>
-    <string name="version"># 1.876</string>
+    <string name="version_code">1.877</string>
+    <string name="version"># 1.877</string>
 
-    <string name="app_name">Таксі Доставка</string>
+    <string name="app_name">Попутчик таксі Україна дешево</string>
 
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
