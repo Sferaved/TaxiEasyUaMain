@@ -3,7 +3,6 @@ package com.taxi.easy.ua.ui.visicom;
 
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.GONE;
-import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.CITY_INFO;
 import static com.taxi.easy.ua.MainActivity.activeCalls;
@@ -150,7 +149,7 @@ public class VisicomFragment extends Fragment {
 
     private FragmentVisicomBinding binding;
     private static final String TAG = "VisicomFragment";
- 
+
 
     @SuppressLint("StaticFieldLeak")
     public static AppCompatButton btn_minus, btn_plus, btnOrder, buttonBonus, gpsBtn, btnCallAdmin, btnCallAdminFin;
@@ -231,7 +230,6 @@ public class VisicomFragment extends Fragment {
     private ActivityResultLauncher<String[]> permissionLauncher;
     private boolean location_update;
     LocationManager locationManager;
-    public static int currentNavDestination = -1; // ID текущего экрана
 
     private Handler costHandler;
     private Runnable reserveRunnable;
@@ -351,7 +349,7 @@ public class VisicomFragment extends Fragment {
         btnAdd = binding.btnAdd;
         constr2 = binding.constr2;
 
-        constr2.setVisibility(INVISIBLE);
+        constr2.setVisibility(GONE);
 
         requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true) {
             @Override
@@ -507,10 +505,8 @@ public class VisicomFragment extends Fragment {
                                     .build());
                         }
                     } else if (navController != null) {
-                        currentNavDestination = R.id.nav_restart;
-                        navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_restart, true)
-                                .build());
+                        Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                        Logger.w(context, TAG, "NO INTERNET - Showing toast message");
                     } else {
                         Logger.e(context, TAG, "NavController равен null, навигация невозможна!");
                     }
@@ -668,14 +664,14 @@ public class VisicomFragment extends Fragment {
 
         // С existing слушатели кликов
         schedule.setOnClickListener(v -> {
-            btnVisible(INVISIBLE);
+            btnVisible(GONE);
             sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
             NavController navController = NavHostFragment.findNavController(this);
             navController.navigate(R.id.nav_options);
         });
 
         shed_down.setOnClickListener(v -> {
-            btnVisible(INVISIBLE);
+            btnVisible(GONE);
             sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
             NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
             navController.navigate(R.id.nav_options, null, new NavOptions.Builder().build());
@@ -790,19 +786,14 @@ public class VisicomFragment extends Fragment {
         shed_down.setVisibility(visible);
         // Всегда отображаемые элементы (независимо от параметра)
         Log.d("BTN_VISIBLE", "Установка всегда видимых элементов:");
-        binding.textfrom.setVisibility(View.VISIBLE);
-        binding.num1.setVisibility(View.VISIBLE);
-        binding.clearButtonFrom.setVisibility(View.VISIBLE);
-        binding.textGeo.setVisibility(View.VISIBLE);
-        binding.textwhere.setVisibility(View.VISIBLE);
-        binding.num2.setVisibility(VISIBLE);
-        binding.textTo.setVisibility(VISIBLE);
-        binding.clearButtonTo.setVisibility(VISIBLE);
+
 
         binding.btnCallAdmin.setVisibility(View.VISIBLE);
 
-        if (visible == INVISIBLE || visible == GONE) {
+        if (visible == GONE) {
+
             binding.fabCallAdmin.setVisibility(VISIBLE);
+            binding.gpsbut.setVisibility(GONE);
             binding.btnCallAdmin.setText(R.string.try_again);
             binding.btnCallAdmin.setOnClickListener(v -> {
                 Log.d("BTN_VISIBLE", "Клик: Попробовать снова - запуск SwipeRefresh");
@@ -846,8 +837,17 @@ public class VisicomFragment extends Fragment {
             });
 
         } else {
+            binding.textfrom.setVisibility(View.VISIBLE);
+            binding.num1.setVisibility(View.VISIBLE);
+            binding.clearButtonFrom.setVisibility(View.VISIBLE);
+            binding.textGeo.setVisibility(View.VISIBLE);
+            binding.textwhere.setVisibility(View.VISIBLE);
+            binding.num2.setVisibility(VISIBLE);
+            binding.textTo.setVisibility(VISIBLE);
+            binding.clearButtonTo.setVisibility(VISIBLE);
             binding.fabCallAdmin.setVisibility(GONE);
             btnCallAdmin.setText(R.string.call_admin);
+            binding.gpsbut.setVisibility(VISIBLE);
             btnCallAdmin.setOnClickListener(v -> {
                 Logger.d(context,"BTN_VISIBLE", "Клик: Позвонить админу");
                 try {
@@ -879,9 +879,9 @@ public class VisicomFragment extends Fragment {
         if (text_view_cost != null) {
             Log.d("BTN_VISIBLE", "text_view_cost не null, продолжаем выполнение");
 
-            // Управление ProgressBar - ТОЛЬКО для состояния INVISIBLE
-            if (visible == View.INVISIBLE) {
-                Log.d("BTN_VISIBLE", "Режим INVISIBLE - показываем ProgressBar");
+            // Управление ProgressBar - ТОЛЬКО для состояния GONE
+            if (visible == View.GONE) {
+                Log.d("BTN_VISIBLE", "Режим GONE - показываем ProgressBar");
                 binding.progressBar.setVisibility(View.VISIBLE);
             }
             // Режим VISIBLE - обычное состояние
@@ -951,8 +951,6 @@ public class VisicomFragment extends Fragment {
         switch (visibility) {
             case View.VISIBLE:
                 return "VISIBLE";
-            case View.INVISIBLE:
-                return "INVISIBLE";
             case View.GONE:
                 return "GONE";
             default:
@@ -968,12 +966,12 @@ public class VisicomFragment extends Fragment {
 
 
         if (text_view_cost != null) {
-            if (visible == INVISIBLE) {
+            if (visible == GONE) {
                 progressBar.setVisibility(VISIBLE);
             } else {
                 progressBar.setVisibility(GONE);
             }
-            if (visible == INVISIBLE) {
+            if (visible == GONE) {
                 if (swipeRefreshLayout != null) {
                     btnCallAdmin.setText(R.string.try_again);
                     progressBar.setVisibility(VISIBLE);
@@ -1197,7 +1195,7 @@ public class VisicomFragment extends Fragment {
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
 
                 }
-             }
+            }
 
             Cursor c = database.query(MainActivity.TABLE_USER_INFO, null, null, null, null, null, null);
             if (c.getCount() == 1) {
@@ -1245,7 +1243,7 @@ public class VisicomFragment extends Fragment {
                 comment = "цифра номера " + lastCharacter + ", Оплатили службе 45грн. " + comment;
 
 //                addCost = addCostBlackList(addCost);
-           }
+            }
 
             boolean doubleOrder = (boolean) sharedPreferencesHelperMain.getValue("doubleOrderPref", false);
             if (doubleOrder) {
@@ -1363,7 +1361,7 @@ public class VisicomFragment extends Fragment {
 // Теперь addCost содержит новое значение
         return  addcost; // Вывод: "145"
 
-   }
+    }
 
     @SuppressLint("SetTextI18n")
     public void readTariffInfo() {
@@ -1491,77 +1489,76 @@ public class VisicomFragment extends Fragment {
             progressBar.setVisibility(GONE);
         } else {
 
-                constraintLayoutVisicomMain.setVisibility(GONE);
+            constraintLayoutVisicomMain.setVisibility(GONE);
 
-                if (textViewTo.getText().equals("")) {
-                    textViewTo.setText(context.getString(R.string.on_city_tv));
-                }
-                String messageResult =
-                        geoText.getText().toString() + " " + getString(R.string.to_message) +
-                                textViewTo.getText() + ".";
+            if (textViewTo.getText().equals("")) {
+                textViewTo.setText(context.getString(R.string.on_city_tv));
+            }
+            String messageResult =
+                    geoText.getText().toString() + " " + getString(R.string.to_message) +
+                            textViewTo.getText() + ".";
 
-                text_full_message.setText(messageResult);
+            text_full_message.setText(messageResult);
 
-                messageResult = context.getString(R.string.check_cost_message);
-                textCostMessage.setText(messageResult);
+            messageResult = context.getString(R.string.check_cost_message);
+            textCostMessage.setText(messageResult);
 
-                textStatusCar.setText(R.string.ex_st_0);
+            textStatusCar.setText(R.string.ex_st_0);
 
             Animation blinkAnimation = AnimationUtils.loadAnimation(context, R.anim.blink_animation);
-                textStatusCar.startAnimation(blinkAnimation);
-                String pay_method_message = "";
-                switch (pay_method) {
-                    case "bonus_payment":
-                        pay_method_message += " " + context.getString(R.string.pay_method_message_bonus);
-                        break;
-                    case "card_payment":
-                    case "fondy_payment":
-                    case "mono_payment":
-                    case "wfp_payment":
-                        pay_method_message += " " + context.getString(R.string.pay_method_message_card);
-                        break;
-                    default:
-                        pay_method_message += " " + context.getString(R.string.pay_method_message_nal);
-                }
+            textStatusCar.startAnimation(blinkAnimation);
+            String pay_method_message = "";
+            switch (pay_method) {
+                case "bonus_payment":
+                    pay_method_message += " " + context.getString(R.string.pay_method_message_bonus);
+                    break;
+                case "card_payment":
+                case "fondy_payment":
+                case "mono_payment":
+                case "wfp_payment":
+                    pay_method_message += " " + context.getString(R.string.pay_method_message_card);
+                    break;
+                default:
+                    pay_method_message += " " + context.getString(R.string.pay_method_message_nal);
+            }
 
 
 //                String messagePayment = text_view_cost.getText().toString() + " " + context.getString(R.string.UAH) + " " + pay_method_message;
 //
 //                textCostMessage.setText(messagePayment);
-                carProgressBar.resumeAnimation();
-                constraintLayoutVisicomFinish.setVisibility(VISIBLE);
+            carProgressBar.resumeAnimation();
+            constraintLayoutVisicomFinish.setVisibility(VISIBLE);
 
 
-                ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
-                baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-                Logger.d(context, TAG, "orderFinished: " + baseUrl + urlOrder);
+            ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
+            baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+            Logger.d(context, TAG, "orderFinished: " + baseUrl + urlOrder);
 
-                parser.sendURLChannel(urlOrder, new Callback<>() {
+            parser.sendURLChannel(urlOrder, new Callback<>() {
 
-                    @Override
-                    public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
-                        if (response.isSuccessful() && response.body() != null) {
-                            Map<String, String> sendUrlMap = response.body();
+                @Override
+                public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        Map<String, String> sendUrlMap = response.body();
 
-                            handleOrderFinished(sendUrlMap, pay_method, context);
-                        } else {
-                            btnVisible(VISIBLE);
-                            String messageErr = getString(R.string.cost_error);
-                            MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(messageErr);
-                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                        }
-
+                        handleOrderFinished(sendUrlMap, pay_method, context);
+                    } else {
+                        btnVisible(VISIBLE);
+                        String messageErr = getString(R.string.cost_error);
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(messageErr);
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
                     }
 
-                    @Override
-                    public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
-                        FirebaseCrashlytics.getInstance().recordException(t);
-                        navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_restart, true)
-                                .build());
-                    }
-                });
-            }
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                    FirebaseCrashlytics.getInstance().recordException(t);
+                    Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    Logger.w(context, TAG, "NO INTERNET - Showing toast message");
+                }
+            });
+        }
 
 
     }
@@ -1802,7 +1799,7 @@ public class VisicomFragment extends Fragment {
             constraintLayoutVisicomMain.setVisibility(VISIBLE);
         }
     }
-     private static void insertRecordsOrders( String from, String to,
+    private static void insertRecordsOrders( String from, String to,
                                              String from_number, String to_number,
                                              String from_lat, String from_lng,
                                              String to_lat, String to_lng, Context context) {
@@ -2003,13 +2000,11 @@ public class VisicomFragment extends Fragment {
 
 
         if (!NetworkUtils.isNetworkAvailable(requireActivity())) {
-            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_restart, true)
-                    .build());
+            Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+            Logger.w(context, TAG, "NO INTERNET - Showing toast message");
         }
 
-        
+
 
         VisicomFragment.sendUrlMap = null;
         MainActivity.uid = null;
@@ -2026,7 +2021,7 @@ public class VisicomFragment extends Fragment {
 
         String cityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
         Logger.d(context, TAG, "CityCheckActivity: " + cityCheckActivity);
-        progressBar.setVisibility(INVISIBLE);
+        progressBar.setVisibility(GONE);
         if (cityCheckActivity.equals("run")) {
             btnVisible(VISIBLE);
         }
@@ -2034,14 +2029,14 @@ public class VisicomFragment extends Fragment {
         String visible_shed = (String) sharedPreferencesHelperMain.getValue("visible_shed", "no");
         if(visible_shed.equals("no")) {
             Logger.d(context, TAG, "onResume 2" );
-            btnVisible(INVISIBLE);
+            btnVisible(GONE);
         } else  {
             if (NetworkUtils.isNetworkAvailable(context)) {
                 Logger.d(context, TAG, "onResume 3" );
                 btnVisible(VISIBLE);
             } else {
                 Logger.d(context, TAG, "onResume 4" );
-                btnVisible(INVISIBLE);
+                btnVisible(GONE);
             }
         }
         Logger.d(context, TAG, "onResume 5" );
@@ -2193,7 +2188,7 @@ public class VisicomFragment extends Fragment {
         buttonBonus.setOnClickListener(v -> {
             boolean black_list_yes = verifyOrder();
             Logger.d(context, TAG, "buttonBonus 2 " + black_list_yes);
-            btnVisible(INVISIBLE);
+            btnVisible(GONE);
             String costText = text_view_cost.getText().toString().trim();
 
             text_view_cost.setText("***");
@@ -2233,7 +2228,7 @@ public class VisicomFragment extends Fragment {
 
 
         btnAdd.setOnClickListener(v -> {
-            btnVisible(INVISIBLE);
+            btnVisible(GONE);
             sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
             sharedPreferencesHelperMain.saveValue("old_cost", "0");
             NavController navController = NavHostFragment.findNavController(this);
@@ -2299,14 +2294,12 @@ public class VisicomFragment extends Fragment {
         });
         btnOrder.setOnClickListener(v -> {
             if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-                navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_restart, true)
-                        .build());
+                Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                Logger.w(context, TAG, "NO INTERNET - Showing toast message");
             }
 
             linearLayout.setVisibility(GONE);
-            btnVisible(INVISIBLE);
+            btnVisible(GONE);
             List<String> stringList1 = logCursor(MainActivity.CITY_INFO, context);
 
             pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
@@ -2441,9 +2434,9 @@ public class VisicomFragment extends Fragment {
         if (NetworkUtils.isNetworkAvailable(context)) {
             if (geoText.getText().toString().isEmpty()) {
 
-                binding.textfrom.setVisibility(INVISIBLE);
-                num1.setVisibility(INVISIBLE);
-                binding.textwhere.setVisibility(INVISIBLE);
+                binding.textfrom.setVisibility(GONE);
+                num1.setVisibility(GONE);
+                binding.textwhere.setVisibility(GONE);
             }
             String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
             if (!userEmail.equals("email")) {
@@ -2456,7 +2449,7 @@ public class VisicomFragment extends Fragment {
             }
 
         } else {
-            binding.textwhere.setVisibility(INVISIBLE);
+            binding.textwhere.setVisibility(GONE);
             progressBar.setVisibility(GONE);
         }
 
@@ -2513,10 +2506,8 @@ public class VisicomFragment extends Fragment {
                 Logger.d(context, TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
                 // GPS включен, выполните ваш код здесь
                 if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-                    NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-                    navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
+                    Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    Logger.w(context, TAG, "NO INTERNET - Showing toast message");
                 }
 
                 else  if(location_update) {
@@ -2700,7 +2691,7 @@ public class VisicomFragment extends Fragment {
     private void visicomCost() throws MalformedURLException {
         Logger.d(context, TAG, "=== visicomCost() started ===");
 
-        constr2.setVisibility(INVISIBLE);
+        constr2.setVisibility(GONE);
 
 
         MainActivity.costMap = null;
@@ -2898,7 +2889,7 @@ public class VisicomFragment extends Fragment {
         }
 
         try {
-           SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1", null);
 
             if (!cursor.moveToFirst()) {
@@ -3541,13 +3532,13 @@ public class VisicomFragment extends Fragment {
 
             // Подготовка новых данных
 
-                settings.add(String.valueOf(currentFromLatitude));
-                settings.add(String.valueOf(currentFromLongitude));
-                settings.add(String.valueOf(currentFromLatitude));
-                settings.add(String.valueOf(currentFromLongitude));
-                settings.add(currentStartAddress);
-                settings.add("");
-                Logger.d(context, TAG, "New settings for route finish point update: " + settings);
+            settings.add(String.valueOf(currentFromLatitude));
+            settings.add(String.valueOf(currentFromLongitude));
+            settings.add(String.valueOf(currentFromLatitude));
+            settings.add(String.valueOf(currentFromLongitude));
+            settings.add(currentStartAddress);
+            settings.add("");
+            Logger.d(context, TAG, "New settings for route finish point update: " + settings);
 
 
             // Обновление таблицы

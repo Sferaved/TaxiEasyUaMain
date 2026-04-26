@@ -28,6 +28,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -363,9 +364,8 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
                 Logger.d(context, TAG, "Request failed:6" + t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
-                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_restart, true)
-                        .build());
+                Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                Logger.w(context, TAG, "NO INTERNET - Showing toast message");
             }
         });
 

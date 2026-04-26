@@ -84,17 +84,10 @@ public class BonusFragment extends Fragment {
         fragmentManager = getParentFragmentManager();
 
         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_restart, true)
-                    .build());
+            Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+            Logger.w(context, TAG, "NO INTERNET - Showing toast message");
+
         }
-//
-//        if (!NetworkUtils.isNetworkAvailable(context)) {
-//            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                    .setPopUpTo(R.id.nav_restart, true)
-//                    .build());
-//        }
         text0 =  binding.text0;
 
         progressBar = binding.progressBar;
@@ -155,19 +148,11 @@ public class BonusFragment extends Fragment {
 
         btnOrder.setOnClickListener(v -> {
             if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-                navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_restart, true)
-                        .build());
+                Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                Logger.w(context, TAG, "NO INTERNET - Showing toast message");
+
             }
 
-//
-//            if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-//
-//                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                        .setPopUpTo(R.id.nav_restart, true)
-//                        .build());
-//            }
             // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту
 
             sharedPreferencesHelperMain.saveValue("gps_upd", true);
@@ -213,9 +198,8 @@ public class BonusFragment extends Fragment {
 
                     Logger.d(context, TAG, "onResponse: " + bonus);
                 } else {
-                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
+                    Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    Logger.w(context, TAG, "NO INTERNET - Showing toast message");
                 }
                 btnOrder.setVisibility(View.VISIBLE);
             }

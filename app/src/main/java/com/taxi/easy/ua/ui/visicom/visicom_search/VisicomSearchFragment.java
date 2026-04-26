@@ -395,10 +395,9 @@ public class VisicomSearchFragment extends Fragment {
     public void onResume() {
         super.onResume();
         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_restart, true)
-                    .build());
+            Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+            Logger.w(context, TAG, "NO INTERNET - Showing toast message");
+
         }
 
         Bundle arguments = getArguments();
@@ -656,10 +655,9 @@ public class VisicomSearchFragment extends Fragment {
             // Пытаемся скрыть клавиатуру
             immHide.hideSoftInputFromWindow(v.getWindowToken(), 0);
             if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-                navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_restart, true)
-                        .build());
+                Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                Logger.w(context, TAG, "NO INTERNET - Showing toast message");
+//                
             }
 
 
@@ -1011,10 +1009,8 @@ public class VisicomSearchFragment extends Fragment {
                 Logger.d(context, TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
                 // GPS включен, выполните ваш код здесь
                 if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-                    NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-                    navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
+                    Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    Logger.w(context, TAG, "NO INTERNET - Showing toast message");
                 }
 
                 else  if(location_update) {

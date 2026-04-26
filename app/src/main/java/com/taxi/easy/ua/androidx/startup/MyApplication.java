@@ -2,7 +2,6 @@ package com.taxi.easy.ua.androidx.startup;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.Application;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -19,6 +18,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
+import androidx.multidex.MultiDexApplication;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
@@ -44,7 +44,7 @@ import java.security.GeneralSecurityException;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-public class MyApplication extends Application {
+public class MyApplication extends MultiDexApplication {
 
     private final String TAG = "MyApplication";
     @SuppressLint("StaticFieldLeak")

@@ -711,5 +711,15 @@
     <string name="inclusiveTransport">♿ Инклюзивность</string>
     <string name="currentInclusiveState">"Сейчас установлено: "</string>
     <string name="server_error_card_payment">В данный момент оплата картой невозможна. Смените способ оплаты за наличные водителю.</string>
-    <string name="ibclusive">Инклюзивность</string>
+    <string name="inclusive">Инклюзивность</string>
+    <string name="network_no_internet">Слабое интернет соединение</string>
+    <string name="network_connected">Интернет подключен</string>
+    <string name="network_restored">Интернет восстановлен</string>
+    <string name="retry">проверить</string>
+    <string name="network_available_check">Интернет доступен, подключаемся...</string>
+    <string name="network_still_down">Интернет всё ещё недоступен</string>
+    <!-- Перший запуск - підказки -->
+    <string name="first_start_reading">Считываем ваш выбор</string>
+    <string name="first_start_checking">Проверяем вашу регистрацию</string>
+    <string name="first_start_setting">Настраиваем ваш аккаунт</string>
 </resources>

@@ -1,18 +1,19 @@
 package com.taxi.easy.ua.utils.to_json_parser;
 
 import static com.taxi.easy.ua.MainActivity.activeCalls;
+import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.navigation.NavOptions;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import java.util.HashMap;
@@ -31,7 +32,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ToJSONParserRetrofit {
 
-
+    private String TAG = "ToJsonParserRetrofit";
     private final APIService apiService;
     String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
     public ToJSONParserRetrofit() {
@@ -184,17 +185,16 @@ public class ToJSONParserRetrofit {
 
                         }
                     } else {
-                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_restart, true)
-                                .build());
+                        Toast.makeText(getCurrentActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                        Logger.w(getCurrentActivity(), TAG, "NO INTERNET - Showing toast message");
+
                     }
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<JsonResponse> call, @NonNull Throwable t) {
-                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
+                    Toast.makeText(getCurrentActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    Logger.w(getCurrentActivity(), TAG, "NO INTERNET - Showing toast message");
                 }
             });
         });
@@ -213,9 +213,8 @@ public class ToJSONParserRetrofit {
                 try {
                     Thread.sleep(100); // Ожидание события с минимальной задержкой
                 } catch (InterruptedException e) {
-                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
+                    Toast.makeText(getCurrentActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    Logger.w(getCurrentActivity(), TAG, "NO INTERNET - Showing toast message");
                     Thread.currentThread().interrupt();
                 }
             }

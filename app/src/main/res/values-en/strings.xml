@@ -705,5 +705,15 @@ Tap "Settings" to check.</string>
     <string name="inclusiveTransport">♿ Inclusive</string>
     <string name="currentInclusiveState">"Currently set to: "</string>
     <string name="server_error_card_payment">Currently, card payments are unavailable. Please change your payment method to cash to the driver.</string>
-    <string name="ibclusive">Inclusiveness</string>
+    <string name="inclusive">Inclusiveness</string>
+    <string name="network_no_internet">Weak internet connection</string>
+    <string name="network_connected">Internet connected</string>
+    <string name="network_restored">Internet restored</string>
+    <string name="retry">check</string>
+    <string name="network_available_check">Internet is available, connecting...</string>
+    <string name="network_still_down">Internet is still unavailable</string>
+    <!-- First launch - hints -->
+    <string name="first_start_reading">Reading your choice</string>
+    <string name="first_start_checking">Checking your registration</string>
+    <string name="first_start_setting">Setting up your account</string>
 </resources>

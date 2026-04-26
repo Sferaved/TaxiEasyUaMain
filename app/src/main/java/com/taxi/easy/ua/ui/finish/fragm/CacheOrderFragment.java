@@ -27,6 +27,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
@@ -37,9 +38,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
-import androidx.navigation.Navigation;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -550,9 +549,8 @@ public class CacheOrderFragment extends Fragment {
                             pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
                             handleOrderFinished(sendUrlMap, pay_method, context);
                         } else {
-                            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                                    .setPopUpTo(R.id.nav_restart, true)
-                                    .build());
+                            Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                            Logger.w(context, TAG, "NO INTERNET - Showing toast message");
                         }
 
                     }
@@ -560,9 +558,8 @@ public class CacheOrderFragment extends Fragment {
                     @Override
                     public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
                         FirebaseCrashlytics.getInstance().recordException(t);
-                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_restart, true)
-                                .build());
+                        Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                        Logger.w(context, TAG, "NO INTERNET - Showing toast message");
                     }
                 });
 
@@ -979,19 +976,9 @@ public class CacheOrderFragment extends Fragment {
 
 
         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_restart, true)
-                    .build());
+            Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+            Logger.w(context, TAG, "NO INTERNET - Showing toast message");
         }
-//            if (!NetworkUtils.isNetworkAvailable(context)) {
-//                // Ваш код при нажатии на заголовок
-//                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                        .setPopUpTo(R.id.nav_restart, true)
-//                        .build());
-//
-//            }
-
 
         Logger.d(context, TAG, "onResume 5" );
 
@@ -1308,9 +1295,8 @@ public class CacheOrderFragment extends Fragment {
             public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
                 FirebaseCrashlytics.getInstance().recordException(t);
                 if (isAdded()) { //
-                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
+                    Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    Logger.w(context, TAG, "NO INTERNET - Showing toast message");
                 }
             }
         });

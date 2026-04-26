@@ -59,7 +59,7 @@ public class AnrActivity extends AppCompatActivity {
         btn_exit.setOnClickListener(v -> closeApplication());
 
         networkMonitor = new NetworkMonitor(this);
-        networkMonitor.startMonitoring(this);
+        networkMonitor.startMonitoring();
     }
 
     private void closeApplication() {

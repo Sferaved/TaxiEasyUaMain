@@ -77,7 +77,7 @@ public class AnrFragment extends Fragment {
         });
 
         networkMonitor = new NetworkMonitor(requireActivity());
-        networkMonitor.startMonitoring(requireActivity());
+        networkMonitor.startMonitoring();
         return root;
     }
 

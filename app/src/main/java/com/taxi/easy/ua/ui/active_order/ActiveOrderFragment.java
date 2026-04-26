@@ -22,14 +22,13 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
-import androidx.navigation.Navigation;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
@@ -132,10 +131,9 @@ public class ActiveOrderFragment extends Fragment {
         upd_but = binding.updBut;
         upd_but.setOnClickListener(v -> {
             if (NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-                navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_restart, true)
-                        .build());
+                Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                Logger.w(context, TAG, "NO INTERNET - Showing toast message");
+//                
             }
         });
         scrollButtonUp = binding.scrollButtonUp;
@@ -219,10 +217,8 @@ public class ActiveOrderFragment extends Fragment {
                         textUid.setText(R.string.no_routs);
                     }
                 } else {
-                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
-
+                    Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    Logger.w(context, TAG, "NO INTERNET - Showing toast message");
                 }
                 requireActivity().runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);

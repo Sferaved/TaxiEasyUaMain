@@ -310,10 +310,9 @@ public class HomeFragment extends Fragment {
                 break;
         }
         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_restart, true)
-                    .build());
+            Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+            Logger.w(context, TAG, "NO INTERNET - Showing toast message");
+
         }
 
 
@@ -445,10 +444,8 @@ public class HomeFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-                    NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-                    navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
+                    Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    Logger.w(context, TAG, "NO INTERNET - Showing toast message");
                 }
 
                 btnVisible(VISIBLE);
@@ -526,9 +523,8 @@ public class HomeFragment extends Fragment {
                         }
 
                 } else {
-                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
+                    Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    Logger.w(context, TAG, "NO INTERNET - Showing toast message");
                 }
             }
         });
@@ -539,8 +535,6 @@ public class HomeFragment extends Fragment {
             sharedPreferencesHelperMain.saveValue("initial_page", "home");
             NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
             navController.navigate(R.id.nav_options, null, new NavOptions.Builder().build());
-//            MyBottomSheetDialogFragment bottomSheetDialogFragment = new MyBottomSheetDialogFragment();
-//            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
         });
         buttonBonus.setOnClickListener(v -> {
             HomeFragment.btnVisible(INVISIBLE);
@@ -1268,9 +1262,8 @@ public class HomeFragment extends Fragment {
 
                 } else {
                     progressBar.setVisibility(GONE);
-                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
+                    Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    Logger.w(context, TAG, "NO INTERNET - Showing toast message");
                 }
 
             }
@@ -1360,90 +1353,13 @@ public class HomeFragment extends Fragment {
 
         }
             else {
-                MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_restart, true)
-                        .build());
+                Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                Logger.w(context, TAG, "NO INTERNET - Showing toast message");
             }
     });
 
     }
-//    @SuppressLint("ResourceAsColor")
-//    private void cost() {
-//
-//        constr2.setVisibility(INVISIBLE);
-//        textViewTo.setVisibility(VISIBLE);
-//        binding.textwhere.setVisibility(VISIBLE);
-//        binding.num2.setVisibility(VISIBLE);
-//        btn_clear.setVisibility(VISIBLE);
-//
-//
-//
-//        from = textViewFrom.getText().toString();
-//
-//        if (numberFlagFrom.equals("1") && from_number.getText().toString().equals(" ")) {
-//            setEditTextBackgroundTint(from_number, R.color.selected_text_color);
-//            from_numberCost = "1";
-//        } else {
-//            if (numberFlagFrom.equals("0")) {
-//                from_numberCost = " ";
-//            } else {
-//                from_numberCost = from_number.getText().toString();
-//            }
-//        }
-//
-//        if (numberFlagTo.equals("1") && to_number.getText().toString().equals(" ")) {
-//            setEditTextBackgroundTint(to_number, R.color.selected_text_color);
-//            to_numberCost = "1";
-//        } else {
-//            if (numberFlagTo.equals("0")) {
-//                to_numberCost = " ";
-//            } else {
-//                to_numberCost = to_number.getText().toString();
-//            }
-//        }
-//
-//        Logger.d(context, TAG, "cost: numberFlagTo " + numberFlagTo);
-//
-//        if (to == null) {
-//            toCost = from;
-//            to_numberCost = from_numberCost;
-//        } else {
-//            toCost = to;
-//        }
-//        List<String> settings = new ArrayList<>();
-//        String urlCost;
-//        try {
-//
-//            settings.add(from);
-//            settings.add(from_numberCost);
-//            settings.add(toCost);
-//            settings.add(to_numberCost);
-//            updateRoutHome(settings);
-//            urlCost = getTaxiUrlSearch("costSearchTime", context);
-//
-//            CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
-//            parser.sendURL(urlCost, new Callback<>() {
-//                @Override
-//                public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
-//                    Map<String, String> sendUrlMapCost = response.body();
-//                    assert sendUrlMapCost != null;
-//                    handleCostResponse(sendUrlMapCost);
-//                }
-//
-//                @Override
-//                public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
-//                    FirebaseCrashlytics.getInstance().recordException(t);
-//                }
-//            });
-//
-//        } catch (MalformedURLException | UnsupportedEncodingException e) {
-//            resetRoutHome();
-//            FirebaseCrashlytics.getInstance().recordException(e);
-//            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                    .setPopUpTo(R.id.nav_restart, true)
-//                    .build());
-//        }
-//    }
+
 @SuppressLint("SetTextI18n")
 private void cost() {
 
@@ -1528,9 +1444,8 @@ private void cost() {
     } catch (UnsupportedEncodingException e) {
         resetRoutHome();
         FirebaseCrashlytics.getInstance().recordException(e);
-        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                .setPopUpTo(R.id.nav_restart, true)
-                .build());
+        Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+        Logger.w(context, TAG, "NO INTERNET - Showing toast message");
     }
 }
 
@@ -2802,9 +2717,8 @@ private void cost() {
 
                 } else {
                     if (isAdded()) { //
-                        MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_restart, true)
-                                .build());
+                         Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                        Logger.w(context, TAG, "NO INTERNET - Showing toast message");
                     }
 
                 }
@@ -2814,9 +2728,8 @@ private void cost() {
             public void onFailure(@NonNull Call<ResponsePaySystem> call, @NonNull Throwable t) {
                 FirebaseCrashlytics.getInstance().recordException(t);
                 if (isAdded()) { //
-                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
+                    Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    Logger.w(context, TAG, "NO INTERNET - Showing toast message");
                 }
             }
         });

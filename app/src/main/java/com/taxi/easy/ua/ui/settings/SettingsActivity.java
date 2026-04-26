@@ -1,6 +1,5 @@
 package com.taxi.easy.ua.ui.settings;
 
-import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
@@ -15,11 +14,9 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.navigation.NavController;
-import androidx.navigation.NavOptions;
-import androidx.navigation.Navigation;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
@@ -134,15 +131,8 @@ public class SettingsActivity extends AppCompatActivity {
                     MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, SettingsActivity.this);
                     bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 } else {
-
-                        NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_restart);
-                        navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_restart, true)
-                                .build());
-
-//                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                            .setPopUpTo(R.id.nav_restart, true)
-//                            .build());
+                    Toast.makeText(this, R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    Logger.w(this, TAG, "NO INTERNET - Showing toast message");
                 }
 
             });
@@ -154,15 +144,8 @@ public class SettingsActivity extends AppCompatActivity {
                     MyBottomSheetCityFragment bottomSheetDialogFragment = new MyBottomSheetCityFragment(city, SettingsActivity.this);
                     bottomSheetDialogFragment.show(getSupportFragmentManager(), bottomSheetDialogFragment.getTag());
                 } else {
-
-                        NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_restart);
-                        navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_restart, true)
-                                .build());
-
-//                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                            .setPopUpTo(R.id.nav_restart, true)
-//                            .build());
+                    Toast.makeText(this, R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    Logger.w(this, TAG, "NO INTERNET - Showing toast message");
                 }
 
             });

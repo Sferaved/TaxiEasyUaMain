@@ -33,9 +33,7 @@ import androidx.appcompat.widget.AppCompatButton;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
-import androidx.navigation.Navigation;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
@@ -114,18 +112,10 @@ public class GalleryFragment extends Fragment {
         context = requireActivity();
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_restart, true)
-                    .build());
-        }
+            Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+            Logger.w(context, TAG, "NO INTERNET - Showing toast message");
 
-//        if (!NetworkUtils.isNetworkAvailable(context)) {
-//
-//            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                    .setPopUpTo(R.id.nav_restart, true)
-//                    .build());
-//        }
+        }
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         scrollButtonUp = binding.scrollButtonUp;
@@ -447,10 +437,9 @@ public class GalleryFragment extends Fragment {
     @SuppressLint("ResourceAsColor")
     private boolean orderRout() {
         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_restart, true)
-                    .build());
+            Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+            Logger.w(context, TAG, "NO INTERNET - Showing toast message");
+
             return false;
         }
 
@@ -664,18 +653,10 @@ public class GalleryFragment extends Fragment {
 
     private void dialogFromToOneRout(Map <String, String> rout) throws MalformedURLException, InterruptedException, JSONException {
         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-            navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_restart, true)
-                    .build());
-        }
+            Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+            Logger.w(context, TAG, "NO INTERNET - Showing toast message");
 
-//        if (!NetworkUtils.isNetworkAvailable(context)) {
-//
-//            MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-//                    .setPopUpTo(R.id.nav_restart, true)
-//                    .build());
-//        }
+        }
 
         else  {
             Logger.d(getActivity(), TAG, "dialogFromToOneRout: " + rout.toString());

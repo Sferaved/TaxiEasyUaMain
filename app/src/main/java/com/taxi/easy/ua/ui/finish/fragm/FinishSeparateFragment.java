@@ -751,10 +751,11 @@ public class FinishSeparateFragment extends Fragment {
                     MyBottomSheetMessageFragment bottomSheetDialogFragment = new MyBottomSheetMessageFragment(message);
                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
 
+
                 } else {
-                    MainActivity.navController.navigate(R.id.nav_restart, null, new NavOptions.Builder()
-                            .setPopUpTo(R.id.nav_restart, true)
-                            .build());
+                    Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    Logger.w(context, TAG, "NO INTERNET - Showing toast message");
+
                 }
             }
 
