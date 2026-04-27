@@ -95,6 +95,7 @@ public class AccountFragment extends Fragment {
     private Context context;
     private List<RouteResponseCancel> routeList;
     private FirebaseConsentManager consentManager;
+    private AppCompatButton btnRestartApp;
 
     @SuppressLint("SourceLockedOrientationActivity")
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -105,7 +106,6 @@ public class AccountFragment extends Fragment {
             button1.setVisibility(View.VISIBLE);
         }
         binding = FragmentAccountBinding.inflate(inflater, container, false);
-
 
         root = binding.getRoot();
         context = requireActivity();
@@ -119,7 +119,7 @@ public class AccountFragment extends Fragment {
         String model = Build.MODEL;
         text_model = binding.textModel;
         text_model.setText(model);
-// Получение версии Android
+
         String androidVersion = Build.VERSION.RELEASE;
         text_androidVersion = binding.textAndroidVersion;
         text_androidVersion.setText(androidVersion);
@@ -128,35 +128,30 @@ public class AccountFragment extends Fragment {
         phoneNumber = binding.phoneNumber;
         email = binding.email;
 
-        List<String> stringList =  logCursor(MainActivity.TABLE_USER_INFO);
+        List<String> stringList = logCursor(MainActivity.TABLE_USER_INFO);
         userEmail = stringList.get(3);
 
         userName.setText(stringList.get(4));
         phoneNumber.setText(formatPhoneNumber(stringList.get(2)));
         email.setText(userEmail);
 
-
         out_but = binding.outBut;
         consentManager = new FirebaseConsentManager(requireActivity());
         out_but.setOnClickListener(v -> {
-            // ⛔️ Отключаем Firestore listener перед выходом
             VerifyUserTask.stopListener();
-
             consentManager.revokeTokenAndSignOut();
             Toast.makeText(context, R.string.out_account, Toast.LENGTH_SHORT).show();
             NavController navController = MainActivity.navController;
-
             navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)
                     .build());
-
         });
 
         in_but = binding.btnInAccount;
         in_but.setOnClickListener(v -> {
-             startFireBase();
+            startFireBase();
+        });
 
-         });
         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
             in_but.setVisibility(GONE);
             Logger.w(context, TAG, "NO INTERNET - Showing toast message");
@@ -168,26 +163,20 @@ public class AccountFragment extends Fragment {
 
         userName.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 upd_but.setVisibility(View.VISIBLE);
-
             }
 
             @Override
-            public void afterTextChanged(Editable s) {
-
-            }
+            public void afterTextChanged(Editable s) {}
         });
+
         phoneNumber.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -195,11 +184,8 @@ public class AccountFragment extends Fragment {
             }
 
             @Override
-            public void afterTextChanged(Editable s) {
-
-            }
+            public void afterTextChanged(Editable s) {}
         });
-
 
         progressBar = binding.progressBar;
         email.setOnClickListener(v -> {
@@ -207,18 +193,14 @@ public class AccountFragment extends Fragment {
             Toast.makeText(getActivity(), R.string.email_upd, Toast.LENGTH_SHORT).show();
         });
 
-
-
         upd_but.setOnClickListener(v -> {
             accountSet();
         });
 
         del_but.setOnClickListener(v -> {
             Logger.d(context, TAG, "Delete button clicked");
-
             startActivity(new Intent(getActivity(), ExitActivity.class));
         });
-
 
         btnCallAdmin.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_DIAL);
@@ -229,16 +211,10 @@ public class AccountFragment extends Fragment {
 
         btnOrder = binding.btnOrder;
         btnOrder.setOnClickListener(v -> {
-
-
-
-
             sharedPreferencesHelperMain.saveValue("gps_upd", true);
-            // Удаляем последний фрагмент из стека навигации и переходим к новому фрагменту
-            
             MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true) 
-                        .build());
+                    .setPopUpTo(R.id.nav_visicom, true)
+                    .build());
         });
 
         googleVerifyAccount();
@@ -251,11 +227,17 @@ public class AccountFragment extends Fragment {
 
         phoneNumber.addTextChangedListener(listener);
         phoneNumber.setOnFocusChangeListener(listener);
+
         if (!NetworkUtils.isNetworkAvailable(requireActivity())) {
             Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
             Logger.w(context, TAG, "NO INTERNET - Showing toast message");
-
         }
+
+        btnRestartApp = binding.btnRestartApp;
+        btnRestartApp.setOnClickListener(v -> {
+            restartApplication();
+        });
+
         return root;
     }
 
@@ -266,41 +248,107 @@ public class AccountFragment extends Fragment {
             @Override
             public void onConsentValid() {
                 Logger.d(context, TAG, "Согласие пользователя действительное.");
-                visibility (View.VISIBLE);
+                visibility(View.VISIBLE);
                 fetchRoutesCancel();
             }
 
             @Override
             public void onConsentInvalid() {
                 Logger.d(context, TAG, "Согласие пользователя НЕ действительное.");
-                visibility (View.INVISIBLE);
+                visibility(View.INVISIBLE);
             }
         });
     }
 
-    private void visibility (int visible) {
+    private void visibility(int visible) {
         if (visible == View.INVISIBLE) {
             if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
                 in_but.setVisibility(GONE);
-                Logger.w(context, TAG, "NO INTERNET - Showing toast message");
+                btnRestartApp.setVisibility(VISIBLE);
+                Logger.w(context, TAG, "NO INTERNET - Showing restart button");
+                Toast.makeText(context, getString(R.string.no_internet_restart), Toast.LENGTH_LONG).show();
             } else {
                 in_but.setVisibility(VISIBLE);
+                btnRestartApp.setVisibility(GONE);
             }
         } else {
             in_but.setVisibility(GONE);
+            btnRestartApp.setVisibility(GONE);
         }
         phoneNumber.setVisibility(visible);
         userName.setVisibility(visible);
         email.setVisibility(visible);
         upd_but.setVisibility(visible);
-
         btnOrder.setVisibility(visible);
-
 
         root.findViewById(R.id.text_name).setVisibility(visible);
         root.findViewById(R.id.text_phone).setVisibility(visible);
         root.findViewById(R.id.text_email).setVisibility(visible);
     }
+
+    private void restartApplication() {
+        try {
+            Logger.d(context, TAG, "Restarting application...");
+            Toast.makeText(context, getString(R.string.restarting_app), Toast.LENGTH_SHORT).show();
+
+            new android.os.Handler().postDelayed(() -> {
+                Intent intent = new Intent(context, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                intent.putExtra("restart_app", true);
+                context.startActivity(intent);
+
+                if (context instanceof Activity) {
+                    ((Activity) context).finishAffinity();
+                }
+            }, 500);
+
+        } catch (Exception e) {
+            Logger.e(context, TAG, "Error restarting app: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
+            showManualRestartDialog();
+        }
+    }
+
+    private void scheduleRestart() {
+        android.app.AlarmManager alarmManager = (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
+                context, 0, intent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE
+        );
+
+        long triggerTime = System.currentTimeMillis() + 1000;
+        alarmManager.set(android.app.AlarmManager.RTC, triggerTime, pendingIntent);
+        System.exit(0);
+    }
+
+    private void showManualRestartDialog() {
+        new androidx.appcompat.app.AlertDialog.Builder(context)
+                .setTitle(getString(R.string.restart_title))
+                .setMessage(getString(R.string.restart_error) + "\n\n" + getString(R.string.restart_manual))
+                .setPositiveButton(getString(R.string.close_app), (dialog, which) -> {
+                    if (context instanceof Activity) {
+                        ((Activity) context).finishAffinity();
+                    }
+                    System.exit(0);
+                })
+                .setNegativeButton(getString(R.string.cancel), null)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
+    }
+
+    private void checkInternetAndShowRestartButton() {
+        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+            btnRestartApp.setVisibility(VISIBLE);
+            in_but.setVisibility(GONE);
+            Toast.makeText(context, getString(R.string.no_internet_restart), Toast.LENGTH_LONG).show();
+        } else {
+            btnRestartApp.setVisibility(GONE);
+            in_but.setVisibility(VISIBLE);
+        }
+    }
+
     private String formatPhoneNumber(String phoneNumber) {
         String input = phoneNumber.replaceAll("[^+\\d]", "");
 
@@ -315,7 +363,6 @@ public class AccountFragment extends Fragment {
         } else {
             return input;
         }
-
     }
 
     private void fetchRoutesCancel() {
@@ -327,15 +374,15 @@ public class AccountFragment extends Fragment {
 
         routeList = new ArrayList<>();
 
-//        String baseUrl = "https://m.easy-order-taxi.site";
         String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         String city = stringList.get(1);
 
-        String url = baseUrl + "/android/UIDStatusShowEmailCancelApp/" + userEmail + "/" + city + "/" +  context.getString(R.string.application);
+        String url = baseUrl + "/android/UIDStatusShowEmailCancelApp/" + userEmail + "/" + city + "/" + context.getString(R.string.application);
         Call<List<RouteResponseCancel>> call = ApiClient.getApiService().getRoutesCancel(url);
         Logger.d(context, TAG, "fetchRoutesCancel: " + url);
+
         call.enqueue(new Callback<List<RouteResponseCancel>>() {
             @Override
             public void onResponse(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Response<List<RouteResponseCancel>> response) {
@@ -349,7 +396,6 @@ public class AccountFragment extends Fragment {
                             Logger.d(context, TAG, "Checking route: " + route);
                             if ("*".equals(route.getRouteFrom())) {
                                 Logger.d(context, TAG, "Route with asterisk found, performing delete actions");
-                                // Выполняем действия удаления
                                 Logger.d(context, TAG, "processRouteList: Array is empty, showing delete button");
                                 out_but.setVisibility(VISIBLE);
                                 del_but.setVisibility(VISIBLE);
@@ -361,9 +407,8 @@ public class AccountFragment extends Fragment {
                             boolean hasRouteWithAsterisk = false;
                             for (RouteResponseCancel route : routes) {
                                 if ("*".equals(route.getRouteFrom())) {
-                                    // Найден объект с routefrom = "*"
                                     hasRouteWithAsterisk = true;
-                                    break;  // Выход из цикла, так как условие уже выполнено
+                                    break;
                                 }
                             }
                             if (!hasRouteWithAsterisk) {
@@ -371,7 +416,6 @@ public class AccountFragment extends Fragment {
                                 processCancelList();
                             }
                         }
-
                     }
                 } else {
                     Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
@@ -380,20 +424,13 @@ public class AccountFragment extends Fragment {
             }
 
             public void onFailure(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Throwable t) {
-                // Обработка ошибок сети или других ошибок
                 FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
     }
 
     private void processCancelList() {
-        // В этом методе вы можете использовать routeList для выполнения дополнительных действий с данными.
-
-        // Создайте массив строк
         array = new String[routeList.size()];
-
-
-
         String closeReasonText = context.getString(R.string.close_resone_def);
 
         for (int i = 0; i < routeList.size(); i++) {
@@ -457,38 +494,34 @@ public class AccountFragment extends Fragment {
                     closeReasonText = context.getString(R.string.close_resone_9);
                     break;
                 default:
-                    // Можно оставить старое значение или назначить что-то по умолчанию
-                    // closeReasonText = closeReasonText; // бесполезно, можно просто ничего не делать
                     break;
             }
 
-
-            if(routeFrom.equals("Місце відправлення")) {
+            if (routeFrom.equals("Місце відправлення")) {
                 routeFrom = context.getString(R.string.start_point_text);
             }
 
-
-            if(routeTo.equals("Точка на карте")) {
+            if (routeTo.equals("Точка на карте")) {
                 routeTo = context.getString(R.string.end_point_marker);
             }
-            if(routeTo.contains("по городу")) {
+            if (routeTo.contains("по городу")) {
                 routeTo = context.getString(R.string.on_city);
             }
-            if(routeTo.contains("по місту")) {
+            if (routeTo.contains("по місту")) {
                 routeTo = context.getString(R.string.on_city);
             }
             String routeInfo = "";
 
-            if(auto == null) {
+            if (auto == null) {
                 auto = "??";
             }
-            if(required_time != null && !required_time.contains("1970-01-01")) {
+            if (required_time != null && !required_time.contains("1970-01-01")) {
                 required_time = " " + getString(R.string.time_order) + required_time;
             } else {
                 required_time = "";
             }
 
-            if(routeFrom.equals(routeTo)) {
+            if (routeFrom.equals(routeTo)) {
                 routeInfo = routeFrom + " " + routefromnumber
                         + context.getString(R.string.close_resone_to)
                         + context.getString(R.string.on_city)
@@ -507,7 +540,6 @@ public class AccountFragment extends Fragment {
                         + createdAt + context.getString(R.string.close_resone_text) + closeReasonText;
             }
 
-//                array[i] = routeInfo;
             dbH.addRouteCancel(uid, routeInfo);
             List<String> settings = new ArrayList<>();
 
@@ -527,8 +559,10 @@ public class AccountFragment extends Fragment {
             Logger.d(context, TAG, settings.toString());
             dbHUid.addCancelInfoUid(settings);
         }
+
         array = dbH.readRouteCancel();
         Logger.d(context, TAG, "processRouteList: array " + Arrays.toString(array));
+
         if (array != null) {
             out_but.setVisibility(GONE);
             del_but.setVisibility(GONE);
@@ -536,22 +570,16 @@ public class AccountFragment extends Fragment {
             MyBottomSheetErrorFragment myBottomSheetMessageFragment = new MyBottomSheetErrorFragment(message);
             myBottomSheetMessageFragment.show(getChildFragmentManager(), myBottomSheetMessageFragment.getTag());
         } else {
-
             dbH.clearTableCancel();
             dbHUid.clearTableCancel();
         }
     }
 
-
-
-
-
-
-
     @Override
     public void onResume() {
         super.onResume();
     }
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
@@ -562,21 +590,18 @@ public class AccountFragment extends Fragment {
         Logger.d(requireActivity(), TAG, "phoneNumber.getText().toString() " + phoneNumber.getText().toString());
         String phone = formatPhoneNumber(phoneNumber.getText().toString());
         Logger.d(requireActivity(), TAG, "phone " + phone);
+        Logger.d(requireActivity(), TAG, "onClick before validate: ");
 
-        Logger.d(requireActivity(), TAG, "onClick befor validate: ");
         String PHONE_PATTERN = "\\+38 \\d{3} \\d{3} \\d{2} \\d{2}";
-
-
         boolean val = Pattern.compile(PHONE_PATTERN).matcher(phone).matches();
         Logger.d(requireActivity(), TAG, "onClick No validate: " + val);
-        if (!val) {
-            Toast.makeText(requireActivity(), getString(format_phone) , Toast.LENGTH_SHORT).show();
-            Logger.d(requireActivity(), TAG, "accountSet" + phoneNumber.getText().toString());
 
+        if (!val) {
+            Toast.makeText(requireActivity(), getString(format_phone), Toast.LENGTH_SHORT).show();
+            Logger.d(requireActivity(), TAG, "accountSet" + phoneNumber.getText().toString());
         } else {
             phoneNumber.setText(phone);
             updateRecordsUser("phone_number", phone);
-
             userManager.saveUserPhone(phone);
 
             String newName = userName.getText().toString();
@@ -586,20 +611,19 @@ public class AccountFragment extends Fragment {
             updateRecordsUser("username", newName);
         }
     }
+
     private void updateRecordsUser(String field, String result) {
         ContentValues cv = new ContentValues();
-
         cv.put(field, result);
 
-        // обновляем по id
         SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?",
-                new String[] { "1" });
+        database.update(MainActivity.TABLE_USER_INFO, cv, "id = ?", new String[]{"1"});
         database.close();
 
         KeyboardUtils.hideKeyboard(requireActivity(), root);
-       Toast.makeText(getActivity(), R.string.info_upd, Toast.LENGTH_SHORT).show();
+        Toast.makeText(getActivity(), R.string.info_upd, Toast.LENGTH_SHORT).show();
     }
+
     @SuppressLint("Range")
     public List<String> logCursor(String table) {
         List<String> list = new ArrayList<>();
@@ -613,9 +637,7 @@ public class AccountFragment extends Fragment {
                     for (String cn : c.getColumnNames()) {
                         str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
                         list.add(c.getString(c.getColumnIndex(cn)));
-
                     }
-
                 } while (c.moveToNext());
             }
         }
@@ -628,7 +650,6 @@ public class AccountFragment extends Fragment {
         database.beginTransaction();
 
         try {
-            // Обновление первой записи
             String updateSql = "UPDATE " + MainActivity.TABLE_USER_INFO
                     + " SET verifyOrder = ?," +
                     " phone_number = ?," +
@@ -680,8 +701,8 @@ public class AccountFragment extends Fragment {
             VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
         }
     }
-    private final ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
 
+    private final ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
             new FirebaseAuthUIActivityResultContract(),
             this::onSignInResult
     );
@@ -690,26 +711,21 @@ public class AccountFragment extends Fragment {
         ContentValues cv = new ContentValues();
         Logger.d(context, TAG, "onSignInResult: ");
 
-        // Попробуем выполнить вход
         try {
             int resultCode = result.getResultCode();
             Logger.d(context, TAG, "onSignInResult: result.getResultCode() " + resultCode);
             if (result.getResultCode() == Activity.RESULT_OK) {
-                Logger.d(context,"SignIn", "Успешная авторизация!");
+                Logger.d(context, "SignIn", "Успешная авторизация!");
                 NavController navController = MainActivity.navController;
                 navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_visicom, true)
                         .build());
             } else {
                 Toast.makeText(context, getString(R.string.firebase_error), Toast.LENGTH_SHORT).show();
-                Logger.w(context,"SignIn", "Авторизация отменена или ошибка. Код: " + result.getResultCode());
+                Logger.w(context, "SignIn", "Авторизация отменена или ошибка. Код: " + result.getResultCode());
             }
-
         } catch (Exception e) {
             FirebaseCrashlytics.getInstance().recordException(e);
         }
     }
-
-
-
 }

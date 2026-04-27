@@ -1471,6 +1471,10 @@ public class VisicomFragment extends Fragment {
 
     @SuppressLint("ResourceAsColor")
     public boolean orderRout() {
+        if (geoText.getText().toString().trim().isEmpty()) {
+            Toast.makeText(context, R.string.no_start_point_message, Toast.LENGTH_SHORT).show();
+            return false;
+        }
         urlOrder = getTaxiUrlSearchMarkers("orderClientCostMyApi", context );
         Logger.d(context, TAG, "order: urlOrder " + urlOrder);
         if(urlOrder.equals("error")) {
@@ -1920,6 +1924,8 @@ public class VisicomFragment extends Fragment {
 
             if (orderRout()) {
                 googleVerifyAccount();
+            } else {
+                btnVisible(VISIBLE);
             }
 
             progressBar.setVisibility(GONE);
@@ -1956,6 +1962,8 @@ public class VisicomFragment extends Fragment {
 
             if (orderRout()) {
                 googleVerifyAccount();
+            } else {
+                btnVisible(VISIBLE);
             }
 
             progressBar.setVisibility(GONE);
@@ -2337,6 +2345,8 @@ public class VisicomFragment extends Fragment {
                     } else {
                         if (orderRout()) {
                             googleVerifyAccount();
+                        }else {
+                            btnVisible(VISIBLE);
                         }
                     }
                     break;
@@ -2349,12 +2359,16 @@ public class VisicomFragment extends Fragment {
                     } else {
                         if (orderRout()) {
                             googleVerifyAccount();
+                        }else {
+                            btnVisible(VISIBLE);
                         }
                     }
                     break;
                 default:
                     if (orderRout()) {
                         googleVerifyAccount();
+                    }else {
+                        btnVisible(VISIBLE);
                     }
 
             }

@@ -716,4 +716,11 @@ Tap "Settings" to check.</string>
     <string name="first_start_reading">Reading your choice</string>
     <string name="first_start_checking">Checking your registration</string>
     <string name="first_start_setting">Setting up your account</string>
+    <string name="no_internet_restart">No internet. Press the button to restart</string>
+    <string name="restart_app">Restart app</string>
+    <string name="restarting_app">Restarting app...</string>
+
+    <string name="restart_manual">Please close the app manually and open it again</string>
+    <string name="close_app">Close app</string>
+    <string name="restart_title">Restart app</string>
 </resources>

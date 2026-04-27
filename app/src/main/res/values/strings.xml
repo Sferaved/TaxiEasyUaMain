@@ -729,4 +729,12 @@
     <string name="first_start_reading">Зчитуємо ваш вибір</string>
     <string name="first_start_checking">Перевіряємо вашу реєстрацію</string>
     <string name="first_start_setting">Налаштовуємо ваш акаунт</string>
+
+    <string name="no_internet_restart">Немає інтернету. Натисніть кнопку для перезапуску</string>
+    <string name="restart_app">Перезапустити додаток</string>
+    <string name="restarting_app">Перезапуск додатку...</string>
+
+    <string name="restart_manual">Будь ласка, закрийте додаток вручну та відкрийте знову</string>
+    <string name="close_app">Закрити додаток</string>
+    <string name="restart_title">Перезапуск додатку</string>
 </resources>

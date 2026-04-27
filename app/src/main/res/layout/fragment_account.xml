@@ -258,7 +258,23 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btnOrder" />
+    <!-- Добавьте эту кнопку перед ProgressBar или в удобное место -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnRestartApp"
+        android:layout_width="0dp"
+        app:layout_constraintWidth_percent="@dimen/button_width"
+        android:layout_height="@dimen/button_height"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/buttons"
+        android:fontFamily="@font/regular"
+        android:text="@string/restarting_app"
+        android:textAlignment="center"
+        android:textColor="@color/colorAccent"
+        android:textSize="15sp"
 
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnCallAdmin" />
     <TextView
         android:id="@+id/text_uid"
         android:layout_width="match_parent"
