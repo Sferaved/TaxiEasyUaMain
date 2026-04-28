@@ -34,7 +34,22 @@
         </intent>
         <categories android:name="android.shortcut.conversation" />
     </shortcut>
-
+    <shortcut
+        android:shortcutId="weather_notification"
+        android:enabled="true"
+        android:icon="@drawable/ic_notification_bell_blue"
+        android:shortcutShortLabel="@string/weather_now"
+        android:shortcutLongLabel="@string/weather_notification_desc"
+        android:shortcutDisabledMessage="@string/weather_no_data">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.taxi.easy.ua"
+            android:targetClass="com.taxi.easy.ua.MainActivity">
+            <extra
+                android:name="shortcut_action"
+                android:value="weather_notification" />
+        </intent>
+    </shortcut>
 
 
 </shortcuts>

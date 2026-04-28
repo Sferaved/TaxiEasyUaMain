@@ -41,13 +41,13 @@ public class WeatherWidget extends AppWidgetProvider {
             // Затем пробуем загрузить свежие данные (асинхронно)
             loadWeatherAsync(context, appWidgetManager, appWidgetId);
         }
-        scheduleWork(context);
+//        scheduleWork(context);
     }
 
     @Override
     public void onEnabled(Context context) {
         super.onEnabled(context);
-        scheduleWork(context);
+//        scheduleWork(context);
     }
 
     @Override
@@ -233,14 +233,24 @@ public class WeatherWidget extends AppWidgetProvider {
     }
 
     private static void setPendingIntent(Context context, RemoteViews views, int appWidgetId) {
-        Intent intent = new Intent(context, MainActivity.class);
-        intent.putExtra("open_weather", true);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                context, appWidgetId, intent,
+        // Существующий Intent для открытия приложения
+        Intent mainIntent = new Intent(context, MainActivity.class);
+        mainIntent.putExtra("open_weather", true);
+        mainIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent mainPendingIntent = PendingIntent.getActivity(
+                context, appWidgetId, mainIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
-        views.setOnClickPendingIntent(R.id.widget_container, pendingIntent);
+        views.setOnClickPendingIntent(R.id.widget_container, mainPendingIntent);
+
+        // ДОБАВЬТЕ ЭТОТ БЛОК для кнопки уведомления
+        Intent notificationIntent = new Intent(context, WeatherNotificationReceiver.class);
+        notificationIntent.setAction("SEND_WEATHER_NOTIFICATION");
+        PendingIntent notificationPendingIntent = PendingIntent.getBroadcast(
+                context, appWidgetId + 1000, notificationIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        views.setOnClickPendingIntent(R.id.btn_weather_notification, notificationPendingIntent);
     }
 
     private static void scheduleWork(Context context) {
@@ -294,7 +304,7 @@ public class WeatherWidget extends AppWidgetProvider {
         return text.substring(0, 1).toUpperCase() + text.substring(1);
     }
 
-    private static String getCityFromDatabase(Context context) {
+    static String getCityFromDatabase(Context context) {
         // Получаем город из вашей БД как в HistoryFragment
         List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
         if (stringList == null || stringList.size() < 2) {
@@ -401,5 +411,54 @@ public class WeatherWidget extends AppWidgetProvider {
             }
         }
         return list;
+    }
+
+    // Добавьте этот метод в класс WeatherWidget.java
+
+    /**
+     * Проверяет погоду и отправляет уведомление, если погода изменилась или прошло достаточно времени
+     */
+    public static void checkAndSendWeatherNotification(Context context) {
+        Logger.d(context, TAG, "🔔 checkAndSendWeatherNotification - START");
+
+        WeatherResponse cachedWeather = WeatherApiHelper.getCachedWeather(context);
+
+        if (cachedWeather == null || cachedWeather.getMain() == null) {
+            Logger.d(context, TAG, "❌ Нет кэшированной погоды для уведомления");
+            return;
+        }
+
+        Logger.d(context, TAG, "✅ Кэш есть, температура: " + cachedWeather.getMain().getTemp());
+
+        long lastNotificationTime = getLastNotificationTime(context);
+        long currentTime = System.currentTimeMillis();
+        long timeSinceLastNotification = currentTime - lastNotificationTime;
+
+        Logger.d(context, TAG, "⏰ Время с последнего уведомления: " + (timeSinceLastNotification / 1000 / 60) + " минут");
+
+        // Временно отключим проверку для теста
+        // if (timeSinceLastNotification < 3 * 60 * 60 * 1000) {
+        //     Logger.d(context, TAG, "Уведомление отправлялось недавно, пропускаем");
+        //     return;
+        // }
+
+        String cityName = getCityFromDatabase(context);
+        Logger.d(context, TAG, "🏙️ Город: " + cityName);
+
+        Logger.d(context, TAG, "📤 Отправляем уведомление...");
+        WeatherNotificationHelper.showWeatherNotification(context, cachedWeather, cityName);
+
+        saveLastNotificationTime(context, currentTime);
+        Logger.d(context, TAG, "✅ checkAndSendWeatherNotification - END");
+    }
+
+    private static long getLastNotificationTime(Context context) {
+        android.content.SharedPreferences prefs = context.getSharedPreferences("weather_widget_prefs", Context.MODE_PRIVATE);
+        return prefs.getLong("last_notification_time", 0);
+    }
+
+    private static void saveLastNotificationTime(Context context, long time) {
+        android.content.SharedPreferences prefs = context.getSharedPreferences("weather_widget_prefs", Context.MODE_PRIVATE);
+        prefs.edit().putLong("last_notification_time", time).apply();
     }
 }

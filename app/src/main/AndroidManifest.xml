@@ -82,6 +82,8 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <activity android:name="com.taxi.easy.ua.ui.cities.check.CityCheckActivity"
@@ -177,6 +179,10 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/weather_widget_info" />
         </receiver>
+
+        <receiver
+            android:name=".widget.WeatherNotificationReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

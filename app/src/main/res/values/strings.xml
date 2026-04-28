@@ -737,4 +737,12 @@
     <string name="restart_manual">Будь ласка, закрийте додаток вручну та відкрийте знову</string>
     <string name="close_app">Закрити додаток</string>
     <string name="restart_title">Перезапуск додатку</string>
+    <string name="thanks_for_review">Дякуємо за вашу оцінку!</string>
+    <string name="no_open_review">Не вдалося відкрити оцінювання</string>
+    <string name="open_review_later">Оцінити можна пізніше</string>
+    <string name="weather_now">Погода зараз</string>
+    <string name="weather_notification_desc">Отримати сповіщення про погоду</string>
+    <string name="weather_no_data">Немає даних про погоду</string>
+    <string name="check">%s, очікується %s</string>
+    <string name="wether">Погода у м.%s</string>
 </resources>

@@ -723,4 +723,12 @@ Tap "Settings" to check.</string>
     <string name="restart_manual">Please close the app manually and open it again</string>
     <string name="close_app">Close app</string>
     <string name="restart_title">Restart app</string>
+    <string name="thanks_for_review">Thank you for your review!</string>
+    <string name="no_open_review">Failed to open review</string>
+    <string name="open_review_later">Can be reviewed later</string>
+    <string name="weather_now">Weather Now</string>
+    <string name="weather_notification_desc">Get Weather Notification</string>
+    <string name="weather_no_data">No Weather Data</string>
+    <string name="check">%s, expected %s</string>
+    <string name="wether">Weather in %s</string>
 </resources>

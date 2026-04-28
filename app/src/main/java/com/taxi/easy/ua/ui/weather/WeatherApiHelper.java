@@ -179,6 +179,26 @@ public class WeatherApiHelper {
 
         return weather;
     }
+    /**
+     * Публичный метод для кэширования погоды
+     * Использует существующий приватный метод saveWeatherToCache
+     */
+    public static void cacheWeather(Context context, WeatherResponse weather) {
+        if (context == null || weather == null) {
+            Logger.e(context, TAG, "Cannot cache weather: context or weather is null");
+            return;
+        }
+
+        // Получаем город из weather или используем последний сохраненный
+        String city = weather.getName();
+        if (city == null || city.isEmpty()) {
+            SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+            city = prefs.getString(KEY_LAST_CITY, "Kyiv");
+        }
+
+        // Вызываем существующий приватный метод
+        saveWeatherToCache(context, weather, city);
+    }
 
     /**
      * Сохранение погоды в кэш

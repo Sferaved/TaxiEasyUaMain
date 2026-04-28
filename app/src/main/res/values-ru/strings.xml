@@ -731,6 +731,12 @@
     <string name="restart_manual">Пожалуйста, закройте приложение вручную и откройте снова</string>
     <string name="close_app">Закрыть приложение</string>
     <string name="restart_title">Перезапуск приложения</string>
-
-
+    <string name="thanks_for_review">Спасибо за ваш отзыв!</string>
+    <string name="no_open_review">Не удалось открыть оценку</string>
+    <string name="open_review_later">Оценить можно позже</string>
+    <string name="weather_now">Погода сейчас</string>
+    <string name="weather_notification_desc">Получить уведомление о погоде</string>
+    <string name="weather_no_data">Нет данных о погоде</string>
+    <string name="check">%s, ожидается %s</string>
+    <string name="wether">Погода в г.%s</string>
 </resources>
