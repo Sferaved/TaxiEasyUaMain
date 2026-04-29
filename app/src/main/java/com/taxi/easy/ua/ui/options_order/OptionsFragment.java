@@ -444,7 +444,11 @@ public class OptionsFragment extends Fragment {
 
         if (isAdded()) {
             if(initial_page.equals("visicom")){
-                VisicomFragment.tariffBtnColor();
+                // Проверяем, существует ли VisicomFragment и его views
+                Fragment visicomFragment = getParentFragmentManager().findFragmentByTag("visicom");
+                if (visicomFragment != null && visicomFragment.isAdded() && visicomFragment.getView() != null) {
+                    VisicomFragment.tariffBtnColor();
+                }
                 NavController navController = NavHostFragment.findNavController(this);
                 navController.navigate(R.id.nav_visicom);
             } else {

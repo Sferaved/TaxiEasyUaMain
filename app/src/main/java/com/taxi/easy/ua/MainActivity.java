@@ -71,6 +71,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
+import com.google.android.play.core.install.model.InstallErrorCode;
 import com.google.android.play.core.install.model.InstallStatus;
 import com.google.android.play.core.install.model.UpdateAvailability;
 import com.google.firebase.analytics.FirebaseAnalytics;
@@ -2604,7 +2605,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             protected void onPreExecute() {
                 super.onPreExecute();
-                Logger.d(getContext(), TAG,
+                Logger.d(MyApplication.getContext(), TAG,
                         "Начинаем проверку обновлений для push-уведомления");
             }
 
@@ -2613,7 +2614,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     // Проверяем, инициализирован ли appUpdateManager
                     if (appUpdateManager == null) {
-                        appUpdateManager = AppUpdateManagerFactory.create(getContext());
+                        appUpdateManager = AppUpdateManagerFactory.create(MyApplication.getContext());
                     }
 
                     // Получаем информацию об обновлениях
@@ -2624,21 +2625,54 @@ public class MainActivity extends AppCompatActivity {
 
                 } catch (TimeoutException e) {
                     error = e;
-                    Logger.e(getContext(), TAG,
+                    Logger.e(MyApplication.getContext(), TAG,
                             "Таймаут при проверке обновлений: " + e.getMessage());
                 } catch (ExecutionException e) {
+                    // Проверяем, является ли корневая причина InstallException
+                    Throwable cause = e.getCause();
+                    if (cause instanceof com.google.android.play.core.install.InstallException) {
+                        com.google.android.play.core.install.InstallException installEx =
+                                (com.google.android.play.core.install.InstallException) cause;
+                        int errorCode = installEx.getErrorCode();
+
+                        // Игнорируем ошибку -10 (APP_NOT_OWNED)
+                        if (errorCode == -10) {
+                            Logger.d(MyApplication.getContext(), TAG,
+                                    "Приложение установлено не из Google Play Store, пропускаем проверку обновлений");
+                            return null;
+                        }
+
+                        // Игнорируем другие ошибки, используя константы InstallErrorCode
+                        if (errorCode == InstallErrorCode.ERROR_INSTALL_UNAVAILABLE) { // -2
+                            Logger.d(MyApplication.getContext(), TAG,
+                                    "Обновления временно недоступны (ERROR_INSTALL_UNAVAILABLE)");
+                            return null;
+                        }
+
+                        if (errorCode == InstallErrorCode.ERROR_API_NOT_AVAILABLE) { // -3
+                            Logger.d(MyApplication.getContext(), TAG,
+                                    "API обновлений недоступен (ERROR_API_NOT_AVAILABLE)");
+                            return null;
+                        }
+
+                        if (errorCode == InstallErrorCode.ERROR_INSTALL_NOT_ALLOWED) { // -7
+                            Logger.d(MyApplication.getContext(), TAG,
+                                    "Установка обновлений не разрешена (ERROR_INSTALL_NOT_ALLOWED)");
+                            return null;
+                        }
+                    }
                     error = e;
-                    Logger.e(getContext(), TAG,
+                    Logger.e(MyApplication.getContext(), TAG,
                             "Ошибка выполнения при проверке обновлений: " + e.getMessage());
                     FirebaseCrashlytics.getInstance().recordException(e);
                 } catch (InterruptedException e) {
                     error = e;
-                    Logger.e(getContext(), TAG,
+                    Logger.e(MyApplication.getContext(), TAG,
                             "Проверка обновлений прервана: " + e.getMessage());
                     Thread.currentThread().interrupt();
                 } catch (Exception e) {
                     error = e;
-                    Logger.e(getContext(), TAG,
+                    Logger.e(MyApplication.getContext(), TAG,
                             "Неожиданная ошибка при проверке обновлений: " + e.getMessage());
                     FirebaseCrashlytics.getInstance().recordException(e);
                 }
@@ -2650,13 +2684,14 @@ public class MainActivity extends AppCompatActivity {
                 super.onPostExecute(appUpdateInfo);
 
                 if (error != null) {
-                    Logger.e(getContext(), TAG,
-                            "Ошибка проверки обновлений: " + error.getMessage());
+                    // Не показываем ошибку пользователю, просто логируем
+                    Logger.d(MyApplication.getContext(), TAG,
+                            "Проверка обновлений пропущена");
                     return;
                 }
 
                 if (appUpdateInfo == null) {
-                    Logger.d(getContext(), TAG,
+                    Logger.d(MyApplication.getContext(), TAG,
                             "Не удалось получить информацию об обновлениях");
                     return;
                 }
@@ -2664,7 +2699,7 @@ public class MainActivity extends AppCompatActivity {
                 int updateAvailability = appUpdateInfo.updateAvailability();
                 int installStatus = appUpdateInfo.installStatus();
 
-                Logger.d(getContext(), TAG,
+                Logger.d(MyApplication.getContext(), TAG,
                         "checkForUpdateForPush - updateAvailability: " + updateAvailability +
                                 ", installStatus: " + installStatus);
 
@@ -2673,34 +2708,34 @@ public class MainActivity extends AppCompatActivity {
                     if (installStatus != InstallStatus.DOWNLOADING &&
                             installStatus != InstallStatus.INSTALLING) {
 
-                        Logger.d(getContext(), TAG,
+                        Logger.d(MyApplication.getContext(), TAG,
                                 "Доступно обновление, показываем уведомление");
 
                         try {
-                            String title = getContext()
+                            String title = MyApplication.getContext()
                                     .getString(R.string.new_version);
-                            String messageNotif = getContext()
+                            String messageNotif = MyApplication.getContext()
                                     .getString(R.string.news_of_version);
                             String urlStr = "https://play.google.com/store/apps/details?id=" +
-                                    getContext().getPackageName();
+                                    MyApplication.getContext().getPackageName();
 
                             NotificationHelper.showNotification(
-                                    getContext(),
+                                    MyApplication.getContext(),
                                     title,
                                     messageNotif,
                                     urlStr
                             );
                         } catch (Exception e) {
-                            Logger.e(getContext(), TAG,
+                            Logger.e(MyApplication.getContext(), TAG,
                                     "Ошибка показа уведомления: " + e.getMessage());
                             FirebaseCrashlytics.getInstance().recordException(e);
                         }
                     } else {
-                        Logger.d(getContext(), TAG,
+                        Logger.d(MyApplication.getContext(), TAG,
                                 "Обновление уже загружается или устанавливается");
                     }
                 } else {
-                    Logger.d(getContext(), TAG,
+                    Logger.d(MyApplication.getContext(), TAG,
                             "Обновлений не найдено или недоступны");
                 }
             }

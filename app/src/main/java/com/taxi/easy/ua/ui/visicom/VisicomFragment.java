@@ -1449,6 +1449,10 @@ public class VisicomFragment extends Fragment {
 
     }
     public static void tariffBtnColor() {
+        if (frame_1 == null || frame_2 == null || frame_3 == null) {
+            Log.e(TAG, "tariffBtnColor: frames are null, skipping update");
+            return;
+        }
         String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
         if (tarif.equals("Базовый")) {
             frame_1.setBackgroundResource(R.drawable.input);
