@@ -68,19 +68,38 @@ public class MyBottomSheetFinishOptionFragment extends BottomSheetDialogFragment
         @SuppressLint("CutPasteId") TextView komenterinp = view.findViewById(R.id.komenterinp);
 
 // Проверяем на null и на пустую строку с учетом возможных пробелов
+        // Проверяем на null и на пустую строку
         if (commentInfo != null && !commentInfo.trim().isEmpty()) {
-            commentInfo = delAdminMessage(commentInfo);
-            if(!commentInfo.isEmpty()) {
-                view.findViewById(R.id.komentar).setVisibility(View.VISIBLE);
-                komenterinp.setVisibility(View.VISIBLE);
-                komenterinp.setText(commentInfo);
-                options = true;
-                komenterinp.setOnClickListener(view1 -> dismiss());
-            } else {
+            String originalComment = commentInfo; // Сохраняем для лога
+
+            // Приводим к нижнему регистру для сравнения
+            String commentLower = commentInfo.trim().toLowerCase();
+
+            // Проверяем на "мусорные" значения в любом регистре
+            if (commentLower.equals("no_comment") ||
+                    commentLower.equals("no_name") ||
+                    commentLower.equals("noname") ||
+                    commentLower.equals("none")) {
+
+                // Это мусор - скрываем комментарий
+                Logger.d(context, TAG, "Мусорный комментарий: " + originalComment + " - скрываем");
                 view.findViewById(R.id.komentar).setVisibility(GONE);
                 komenterinp.setVisibility(GONE);
+            } else {
+                // Нормальный комментарий - обрабатываем
+                Logger.d(context, TAG, "Нормальный комментарий: " + originalComment);
+                commentInfo = delAdminMessage(commentInfo);
+                if(commentInfo != null && !commentInfo.isEmpty()) {
+                    view.findViewById(R.id.komentar).setVisibility(View.VISIBLE);
+                    komenterinp.setVisibility(View.VISIBLE);
+                    komenterinp.setText(commentInfo);
+                    options = true;
+                    komenterinp.setOnClickListener(view1 -> dismiss());
+                } else {
+                    view.findViewById(R.id.komentar).setVisibility(GONE);
+                    komenterinp.setVisibility(GONE);
+                }
             }
-
         } else {
             view.findViewById(R.id.komentar).setVisibility(GONE);
             komenterinp.setVisibility(GONE);
@@ -225,18 +244,8 @@ public class MyBottomSheetFinishOptionFragment extends BottomSheetDialogFragment
 //        }
         Log.d(TAG, "options: " + options);
 
-
         Logger.d(context, TAG, "commentInfo:" + commentInfo);
 
-//        if(!options || commentInfo.equals("no_comment")) {
-        if(!options) {
-            komenterinp.setVisibility(View.VISIBLE);
-            komenterinp.setText(R.string.no_options);
-        }
-        if(commentInfo.equals("no_comment")) {
-            view.findViewById(R.id.komentar).setVisibility(GONE);
-            komenterinp.setVisibility(GONE);
-        }
         return view;
     }
 
@@ -256,31 +265,22 @@ public class MyBottomSheetFinishOptionFragment extends BottomSheetDialogFragment
     }
 
     private String delAdminMessage(String comment) {
-        // Указываем тег для логов, чтобы потом было легче найти записи
         final String TAG = "DelAdminMessage";
+
         Log.d(TAG, "Исходный комментарий: " + comment);
 
         String newComment = comment;
-
-        // Начальная и конечная части добавленного текста
         String startMarker = "цифра номера ";
         String endMarker = ", Оплатили службе 45грн. ";
 
-        // Находим позиции начального и конечного маркеров в строке
         int startIndex = comment.indexOf(startMarker);
         int endIndex = comment.indexOf(endMarker, startIndex);
 
-        // Логируем индексы маркеров
-        Log.d(TAG, "Позиция начального маркера: " + startIndex);
-        Log.d(TAG, "Позиция конечного маркера: " + endIndex);
-
-        // Проверяем, что маркеры найдены
         if (startIndex != -1 && endIndex != -1) {
-            // Вырезаем нужный фрагмент, исключая добавленную информацию
             newComment = comment.substring(0, startIndex) + comment.substring(endIndex + endMarker.length());
-            Log.d(TAG, "Комментарий после удаления добавленной информации: " + newComment);
+            Log.d(TAG, "Комментарий после удаления: " + newComment);
         } else {
-            Log.w(TAG, "Не удалось найти начальный или конечный маркер, возвращаем исходный комментарий.");
+            Log.w(TAG, "Маркеры не найдены, возвращаем исходный комментарий.");
         }
 
         return newComment;

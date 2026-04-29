@@ -754,17 +754,21 @@ public class VisicomFragment extends Fragment {
         if (!tarif.equals(" ")) {
             newCheck++;
         }
-        boolean isInclusive = InclusiveTransportPreferenceWorker.needsInclusiveTransport();
-        if (isInclusive) {
-            newCheck++;
-        }
+//        boolean isInclusive = InclusiveTransportPreferenceWorker.needsInclusiveTransport();
+//        if (isInclusive) {
+//            newCheck++;
+//        }
 
 //        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
 //        String comment = stringList.get(2);
         String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
         Logger.d(context, TAG, "comment" + comment);
 
-        if (!comment.equals("no_comment")) {
+        if (!comment.equals("no_comment")
+                && !comment.isEmpty()
+                && !comment.equals(" ")
+                && !comment.equals("no_name ")
+        ) {
             newCheck++;
         }
         String mes = context.getString(R.string.add_services);
@@ -1202,13 +1206,26 @@ public class VisicomFragment extends Fragment {
                 phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
             }
             c.close();
-            if (InclusiveTransportPreferenceWorker.needsInclusiveTransport()) {
-                Logger.d(context, TAG, "Нужно добавить информацию в заказ что нужен инклюзивный  транспорт");
+            // Проверяем, что комментарий не является "мусорным"
+            boolean isDummyComment = (comment == null ||
+                    comment.equals("no_comment") ||
+                    comment.equals("no_name") ||
+                    comment.equals("none") ||
+                    comment.trim().isEmpty());
+
+            if (isDummyComment) {
+                // Если комментарий мусорный - просто устанавливаем сообщение про инклюзив
+                comment = context.getString(R.string.inclusive_transport_message_yes);
+                Logger.d(context, "comment", "Был мусорный комментарий, устанавливаем только инклюзив: " + comment);
+            } else {
                 // Проверяем, содержит ли уже комментарий эту фразу
                 if (!comment.contains(context.getString(R.string.inclusive_transport_message_yes))) {
-                    comment += context.getString(R.string.inclusive_transport_message_yes);
+                    comment += " " + context.getString(R.string.inclusive_transport_message_yes);
+                    Logger.d(context, "comment", "Добавляем инклюзив к существующему комментарию: " + comment);
                 }
             }
+            sharedPreferencesHelperMain.saveValue("comment", comment );
+            Logger.d(context, "comment", comment);
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
                     + displayName + " (" + context.getString(R.string.version_code) + ") *" + userEmail + "*" + payment_type + "/"
                     + time + "/" + date;
@@ -1259,13 +1276,24 @@ public class VisicomFragment extends Fragment {
             }
             sharedPreferencesHelperMain.saveValue("black_list_45", false);
             sharedPreferencesHelperMain.saveValue("old_cost", clientCost);
-            if (InclusiveTransportPreferenceWorker.needsInclusiveTransport()) {
-                Logger.d(context, TAG, "Нужно добавить информацию в заказ что нужен инклюзивный  транспорт");
+            boolean isDummyComment = (comment == null ||
+                    comment.equals("no_comment") ||
+                    comment.equals("no_name") ||
+                    comment.equals("none") ||
+                    comment.trim().isEmpty());
+
+            if (isDummyComment) {
+                // Если комментарий мусорный - просто устанавливаем сообщение про инклюзив
+                comment = context.getString(R.string.inclusive_transport_message_yes);
+                Logger.d(context, "comment", "Был мусорный комментарий, устанавливаем только инклюзив: " + comment);
+            } else {
                 // Проверяем, содержит ли уже комментарий эту фразу
                 if (!comment.contains(context.getString(R.string.inclusive_transport_message_yes))) {
-                    comment += context.getString(R.string.inclusive_transport_message_yes);
+                    comment += " " + context.getString(R.string.inclusive_transport_message_yes);
+                    Logger.d(context, "comment", "Добавляем инклюзив к существующему комментарию: " + comment);
                 }
             }
+            sharedPreferencesHelperMain.saveValue("comment", comment );
             parameters = str_origin + "/" + str_dest + "/" + tarif + "/" + phoneNumber + "/"
                     + clientCost + "/" + paramsUserArr + "/" + addCost + "/"
                     + time + "/" + comment + "/" + date + "/" + start + "/" + finish + "/" + wfpInvoice;
@@ -1726,6 +1754,18 @@ public class VisicomFragment extends Fragment {
                 Logger.d(context, TAG, "getTaxiUrlSearchGeo result:" + result + "/");
                 sendUrlMap.put("extra_charge_codes", result);
             }
+            String comment =  sendUrlMap.get("comment_info");
+            Logger.d(context, TAG, "sendUrlMap: comment_info " + comment);
+            String savedComment = sharedPreferencesHelperMain.getValue("comment", "").toString();
+            if (!savedComment.trim().isEmpty() && !savedComment.equals("no_name") && !savedComment.equals("no_comment")) {
+                comment = savedComment;
+            } else {
+                comment = "";
+            }
+            // Перезаписываем значение по ключу
+            sendUrlMap.put("comment_info", comment);
+
+
             Logger.d(context, TAG, "sendUrlMap: comment_info " + sendUrlMap.get("comment_info"));
             Logger.d(context, TAG, "sendUrlMap: extra_charge_codes " + sendUrlMap.get("extra_charge_codes"));
 

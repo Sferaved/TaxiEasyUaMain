@@ -743,6 +743,6 @@
     <string name="weather_now">Погода зараз</string>
     <string name="weather_notification_desc">Отримати сповіщення про погоду</string>
     <string name="weather_no_data">Немає даних про погоду</string>
-    <string name="check">%s, ожидается %s</string>
+    <string name="check">%s, очікується %s</string>
     <string name="wether">Погода у м.%s</string>
 </resources>
