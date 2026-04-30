@@ -2710,7 +2710,7 @@ public class VisicomFragment extends Fragment {
                                 if (FromAdressString != null && FromAdressString.contains("Точка на карте")) {
                                     FromAdressString = context.getString(R.string.startPoint);
                                 }
-
+                                geoText.setText(FromAdressString);
                                 new CityFinder(
                                         context,
                                         latitude,
