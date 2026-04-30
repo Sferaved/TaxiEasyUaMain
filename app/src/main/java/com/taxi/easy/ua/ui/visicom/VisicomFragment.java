@@ -236,6 +236,9 @@ public class VisicomFragment extends Fragment {
     private String lastCost = null;
     static SwipeRefreshLayout swipeRefreshLayout;
     private LifecycleObserver lifecycleObserver;
+
+
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentVisicomBinding.inflate(inflater, container, false);
@@ -470,6 +473,15 @@ public class VisicomFragment extends Fragment {
             }
             // Если aBoolean == false - ничего не делаем
         });
+    }
+    public static void updateGpsButtonCross(boolean show) {
+        if (gpsBtn != null && getCurrentActivity() != null) {
+            if (show) {
+                gpsBtn.setBackground(ContextCompat.getDrawable(getCurrentActivity(), R.drawable.buttons_green_cross));
+            } else {
+                gpsBtn.setBackground(ContextCompat.getDrawable(getCurrentActivity(), R.drawable.buttons_green));
+            }
+        }
     }
 
     private void setupActionBar() {
