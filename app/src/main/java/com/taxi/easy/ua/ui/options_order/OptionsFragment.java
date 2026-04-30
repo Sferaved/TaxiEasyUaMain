@@ -124,13 +124,18 @@ public class OptionsFragment extends Fragment {
         boolean isInclusive = InclusiveTransportPreferenceWorker.needsInclusiveTransport();
         cbInclusive.setChecked(isInclusive);
 
-// Синхронизируем с SharedPreferences для единообразия
-        sharedPreferencesHelperMain.saveValue("inclusive", isInclusive ? "1" : "0");
-
 // Обработчик изменения состояния
         cbInclusive.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            sharedPreferencesHelperMain.saveValue("inclusive", isChecked ? "1" : "0");
-            InclusiveTransportPreferenceWorker.saveUserPreference(context, isChecked);
+
+            InclusiveTransportPreferenceWorker.saveUserPreference(isChecked);
+            if(!isChecked) {
+                komenterinp.setText("");
+                sharedPreferencesHelperMain.saveValue("comment", "no_comment");
+            } else {
+                komenterinp.setText(context.getString(R.string.inclusive_transport_message_yes));
+
+            }
+
             Logger.d(context, TAG, "Инклюзивность: " + (isChecked ? "включена" : "выключена"));
         });
 
@@ -335,8 +340,7 @@ public class OptionsFragment extends Fragment {
         Toast.makeText(context, R.string.all_data_clear, Toast.LENGTH_SHORT).show();
         Logger.d(context, TAG, "All data cleared");
         cbInclusive.setChecked(false);
-        sharedPreferencesHelperMain.saveValue("inclusive", "0");
-        InclusiveTransportPreferenceWorker.saveUserPreference(context, false);
+        InclusiveTransportPreferenceWorker.saveUserPreference(false);
     }
 
     // Метод для обновления отображаемой даты

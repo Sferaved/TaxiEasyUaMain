@@ -3064,11 +3064,11 @@ public class MainActivity extends AppCompatActivity {
 
                 builder.setPositiveButton(getString(R.string.inclusive_transport_yes), (dialog, which) -> {
                     Logger.d(this, TAG, "Пользователь выбрал ДА");
-                    InclusiveTransportPreferenceWorker.saveUserPreference(this, true);
+                    InclusiveTransportPreferenceWorker.saveUserPreference(true);
                 });
                 builder.setNegativeButton(getString(R.string.inclusive_transport_no), (dialog, which) -> {
                     Logger.d(this, TAG, "Пользователь выбрал НЕТ");
-                    InclusiveTransportPreferenceWorker.saveUserPreference(this, false);
+                    InclusiveTransportPreferenceWorker.saveUserPreference(false);
                 });
                 builder.setCancelable(false);
 

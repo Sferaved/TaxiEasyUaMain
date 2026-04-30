@@ -63,17 +63,9 @@ public class InclusiveTransportPreferenceWorker extends Worker {
     }
 
     // Статический метод для сохранения ответа пользователя
-    public static void saveUserPreference(Context context, boolean needsInclusiveTransport) {
+    public static void saveUserPreference(boolean needsInclusiveTransport) {
         sharedPreferencesHelperMain.saveValue(KEY_INCLUSIVE_TRANSPORT_ENABLED, needsInclusiveTransport);
         sharedPreferencesHelperMain.saveValue(KEY_INCLUSIVE_TRANSPORT_ASKED, true);
-        //        SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-//        prefs.edit()
-//                .putBoolean(KEY_INCLUSIVE_TRANSPORT_ENABLED, needsInclusiveTransport)
-//                .putBoolean(KEY_INCLUSIVE_TRANSPORT_ASKED, true)
-//                .apply();
-//
-//        Logger.d(context, TAG, "Сохранено предпочтение пользователя: inclusiveTransport="
-//                + needsInclusiveTransport);
     }
 
     // Метод для проверки, нужен ли пользователю инклюзивный транспорт

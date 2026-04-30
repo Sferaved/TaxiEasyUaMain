@@ -6,15 +6,12 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.os.Build;
-import android.widget.Toast;
 
 import androidx.core.app.NotificationCompat;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.weather.WeatherResponse;
-import com.taxi.easy.ua.utils.log.Logger;
 
 public class WeatherNotificationHelper {
 

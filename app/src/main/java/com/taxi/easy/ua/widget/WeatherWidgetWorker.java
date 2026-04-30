@@ -15,7 +15,6 @@ import androidx.work.WorkerParameters;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.ui.weather.WeatherApiHelper;
 import com.taxi.easy.ua.ui.weather.WeatherResponse;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.log.Logger;
