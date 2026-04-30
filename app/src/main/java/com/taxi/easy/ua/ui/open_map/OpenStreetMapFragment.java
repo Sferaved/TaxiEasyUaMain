@@ -772,14 +772,24 @@ public class OpenStreetMapFragment extends Fragment {
         apiService = retrofit.create(ApiService.class);
         Logger.d(ctx, TAG, "Request URL: " + retrofit.baseUrl());
     }
-
+    private void showSearchProgress() {
+        if (getActivity() == null) return;
+        getActivity().runOnUiThread(() -> {
+            if (progressBar != null) {
+                progressBar.setVisibility(View.VISIBLE);
+            }
+            Toast.makeText(ctx, ctx.getString(R.string.searching_address), Toast.LENGTH_SHORT).show();
+        });
+    }
     // Вызов API для получения адреса по координатам
     private void makeApiCall(double latitude, double longitude, Context context) {
         Logger.d(context, TAG, "makeApiCall started with latitude=" + latitude + ", longitude=" + longitude + ", map=" + map + ", markerType=" + markerType);
+        showSearchProgress();
         if (map == null) {
             Logger.e(context, TAG, "MapView is null, aborting API call");
             return;
         }
+
         if (markerType == null || (!"startMarker".equals(markerType) && !"finishMarker".equals(markerType))) {
             Logger.i(context, TAG, "Invalid markerType: " + markerType + ", defaulting to startMarker");
             markerType = "startMarker"; // Fallback

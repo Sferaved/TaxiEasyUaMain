@@ -1293,21 +1293,26 @@ public class VisicomFragment extends Fragment {
             }
             sharedPreferencesHelperMain.saveValue("black_list_45", false);
             sharedPreferencesHelperMain.saveValue("old_cost", clientCost);
-            boolean isDummyComment = (comment == null ||
-                    comment.equals("no_comment") ||
-                    comment.equals("no_name") ||
-                    comment.equals("none") ||
-                    comment.trim().isEmpty());
+            boolean isInclusive = InclusiveTransportPreferenceWorker.needsInclusiveTransport();
+            if (isInclusive) {
 
-            if (isDummyComment) {
-                // Если комментарий мусорный - просто устанавливаем сообщение про инклюзив
-                comment = context.getString(R.string.inclusive_transport_message_yes);
-                Logger.d(context, "comment", "Был мусорный комментарий, устанавливаем только инклюзив: " + comment);
-            } else {
-                // Проверяем, содержит ли уже комментарий эту фразу
-                if (!comment.contains(context.getString(R.string.inclusive_transport_message_yes))) {
-                    comment += " " + context.getString(R.string.inclusive_transport_message_yes);
-                    Logger.d(context, "comment", "Добавляем инклюзив к существующему комментарию: " + comment);
+
+                boolean isDummyComment = (comment == null ||
+                        comment.equals("no_comment") ||
+                        comment.equals("no_name") ||
+                        comment.equals("none") ||
+                        comment.trim().isEmpty());
+
+                if (isDummyComment) {
+                    // Если комментарий мусорный - просто устанавливаем сообщение про инклюзив
+                    comment = context.getString(R.string.inclusive_transport_message_yes);
+                    Logger.d(context, "comment", "Был мусорный комментарий, устанавливаем только инклюзив: " + comment);
+                } else {
+                    // Проверяем, содержит ли уже комментарий эту фразу
+                    if (!comment.contains(context.getString(R.string.inclusive_transport_message_yes))) {
+                        comment += " " + context.getString(R.string.inclusive_transport_message_yes);
+                        Logger.d(context, "comment", "Добавляем инклюзив к существующему комментарию: " + comment);
+                    }
                 }
             }
             sharedPreferencesHelperMain.saveValue("comment", comment );

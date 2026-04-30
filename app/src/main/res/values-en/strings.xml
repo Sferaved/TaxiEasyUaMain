@@ -731,4 +731,5 @@ Tap "Settings" to check.</string>
     <string name="weather_no_data">No Weather Data</string>
     <string name="check">%s, expected %s</string>
     <string name="wether">Weather in %s</string>
+    <string name="searching_address">Searching address ...</string>
 </resources>

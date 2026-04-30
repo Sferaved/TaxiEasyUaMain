@@ -745,4 +745,5 @@
     <string name="weather_no_data">Немає даних про погоду</string>
     <string name="check">%s, очікується %s</string>
     <string name="wether">Погода у м.%s</string>
+    <string name="searching_address">Пошук адреси...</string>
 </resources>

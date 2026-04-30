@@ -118,11 +118,19 @@ public class OptionsFragment extends Fragment {
         listView.setAdapter(adapterSet);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         cbInclusive = view.findViewById(R.id.cb_inclusive);
-
-// Загрузка сохраненного состояния инклюзивности через Worker
+        komenterinp = view.findViewById(R.id.komenterinp);
+// Загрузка сохраненного состояния инклюзивности
 // Метод needsInclusiveTransport() возвращает boolean, по умолчанию false
         boolean isInclusive = InclusiveTransportPreferenceWorker.needsInclusiveTransport();
         cbInclusive.setChecked(isInclusive);
+        if(!isInclusive) {
+            komenterinp.setText("");
+            sharedPreferencesHelperMain.saveValue("comment", "no_comment");
+        } else {
+            komenterinp.setText(context.getString(R.string.inclusive_transport_message_yes));
+
+        }
+
 
 // Обработчик изменения состояния
         cbInclusive.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -233,7 +241,6 @@ public class OptionsFragment extends Fragment {
         updateSelectedTime();
         tvSelectedTime.setOnClickListener(v -> showTimePickerDialog());
 
-        komenterinp = view.findViewById(R.id.komenterinp);
         discount = view.findViewById(R.id.discinp);
 
         String comment = (String) sharedPreferencesHelperMain.getValue("comment", "no_comment");
