@@ -7,20 +7,31 @@
     android:background="@color/new_background_color">
 
     <TextView
+        android:id="@+id/text_phone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:background="@drawable/input"
+        android:gravity="center"
+        android:text="@string/phone_header"
+        android:textColor="@color/white"
+        android:textSize="@dimen/textView_textSize"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_editor_absoluteX="8dp" />
+
+    <TextView
         android:id="@+id/textView6"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
 
         android:layout_margin="8sp"
+        android:background="@drawable/input"
         android:gravity="left|fill_horizontal"
         android:text="@string/please_phone_message"
-        android:background="@drawable/input"
         android:textColor="@color/white"
         android:textSize="@dimen/textView_textSize"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:ignore="MissingConstraints" />
+        app:layout_constraintTop_toBottomOf="@+id/text_phone"
+        tools:layout_editor_absoluteX="10dp" />
 
     <TextView
         android:id="@+id/textView7"

@@ -651,8 +651,8 @@ public class HomeFragment extends Fragment {
     private void orderFinished() {
 
         if (!verifyPhone()){
-            MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment(context, "home");
-            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+            MyPhoneDialogFragment bottomSheetDialogFragment = MyPhoneDialogFragment.newInstance("home");
+            bottomSheetDialogFragment.show(fragmentManager, "MyPhoneDialogFragment");
             progressBar.setVisibility(GONE);
         } else {
             constraintLayoutHomeMain.setVisibility(GONE);

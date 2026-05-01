@@ -732,4 +732,5 @@ Tap "Settings" to check.</string>
     <string name="check">%s, expected %s</string>
     <string name="wether">Weather in %s</string>
     <string name="searching_address">Searching address ...</string>
+    <string name="phone_header">PHONE</string>
 </resources>

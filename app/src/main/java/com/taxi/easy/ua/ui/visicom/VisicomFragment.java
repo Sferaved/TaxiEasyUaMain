@@ -1542,8 +1542,8 @@ public class VisicomFragment extends Fragment {
     public void orderFinished() throws MalformedURLException {
 
         if (!verifyPhone()) {
-            MyPhoneDialogFragment bottomSheetDialogFragment = new MyPhoneDialogFragment(context, "visicom");
-            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+            MyPhoneDialogFragment bottomSheetDialogFragment = MyPhoneDialogFragment.newInstance("visicom");
+            bottomSheetDialogFragment.show(fragmentManager, "MyPhoneDialogFragment");
             progressBar.setVisibility(GONE);
         } else {
 

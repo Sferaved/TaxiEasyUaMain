@@ -726,9 +726,9 @@
     <string name="network_available_check">Інтернет доступний, підключаємося...</string>
     <string name="network_still_down">Інтернет все ще недоступний</string>
     <!-- Перший запуск - підказки -->
-    <string name="first_start_reading">Зчитуємо ваш вибір</string>
-    <string name="first_start_checking">Перевіряємо вашу реєстрацію</string>
-    <string name="first_start_setting">Налаштовуємо ваш акаунт</string>
+    <string name="first_start_reading">Зчитуємо Ваш вибір</string>
+    <string name="first_start_checking">Перевіряємо Вашу реєстрацію</string>
+    <string name="first_start_setting">Налаштовуємо Ваш акаунт</string>
 
     <string name="no_internet_restart">Немає інтернету. Натисніть кнопку для перезапуску</string>
     <string name="restart_app">Перезапустити додаток</string>
@@ -746,4 +746,5 @@
     <string name="check">%s, очікується %s</string>
     <string name="wether">Погода у м.%s</string>
     <string name="searching_address">Пошук адреси...</string>
+    <string name="phone_header">ТЕЛЕФОН</string>
 </resources>
