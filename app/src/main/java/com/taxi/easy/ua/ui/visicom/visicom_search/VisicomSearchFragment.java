@@ -709,7 +709,7 @@ public class VisicomSearchFragment extends Fragment {
             text_toError.setVisibility(View.GONE);
             root.findViewById(R.id.textwhere).setVisibility(View.GONE);
             root.findViewById(R.id.num2).setVisibility(View.GONE);
-            gpsbut.setVisibility(GONE);
+//            gpsbut.setVisibility(GONE);
         }
         if(end.equals("ok")) {
             oldAddresses("finish");

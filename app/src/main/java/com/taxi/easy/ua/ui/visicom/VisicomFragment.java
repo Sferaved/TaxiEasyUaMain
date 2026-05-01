@@ -810,7 +810,7 @@ public class VisicomFragment extends Fragment {
         if (visible == GONE) {
 
             binding.fabCallAdmin.setVisibility(VISIBLE);
-            binding.gpsbut.setVisibility(GONE);
+//            binding.gpsbut.setVisibility(GONE);
             binding.btnCallAdmin.setText(R.string.try_again);
             binding.btnCallAdmin.setOnClickListener(v -> {
                 Log.d("BTN_VISIBLE", "Клик: Попробовать снова - запуск SwipeRefresh");
