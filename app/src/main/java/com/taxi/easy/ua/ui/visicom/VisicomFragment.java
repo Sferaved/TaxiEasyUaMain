@@ -237,7 +237,8 @@ public class VisicomFragment extends Fragment {
     static SwipeRefreshLayout swipeRefreshLayout;
     private LifecycleObserver lifecycleObserver;
 
-
+    private static final double DEFAULT_LAT = 50.4501; // Киев по умолчанию
+    private static final double DEFAULT_LON = 30.5234;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -2693,7 +2694,16 @@ public class VisicomFragment extends Fragment {
                     if (location != null) {
                         double latitude = location.getLatitude();
                         double longitude = location.getLongitude();
+                        boolean coordinatesChanged = haveCoordinatesChanged(latitude, longitude);
+                        Logger.d(context, TAG, "getCurrentLocation: координаты изменились = " + coordinatesChanged +
+                                ", latitude=" + latitude + ", longitude=" + longitude);
 
+                        if (!coordinatesChanged) {
+                            progressBar.setVisibility(View.GONE);
+                            updateGpsButtonCross(false);
+                            Logger.d(context, TAG, "Пропускаем обновление - координаты не изменились");
+                            return;
+                        }
                         Logger.d(context, TAG, "getCurrentLocation: " + latitude + ", " + longitude);
 
                         List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
@@ -2718,6 +2728,12 @@ public class VisicomFragment extends Fragment {
                                         FromAdressString,
                                         context
                                 ).findCity(latitude, longitude);
+                                updateCoordinatesInDatabase(latitude, longitude, FromAdressString);
+                                try {
+                                    visicomCost();
+                                } catch (MalformedURLException e) {
+                                    throw new RuntimeException(e);
+                                }
                                 Logger.d(context, TAG, "ToAdressString: " + textViewTo.getText().toString());
                             } else {
                                 Logger.d(context, TAG, "Ошибка при получении адреса");
@@ -2731,6 +2747,140 @@ public class VisicomFragment extends Fragment {
                 });
     }
 
+    private boolean haveCoordinatesChanged(double newLat, double newLon) {
+        // Получаем текущие координаты из БД
+        double[] currentCoordinates = getCurrentCoordinatesFromDatabase();
+        double currentLat = currentCoordinates[0];
+        double currentLon = currentCoordinates[1];
+
+        // Вычисляем разницу
+        double latDiff = Math.abs(newLat - currentLat);
+        double lonDiff = Math.abs(newLon - currentLon);
+
+        // Проверяем, изменились ли координаты (с допустимой погрешностью 0.00001 градуса ~ 1 метр)
+        boolean changed = latDiff > 0.00001 || lonDiff > 0.00001;
+
+        // Детальное логирование
+        Logger.d(context, TAG, String.format(Locale.US,
+                "haveCoordinatesChanged: changed=%b, " +
+                        "old=(%.6f, %.6f), new=(%.6f, %.6f), " +
+                        "diff(lat=%.6f, lon=%.6f), threshold=0.00001",
+                changed, currentLat, currentLon, newLat, newLon, latDiff, lonDiff));
+
+        return changed;
+    }
+
+    // Вспомогательный метод для получения координат из БД
+    private double[] getCurrentCoordinatesFromDatabase() {
+        double[] coordinates = {DEFAULT_LAT, DEFAULT_LON};
+
+        try {
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            Cursor cursor = database.rawQuery("SELECT startLat, startLan FROM " + MainActivity.ROUT_MARKER + " LIMIT 1", null);
+
+            if (cursor.moveToFirst()) {
+                coordinates[0] = cursor.getDouble(0);
+                coordinates[1] = cursor.getDouble(1);
+            }
+
+            cursor.close();
+            database.close();
+        } catch (Exception e) {
+            Logger.e(context, TAG, "Ошибка получения координат из БД: " + e.getMessage());
+        }
+
+        return coordinates;
+    }
+    private void updateCoordinatesInDatabase(double newLat, double newLon, String address) {
+        String TAG = "updateCoordinatesInDatabase";
+        Logger.d(context, TAG, "=== updateCoordinatesInDatabase START ===");
+        Logger.d(context, TAG, "Входные параметры: newLat=" + newLat + ", newLon=" + newLon + ", address='" + address + "'");
+
+        try {
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            Logger.d(context, TAG, "База данных открыта: " + MainActivity.DB_NAME);
+
+            // Проверяем, существует ли таблица
+            database.execSQL("CREATE TABLE IF NOT EXISTS " + MainActivity.ROUT_MARKER + " (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "startLat REAL, startLan REAL, to_lat REAL, to_lng REAL, " +
+                    "start TEXT, finish TEXT)");
+            Logger.d(context, TAG, "Таблица " + MainActivity.ROUT_MARKER + " проверена/создана");
+
+            // Сохраняем текущие значения конечной точки
+            Logger.d(context, TAG, "Загружаем текущие значения конечной точки из БД...");
+            Cursor cursor = database.rawQuery("SELECT to_lat, to_lng, finish FROM " + MainActivity.ROUT_MARKER + " LIMIT 1", null);
+            double existingToLat = 0.0;
+            double existingToLng = 0.0;
+            String existingFinish = "";
+
+            if (cursor.moveToFirst()) {
+                existingToLat = cursor.getDouble(0);
+                existingToLng = cursor.getDouble(1);
+                existingFinish = cursor.getString(2) != null ? cursor.getString(2) : "";
+                Logger.d(context, TAG, String.format(Locale.US,
+                        "Найдена существующая конечная точка: to_lat=%.6f, to_lng=%.6f, finish='%s'",
+                        existingToLat, existingToLng, existingFinish));
+            } else {
+                Logger.d(context, TAG, "Запись в таблице не найдена, будет создана новая");
+            }
+            cursor.close();
+
+            // Обновляем только стартовую точку, сохраняя существующую конечную
+            ContentValues values = new ContentValues();
+            values.put("startLat", newLat);
+            values.put("startLan", newLon);
+            values.put("start", address);
+            values.put("to_lat", existingToLat);  // Сохраняем старую конечную точку
+            values.put("to_lng", existingToLng);  // Сохраняем старую конечную точку
+            values.put("finish", existingFinish);  // Сохраняем старый адрес назначения
+
+            Logger.d(context, TAG, "Подготовлены значения для обновления:");
+            Logger.d(context, TAG, "  startLat=" + newLat);
+            Logger.d(context, TAG, "  startLan=" + newLon);
+            Logger.d(context, TAG, "  start='" + address + "'");
+            Logger.d(context, TAG, "  to_lat=" + existingToLat + " (сохранено)");
+            Logger.d(context, TAG, "  to_lng=" + existingToLng + " (сохранено)");
+            Logger.d(context, TAG, "  finish='" + existingFinish + "' (сохранено)");
+
+            int rowsUpdated = database.update(MainActivity.ROUT_MARKER, values, "id = ?", new String[]{"1"});
+            Logger.d(context, TAG, "Результат обновления: rowsUpdated=" + rowsUpdated);
+
+            if (rowsUpdated == 0) {
+                // Если записи нет - создаем
+                Logger.d(context, TAG, "Запись не найдена (rowsUpdated=0), создаем новую запись...");
+                long newId = database.insert(MainActivity.ROUT_MARKER, null, values);
+                Logger.d(context, TAG, "Создана новая запись с id=" + newId);
+            } else {
+                Logger.d(context, TAG, "Существующая запись успешно обновлена");
+            }
+
+            // Для верификации - читаем обновленные данные
+            Logger.d(context, TAG, "Верификация: читаем обновленные данные из БД...");
+            Cursor verifyCursor = database.rawQuery("SELECT startLat, startLan, start, to_lat, to_lng, finish FROM " + MainActivity.ROUT_MARKER + " LIMIT 1", null);
+            if (verifyCursor.moveToFirst()) {
+                Logger.d(context, TAG, String.format(Locale.US,
+                        "Проверка: startLat=%.6f, startLan=%.6f, start='%s', to_lat=%.6f, to_lng=%.6f, finish='%s'",
+                        verifyCursor.getDouble(0), verifyCursor.getDouble(1), verifyCursor.getString(2),
+                        verifyCursor.getDouble(3), verifyCursor.getDouble(4), verifyCursor.getString(5)));
+            }
+            verifyCursor.close();
+
+            Logger.d(context, TAG, String.format(Locale.US,
+                    "✅ Обновлена стартовая точка: (%.6f, %.6f) -> '%s'. Конечная точка сохранена: (%.6f, %.6f) -> '%s'",
+                    newLat, newLon, address, existingToLat, existingToLng, existingFinish));
+
+            database.close();
+            Logger.d(context, TAG, "База данных закрыта");
+
+        } catch (Exception e) {
+            Logger.e(context, TAG, "❌ Ошибка обновления координат в БД: " + e.getMessage());
+            Logger.e(context, TAG, "Stack trace: " + e.toString());
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
+
+        Logger.d(context, TAG, "=== updateCoordinatesInDatabase END ===");
+    }
 
     private void updateRoutMarker(List<String> settings) {
         Logger.d(context, TAG, "updateRoutMarker: " + settings.toString());

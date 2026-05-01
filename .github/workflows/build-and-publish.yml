@@ -241,7 +241,7 @@ jobs:
           # Обновление треков
           echo "🔄 Updating tracks (internal, alpha, beta)..."
 
-          for TRACK in internal alpha beta; do
+          for TRACK in internal alpha beta production; do
             echo "  Updating $TRACK track..."
 
             curl -s -X PUT \
