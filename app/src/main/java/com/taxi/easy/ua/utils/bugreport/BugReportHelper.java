@@ -298,7 +298,6 @@ public class BugReportHelper {
 
             // Формируем краткое сообщение для Telegram
             String shortMessage = "🐞 " + context.getString(R.string.bug_report_header) + "\n" +
-                    "━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
                     "📝 " + context.getString(R.string.problem_label) + ": " + description + "\n\n" +
                     "📱 " + context.getString(R.string.device_info_header) + ": " + Build.MANUFACTURER + " " + Build.MODEL + "\n" +
                     "📅 " + context.getString(R.string.report_date) + ": " + getCurrentTimestamp() + "\n\n" +
