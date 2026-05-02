@@ -458,7 +458,7 @@
     <string name="finish_info">Заказ снят</string>
     <string name="no_options">В Вашем заказе нет дополнительных опций</string>
     <string name="check_cost_message">Ожидайте, идет расчет стоимости поездки...</string>
-    <string name="android_version">Версия Андроида:</string>
+
     <string name="device">Устройство:</string>
     <string name="time_car_found">Время поиска машины подошло к концу</string>
     <string name="cancel_car_found_time">Нажмите кнопку Ок для отмены текущего заказа и перехода к новому заказу</string> <string name="alfa_test">(Альфа-тестирование)</string>
@@ -472,7 +472,7 @@
     <string name="language">🌐️ Язык</string>
     <string name="item_settings">Настройки</string>
     <string name="save_btn">Сохранить</string>
-    <string name="close">Закрыть</string>
+
     <string name="ok_add_cost">Подтвердить</string>
     <string name="add_cost_btn">Хочу быстрее</string>
     <string name="addCostBonusMessage">Для более быстрого поиска авто закажите за наличные или с оплатой поездки картой</string>
@@ -605,7 +605,7 @@
 
 Нажмите \"Настройки\" для проверки.</string>
     <string name="settings">Настройки</string>
-    <string name="cancel">Отмена</string>
+
 
     <!-- Предупреждение о подозрительной локации -->
     <string name="suspicious_location_warning">Обнаружена подозрительная локация</string>
@@ -640,7 +640,7 @@
     <string name="location_valid">Локация проверена</string>
     <string name="location_invalid">Локация недостоверна</string>
     <string name="location_blocked_title">Локация заблокирована</string>
-    <string name="location_blocked_message">Невозможно использовать текущую геолокацию по следующим причинам:</string>
+    <string name="location_blocked_message">Ошибка геолокации:</string>
     <string name="mock_provider_detected">Обнаружен mock-провайдер (эмуляция GPS)</string>
     <string name="zero_coordinates">Нулевые координаты (0,0)</string>
     <string name="location_blocked_toast">Локация недоступна. Проверьте настройки GPS.</string>
@@ -741,4 +741,127 @@
     <string name="wether">Погода в г.%s</string>
     <string name="searching_address">Поиск адреса...</string>
     <string name="phone_header">ТЕЛЕФОН</string>
+    <!-- GPS ошибки -->
+    <string name="gnss_error_message">📡 GPS не ловит спутники. Выйдите на улицу.</string>
+    <string name="gnss_error_action">Закрыть</string>
+    <!-- BugReportHelper -->
+    <string name="bug_report_manager_title">📋 Менеджер баг-репортов</string>
+    <string name="close">Закрыть</string>
+    <string name="generating_report">Генерация отчета...</string>
+    <string name="report_generated">✅ Отчет сгенерирован</string>
+    <string name="generate_report_hint">Нажмите \'Сгенерировать отчет\'</string>
+    <string name="generate_report_first">Сначала сгенерируйте отчет</string>
+    <string name="report_copied">📋 Отчет скопирован в буфер</string>
+    <string name="sent_to_telegram">✅ Отправлено в Telegram</string>
+    <string name="sent_to_telegram_with_logs">✅ Отправлено в Telegram с логами (%d KB)</string>
+    <string name="report_saved">✅ Отчет сохранен: %s</string>
+    <string name="error_saving_report">❌ Ошибка сохранения: %s</string>
+    <string name="share_report">Поделиться отчетом</string>
+    <string name="error_sharing">Ошибка: %s</string>
+    <string name="bug_report_subject">Bug Report - Taxi Easy UA</string>
+    <string name="clear_logs_title">Очистка логов</string>
+    <string name="clear_logs_message">Вы уверены, что хотите очистить файлы логов?</string>
+    <string name="clear">Очистить</string>
+    <string name="cancel">Отмена</string>
+    <string name="logs_cleared">✅ Логи очищены</string>
+    <string name="error_clearing_logs">❌ Ошибка очистки логов</string>
+    <string name="logs_not_found">❌ Логи не найдены</string>
+    <string name="enter_problem_description">Пожалуйста, опишите проблему</string>
+    <string name="description_too_long">Описание не должно превышать 500 символов</string>
+    <string name="problem_description_title">📝 Описание проблемы</string>
+    <string name="problem_label">Проблема</string>
+    <string name="steps_label">Шаги для воспроизведения</string>
+    <string name="expected_label">Ожидаемый результат</string>
+    <string name="actual_label">Фактический результат</string>
+
+    <!-- Заголовки отчета -->
+    <string name="bug_report_header">БАГ-РЕПОРТ TAXI EASY UA</string>
+    <string name="report_date">Дата</string>
+    <string name="device_info_header">ИНФОРМАЦИЯ О УСТРОЙСТВЕ</string>
+    <string name="app_info_header">🚕 ИНФОРМАЦИЯ О ПРИЛОЖЕНИИ</string>
+    <string name="user_info_header">👤 ПОЛЬЗОВАТЕЛЬ</string>
+    <string name="settings_info_header">⚙️ НАСТРОЙКИ</string>
+    <string name="system_info_header">🔧 СИСТЕМА</string>
+    <string name="problem_description_header">📝 ОПИСАНИЕ ПРОБЛЕМЫ</string>
+
+    <!-- Плейсхолдеры -->
+    <string name="problem_placeholder">Пожалуйста, опишите проблему здесь:</string>
+    <string name="steps_placeholder">Шаги для воспроизведения:</string>
+    <string name="expected_result_placeholder">Ожидаемый результат:</string>
+    <string name="actual_result_placeholder">Фактический результат:</string>
+
+    <!-- Поля информации -->
+    <string name="device_model">Модель</string>
+    <string name="android_version">Android версия</string>
+    <string name="processor">Процессор</string>
+    <string name="screen_resolution">Экран</string>
+    <string name="ram">RAM</string>
+    <string name="free_storage">Свободно памяти</string>
+    <string name="android_id">Android ID</string>
+    <string name="device_brand">Производитель</string>
+    <string name="app_version">Версия приложения</string>
+    <string name="current_city">Город</string>
+    <string name="payment_type">Тип оплаты</string>
+    <string name="network_status">Статус сети</string>
+    <string name="connected">Подключен</string>
+    <string name="no_network">Нет сети</string>
+
+    <string name="phone">Телефон</string>
+
+    <string name="currency_uah">грн</string>
+    <string name="user_data_not_available">Данные не доступны</string>
+    <string name="car_type">Тип авто</string>
+    <string name="tariff">Тариф</string>
+    <string name="discount">Скидка</string>
+    <string name="additional_cost">Доп. стоимость</string>
+    <string name="gps_permission">GPS разрешение</string>
+    <string name="notification_permission">Уведомления</string>
+    <string name="battery">Батарея</string>
+    <string name="charging">Зарядка</string>
+    <string name="logs">Логи</string>
+
+    <string name="unknown">Неизвестно</string>
+    <string name="not_specified">Не указан</string>
+    <string name="cash_payment">Наличные</string>
+
+    <string name="no_logs">Нет логов</string>
+    <string name="problem_description_hint">Опишите проблему:</string>
+    <string name="short_description_hint">Краткое описание *</string>
+    <string name="steps_to_reproduce_hint">Шаги для воспроизведения:</string>
+    <string name="steps_example_hint">1. ... 2. ... 3. ...</string>
+    <string name="expected_result_hint">Ожидаемый результат:</string>
+    <string name="expected_result_placeholder_hint">Что должно было произойти?</string>
+    <string name="actual_result_hint">Фактический результат:</string>
+    <string name="actual_result_placeholder_hint">Что произошло на самом деле?</string>
+    <string name="send">Отправить</string>
+    <string name="generate">Генерация</string>
+    <string name="copy">Копировать</string>
+    <string name="save">Сохранить</string>
+
+    <string name="telegram">Telegram</string>
+    <string name="telegram_with_logs">Telegram+Логи</string>
+    <string name="clear_logs">Очистить логи</string>
+    <string name="export_logs">Экспорт логов</string>
+
+    <!-- BugReportManager -->
+    <string name="bug_report_title">🐞 Баг-репорт</string>
+    <string name="bug_report_subtitle">Создайте детальный отчет об ошибке</string>
+    <string name="preview_title">📄 Превью отчета</string>
+    <string name="zero_chars">0 символов</string>
+
+    <string name="main_actions_title">⚡ Основные действия</string>
+    <string name="system_actions_title">🛠️ Системные операции</string>
+
+    <string name="telegram_with_logs_short">+ Логи</string>
+
+
+    <!-- BugDescriptionDialog -->
+
+    <string name="problem_description_subtitle">Детально опишите ошибку</string>
+
+    <string name="steps_hint">Шаги для воспроизведения (1. ... 2. ...)</string>
+    <string name="expected_hint">Ожидаемый результат</string>
+    <string name="actual_hint">Фактический результат</string>
+    <string name="error_sending">❌ Ошибка: %s</string>
+
 </resources>

@@ -453,7 +453,7 @@
     <string name="finish_info">Order cancelled</string>
     <string name="no_options">Your order does not have any additional options</string>
     <string name="check_cost_message">Please wait, getting trip cost...</string>
-    <string name="android_version">Android version:</string>
+
     <string name="device">Device:</string>
     <string name="time_car_found">The time to search for a car has expired</string>
     <string name="cancel_car_found_time">Click the OK button to cancel the current order and proceed to a new order</string>
@@ -468,7 +468,7 @@
     <string name="language">🌐️ Language</string>
     <string name="item_settings">Settings</string>
     <string name="save_btn">Save</string>
-    <string name="close">Close</string>
+
     <string name="ok_add_cost">Confirm</string>
     <string name="add_cost_btn">I want it faster</string>
     <string name="addCostBonusMessage">For a faster car search, order in cash or pay for the trip by card</string>
@@ -598,7 +598,7 @@
 
 Tap "Settings" to check.</string>
     <string name="settings">Settings</string>
-    <string name="cancel">Cancel</string>
+
 
     <!-- Suspicious Location Warning -->
     <string name="suspicious_location_warning">Suspicious location detected</string>
@@ -633,7 +633,7 @@ Tap "Settings" to check.</string>
     <string name="location_valid">Location verified</string>
     <string name="location_invalid">Location unreliable</string>
     <string name="location_blocked_title">Location blocked</string>
-    <string name="location_blocked_message">The current geolocation cannot be used for the following reasons:</string>
+    <string name="location_blocked_message">Geolocation error:</string>
     <string name="mock_provider_detected">Mock provider (GPS emulation) detected</string>
     <string name="zero_coordinates">Zero coordinates (0,0)</string>
     <string name="location_blocked_toast">Location unavailable. Check your GPS settings.</string>
@@ -733,4 +733,125 @@ Tap "Settings" to check.</string>
     <string name="wether">Weather in %s</string>
     <string name="searching_address">Searching address ...</string>
     <string name="phone_header">PHONE</string>
+    <string name="gnss_error_message">📡 GPS cannot find satellites. Go outside.</string>
+    <string name="gnss_error_action">Close</string>
+    <!-- BugReportHelper -->
+    <string name="bug_report_manager_title">📋 Bug Report Manager</string>
+    <string name="close">Close</string>
+    <string name="generating_report">Generating report...</string>
+    <string name="report_generated">✅ Report generated</string>
+    <string name="generate_report_hint">Click \'Generate report\'</string>
+    <string name="generate_report_first">Generate report first</string>
+    <string name="report_copied">📋 Report copied to clipboard</string>
+    <string name="sent_to_telegram">✅ Sent to Telegram</string>
+    <string name="sent_to_telegram_with_logs">✅ Sent to Telegram with logs (%d KB)</string>
+    <string name="report_saved">✅ Report saved: %s</string>
+    <string name="error_saving_report">❌ Error saving: %s</string>
+    <string name="share_report">Share report</string>
+    <string name="error_sharing">Error: %s</string>
+    <string name="bug_report_subject">Bug Report - Taxi Easy UA</string>
+    <string name="clear_logs_title">Clear logs</string>
+    <string name="clear_logs_message">Are you sure you want to clear log files?</string>
+    <string name="clear">Clear</string>
+    <string name="cancel">Cancel</string>
+    <string name="logs_cleared">✅ Logs cleared</string>
+    <string name="error_clearing_logs">❌ Error clearing logs</string>
+    <string name="logs_not_found">❌ Logs not found</string>
+    <string name="enter_problem_description">Please describe the problem</string>
+    <string name="description_too_long">Description must not exceed 500 characters</string>
+    <string name="problem_description_title">📝 Problem description</string>
+    <string name="problem_label">Problem</string>
+    <string name="steps_label">Steps to reproduce</string>
+    <string name="expected_label">Expected result</string>
+    <string name="actual_label">Actual result</string>
+
+    <!-- Report headers -->
+    <string name="bug_report_header">BUG REPORT TAXI EASY UA</string>
+    <string name="report_date">Date</string>
+    <string name="device_info_header">DEVICE INFORMATION</string>
+    <string name="app_info_header">🚕 APPLICATION INFORMATION</string>
+    <string name="user_info_header">👤 USER</string>
+    <string name="settings_info_header">⚙️ SETTINGS</string>
+    <string name="system_info_header">🔧 SYSTEM</string>
+    <string name="problem_description_header">📝 PROBLEM DESCRIPTION</string>
+
+    <!-- Placeholders -->
+    <string name="problem_placeholder">Please describe the problem here:</string>
+    <string name="steps_placeholder">Steps to reproduce:</string>
+    <string name="expected_result_placeholder">Expected result:</string>
+    <string name="actual_result_placeholder">Actual result:</string>
+
+    <!-- Info fields -->
+    <string name="device_model">Model</string>
+    <string name="android_version">Android version</string>
+    <string name="processor">Processor</string>
+    <string name="screen_resolution">Screen</string>
+    <string name="ram">RAM</string>
+    <string name="free_storage">Free storage</string>
+    <string name="android_id">Android ID</string>
+    <string name="device_brand">Brand</string>
+    <string name="app_version">App version</string>
+    <string name="current_city">City</string>
+    <string name="payment_type">Payment type</string>
+    <string name="network_status">Network status</string>
+    <string name="connected">Connected</string>
+    <string name="no_network">No network</string>
+
+    <string name="phone">Phone</string>
+
+    <string name="currency_uah">UAH</string>
+    <string name="user_data_not_available">Data not available</string>
+    <string name="car_type">Car type</string>
+    <string name="tariff">Tariff</string>
+    <string name="discount">Discount</string>
+    <string name="additional_cost">Additional cost</string>
+    <string name="gps_permission">GPS permission</string>
+    <string name="notification_permission">Notifications</string>
+    <string name="battery">Battery</string>
+    <string name="charging">Charging</string>
+    <string name="logs">Logs</string>
+
+    <string name="unknown">Unknown</string>
+    <string name="not_specified">Not specified</string>
+    <string name="cash_payment">Cash</string>
+
+    <string name="no_logs">No logs</string>
+    <!-- Dialog strings -->
+    <string name="problem_description_hint">Describe the problem:</string>
+    <string name="short_description_hint">Short description *</string>
+    <string name="steps_to_reproduce_hint">Steps to reproduce:</string>
+    <string name="steps_example_hint">1. ... 2. ... 3. ...</string>
+    <string name="expected_result_hint">Expected result:</string>
+    <string name="expected_result_placeholder_hint">What should have happened?</string>
+    <string name="actual_result_hint">Actual result:</string>
+    <string name="actual_result_placeholder_hint">What actually happened?</string>
+    <string name="send">Send</string>
+    <string name="generate">Generate</string>
+    <string name="copy">Copy</string>
+    <string name="save">Save</string>
+
+    <string name="telegram">Telegram</string>
+    <string name="telegram_with_logs">Telegram+Logs</string>
+    <string name="clear_logs">Clear logs</string>
+    <string name="export_logs">Export logs</string>
+
+    <!-- BugReportManager -->
+    <string name="bug_report_title">🐞 Bug Report</string>
+    <string name="bug_report_subtitle">Create a detailed error report</string>
+    <string name="preview_title">📄 Report Preview</string>
+    <string name="zero_chars">0 characters</string>
+
+    <string name="main_actions_title">⚡ Main Actions</string>
+    <string name="system_actions_title">🛠️ System Operations</string>
+    <string name="telegram_with_logs_short">+ Logs</string>
+
+    <!-- BugDescriptionDialog -->
+
+    <string name="problem_description_subtitle">Describe the error in detail</string>
+
+    <string name="steps_hint">Steps to reproduce (1. ... 2. ...)</string>
+    <string name="expected_hint">Expected result</string>
+    <string name="actual_hint">Actual result</string>
+    <string name="error_sending">❌ Error: %s</string>
+
 </resources>

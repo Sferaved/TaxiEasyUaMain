@@ -96,6 +96,7 @@ import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
+import com.taxi.easy.ua.utils.bugreport.BugReportHelper;
 import com.taxi.easy.ua.utils.centrifugo.CentrifugoManager;
 import com.taxi.easy.ua.utils.connect.NetworkMonitor;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
@@ -259,7 +260,7 @@ public class MainActivity extends AppCompatActivity {
     public AppReviewManager getAppReviewManager() {
         return appReviewManager;
     }
-
+    private BugReportHelper bugReportHelper;
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -267,6 +268,8 @@ public class MainActivity extends AppCompatActivity {
         String localeCode = (String) MyApplication.sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().getLanguage());
         applyLocale(localeCode);
         super.onCreate(savedInstanceState);
+        bugReportHelper = new BugReportHelper(this);
+
         if (getIntent() != null && getIntent().hasExtra("shortcut_action")) {
             String action = getIntent().getStringExtra("shortcut_action");
 
@@ -1438,82 +1441,86 @@ public class MainActivity extends AppCompatActivity {
 
         }
         if (item.getItemId() == R.id.send_email_admin) {
-            // Инфлейтим кастомный layout
-            View dialogView = getLayoutInflater().inflate(R.layout.dialog_send_report, null);
-
-            // Находим все элементы
-            TextInputEditText etMessage = dialogView.findViewById(R.id.discinp);
-//            TextView tvLogInfo = dialogView.findViewById(R.id.dialogMessage);
-            ProgressBar progressBar = dialogView.findViewById(R.id.progressBar);
-            TextView tvCharCounter = dialogView.findViewById(R.id.charCounter);
-            AppCompatButton negativeButton = dialogView.findViewById(R.id.negativeButton);
-            AppCompatButton positiveButton = dialogView.findViewById(R.id.positiveButton);
-
-
-
-            // Устанавливаем начальное значение счетчика
-            tvCharCounter.setText(String.format(getString(R.string.char_counter), 0));
-
-            // Счетчик символов
-            etMessage.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    int length = s.length();
-                    tvCharCounter.setText(String.format(getString(R.string.char_counter), length));
-                    progressBar.setProgress(Math.min(length, 500));
-
-                    if (length > 500) {
-                        tvCharCounter.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.error_red));
-                        progressBar.setProgressTintList(ColorStateList.valueOf(ContextCompat.getColor(MainActivity.this, R.color.error_red)));
-                    } else if (length > 450) {
-                        tvCharCounter.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.warning_orange));
-                        progressBar.setProgressTintList(ColorStateList.valueOf(ContextCompat.getColor(MainActivity.this, R.color.warning_orange)));
-                    } else {
-                        tvCharCounter.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.gray_500));
-                        progressBar.setProgressTintList(ColorStateList.valueOf(ContextCompat.getColor(MainActivity.this, R.color.colorPrimaryDark)));
-                    }
-                }
-
-                @Override
-                public void afterTextChanged(Editable s) {}
-            });
-
-            // Создаем диалог
-            AlertDialog.Builder builder =
-                    new AlertDialog.Builder(this, R.style.CustomAlertDialogTheme);
-            builder.setView(dialogView);
-
-            AlertDialog dialog = builder.create();
-            dialog.setCancelable(true);
-
-            // Обработка кнопок
-            positiveButton.setOnClickListener(v -> {
-                String message = etMessage.getText().toString().trim();
-
-                if (message.length() > 500) {
-                    Toast.makeText(this, getString(R.string.error_message_too_long), Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                if (message.isEmpty()) {
-                    Toast.makeText(this, getString(R.string.error_message_empty), Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                String logFilePath = getExternalFilesDir(null) + "/app_log.txt";
-                TelegramUtils.sendErrorToTelegram(generateEmailBody(message), logFilePath);
-
-                Toast.makeText(this, getString(R.string.report_sent), Toast.LENGTH_SHORT).show();
-                dialog.dismiss();
-            });
-
-            negativeButton.setOnClickListener(v -> dialog.dismiss());
-
-            dialog.show();
+            bugReportHelper.showBugReportManager();
+            return true;
         }
+//        if (item.getItemId() == R.id.send_email_admin) {
+//            // Инфлейтим кастомный layout
+//            View dialogView = getLayoutInflater().inflate(R.layout.dialog_send_report, null);
+//
+//            // Находим все элементы
+//            TextInputEditText etMessage = dialogView.findViewById(R.id.discinp);
+////            TextView tvLogInfo = dialogView.findViewById(R.id.dialogMessage);
+//            ProgressBar progressBar = dialogView.findViewById(R.id.progressBar);
+//            TextView tvCharCounter = dialogView.findViewById(R.id.charCounter);
+//            AppCompatButton negativeButton = dialogView.findViewById(R.id.negativeButton);
+//            AppCompatButton positiveButton = dialogView.findViewById(R.id.positiveButton);
+//
+//
+//
+//            // Устанавливаем начальное значение счетчика
+//            tvCharCounter.setText(String.format(getString(R.string.char_counter), 0));
+//
+//            // Счетчик символов
+//            etMessage.addTextChangedListener(new TextWatcher() {
+//                @Override
+//                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+//
+//                @Override
+//                public void onTextChanged(CharSequence s, int start, int before, int count) {
+//                    int length = s.length();
+//                    tvCharCounter.setText(String.format(getString(R.string.char_counter), length));
+//                    progressBar.setProgress(Math.min(length, 500));
+//
+//                    if (length > 500) {
+//                        tvCharCounter.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.error_red));
+//                        progressBar.setProgressTintList(ColorStateList.valueOf(ContextCompat.getColor(MainActivity.this, R.color.error_red)));
+//                    } else if (length > 450) {
+//                        tvCharCounter.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.warning_orange));
+//                        progressBar.setProgressTintList(ColorStateList.valueOf(ContextCompat.getColor(MainActivity.this, R.color.warning_orange)));
+//                    } else {
+//                        tvCharCounter.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.gray_500));
+//                        progressBar.setProgressTintList(ColorStateList.valueOf(ContextCompat.getColor(MainActivity.this, R.color.colorPrimaryDark)));
+//                    }
+//                }
+//
+//                @Override
+//                public void afterTextChanged(Editable s) {}
+//            });
+//
+//            // Создаем диалог
+//            AlertDialog.Builder builder =
+//                    new AlertDialog.Builder(this, R.style.CustomAlertDialogTheme);
+//            builder.setView(dialogView);
+//
+//            AlertDialog dialog = builder.create();
+//            dialog.setCancelable(true);
+//
+//            // Обработка кнопок
+//            positiveButton.setOnClickListener(v -> {
+//                String message = etMessage.getText().toString().trim();
+//
+//                if (message.length() > 500) {
+//                    Toast.makeText(this, getString(R.string.error_message_too_long), Toast.LENGTH_SHORT).show();
+//                    return;
+//                }
+//
+//                if (message.isEmpty()) {
+//                    Toast.makeText(this, getString(R.string.error_message_empty), Toast.LENGTH_SHORT).show();
+//                    return;
+//                }
+//
+//                String logFilePath = getExternalFilesDir(null) + "/app_log.txt";
+//                TelegramUtils.sendErrorToTelegram(generateEmailBody(message), logFilePath);
+//
+//                Toast.makeText(this, getString(R.string.report_sent), Toast.LENGTH_SHORT).show();
+//                dialog.dismiss();
+//            });
+//
+//            negativeButton.setOnClickListener(v -> dialog.dismiss());
+//
+//            dialog.show();
+//        }
         if (item.getItemId() == R.id.send_email) {
             String subject = getString(R.string.android);
             String body = getString(R.string.good_day);
