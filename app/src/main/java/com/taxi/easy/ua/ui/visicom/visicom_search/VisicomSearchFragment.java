@@ -225,114 +225,7 @@ public class VisicomSearchFragment extends Fragment {
         viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
 
     }
-    private void firstLocation() {
 
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context);
-        Logger.d(context, TAG, "firstLocation: ");
-        gpsbut.setText(R.string.cancel_gps);
-
-        gpsbut.setOnClickListener(v -> {
-
-            if (fusedLocationProviderClient != null && locationCallback != null) {
-                fusedLocationProviderClient.removeLocationUpdates(locationCallback);
-            }
-
-            gpsbut.setText(R.string.change);
-            gpsbut.setOnClickListener(v1 -> {
-                gpsButSetOnClickListener (locationManager);
-            });
-
-        });
-
-//        locationCallback = new LocationCallback() {
-//
-//            @Override
-//            public void onLocationResult(@NonNull LocationResult locationResult) {
-//                // Обработка полученных местоположений
-//                stopLocationUpdates();
-//                viewModel.setStatusX(false);
-//                // Обработка полученных местоположений
-//                List<Location> locations = locationResult.getLocations();
-//                Logger.d(context, TAG, "onLocationResult: locations 222222" + locations);
-//
-//                if (!locations.isEmpty()) {
-//                    Location firstLocation = locations.get(0);
-//
-//                    double latitude = firstLocation.getLatitude();
-//                    double longitude = firstLocation.getLongitude();
-//
-//
-//                    List<String> stringList = logCursor(MainActivity.CITY_INFO);
-//                    String api = stringList.get(2);
-//
-//                    Locale locale = Locale.getDefault();
-//                    String language = locale.getLanguage(); // Получаем язык устройства
-//                    String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-//                    String urlFrom = baseUrl + "/" + api + "/android/fromSearchGeoLocal/" + latitude + "/" + longitude + "/" + language;
-//                    FromJSONParserRetrofit.sendURL(urlFrom, result -> {
-//                        // Обработка результата в основном потоке
-//                        if (result != null) {
-//                            Logger.d(context, TAG, "Результат: " + result);
-//                            String FromAdressString = result.get("route_address_from");
-//
-//                            if (FromAdressString != null && FromAdressString.contains("Точка на карте")) {
-//                                FromAdressString = context.getString(R.string.startPoint);
-//                            }
-//                            CityFinder cityFinder = new CityFinder(context, latitude, longitude , FromAdressString);
-//                            cityFinder.findCity(latitude, longitude);
-//                            updateMyPosition(latitude, longitude, FromAdressString, context);
-//
-//                        fromEditAddress.setText(FromAdressString);
-//                        progressBar.setVisibility(GONE);
-//
-//                        assert FromAdressString != null;
-//                        fromEditAddress.setSelection(FromAdressString.length());
-//
-//
-//
-//
-//
-//
-//                        String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-//                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-//                        @SuppressLint("Recycle") Cursor cursor = database.rawQuery(query, null);
-//
-//                        cursor.moveToFirst();
-//
-//                            // Получите значения полей из первой записи
-//                        @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-//                        @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-//                        @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
-//
-//                        Logger.d(context, TAG, "onLocationResult:FromAdressString " + FromAdressString);
-//
-//                        List<String> settings = new ArrayList<>();
-//
-//                        if (originLatitude == toLatitude) {
-//
-//                            finish = "";
-//                        }
-//
-//                        settings.add(Double.toString(latitude));
-//                        settings.add(Double.toString(longitude));
-//                        settings.add(Double.toString(latitude));
-//                        settings.add(Double.toString(longitude));
-//                        settings.add(FromAdressString);
-//                        settings.add(finish);
-//                        updateRoutMarker(settings);
-//
-//                        } else {
-//                            Logger.d(context, TAG, "Ошибка при выполнении запроса");
-//                        }
-//                    });
-//
-//                }
-//            }
-//
-//        };
-//
-//        startLocationUpdates();
-    }
 
     private static void updateMyPosition(Double startLat, Double startLan, String position, Context context) {
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -698,9 +591,6 @@ public class VisicomSearchFragment extends Fragment {
             return true; // сигнализирует, что обработка завершена
         });
 
-        gpsbut.setOnClickListener(v -> {
-            gpsButSetOnClickListener (locationManager);
-        });
 
         if(start.equals("ok")) {
             oldAddresses("start");
@@ -709,7 +599,7 @@ public class VisicomSearchFragment extends Fragment {
             text_toError.setVisibility(View.GONE);
             root.findViewById(R.id.textwhere).setVisibility(View.GONE);
             root.findViewById(R.id.num2).setVisibility(View.GONE);
-//            gpsbut.setVisibility(GONE);
+            gpsbut.setVisibility(GONE);
         }
         if(end.equals("ok")) {
             oldAddresses("finish");
@@ -971,67 +861,7 @@ public class VisicomSearchFragment extends Fragment {
 
         }
     }
-    private void gpsButSetOnClickListener (LocationManager locationManager) {
-        viewModel.setStatusX(true);
-        viewModel.setStatusGpsUpdate(false);
-        if (locationManager != null) {
-            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
 
-                if(loadPermissionRequestCount() >= 3  && !location_update) {
-                    MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment(getString(R.string.location_on));
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                } else {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                            // Обработка отсутствия необходимых разрешений
-                            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION);
-                        }
-                    } else {
-                        // Для версий Android ниже 10
-                        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                                || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                            // Обработка отсутствия необходимых разрешений
-                            checkPermission(Manifest.permission.ACCESS_FINE_LOCATION);
-                            checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION);
-                        }
-                    }
-                }
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                        // Обработка отсутствия необходимых разрешений
-                        location_update = true;
-                    }
-                } else location_update = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                        || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-
-
-                Logger.d(context, TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
-                // GPS включен, выполните ваш код здесь
-                if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
-                    Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
-                    Logger.w(context, TAG, "NO INTERNET - Showing toast message");
-                }
-
-                else  if(location_update) {
-                    String searchText = getString(R.string.search_text) + "...";
-
-                    progressBar.setVisibility(View.VISIBLE);
-                    Toast.makeText(context, searchText, Toast.LENGTH_SHORT).show();
-                    firstLocation();
-                }
-            } else {
-                MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
-                bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-            }
-
-        } else {
-            // GPS выключен, выполните необходимые действия
-            // Например, показать диалоговое окно с предупреждением о включении GPS
-            MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment("");
-            bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-        }
-    };
     private void performAddressSearch(String inputText, String point) {
 
         try {
