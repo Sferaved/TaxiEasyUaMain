@@ -853,5 +853,5 @@ Tap "Settings" to check.</string>
     <string name="expected_hint">Expected result</string>
     <string name="actual_hint">Actual result</string>
     <string name="error_sending">❌ Error: %s</string>
-
+    <string name="max_zoom">Maximum zoom</string>
 </resources>

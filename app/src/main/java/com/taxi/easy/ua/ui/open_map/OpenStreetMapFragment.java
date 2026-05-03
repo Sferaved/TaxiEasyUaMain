@@ -34,6 +34,7 @@ import android.provider.Settings;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -49,6 +50,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.GestureDetectorCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavController;
@@ -156,7 +158,12 @@ public class OpenStreetMapFragment extends Fragment {
     // Поток для маршрутов
     private static final Executor executor = Executors.newSingleThreadExecutor();
     private boolean userMovedMap = false;
-
+    private GestureDetectorCompat gestureDetector;
+    private boolean isMapDragging = false;
+    private double lastZoomLevel = 0;
+    private long lastZoomTime = 0;
+    private static final long ZOOM_COOLDOWN_MS = 500; // Задержка между зумированиями
+    private static final int MAX_CONSECUTIVE_ZOOMS = 3; // Максимум последовательных приближений
     @SuppressLint({"MissingInflatedId", "InflateParams", "UseCompatLoadingForDrawables"})
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -202,7 +209,7 @@ public class OpenStreetMapFragment extends Fragment {
         mapController.setZoom(16.0); // Начальный зум
         mapController.setCenter(new GeoPoint(0.0, 0.0)); // Временный центр
         Logger.d(ctx, TAG, "MapView initialized with zoom=16.0");
-
+        setupMapTapZoom();
         // Инициализация остальных компонентов
         initializeArguments();
         initializePermissionLauncher();
@@ -216,7 +223,85 @@ public class OpenStreetMapFragment extends Fragment {
 
         return root;
     }
+    private void setupMapTapZoom() {
+        gestureDetector = new GestureDetectorCompat(requireContext(), new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onSingleTapConfirmed(@NonNull MotionEvent e) {
+                if (map == null) return false; // Убираем проверку userMovedMap
 
+                // Защита от слишком частых нажатий
+                long currentTime = System.currentTimeMillis();
+                if (currentTime - lastZoomTime < ZOOM_COOLDOWN_MS) {
+                    return false;
+                }
+                lastZoomTime = currentTime;
+
+                // Получаем координаты тапа
+                Projection proj = map.getProjection();
+                GeoPoint tappedPoint = (GeoPoint) proj.fromPixels((int) e.getX(), (int) e.getY());
+
+                if (tappedPoint != null) {
+                    // Анимированное перемещение в точку тапа
+                    mapController.animateTo(tappedPoint);
+
+                    // Увеличиваем зум после анимации
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                        if (map != null) {
+                            double currentZoom = map.getZoomLevelDouble();
+                            double maxZoom = map.getMaxZoomLevel();
+
+                            // Проверяем, не достигнут ли максимум
+                            if (currentZoom >= maxZoom - 0.5) {
+                                Toast.makeText(ctx, ctx.getString(R.string.max_zoom), Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+
+                            double newZoom = Math.min(currentZoom + 1.0, maxZoom);
+                            mapController.setZoom(newZoom);
+                            lastZoomLevel = newZoom;
+
+                            // Обновляем маркеры ТОЛЬКО если пользователь уже перемещал карту
+                            // или если это явно режим выбора маркера
+                            if (userMovedMap || markerType != null) {
+                                if ("startMarker".equals(markerType)) {
+                                    startPoint = tappedPoint;
+                                    try {
+                                        dialogMarkerStartPoint(ctx);
+                                    } catch (MalformedURLException ex) {
+                                        Logger.e(ctx, TAG, "Error updating start point: " + ex.getMessage());
+                                    }
+                                } else if ("finishMarker".equals(markerType)) {
+                                    endPoint = tappedPoint;
+                                    try {
+                                        dialogMarkersEndPoint(ctx);
+                                    } catch (Exception ex) {
+                                        Logger.e(ctx, TAG, "Error updating finish point: " + ex.getMessage());
+                                    }
+                                }
+                            }
+                        }
+                    }, 300);
+                    return true;
+                }
+                return false;
+            }
+
+            @Override
+            public boolean onDoubleTap(@NonNull MotionEvent e) {
+                if (map == null) return false;
+
+                double currentZoom = map.getZoomLevelDouble();
+                double maxZoom = map.getMaxZoomLevel();
+
+                if (currentZoom >= maxZoom - 0.5) {
+                    return true;
+                }
+
+                mapController.zoomIn();
+                return true;
+            }
+        });
+    }
     private boolean isNetworkAvailable() {
         ConnectivityManager cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
@@ -372,7 +457,56 @@ public class OpenStreetMapFragment extends Fragment {
                     arguments.getString("finishMarker", "").equals("ok") ? "finishMarker" : null;
         }
     }
+    // Показывает индикатор поиска адреса
+    private void showSearchProgress() {
+        if (getActivity() == null) return;
+        getActivity().runOnUiThread(() -> {
+            if (progressBar != null) {
+                progressBar.setVisibility(View.VISIBLE);
+            }
+            Toast.makeText(ctx, ctx.getString(R.string.searching_address), Toast.LENGTH_SHORT).show();
+        });
+    }
+    private void hideSearchProgress() {
+        if (getActivity() == null) return;
+        getActivity().runOnUiThread(() -> {
+            if (progressBar != null) {
+                progressBar.setVisibility(View.GONE);
+            }
+        });
+    }
+    // Скрывает индикатор поиска адреса
+    private void handleApiResponse(Response<ApiResponse> response, Context localizedContext) {
+        Logger.d(ctx, TAG, "onResponse called, response successful: " + response.isSuccessful());
+        if (!isAdded()) {
+            Logger.e(ctx, TAG, "Fragment is not attached");
+            hideSearchProgress();
+            return;
+        }
+        if (response.isSuccessful() && response.body() != null) {
+            ApiResponse apiResponse = response.body();
+            String result = apiResponse.getResult();
+            Logger.d(ctx, TAG, "API response result: " + result);
 
+            if (map == null || map.getRepository() == null) {
+                Logger.e(ctx, TAG, "Map or repository is null");
+                hideSearchProgress();
+                return;
+            }
+
+            if ("startMarker".equals(markerType)) {
+                handleStartMarkerResponse(result, localizedContext);
+            } else if ("finishMarker".equals(markerType)) {
+                handleFinishMarkerResponse(result, localizedContext);
+            }
+            hideSearchProgress();
+
+        } else {
+            Logger.e(ctx, TAG, "API response unsuccessful or body is null, response code: " + response.code());
+            hideSearchProgress();
+            Toast.makeText(ctx, "Ошибка получения адреса", Toast.LENGTH_SHORT).show();
+        }
+    }
     // Инициализация UI элементов
     private void initializeUI() {
         progressBar = binding.progressBar;
@@ -464,23 +598,32 @@ public class OpenStreetMapFragment extends Fragment {
     private void setupMapTouchListener() {
         map.setOnTouchListener((v, event) -> {
             int action = event.getAction();
+
+            // Передаем событие в GestureDetector для обработки тапов
+            if (gestureDetector != null) {
+                gestureDetector.onTouchEvent(event);
+            }
+
             GeoPoint centerPoint = (GeoPoint) map.getMapCenter();
-            Logger.d(ctx, TAG, "Map touch event: action=" + action + ", centerPoint=" + centerPoint);
 
             if (action == MotionEvent.ACTION_DOWN) {
                 binding.centerMarker.setVisibility(VISIBLE);
                 removeMarkerOnTouchDown();
+                isMapDragging = false;
 
-            }else if (action == MotionEvent.ACTION_UP) {
-                userMovedMap = true;
-                handleTouchUp(centerPoint);
-                return true;
             } else if (action == MotionEvent.ACTION_MOVE) {
+                isMapDragging = true;
                 updateZoomLevel();
+
+            } else if (action == MotionEvent.ACTION_UP) {
+                if (isMapDragging) {
+                    userMovedMap = true;
+                    handleTouchUp(centerPoint);
+                }
+                return true;
             }
             return false;
         });
-
     }
 
     // Удаление маркера при начале касания
@@ -512,12 +655,13 @@ public class OpenStreetMapFragment extends Fragment {
             if ("startMarker".equals(markerType)) {
                 sharedPreferencesHelperMain.saveValue("on_gps", false);
                 startPoint = centerPoint;
+                userMovedMap = true; // ← Добавьте здесь
                 dialogMarkerStartPoint(ctx);
             } else if ("finishMarker".equals(markerType)) {
                 endPoint = centerPoint;
+                userMovedMap = true; // ← Добавьте здесь
                 dialogMarkersEndPoint(ctx);
             }
-
         } catch (MalformedURLException | JSONException | InterruptedException e) {
             Logger.e(ctx, TAG, "Error handling marker point on ACTION_UP" + e);
             FirebaseCrashlytics.getInstance().recordException(e);
@@ -540,6 +684,8 @@ public class OpenStreetMapFragment extends Fragment {
 
     // Инициализация позиции карты
     private void initializeMapPosition() {
+        setupMapTapZoom();
+        setupMapTapZoom(); // Добавьте эту строку
         newShowRout();
     }
 
@@ -726,7 +872,7 @@ public class OpenStreetMapFragment extends Fragment {
             map.invalidate();
         } catch (MalformedURLException | InterruptedException | JSONException e) {
             Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
-            Logger.w(requireActivity(), TAG, "NO INTERNET - Showing toast message");
+            Logger.w(requireContext(), TAG, "NO INTERNET - Showing toast message");
         }
     }
 
@@ -772,27 +918,23 @@ public class OpenStreetMapFragment extends Fragment {
         apiService = retrofit.create(ApiService.class);
         Logger.d(ctx, TAG, "Request URL: " + retrofit.baseUrl());
     }
-    private void showSearchProgress() {
-        if (getActivity() == null) return;
-        getActivity().runOnUiThread(() -> {
-            if (progressBar != null) {
-                progressBar.setVisibility(View.VISIBLE);
-            }
-            Toast.makeText(ctx, ctx.getString(R.string.searching_address), Toast.LENGTH_SHORT).show();
-        });
-    }
+
+    // Вызов API для получения адреса по координатам
     // Вызов API для получения адреса по координатам
     private void makeApiCall(double latitude, double longitude, Context context) {
-        Logger.d(context, TAG, "makeApiCall started with latitude=" + latitude + ", longitude=" + longitude + ", map=" + map + ", markerType=" + markerType);
+        Logger.d(context, TAG, "makeApiCall started with latitude=" + latitude + ", longitude=" + longitude);
+
+        // ПОКАЗЫВАЕМ ПРОГРЕСС
         showSearchProgress();
+
         if (map == null) {
             Logger.e(context, TAG, "MapView is null, aborting API call");
+            hideSearchProgress();
             return;
         }
-
         if (markerType == null || (!"startMarker".equals(markerType) && !"finishMarker".equals(markerType))) {
             Logger.i(context, TAG, "Invalid markerType: " + markerType + ", defaulting to startMarker");
-            markerType = "startMarker"; // Fallback
+            markerType = "startMarker";
         }
         String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
         Logger.d(context, TAG, "localeCode=" + localeCode);
@@ -807,6 +949,7 @@ public class OpenStreetMapFragment extends Fragment {
 
         if (map == null) {
             Logger.e(context, TAG, "MapView is null");
+            hideSearchProgress();
             return;
         }
 
@@ -817,17 +960,19 @@ public class OpenStreetMapFragment extends Fragment {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
+                hideSearchProgress(); // СКРЫВАЕМ ПРОГРЕСС
                 handleApiResponse(response, localizedContext);
             }
 
             @Override
             public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
+                hideSearchProgress(); // СКРЫВАЕМ ПРОГРЕСС
                 Logger.e(context, TAG, "API call failed: " + t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
+                Toast.makeText(context, "Ошибка поиска: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }
-
     // Подготовка маркера перед API вызовом
     private void prepareMarker() {
         if (map == null) {
@@ -855,33 +1000,7 @@ public class OpenStreetMapFragment extends Fragment {
     }
 
     // Обработка ответа API
-    private void handleApiResponse(Response<ApiResponse> response, Context localizedContext) {
-        Logger.d(ctx, TAG, "onResponse called, response successful: " + response.isSuccessful());
-        if (!isAdded()) {
-            Logger.e(ctx, TAG, "Fragment is not attached");
-            return;
-        }
-        if (response.isSuccessful() && response.body() != null) {
-            ApiResponse apiResponse = response.body();
-            String result = apiResponse.getResult();
-            Logger.d(ctx, TAG, "API response result: " + result);
 
-            if (map == null || map.getRepository() == null) {
-                Logger.e(ctx, TAG, "Map or repository is null");
-                return;
-            }
-
-            if ("startMarker".equals(markerType)) {
-                handleStartMarkerResponse(result, localizedContext);
-            } else if ("finishMarker".equals(markerType)) {
-                handleFinishMarkerResponse(result, localizedContext);
-            }
-
-
-        } else {
-            Logger.e(ctx, TAG, "API response unsuccessful or body is null, response code: " + response.code());
-        }
-    }
 
     // Обработка ответа для начального маркера
     private void handleStartMarkerResponse(String result, Context localizedContext) {

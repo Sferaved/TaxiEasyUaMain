@@ -863,5 +863,5 @@
     <string name="expected_hint">Ожидаемый результат</string>
     <string name="actual_hint">Фактический результат</string>
     <string name="error_sending">❌ Ошибка: %s</string>
-
+    <string name="max_zoom">Максимальное приближение</string>
 </resources>
