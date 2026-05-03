@@ -576,7 +576,7 @@ public class OpenStreetMapFragment extends Fragment {
         map.setTilesScaledToDpi(true);
         map.setMinZoomLevel(0.0);
         map.setMaxZoomLevel(20.0);
-        map.getZoomController().setVisibility(CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT);
+        map.getZoomController().setVisibility(CustomZoomButtonsController.Visibility.ALWAYS);
         map.setScrollableAreaLimitDouble(null);
 
         Logger.d(ctx, TAG, "Map настроен");
