@@ -55,7 +55,6 @@ import androidx.navigation.Navigation;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
@@ -74,7 +73,6 @@ import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiClientMapbox;
 import com.taxi.easy.ua.ui.open_map.mapbox.key_mapbox.ApiResponseMapbox;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.visicom.visicom_search.key_visicom.ApiResponse;
-import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -1442,19 +1440,19 @@ public class VisicomSearchFragment extends Fragment {
                 }
 
             }
-            String newAddress = getString(R.string.address_on_map);
-
-            boolean isAddressExists = false;
-            for (String[] address : addresses) {
-                if (address.length > 0 && address[0].equals(newAddress)) {
-                    isAddressExists = true;
-                    break;
-                }
-            }
-
-            if (!isAddressExists) {
-                addresses.add(new String[]{newAddress, "", "", ""});
-            }
+//            String newAddress = getString(R.string.address_on_map);
+//
+//            boolean isAddressExists = false;
+//            for (String[] address : addresses) {
+//                if (address.length > 0 && address[0].equals(newAddress)) {
+//                    isAddressExists = true;
+//                    break;
+//                }
+//            }
+//
+//            if (!isAddressExists) {
+//                addresses.add(new String[]{newAddress, "", "", ""});
+//            }
 
 
         } catch (JSONException e) {
@@ -1853,12 +1851,12 @@ public class VisicomSearchFragment extends Fragment {
         //                    btn_ok.setVisibility(View.VISIBLE);
         db.close();
         c.close();
-        addresses.add(new String[]{
-                getString(R.string.address_on_map),
-                "",
-                "",
-                "",
-        });
+//        addresses.add(new String[]{
+//                getString(R.string.address_on_map),
+//                "",
+//                "",
+//                "",
+//        });
          addressesList = new ArrayList<>();
         for (String[] addressArray : addresses) {
             // Выбираем значение 'address' из массива и добавляем его в addressesList
@@ -2107,18 +2105,18 @@ public class VisicomSearchFragment extends Fragment {
         } else {
             Logger.d(context, TAG, "No results found.");
         }
-        String newAddress = getString(R.string.address_on_map);
-
-        boolean isAddressExists = false;
-        for (String[] address : addresses) {
-            if (address.length > 0 && address[0].equals(newAddress)) {
-                isAddressExists = true;
-                break;
-            }
-        }
-        if (!isAddressExists) {
-            addresses.add(new String[]{newAddress, "", "", ""});
-        }
+//        String newAddress = getString(R.string.address_on_map);
+//
+//        boolean isAddressExists = false;
+//        for (String[] address : addresses) {
+//            if (address.length > 0 && address[0].equals(newAddress)) {
+//                isAddressExists = true;
+//                break;
+//            }
+//        }
+//        if (!isAddressExists) {
+//            addresses.add(new String[]{newAddress, "", "", ""});
+//        }
 
         new Handler(Looper.getMainLooper()).post(() -> {
             addressesList = new ArrayList<>();

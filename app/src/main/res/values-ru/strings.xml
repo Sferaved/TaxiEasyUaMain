@@ -864,4 +864,13 @@
     <string name="actual_hint">Фактический результат</string>
     <string name="error_sending">❌ Ошибка: %s</string>
     <string name="max_zoom">Максимальное приближение</string>
+    <string name="inclusive_transport_hint">Вы можете изменить этот выбор в любое время в настройках приложения</string>
+    <string name="inclusiv_on">Инклюзивный транспорт включен</string>
+    <string name="inclusiv_off">Инклюзивный транспорт выключен</string>
+    <string name="location_searching">Поиск местоположения...</string>
+    <string name="location_processing">Обработка локации...</string>
+    <string name="location_getting_address">Определение адреса...</string>
+    <string name="location_calculating_cost">Расчет стоимости...</string>
+    <string name="location_timeout">Время ожидания локации истекло</string>
+    <string name="admin_phone_absent">Номер администратора не найден</string>
 </resources>

@@ -854,4 +854,13 @@ Tap "Settings" to check.</string>
     <string name="actual_hint">Actual result</string>
     <string name="error_sending">❌ Error: %s</string>
     <string name="max_zoom">Maximum zoom</string>
+    <string name="inclusive_transport_hint">You can change this choice at any time in the app settings</string>
+    <string name="inclusiv_on">Inclusive transport on</string>
+    <string name="inclusiv_off">Inclusive transport off</string>
+    <string name="location_searching">Searching for location...</string>
+    <string name="location_processing">Processing location...</string>
+    <string name="location_getting_address">Determining address...</string>
+    <string name="location_calculating_cost">Calculating cost...</string>
+    <string name="location_timeout">Location timeout expired</string>
+    <string name="admin_phone_absent">Administrator number not found</string>
 </resources>

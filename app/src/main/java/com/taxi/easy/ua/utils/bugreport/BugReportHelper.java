@@ -46,51 +46,29 @@ public class BugReportHelper {
     private String systemInfo;
     private String settingsInfo;
     private String currentReport = null;
+
     public BugReportHelper(MainActivity activity) {
         this.context = activity;
         this.mainActivity = activity;
     }
 
     public void showBugReportManager() {
-        View view = LayoutInflater.from(context).inflate(R.layout.dialog_bug_report_manager, null);
+        // Сразу показываем диалог ввода описания ошибки
+        showDescriptionDialog();
+    }
 
-
-        Button btnSendTelegramWithLogs = view.findViewById(R.id.btnSendTelegramWithLogs);
-        Button btnClearLogs = view.findViewById(R.id.btnClearLogs);
-
-        ProgressBar progressBar = view.findViewById(R.id.progressBar);
-
-        AlertDialog dialog = new AlertDialog.Builder(context)
-                .setView(view)
-                .setNegativeButton(context.getString(R.string.cancel), (d, which) -> d.dismiss())
-                .create();
-        dialog.show();
-        currentDialog = dialog;
-
-        // Генерация отчета в фоне
-        progressBar.setVisibility(View.VISIBLE);
+    /**
+     * Генерация полного отчета (выполняется в фоне)
+     */
+    private void generateFullReportAsync(OnReportGeneratedListener listener) {
         new Thread(() -> {
-            currentReport = generateFullReport();
+            String report = generateFullReport();
             mainActivity.runOnUiThread(() -> {
-                progressBar.setVisibility(View.GONE);
-                Toast.makeText(context, context.getString(R.string.report_generated), Toast.LENGTH_SHORT).show();
+                if (listener != null) {
+                    listener.onReportGenerated(report);
+                }
             });
         }).start();
-
-
-
-
-        btnSendTelegramWithLogs.setOnClickListener(v -> {
-            if (currentReport == null) {
-                Toast.makeText(context, context.getString(R.string.generate_report_first), Toast.LENGTH_SHORT).show();
-                return;
-            }
-            sendToTelegramWithLogs(currentReport);
-            dialog.dismiss();
-        });
-
-        btnClearLogs.setOnClickListener(v -> clearLogs());
-
     }
 
     private String generateFullReport() {
@@ -162,16 +140,12 @@ public class BugReportHelper {
         appInfo = info.toString();
     }
 
-    /**
-     * Сбор информации о пользователе
-     */
     private void collectUserInfo() {
         StringBuilder info = new StringBuilder();
 
         List<String> userList = mainActivity.logCursor(MainActivity.TABLE_USER_INFO);
 
         if (userList.size() >= 6) {
-            // Показываем email полностью, без маскирования
             String email = userList.get(3);
             if (email == null || email.isEmpty() || email.equals("email")) {
                 info.append("  • Email: ").append(context.getString(R.string.not_specified)).append("\n");
@@ -179,7 +153,6 @@ public class BugReportHelper {
                 info.append("  • Email: ").append(email).append("\n");
             }
 
-            // Показываем имя пользователя
             String userName = userList.get(4);
             if (userName == null || userName.isEmpty() || userName.equals("username")) {
                 info.append("  • ").append(context.getString(R.string.user_name)).append(": ").append(context.getString(R.string.not_specified)).append("\n");
@@ -187,7 +160,6 @@ public class BugReportHelper {
                 info.append("  • ").append(context.getString(R.string.user_name)).append(": ").append(userName).append("\n");
             }
 
-            // Показываем телефон полностью, без маскирования
             String phone = userList.get(2);
             if (phone == null || phone.isEmpty() || phone.equals("+38")) {
                 info.append("  • ").append(context.getString(R.string.phone)).append(": ").append(context.getString(R.string.not_specified)).append("\n");
@@ -195,7 +167,6 @@ public class BugReportHelper {
                 info.append("  • ").append(context.getString(R.string.phone)).append(": ").append(phone).append("\n");
             }
 
-            // Показываем бонусы
             String bonus = userList.get(5);
             info.append("  • ").append(context.getString(R.string.bonus)).append(": ").append(bonus).append(" ").append(context.getString(R.string.currency_uah)).append("\n");
         } else {
@@ -229,11 +200,10 @@ public class BugReportHelper {
         systemInfo = info.toString();
     }
 
-    private void sendToTelegramWithLogs(String report) {
-        showDescriptionDialog(report);
-    }
-
-    private void showDescriptionDialog(String baseReport) {
+    /**
+     * Диалог ввода описания проблемы (без промежуточного экрана)
+     */
+    private void showDescriptionDialog() {
         View view = LayoutInflater.from(context).inflate(R.layout.dialog_bug_description, null);
 
         EditText etDescription = view.findViewById(R.id.etDescription);
@@ -244,6 +214,9 @@ public class BugReportHelper {
         ProgressBar progressBar = view.findViewById(R.id.progressBar);
         Button btnSend = view.findViewById(R.id.btnSend);
         Button btnCancel = view.findViewById(R.id.btnCancel);
+
+        // Скрываем прогресс бар сначала (он понадобится при отправке)
+        progressBar.setVisibility(View.GONE);
 
         etDescription.addTextChangedListener(new android.text.TextWatcher() {
             @Override
@@ -266,6 +239,7 @@ public class BugReportHelper {
                 .setCancelable(false)
                 .create();
         dialog.show();
+        currentDialog = dialog;
 
         btnSend.setOnClickListener(v -> {
             String description = etDescription.getText().toString().trim();
@@ -282,59 +256,92 @@ public class BugReportHelper {
                 return;
             }
 
-            dialog.dismiss();
+            // Показываем прогресс и блокируем кнопку
             progressBar.setVisibility(View.VISIBLE);
             btnSend.setEnabled(false);
+            btnCancel.setEnabled(false);
 
-            // Формируем полный отчет для лог-файла
-            StringBuilder fullReport = new StringBuilder();
-            fullReport.append(baseReport);
-            fullReport.append("\n📝 ").append(context.getString(R.string.problem_description_header)).append("\n");
-            fullReport.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
-            fullReport.append("🔴 ").append(context.getString(R.string.problem_label)).append(": ").append(description).append("\n\n");
-            if (!steps.isEmpty()) fullReport.append("📋 ").append(context.getString(R.string.steps_label)).append(":\n").append(steps).append("\n\n");
-            if (!expected.isEmpty()) fullReport.append("✅ ").append(context.getString(R.string.expected_label)).append(":\n").append(expected).append("\n\n");
-            if (!actual.isEmpty()) fullReport.append("❌ ").append(context.getString(R.string.actual_label)).append(":\n").append(actual).append("\n\n");
+            // Формируем данные для отправки (без отчета, но с описанием)
+            String finalDescription = description;
+            String finalSteps = steps;
+            String finalExpected = expected;
+            String finalActual = actual;
 
-            // Формируем краткое сообщение для Telegram
-            String shortMessage = "🐞 " + context.getString(R.string.bug_report_header) + "\n" +
-                    "📝 " + context.getString(R.string.problem_label) + ": " + description + "\n\n" +
-                    "📱 " + context.getString(R.string.device_info_header) + ": " + Build.MANUFACTURER + " " + Build.MODEL + "\n" +
-                    "📅 " + context.getString(R.string.report_date) + ": " + getCurrentTimestamp() + "\n\n" +
-                    "📄 " + context.getString(R.string.logs) + ": " + getLogFileSize();
-
-            new Thread(() -> {
-                try {
-                    // Добавляем полный отчет в лог-файл
-                    appendToLogFile(fullReport.toString());
-
-                    // Отправляем краткое сообщение + лог-файл
-                    File logFile = new File(context.getExternalFilesDir(null), "app_log.txt");
-                    if (logFile.exists() && logFile.length() > 0) {
-                        TelegramUtils.sendErrorToTelegram(shortMessage, logFile.getAbsolutePath());
-                        mainActivity.runOnUiThread(() ->
-                                Toast.makeText(context, context.getString(R.string.sent_to_telegram_with_logs, logFile.length() / 1024), Toast.LENGTH_LONG).show());
-                    } else {
-                        TelegramUtils.sendErrorToTelegram(shortMessage, null);
-                        mainActivity.runOnUiThread(() ->
-                                Toast.makeText(context, context.getString(R.string.sent_to_telegram), Toast.LENGTH_SHORT).show());
-                    }
-                    dialog.dismiss();
-                } catch (Exception e) {
-                    Logger.e(context, TAG, "Error: " + e.getMessage());
-                    mainActivity.runOnUiThread(() ->
-                            Toast.makeText(context, context.getString(R.string.error_sending, e.getMessage()), Toast.LENGTH_SHORT).show());
-                } finally {
-                    mainActivity.runOnUiThread(() -> {
-                        progressBar.setVisibility(View.GONE);
-                        btnSend.setEnabled(true);
-                    });
-                }
-            }).start();
+            // Запускаем генерацию отчета в фоне
+            generateFullReportAsync(report -> {
+                // Отчет сгенерирован, теперь отправляем
+                sendReportWithDescription(report, finalDescription, finalSteps, finalExpected, finalActual, progressBar, btnSend, btnCancel, dialog);
+            });
         });
 
-        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        btnCancel.setOnClickListener(v -> {
+            if (currentDialog != null) {
+                currentDialog.dismiss();
+                currentDialog = null;
+            }
+        });
+    }
 
+    /**
+     * Отправка сгенерированного отчета вместе с описанием проблемы
+     */
+    private void sendReportWithDescription(String baseReport, String description, String steps, String expected, String actual,
+                                           ProgressBar progressBar, Button btnSend, Button btnCancel, AlertDialog dialog) {
+        // Формируем полный отчет для лог-файла
+        StringBuilder fullReport = new StringBuilder();
+        fullReport.append(baseReport);
+        fullReport.append("\n📝 ").append(context.getString(R.string.problem_description_header)).append("\n");
+        fullReport.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+        fullReport.append("🔴 ").append(context.getString(R.string.problem_label)).append(": ").append(description).append("\n\n");
+        if (!steps.isEmpty()) fullReport.append("📋 ").append(context.getString(R.string.steps_label)).append(":\n").append(steps).append("\n\n");
+        if (!expected.isEmpty()) fullReport.append("✅ ").append(context.getString(R.string.expected_label)).append(":\n").append(expected).append("\n\n");
+        if (!actual.isEmpty()) fullReport.append("❌ ").append(context.getString(R.string.actual_label)).append(":\n").append(actual).append("\n\n");
+
+        // Формируем краткое сообщение для Telegram
+        String shortMessage = "🐞 " + context.getString(R.string.bug_report_header) + "\n" +
+                "📝 " + context.getString(R.string.problem_label) + ": " + description + "\n\n" +
+                "📱 " + context.getString(R.string.device_info_header) + ": " + Build.MANUFACTURER + " " + Build.MODEL + "\n" +
+                "📅 " + context.getString(R.string.report_date) + ": " + getCurrentTimestamp() + "\n\n" +
+                "📄 " + context.getString(R.string.logs) + ": " + getLogFileSize();
+
+        new Thread(() -> {
+            try {
+                // Добавляем полный отчет в лог-файл
+                appendToLogFile(fullReport.toString());
+
+                // Отправляем краткое сообщение + лог-файл
+                File logFile = new File(context.getExternalFilesDir(null), "app_log.txt");
+                if (logFile.exists() && logFile.length() > 0) {
+                    TelegramUtils.sendErrorToTelegram(shortMessage, logFile.getAbsolutePath());
+                    mainActivity.runOnUiThread(() ->
+                            Toast.makeText(context, context.getString(R.string.sent_to_telegram_with_logs, logFile.length() / 1024), Toast.LENGTH_LONG).show());
+                } else {
+                    TelegramUtils.sendErrorToTelegram(shortMessage, null);
+                    mainActivity.runOnUiThread(() ->
+                            Toast.makeText(context, context.getString(R.string.sent_to_telegram), Toast.LENGTH_SHORT).show());
+                }
+
+                mainActivity.runOnUiThread(() -> {
+                    if (dialog != null && dialog.isShowing()) {
+                        dialog.dismiss();
+                    }
+                    if (currentDialog != null) {
+                        currentDialog = null;
+                    }
+                });
+
+            } catch (Exception e) {
+                Logger.e(context, TAG, "Error: " + e.getMessage());
+                mainActivity.runOnUiThread(() ->
+                        Toast.makeText(context, context.getString(R.string.error_sending, e.getMessage()), Toast.LENGTH_SHORT).show());
+            } finally {
+                mainActivity.runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    btnSend.setEnabled(true);
+                    btnCancel.setEnabled(true);
+                });
+            }
+        }).start();
     }
 
     private void appendToLogFile(String content) {
@@ -352,23 +359,6 @@ public class BugReportHelper {
             Logger.e(context, TAG, "Error appending to log: " + e.getMessage());
         }
     }
-
-
-
-
-    private void clearLogs() {
-        new AlertDialog.Builder(context)
-                .setTitle(context.getString(R.string.clear_logs_title))
-                .setMessage(context.getString(R.string.clear_logs_message))
-                .setPositiveButton(context.getString(R.string.clear), (dialog, which) -> {
-                    File logFile = new File(context.getExternalFilesDir(null), "app_log.txt");
-                    if (logFile.exists()) logFile.delete();
-                    Toast.makeText(context, context.getString(R.string.logs_cleared), Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton(context.getString(R.string.cancel), null)
-                .show();
-    }
-
 
 
     // ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
@@ -492,4 +482,8 @@ public class BugReportHelper {
         return context.getString(R.string.no_logs);
     }
 
+    // Интерфейс для колбэка после генерации отчета
+    private interface OnReportGeneratedListener {
+        void onReportGenerated(String report);
+    }
 }

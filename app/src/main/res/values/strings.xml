@@ -867,4 +867,13 @@
     <string name="actual_hint">Фактичний результат</string>
     <string name="error_sending">❌ Помилка: %s</string>
     <string name="max_zoom">Максимальне наближення</string>
+    <string name="inclusive_transport_hint">Ви можете змінити цей вибір у будь-який час у налаштуваннях програми</string>
+    <string name="inclusiv_on">Інклюзивний транспорт увімкнено</string>
+    <string name="inclusiv_off">Інклюзивний транспорт вимкнено</string>
+    <string name="location_searching">Пошук розташування...</string>
+    <string name="location_processing">Обробка локації...</string>
+    <string name="location_getting_address">Визначення адреси...</string>
+    <string name="location_calculating_cost">Розрахунок вартості...</string>
+    <string name="location_timeout">Час очікування локації минув</string>
+    <string name="admin_phone_absent">Номер адміністратора не знайдено</string>
 </resources>

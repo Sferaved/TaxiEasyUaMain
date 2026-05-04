@@ -36,7 +36,6 @@ import android.provider.Settings;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.StyleSpan;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -806,172 +805,83 @@ public class VisicomFragment extends Fragment {
     }
 
     public void btnVisible(int visible) {
-        // Логирование начала работы метода
-        Logger.d(context,"BTN_VISIBLE", "Метод btnVisible вызван с параметром visible = " + visible +
-                " (" + getVisibilityString(visible) + ")");
-        Logger.d(context,"BTN_VISIBLE", "text_view_cost != null: " + (text_view_cost != null));
-        schedule.setVisibility(visible);
-        shed_down.setVisibility(visible);
-        // Всегда отображаемые элементы (независимо от параметра)
-        Logger.d(context,"BTN_VISIBLE", "Установка всегда видимых элементов:");
+        Logger.d(context,"BTN_VISIBLE", "Метод вызван с параметром: " + getVisibilityString(visible));
 
-
+        // Всегда видимая кнопка администратора
         binding.btnCallAdmin.setVisibility(View.VISIBLE);
 
         if (visible == GONE) {
-
-            binding.fabCallAdmin.setVisibility(VISIBLE);
-//            binding.gpsbut.setVisibility(GONE);
-            binding.btnCallAdmin.setText(R.string.try_again);
-            binding.btnCallAdmin.setOnClickListener(v -> {
-                Logger.d(context,"BTN_VISIBLE", "Клик: Попробовать снова - запуск SwipeRefresh");
-                clearTABLE_SERVICE_INFO();
-                sharedPreferencesHelperMain.saveValue("time", "no_time");
-                sharedPreferencesHelperMain.saveValue("date", "no_date");
-                sharedPreferencesHelperMain.saveValue("comment", "no_comment");
-                sharedPreferencesHelperMain.saveValue("tarif", " ");
-                sharedPreferencesHelperMain.saveValue("setStatusX", true);
-                svButton.setVisibility(GONE);
-                sharedPreferencesHelperMain.saveValue("old_cost", "0");
-
-                // Выполняем необходимое действие (например, запуск новой активности)
-                startActivity(new Intent(context, MainActivity.class));                //
-            });
-
-            binding.fabCallAdmin.setOnClickListener(v -> {
-                Logger.d(context,"BTN_VISIBLE", "Клик: Позвонить админу");
-                Logger.d(context,"BTN_VISIBLE", "Клик: Позвонить админу");
-                try {
-                    Intent intent = new Intent(Intent.ACTION_DIAL);
-                    List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
-                    if (stringList.size() > 3) {
-                        String phone = stringList.get(3);
-                        Logger.d(context,"BTN_VISIBLE", "Телефон для звонка: " + phone);
-                        if (phone != null && !phone.trim().isEmpty()) {
-                            intent.setData(Uri.parse(phone));
-                            startActivity(intent);
-                        } else {
-                            Logger.e(context,"BTN_VISIBLE", "Номер телефона пустой или null");
-                            Toast.makeText(requireContext(), R.string.no_access_to_phone_admin, Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Logger.e(context,"BTN_VISIBLE", "Не удалось получить данные телефона");
-                        Toast.makeText(requireContext(), R.string.no_access_to_phone_admin, Toast.LENGTH_SHORT).show();
-                    }
-                } catch (Exception e) {
-                    Logger.e(context,"BTN_VISIBLE", "Ошибка при звонке: " + e.getMessage());
-                    Toast.makeText(requireContext(), R.string.no_access_to_phone_admin, Toast.LENGTH_SHORT).show();
-                }
-            });
-
-        } else {
-            binding.textfrom.setVisibility(View.VISIBLE);
-            binding.num1.setVisibility(View.VISIBLE);
-            binding.clearButtonFrom.setVisibility(View.VISIBLE);
-            binding.textGeo.setVisibility(View.VISIBLE);
-            binding.textwhere.setVisibility(View.VISIBLE);
-            binding.num2.setVisibility(VISIBLE);
-            binding.textTo.setVisibility(VISIBLE);
-            binding.clearButtonTo.setVisibility(VISIBLE);
-            binding.fabCallAdmin.setVisibility(GONE);
-            btnCallAdmin.setText(R.string.call_admin);
-            binding.gpsbut.setVisibility(VISIBLE);
-            btnCallAdmin.setOnClickListener(v -> {
-                Logger.d(context,"BTN_VISIBLE", "Клик: Позвонить админу");
-                try {
-                    Intent intent = new Intent(Intent.ACTION_DIAL);
-                    List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
-                    if (stringList.size() > 3) {
-                        String phone = stringList.get(3);
-                        Logger.d(context,"BTN_VISIBLE", "Телефон для звонка: " + phone);
-                        if (phone != null && !phone.trim().isEmpty()) {
-                            intent.setData(Uri.parse(phone));
-                            startActivity(intent);
-                        } else {
-                            Logger.e(context,"BTN_VISIBLE", "Номер телефона пустой или null");
-                            Toast.makeText(requireContext(), R.string.no_access_to_phone_admin, Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Logger.e(context,"BTN_VISIBLE", "Не удалось получить данные телефона");
-                        Toast.makeText(requireContext(), R.string.no_access_to_phone_admin, Toast.LENGTH_SHORT).show();
-                    }
-                } catch (Exception e) {
-                    Logger.e(context,"BTN_VISIBLE", "Ошибка при звонке: " + e.getMessage());
-                    Toast.makeText(requireContext(), R.string.no_access_to_phone_admin, Toast.LENGTH_SHORT).show();
-                }
-            });
+            showRetryMode();
+        } else if (visible == VISIBLE) {
+            showNormalMode();
         }
 
+        // Управление ProgressBar
+        binding.progressBar.setVisibility(visible == GONE ? View.VISIBLE : View.GONE);
 
-        // Проверка на null для text_view_cost
-        if (text_view_cost != null) {
-            Logger.d(context,"BTN_VISIBLE", "text_view_cost не null, продолжаем выполнение");
+        // Групповая установка видимости для основных элементов
+        setViewsVisibility(visible,
+                binding.linearLayoutButtons,
+                binding.btnAdd, binding.btnBonus, binding.btnMinus,
+                binding.textViewCost, binding.btnPlus, binding.btnOrder,
+                binding.schedule, binding.shedDown
+        );
 
-            // Управление ProgressBar - ТОЛЬКО для состояния GONE
-            if (visible == View.GONE) {
-                Logger.d(context,"BTN_VISIBLE", "Режим GONE - показываем ProgressBar");
-                binding.progressBar.setVisibility(View.VISIBLE);
-            }
-            // Режим VISIBLE - обычное состояние
-            else if (visible == View.VISIBLE) {
-                Logger.d(context,"BTN_VISIBLE", "Режим VISIBLE - скрываем ProgressBar");
-                binding.progressBar.setVisibility(View.GONE);
-
-            }
-            // Режим GONE - все скрыто
-            else if (visible == View.GONE) {
-                Logger.d(context,"BTN_VISIBLE", "Режим GONE - скрываем ProgressBar и настраиваем кнопку");
-                binding.progressBar.setVisibility(View.GONE);
-
-            }
-            // Неизвестное значение
-            else {
-                Logger.w(context,"BTN_VISIBLE", "Неизвестное значение visible: " + visible);
-                // По умолчанию используем режим VISIBLE
-                binding.progressBar.setVisibility(View.GONE);
-                btnCallAdmin.setVisibility(View.VISIBLE);
-            }
-
-            // Установка видимости для группы элементов LinearLayout
-            Logger.d(context,"BTN_VISIBLE", "Установка видимости для linearLayoutButtons: " + getVisibilityString(visible));
-            binding.linearLayoutButtons.setVisibility(visible);
-
-            // Установка видимости для кнопок и элементов управления
-            Logger.d(context,"BTN_VISIBLE", "Установка видимости кнопок и элементов:");
-            binding.btnAdd.setVisibility(visible);
-            binding.btnBonus.setVisibility(visible);
-            binding.btnMinus.setVisibility(visible);
-            binding.textViewCost.setVisibility(visible);
-            binding.btnPlus.setVisibility(visible);
-            binding.btnOrder.setVisibility(visible);
-            binding.schedule.setVisibility(visible);
-            binding.shedDown.setVisibility(visible);
-
-
-        } else {
-            Logger.e(context,"BTN_VISIBLE", "text_view_cost is null! Основные элементы не будут отображаться");
-
-            // Даже если text_view_cost null, покажем хотя бы основные элементы
-            binding.linearLayoutButtons.setVisibility(View.GONE);
-            binding.progressBar.setVisibility(View.GONE);
-
-            // ВАЖНО: Делаем кнопку видимой
-            btnCallAdmin.setVisibility(View.VISIBLE);
-
-            btnCallAdmin.setText("Ошибка загрузки");
-            btnCallAdmin.setOnClickListener(v -> {
-                Toast.makeText(requireContext(), "Повторите попытку", Toast.LENGTH_SHORT).show();
-            });
-        }
-
-        Logger.d(context,"BTN_VISIBLE", "Метод btnVisible завершен. Текущий режим: " + getVisibilityString(visible));
-
-        // Дополнительное логирование для отладки
-        Logger.d(context,"BTN_VISIBLE_DEBUG", "Состояние кнопки btnCallAdmin: " +
-                "видимость=" + getVisibilityString(btnCallAdmin.getVisibility()) +
-                ", текст=" + btnCallAdmin.getText());
+        Logger.d(context,"BTN_VISIBLE", "Метод завершен. Текущий режим: " + getVisibilityString(visible));
     }
 
+    private void showRetryMode() {
+        binding.fabCallAdmin.setVisibility(VISIBLE);
+        binding.btnCallAdmin.setText(R.string.try_again);
+
+        binding.btnCallAdmin.setOnClickListener(v -> {
+            Logger.d(context,"BTN_VISIBLE", "Клик: Попробовать снова");
+            clearTABLE_SERVICE_INFO();
+            sharedPreferencesHelperMain.saveValue("time", "no_time");
+            sharedPreferencesHelperMain.saveValue("date", "no_date");
+            sharedPreferencesHelperMain.saveValue("comment", "no_comment");
+            sharedPreferencesHelperMain.saveValue("tarif", " ");
+            sharedPreferencesHelperMain.saveValue("setStatusX", true);
+            svButton.setVisibility(GONE);
+            sharedPreferencesHelperMain.saveValue("old_cost", "0");
+            startActivity(new Intent(context, MainActivity.class));
+        });
+
+        binding.fabCallAdmin.setOnClickListener(v -> callAdmin());
+    }
+
+    private void showNormalMode() {
+        setViewsVisibility(VISIBLE,
+                binding.textfrom, binding.num1, binding.clearButtonFrom,
+                binding.textGeo, binding.textwhere, binding.num2,
+                binding.textTo, binding.clearButtonTo, binding.gpsbut
+        );
+
+        binding.fabCallAdmin.setVisibility(GONE);
+        binding.btnCallAdmin.setText(R.string.call_admin);
+        binding.btnCallAdmin.setOnClickListener(v -> callAdmin());
+    }
+
+    private void setViewsVisibility(int visibility, View... views) {
+        for (View view : views) {
+            if (view != null) view.setVisibility(visibility);
+        }
+    }
+    private void callAdmin() {
+        Logger.d(context, TAG, "Вызов администратора");
+
+        // Читаємо номер адміністратора з таблиці USER_INFO або SETTINGS_INFO
+        List<String> userInfo = logCursor(MainActivity.TABLE_USER_INFO, context);
+        String adminPhone = userInfo.size() > 2 ? userInfo.get(2) : "no_phone";
+
+        if (!"no_phone".equals(adminPhone)) {
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            intent.setData(Uri.parse("tel:" + adminPhone));
+            startActivity(intent);
+        } else {
+            Toast.makeText(context, R.string.admin_phone_absent, Toast.LENGTH_SHORT).show();
+        }
+    }
 
 
     // Вспомогательный метод для логирования (добавьте в класс)

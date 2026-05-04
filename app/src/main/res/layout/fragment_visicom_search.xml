@@ -6,6 +6,53 @@
     android:layout_height="match_parent"
     android:background="@color/new_background_color">
 
+    <ImageButton
+        android:id="@+id/btn_no"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/btn_accents"
+        android:scaleType="centerInside"
+        android:src="@drawable/arrow_back_fill0_wght400_grad0_opsz24"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/change"
+        android:layout_width="wrap_content"
+        android:layout_height="44dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/buttons"
+        android:text="@string/change"
+        android:textColor="#D9D9D9"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ProgressBar
+        android:id="@+id/progress_bar_visicom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="8sp"
+        android:layout_marginTop="8dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toStartOf="@+id/change"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/textfrom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24sp"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/light"
+        android:text="@string/from_text"
+        android:textColor="#9DA0A8"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_no" />
+
     <TextView
         android:id="@+id/num1"
         android:layout_width="wrap_content"
@@ -32,39 +79,38 @@
         android:hint="@string/Street_hint"
         android:textColor="@color/white"
         android:textColorHint="#ABD9D9D9"
-        app:layout_constraintWidth_percent="@dimen/button_width"
         android:textSize="@dimen/textView_textSize"
-        app:layout_constraintEnd_toEndOf="@+id/btn_on_map"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/num1"
         app:layout_constraintTop_toBottomOf="@+id/textfrom"
-        tools:ignore="MissingConstraints" />
+        app:layout_constraintWidth_percent="@dimen/button_width" />
 
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/change"
-        android:layout_width="wrap_content"
-        android:layout_height="44sp"
-
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="12dp"
-        android:background="@drawable/buttons"
-        android:text="@string/change"
-        android:textColor="#D9D9D9"
-        app:layout_constraintEnd_toStartOf="@+id/btn_on_map"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <ImageButton
-        android:id="@+id/btn_ok"
-        android:layout_width="wrap_content"
+    <TextView
+        android:id="@+id/textGeoError"
+        android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="44dp"
-        android:layout_marginEnd="28dp"
-        android:background="@drawable/btn_accents"
-        android:scaleType="centerInside"
-        android:src="@drawable/baseline_check_black_24dp"
+        android:background="@drawable/error"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:textSize="12sp"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_no" />
+        app:layout_constraintHorizontal_bias="0.216"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textGeo" />
+
+    <TextView
+        android:id="@+id/textwhere"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24sp"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/light"
+        android:text="@string/to_edit"
+        android:textColor="#9DA0A8"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textGeoError" />
 
     <TextView
         android:id="@+id/num2"
@@ -74,12 +120,10 @@
         android:layout_marginTop="8sp"
         android:fontFamily="@font/regular"
         android:text="2"
-
         android:textColor="#D9D9D9"
         android:textSize="14sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textwhere" />
-
 
     <EditText
         android:id="@+id/text_to"
@@ -96,10 +140,10 @@
         android:textColor="@color/white"
         android:textColorHint="#ABD9D9D9"
         android:textSize="@dimen/textView_textSize"
-        app:layout_constraintWidth_percent="@dimen/button_width"
-        app:layout_constraintEnd_toEndOf="@+id/btn_on_map"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/num2"
-        app:layout_constraintTop_toBottomOf="@+id/textwhere" />
+        app:layout_constraintTop_toBottomOf="@+id/textwhere"
+        app:layout_constraintWidth_percent="@dimen/button_width" />
 
     <TextView
         android:id="@+id/text_toError"
@@ -113,137 +157,68 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.216"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/text_to"
-        tools:ignore="MissingConstraints" />
-
-    <TextView
-        android:id="@+id/textfrom"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24sp"
-        android:layout_marginTop="16dp"
-        android:fontFamily="@font/light"
-        android:text="@string/from_text"
-        android:textColor="#9DA0A8"
-        android:textSize="14sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_on_map" />
-
-
-    <TextView
-        android:id="@+id/textwhere"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24sp"
-
-        android:layout_marginTop="16dp"
-        android:fontFamily="@font/light"
-        android:text="@string/to_edit"
-        android:textColor="#9DA0A8"
-        android:textSize="14sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textGeoError" />
-
-    <TextView
-        android:id="@+id/textGeoError"
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
-        android:background="@drawable/error"
-        android:gravity="center"
-        android:textColor="@color/white"
-        android:textSize="12sp"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.216"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textGeo"
-        tools:ignore="MissingConstraints" />
+        app:layout_constraintTop_toBottomOf="@+id/text_to" />
 
     <ListView
         android:id="@+id/listAddress"
         android:layout_width="match_parent"
-        android:layout_height="300dp"
+        android:layout_height="0dp"
         android:layout_margin="8dp"
-        android:scrollbarThumbVertical="@color/colorYellow"
-        app:layout_constraintTop_toBottomOf="@+id/text_toError"
-        tools:layout_editor_absoluteX="0dp" />
-
-    <ImageButton
-        android:id="@+id/btn_no"
-         android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
-        android:background="@drawable/btn_accents"
-        android:scaleType="centerInside"
-        android:src="@drawable/arrow_back_fill0_wght400_grad0_opsz24"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:scrollbarThumbVertical="@color/colorYellow"
+        app:layout_constraintBottom_toTopOf="@+id/btn_on_map"
+        app:layout_constraintTop_toBottomOf="@+id/text_toError"
+        app:layout_constraintVertical_weight="1" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_on_map"
-        android:layout_width="wrap_content"
-        android:layout_height="44sp"
-
-        android:layout_margin="8sp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="16dp"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_margin="16dp"
+        android:layout_marginBottom="24dp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
-        android:text="@string/on_map"
+        android:text="@string/address_on_map"
         android:textAlignment="center"
         android:textColor="@color/white"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintWidth_percent="@dimen/button_width" />
 
-    <ProgressBar
-        android:id="@+id/progress_bar_visicom"
+    <LinearLayout
+        android:id="@+id/scroll_buttons_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="8sp"
-        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
         android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/btn_on_map"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.415"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintStart_toStartOf="parent">
 
-    <ImageButton
-        android:id="@+id/scrollButtonUp"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_margin="8dp"
-        android:visibility="gone"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/round_button_background"
-        android:src="@drawable/up_arrow"
-        app:layout_constraintEnd_toStartOf="@+id/scrollButtonDown"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/listAddress"
-        tools:ignore="ContentDescription" />
+        <ImageButton
+            android:id="@+id/scrollButtonUp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_margin="8dp"
+            android:background="@drawable/round_button_background"
+            android:src="@drawable/up_arrow" />
 
-    <ImageButton
-        android:id="@+id/scrollButtonDown"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_margin="8dp"
-        android:visibility="gone"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/round_button_background"
-        android:src="@drawable/down_arrow"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/scrollButtonUp"
-        app:layout_constraintTop_toBottomOf="@+id/listAddress"
-        tools:ignore="ContentDescription" />
+        <ImageButton
+            android:id="@+id/scrollButtonDown"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_margin="8dp"
+            android:background="@drawable/round_button_background"
+            android:src="@drawable/down_arrow" />
+    </LinearLayout>
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnCallAdmin"
-       android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
+        android:layout_width="0dp"
         android:layout_height="@dimen/button_height"
-        android:layout_marginTop="8sp"
+        android:layout_margin="16dp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
         android:text="@string/call_admin"
@@ -251,8 +226,22 @@
         android:textColor="#D9D9D9"
         android:textSize="@dimen/textView_textSize"
         android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/btn_on_map"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/listAddress" />
+        app:layout_constraintWidth_percent="@dimen/button_width" />
+
+    <ImageButton
+        android:id="@+id/btn_ok"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_margin="16dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/btn_accents"
+        android:scaleType="centerInside"
+        android:src="@drawable/baseline_check_black_24dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

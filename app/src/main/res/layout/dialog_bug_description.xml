@@ -6,34 +6,41 @@
     android:orientation="vertical"
     android:background="#FFFFFF">
 
-    <!-- ScrollView -->
+    <!-- ScrollView с уменьшенной высотой для узких экранов -->
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="400dp"
-        android:padding="16dp"
-        android:fillViewport="true">
+        android:layout_height="wrap_content"
+        android:maxHeight="300dp"
+        android:padding="10dp"
+        android:fillViewport="true"
+        android:scrollbars="vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Описание -->
+            <!-- Описание (обязательное поле) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="4dp"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                android:layout_marginBottom="2dp"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:boxCornerRadiusTopStart="8dp"
+                app:boxCornerRadiusTopEnd="8dp"
+                app:boxCornerRadiusBottomStart="8dp"
+                app:boxCornerRadiusBottomEnd="8dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etDescription"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="100dp"
+                    android:minHeight="70dp"
                     android:hint="Короткий опис помилки *"
-                    android:maxLines="4"
+                    android:maxLines="3"
                     android:inputType="textMultiLine"
-                    android:gravity="top" />
+                    android:gravity="top"
+                    android:textSize="13sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Счетчик символов -->
@@ -42,71 +49,86 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="0/500"
-                android:textSize="12sp"
+                android:textSize="10sp"
                 android:gravity="end"
-                android:layout_marginBottom="12dp"
-                android:paddingEnd="4dp"
+                android:layout_marginBottom="6dp"
+                android:paddingEnd="2dp"
                 android:textColor="#666666" />
 
-            <!-- Шаги -->
+            <!-- Шаги для воспроизведения -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                android:layout_marginBottom="6dp"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:boxCornerRadiusTopStart="8dp"
+                app:boxCornerRadiusTopEnd="8dp"
+                app:boxCornerRadiusBottomStart="8dp"
+                app:boxCornerRadiusBottomEnd="8dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etSteps"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="120dp"
-                    android:hint="Кроки для відтворення (1. ... 2. ...)"
-                    android:maxLines="6"
+                    android:minHeight="70dp"
+                    android:hint="Кроки для відтворення"
+                    android:maxLines="4"
                     android:inputType="textMultiLine"
-                    android:gravity="top" />
+                    android:gravity="top"
+                    android:textSize="13sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Ожидаемый результат -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                android:layout_marginBottom="6dp"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:boxCornerRadiusTopStart="8dp"
+                app:boxCornerRadiusTopEnd="8dp"
+                app:boxCornerRadiusBottomStart="8dp"
+                app:boxCornerRadiusBottomEnd="8dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etExpected"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="80dp"
+                    android:minHeight="55dp"
                     android:hint="Очікуваний результат"
-                    android:maxLines="4"
+                    android:maxLines="3"
                     android:inputType="textMultiLine"
-                    android:gravity="top" />
+                    android:gravity="top"
+                    android:textSize="13sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Фактический результат -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                android:layout_marginBottom="6dp"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:boxCornerRadiusTopStart="8dp"
+                app:boxCornerRadiusTopEnd="8dp"
+                app:boxCornerRadiusBottomStart="8dp"
+                app:boxCornerRadiusBottomEnd="8dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etActual"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="80dp"
+                    android:minHeight="55dp"
                     android:hint="Фактичний результат"
-                    android:maxLines="4"
+                    android:maxLines="3"
                     android:inputType="textMultiLine"
-                    android:gravity="top" />
+                    android:gravity="top"
+                    android:textSize="13sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Прогресс -->
             <ProgressBar
                 android:id="@+id/progressBar"
                 android:layout_width="match_parent"
-                android:layout_height="4dp"
+                android:layout_height="3dp"
                 android:visibility="gone"
                 style="?android:attr/progressBarStyleHorizontal"
                 android:indeterminate="true" />
@@ -114,34 +136,40 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Кнопки -->
+    <!-- Кнопки - полностью адаптированы для узких экранов -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp"
+        android:padding="12dp"
         android:background="#FFFFFF"
         android:elevation="4dp">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancel"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="44dp"
             android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="Скасувати"
-            android:textSize="14sp"
-            android:backgroundTint="#9E9E9E" />
+            android:layout_marginEnd="6dp"
+            android:text="@string/cancel"
+            android:textSize="13sp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            app:strokeColor="#9E9E9E"
+            app:strokeWidth="1.5dp"
+            app:cornerRadius="22dp"
+            android:textColor="#757575" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSend"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="44dp"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="Надіслати"
-            android:textSize="14sp"
-            android:backgroundTint="#4CAF50" />
+            android:layout_marginStart="6dp"
+            android:text="@string/send"
+            android:textSize="13sp"
+            style="@style/Widget.MaterialComponents.Button"
+            android:backgroundTint="@color/colorAccent"
+            app:cornerRadius="22dp" />
     </LinearLayout>
 
 </LinearLayout>

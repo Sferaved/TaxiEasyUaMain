@@ -12,11 +12,11 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
-import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
+import android.graphics.drawable.GradientDrawable;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -24,14 +24,14 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ProgressBar;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,7 +40,6 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
@@ -67,7 +66,6 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
@@ -101,7 +99,6 @@ import com.taxi.easy.ua.utils.centrifugo.CentrifugoManager;
 import com.taxi.easy.ua.utils.connect.NetworkMonitor;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.download.AppUpdater;
-import com.taxi.easy.ua.utils.helpers.TelegramUtils;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.model.OrderViewModel;
@@ -3050,42 +3047,127 @@ public class MainActivity extends AppCompatActivity {
     private void showInclusiveTransportDialog() {
         Logger.d(this, TAG, "showInclusiveTransportDialog вызван");
 
-        // Проверяем, что Activity не destroyed и не finishing
         if (isFinishing() || isDestroyed()) {
-            Logger.e(this, TAG, "Activity is finishing or destroyed, cannot show dialog");
             return;
         }
 
-        // Запускаем на UI потоке с небольшой задержкой
         runOnUiThread(() -> {
             try {
-                Logger.d(this, TAG, "Создаем диалог");
+                // Создаем кастомный layout программно
+                LinearLayout layout = new LinearLayout(this);
+                layout.setOrientation(LinearLayout.VERTICAL);
+                layout.setPadding(dpToPx(24), dpToPx(24), dpToPx(24), dpToPx(16));
+                layout.setBackgroundColor(getColor(android.R.color.white));
+
+                // Заголовок
+                TextView title = new TextView(this);
+                title.setText("Інклюзивний транспорт");
+                title.setTextSize(18);
+                title.setTypeface(null, android.graphics.Typeface.BOLD);
+                title.setTextColor(getColor(R.color.colorPrimary));
+                title.setGravity(Gravity.CENTER);
+                title.setPadding(0, 0, 0, dpToPx(16));
+                layout.addView(title);
+
+                // Разделитель
+                View divider = new View(this);
+                divider.setLayoutParams(new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(1)));
+                divider.setBackgroundColor(getColor(android.R.color.darker_gray));
+                divider.setPadding(0, 0, 0, dpToPx(16));
+                layout.addView(divider);
+
+                // Текст вопроса
+                TextView questionText = new TextView(this);
+                questionText.setText("Чи потрібні вам автомобілі, адаптовані для людей з обмеженими можливостями?");
+                questionText.setTextSize(16);
+                questionText.setTextColor(getColor(android.R.color.black));
+                questionText.setPadding(0, 0, 0, dpToPx(20));
+                questionText.setLineSpacing(0, 1.3f);
+                layout.addView(questionText);
+
+                // Switch контейнер
+                LinearLayout switchContainer = new LinearLayout(this);
+                switchContainer.setOrientation(LinearLayout.HORIZONTAL);
+                switchContainer.setGravity(Gravity.CENTER_VERTICAL);
+                switchContainer.setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(14));
+                switchContainer.setBackgroundColor(getColor(android.R.color.white));
+
+                // Фон для контейнера
+                GradientDrawable containerBg = new GradientDrawable();
+                containerBg.setColor(getColor(android.R.color.white));
+                containerBg.setCornerRadius(dpToPx(12));
+                containerBg.setStroke(dpToPx(1), getColor(android.R.color.darker_gray));
+                switchContainer.setBackground(containerBg);
+
+                // Текст "Потрібен інклюзивний транспорт"
+                TextView switchLabel = new TextView(this);
+                switchLabel.setText("Потрібен інклюзивний транспорт");
+                switchLabel.setTextSize(15);
+                switchLabel.setTextColor(getColor(android.R.color.black));
+                switchLabel.setLayoutParams(new LinearLayout.LayoutParams(0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+                switchContainer.addView(switchLabel);
+
+                // Switch
+                androidx.appcompat.widget.SwitchCompat switchBtn = new androidx.appcompat.widget.SwitchCompat(this);
+                boolean needsInclusive = InclusiveTransportPreferenceWorker.needsInclusiveTransport();
+                switchBtn.setChecked(needsInclusive);
+                switchBtn.setTextOff(getString(R.string.inclusive_transport_no));
+                switchBtn.setTextOn(getString(R.string.inclusive_transport_yes));
+                switchBtn.setPadding(dpToPx(8), 0, 0, 0);
+
+                switchContainer.addView(switchBtn);
+                layout.addView(switchContainer);
+
+                // Кнопка "Зберегти"
+                Button saveButton = new Button(this);
+                saveButton.setText("Зберегти");
+                saveButton.setLayoutParams(new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+                saveButton.setPadding(dpToPx(16), dpToPx(12), dpToPx(16), dpToPx(12));
+                ((LinearLayout.LayoutParams) saveButton.getLayoutParams()).topMargin = dpToPx(24);
+
+                GradientDrawable buttonBg = new GradientDrawable();
+                buttonBg.setColor(getColor(R.color.colorPrimary));
+                buttonBg.setCornerRadius(dpToPx(8));
+                saveButton.setBackground(buttonBg);
+                saveButton.setTextColor(getColor(android.R.color.white));
+                saveButton.setTextSize(14);
+                saveButton.setAllCaps(false);
+
+                layout.addView(saveButton);
+
+                // Создаем диалог
                 AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle(getString(R.string.inclusive_transport_title));
-
-                String currentInclusiveState = getString(R.string.inclusive_transport_no);
-                if (InclusiveTransportPreferenceWorker.needsInclusiveTransport()){
-                    currentInclusiveState = getString(R.string.inclusive_transport_yes);
-                }
-                builder.setMessage(getString(R.string.inclusive_transport_message) + "\n"+ "\n"+ getString(R.string.currentInclusiveState) + currentInclusiveState);
-
-                builder.setPositiveButton(getString(R.string.inclusive_transport_yes), (dialog, which) -> {
-                    Logger.d(this, TAG, "Пользователь выбрал ДА");
-                    InclusiveTransportPreferenceWorker.saveUserPreference(true);
-                });
-                builder.setNegativeButton(getString(R.string.inclusive_transport_no), (dialog, which) -> {
-                    Logger.d(this, TAG, "Пользователь выбрал НЕТ");
-                    InclusiveTransportPreferenceWorker.saveUserPreference(false);
-                });
-                builder.setCancelable(false);
+                builder.setView(layout)
+                        .setCancelable(true);
 
                 AlertDialog dialog = builder.create();
                 dialog.show();
-                Logger.d(this, TAG, "Диалог показан");
+
+                // Обработчик сохранения
+                saveButton.setOnClickListener(v -> {
+                    boolean newValue = switchBtn.isChecked();
+                    InclusiveTransportPreferenceWorker.saveUserPreference(newValue);
+                    dialog.dismiss();
+
+                    // Показываем Toast с подтверждением
+                    String message = newValue ?
+                            getString(R.string.inclusiv_on) :
+                            getString(R.string.inclusiv_off);
+                    Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+                });
+
             } catch (Exception e) {
+                Logger.e(this, TAG, "Ошибка: " + e.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(e);
-                Logger.e(this, TAG, "Ошибка при показе диалога: " + e.getMessage());
             }
         });
+    }
+
+    private int dpToPx(int dp) {
+        return (int) (dp * getResources().getDisplayMetrics().density);
     }
 }
