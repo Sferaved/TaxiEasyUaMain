@@ -794,6 +794,10 @@ public class VisicomFragment extends Fragment {
         ) {
             newCheck++;
         }
+        String discount= sharedPreferencesHelperMain.getValue("discount", "0").toString();
+        if(!discount.equals("0")) {
+            newCheck++;
+        }
         String mes = context.getString(R.string.add_services);
         if (newCheck != 0) {
             mes = context.getString(R.string.add_services) + " (" + newCheck + ")";

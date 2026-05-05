@@ -1076,7 +1076,7 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-
+        addCheck(context);
         VisicomFragment.sendUrlMap = null;
         MainActivity.uid = null;
 
@@ -1888,6 +1888,10 @@ private void cost() {
     public static void  addCheck(Context context) {
 
         int newCheck = 0;
+        String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
+        if (!tarif.equals(" ")) {
+            newCheck++;
+        }
         List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
         for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
             if(services.get(i+1).equals("1")) {
@@ -1905,7 +1909,10 @@ private void cost() {
         if (!comment.equals("no_comment")) {
             newCheck++;
         }
-
+        String discount= sharedPreferencesHelperMain.getValue("discount", "0").toString();
+        if(!discount.equals("0")) {
+            newCheck++;
+        }
         String mes = context.getString(R.string.add_services);
         if(newCheck != 0) {
             mes = context.getString(R.string.add_services) + " (" + newCheck + ")";
