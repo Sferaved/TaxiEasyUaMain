@@ -34,6 +34,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -121,8 +122,8 @@ public class VisicomSearchFragment extends Fragment {
     private String[] kyivRegionArr;
     private int positionChecked;
     private String zone;
-  
- 
+
+
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
 
@@ -183,39 +184,35 @@ public class VisicomSearchFragment extends Fragment {
         return root;
 
     }
-    private void requestLocationPermissions() {
-        permissionLauncher.launch(new String[]{
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-        });
-    }
-    private void scrollSetVisibility() {
-        if (addressesList != null) {
-            addressListView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+    private void updateScrollButtonsVisibility() {
+        if (addressListView != null && addressAdapter != null) {
+            addressListView.post(() -> {
                 int totalHeight = 0;
                 int desiredWidth = View.MeasureSpec.makeMeasureSpec(addressListView.getWidth(), View.MeasureSpec.AT_MOST);
 
                 for (int i = 0; i < addressAdapter.getCount(); i++) {
                     View listItem = addressAdapter.getView(i, null, addressListView);
-
-                    // Замер высоты элемента
                     listItem.measure(desiredWidth, View.MeasureSpec.UNSPECIFIED);
                     totalHeight += listItem.getMeasuredHeight();
                 }
-                Log.d("TotalHeight", "Total height of all items: " + totalHeight);
-                if (totalHeight > 300) {
-                    scrollButtonUp.setVisibility(View.VISIBLE);
-                    scrollButtonDown.setVisibility(View.VISIBLE);
+
+                int listViewHeight = addressListView.getHeight();
+                LinearLayout scrollContainer = root.findViewById(R.id.scroll_buttons_container);
+
+                if (totalHeight > listViewHeight && listViewHeight > 0) {
+                    scrollContainer.setVisibility(View.VISIBLE);
                 } else {
-                    scrollButtonUp.setVisibility(View.GONE);
-                    scrollButtonDown.setVisibility(View.GONE);
+                    scrollContainer.setVisibility(View.GONE);
                 }
             });
-
-
-
         }
     }
+    private void scrollSetVisibility() {
+        if (addressesList != null && addressAdapter != null) {
+            addressListView.getViewTreeObserver().addOnGlobalLayoutListener(this::updateScrollButtonsVisibility);
+        }
+    }
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -241,32 +238,6 @@ public class VisicomSearchFragment extends Fragment {
         database.close();
 
     }
-    private void startLocationUpdates() {
-        LocationRequest locationRequest = createLocationRequest();
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            return;
-        }
-        fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
-    }
-    private void stopLocationUpdates() {
-        fusedLocationProviderClient.removeLocationUpdates(locationCallback);
-    }
-
-    private LocationRequest createLocationRequest() {
-        return new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)  // приоритет и интервал обновления
-                .setMinUpdateIntervalMillis(100) // минимальный быстрый интервал
-                .build();
-    }
-
-
-    private void checkPermission(String permission) {
-
-        requestLocationPermissions();
-    }
-
-
 
 
     // Метод для сохранения количества запросов разрешений в SharedPreferences
@@ -572,6 +543,7 @@ public class VisicomSearchFragment extends Fragment {
         addressesList = new ArrayList<>();
         addressAdapter = new ArrayAdapter<>(context, R.layout.custom_list_item, addressesList);
         addressListView.setAdapter(addressAdapter);
+        updateScrollButtonsVisibility();
         scrollButtonUp = root.findViewById(R.id.scrollButtonUp);
         scrollButtonDown = root.findViewById(R.id.scrollButtonDown);
 
@@ -593,7 +565,7 @@ public class VisicomSearchFragment extends Fragment {
         if(start.equals("ok")) {
             oldAddresses("start");
             toEditAddress.setVisibility(View.GONE);
-            
+
             text_toError.setVisibility(View.GONE);
             root.findViewById(R.id.textwhere).setVisibility(View.GONE);
             root.findViewById(R.id.num2).setVisibility(View.GONE);
@@ -604,7 +576,7 @@ public class VisicomSearchFragment extends Fragment {
             root.findViewById(R.id.textfrom).setVisibility(View.GONE);
             root.findViewById(R.id.num1).setVisibility(View.GONE);
             fromEditAddress.setVisibility(View.GONE);
-            
+
 
             textGeoError.setVisibility(View.GONE);
             gpsbut.setText(getString(R.string.on_city_tv));
@@ -790,7 +762,7 @@ public class VisicomSearchFragment extends Fragment {
                     }
                     textGeoError.setVisibility(View.GONE);
                 }
-                
+
             }
 
             @Override
@@ -836,7 +808,7 @@ public class VisicomSearchFragment extends Fragment {
                 }
 
                 text_toError.setVisibility(View.GONE);
-             }
+            }
 
             @Override
             public void afterTextChanged(Editable editable) {
@@ -991,21 +963,21 @@ public class VisicomSearchFragment extends Fragment {
                                 // Проверка по Киевской области
                                 if (citySearch.equals("Київ") || citySearch.equals("Киев")) {
 
-                                        String addressAdm = String.format("%s %s\t",
-                                                properties.getString("type"),
-                                                properties.getString("name")
-                                        );
+                                    String addressAdm = String.format("%s %s\t",
+                                            properties.getString("type"),
+                                            properties.getString("name")
+                                    );
 
-                                        double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
-                                        double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
+                                    double longitude = geoCentroid.getJSONArray("coordinates").getDouble(0);
+                                    double latitude = geoCentroid.getJSONArray("coordinates").getDouble(1);
 
-                                        addAddressOne(
-                                                addressAdm,
-                                                "",
-                                                "",
-                                                "",
-                                                longitude,
-                                                latitude);
+                                    addAddressOne(
+                                            addressAdm,
+                                            "",
+                                            "",
+                                            "",
+                                            longitude,
+                                            latitude);
 
                                 }
                                 break;
@@ -1105,21 +1077,21 @@ public class VisicomSearchFragment extends Fragment {
                                         Logger.d(context, TAG, "processAddressData: zone" + zone);
 
 
-                                            address = String.format("%s %s %s %s %s %s\t",
+                                        address = String.format("%s %s %s %s %s %s\t",
 
-                                                    properties.getString("street_type"),
-                                                    properties.getString("street"),
-                                                    properties.getString("name"),
-                                                    properties.getString("zone"),
-                                                    properties.getString("settlement_type"),
-                                                    properties.getString("settlement"));
-                                            addAddressOne(
-                                                    address,
-                                                    "",
-                                                    "",
-                                                    "",
-                                                    longitude,
-                                                    latitude);
+                                                properties.getString("street_type"),
+                                                properties.getString("street"),
+                                                properties.getString("name"),
+                                                properties.getString("zone"),
+                                                properties.getString("settlement_type"),
+                                                properties.getString("settlement"));
+                                        addAddressOne(
+                                                address,
+                                                "",
+                                                "",
+                                                "",
+                                                longitude,
+                                                latitude);
 
 
                                     } else {
@@ -1538,7 +1510,7 @@ public class VisicomSearchFragment extends Fragment {
 
                 addressListView.setAdapter(addressAdapter);
 
-
+                updateScrollButtonsVisibility();
                 addressListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
                 addressListView.setItemChecked(0, true);
 
@@ -1857,16 +1829,16 @@ public class VisicomSearchFragment extends Fragment {
 //                "",
 //                "",
 //        });
-         addressesList = new ArrayList<>();
+        addressesList = new ArrayList<>();
         for (String[] addressArray : addresses) {
             // Выбираем значение 'address' из массива и добавляем его в addressesList
             addressesList.add(addressArray[0]);
         }
         Logger.d(context, TAG, "onCreate: " + addressesList);
         addressAdapter = new ArrayAdapter<>(context, R.layout.custom_list_item, addressesList);
-        
-        addressListView.setAdapter(addressAdapter);
 
+        addressListView.setAdapter(addressAdapter);
+        updateScrollButtonsVisibility();
         addressListView.setVisibility(View.VISIBLE);
 
 
@@ -1920,7 +1892,7 @@ public class VisicomSearchFragment extends Fragment {
                     fromEditAddress.setSelection(startPoint.length());
 
                     if (!verifyBuildingStart) {
-                         
+
                         List<String> settings = new ArrayList<>();
 
 
@@ -1973,7 +1945,7 @@ public class VisicomSearchFragment extends Fragment {
                     toEditAddress.setSelection(finishPoint.length());
 
                     if (!verifyBuildingFinish) {
-                         
+
                         List<String> settings = new ArrayList<>();
 
                         VisicomFragment.textViewTo.setText(addressesList.get(position));
@@ -2137,6 +2109,7 @@ public class VisicomSearchFragment extends Fragment {
 
             addressListView.setAdapter(addressAdapter);
             addressListView.setVisibility(View.VISIBLE);
+            updateScrollButtonsVisibility();
 
             addressListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
             addressListView.setItemChecked(0, true);
@@ -2301,26 +2274,26 @@ public class VisicomSearchFragment extends Fragment {
 
     private void visicomKey() {
         com.taxi.easy.ua.ui.visicom.visicom_search.key_visicom.ApiClient.getVisicomKeyInfo(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse apiResponse = response.body();
-                    String keyVisicom = apiResponse.getKeyVisicom();
-                    Logger.d(context, "ApiResponse", "keyVisicom: " + keyVisicom);
-                    MainActivity.apiKey = keyVisicom;
-                } else {
-                    // Обработка ошибки
-                    Logger.d(context, "visicomKey", "Error: " + response.code());
+                                                                                             @Override
+                                                                                             public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
+                                                                                                 if (response.isSuccessful() && response.body() != null) {
+                                                                                                     ApiResponse apiResponse = response.body();
+                                                                                                     String keyVisicom = apiResponse.getKeyVisicom();
+                                                                                                     Logger.d(context, "ApiResponse", "keyVisicom: " + keyVisicom);
+                                                                                                     MainActivity.apiKey = keyVisicom;
+                                                                                                 } else {
+                                                                                                     // Обработка ошибки
+                                                                                                     Logger.d(context, "visicomKey", "Error: " + response.code());
 
-                }
-            }
+                                                                                                 }
+                                                                                             }
 
-            @Override
-            public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
-                // Обработка ошибки
-                Logger.d(context, "visicomKey", "Failed to make API call" + t);
-            }
-        },getString(R.string.application)
+                                                                                             @Override
+                                                                                             public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
+                                                                                                 // Обработка ошибки
+                                                                                                 Logger.d(context, "visicomKey", "Failed to make API call" + t);
+                                                                                             }
+                                                                                         },getString(R.string.application)
         );
     }
     private void mapboxKey() {
