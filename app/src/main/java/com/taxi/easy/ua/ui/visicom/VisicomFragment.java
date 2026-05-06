@@ -1463,6 +1463,13 @@ public class VisicomFragment extends Fragment {
 
 
     public void orderFinished() throws MalformedURLException {
+        if (!isAdded() || getActivity() == null || getContext() == null) {
+            Logger.d(null, TAG, "Fragment not attached, cannot order");
+            btnVisible(VISIBLE);
+            return;
+        }
+
+        Context ctx = requireContext(); // ← получаем актуальный контекст
 
         if (!verifyPhone()) {
             MyPhoneDialogFragment bottomSheetDialogFragment = MyPhoneDialogFragment.newInstance("visicom");
@@ -1473,7 +1480,7 @@ public class VisicomFragment extends Fragment {
             constraintLayoutVisicomMain.setVisibility(GONE);
 
             if (textViewTo.getText().equals("")) {
-                textViewTo.setText(context.getString(R.string.on_city_tv));
+                textViewTo.setText(ctx.getString(R.string.on_city_tv)); // ← ctx
             }
             String messageResult =
                     geoText.getText().toString() + " " + getString(R.string.to_message) +
@@ -1481,67 +1488,74 @@ public class VisicomFragment extends Fragment {
 
             text_full_message.setText(messageResult);
 
-            messageResult = context.getString(R.string.check_cost_message);
+            messageResult = ctx.getString(R.string.check_cost_message); // ← ctx
             textCostMessage.setText(messageResult);
 
             textStatusCar.setText(R.string.ex_st_0);
 
-            Animation blinkAnimation = AnimationUtils.loadAnimation(context, R.anim.blink_animation);
+            Animation blinkAnimation = AnimationUtils.loadAnimation(ctx, R.anim.blink_animation); // ← ctx
             textStatusCar.startAnimation(blinkAnimation);
+
             String pay_method_message = "";
             switch (pay_method) {
                 case "bonus_payment":
-                    pay_method_message += " " + context.getString(R.string.pay_method_message_bonus);
+                    pay_method_message += " " + ctx.getString(R.string.pay_method_message_bonus); // ← ctx
                     break;
                 case "card_payment":
                 case "fondy_payment":
                 case "mono_payment":
                 case "wfp_payment":
-                    pay_method_message += " " + context.getString(R.string.pay_method_message_card);
+                    pay_method_message += " " + ctx.getString(R.string.pay_method_message_card); // ← ctx
                     break;
                 default:
-                    pay_method_message += " " + context.getString(R.string.pay_method_message_nal);
+                    pay_method_message += " " + ctx.getString(R.string.pay_method_message_nal); // ← ctx
             }
 
-
-//                String messagePayment = text_view_cost.getText().toString() + " " + context.getString(R.string.UAH) + " " + pay_method_message;
-//
-//                textCostMessage.setText(messagePayment);
             carProgressBar.resumeAnimation();
             constraintLayoutVisicomFinish.setVisibility(VISIBLE);
 
-
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
             baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-            Logger.d(context, TAG, "orderFinished: " + baseUrl + urlOrder);
+            Logger.d(ctx, TAG, "orderFinished: " + baseUrl + urlOrder); // ← ctx
 
             parser.sendURLChannel(urlOrder, new Callback<>() {
 
                 @Override
                 public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
+                    // Проверяем, что фрагмент всё ещё активен
+                    if (!isAdded() || getActivity() == null) {
+                        Logger.d(null, TAG, "Fragment detached during onResponse");
+                        return;
+                    }
+
                     if (response.isSuccessful() && response.body() != null) {
                         Map<String, String> sendUrlMap = response.body();
-
-                        handleOrderFinished(sendUrlMap, pay_method, context);
+                        // Используем ctx из внешнего метода (должен быть effectively final)
+                        handleOrderFinished(sendUrlMap, pay_method, ctx); // ← передаём ctx
                     } else {
                         btnVisible(VISIBLE);
                         String messageErr = getString(R.string.cost_error);
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(messageErr);
-                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        if (fragmentManager != null) {
+                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                        }
                     }
-
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
+                    // Проверяем, что фрагмент всё ещё активен
+                    if (!isAdded() || getActivity() == null) {
+                        Logger.d(null, TAG, "Fragment detached during onFailure");
+                        return;
+                    }
+
                     FirebaseCrashlytics.getInstance().recordException(t);
                     Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
-                    Logger.w(context, TAG, "NO INTERNET - Showing toast message");
+                    Logger.w(ctx, TAG, "NO INTERNET - Showing toast message"); // ← ctx
                 }
             });
         }
-
-
     }
 
     private void handleOrderFinished(Map<String, String> sendUrlMap, String pay_method, Context context) {
@@ -1846,24 +1860,31 @@ public class VisicomFragment extends Fragment {
     }
 
     private boolean verifyPhone() {
-        if (!isAdded() || getActivity() == null) {
+        // 1. Проверка, что фрагмент прикреплён к активности
+        if (!isAdded() || getActivity() == null || getContext() == null) {
             Logger.d(null, TAG, "Fragment not attached, skipping phone verification");
-            return false; // Or handle appropriately
-        }
-        List<String> stringList = logCursor(MainActivity.TABLE_USER_INFO, context);
-        if (stringList.size() < 3) {
-            Logger.d(requireActivity(), TAG, "Invalid or empty stringList");
             return false;
         }
+
+        // 2. Получаем актуальный Context
+        Context ctx = requireContext(); // или getContext()
+
+        List<String> stringList = logCursor(MainActivity.TABLE_USER_INFO, ctx);
+        if (stringList.size() < 3) {
+            Logger.d(ctx, TAG, "Invalid or empty stringList");
+            return false;
+        }
+
         String phone = stringList.get(2);
         if (phone == null || phone.isEmpty()) {
-            Logger.d(requireActivity(), TAG, "Phone number is null or empty");
+            Logger.d(ctx, TAG, "Phone number is null or empty");
             return false;
         }
-        Logger.d(requireActivity(), TAG, "onClick befor validate: ");
+
+        Logger.d(ctx, TAG, "onClick before validate: ");
         String PHONE_PATTERN = "\\+38 \\d{3} \\d{3} \\d{2} \\d{2}";
         boolean val = Pattern.compile(PHONE_PATTERN).matcher(phone).matches();
-        Logger.d(requireActivity(), TAG, "onClick No validate: " + val);
+        Logger.d(ctx, TAG, "onClick No validate: " + val);
         return val;
     }
 
