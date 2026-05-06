@@ -876,4 +876,13 @@
     <string name="location_calculating_cost">Розрахунок вартості...</string>
     <string name="location_timeout">Час очікування локації минув</string>
     <string name="admin_phone_absent">Номер адміністратора не знайдено</string>
+    <!-- PhoneCallHelper повідомлення -->
+    <string name="phone_error_not_initialized">Хелпер не ініціалізований</string>
+    <string name="phone_error_no_saved_number">Номер міста не збережено</string>
+    <string name="phone_error_empty_phone">Номер телефону не вказано</string>
+    <string name="phone_error_context_unavailable">Контекст недоступний</string>
+    <string name="phone_error_no_phone_number">Не вдалося отримати номер телефону</string>
+    <string name="phone_error_call_permission">Помилка: немає дозволу для дзвінка</string>
+    <string name="phone_permission_denied_message">Немає дозволу на дзвінок. Відкрито набір номера.</string>
+    <string name="phone_error_driver_empty">Номер водія не вказано</string>
 </resources>

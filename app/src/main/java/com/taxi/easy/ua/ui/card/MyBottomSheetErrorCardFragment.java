@@ -5,10 +5,8 @@ import static com.taxi.easy.ua.MainActivity.button1;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,6 +20,8 @@ import androidx.appcompat.widget.AppCompatButton;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
+import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.uxcam.UXCam;
 
 import java.util.ArrayList;
@@ -51,13 +51,17 @@ public class MyBottomSheetErrorCardFragment extends BottomSheetDialogFragment {
         btn_help = view.findViewById(R.id.btn_help);
         btn_help.setText(getString(R.string.order));
         btn_help.setOnClickListener(v -> {
-            List<String> stringList = logCursor(MainActivity.CITY_INFO, requireContext());
-            Intent intent = new Intent(Intent.ACTION_DIAL);
-            String phone = stringList.get(3);
-
-            intent.setData(Uri.parse(phone));
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // Добавляем флаг FLAG_ACTIVITY_NEW_TASK
-            startActivity(intent);
+            PhoneCallHelper.callWithFallback(() -> {
+                List<String> stringList = logCursor(MainActivity.CITY_INFO, MyApplication.getContext());
+                return stringList.size() > 3 ? stringList.get(3) : "";
+            });
+//            List<String> stringList = logCursor(MainActivity.CITY_INFO, requireContext());
+//            Intent intent = new Intent(Intent.ACTION_DIAL);
+//            String phone = stringList.get(3);
+//
+//            intent.setData(Uri.parse(phone));
+//            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // Добавляем флаг FLAG_ACTIVITY_NEW_TASK
+//            startActivity(intent);
         });
         textViewInfo = view.findViewById(R.id.textViewInfo);
         textViewInfo.setText(errorMessage);

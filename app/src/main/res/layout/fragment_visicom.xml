@@ -276,12 +276,14 @@
 
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btn_minus"
-                    android:layout_width="60sp"
-                    android:layout_height="60sp"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
                     android:layout_marginTop="4dp"
+                    android:background="@drawable/circle_button_minus"
                     android:gravity="center"
                     android:text="-"
                     android:textSize="30sp"
+                    android:textColor="@color/black"
                     android:visibility="invisible"
                     app:layout_constraintEnd_toStartOf="@+id/text_view_cost"
                     app:layout_constraintHorizontal_bias="0.858"
@@ -309,19 +311,19 @@
 
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btn_plus"
-                    android:layout_width="60sp"
-                    android:layout_height="60sp"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
                     android:layout_marginTop="4dp"
-                    android:backgroundTint="@color/colorAccent"
+                    android:background="@drawable/circle_button_plus"
                     android:gravity="center"
                     android:text="+"
                     android:textSize="30sp"
+                    android:textColor="@color/black"
                     android:visibility="invisible"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintHorizontal_bias="0.162"
                     app:layout_constraintStart_toEndOf="@+id/text_view_cost"
-                    app:layout_constraintTop_toBottomOf="@+id/btnBonus"
-                    tools:ignore="MissingConstraints" />
+                    app:layout_constraintTop_toBottomOf="@+id/btnBonus" />
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/linear_layout_buttons"

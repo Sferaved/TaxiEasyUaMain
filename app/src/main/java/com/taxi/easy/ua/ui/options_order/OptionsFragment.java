@@ -123,12 +123,8 @@ public class OptionsFragment extends Fragment {
 // Метод needsInclusiveTransport() возвращает boolean, по умолчанию false
         boolean isInclusive = InclusiveTransportPreferenceWorker.needsInclusiveTransport();
         cbInclusive.setChecked(isInclusive);
-        if(!isInclusive) {
-            komenterinp.setText("");
-            sharedPreferencesHelperMain.saveValue("comment", "no_comment");
-        } else {
+        if(isInclusive) {
             komenterinp.setText(context.getString(R.string.inclusive_transport_message_yes));
-
         }
 
 

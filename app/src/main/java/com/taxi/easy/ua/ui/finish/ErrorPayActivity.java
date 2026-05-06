@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -27,6 +26,7 @@ import com.taxi.easy.ua.ui.fondy.revers.SuccessResponseDataRevers;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -65,11 +65,15 @@ public class ErrorPayActivity extends AppCompatActivity {
         fab_call.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_DIAL);
-                List<String> stringList = logCursor(MainActivity.CITY_INFO);
-                String phone = stringList.get(3);
-                intent.setData(Uri.parse(phone));
-                startActivity(intent);
+                PhoneCallHelper.callWithFallback(() -> {
+                    List<String> stringList = logCursor(MainActivity.CITY_INFO);
+                    return stringList.size() > 3 ? stringList.get(3) : "";
+                });
+//                Intent intent = new Intent(Intent.ACTION_DIAL);
+//                List<String> stringList = logCursor(MainActivity.CITY_INFO);
+//                String phone = stringList.get(3);
+//                intent.setData(Uri.parse(phone));
+//                startActivity(intent);
             }
         });
     }

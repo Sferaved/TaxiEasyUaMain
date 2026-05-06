@@ -105,6 +105,7 @@ import com.taxi.easy.ua.utils.model.OrderViewModel;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
+import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.pusher.PusherManager;
 import com.taxi.easy.ua.utils.review.AppReviewManager;
@@ -266,7 +267,8 @@ public class MainActivity extends AppCompatActivity {
         applyLocale(localeCode);
         super.onCreate(savedInstanceState);
         bugReportHelper = new BugReportHelper(this);
-
+        PhoneCallHelper.initWithActivity(this);
+        PhoneCallHelper.ensureCallPermission();
         if (getIntent() != null && getIntent().hasExtra("shortcut_action")) {
             String action = getIntent().getStringExtra("shortcut_action");
 

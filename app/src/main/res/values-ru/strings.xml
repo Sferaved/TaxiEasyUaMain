@@ -873,4 +873,13 @@
     <string name="location_calculating_cost">Расчет стоимости...</string>
     <string name="location_timeout">Время ожидания локации истекло</string>
     <string name="admin_phone_absent">Номер администратора не найден</string>
+    <!-- PhoneCallHelper сообщения -->
+    <string name="phone_error_not_initialized">Хелпер не инициализирован</string>
+    <string name="phone_error_no_saved_number">Номер города не сохранён</string>
+    <string name="phone_error_empty_phone">Номер телефона не указан</string>
+    <string name="phone_error_context_unavailable">Контекст недоступен</string>
+    <string name="phone_error_no_phone_number">Не удалось получить номер телефона</string>
+    <string name="phone_error_call_permission">Ошибка: нет разрешения для звонка</string>
+    <string name="phone_permission_denied_message">Нет разрешения на звонок. Открыт набор номера.</string>
+    <string name="phone_error_driver_empty">Номер водителя не указан</string>
 </resources>

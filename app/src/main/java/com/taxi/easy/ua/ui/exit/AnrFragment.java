@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -23,8 +22,10 @@ import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentAnrBinding;
 import com.taxi.easy.ua.utils.connect.NetworkMonitor;
+import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,10 +68,14 @@ public class AnrFragment extends Fragment {
             startActivity(new Intent(requireActivity(), MainActivity.class));
         });
         btnCallAdmin.setOnClickListener(view16 -> {
-            Intent intent = new Intent(Intent.ACTION_DIAL);
-            String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
-            intent.setData(Uri.parse(phone));
-            startActivity(intent);
+            PhoneCallHelper.callWithFallback(() -> {
+                List<String> stringList = logCursor(MainActivity.CITY_INFO, MyApplication.getContext());
+                return stringList.size() > 3 ? stringList.get(3) : "";
+            });
+//            Intent intent = new Intent(Intent.ACTION_DIAL);
+//            String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
+//            intent.setData(Uri.parse(phone));
+//            startActivity(intent);
         });
         btn_exit.setOnClickListener(view16 -> {
             closeApplication();

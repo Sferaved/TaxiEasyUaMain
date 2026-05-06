@@ -9,10 +9,8 @@ import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -34,6 +32,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.ui.card.CustomCardAdapter;
 import com.taxi.easy.ua.ui.card.MyBottomSheetCardPayment;
 import com.taxi.easy.ua.ui.finish.ApiClient;
@@ -62,6 +61,7 @@ import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
+import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
 import com.uxcam.UXCam;
@@ -160,13 +160,17 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         btn_help = view.findViewById(R.id.btn_help);
         btn_help.setOnClickListener(v -> {
             actionPerformed = true; // Отмечаем, что действие было выполнено
-            List<String> stringList = logCursor(MainActivity.CITY_INFO, requireContext());
-            Intent intent = new Intent(Intent.ACTION_DIAL);
-            String phone = stringList.get(3);
-
-            intent.setData(Uri.parse(phone));
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
+            PhoneCallHelper.callWithFallback(() -> {
+                List<String> stringList = logCursor(MainActivity.CITY_INFO, MyApplication.getContext());
+                return stringList.size() > 3 ? stringList.get(3) : "";
+            });
+//            List<String> stringList = logCursor(MainActivity.CITY_INFO, requireContext());
+//            Intent intent = new Intent(Intent.ACTION_DIAL);
+//            String phone = stringList.get(3);
+//
+//            intent.setData(Uri.parse(phone));
+//            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//            startActivity(intent);
         });
 
         btn_ok = view.findViewById(R.id.btn_ok);

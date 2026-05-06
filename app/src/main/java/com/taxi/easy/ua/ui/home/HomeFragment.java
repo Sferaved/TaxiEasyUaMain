@@ -16,7 +16,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
@@ -27,7 +26,6 @@ import android.graphics.Typeface;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -112,6 +110,7 @@ import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
+import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.retrofit.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.retrofit.worker.RetrofitWorker;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
@@ -565,18 +564,26 @@ public class HomeFragment extends Fragment {
         });
         btnCallAdmin = binding.btnCallAdmin;
         btnCallAdmin.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_DIAL);
-            String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
-            intent.setData(Uri.parse(phone));
-            startActivity(intent);
+            PhoneCallHelper.callWithFallback(() -> {
+                List<String> stringListPhone = logCursor(MainActivity.CITY_INFO, MyApplication.getContext());
+                return stringListPhone.size() > 3 ? stringList.get(3) : "";
+            });
+//            Intent intent = new Intent(Intent.ACTION_DIAL);
+//            String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
+//            intent.setData(Uri.parse(phone));
+//            startActivity(intent);
         });
 
         btnCallAdminFin = binding.btnCallAdminFin;
         btnCallAdminFin.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_DIAL);
-            String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
-            intent.setData(Uri.parse(phone));
-            startActivity(intent);
+            PhoneCallHelper.callWithFallback(() -> {
+                List<String> stringListPhone = logCursor(MainActivity.CITY_INFO, MyApplication.getContext());
+                return stringListPhone.size() > 3 ? stringList.get(3) : "";
+            });
+//            Intent intent = new Intent(Intent.ACTION_DIAL);
+//            String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
+//            intent.setData(Uri.parse(phone));
+//            startActivity(intent);
         });
 
 
@@ -1892,6 +1899,7 @@ private void cost() {
         if (!tarif.equals(" ")) {
             newCheck++;
         }
+
         List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
         for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
             if(services.get(i+1).equals("1")) {
@@ -1899,8 +1907,6 @@ private void cost() {
             }
         }
 
-//        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
-//        String comment = stringList.get(2);
         String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
         Logger.d(context, TAG, "comment" + comment);
 
@@ -1913,6 +1919,7 @@ private void cost() {
         if(!discount.equals("0")) {
             newCheck++;
         }
+
         String mes = context.getString(R.string.add_services);
         if(newCheck != 0) {
             mes = context.getString(R.string.add_services) + " (" + newCheck + ")";

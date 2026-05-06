@@ -4,10 +4,8 @@ import static android.content.Context.MODE_PRIVATE;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,6 +19,8 @@ import androidx.appcompat.widget.AppCompatButton;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
+import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.uxcam.UXCam;
 
 import java.util.ArrayList;
@@ -50,12 +50,16 @@ public class MyBottomSheetBlackListFragment extends BottomSheetDialogFragment {
         btn_help.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                List<String> stringList = logCursor(MainActivity.CITY_INFO, getContext());
-                Intent intent = new Intent(Intent.ACTION_DIAL);
-                String phone = stringList.get(3);
-
-                intent.setData(Uri.parse(phone));
-                startActivity(intent);
+                PhoneCallHelper.callWithFallback(() -> {
+                    List<String> stringList = logCursor(MainActivity.CITY_INFO, MyApplication.getContext());
+                    return stringList.size() > 3 ? stringList.get(3) : "";
+                });
+//                List<String> stringList = logCursor(MainActivity.CITY_INFO, getContext());
+//                Intent intent = new Intent(Intent.ACTION_DIAL);
+//                String phone = stringList.get(3);
+//
+//                intent.setData(Uri.parse(phone));
+//                startActivity(intent);
             }
         });
         textViewCost = view.findViewById(R.id.textViewCost);

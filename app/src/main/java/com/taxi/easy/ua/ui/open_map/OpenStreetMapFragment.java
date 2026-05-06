@@ -68,6 +68,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentOpenstreetmapBinding;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
 import com.taxi.easy.ua.ui.open_map.api.ApiResponse;
@@ -76,6 +77,7 @@ import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
+import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 
 import org.json.JSONException;
 import org.osmdroid.api.IMapController;
@@ -420,11 +422,15 @@ public class OpenStreetMapFragment extends Fragment {
         }
 
         fabCall.setOnClickListener(v -> {
-            List<String> stringList = logCursor(MainActivity.CITY_INFO, ctx);
-            String phone = stringList.get(3);
-            Intent intent = new Intent(Intent.ACTION_DIAL);
-            intent.setData(Uri.parse(phone));
-            startActivity(intent);
+            PhoneCallHelper.callWithFallback(() -> {
+                List<String> stringList = logCursor(MainActivity.CITY_INFO, MyApplication.getContext());
+                return stringList.size() > 3 ? stringList.get(3) : "";
+            });
+//            List<String> stringList = logCursor(MainActivity.CITY_INFO, ctx);
+//            String phone = stringList.get(3);
+//            Intent intent = new Intent(Intent.ACTION_DIAL);
+//            intent.setData(Uri.parse(phone));
+//            startActivity(intent);
         });
 
         gpsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {

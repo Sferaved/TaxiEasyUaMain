@@ -863,4 +863,13 @@ Tap "Settings" to check.</string>
     <string name="location_calculating_cost">Calculating cost...</string>
     <string name="location_timeout">Location timeout expired</string>
     <string name="admin_phone_absent">Administrator number not found</string>
+    <!-- PhoneCallHelper messages -->
+    <string name="phone_error_not_initialized">Helper not initialized</string>
+    <string name="phone_error_no_saved_number">City number not saved</string>
+    <string name="phone_error_empty_phone">Phone number not specified</string>
+    <string name="phone_error_context_unavailable">Context unavailable</string>
+    <string name="phone_error_no_phone_number">Failed to get phone number</string>
+    <string name="phone_error_call_permission">Error: No call permission</string>
+    <string name="phone_permission_denied_message">No call permission. Dialing open.</string>
+    <string name="phone_error_driver_empty">Driver number not specified</string>
 </resources>

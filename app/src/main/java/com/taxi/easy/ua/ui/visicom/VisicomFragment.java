@@ -27,7 +27,6 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.location.Location;
 import android.location.LocationManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -118,6 +117,7 @@ import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.location.TaxiLocationValidator;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
+import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.retrofit.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
@@ -327,11 +327,15 @@ public class VisicomFragment extends Fragment {
 
         btnCallAdminFin = binding.btnCallAdminFin;
         btnCallAdmin.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_DIAL);
-            List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
-            String phone = stringList.get(3);
-            intent.setData(Uri.parse(phone));
-            startActivity(intent);
+            PhoneCallHelper.callWithFallback(() -> {
+                List<String> stringList = logCursor(MainActivity.CITY_INFO, MyApplication.getContext());
+                return stringList.size() > 3 ? stringList.get(3) : "";
+            });
+//            Intent intent = new Intent(Intent.ACTION_DIAL);
+//            List<String> stringList = logCursor(MainActivity.CITY_INFO, requireActivity());
+//            String phone = stringList.get(3);
+//            intent.setData(Uri.parse(phone));
+//            startActivity(intent);
         });
         btn1 = binding.button1;
         btn2 = binding.button2;
@@ -766,7 +770,7 @@ public class VisicomFragment extends Fragment {
 
     public static void addCheck(Context context) {
 
-        String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
+
         int newCheck = 0;
         List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
         for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
@@ -774,16 +778,12 @@ public class VisicomFragment extends Fragment {
                 newCheck++;
             }
         }
+
+        String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
         if (!tarif.equals(" ")) {
             newCheck++;
         }
-//        boolean isInclusive = InclusiveTransportPreferenceWorker.needsInclusiveTransport();
-//        if (isInclusive) {
-//            newCheck++;
-//        }
 
-//        List<String> stringList = logCursor(MainActivity.TABLE_ADD_SERVICE_INFO, context);
-//        String comment = stringList.get(2);
         String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
         Logger.d(context, TAG, "comment" + comment);
 
@@ -798,11 +798,11 @@ public class VisicomFragment extends Fragment {
         if(!discount.equals("0")) {
             newCheck++;
         }
+
         String mes = context.getString(R.string.add_services);
         if (newCheck != 0) {
             mes = context.getString(R.string.add_services) + " (" + newCheck + ")";
         }
-
 
         btnAdd.setText(mes);
 
@@ -826,6 +826,7 @@ public class VisicomFragment extends Fragment {
         // Групповая установка видимости для основных элементов
         setViewsVisibility(visible,
                 binding.linearLayoutButtons,
+                binding.gpsbut,
                 binding.btnAdd, binding.btnBonus, binding.btnMinus,
                 binding.textViewCost, binding.btnPlus, binding.btnOrder,
                 binding.schedule, binding.shedDown
@@ -873,18 +874,10 @@ public class VisicomFragment extends Fragment {
     }
     private void callAdmin() {
         Logger.d(context, TAG, "Вызов администратора");
-
-        // Читаємо номер адміністратора з таблиці USER_INFO або SETTINGS_INFO
-        List<String> userInfo = logCursor(MainActivity.TABLE_USER_INFO, context);
-        String adminPhone = userInfo.size() > 2 ? userInfo.get(2) : "no_phone";
-
-        if (!"no_phone".equals(adminPhone)) {
-            Intent intent = new Intent(Intent.ACTION_DIAL);
-            intent.setData(Uri.parse("tel:" + adminPhone));
-            startActivity(intent);
-        } else {
-            Toast.makeText(context, R.string.admin_phone_absent, Toast.LENGTH_SHORT).show();
-        }
+        PhoneCallHelper.callWithFallback(() -> {
+            List<String> stringList = logCursor(MainActivity.CITY_INFO, MyApplication.getContext());
+            return stringList.size() > 3 ? stringList.get(3) : "";
+        });
     }
 
 
@@ -926,11 +919,15 @@ public class VisicomFragment extends Fragment {
                 progressBar.setVisibility(GONE);
                 btnCallAdmin.setText(R.string.call_admin);
                 btnCallAdmin.setOnClickListener(v -> {
-                    Intent intent = new Intent(Intent.ACTION_DIAL);
-                    List<String> stringList = logCursor(MainActivity.CITY_INFO, activity);
-                    String phone = stringList.get(3);
-                    intent.setData(Uri.parse(phone));
-                    activity.startActivity(intent);
+                    PhoneCallHelper.callWithFallback(() -> {
+                        List<String> stringList = logCursor(MainActivity.CITY_INFO, MyApplication.getContext());
+                        return stringList.size() > 3 ? stringList.get(3) : "";
+                    });
+//                    Intent intent = new Intent(Intent.ACTION_DIAL);
+//                    List<String> stringList = logCursor(MainActivity.CITY_INFO, activity);
+//                    String phone = stringList.get(3);
+//                    intent.setData(Uri.parse(phone));
+//                    activity.startActivity(intent);
                 });
             }
 
@@ -2951,9 +2948,7 @@ public class VisicomFragment extends Fragment {
 
     private void visicomCost() throws MalformedURLException {
         Logger.d(context, TAG, "=== visicomCost() started ===");
-
         constr2.setVisibility(GONE);
-
 
         MainActivity.costMap = null;
 
@@ -2982,15 +2977,8 @@ public class VisicomFragment extends Fragment {
         if ("run".equals(cityCheckActivity) && originLatitude != 0.0 && toLat != 0.0) {
             progressBar.setVisibility(View.VISIBLE);
 
-            gpsBtn.setVisibility(View.VISIBLE);
+
             btnVisible(VISIBLE);
-//            svButton.setVisibility(View.VISIBLE);
-//            btnCallAdmin.setVisibility(View.VISIBLE);
-//            textfrom.setVisibility(View.VISIBLE);
-//            num1.setVisibility(View.VISIBLE);
-//            textwhere.setVisibility(View.VISIBLE);
-//            num2.setVisibility(View.VISIBLE);
-//            textViewTo.setVisibility(View.VISIBLE);
 
             String cost = (String) sharedPreferencesHelperMain.getValue("old_cost","0");
             Logger.d(context,TAG, "onContextItemSelected parts[1] cost: " + cost);
@@ -2999,7 +2987,7 @@ public class VisicomFragment extends Fragment {
                 sharedPreferencesHelperMain.saveValue("old_cost","0");
                 requestCostFromServer(start, finish);
             } else {
-                Toast.makeText(context, context.getString(R.string.check_cost_message), Toast.LENGTH_SHORT).show();
+
                 requestCostFromServer(start, finish);
             }
         } else {
