@@ -861,10 +861,51 @@ public class VisicomFragment extends Fragment {
                 binding.textGeo, binding.textwhere, binding.num2,
                 binding.textTo, binding.clearButtonTo, binding.gpsbut
         );
-
         binding.fabCallAdmin.setVisibility(GONE);
+
         binding.btnCallAdmin.setText(R.string.call_admin);
         binding.btnCallAdmin.setOnClickListener(v -> callAdmin());
+
+        boolean needFix = false;
+
+        // Проверяем видимость
+        if (binding.gpsbut.getVisibility() != VISIBLE) {
+            binding.gpsbut.setVisibility(VISIBLE);
+            needFix = true;
+        }
+
+        // Проверяем привязанность (Enabled)
+        if (!binding.gpsbut.isEnabled()) {
+            binding.gpsbut.setEnabled(true);
+            needFix = true;
+        }
+
+        // Логируем, если что-то было исправлено
+        if (needFix) {
+            Logger.d(context, "showNormalMode", "GPS button fixed: visibility=" +
+                    binding.gpsbut.getVisibility() + ", enabled=" + binding.gpsbut.isEnabled());
+        }
+
+
+        // Проверяем видимость (должна быть GONE в нормальном режиме)
+        if (binding.fabCallAdmin.getVisibility() != GONE) {
+            binding.fabCallAdmin.setVisibility(GONE);
+            needFix = true;
+        }
+
+        // Проверяем привязанность (Enabled) - отключаем, так как кнопка не нужна
+        if (binding.fabCallAdmin.isEnabled()) {
+            binding.fabCallAdmin.setEnabled(false);
+            needFix = true;
+        }
+
+        // Логируем, если что-то было исправлено
+        if (needFix) {
+            Logger.d(context, "showNormalMode", "FAB call button fixed: visibility=" +
+                    binding.fabCallAdmin.getVisibility() + ", enabled=" + binding.fabCallAdmin.isEnabled());
+        }
+
+
     }
 
     private void setViewsVisibility(int visibility, View... views) {
