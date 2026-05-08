@@ -55,7 +55,8 @@ public class ExitActivity extends AppCompatActivity {
         btnCallAdmin = findViewById(R.id.btnCallAdmin);
         btn_exit = findViewById(R.id.btn_exit);
         btn_ok = findViewById(R.id.btn_ok);
-
+        PhoneCallHelper.initWithActivity(this);
+        PhoneCallHelper.ensureCallPermission();
         // Регистрируем обработчик нажатия кнопки "назад"
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override

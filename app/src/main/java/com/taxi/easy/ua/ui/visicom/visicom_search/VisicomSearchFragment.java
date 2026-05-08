@@ -669,7 +669,7 @@ public class VisicomSearchFragment extends Fragment {
         btnCallAdmin.setOnClickListener(view -> {
             PhoneCallHelper.callWithFallback(() -> {
                 List<String> stringListPhone = logCursor(MainActivity.CITY_INFO);
-                return stringList.size() > 3 ? stringList.get(3) : "";
+                return stringListPhone.size() > 3 ? stringListPhone.get(3) : "";
             });
 //            Intent intent = new Intent(Intent.ACTION_DIAL);
 //            List<String> stringList1 = logCursor(MainActivity.CITY_INFO);

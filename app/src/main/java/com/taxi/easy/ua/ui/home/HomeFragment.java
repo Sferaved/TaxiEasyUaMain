@@ -566,7 +566,7 @@ public class HomeFragment extends Fragment {
         btnCallAdmin.setOnClickListener(v -> {
             PhoneCallHelper.callWithFallback(() -> {
                 List<String> stringListPhone = logCursor(MainActivity.CITY_INFO, MyApplication.getContext());
-                return stringListPhone.size() > 3 ? stringList.get(3) : "";
+                return stringListPhone.size() > 3 ? stringListPhone.get(3) : "";
             });
 //            Intent intent = new Intent(Intent.ACTION_DIAL);
 //            String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
@@ -578,7 +578,7 @@ public class HomeFragment extends Fragment {
         btnCallAdminFin.setOnClickListener(v -> {
             PhoneCallHelper.callWithFallback(() -> {
                 List<String> stringListPhone = logCursor(MainActivity.CITY_INFO, MyApplication.getContext());
-                return stringListPhone.size() > 3 ? stringList.get(3) : "";
+                return stringListPhone.size() > 3 ? stringListPhone.get(3) : "";
             });
 //            Intent intent = new Intent(Intent.ACTION_DIAL);
 //            String phone = logCursor(MainActivity.CITY_INFO, requireActivity()).get(3);
