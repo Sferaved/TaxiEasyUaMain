@@ -3,6 +3,7 @@ package com.taxi.easy.ua.ui.visicom;
 
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.GONE;
+import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static com.taxi.easy.ua.MainActivity.CITY_INFO;
 import static com.taxi.easy.ua.MainActivity.activeCalls;
@@ -814,7 +815,10 @@ public class VisicomFragment extends Fragment {
         // Всегда видимая кнопка администратора
         binding.btnCallAdmin.setVisibility(View.VISIBLE);
 
-        if (visible == GONE) {
+        // GPS кнопка всегда видна
+        binding.gpsbut.setVisibility(View.VISIBLE);
+
+        if (visible == GONE || visible == INVISIBLE) {
             showRetryMode();
         } else if (visible == VISIBLE) {
             showNormalMode();
@@ -823,10 +827,9 @@ public class VisicomFragment extends Fragment {
         // Управление ProgressBar
         binding.progressBar.setVisibility(visible == GONE ? View.VISIBLE : View.GONE);
 
-        // Групповая установка видимости для основных элементов
+        // Групповая установка видимости для основных элементов (исключаем gpsbut)
         setViewsVisibility(visible,
                 binding.linearLayoutButtons,
-                binding.gpsbut,
                 binding.btnAdd, binding.btnBonus, binding.btnMinus,
                 binding.textViewCost, binding.btnPlus, binding.btnOrder,
                 binding.schedule, binding.shedDown
@@ -836,10 +839,10 @@ public class VisicomFragment extends Fragment {
     }
 
     private void showRetryMode() {
-        binding.fabCallAdmin.setVisibility(VISIBLE);
-        binding.btnCallAdmin.setText(R.string.try_again);
 
-        binding.btnCallAdmin.setOnClickListener(v -> {
+        binding.btnReset.setVisibility(VISIBLE);
+
+        binding.btnReset.setOnClickListener(v -> {
             Logger.d(context,"BTN_VISIBLE", "Клик: Попробовать снова");
             clearTABLE_SERVICE_INFO();
             sharedPreferencesHelperMain.saveValue("time", "no_time");
@@ -852,60 +855,19 @@ public class VisicomFragment extends Fragment {
             startActivity(new Intent(context, MainActivity.class));
         });
 
-        binding.fabCallAdmin.setOnClickListener(v -> callAdmin());
+
     }
 
     private void showNormalMode() {
+        // Убираем gpsbut из этого списка
         setViewsVisibility(VISIBLE,
                 binding.textfrom, binding.num1, binding.clearButtonFrom,
                 binding.textGeo, binding.textwhere, binding.num2,
-                binding.textTo, binding.clearButtonTo, binding.gpsbut
+                binding.textTo, binding.clearButtonTo
+                // binding.gpsbut - удаляем отсюда
         );
-        binding.fabCallAdmin.setVisibility(GONE);
 
-        binding.btnCallAdmin.setText(R.string.call_admin);
-        binding.btnCallAdmin.setOnClickListener(v -> callAdmin());
-
-        boolean needFix = false;
-
-        // Проверяем видимость
-        if (binding.gpsbut.getVisibility() != VISIBLE) {
-            binding.gpsbut.setVisibility(VISIBLE);
-            needFix = true;
-        }
-
-        // Проверяем привязанность (Enabled)
-        if (!binding.gpsbut.isEnabled()) {
-            binding.gpsbut.setEnabled(true);
-            needFix = true;
-        }
-
-        // Логируем, если что-то было исправлено
-        if (needFix) {
-            Logger.d(context, "showNormalMode", "GPS button fixed: visibility=" +
-                    binding.gpsbut.getVisibility() + ", enabled=" + binding.gpsbut.isEnabled());
-        }
-
-
-        // Проверяем видимость (должна быть GONE в нормальном режиме)
-        if (binding.fabCallAdmin.getVisibility() != GONE) {
-            binding.fabCallAdmin.setVisibility(GONE);
-            needFix = true;
-        }
-
-        // Проверяем привязанность (Enabled) - отключаем, так как кнопка не нужна
-        if (binding.fabCallAdmin.isEnabled()) {
-            binding.fabCallAdmin.setEnabled(false);
-            needFix = true;
-        }
-
-        // Логируем, если что-то было исправлено
-        if (needFix) {
-            Logger.d(context, "showNormalMode", "FAB call button fixed: visibility=" +
-                    binding.fabCallAdmin.getVisibility() + ", enabled=" + binding.fabCallAdmin.isEnabled());
-        }
-
-
+        binding.btnReset.setVisibility(GONE);
     }
 
     private void setViewsVisibility(int visibility, View... views) {
@@ -3713,7 +3675,7 @@ public class VisicomFragment extends Fragment {
     }
 
     private void googleVerifyAccount() {
-        binding.fabCallAdmin.setVisibility(GONE);
+
         FirebaseConsentManager consentManager = new FirebaseConsentManager(context);
 
         consentManager.checkUserConsent(new FirebaseConsentManager.ConsentCallback() {

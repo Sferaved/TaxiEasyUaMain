@@ -97,7 +97,9 @@ public class WeatherWidget extends AppWidgetProvider {
         if (city == null || city.isEmpty()) {
             city = "Kyiv";
         }
-
+        String requestUrl = String.format("https://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric",
+                city, apiKey);
+        Logger.d(context, TAG, "🔍 FULL WEATHER REQUEST URL: " + requestUrl);
         WeatherApiHelper.fetchWeatherAsync(context, city, apiKey, new WeatherApiHelper.WeatherCallback() {
             @Override
             public void onSuccess(WeatherResponse weather) {

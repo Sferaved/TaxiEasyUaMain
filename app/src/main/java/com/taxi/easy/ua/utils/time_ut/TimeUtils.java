@@ -5,7 +5,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
-import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 
 import java.text.ParseException;
