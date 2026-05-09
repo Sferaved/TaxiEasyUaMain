@@ -692,16 +692,22 @@ public class VisicomFragment extends Fragment {
 
         // С existing слушатели кликов
         schedule.setOnClickListener(v -> {
+            if (!isAdded() || getActivity() == null) {
+                return;
+            }
             btnVisible(GONE);
             sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
-            NavController navController = NavHostFragment.findNavController(this);
-            navController.navigate(R.id.nav_options);
+            NavController navController = NavHostFragment.findNavController(VisicomFragment.this);
+            navController.navigate(R.id.nav_options, null, new NavOptions.Builder().build());
         });
 
         shed_down.setOnClickListener(v -> {
+            if (!isAdded() || getActivity() == null) {
+                return;
+            }
             btnVisible(GONE);
             sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
-            NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+            NavController navController = NavHostFragment.findNavController(VisicomFragment.this);
             navController.navigate(R.id.nav_options, null, new NavOptions.Builder().build());
         });
     }
@@ -2249,11 +2255,14 @@ public class VisicomFragment extends Fragment {
 
 
         btnAdd.setOnClickListener(v -> {
+            if (!isAdded() || getActivity() == null) {
+                return;
+            }
             btnVisible(GONE);
             sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
             sharedPreferencesHelperMain.saveValue("old_cost", "0");
-            NavController navController = NavHostFragment.findNavController(this);
-            navController.navigate(R.id.nav_options);
+            NavController navController = NavHostFragment.findNavController(VisicomFragment.this);
+            navController.navigate(R.id.nav_options, null, new NavOptions.Builder().build());
         });
 
 

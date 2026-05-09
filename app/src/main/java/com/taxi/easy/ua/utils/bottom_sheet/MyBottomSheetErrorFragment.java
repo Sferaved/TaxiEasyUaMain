@@ -41,6 +41,7 @@ import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.ui.cities.api.CityApiClient;
 import com.taxi.easy.ua.ui.cities.api.CityResponse;
 import com.taxi.easy.ua.ui.cities.api.CityService;
+import com.taxi.easy.ua.ui.home.ButtonVisibilityCallback;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
@@ -80,7 +81,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         this.errorMessage = errorMessage;
     }
     // Публичный безаргументный конструктор
-
+    private ButtonVisibilityCallback callback;
      
     @SuppressLint("UseCompatLoadingForDrawables")
     @Nullable
@@ -251,7 +252,9 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                         if (currentId == R.id.nav_visicom) {
                             VisicomFragment.btnStaticVisible(View.VISIBLE);
                         } else if (currentId == R.id.nav_home) {
-                            HomeFragment.btnVisible(View.VISIBLE);
+                            if (callback != null) {
+                                callback.onShowButtons(View.VISIBLE);
+                            }
                         }
                     });
 
@@ -303,7 +306,16 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
 
         return view;
     }
-
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        // Получаем callback из активности или родительского фрагмента
+        if (getParentFragment() instanceof ButtonVisibilityCallback) {
+            callback = (ButtonVisibilityCallback) getParentFragment();
+        } else if (getActivity() instanceof ButtonVisibilityCallback) {
+            callback = (ButtonVisibilityCallback) getActivity();
+        }
+    }
     private void restartApplication(Context context) {
         Intent intent = new Intent(context, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(

@@ -882,4 +882,21 @@
     <string name="phone_error_call_permission">Ошибка: нет разрешения для звонка</string>
     <string name="phone_permission_denied_message">Нет разрешения на звонок. Открыт набор номера.</string>
     <string name="phone_error_driver_empty">Номер водителя не указан</string>
+    <!-- Диалоги верификации -->
+    <string name="verification_required_title">⚠️ Верификация аккаунта</string>
+    <string name="verification_required_message">Для работы с приложением необходима верификация аккаунта.\n\nПожалуйста, войдите в свой аккаунт или зарегистрируйтесь.</string>
+    <string name="verification_cancelled_title">⚠️ Верификация обязательна</string>
+    <string name="verification_cancelled_message">Вы не можете использовать приложение без подтверждения аккаунта.\n\nПожалуйста, авторизуйтесь для продолжения работы.</string>
+    <string name="verification_error_title">❌ Ошибка</string>
+    <string name="verification_error_message">Произошла ошибка:\n%s\n\nПожалуйста, попробуйте снова.</string>
+    <string name="verification_mandatory_toast">Верификация обязательна для работы с приложением</string>
+
+    <!-- Кнопки -->
+    <string name="verify_now">Войти</string>
+    <string name="try_again_v">Попробовать снова</string>
+    <string name="exit_app">Выйти</string>
+    <string name="retry_v">Повторить</string>
+    <string name="air_alarm">воздушная тревога</string>
+    <string name="reb_alarm">работа РЭБ</string>
+    <string name="dificult_find_car">Поиск машины затруднен. Рекомендуется добавить в тариф. \n\nЗафиксировано: </string>
 </resources>

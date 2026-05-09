@@ -872,4 +872,21 @@ Tap "Settings" to check.</string>
     <string name="phone_error_call_permission">Error: No call permission</string>
     <string name="phone_permission_denied_message">No call permission. Dialing open.</string>
     <string name="phone_error_driver_empty">Driver number not specified</string>
+    <!-- Verification Dialogs -->
+    <string name="verification_required_title">⚠️ Account Verification</string>
+    <string name="verification_required_message">Account verification is required to use the application.\n\nPlease sign in or register.</string>
+    <string name="verification_cancelled_title">⚠️ Verification Required</string>
+    <string name="verification_cancelled_message">You cannot use the application without account verification.\n\nPlease sign in to continue.</string>
+    <string name="verification_error_title">❌ Error</string>
+    <string name="verification_error_message">An error occurred:\n%s\n\nPlease try again.</string>
+    <string name="verification_mandatory_toast">Verification is required to use the application</string>
+
+    <!-- Buttons -->
+    <string name="verify_now">Sign in</string>
+    <string name="try_again_v">Try again</string>
+    <string name="exit_app">Exit</string>
+    <string name="retry_v">Retry</string>
+    <string name="air_alarm">air alarm</string>
+    <string name="reb_alarm">EW operation</string>
+    <string name="dificult_find_car">Finding a car is difficult. It is recommended to add to the tariff. \n\nCurrently recorded: </string>
 </resources>

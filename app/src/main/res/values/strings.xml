@@ -885,4 +885,21 @@
     <string name="phone_error_call_permission">Помилка: немає дозволу для дзвінка</string>
     <string name="phone_permission_denied_message">Немає дозволу на дзвінок. Відкрито набір номера.</string>
     <string name="phone_error_driver_empty">Номер водія не вказано</string>
+    <!-- Діалоги верифікації -->
+    <string name="verification_required_title">⚠️ Верифікація акаунта</string>
+    <string name="verification_required_message">Для роботи з додатком необхідна верифікація акаунта.\n\nБудь ласка, увійдіть у свій акаунт або зареєструйтесь.</string>
+    <string name="verification_cancelled_title">⚠️ Верифікація обов\'язкова</string>
+    <string name="verification_cancelled_message">Ви не можете використовувати додаток без підтвердження акаунта.\n\nБудь ласка, авторизуйтесь для продовження роботи.</string>
+    <string name="verification_error_title">❌ Помилка</string>
+    <string name="verification_error_message">Сталася помилка:\n%s\n\nБудь ласка, спробуйте ще раз.</string>
+    <string name="verification_mandatory_toast">Верифікація обов\'язкова для роботи з додатком</string>
+
+    <!-- Кнопки -->
+    <string name="verify_now">Увійти</string>
+    <string name="try_again_v">Спробувати ще раз</string>
+    <string name="exit_app">Вийти</string>
+    <string name="retry_v">Повторити</string>
+    <string name="air_alarm">повітряна тривога</string>
+    <string name="reb_alarm">робота РЕБ</string>
+    <string name="dificult_find_car">Пошук машини ускладнено. Рекомендується додати до тарифу. \n\nНаразі зафіксовано: </string>
 </resources>

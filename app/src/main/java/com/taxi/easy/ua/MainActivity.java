@@ -259,6 +259,11 @@ public class MainActivity extends AppCompatActivity {
         return appReviewManager;
     }
     private BugReportHelper bugReportHelper;
+
+    private boolean isVerificationRequired = false;  // Флаг, что требуется верификация
+    private AlertDialog verificationDialog = null;   // Ссылка на диалог
+    private boolean isWaitingForVerification = false;
+
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -2131,7 +2136,15 @@ public class MainActivity extends AppCompatActivity {
             sharedPreferencesHelperMain.saveValue("CityCheckActivity", "**");
             VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
             Toast.makeText(MainActivity.this, R.string.checking, Toast.LENGTH_SHORT).show();
-            startFireBase();
+            if (VisicomFragment.progressBar != null) {
+                VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
+            }
+
+            // Блокируем UI до верификации
+            blockUiUntilVerification();
+
+            // Показываем диалог верификации
+            showAccountVerificationRequiredDialog();
         } else {
 
             findUserFromServer(userEmail, findUser -> {
@@ -2332,32 +2345,35 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startFireBase() {
-        Toast.makeText(this, R.string.account_verify, Toast.LENGTH_SHORT).show();
-        startSignIn();
+        runOnUiThread(() -> {
+            try {
+                Toast.makeText(this, R.string.account_verify, Toast.LENGTH_SHORT).show();
+
+                List<AuthUI.IdpConfig> providers = Collections.singletonList(
+                        new AuthUI.IdpConfig.GoogleBuilder().build());
+
+                Intent signInIntent = AuthUI.getInstance()
+                        .createSignInIntentBuilder()
+                        .setAvailableProviders(providers)
+                        .setAlwaysShowSignInMethodScreen(true) // Всегда показывать выбор
+                        .build();
+
+                signInLauncher.launch(signInIntent);
+
+            } catch (Exception e) {
+                Logger.e(getApplicationContext(), TAG, "Exception during sign-in launch " + e);
+                FirebaseCrashlytics.getInstance().recordException(e);
+
+                // При ошибке показываем диалог повторно
+                showVerificationErrorDialog(e.getMessage());
+            }
+        });
     }
 
-    private void startSignIn() {
-        try {
-            Logger.d(getApplicationContext(), TAG, "run: ");
-            List<AuthUI.IdpConfig> providers = Collections.singletonList(
-                    new AuthUI.IdpConfig.GoogleBuilder().build());
 
-            Intent signInIntent = AuthUI.getInstance()
-                    .createSignInIntentBuilder()
-                    .setAvailableProviders(providers)
-                    .build();
-
-            signInLauncher.launch(signInIntent);
-        } catch (Exception e) {
-            Logger.e(getApplicationContext(), TAG, "Exception during sign-in launch " + e);
-            FirebaseCrashlytics.getInstance().recordException(e);
-            VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-        }
-    }
 
 
     private final ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
-
             new FirebaseAuthUIActivityResultContract(),
             result -> {
                 onSignInResult(result, getSupportFragmentManager());
@@ -2365,8 +2381,18 @@ public class MainActivity extends AppCompatActivity {
     );
 
     private void onSignInResult(FirebaseAuthUIAuthenticationResult result, FragmentManager fm) {
-        ContentValues cv = new ContentValues();
         Logger.d(this, TAG, "onSignInResult: ");
+
+        // Проверяем, был ли отменен вход
+        if (result.getResultCode() == RESULT_CANCELED) {
+            Logger.d(this, TAG, "Sign-in was cancelled by user");
+
+            // Пользователь отменил выбор аккаунта
+            if (isWaitingForVerification) {
+                handleVerificationCancelled();
+            }
+            return;
+        }
 
         // Попробуем выполнить вход
         try {
@@ -2378,6 +2404,14 @@ public class MainActivity extends AppCompatActivity {
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
                 if (user != null) {
+                    isWaitingForVerification = false;
+                    isVerificationRequired = false;
+
+                    // Закрываем диалог если он еще показывается
+                    if (verificationDialog != null && verificationDialog.isShowing()) {
+                        verificationDialog.dismiss();
+                        verificationDialog = null;
+                    }
 
                     userEmailForTest = user.getEmail();
                     usernameForTest = "username";
@@ -2388,21 +2422,11 @@ public class MainActivity extends AppCompatActivity {
                     Logger.d(this, TAG, "CityCheckActivity: " + sityCheckActivity);
 
                     if (sityCheckActivity.equals("**")) {
-                        // Запускаем CityCheckActivity, если состояние страны не задано
                         Intent intent = new Intent(this, CityCheckActivity.class);
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                         startActivity(intent);
                     }
-//                    pusherManager = new PusherManager(
-//                            getString(R.string.application),
-//                            user.getEmail(),
-//                            this,
-//                            viewModel
-//                    );
-//                    pusherManager.connect();
-//                    pusherManager.subscribeToChannel();
-//                    Log.d("DEBUG", "Creating PusherManager instance. Hash: " + pusherManager.hashCode());
-//                    Log.d("DEBUG", "ViewModel passed to PusherManager hash: " + viewModel.hashCode());
+
                     centrifugoManager = new CentrifugoManager(
                             getString(R.string.application),
                             user.getEmail(),
@@ -2411,27 +2435,38 @@ public class MainActivity extends AppCompatActivity {
                     );
 
                     centrifugoManager.connect();
-// subscribeToChannel() не обязателен, но можно вызвать для надежности
                     centrifugoManager.subscribeToChannel();
+
+                    // Разблокируем UI
+                    unblockUiAfterVerification();
                 }
             } else {
                 handleSignInFailure(result);
             }
         } catch (Exception e) {
-            handleException(e, cv);
+            handleException(e, new ContentValues());
         }
     }
 
-    // Метод обработки ошибок при входе
+
+
     private void handleSignInFailure(FirebaseAuthUIAuthenticationResult result) {
         IdpResponse response = result.getIdpResponse();
         if (response == null) {
             Logger.d(this, TAG, "Sign-in canceled by user.");
+            // Пользователь отменил вход
+            if (isWaitingForVerification) {
+                handleVerificationCancelled();
+            }
         } else {
             Logger.d(this, TAG, "Sign-in error: " + response.getError().getMessage());
             FirebaseCrashlytics.getInstance().recordException(response.getError());
+
+            // Показываем ошибку и предлагаем попробовать снова
+            showVerificationErrorDialog(response.getError().getMessage());
         }
     }
+
 
     // Метод для обработки исключений
     private void handleException(Exception e, ContentValues cv) {
@@ -3172,4 +3207,173 @@ public class MainActivity extends AppCompatActivity {
     private int dpToPx(int dp) {
         return (int) (dp * getResources().getDisplayMetrics().density);
     }
+    // Простой диалог для верификации
+    private void showAccountVerificationRequiredDialog() {
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+
+        runOnUiThread(() -> {
+            try {
+                isVerificationRequired = true;
+                isWaitingForVerification = true;
+
+                // Используем кастомный layout
+                View dialogView = getLayoutInflater().inflate(R.layout.dialog_verification_simple, null);
+
+                TextView tvTitle = dialogView.findViewById(R.id.tvTitle);
+                TextView tvMessage = dialogView.findViewById(R.id.tvMessage);
+                Button btnPositive = dialogView.findViewById(R.id.btnPositive);
+                Button btnNegative = dialogView.findViewById(R.id.btnNegative);
+
+                // Устанавливаем сообщение
+                tvMessage.setText(getString(R.string.verification_required_message));
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setView(dialogView)
+                        .setCancelable(false);
+
+                verificationDialog = builder.create();
+                verificationDialog.show();
+
+                // Обработчики кнопок
+                btnPositive.setOnClickListener(v -> {
+                    isWaitingForVerification = true;
+                    verificationDialog.dismiss();
+                    startFireBase();
+                });
+
+                btnNegative.setOnClickListener(v -> {
+                    verificationDialog.dismiss();
+                    finishAffinity();
+                    System.exit(0);
+                });
+
+            } catch (Exception e) {
+                Logger.e(this, TAG, "Error showing dialog: " + e.getMessage());
+            }
+        });
+    }
+
+    // Диалог при отмене верификации
+    private void handleVerificationCancelled() {
+        runOnUiThread(() -> {
+            Logger.d(this, TAG, "User cancelled verification");
+
+            if (verificationDialog != null && verificationDialog.isShowing()) {
+                verificationDialog.dismiss();
+                verificationDialog = null;
+            }
+
+            Toast.makeText(this, "Верификация обязательна", Toast.LENGTH_LONG).show();
+
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (isVerificationRequired && !isFinishing() && !isDestroyed()) {
+                    View dialogView = getLayoutInflater().inflate(R.layout.dialog_verification_simple, null);
+
+                    TextView tvTitle = dialogView.findViewById(R.id.tvTitle);
+                    TextView tvMessage = dialogView.findViewById(R.id.tvMessage);
+                    Button btnPositive = dialogView.findViewById(R.id.btnPositive);
+                    Button btnNegative = dialogView.findViewById(R.id.btnNegative);
+
+                    tvTitle.setText(getString(R.string.verification_required_title));
+                    tvMessage.setText(getString(R.string.verification_required_message));
+                    btnPositive.setText(getString(R.string.verify_now));
+                    btnNegative.setText(getString(R.string.exit_app));
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setView(dialogView)
+                            .setCancelable(false);
+
+                    verificationDialog = builder.create();
+                    verificationDialog.show();
+
+                    btnPositive.setOnClickListener(v -> {
+                        verificationDialog.dismiss();
+                        startFireBase();
+                    });
+
+                    btnNegative.setOnClickListener(v -> {
+                        verificationDialog.dismiss();
+                        finishAffinity();
+                        System.exit(0);
+                    });
+                }
+            }, 1000);
+        });
+    }
+
+    // Диалог ошибки
+    private void showVerificationErrorDialog(String errorMessage) {
+        runOnUiThread(() -> {
+            if (isFinishing() || isDestroyed()) return;
+
+            View dialogView = getLayoutInflater().inflate(R.layout.dialog_verification_simple, null);
+
+            TextView tvTitle = dialogView.findViewById(R.id.tvTitle);
+            TextView tvMessage = dialogView.findViewById(R.id.tvMessage);
+            Button btnPositive = dialogView.findViewById(R.id.btnPositive);
+            Button btnNegative = dialogView.findViewById(R.id.btnNegative);
+
+            tvTitle.setText(getString(R.string.verification_error_title));
+            tvMessage.setText(String.format(getString(R.string.verification_error_message), errorMessage));
+            btnPositive.setText(getString(R.string.retry_v));
+            btnNegative.setText(getString(R.string.exit_app));
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setView(dialogView)
+                    .setCancelable(false);
+
+            AlertDialog errorDialog = builder.create();
+            errorDialog.show();
+
+            btnPositive.setOnClickListener(v -> {
+                errorDialog.dismiss();
+                startFireBase();
+            });
+
+            btnNegative.setOnClickListener(v -> {
+                errorDialog.dismiss();
+                finishAffinity();
+                System.exit(0);
+            });
+        });
+    }
+    // Методы блокировки/разблокировки UI
+    private void blockUiUntilVerification() {
+        runOnUiThread(() -> {
+            try {
+                // Блокируем drawer
+                binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+
+                // Показываем затемнение
+                View overlay = findViewById(R.id.overlay_view);
+                if (overlay != null) {
+                    overlay.setVisibility(View.VISIBLE);
+                    overlay.setOnClickListener(v -> {
+                        // Просто игнорируем клики
+                    });
+                }
+            } catch (Exception e) {
+                Logger.e(this, TAG, "blockUi error: " + e.getMessage());
+            }
+        });
+    }
+
+    private void unblockUiAfterVerification() {
+        runOnUiThread(() -> {
+            try {
+                binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+
+                View overlay = findViewById(R.id.overlay_view);
+                if (overlay != null) {
+                    overlay.setVisibility(View.GONE);
+                    overlay.setOnClickListener(null);
+                }
+            } catch (Exception e) {
+                Logger.e(this, TAG, "unblockUi error: " + e.getMessage());
+            }
+        });
+    }
+
 }

@@ -31,6 +31,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.redmadrobot.inputmask.MaskedTextChangedListener;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.home.ButtonVisibilityCallback;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -53,7 +54,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
     private CheckBox checkBox;
     private String page;
     private FirebaseUserManager userManager;
-
+    private ButtonVisibilityCallback callback;
     // Пустой конструктор обязателен для фрагментов
     public MyPhoneDialogFragment() {
     }
@@ -109,7 +110,16 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
 
         return view;
     }
-
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        // Получаем callback из активности или родительского фрагмента
+        if (getParentFragment() instanceof ButtonVisibilityCallback) {
+            callback = (ButtonVisibilityCallback) getParentFragment();
+        } else if (getActivity() instanceof ButtonVisibilityCallback) {
+            callback = (ButtonVisibilityCallback) getActivity();
+        }
+    }
     private void navigateBasedOnPage() {
         if (page == null) {
             dismiss();
@@ -118,7 +128,10 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
 
         switch (page) {
             case "home":
-                HomeFragment.btnVisible(View.INVISIBLE);
+                if (callback != null) {
+                    callback.onShowButtons(View.INVISIBLE);
+                }
+
                 HomeFragment.btn_order.performClick();
                 dismiss();
                 break;
@@ -181,7 +194,9 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                 VisicomFragment.btnStaticVisible(View.VISIBLE);
                 break;
             case "home":
-                HomeFragment.btnVisible(View.VISIBLE);
+                if (callback != null) {
+                    callback.onShowButtons(View.VISIBLE);
+                }
                 break;
         }
     }

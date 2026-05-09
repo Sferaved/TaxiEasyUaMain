@@ -145,7 +145,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 
-public class HomeFragment extends Fragment {
+public class HomeFragment extends Fragment  implements ButtonVisibilityCallback {
 
     private static final String TAG = "HomeFragment";
 
@@ -536,7 +536,7 @@ public class HomeFragment extends Fragment {
             navController.navigate(R.id.nav_options, null, new NavOptions.Builder().build());
         });
         buttonBonus.setOnClickListener(v -> {
-            HomeFragment.btnVisible(INVISIBLE);
+            btnVisible(INVISIBLE);
             List<String> stringList1 = logCursor(MainActivity.CITY_INFO, context);
             String api =  stringList1.get(2);
             updateAddCost("0");
@@ -1028,27 +1028,27 @@ public class HomeFragment extends Fragment {
         requestPermissions();
     }
 
-    public static void btnVisible(int visible) {
-
-        (MyApplication.getCurrentActivity()).runOnUiThread(() -> {
-            if (text_view_cost != null) {
-                schedule.setVisibility(visible);
-                shed_down.setVisibility(visible);
-                text_view_cost.setVisibility(visible);
-                btn_clear.setVisibility(visible);
-                btn_minus.setVisibility(visible);
-                btn_plus.setVisibility(visible);
-                buttonAddServices.setVisibility(visible);
-                buttonBonus.setVisibility(visible);
-                btn_clear.setVisibility(visible); // Note: btn_clear is set twice, consider removing duplicate
-                btn_order.setVisibility(visible);
-                if (visible == View.INVISIBLE) {
-                    progressBar.setVisibility(View.VISIBLE);
-                } else {
-                    progressBar.setVisibility(View.GONE);
+    public void btnVisible(int visible) {
+        if (getActivity() != null && !getActivity().isFinishing() && !getActivity().isDestroyed()) {
+            getActivity().runOnUiThread(() -> {
+                if (text_view_cost != null && getView() != null) {
+                    schedule.setVisibility(visible);
+                    shed_down.setVisibility(visible);
+                    text_view_cost.setVisibility(visible);
+                    btn_clear.setVisibility(visible);
+                    btn_minus.setVisibility(visible);
+                    btn_plus.setVisibility(visible);
+                    buttonAddServices.setVisibility(visible);
+                    buttonBonus.setVisibility(visible);
+                    btn_order.setVisibility(visible);
+                    if (visible == View.INVISIBLE) {
+                        progressBar.setVisibility(View.VISIBLE);
+                    } else {
+                        progressBar.setVisibility(View.GONE);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     // Метод для сохранения количества запросов разрешений в SharedPreferences
@@ -2794,4 +2794,8 @@ private void cost() {
         });
     }
 
+    @Override
+    public void onShowButtons(int visibility) {
+        btnVisible(visibility);
+    }
 }

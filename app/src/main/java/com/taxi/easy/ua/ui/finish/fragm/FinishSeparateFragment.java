@@ -63,6 +63,7 @@ import com.taxi.easy.ua.ui.finish.BonusResponse;
 import com.taxi.easy.ua.ui.finish.FinishCostResponse;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
 import com.taxi.easy.ua.ui.finish.Status;
+import com.taxi.easy.ua.ui.weather.finish.PassengerNotifier;
 import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetAddCostFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
@@ -198,7 +199,9 @@ public class FinishSeparateFragment extends Fragment {
 //    long delayMillis = 30 * 1000;
     private String pendingAddCost = "0";
     private boolean isTaskScheduled = false; // Флаг для отслеживания
-    
+    private PassengerNotifier notifier;
+    private Handler checkHandler = new Handler();
+    private Runnable checkRunnable;
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -530,6 +533,21 @@ public class FinishSeparateFragment extends Fragment {
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
+
+        notifier = new PassengerNotifier(context);
+
+        // Когда начинаете поиск машины:
+        notifier.onSearchStarted();
+        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
+//        String city = listCity.get(1);
+        String city = null;
+        Logger.d(context, "PassengerNotifier", "city " + city);
+        // Проверка через 1 секунду
+        checkHandler.postDelayed(() -> {
+            notifier.checkAndNotify(context, city);
+        }, 1000);
+
+
         return root;
     }
 
