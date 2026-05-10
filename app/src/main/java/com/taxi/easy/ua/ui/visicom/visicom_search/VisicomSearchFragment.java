@@ -1539,20 +1539,7 @@ public class VisicomSearchFragment extends Fragment {
                         finishMarker = "ok";
                     }
 
-                    if (position == addressesList.size() - 1) {
-                        Bundle bundle = new Bundle();
-                        bundle.putString("startMarker", start);
-                        bundle.putString("finishMarker", end);
 
-                        MainActivity.navController.navigate(
-                                R.id.nav_map,
-                                bundle,
-                                new NavOptions.Builder()
-                                        .setPopUpTo(R.id.nav_map, true)
-                                        .build()
-                        );
-
-                    } else {
                         double[] coordinates = coordinatesList.get(position);
 
                         if (point.equals("start")) {
@@ -1674,7 +1661,7 @@ public class VisicomSearchFragment extends Fragment {
                             }
 
                         }
-                    }
+
 
                     addressListView.setVisibility(View.INVISIBLE);
                     Logger.d(context, TAG, "processAddressData:222222 " + addressesList.get(position));
@@ -1866,26 +1853,7 @@ public class VisicomSearchFragment extends Fragment {
                 finishMarker = "ok";
             }
 
-            if (position == addressesList.size() - 1) {
-                Bundle bundle = new Bundle();
-                bundle.putString("startMarker", startMarker);
-                bundle.putString("finishMarker", finishMarker);
 
-                MainActivity.navController.navigate(
-                        R.id.nav_map,
-                        bundle,
-                        new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_map, true)
-                                .build()
-                );
-//                Intent intent = new Intent(context, OpenStreetMapVisicomActivity.class);
-//
-//                intent.putExtra("startMarker", startMarker);
-//                intent.putExtra("finishMarker", finishMarker);
-//
-//                startActivity(intent);
-//                finish();
-            } else {
                 double[] coordinates = coordinatesList.get(position);
 
                 if (point.equals("start")) {
@@ -1995,7 +1963,7 @@ public class VisicomSearchFragment extends Fragment {
                         }
                     }
                 }
-            }
+
 
             addressListView.setVisibility(View.INVISIBLE);
             scrollSetVisibility();
@@ -2136,26 +2104,7 @@ public class VisicomSearchFragment extends Fragment {
                     finishMarker = "ok";
                 }
 
-                if (position == addressesList.size() - 1) {
-                    Bundle bundle = new Bundle();
-                    bundle.putString("startMarker", startMarker);
-                    bundle.putString("finishMarker", finishMarker);
 
-                    MainActivity.navController.navigate(
-                            R.id.nav_map,
-                            bundle,
-                            new NavOptions.Builder()
-                                    .setPopUpTo(R.id.nav_map, true)
-                                    .build()
-                    );
-//                    Intent intent = new Intent(context, OpenStreetMapVisicomActivity.class);
-//
-//                    intent.putExtra("startMarker", startMarker);
-//                    intent.putExtra("finishMarker", finishMarker);
-//
-//                    startActivity(intent);
-//                        finish();
-                } else {
                     double[] coordinates = coordinatesList.get(position);
 
                     if (point.equals("start")) {
@@ -2265,7 +2214,7 @@ public class VisicomSearchFragment extends Fragment {
                         }
 
                     }
-                }
+
 
                 addressListView.setVisibility(View.INVISIBLE);
             });
