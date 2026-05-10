@@ -539,8 +539,8 @@ public class FinishSeparateFragment extends Fragment {
         // Когда начинаете поиск машины:
         notifier.onSearchStarted();
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
-//        String city = listCity.get(1);
-        String city = null;
+        String city = listCity.get(1);
+
         Logger.d(context, "PassengerNotifier", "city " + city);
         // Проверка через 1 секунду
         checkHandler.postDelayed(() -> {

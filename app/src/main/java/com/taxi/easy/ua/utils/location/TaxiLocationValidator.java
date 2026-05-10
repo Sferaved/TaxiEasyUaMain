@@ -26,77 +26,227 @@ public class TaxiLocationValidator {
     /**
      * Асинхронная проверка локации
      */
-    public static void evaluateAsync(Location location, Context context, LocationEvaluationCallback callback) {
+    public static void evaluateAsync(Location location,
+                                     Context context,
+                                     LocationEvaluationCallback callback) {
+
         Logger.d(context, "LocationValidator", "=== evaluateAsync() START ===");
-        Logger.d(context, "LocationValidator", "Location: " + (location != null ?
-                "lat=" + location.getLatitude() + ", lon=" + location.getLongitude() : "null"));
 
         if (location == null) {
-            Logger.e(context, "LocationValidator", "Location is NULL -> BLOCK");
             if (callback != null) callback.onResult(RiskLevel.BLOCK);
             return;
         }
 
-        // 1. Mock проверка
+        int riskScore = 0;
+
+        // =========================
+        // MOCK CHECK
+        // =========================
+
         if (location.isFromMockProvider()) {
-            Logger.w(context, "LocationValidator", "isFromMockProvider=true -> BLOCK");
-            if (callback != null) callback.onResult(RiskLevel.BLOCK);
-            return;
-        }
-        Logger.d(context, "LocationValidator", "isFromMockProvider=false -> OK");
-
-        // 2. Точность
-        if (!location.hasAccuracy() || location.getAccuracy() > 50) {
-            Logger.w(context, "LocationValidator", "Accuracy=" + location.getAccuracy() + " -> SUSPICIOUS");
-            if (callback != null) callback.onResult(RiskLevel.SUSPICIOUS);
-            return;
-        }
-        Logger.d(context, "LocationValidator", "Accuracy=" + location.getAccuracy() + " -> OK");
-
-        // 3. Скорость
-        float speed = location.getSpeed();
-        if (speed > 50) {
-            Logger.w(context, "LocationValidator", "Speed=" + speed + " m/s -> SUSPICIOUS");
-            if (callback != null) callback.onResult(RiskLevel.SUSPICIOUS);
-            return;
-        }
-        Logger.d(context, "LocationValidator", "Speed=" + speed + " -> OK");
-
-        // 4. Нулевые координаты
-        if (location.getLatitude() == 0.0 && location.getLongitude() == 0.0) {
-            Logger.w(context, "LocationValidator", "Coordinates are (0,0) -> BLOCK");
-            if (callback != null) callback.onResult(RiskLevel.BLOCK);
-            return;
+            Logger.w(context, "LocationValidator", "Mock provider detected");
+            riskScore += 100;
         }
 
-        // 5. Высота
-        if (location.hasAltitude()) {
-            double altitude = location.getAltitude();
-            if (altitude < -100 || altitude > 9000) {
-                Logger.w(context, "LocationValidator", "Altitude=" + altitude + " -> SUSPICIOUS");
-                if (callback != null) callback.onResult(RiskLevel.SUSPICIOUS);
-                return;
-            }
-            Logger.d(context, "LocationValidator", "Altitude=" + altitude + " -> OK");
-        }
+        // =========================
+        // ACCURACY
+        // =========================
 
-        // 6. ★★★ ГЛАВНАЯ ПРОВЕРКА: реальные спутники (асинхронная) ★★★
-        if (gnssCheckDisabled) {
-            Logger.w(context, "LocationValidator", "GNSS check DISABLED -> SAFE");
-            if (callback != null) callback.onResult(RiskLevel.SAFE);
+        if (!location.hasAccuracy()) {
+            Logger.w(context, "LocationValidator", "No accuracy");
+            riskScore += 40;
         } else {
+
+            float accuracy = location.getAccuracy();
+
+            Logger.d(context, "LocationValidator",
+                    "Accuracy = " + accuracy);
+
+            if (accuracy > 100) {
+                riskScore += 60;
+            } else if (accuracy > 50) {
+                riskScore += 30;
+            } else if (accuracy > 20) {
+                riskScore += 10;
+            }
+        }
+
+        // =========================
+        // SPEED
+        // =========================
+
+        if (location.hasSpeed()) {
+
+            float speed = location.getSpeed();
+
+            // > 216 km/h
+            if (speed > 60f) {
+                Logger.w(context, "LocationValidator",
+                        "Unrealistic speed = " + speed);
+
+                riskScore += 80;
+            }
+
+            // > 144 km/h
+            else if (speed > 40f) {
+                riskScore += 40;
+            }
+        }
+
+        // =========================
+        // COORDINATES
+        // =========================
+
+        if (location.getLatitude() == 0.0
+                && location.getLongitude() == 0.0) {
+
+            Logger.w(context, "LocationValidator", "(0,0) coordinates");
+
+            riskScore += 100;
+        }
+
+        // =========================
+        // ALTITUDE
+        // =========================
+
+        if (location.hasAltitude()) {
+
+            double altitude = location.getAltitude();
+
+            if (altitude < -100 || altitude > 9000) {
+
+                Logger.w(context, "LocationValidator",
+                        "Suspicious altitude = " + altitude);
+
+                riskScore += 30;
+            }
+        }
+
+        // =========================
+        // PROVIDER
+        // =========================
+
+        String provider = location.getProvider();
+
+        if (provider == null) {
+
+            riskScore += 80;
+
+        } else {
+
+            Logger.d(context, "LocationValidator",
+                    "Provider = " + provider);
+
+            if (!provider.equals(LocationManager.GPS_PROVIDER)
+                    && !provider.equals(LocationManager.NETWORK_PROVIDER)
+                    && !provider.equals("fused")) {
+
+                Logger.w(context, "LocationValidator",
+                        "Unknown provider");
+
+                riskScore += 60;
+            }
+        }
+
+        // =========================
+        // LOCATION AGE
+        // =========================
+
+        long ageMs =
+                System.currentTimeMillis() - location.getTime();
+
+        Logger.d(context, "LocationValidator",
+                "Location age = " + ageMs);
+
+        if (ageMs > 30000) {
+            riskScore += 60;
+        } else if (ageMs > 15000) {
+            riskScore += 30;
+        }
+
+        // =========================
+        // ELAPSED REALTIME CHECK
+        // =========================
+
+        long realtimeAgeMs =
+                (android.os.SystemClock.elapsedRealtimeNanos()
+                        - location.getElapsedRealtimeNanos())
+                        / 1_000_000;
+
+        Logger.d(context,
+                "LocationValidator",
+                "Realtime age = " + realtimeAgeMs);
+
+        if (realtimeAgeMs > 10000) {
+
+            Logger.w(context,
+                    "LocationValidator",
+                    "Old realtime location");
+
+            riskScore += 40;
+        }
+
+
+        // =========================
+        // GNSS CHECK
+        // =========================
+
+        if (gnssCheckDisabled) {
+
+            finishRiskEvaluation(riskScore, callback);
+
+        } else {
+
+            final int currentRisk = riskScore;
+
             isRealGnssWorkingAsync(context, gnssWorking -> {
-                Logger.d(context, "LocationValidator", "GNSS async result: " + gnssWorking);
+
+                int finalRisk = currentRisk;
+
                 if (!gnssWorking) {
-                    Logger.w(context, "LocationValidator", "GNSS NOT working -> BLOCK");
-                    if (callback != null) callback.onResult(RiskLevel.BLOCK);
-                } else {
-                    Logger.d(context, "LocationValidator", "All checks passed -> SAFE");
-                    if (callback != null) callback.onResult(RiskLevel.SAFE);
+
+                    Logger.w(context,
+                            "LocationValidator",
+                            "GNSS not confirmed");
+
+                    // НЕ BLOCK!
+                    finalRisk += 35;
                 }
+
+                finishRiskEvaluation(finalRisk, callback);
             });
         }
     }
+
+
+    private static void finishRiskEvaluation(int riskScore,
+                                             LocationEvaluationCallback callback) {
+
+        RiskLevel result;
+
+        if (riskScore >= 100) {
+
+            result = RiskLevel.BLOCK;
+
+        } else if (riskScore >= 40) {
+
+            result = RiskLevel.SUSPICIOUS;
+
+        } else {
+
+            result = RiskLevel.SAFE;
+        }
+
+        Logger.d(MyApplication.getContext(),
+                "LocationValidator",
+                "Final riskScore = " + riskScore
+                        + ", result = " + result);
+
+        if (callback != null) {
+            callback.onResult(result);
+        }
+    }
+
 
     /**
      * Асинхронная проверка, что устройство реально видит и использует спутники GNSS
@@ -121,12 +271,6 @@ public class TaxiLocationValidator {
             return;
         }
 
-        // Для старых версий Android не можем проверить спутники
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-            Logger.w(context, "LocationValidator", "Android version < N, assume working");
-            if (callback != null) callback.onResult(true);
-            return;
-        }
 
         final Handler handler = new Handler(Looper.getMainLooper());
         final AtomicBoolean callbackCalled = new AtomicBoolean(false);
@@ -149,7 +293,7 @@ public class TaxiLocationValidator {
 
                 Logger.d(context, "LocationValidator", "GNSS callback: total=" + total + ", used=" + used);
 
-                if (used >= 3 && !callbackCalled.getAndSet(true)) {
+                if (used >= 2 && total >= 5 && !callbackCalled.getAndSet(true)){
                     Logger.d(context, "LocationValidator", "Has fix! (used>=3) -> true");
                     handler.post(() -> {
                         try {
@@ -158,6 +302,7 @@ public class TaxiLocationValidator {
                             Logger.e(context, "LocationValidator", "Error unregistering: " + e.getMessage());
                         }
                         if (callback != null) callback.onResult(true);
+                        handler.removeCallbacksAndMessages(null);
                     });
                 }
             }

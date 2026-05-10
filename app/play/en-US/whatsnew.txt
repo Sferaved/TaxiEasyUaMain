@@ -1,1 +1,13 @@
-In this release, the payment method for a taxi ride when ordering in Kyiv with payment by card has been improved. Added a dialog for changing the choice of payment method or linked card in case of unsuccessful payment due to card blocking or lack of funds, as well as when any negative payment information is delivered from the bank.
+The geolocation verification and GPS spoofing protection system has been improved:
+• Multi-level risk assessment has been added instead of a hard block
+• Improved accuracy of fake GPS and mock location detection
+• Improved stability indoors and with a weak GNSS signal
+• Reduced the number of false blocks of real users
+• Added additional checks for the relevance and accuracy of coordinates
+• Optimized GNSS checks to reduce battery drain
+• Improved overall reliability and stability of the geolocation system
+
+The app now warns about the weather 🌤️
+• Understand why it takes longer to find a car
+• Honest warning about dynamic rates
+• Real-time weather for 20+ Ukrainian cities

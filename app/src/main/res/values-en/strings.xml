@@ -886,7 +886,13 @@ Tap "Settings" to check.</string>
     <string name="try_again_v">Try again</string>
     <string name="exit_app">Exit</string>
     <string name="retry_v">Retry</string>
-    <string name="air_alarm">air alarm</string>
-    <string name="reb_alarm">EW operation</string>
-    <string name="dificult_find_car">Finding a car is difficult. It is recommended to add to the tariff. \n\nCurrently recorded: </string>
+    <!-- For good weather -->
+    <string name="weather_good_message">Good weather! 🌤️\n%s, %d°C\nHave a nice trip! 🚖</string>
+    <string name="weather_good_no_temp">Good weather! 🌤️\n%s\nHave a nice trip! 🚖</string>
+    <string name="weather_good_temp_only">Good weather! 🌡️\n%d°C\nHave a nice trip! 🚖</string>
+
+    <!-- For bad weather (it should already be) -->
+    <string name="dificult_find_car">⚠️ Finding a car is difficult. Recommended to add to your plan.\n\n Fixed: </string>
+    <string name="air_alarm">🚨 Air alarm</string>
+    <string name="reb_alarm">📡 EW work</string>
 </resources>

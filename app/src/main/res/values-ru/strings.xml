@@ -896,7 +896,13 @@
     <string name="try_again_v">Попробовать снова</string>
     <string name="exit_app">Выйти</string>
     <string name="retry_v">Повторить</string>
-    <string name="air_alarm">воздушная тревога</string>
-    <string name="reb_alarm">работа РЭБ</string>
-    <string name="dificult_find_car">Поиск машины затруднен. Рекомендуется добавить в тариф. \n\nЗафиксировано: </string>
+    <!-- Для хорошей погоды -->
+    <string name="weather_good_message">Хорошая погода! 🌤️\n%s, %d°C\nПриятной поездки! 🚖</string>
+    <string name="weather_good_no_temp">Хорошая погода! 🌤️\n%s\nПриятной поездки! 🚖</string>
+    <string name="weather_good_temp_only">Хорошая погода! 🌡️\n%d°C\nПриятной поездки! 🚖</string>
+
+    <!-- Для плохой погоды (уже должно быть) -->
+    <string name="dificult_find_car">⚠️ Поиск машины затруднен. Рекомендуется добавить в тариф. \n\n Зафиксировано: </string>
+    <string name="air_alarm">🚨 Воздушная тревога</string>
+    <string name="reb_alarm">📡 Работа РЭБ</string>
 </resources>
