@@ -895,4 +895,5 @@ Tap "Settings" to check.</string>
     <string name="dificult_find_car">⚠️ Finding a car is difficult. Recommended to add to your plan.\n\n Fixed: </string>
     <string name="air_alarm">🚨 Air alarm</string>
     <string name="reb_alarm">📡 EW work</string>
+    <string name="attantion_mes">Pay attention</string>
 </resources>

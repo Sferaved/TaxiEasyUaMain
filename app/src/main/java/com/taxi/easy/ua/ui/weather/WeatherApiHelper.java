@@ -5,8 +5,18 @@ import android.content.SharedPreferences;
 
 import androidx.annotation.NonNull;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.taxi.easy.ua.utils.log.Logger;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -238,5 +248,157 @@ public class WeatherApiHelper {
     public interface WeatherCallback {
         void onSuccess(WeatherResponse weather);
         void onFailure(String error);
+    }
+
+    /**
+     * Получает погоду асинхронно с указанной локалью
+     * @param context Контекст
+     * @param city Название города
+     * @param apiKey API ключ OpenWeather
+     * @param localeCode Код локали (ua, ru, en и т.д.)
+     * @param callback Колбэк для результата
+     */
+    public static void fetchWeatherAsyncWithLocale(Context context, String city, String apiKey,
+                                                   String localeCode, WeatherCallback callback) {
+        // Преобразуем код локали в формат OpenWeather
+        String lang = getOpenWeatherLang(localeCode);
+
+        // Формируем URL с параметром lang
+        String url = String.format(Locale.US,
+                "https://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric&lang=%s",
+                city, apiKey, lang);
+
+        Logger.d(context, TAG, "fetchWeatherAsyncWithLocale: запрос к OpenWeather с локалью " + lang);
+        Logger.d(context, TAG, "fetchWeatherAsyncWithLocale: URL=" + url);
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+                response -> {
+                    try {
+                        WeatherResponse weatherResponse = parseWeatherResponse(response);
+                        Logger.d(context, TAG, "fetchWeatherAsyncWithLocale: успешно, погода=" +
+                                (weatherResponse.getWeather() != null && !weatherResponse.getWeather().isEmpty() ?
+                                        weatherResponse.getWeather().get(0).getDescription() : "null"));
+                        if (callback != null) {
+                            callback.onSuccess(weatherResponse);
+                        }
+                    } catch (Exception e) {
+                        Logger.e(context, TAG, "fetchWeatherAsyncWithLocale: ошибка парсинга - " + e.getMessage());
+                        if (callback != null) {
+                            callback.onFailure("Ошибка парсинга: " + e.getMessage());
+                        }
+                    }
+                },
+                error -> {
+                    String errorMsg = "Ошибка запроса: ";
+                    if (error.networkResponse != null) {
+                        errorMsg += "код " + error.networkResponse.statusCode;
+                    } else {
+                        errorMsg += error.getMessage();
+                    }
+                    Logger.e(context, TAG, "fetchWeatherAsyncWithLocale: " + errorMsg);
+                    if (callback != null) {
+                        callback.onFailure(errorMsg);
+                    }
+                });
+
+        queue.add(request);
+    }
+
+    /**
+     * Преобразует код локали в формат OpenWeather
+     */
+    private static String getOpenWeatherLang(String localeCode) {
+        if (localeCode == null) {
+            return "ua";
+        }
+
+        switch (localeCode.toLowerCase()) {
+            case "ru":
+            case "russian":
+                return "ru";
+            case "en":
+            case "english":
+                return "en";
+            default:
+                return "ua";
+        }
+    }
+
+    /**
+     * Парсит JSON ответ от OpenWeather в объект WeatherResponse
+     */
+    private static WeatherResponse parseWeatherResponse(JSONObject response) throws JSONException {
+        WeatherResponse weatherResponse = new WeatherResponse();
+
+        // Парсим Main (температура)
+        if (response.has("main")) {
+            JSONObject main = response.getJSONObject("main");
+            WeatherResponse.Main mainData = new WeatherResponse.Main();
+
+            if (main.has("temp")) {
+                mainData.setTemp(main.getDouble("temp"));
+            }
+            if (main.has("feels_like")) {
+                mainData.setFeelsLike(main.getDouble("feels_like"));
+            }
+            if (main.has("humidity")) {
+                mainData.setHumidity(main.getInt("humidity"));
+            }
+            if (main.has("pressure")) {
+                mainData.setPressure(main.getInt("pressure"));
+            }
+
+            weatherResponse.setMain(mainData);
+        }
+
+        // Парсим Weather (описание погоды)
+        if (response.has("weather")) {
+            org.json.JSONArray weatherArray = response.getJSONArray("weather");
+            if (weatherArray.length() > 0) {
+                JSONObject weatherObj = weatherArray.getJSONObject(0);
+                WeatherResponse.Weather weather = new WeatherResponse.Weather();
+
+                if (weatherObj.has("id")) {
+                    weather.setId(weatherObj.getInt("id"));
+                }
+                if (weatherObj.has("main")) {
+                    weather.setMain(weatherObj.getString("main"));
+                }
+                if (weatherObj.has("description")) {
+                    weather.setDescription(weatherObj.getString("description"));
+                }
+                if (weatherObj.has("icon")) {
+                    weather.setIcon(weatherObj.getString("icon"));
+                }
+
+                List<WeatherResponse.Weather> weatherList = new ArrayList<>();
+                weatherList.add(weather);
+                weatherResponse.setWeather(weatherList);
+            }
+        }
+
+        // Парсим Wind (ветер)
+        if (response.has("wind")) {
+            JSONObject wind = response.getJSONObject("wind");
+            WeatherResponse.Wind windData = new WeatherResponse.Wind();
+
+            if (wind.has("speed")) {
+                windData.setSpeed(wind.getDouble("speed"));
+            }
+            if (wind.has("deg")) {
+                windData.setDeg(wind.getInt("deg"));
+            }
+
+            weatherResponse.setWind(windData);
+        }
+
+        // Парсим name (название города)
+        if (response.has("name")) {
+            weatherResponse.setName(response.getString("name"));
+        }
+
+        return weatherResponse;
     }
 }

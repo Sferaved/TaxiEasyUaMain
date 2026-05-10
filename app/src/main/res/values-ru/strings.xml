@@ -904,5 +904,6 @@
     <!-- Для плохой погоды (уже должно быть) -->
     <string name="dificult_find_car">⚠️ Поиск машины затруднен. Рекомендуется добавить в тариф. \n\n Зафиксировано: </string>
     <string name="air_alarm">🚨 Воздушная тревога</string>
-    <string name="reb_alarm">📡 Работа РЭБ</string>
+    <string name="attantion_mes">Обратите внимание</string>
+
 </resources>

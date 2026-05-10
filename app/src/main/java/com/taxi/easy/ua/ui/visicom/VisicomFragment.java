@@ -866,6 +866,7 @@ public class VisicomFragment extends Fragment {
 
     private void showNormalMode() {
         // Убираем gpsbut из этого списка
+        binding.btnReset.setVisibility(GONE);
         setViewsVisibility(VISIBLE,
                 binding.textfrom, binding.num1, binding.clearButtonFrom,
                 binding.textGeo, binding.textwhere, binding.num2,
@@ -873,7 +874,7 @@ public class VisicomFragment extends Fragment {
                 // binding.gpsbut - удаляем отсюда
         );
 
-        binding.btnReset.setVisibility(GONE);
+
     }
 
     private void setViewsVisibility(int visibility, View... views) {

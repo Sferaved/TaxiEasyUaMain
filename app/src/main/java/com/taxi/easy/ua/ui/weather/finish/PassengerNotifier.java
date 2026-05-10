@@ -9,6 +9,7 @@ import androidx.appcompat.app.AlertDialog;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.ui.weather.WeatherApiHelper;
 import com.taxi.easy.ua.ui.weather.WeatherResponse;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -16,7 +17,9 @@ import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
+import android.content.res.Configuration;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -41,59 +44,139 @@ public class PassengerNotifier {
         Logger.d(appContext, TAG, "onSearchStarted: поиск начат, время старта=" + searchStartTime);
     }
 
-    // Вызывайте этот метод для проверки (например, через 1 секунду и через 2 минуты)
     public void checkAndNotify(Context context, String city) {
-        // Сохраняем город для повторных попыток
         this.pendingCity = city;
-
-        // Нормализуем название города для API
         String normalizedCity = normalizeCityName(city);
 
         long currentTime = System.currentTimeMillis();
         long elapsedMs = currentTime - searchStartTime;
         long elapsedSeconds = elapsedMs / 1000;
 
-        Logger.d(context, TAG, "checkAndNotify: исходный город='" + city + "', нормализованный='" + normalizedCity +
-                "', elapsedSeconds=" + elapsedSeconds + " (лимит 120 сек)");
+        Logger.d(context, TAG, "checkAndNotify: elapsedSeconds=" + elapsedSeconds);
 
-        // Проверяем только первые 2 минуты
         if (elapsedSeconds > 120) {
-            Logger.d(context, TAG, "checkAndNotify: превышен лимит 120 секунд, пропускаем");
+            Logger.d(context, TAG, "checkAndNotify: превышен лимит 120 секунд");
             return;
         }
 
-        Logger.d(context, TAG, "checkAndNotify: отправляем запрос к API для города=" + normalizedCity);
-
+        // Получаем только тревоги из CityInfoHelper, погоду игнорируем
         apiHelper.getCityInfo(normalizedCity, new CityInfoHelper.CityInfoCallback() {
             @Override
             public void onSuccess(CityInfo info) {
-                Logger.d(context, TAG, "API onSuccess: получены данные - weather=" + info.getWeather() +
-                        ", temperature=" + info.getTemperature() +
-                        ", airAlarm=" + info.isAirAlarm() +
+                Logger.d(context, TAG, "API onSuccess: airAlarm=" + info.isAirAlarm() +
                         ", rebActive=" + info.isRebActive());
 
-                // Если погода от CityInfoHelper отсутствует или некорректна, пробуем получить из OpenWeather
-                if (!isWeatherValid(info.getWeather())) {
-                    Logger.d(context, TAG, "Погода от CityInfoHelper невалидна: " + info.getWeather());
-                    fetchWeatherFromOpenWeather(context, normalizedCity, info);
-                } else {
-                    String message = buildNotificationMessage(info);
-                    if (message != null) {
-                        Logger.d(context, TAG, "onSuccess: показываем уведомление: " + message);
-                        showNotification(context, message);
-                    } else {
-                        Logger.d(context, TAG, "onSuccess: проблем не обнаружено, уведомление не показываем");
-                    }
-                }
+                // Создаем объект только с тревогами, погоду будем получать отдельно
+                CityInfo alertOnlyInfo = new CityInfo();
+                alertOnlyInfo.setAirAlarm(info.isAirAlarm());
+                alertOnlyInfo.setRebActive(info.isRebActive());
+
+                // Получаем погоду из OpenWeather с нужной локалью
+                fetchWeatherOnly(context, normalizedCity, alertOnlyInfo);
             }
 
             @Override
             public void onError(String error) {
-                Logger.d(context, TAG, "API onError: ошибка получения данных - " + error);
-                // При ошибке CityInfoHelper пытаемся получить хотя бы погоду
-                fetchWeatherFromOpenWeather(context, normalizedCity, null);
+                Logger.d(context, TAG, "API onError: " + error);
+                // Даже если ошибка, пробуем получить хотя бы погоду
+                fetchWeatherOnly(context, normalizedCity, null);
             }
         });
+    }
+    /**
+     * Получает только погоду из OpenWeather API с учетом локали
+     */
+    private void fetchWeatherOnly(Context context, String city, CityInfo alertInfo) {
+        Logger.d(context, TAG, "fetchWeatherOnly: город=" + city);
+
+        // Получаем сохраненную локаль
+        String localeCode = (String) MyApplication.sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().getLanguage());
+        Logger.d(context, TAG, "fetchWeatherOnly: запрашиваем погоду на языке - " + localeCode);
+
+        String apiKey = WeatherApiHelper.getApiKey(context);
+
+        if (apiKey == null || apiKey.isEmpty()) {
+            loadApiKeyAndFetchWeatherOnly(context, city, alertInfo);
+            return;
+        }
+
+        doFetchWeatherOnly(context, city, alertInfo, apiKey, localeCode);
+    }
+
+    private void loadApiKeyAndFetchWeatherOnly(Context context, String city, CityInfo alertInfo) {
+        FirestoreHelper firestoreHelper = new FirestoreHelper(context);
+
+        firestoreHelper.getWeatherKey(new FirestoreHelper.OnVisicomKeyFetchedListener() {
+            @Override
+            public void onSuccess(String vKey) {
+                if (vKey != null && !vKey.isEmpty()) {
+                    MainActivity.weatherKey = vKey;
+                    WeatherApiHelper.saveApiKey(context, vKey);
+                    String localeCode = (String) MyApplication.sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().getLanguage());
+                    doFetchWeatherOnly(context, city, alertInfo, vKey, localeCode);
+                } else {
+                    showFinalNotification(context, alertInfo, null, -273);
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                showFinalNotification(context, alertInfo, null, -273);
+            }
+        });
+    }
+
+    private void doFetchWeatherOnly(Context context, String city, CityInfo alertInfo, String apiKey, String localeCode) {
+        String displayCity = getCityDisplayName(pendingCity);
+
+        // Передаем локаль в запрос погоды
+        WeatherApiHelper.fetchWeatherAsyncWithLocale(context, displayCity, apiKey, localeCode, new WeatherApiHelper.WeatherCallback() {
+            @Override
+            public void onSuccess(WeatherResponse weather) {
+                Logger.d(context, TAG, "Погода получена на языке " + localeCode);
+
+                String weatherDescription = null;
+                int temperature = -273;
+
+                if (weather.getWeather() != null && !weather.getWeather().isEmpty()) {
+                    weatherDescription = weather.getWeather().get(0).getDescription();
+                    Logger.d(context, TAG, "Описание погоды: " + weatherDescription);
+                }
+
+                if (weather.getMain() != null) {
+                    temperature = (int) Math.round(weather.getMain().getTemp());
+                }
+
+                showFinalNotification(context, alertInfo, weatherDescription, temperature);
+            }
+
+            @Override
+            public void onFailure(String error) {
+                Logger.e(context, TAG, "Ошибка получения погоды: " + error);
+                showFinalNotification(context, alertInfo, null, -273);
+            }
+        });
+    }
+
+    private void showFinalNotification(Context context, CityInfo alertInfo, String weather, int temperature) {
+        // Создаем полный CityInfo из тревог + погоды
+        CityInfo fullInfo = new CityInfo();
+
+        if (alertInfo != null) {
+            fullInfo.setAirAlarm(alertInfo.isAirAlarm());
+            fullInfo.setRebActive(alertInfo.isRebActive());
+        }
+
+        if (weather != null) {
+            fullInfo.setWeather(weather);
+        }
+        fullInfo.setTemperature(temperature);
+
+        String message = buildNotificationMessage(fullInfo);
+        if (message != null) {
+            Logger.d(context, TAG, "Показываем уведомление: " + message);
+            showNotification(context, message);
+        }
     }
 
     /**
@@ -340,9 +423,20 @@ public class PassengerNotifier {
         return normalizedCity;
     }
 
-    // PassengerNotifier.java - обновленный метод buildNotificationMessage
+    private void applyLocale(String localeCode) {
+        Locale locale = new Locale(localeCode);
+        Locale.setDefault(locale);
+
+        Configuration config = new Configuration(appContext.getResources().getConfiguration());
+        config.setLocale(locale);
+
+        appContext.getResources().updateConfiguration(config, appContext.getResources().getDisplayMetrics());
+    }
 
     private String buildNotificationMessage(CityInfo info) {
+        String localeCode = (String) MyApplication.sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().getLanguage());
+        applyLocale(localeCode);
+        Context appContext = MyApplication.getContext();
         Logger.d(appContext, TAG, "buildNotificationMessage: начало анализа погодных условий");
 
         List<String> problems = new ArrayList<>();
@@ -362,7 +456,6 @@ public class PassengerNotifier {
         int temperature = (int) info.getTemperature();
 
         // Проверяем погоду
-
         if (weather != null && isBadWeather(weather)) {
             problems.add(weather);
             Logger.d(appContext, TAG, "buildNotificationMessage: обнаружена плохая погода - " + weather);
@@ -378,11 +471,15 @@ public class PassengerNotifier {
         if (problems.isEmpty()) {
             // Нет проблем - показываем хорошую погоду и пожелание
             if (weather != null && temperature > -50) {
+                // ИСПРАВЛЕНО: порядок аргументов - сначала weather, потом temperature
                 message = appContext.getString(R.string.weather_good_message, weather, temperature);
+                Logger.d(appContext, TAG, "message1 "+ message);
             } else if (weather != null) {
                 message = appContext.getString(R.string.weather_good_no_temp, weather);
+                Logger.d(appContext, TAG, "message2 "+ message);
             } else if (temperature > -50) {
                 message = appContext.getString(R.string.weather_good_temp_only, temperature);
+                Logger.d(appContext, TAG, "message3 "+ message);
             } else {
                 // Если нет данных о погоде, не показываем уведомление
                 Logger.d(appContext, TAG, "buildNotificationMessage: нет данных о погоде, уведомление не показываем");
@@ -517,7 +614,7 @@ public class PassengerNotifier {
         TextView tvTitle = dialogView.findViewById(R.id.tvTitle);
         TextView tvMessage = dialogView.findViewById(R.id.tvMessage);
 
-        tvTitle.setText("Зверніть увагу");
+        tvTitle.setText(R.string.attantion_mes);
         tvMessage.setText(message);
 
         AlertDialog dialog = new AlertDialog.Builder(context)
@@ -529,7 +626,7 @@ public class PassengerNotifier {
         Button btnPositive = dialogView.findViewById(R.id.btnPositive);
 
         btnNegative.setVisibility(GONE);
-        btnPositive.setText("Зрозуміло");
+        btnPositive.setText(R.string.ok_error);
 
         btnPositive.setOnClickListener(v -> {
             Logger.d(context, TAG, "showNotification: нажата кнопка 'Зрозуміло'");
