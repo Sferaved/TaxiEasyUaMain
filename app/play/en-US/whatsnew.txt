@@ -1,13 +1,11 @@
-Geolocation & anti-spoofing improvements:
-• Multi-level risk assessment (no hard block)
-• Better fake GPS & mock location detection
-• Improved indoor & weak GNSS signal stability
-• Fewer false blocks of real users
-• Extra checks for coordinate accuracy
-• Optimized GNSS to reduce battery drain
-• Overall reliability & stability improvements
-
-Weather warnings 🌤️
-• Know why car search takes longer
-• Honest notice about dynamic rates
-• Real-time weather for 20+ Ukrainian cities
+Улучшена проверка геолокации и защита от замены GPS для такси:
+Многоуровневая оценка риска вместо жесткой блокировки
+Точнее определяются fake GPS и mock location
+Более стабильная работа при слабом GNSS-сигнале и в помещении
+Меньше ошибочных блокировок
+Дополнительные проверки координат
+Сниженный расход батареи
+Добавлены погодные предупреждения 🌤️
+Причины задержки поиска машины
+Предупреждение о динамическом тарифе
+Погода для 20+ городов Украины
