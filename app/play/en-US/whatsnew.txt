@@ -1,11 +1,11 @@
-Улучшена проверка геолокации и защита от замены GPS для такси:
-Многоуровневая оценка риска вместо жесткой блокировки
-Точнее определяются fake GPS и mock location
-Более стабильная работа при слабом GNSS-сигнале и в помещении
-Меньше ошибочных блокировок
-Дополнительные проверки координат
-Сниженный расход батареи
-Добавлены погодные предупреждения 🌤️
-Причины задержки поиска машины
-Предупреждение о динамическом тарифе
-Погода для 20+ городов Украины
+Improved geolocation verification and GPS spoofing protection for taxis:
+Multi-level risk assessment instead of hard blocking
+More accurate detection of fake GPS and mock locations
+More stable operation with a weak GNSS signal and indoors
+Fewer false blocks
+Additional coordinate checks
+Reduced battery consumption
+Added weather alerts 🌤️
+Reasons for delays in finding a car
+Dynamic fare warning
+Weather for 20+ Ukrainian cities
