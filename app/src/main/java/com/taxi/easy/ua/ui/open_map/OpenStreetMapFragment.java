@@ -1420,8 +1420,10 @@ public class OpenStreetMapFragment extends Fragment {
                 }
 
                 // Вычисляем середину отрезка
-                double newLat = currentMarkerPoint.getLatitude() + (tapPoint.getLatitude() - currentMarkerPoint.getLatitude()) / 2;
-                double newLon = currentMarkerPoint.getLongitude() + (tapPoint.getLongitude() - currentMarkerPoint.getLongitude()) / 2;
+                double newLat = currentMarkerPoint.getLatitude() +
+                        (tapPoint.getLatitude() - currentMarkerPoint.getLatitude()) * 0.75;
+                double newLon = currentMarkerPoint.getLongitude() +
+                        (tapPoint.getLongitude() - currentMarkerPoint.getLongitude()) * 0.75;
                 GeoPoint newCenter = new GeoPoint(newLat, newLon);
 
                 // Перемещаем центр карты
@@ -1433,7 +1435,7 @@ public class OpenStreetMapFragment extends Fragment {
                 double actualMaxZoom = Math.min(map.getMaxZoomLevel(), maxUsefulZoom);
 
                 if (currentZoom < actualMaxZoom - 0.1) {
-                    mapController.setZoom(Math.min(currentZoom + 1.0, actualMaxZoom));
+                    mapController.setZoom(Math.min(currentZoom + 2.0, actualMaxZoom));
                 } else {
                     Toast.makeText(ctx, ctx.getString(R.string.max_zoom), Toast.LENGTH_SHORT).show();
                 }
