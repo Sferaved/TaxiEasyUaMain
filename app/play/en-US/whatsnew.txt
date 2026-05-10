@@ -1,13 +1,13 @@
-The geolocation verification and GPS spoofing protection system has been improved:
-• Multi-level risk assessment has been added instead of a hard block
-• Improved accuracy of fake GPS and mock location detection
-• Improved stability indoors and with a weak GNSS signal
-• Reduced the number of false blocks of real users
-• Added additional checks for the relevance and accuracy of coordinates
-• Optimized GNSS checks to reduce battery drain
-• Improved overall reliability and stability of the geolocation system
+Geolocation & anti-spoofing improvements:
+• Multi-level risk assessment (no hard block)
+• Better fake GPS & mock location detection
+• Improved indoor & weak GNSS signal stability
+• Fewer false blocks of real users
+• Extra checks for coordinate accuracy
+• Optimized GNSS to reduce battery drain
+• Overall reliability & stability improvements
 
-The app now warns about the weather 🌤️
-• Understand why it takes longer to find a car
-• Honest warning about dynamic rates
+Weather warnings 🌤️
+• Know why car search takes longer
+• Honest notice about dynamic rates
 • Real-time weather for 20+ Ukrainian cities
