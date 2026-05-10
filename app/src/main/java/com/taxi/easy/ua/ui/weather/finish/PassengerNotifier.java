@@ -179,36 +179,7 @@ public class PassengerNotifier {
         }
     }
 
-    /**
-     * Проверяет, является ли погодное условие валидным
-     */
-    private boolean isWeatherValid(String weather) {
-        if (weather == null || weather.isEmpty()) {
-            return false;
-        }
-        // Проверяем, что это не "unknown" или подобные значения
-        String lowerWeather = weather.toLowerCase();
-        return !lowerWeather.equals("unknown") &&
-                !lowerWeather.equals("none") &&
-                !lowerWeather.contains("null");
-    }
 
-    /**
-     * Получение погоды из OpenWeather API
-     */
-    private void fetchWeatherFromOpenWeather(Context context, String city, CityInfo existingInfo) {
-        Logger.d(context, TAG, "fetchWeatherFromOpenWeather: пытаемся получить погоду для города " + city);
-
-        String apiKey = WeatherApiHelper.getApiKey(context);
-
-        if (apiKey == null || apiKey.isEmpty()) {
-            Logger.e(context, TAG, "API ключ OpenWeather не найден, загружаем из Firestore");
-            loadApiKeyAndFetchWeather(context, city, existingInfo);
-            return;
-        }
-
-        doFetchWeather(context, city, existingInfo, apiKey);
-    }
 
     /**
      * Загружаем API ключ из Firestore и затем получаем погоду
