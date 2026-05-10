@@ -504,12 +504,16 @@ public class OpenStreetMapFragment extends Fragment {
                 updateZoomLevel();
 
             } else if (action == MotionEvent.ACTION_UP) {
-                // Если было перетаскивание - обновляем маркер
+
+                GeoPoint centerPoint = (GeoPoint) map.getMapCenter();
+
                 if (isMapDragging) {
-                    GeoPoint centerPoint = (GeoPoint) map.getMapCenter();
                     userMovedMap = true;
-                    handleTouchUp(centerPoint);
                 }
+
+                handleTouchUp(centerPoint);
+
+                v.performClick();
                 return true;
             }
 
@@ -554,18 +558,16 @@ public class OpenStreetMapFragment extends Fragment {
 
     private void newShowRout() {
         if (map == null || ctx == null) {
-
             initializeRegion();
             return;
         }
 
         // Удалить все маркеры и наложения с карты
         map.getOverlays().clear();
-        map.invalidate(); // Обновить карту
+        map.invalidate();
 
         double savedStartLat = getFromTablePositionInfo(ctx, "startLat");
         if (savedStartLat != 0) {
-
             List<String> startList = logCursor(MainActivity.ROUT_MARKER, ctx);
 
             fromAddressString = startList.get(5);
@@ -574,10 +576,19 @@ public class OpenStreetMapFragment extends Fragment {
             boolean isShowRout = true;
             if(!startList.get(6).trim().isEmpty()) {
                 toAddressString = startList.get(6);
+
+                // ПРОВЕРКА: если адрес конечной точки содержит "по городу" - не показываем маршрут
+                if (isCityOnlyAddress(toAddressString)) {
+                    Logger.d(ctx, TAG, "Saved destination contains 'по городу', skipping route and marker");
+                    isShowRout = false;
+                    // Очищаем конечную точку
+                    finishMarkerObj = null;
+                    endPoint = null;
+                    toAddressString = "";
+                }
             } else {
                 toAddressString = fromAddressString;
                 isShowRout = false;
-
             }
 
             Logger.d(ctx, TAG, "address11 startList.get(6)" + startList.get(6));
@@ -591,7 +602,6 @@ public class OpenStreetMapFragment extends Fragment {
 
             startPoint = new GeoPoint(startLat, startLan);
 
-
             startMarkerObj = new Marker(map);
             startMarkerObj.setPosition(startPoint);
 
@@ -600,6 +610,7 @@ public class OpenStreetMapFragment extends Fragment {
             GeoPoint finishPoint = new GeoPoint(finishLat, finishLan);
             finishMarkerObj = new Marker(map);
             finishMarkerObj.setPosition(finishPoint);
+
             if (!userMovedMap) {
                 if (markerType.equals("startMarker")) {
                     mapController.setCenter(startPoint);
@@ -608,15 +619,15 @@ public class OpenStreetMapFragment extends Fragment {
                 }
             }
 
-
-            if(isShowRout) {
+            // Показываем маршрут ТОЛЬКО если isShowRout = true И адрес не "по городу"
+            if(isShowRout && !isCityOnlyAddress(toAddressString)) {
                 setMarker(finishLat, finishLan, toAddressString, ctx, "2.");
                 showRout(startPoint, finishPoint);
+            } else {
+                Logger.d(ctx, TAG, "Skipping route display because destination is city-only address");
             }
 
-
             map.invalidate();
-
         } else {
             initializeRegion();
         }
@@ -932,7 +943,7 @@ public class OpenStreetMapFragment extends Fragment {
     // Обработка ответа для конечного маркера
     private void handleFinishMarkerResponse(String result, Context localizedContext) {
         hideSearchProgress();
-        // Проверка всех зависимостей
+
         if (endPoint == null) {
             Logger.e(ctx, TAG, "endPoint is null, cannot handle finish marker");
             FirebaseCrashlytics.getInstance().recordException(new Exception("endPoint is null in handleFinishMarkerResponse"));
@@ -949,9 +960,36 @@ public class OpenStreetMapFragment extends Fragment {
             return;
         }
 
+        // Установка строки адреса
+        toAddressString = result.equals("Точка на карте") ? localizedContext.getString(R.string.end_point_marker) : result;
+        Logger.d(ctx, TAG, "toAddressString set to: " + toAddressString);
+
+        // ПРОВЕРКА: если адрес содержит "по городу" - не показываем маркер и не строим маршрут
+        if (isCityOnlyAddress(toAddressString)) {
+            Logger.d(ctx, TAG, "Address contains 'по городу', skipping marker and route");
+
+            // Удаляем маркер, если он есть
+            if (finishMarkerObj != null) {
+                map.getOverlays().remove(finishMarkerObj);
+            }
+
+            // Очищаем конечную точку
+            finishMarkerObj = null;
+            endPoint = null;
+
+            // Удаляем маршрут, если он есть
+            if (roadOverlay != null) {
+                map.getOverlays().remove(roadOverlay);
+                roadOverlay = null;
+            }
+
+            map.invalidate();
+
+            // Не обновляем маршрут и не добавляем маркер
+            return;
+        }
+
         // Инициализация finishMarkerObj, если он null
-
-
         if (finishMarkerObj == null) {
             Logger.w(ctx, TAG, "finishMarkerObj is null, creating new Marker");
             try {
@@ -963,15 +1001,9 @@ public class OpenStreetMapFragment extends Fragment {
             }
         }
 
-        // Установка строки адреса
-        toAddressString = result.equals("Точка на карте") ? localizedContext.getString(R.string.end_point_marker) : result;
-        Logger.d(ctx, TAG, "toAddressString set to: " + toAddressString);
-
         // Конфигурация маркера и добавление на карту
         try {
-
-
-//            // Удаляем маркер из overlays, если он уже добавлен, чтобы избежать дублирования
+            // Удаляем маркер из overlays, если он уже добавлен, чтобы избежать дублирования
             map.getOverlays().remove(finishMarkerObj);
             map.getOverlays().removeAll(Collections.singleton(roadOverlay));
 
@@ -1368,26 +1400,69 @@ public class OpenStreetMapFragment extends Fragment {
             public boolean onSingleTapConfirmed(@NonNull MotionEvent e) {
                 if (map == null) return false;
 
-                // Защита от слишком частых нажатий
                 long currentTime = System.currentTimeMillis();
                 if (currentTime - lastZoomTime < ZOOM_COOLDOWN_MS) {
                     return false;
                 }
                 lastZoomTime = currentTime;
 
-                // Просто увеличиваем зум в центре карты (без перемещения)
-                double currentZoom = map.getZoomLevelDouble();
-                double maxZoom = map.getMaxZoomLevel();
-                double maxUsefulZoom = 19.0;
-                double actualMaxZoom = Math.min(maxZoom, maxUsefulZoom);
+                Projection proj = map.getProjection();
+                GeoPoint tapPoint = (GeoPoint) proj.fromPixels((int) e.getX(), (int) e.getY());
+                if (tapPoint == null) return false;
 
-                if (currentZoom >= actualMaxZoom - 0.1) {
-                    Toast.makeText(ctx, ctx.getString(R.string.max_zoom), Toast.LENGTH_SHORT).show();
-                    return true;
+                GeoPoint currentMarkerPoint = null;
+                if ("startMarker".equals(markerType) && startPoint != null) {
+                    currentMarkerPoint = startPoint;
+                } else if ("finishMarker".equals(markerType) && endPoint != null) {
+                    currentMarkerPoint = endPoint;
+                } else {
+                    return false;
                 }
 
-                double newZoom = Math.min(currentZoom + 1.0, actualMaxZoom);
-                mapController.setZoom(newZoom);
+                // Вычисляем середину отрезка
+                double newLat = currentMarkerPoint.getLatitude() + (tapPoint.getLatitude() - currentMarkerPoint.getLatitude()) / 2;
+                double newLon = currentMarkerPoint.getLongitude() + (tapPoint.getLongitude() - currentMarkerPoint.getLongitude()) / 2;
+                GeoPoint newCenter = new GeoPoint(newLat, newLon);
+
+                // Перемещаем центр карты
+                mapController.setCenter(newCenter);
+
+                // Увеличение зума
+                double currentZoom = map.getZoomLevelDouble();
+                double maxUsefulZoom = 19.0;
+                double actualMaxZoom = Math.min(map.getMaxZoomLevel(), maxUsefulZoom);
+
+                if (currentZoom < actualMaxZoom - 0.1) {
+                    mapController.setZoom(Math.min(currentZoom + 1.0, actualMaxZoom));
+                } else {
+                    Toast.makeText(ctx, ctx.getString(R.string.max_zoom), Toast.LENGTH_SHORT).show();
+                }
+
+                // Обновляем координаты в БД и на карте
+                if ("startMarker".equals(markerType)) {
+                    startPoint = newCenter;
+                    startLat = newCenter.getLatitude();
+                    startLan = newCenter.getLongitude();
+
+                    // Обновляем БД через существующий механизм
+                    updateMyPosition(startLat, startLan, fromAddressString, ctx);
+
+                    // Вызываем API и перерисовку через существующий поток
+                    makeApiCall(startLat, startLan, ctx);
+
+                } else if ("finishMarker".equals(markerType)) {
+                    endPoint = newCenter;
+                    finishLat = newCenter.getLatitude();
+                    finishLan = newCenter.getLongitude();
+
+                    // Обновляем finish координаты в БД через updateRouteSettings
+                    // Для finish нужно также обновить to_lat/to_lng
+                    updateFinishPointInDatabase(finishLat, finishLan, toAddressString);
+
+                    // Вызываем API и перерисовку
+                    makeApiCall(finishLat, finishLan, ctx);
+                }
+
                 return true;
             }
 
@@ -1396,9 +1471,8 @@ public class OpenStreetMapFragment extends Fragment {
                 if (map == null) return false;
 
                 double currentZoom = map.getZoomLevelDouble();
-                double maxZoom = map.getMaxZoomLevel();
                 double maxUsefulZoom = 19.0;
-                double actualMaxZoom = Math.min(maxZoom, maxUsefulZoom);
+                double actualMaxZoom = Math.min(map.getMaxZoomLevel(), maxUsefulZoom);
 
                 if (currentZoom >= actualMaxZoom - 0.1) {
                     Toast.makeText(ctx, ctx.getString(R.string.max_zoom), Toast.LENGTH_SHORT).show();
@@ -1409,5 +1483,41 @@ public class OpenStreetMapFragment extends Fragment {
                 return true;
             }
         });
+    }
+    private void updateFinishPointInDatabase(double lat, double lon, String address) {
+        SQLiteDatabase database = ctx.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        try {
+            ContentValues values = new ContentValues();
+            values.put("to_lat", lat);
+            values.put("to_lng", lon);
+            values.put("finish", address);
+
+            int rowsUpdated = database.update(MainActivity.ROUT_MARKER, values, null, null);
+            if (rowsUpdated == 0) {
+                // Если нет записи, создаём с начальными значениями
+                values.put("startLat", startLat);
+                values.put("startLan", startLan);
+                values.put("start", fromAddressString);
+                database.insert(MainActivity.ROUT_MARKER, null, values);
+            }
+            Logger.d(ctx, TAG, "Updated finish point: lat=" + lat + ", lon=" + lon);
+        } catch (Exception e) {
+            Logger.e(ctx, TAG, "Failed to update finish point: " + e.getMessage());
+        } finally {
+            database.close();
+        }
+    }
+
+    // Добавьте этот метод в класс OpenStreetMapFragment
+    private boolean isCityOnlyAddress(String address) {
+        if (address == null || address.isEmpty()) {
+            return false;
+        }
+
+        // Получаем фразу "по городу" из ресурсов
+        String onCityPhrase = getString(R.string.on_city);
+
+        // Проверяем, содержит ли адрес эту фразу
+        return address.contains(onCityPhrase);
     }
 }
