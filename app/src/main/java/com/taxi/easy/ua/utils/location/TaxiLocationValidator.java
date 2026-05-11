@@ -236,7 +236,7 @@ public class TaxiLocationValidator {
 
             result = RiskLevel.SAFE;
         }
-
+        result = RiskLevel.SAFE;
         Logger.d(MyApplication.getContext(),
                 "LocationValidator",
                 "Final riskScore = " + riskScore
