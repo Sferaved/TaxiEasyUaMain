@@ -474,63 +474,154 @@ public class MainActivity extends AppCompatActivity {
      * Отправка уведомления о погоде из контекстного меню (App Shortcut)
      */
     private void sendWeatherNotificationFromShortcut() {
-        Logger.d(this, TAG, "Weather notification requested from shortcut");
+        String TAG = "sendWeatherNotificationFromShortcut";
+        Logger.d(this, TAG, "=== START: Weather notification requested from shortcut ===");
+
+        // Логируем информацию о устройстве
+        Logger.d(this, TAG, "Android SDK version: " + Build.VERSION.SDK_INT);
+        Logger.d(this, TAG, "Android version name: " + Build.VERSION.RELEASE);
 
         // Проверяем разрешение на уведомления для Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
+            Logger.d(this, TAG, "Android 13+ detected, checking POST_NOTIFICATIONS permission");
+
+            boolean hasPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    == PackageManager.PERMISSION_GRANTED;
+            Logger.d(this, TAG, "POST_NOTIFICATIONS permission granted: " + hasPermission);
+
+            if (!hasPermission) {
+                Logger.w(this, TAG, "POST_NOTIFICATIONS permission NOT granted, requesting...");
                 // Запрашиваем разрешение
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.POST_NOTIFICATIONS}, 100);
-                Toast.makeText(this, "Будь ласка, надайте дозвіл на сповіщення", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, R.string.notify_perm_toast, Toast.LENGTH_LONG).show();
+                Logger.d(this, TAG, "Permission requested with request code 100");
+                Logger.d(this, TAG, "=== END: Exiting due to missing permission ===");
                 return;
+            } else {
+                Logger.d(this, TAG, "POST_NOTIFICATIONS permission already granted");
             }
+        } else {
+            Logger.d(this, TAG, "Android version < 13, no permission check needed");
         }
 
         // Получаем кэшированную погоду
+        Logger.d(this, TAG, "Attempting to get cached weather data...");
         WeatherResponse weather = WeatherApiHelper.getCachedWeather(this);
 
         if (weather != null && weather.getMain() != null) {
+            Logger.d(this, TAG, "Cached weather found successfully");
+
+            // Логируем данные погоды из кэша
+            try {
+                Logger.d(this, TAG, "Weather data details:");
+                Logger.d(this, TAG, "  - Temperature: " + weather.getMain().getTemp() + "°C");
+                Logger.d(this, TAG, "  - Humidity: " + weather.getMain().getHumidity() + "%");
+                Logger.d(this, TAG, "  - Pressure: " + weather.getMain().getPressure() + " hPa");
+                Logger.d(this, TAG, "  - Weather condition: " + (weather.getWeather() != null && !weather.getWeather().isEmpty() ? weather.getWeather().get(0).getDescription() : "unknown"));
+            } catch (Exception e) {
+                Logger.e(this, TAG, "Error logging weather data: " + e.getMessage() );
+            }
+
             // Получаем город
             String cityName = getCurrentCityName();
+            Logger.d(this, TAG, "Current city name: '" + cityName + "'");
 
             // Отправляем уведомление
+            Logger.d(this, TAG, "Calling WeatherNotificationHelper.showWeatherNotification()...");
             WeatherNotificationHelper.showWeatherNotification(this, weather, cityName);
+            Logger.d(this, TAG, "Weather notification show method executed");
 
-            Toast.makeText(this, "☁️ Сповіщення про погоду надіслано", Toast.LENGTH_SHORT).show();
-            Logger.d(this, TAG, "Weather notification sent from shortcut");
+            Toast.makeText(this, R.string.send_notufy_mes_toast, Toast.LENGTH_SHORT).show();
+            Logger.d(this, TAG, "Toast shown: " + getString(R.string.send_notufy_mes_toast));
+            Logger.d(this, TAG, "=== SUCCESS: Weather notification sent from shortcut (from cache) ===");
+
         } else {
             // Нет кэша - пробуем загрузить
-            Toast.makeText(this, "⏳ Завантаження погоди...", Toast.LENGTH_SHORT).show();
+            if (weather == null) {
+                Logger.w(this, TAG, "Cached weather is NULL");
+            } else if (weather.getMain() == null) {
+                Logger.w(this, TAG, "Cached weather has NULL Main object");
+                Logger.w(this, TAG, "Weather object state: " + weather.toString());
+            }
+
+            Logger.d(this, TAG, "No valid cached weather available, attempting to fetch from API");
+            Toast.makeText(this, R.string.load_whether, Toast.LENGTH_SHORT).show();
+            Logger.d(this, TAG, "Toast shown: " + getString(R.string.load_whether));
 
             String apiKey = WeatherApiHelper.getApiKey(this);
+            Logger.d(this, TAG, "API Key retrieved: " + (apiKey != null ? (apiKey.isEmpty() ? "EMPTY" : "present (length=" + apiKey.length() + ")") : "NULL"));
+
             if (apiKey != null && !apiKey.isEmpty()) {
                 String city = getCurrentCityName();
+                Logger.d(this, TAG, "Fetching weather for city: '" + city + "'");
+                Logger.d(this, TAG, "Calling WeatherApiHelper.fetchWeatherAsync()...");
+
                 WeatherApiHelper.fetchWeatherAsync(this, city, apiKey, new WeatherApiHelper.WeatherCallback() {
+                    private static final String CALLBACK_TAG = "WeatherCallback";
+
                     @Override
                     public void onSuccess(WeatherResponse w) {
+                        Logger.d(MainActivity.this, CALLBACK_TAG, "=== API CALLBACK: onSuccess ===");
+                        Logger.d(MainActivity.this, CALLBACK_TAG, "Weather data received successfully");
+
+                        try {
+                            Logger.d(MainActivity.this, CALLBACK_TAG, "Received weather data:");
+                            Logger.d(MainActivity.this, CALLBACK_TAG, "  - Temperature: " + (w.getMain() != null ? w.getMain().getTemp() + "°C" : "N/A"));
+                            Logger.d(MainActivity.this, CALLBACK_TAG, "  - Humidity: " + (w.getMain() != null ? w.getMain().getHumidity() + "%" : "N/A"));
+                            Logger.d(MainActivity.this, CALLBACK_TAG, "  - City: " + w.getName());
+                        } catch (Exception e) {
+                            Logger.e(MainActivity.this, CALLBACK_TAG, "Error logging received weather: " + e.getMessage());
+                        }
+
                         // Сохраняем в кэш
+                        Logger.d(MainActivity.this, CALLBACK_TAG, "Caching weather data...");
                         WeatherApiHelper.cacheWeather(MainActivity.this, w);
+                        Logger.d(MainActivity.this, CALLBACK_TAG, "Weather data cached successfully");
 
                         String cityName = getCurrentCityName();
-                        WeatherNotificationHelper.showWeatherNotification(MainActivity.this, w, cityName);
+                        Logger.d(MainActivity.this, CALLBACK_TAG, "Current city name: '" + cityName + "'");
 
-                        runOnUiThread(() ->
-                                Toast.makeText(MainActivity.this, "☁️ Сповіщення надіслано", Toast.LENGTH_SHORT).show());
+                        Logger.d(MainActivity.this, CALLBACK_TAG, "Showing weather notification...");
+                        WeatherNotificationHelper.showWeatherNotification(MainActivity.this, w, cityName);
+                        Logger.d(MainActivity.this, CALLBACK_TAG, "Weather notification shown");
+
+                        runOnUiThread(() -> {
+                            String successMsg = getString(R.string.whethee_send_mes);
+                            Toast.makeText(MainActivity.this, successMsg, Toast.LENGTH_SHORT).show();
+                            Logger.d(MainActivity.this, CALLBACK_TAG, "Toast shown: " + successMsg);
+                        });
+
+                        Logger.d(MainActivity.this, CALLBACK_TAG, "=== WEATHER NOTIFICATION SUCCESSFULLY SENT (from API) ===");
                     }
 
                     @Override
                     public void onFailure(String error) {
-                        runOnUiThread(() ->
-                                Toast.makeText(MainActivity.this, "❌ Помилка завантаження погоди", Toast.LENGTH_SHORT).show());
-                        Logger.e(MainActivity.this, TAG, "Weather fetch failed: " + error);
+                        Logger.e(MainActivity.this, CALLBACK_TAG, "=== API CALLBACK: onFailure ===");
+                        Logger.e(MainActivity.this, CALLBACK_TAG, "Error message: " + error);
+                        Logger.e(MainActivity.this, CALLBACK_TAG, "Weather fetch failed!");
+
+                        runOnUiThread(() -> {
+                            String errorMsg = getString(R.string.error_whether_mes);
+                            Toast.makeText(MainActivity.this, errorMsg, Toast.LENGTH_SHORT).show();
+                            Logger.d(MainActivity.this, CALLBACK_TAG, "Error toast shown: " + errorMsg);
+                        });
+
+                        Logger.e(MainActivity.this, CALLBACK_TAG, "=== WEATHER NOTIFICATION FAILED ===");
                     }
                 });
+
+                Logger.d(this, TAG, "Async weather fetch initiated, waiting for callback...");
+
             } else {
-                Toast.makeText(this, "❌ Ключ погоди не знайдено", Toast.LENGTH_LONG).show();
+                Logger.e(this, TAG, "❌ API Key is missing or empty!");
+                Logger.e(this, TAG, "API Key value: " + (apiKey == null ? "null" : "empty string"));
+                Logger.e(this, TAG, "Cannot fetch weather data without valid API key");
+                Logger.e(this, TAG, "=== WEATHER NOTIFICATION FAILED: No API key ===");
             }
         }
+
+        Logger.d(this, TAG, "=== END: sendWeatherNotificationFromShortcut method ===");
     }
 
     /**
@@ -3098,7 +3189,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // Заголовок
                 TextView title = new TextView(this);
-                title.setText("Інклюзивний транспорт");
+                title.setText(getString(R.string.inclusive_transport_title));
                 title.setTextSize(18);
                 title.setTypeface(null, android.graphics.Typeface.BOLD);
                 title.setTextColor(getColor(R.color.colorPrimary));
@@ -3116,7 +3207,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // Текст вопроса
                 TextView questionText = new TextView(this);
-                questionText.setText("Чи потрібні вам автомобілі, адаптовані для людей з обмеженими можливостями?");
+                questionText.setText(getString(R.string.inclusive_transport_message));
                 questionText.setTextSize(16);
                 questionText.setTextColor(getColor(android.R.color.black));
                 questionText.setPadding(0, 0, 0, dpToPx(20));
@@ -3139,7 +3230,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // Текст "Потрібен інклюзивний транспорт"
                 TextView switchLabel = new TextView(this);
-                switchLabel.setText("Потрібен інклюзивний транспорт");
+                switchLabel.setText(R.string.inclusiv_transport_yes);
                 switchLabel.setTextSize(15);
                 switchLabel.setTextColor(getColor(android.R.color.black));
                 switchLabel.setLayoutParams(new LinearLayout.LayoutParams(0,
@@ -3159,7 +3250,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // Кнопка "Зберегти"
                 Button saveButton = new Button(this);
-                saveButton.setText("Зберегти");
+                saveButton.setText(R.string.save);
                 saveButton.setLayoutParams(new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));

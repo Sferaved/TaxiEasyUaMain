@@ -896,4 +896,10 @@ Tap "Settings" to check.</string>
     <string name="air_alarm">🚨 Air alarm</string>
     <string name="reb_alarm">📡 EW work</string>
     <string name="attantion_mes">Pay attention</string>
+    <string name="notify_perm_toast">Please grant notification permission</string>
+    <string name="send_notufy_mes_toast">☁️ Weather notification sent</string>
+    <string name="load_whether">⏳ Loading weather...</string>
+    <string name="whethee_send_mes">☁️ Notification sent</string>
+    <string name="error_whether_mes">❌ Error loading weather</string>
+    <string name="inclusiv_transport_yes">Inclusive transport required</string>
 </resources>

@@ -3,7 +3,11 @@ package com.taxi.easy.ua.ui.weather.finish;
 import static android.view.View.GONE;
 
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.content.res.Configuration;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 
@@ -12,18 +16,12 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.ui.weather.WeatherApiHelper;
 import com.taxi.easy.ua.ui.weather.WeatherResponse;
-import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
+import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
-import android.content.res.Configuration;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
 
 public class PassengerNotifier {
     private static final String TAG = "PassengerNotifier";

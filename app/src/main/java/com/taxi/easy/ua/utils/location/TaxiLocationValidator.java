@@ -5,7 +5,6 @@ import android.content.Context;
 import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationManager;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -236,7 +235,7 @@ public class TaxiLocationValidator {
 
             result = RiskLevel.SAFE;
         }
-        result = RiskLevel.SAFE;
+
         Logger.d(MyApplication.getContext(),
                 "LocationValidator",
                 "Final riskScore = " + riskScore

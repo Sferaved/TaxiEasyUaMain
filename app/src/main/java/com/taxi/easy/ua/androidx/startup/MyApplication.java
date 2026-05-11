@@ -94,6 +94,9 @@ public class MyApplication extends MultiDexApplication {
             FirebaseCrashlytics.getInstance().recordException(e);
         }
     }
+    public static MyApplication getInstance() {
+        return instance;
+    }
 
     // ---------- ЗАПУСК И ОСТАНОВКА WORKER ----------
 

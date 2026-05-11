@@ -1065,10 +1065,10 @@ public class VisicomFragment extends Fragment {
         String start = cursor.getString(cursor.getColumnIndex("start"));
         String finish = cursor.getString(cursor.getColumnIndex("finish"));
 
-        if (start.trim().isEmpty() || geoText.getText().toString().trim().isEmpty()) {
-            start = context.getString(R.string.startPoint);
-            geoText.setText(start);
-        }
+//        if (start.trim().isEmpty() || geoText.getText().toString().trim().isEmpty()) {
+//            start = context.getString(R.string.startPoint);
+//            geoText.setText(start);
+//        }
         if (originLatitude == 0.0) {
             geoText.setText("");
             geoText.setBackgroundColor(R.color.selected_text_color);

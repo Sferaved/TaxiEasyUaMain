@@ -905,5 +905,11 @@
     <string name="dificult_find_car">⚠️ Поиск машины затруднен. Рекомендуется добавить в тариф. \n\n Зафиксировано: </string>
     <string name="air_alarm">🚨 Воздушная тревога</string>
     <string name="attantion_mes">Обратите внимание</string>
+    <string name="notify_perm_toast">Пожалуйста, разрешите уведомления</string>
+    <string name="send_notufy_mes_toast">☁️ Уведомление о погоде отправлено</string>
+    <string name="load_whether">⏳ Загрузка погоды...</string>
+    <string name="whethee_send_mes">☁️ Уведомление отправлено</string>
+    <string name="error_whether_mes">❌ Ошибка загрузки погоды</string>
+    <string name="inclusiv_transport_yes">Требуется инклюзивный транспорт</string>
 
 </resources>

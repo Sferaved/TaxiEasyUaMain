@@ -95,6 +95,10 @@ public class WeatherApiHelper {
             @Override
             public void onResponse(@NonNull Call<WeatherResponse> call, @NonNull Response<WeatherResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
+                    if (response.body().getWeather() != null && !response.body().getWeather().isEmpty()) {
+                        String desc = response.body().getWeather().get(0).getDescription();
+                        Logger.d(context, TAG, "📡 ПОЛУЧЕНО ОТ API: description = '" + desc + "'");
+                    }
                     result[0] = response.body();
                     // Сохраняем данные для кэша
                     saveWeatherToCache(context, response.body(), city);
@@ -213,7 +217,11 @@ public class WeatherApiHelper {
     /**
      * Сохранение погоды в кэш
      */
-    private static void saveWeatherToCache(Context context, WeatherResponse weather, String city) {
+    public static void saveWeatherToCache(Context context, WeatherResponse weather, String city) {
+        if (weather != null && weather.getWeather() != null && !weather.getWeather().isEmpty()) {
+            String descBefore = weather.getWeather().get(0).getDescription();
+            Logger.d(context, TAG, "💾 СОХРАНЯЕМ В КЭШ: description = '" + descBefore + "'");
+        }
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
@@ -235,9 +243,10 @@ public class WeatherApiHelper {
     }
 
     private static String getLanguage(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-        String locale = prefs.getString("locale", "uk");
-        switch (locale) {
+
+        String localeCode = context.getResources().getConfiguration().locale.getLanguage();
+        Logger.d(context, TAG, "fetchWeatherOnly: запрашиваем погоду на языке - " + localeCode);
+        switch (localeCode) {
             case "uk": return "ua";
             case "ru": return "ru";
             case "en": return "en";

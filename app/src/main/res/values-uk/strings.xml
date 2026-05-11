@@ -909,4 +909,10 @@
     <string name="air_alarm">🚨 Повітряна тривога</string>
     <string name="reb_alarm">📡 Робота РЕБ</string>
     <string name="attantion_mes">Зверніть увагу</string>
+    <string name="notify_perm_toast">Будь ласка, надайте дозвіл на сповіщення</string>
+    <string name="send_notufy_mes_toast">☁️ Сповіщення про погоду надіслано</string>
+    <string name="load_whether">⏳ Завантаження погоди...</string>
+    <string name="whethee_send_mes">☁️ Сповіщення надіслано</string>
+    <string name="error_whether_mes">❌ Помилка завантаження погоди</string>
+    <string name="inclusiv_transport_yes">Потрібен інклюзивний транспорт</string>
 </resources>
