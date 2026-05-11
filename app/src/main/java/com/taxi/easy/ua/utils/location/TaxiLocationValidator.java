@@ -217,7 +217,33 @@ public class TaxiLocationValidator {
         }
     }
 
+    /**
+     * Быстрая синхронная проверка качества локации для одноразового определения
+     * (используйте только для UI-иницированных действий)
+     */
+    public static boolean isLocationUsable(Location location) {
+        if (location == null) return false;
 
+        // Базовая проверка
+        if (location.getLatitude() == 0.0 && location.getLongitude() == 0.0) return false;
+
+        // Проверка точности
+        if (!location.hasAccuracy()) return false;
+        if (location.getAccuracy() > 100) return false;  // Грубо, но для старта можно
+
+        // Проверка свежести
+        long age = System.currentTimeMillis() - location.getTime();
+        if (age > 30000) return false;  // Старше 30 секунд
+
+        // Проверка провайдера
+        String provider = location.getProvider();
+        if (provider == null) return false;
+
+        // Проверка на мок
+        if (location.isFromMockProvider()) return false;
+
+        return true;
+    }
     private static void finishRiskEvaluation(int riskScore,
                                              LocationEvaluationCallback callback) {
 
