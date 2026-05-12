@@ -27,6 +27,12 @@ public class FromJSONParserRetrofit {
 
     private static final String TAG = "FromJSONParserRetrofit";
 
+    // ✅ ДОБАВИТЬ: Статическая переменная для хранения текущего запроса
+    private static Call<ApiResponse> currentCall;
+
+    // ✅ ДОБАВИТЬ: Флаг для отслеживания, отменен ли запрос
+    private static boolean isCancelled = false;
+
     // Интерфейс для описания запросов к API
     public interface ApiService {
         @GET
@@ -71,39 +77,60 @@ public class FromJSONParserRetrofit {
         }
     }
 
+    // ✅ ИЗМЕНИТЬ: Добавить возможность отмены
     public static void sendURL(String urlString, Callback<Map<String, String>> callback) {
+        // Отменяем предыдущий запрос, если он существует и не выполнен
+        cancelCurrentRequest();
+
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Handler handler = new Handler(Looper.getMainLooper());
 
+        // ✅ Сбрасываем флаг отмены
+        isCancelled = false;
+
         executor.execute(() -> {
+            // ✅ Проверяем, не был ли запрос отменен
+            if (isCancelled) {
+                Log.d(TAG, "Request cancelled before execution");
+                return;
+            }
+
             Map<String, String> costMap = new HashMap<>();
             String baseUrl = getBaseUrl(urlString);
 
-            // Создание экземпляра OkHttpClient с таймаутом
-
             OkHttpClient okHttpClient = new OkHttpClient.Builder()
                     .addInterceptor(new RetryInterceptor())
-                    .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
-                    .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
-                    .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(30, TimeUnit.SECONDS)
                     .build();
 
-
-            // Создание экземпляра Retrofit
             Retrofit retrofit = new Retrofit.Builder()
-                    .baseUrl(baseUrl) // базовый URL
-                    .client(okHttpClient) // настройка клиента
-                    .addConverterFactory(GsonConverterFactory.create()) // конвертер для парсинга JSON
+                    .baseUrl(baseUrl)
+                    .client(okHttpClient)
+                    .addConverterFactory(GsonConverterFactory.create())
                     .build();
 
-            // Создание объекта, представляющего интерфейс API
             ApiService apiService = retrofit.create(ApiService.class);
 
-            // Выполнение запроса к API
-            Call<ApiResponse> call = apiService.fetchData(urlString);
+            // ✅ Сохраняем текущий запрос
+            currentCall = apiService.fetchData(urlString);
 
             try {
-                retrofit2.Response<ApiResponse> response = call.execute();
+                // ✅ Проверяем отмену перед выполнением
+                if (isCancelled) {
+                    Log.d(TAG, "Request cancelled before execution");
+                    return;
+                }
+
+                retrofit2.Response<ApiResponse> response = currentCall.execute();
+
+                // ✅ Проверяем, не был ли запрос отменен во время выполнения
+                if (isCancelled || currentCall.isCanceled()) {
+                    Log.d(TAG, "Request was cancelled during execution");
+                    return;
+                }
+
                 if (response.isSuccessful() && response.body() != null) {
                     ApiResponse apiResponse = response.body();
                     if (apiResponse != null) {
@@ -125,21 +152,45 @@ public class FromJSONParserRetrofit {
                     costMap.put("message", "Ошибка: " + response.code());
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Ошибка при выполнении запроса", e);
-                FirebaseCrashlytics.getInstance().recordException(e);
-                costMap.put("order_cost", "0");
-                costMap.put("message", "Произошла ошибка при выполнении запроса");
+                // ✅ Не логируем ошибку, если запрос был отменен
+                if (!isCancelled && (currentCall == null || !currentCall.isCanceled())) {
+                    Log.e(TAG, "Ошибка при выполнении запроса", e);
+                    FirebaseCrashlytics.getInstance().recordException(e);
+                    costMap.put("order_cost", "0");
+                    costMap.put("message", "Произошла ошибка при выполнении запроса");
+                } else {
+                    Log.d(TAG, "Request cancelled, ignoring error");
+                }
+            } finally {
+                // ✅ Очищаем текущий запрос, если это был он
+                if (currentCall != null && !isCancelled) {
+                    currentCall = null;
+                }
             }
 
-            handler.post(() -> callback.onComplete(costMap));
+            // ✅ Передаем результат только если запрос не был отменен
+            if (!isCancelled) {
+                handler.post(() -> callback.onComplete(costMap));
+            }
+
+            executor.shutdown();
         });
+    }
+
+    // ✅ ДОБАВИТЬ: Метод для отмены текущего запроса
+    public static void cancelCurrentRequest() {
+        isCancelled = true;
+        if (currentCall != null && !currentCall.isCanceled()) {
+            currentCall.cancel();
+            Log.d(TAG, "Current request cancelled");
+        }
+        currentCall = null;
     }
 
     // Интерфейс обратного вызова для получения результата
     public interface Callback<T> {
         void onComplete(T result);
     }
-
 
     // Метод для получения базового URL из полной строки URL
     private static String getBaseUrl(String urlString) {
