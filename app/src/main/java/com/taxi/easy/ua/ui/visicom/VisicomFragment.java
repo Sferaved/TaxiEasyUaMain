@@ -75,11 +75,9 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
-import com.google.android.gms.location.LocationRequest;
+
 import com.bumptech.glide.Glide;
 import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 import com.google.android.gms.tasks.Task;
@@ -244,11 +242,10 @@ public class VisicomFragment extends Fragment {
 
     private static final double DEFAULT_LAT = 50.4501; // Киев по умолчанию
     private static final double DEFAULT_LON = 30.5234;
-    private int locationRetryCount = 0;
-    private LocationCallback currentLocationCallback = null;
     private boolean isUpdatingFromGPS = false;
     private long lastSuccessfulLocationTime = 0;
     private String lastProcessedAddress = "";
+    private String pendingAddressRequest = null;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -996,18 +993,9 @@ public class VisicomFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-
-        FromJSONParserRetrofit.cancelCurrentRequest();
-        // Отменяем location updates
-        if (currentLocationCallback != null && getContext() != null) {
-            try {
-                FusedLocationProviderClient client = LocationServices.getFusedLocationProviderClient(getContext());
-                client.removeLocationUpdates(currentLocationCallback);
-                currentLocationCallback = null;
-            } catch (Exception e) {
-                Logger.e(context, TAG, "Error removing location updates: " + e.getMessage());
-            }
-        }
+        // ✅ Отменяем активные запросы
+        pendingAddressRequest = null;
+        isUpdatingFromGPS = false;
 
         // Удаляем observer жизненного цикла
         if (lifecycleObserver != null) {
@@ -1085,6 +1073,10 @@ public class VisicomFragment extends Fragment {
         String start = cursor.getString(cursor.getColumnIndex("start"));
         String finish = cursor.getString(cursor.getColumnIndex("finish"));
 
+//        if (start.trim().isEmpty() || geoText.getText().toString().trim().isEmpty()) {
+//            start = context.getString(R.string.startPoint);
+//            geoText.setText(start);
+//        }
         if (originLatitude == 0.0) {
             geoText.setText("");
             geoText.setBackgroundColor(R.color.selected_text_color);
@@ -2038,6 +2030,7 @@ public class VisicomFragment extends Fragment {
         if (!firstStart && !isUpdatingFromGPS) {
             List<String> startList = logCursor(MainActivity.ROUT_MARKER, context);
             String fromAddressString = startList.get(5);
+            Logger.d(context, TAG, "address onResume fromAddressString" + fromAddressString);
 
             // ✅ Проверяем, не установлен ли уже этот адрес
             if (!binding.textGeo.getText().toString().equals(fromAddressString)) {
@@ -2611,283 +2604,153 @@ public class VisicomFragment extends Fragment {
 
 
     private void firstLocation() {
-        Logger.d(context, TAG, "=== firstLocation() START ===");
+        // ✅ Защита от повторных вызовов
+        if (isUpdatingFromGPS) {
+            Logger.d(context, TAG, "GPS update already in progress, skipping");
+            return;
+        }
 
         progressBar.setVisibility(View.VISIBLE);
         schedule.setVisibility(View.VISIBLE);
         shed_down.setVisibility(View.VISIBLE);
 
-        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-            Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
-            progressBar.setVisibility(View.GONE);
-            return;
-        }
+        Toast.makeText(context, context.getString(R.string.search), Toast.LENGTH_SHORT).show();
+
+        FusedLocationProviderClient fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context);
+
+        gpsBtn.setText(R.string.change);
+        gpsBtn.setOnClickListener(v1 -> {
+            sharedPreferencesHelperMain.saveValue("old_cost", "0");
+            LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+            gpsButSetOnClickListener(locationManager);
+        });
 
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            requestLocationPermissions();
+            Logger.d(context, TAG, "Нет разрешения на геолокацию");
             progressBar.setVisibility(View.GONE);
             return;
         }
 
-        Toast.makeText(context, context.getString(R.string.search), Toast.LENGTH_SHORT).show();
-        gpsBtn.setText(R.string.change);
+        viewModel.setStatusX(false);
 
-        FusedLocationProviderClient fusedClient = LocationServices.getFusedLocationProviderClient(context);
+        // ✅ Устанавливаем флаг, что начали обновление
+        isUpdatingFromGPS = true;
 
-        // ✅ ИСПРАВЛЕННЫЙ LocationRequest
-        LocationRequest locationRequest = new LocationRequest.Builder(
-                Priority.PRIORITY_HIGH_ACCURACY,  // ← первый параметр: priority (константа)
-                5000L                              // ← второй параметр: intervalMillis
-        )
-                .setWaitForAccurateLocation(true)
-                .setMinUpdateIntervalMillis(2000L)
-                .setMaxUpdateDelayMillis(10000L)
-                .build();
-
-        // Используем getCurrentLocation
-        fusedClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+        // ✅ Одноразовое получение текущей локации
+        fusedLocationProviderClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
                 .addOnSuccessListener(location -> {
-                    if (isLocationQualityGood(location)) {
-                        Logger.d(context, TAG, "Good location received immediately");
-                        processLocation(location);
-                    } else if (location != null) {
-                        Logger.d(context, TAG, "Poor quality location, waiting for better...");
-                        waitForBetterLocation(fusedClient, locationRequest, location);
+                    if (location != null) {
+                        updateGpsButtonDrawable(false);
+                        double latitude = location.getLatitude();
+                        double longitude = location.getLongitude();
+
+                        // ✅ Проверяем, изменились ли координаты
+                        boolean coordinatesChanged = haveCoordinatesChanged(latitude, longitude);
+                        Logger.d(context, TAG, "getCurrentLocation: координаты изменились = " + coordinatesChanged +
+                                ", latitude=" + latitude + ", longitude=" + longitude);
+
+                        if (!coordinatesChanged) {
+                            progressBar.setVisibility(View.GONE);
+                            updateGpsButtonCross(false);
+                            isUpdatingFromGPS = false; // ✅ Снимаем флаг
+                            Logger.d(context, TAG, "Пропускаем обновление - координаты не изменились");
+                            return;
+                        }
+
+                        // ✅ Защита от слишком частых обновлений
+                        long currentTime = System.currentTimeMillis();
+                        if (currentTime - lastSuccessfulLocationTime < 3000) {
+                            Logger.d(context, TAG, "Too frequent updates, skipping");
+                            progressBar.setVisibility(View.GONE);
+                            isUpdatingFromGPS = false;
+                            return;
+                        }
+
+                        Logger.d(context, TAG, "getCurrentLocation: " + latitude + ", " + longitude);
+
+                        List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
+                        String api = stringList.get(2);
+                        String language = Locale.getDefault().getLanguage();
+
+                        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+                        String urlFrom = baseUrl + "/" + api + "/android/fromSearchGeoLocal/" + latitude + "/" + longitude + "/" + language;
+
+                        // ✅ Сохраняем идентификатор запроса
+                        final String requestKey = latitude + "_" + longitude + "_" + currentTime;
+                        pendingAddressRequest = requestKey;
+
+                        FromJSONParserRetrofit.sendURL(urlFrom, result -> {
+                            // ✅ Проверяем, что это последний запрос
+                            if (!requestKey.equals(pendingAddressRequest)) {
+                                Logger.d(context, TAG, "Ignoring stale address response");
+                                progressBar.setVisibility(View.GONE);
+                                isUpdatingFromGPS = false;
+                                return;
+                            }
+
+                            if (!isAdded()) {
+                                isUpdatingFromGPS = false;
+                                return;
+                            }
+
+                            if (result != null) {
+                                String FromAdressString = result.get("route_address_from");
+                                Logger.d(context, TAG, "FromAdressString: " + FromAdressString);
+
+                                if (FromAdressString != null && FromAdressString.contains("Точка на карте")) {
+                                    FromAdressString = context.getString(R.string.startPoint);
+                                }
+
+                                // ✅ Проверяем, не тот же ли это адрес
+                                if (lastProcessedAddress.equals(FromAdressString) &&
+                                        System.currentTimeMillis() - lastSuccessfulLocationTime < 10000) {
+                                    Logger.d(context, TAG, "Same address, skipping update");
+                                    progressBar.setVisibility(View.GONE);
+                                    isUpdatingFromGPS = false;
+                                    return;
+                                }
+
+                                // ✅ Обновляем UI
+                                geoText.setText(FromAdressString);
+                                lastProcessedAddress = FromAdressString;
+                                lastSuccessfulLocationTime = currentTime;
+
+                                new CityFinder(
+                                        context,
+                                        latitude,
+                                        longitude,
+                                        FromAdressString,
+                                        context
+                                ).findCity(latitude, longitude);
+
+                                updateCoordinatesInDatabase(latitude, longitude, FromAdressString);
+
+                                try {
+                                    visicomCost();
+                                } catch (MalformedURLException e) {
+                                    throw new RuntimeException(e);
+                                }
+                                Logger.d(context, TAG, "ToAdressString: " + textViewTo.getText().toString());
+                            } else {
+                                Logger.d(context, TAG, "Ошибка при получении адреса");
+                            }
+
+                            progressBar.setVisibility(View.GONE);
+                            isUpdatingFromGPS = false; // ✅ Снимаем флаг
+                            pendingAddressRequest = null;
+                        });
                     } else {
-                        Logger.d(context, TAG, "No location, waiting for updates...");
-                        waitForBetterLocation(fusedClient, locationRequest, null);
+                        Logger.d(context, TAG, "Локация = null");
+                        progressBar.setVisibility(View.GONE);
+                        isUpdatingFromGPS = false; // ✅ Снимаем флаг
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Logger.e(context, TAG, "getCurrentLocation failed: " + e.getMessage());
-                    waitForBetterLocation(fusedClient, locationRequest, null);
-                });
-    }
-
-    private void waitForBetterLocation(FusedLocationProviderClient fusedClient,
-                                       LocationRequest locationRequest,
-                                       Location initialLocation) {
-
-        // Проверяем разрешения - если нет, запрашиваем и выходим
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            Logger.d(context, TAG, "No location permissions, requesting...");
-            requestLocationPermissions();
-            progressBar.setVisibility(View.GONE);
-            Toast.makeText(context, R.string.location_permission_required, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Отменяем предыдущий callback если есть
-        if (currentLocationCallback != null) {
-            fusedClient.removeLocationUpdates(currentLocationCallback);
-        }
-
-        currentLocationCallback = new LocationCallback() {
-            private long startTime = System.currentTimeMillis();
-            private Location bestLocation = initialLocation;
-            private static final long TIMEOUT_MS = 10000; // 10 секунд максимум
-
-            @Override
-            public void onLocationResult(LocationResult locationResult) {
-                if (locationResult == null) return;
-
-                Location newLocation = locationResult.getLastLocation();
-                long elapsedTime = System.currentTimeMillis() - startTime;
-
-                if (newLocation != null) {
-                    if (isLocationQualityGood(newLocation)) {
-                        Logger.d(context, TAG, "Got good location after " + elapsedTime + "ms");
-                        fusedClient.removeLocationUpdates(this);
-                        currentLocationCallback = null;
-                        processLocation(newLocation);
-                    } else if (elapsedTime > TIMEOUT_MS) {
-                        Logger.d(context, TAG, "Timeout reached, using best available");
-                        fusedClient.removeLocationUpdates(this);
-                        currentLocationCallback = null;
-                        processLocation(bestLocation != null ? bestLocation : newLocation);
-                    } else if (bestLocation == null ||
-                            newLocation.getAccuracy() < bestLocation.getAccuracy()) {
-                        bestLocation = newLocation;
-                        Logger.d(context, TAG, "Better location: accuracy=" + newLocation.getAccuracy());
-                    }
-                }
-            }
-        };
-
-        // Запрашиваем обновления
-        fusedClient.requestLocationUpdates(locationRequest, currentLocationCallback, Looper.getMainLooper());
-
-        // Глобальный таймаут на случай если ничего не пришло
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            if (currentLocationCallback != null) {
-                Logger.d(context, TAG, "Global timeout for location updates");
-                fusedClient.removeLocationUpdates(currentLocationCallback);
-                currentLocationCallback = null;
-                progressBar.setVisibility(View.GONE);
-                Toast.makeText(context, R.string.location_timeout, Toast.LENGTH_SHORT).show();
-            }
-        }, 15000);
-    }
-
-    private boolean isLocationQualityGood(Location location) {
-        if (location == null) return false;
-
-        // Убираем синхронную GNSS проверку - она слишком медленная
-        // Просто проверяем базовые параметры
-        return location.hasAccuracy() &&
-                location.getAccuracy() < 50 &&  // Увеличил до 50 метров для лучшего UX
-                location.getTime() > System.currentTimeMillis() - 30000 &&
-                location.getLatitude() != 0.0;
-    }
-
-    private boolean checkGnssStatus() {
-        // Используем синхронную проверку с коротким таймаутом
-        // Для одноразового определения это приемлемо
-        try {
-            final boolean[] result = {false};
-            final Object lock = new Object();
-
-            TaxiLocationValidator.isRealGnssWorkingAsync(context, gnssWorking -> {
-                synchronized (lock) {
-                    result[0] = gnssWorking;
-                    lock.notify();
-                }
-            });
-
-            synchronized (lock) {
-                lock.wait(3000); // Ждём максимум 3 секунды
-            }
-            return result[0];
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        }
-    }
-
-    private void attemptRetryLocation() {
-        // Повторная попытка с немного другими параметрами
-        if (locationRetryCount < 2) {
-            locationRetryCount++;
-            Logger.d(context, TAG, "Retrying location, attempt " + locationRetryCount);
-
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                firstLocation(); // Повторяем запрос
-            }, 2000);
-        } else {
-            locationRetryCount = 0;
-            progressBar.setVisibility(View.GONE);
-            Toast.makeText(context, R.string.location_unavailable, Toast.LENGTH_LONG).show();
-        }
-    }
-    @SuppressLint("DefaultLocale")
-    private void processLocation(Location location) {
-        if (location == null) {
-            progressBar.setVisibility(View.GONE);
-            Toast.makeText(context, R.string.location_failed, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // ✅ Проверяем, изменились ли координаты
-        if (!haveCoordinatesChanged(location.getLatitude(), location.getLongitude())) {
-            Logger.d(context, TAG, "Coordinates unchanged, skipping update");
-            progressBar.setVisibility(View.GONE);
-            return;
-        }
-
-        // ✅ Защита от слишком частых обновлений
-        long currentTime = System.currentTimeMillis();
-        if (currentTime - lastSuccessfulLocationTime < 3000) {
-            Logger.d(context, TAG, "Too frequent updates, skipping");
-            progressBar.setVisibility(View.GONE);
-            return;
-        }
-
-        // ✅ Быстрая проверка качества
-        if (!TaxiLocationValidator.isLocationUsable(location)) {
-            Logger.w(context, TAG, "Location not usable - skipping validation");
-            String message = getString(R.string.location_poor_quality);
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show();
-            attemptRetryLocation();
-            return;
-        }
-
-        Logger.d(context, TAG, String.format("Processing location: lat=%.6f, lon=%.6f, acc=%.1f",
-                location.getLatitude(), location.getLongitude(), location.getAccuracy()));
-
-        isUpdatingFromGPS = true;
-
-        TaxiLocationValidator.evaluateAsync(location, context, risk -> {
-            requireActivity().runOnUiThread(() -> {
-                if (risk == TaxiLocationValidator.RiskLevel.BLOCK) {
-                    showLocationErrorDialog(location);
+                    Logger.e(context, TAG, "Failed to get location: " + e.getMessage());
                     progressBar.setVisibility(View.GONE);
-                    isUpdatingFromGPS = false;
-                    return;
-                }
-
-                if (risk == TaxiLocationValidator.RiskLevel.SUSPICIOUS) {
-                    showSuspiciousLocationWarning(location, risk);
-                }
-
-                double latitude = location.getLatitude();
-                double longitude = location.getLongitude();
-
-                List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
-                String api = stringList.get(2);
-                String language = Locale.getDefault().getLanguage();
-
-                String urlFrom = baseUrl + "/" + api + "/android/fromSearchGeoLocal/" +
-                        latitude + "/" + longitude + "/" + language;
-
-                // ✅ Отменяем предыдущий запрос перед новым
-                FromJSONParserRetrofit.cancelCurrentRequest();
-
-                FromJSONParserRetrofit.sendURL(urlFrom, result -> {
-                    if (!isAdded()) {
-                        isUpdatingFromGPS = false;
-                        return;
-                    }
-
-                    String fromAddress = result.get("route_address_from");
-                    if (fromAddress != null && fromAddress.contains("Точка на карте")) {
-                        fromAddress = context.getString(R.string.startPoint);
-                    }
-
-                    // ✅ Проверяем, не тот же ли это адрес
-                    if (lastProcessedAddress.equals(fromAddress) &&
-                            System.currentTimeMillis() - lastSuccessfulLocationTime < 10000) {
-                        Logger.d(context, TAG, "Same address, skipping update");
-                        progressBar.setVisibility(View.GONE);
-                        isUpdatingFromGPS = false;
-                        return;
-                    }
-
-                    // ✅ Обновляем UI только если адрес действительно изменился
-                    if (!geoText.getText().toString().equals(fromAddress)) {
-                        geoText.setText(fromAddress);
-                        lastProcessedAddress = fromAddress;
-                        lastSuccessfulLocationTime = System.currentTimeMillis();
-                    }
-
-                    new CityFinder(context, latitude, longitude, fromAddress, context)
-                            .findCity(latitude, longitude);
-
-                    updateGpsButtonDrawable(false);
-                    updateCoordinatesInDatabase(latitude, longitude, fromAddress);
-
-                    try {
-                        visicomCost();
-                    } catch (MalformedURLException e) {
-                        Logger.e(context, TAG, "Error: " + e.getMessage());
-                    }
-
-                    progressBar.setVisibility(View.GONE);
-                    isUpdatingFromGPS = false;
+                    isUpdatingFromGPS = false; // ✅ Снимаем флаг
+                    Toast.makeText(context, R.string.location_failed, Toast.LENGTH_SHORT).show();
                 });
-            });
-        });
     }
 
     private void showGnssErrorSnackbar() {
@@ -3045,14 +2908,6 @@ public class VisicomFragment extends Fragment {
     }
     private void updateCoordinatesInDatabase(double newLat, double newLon, String address) {
         String TAG = "updateCoordinatesInDatabase";
-        // ✅ Проверяем, не обновляем ли мы те же координаты
-        double[] current = getCurrentCoordinatesFromDatabase();
-        if (Math.abs(current[0] - newLat) < 0.00001 &&
-                Math.abs(current[1] - newLon) < 0.00001) {
-            Logger.d(context, TAG, "Coordinates already in DB, skipping update");
-            return;
-        }
-
         Logger.d(context, TAG, "=== updateCoordinatesInDatabase START ===");
         Logger.d(context, TAG, "Входные параметры: newLat=" + newLat + ", newLon=" + newLon + ", address='" + address + "'");
 
@@ -3413,6 +3268,17 @@ public class VisicomFragment extends Fragment {
 
             Logger.d(context, TAG, "Setting UI visibility and values");
             btnVisible(VISIBLE);
+//            progressBar.setVisibility(View.GONE);
+//
+//            geoText.setVisibility(View.VISIBLE);
+//            geoText.setText(start);
+//
+//            textfrom.setVisibility(View.VISIBLE);
+//            num1.setVisibility(View.VISIBLE);
+//            textwhere.setVisibility(View.VISIBLE);
+//
+//            num2.setVisibility(View.VISIBLE);
+//            textViewTo.setVisibility(View.VISIBLE);
 
             if(!finish.isEmpty()) {
                 textViewTo.setText(finish);

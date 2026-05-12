@@ -912,8 +912,5 @@
     <string name="error_whether_mes">❌ Ошибка загрузки погоды</string>
     <string name="inclusiv_transport_yes">Требуется инклюзивный транспорт</string>
     <string name="location_failed">Не удалось определить местоположение</string>
-    <string name="location_unavailable">Местоположение недоступно</string>
-    <string name="location_poor_quality">Низкое качество GPS сигнала, попробуйте еще раз</string>
-    <string name="location_permission_required">Для определения местоположения необходимо разрешение</string>
-
+    <string name="location_failed_message">Не удалось получить координаты. Пожалуйста, проверьте включен ли GPS и дайте разрешение на определение местоположения.</string>
 </resources>
