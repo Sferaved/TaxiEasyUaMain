@@ -505,49 +505,8 @@ public class MainActivity extends AppCompatActivity {
             Logger.d(this, TAG, "Android version < 13, no permission check needed");
         }
 
-        // Получаем кэшированную погоду
-        Logger.d(this, TAG, "Attempting to get cached weather data...");
-        WeatherResponse weather = WeatherApiHelper.getCachedWeather(this);
+        // Получаем погоду
 
-        if (weather != null && weather.getMain() != null) {
-            Logger.d(this, TAG, "Cached weather found successfully");
-
-            // Логируем данные погоды из кэша
-            try {
-                Logger.d(this, TAG, "Weather data details:");
-                Logger.d(this, TAG, "  - Temperature: " + weather.getMain().getTemp() + "°C");
-                Logger.d(this, TAG, "  - Humidity: " + weather.getMain().getHumidity() + "%");
-                Logger.d(this, TAG, "  - Pressure: " + weather.getMain().getPressure() + " hPa");
-                Logger.d(this, TAG, "  - Weather condition: " + (weather.getWeather() != null && !weather.getWeather().isEmpty() ? weather.getWeather().get(0).getDescription() : "unknown"));
-            } catch (Exception e) {
-                Logger.e(this, TAG, "Error logging weather data: " + e.getMessage() );
-            }
-
-            // Получаем город
-            String cityName = getCurrentCityName();
-            Logger.d(this, TAG, "Current city name: '" + cityName + "'");
-
-            // Отправляем уведомление
-            Logger.d(this, TAG, "Calling WeatherNotificationHelper.showWeatherNotification()...");
-            WeatherNotificationHelper.showWeatherNotification(this, weather, cityName);
-            Logger.d(this, TAG, "Weather notification show method executed");
-
-            Toast.makeText(this, R.string.send_notufy_mes_toast, Toast.LENGTH_SHORT).show();
-            Logger.d(this, TAG, "Toast shown: " + getString(R.string.send_notufy_mes_toast));
-            Logger.d(this, TAG, "=== SUCCESS: Weather notification sent from shortcut (from cache) ===");
-
-        } else {
-            // Нет кэша - пробуем загрузить
-            if (weather == null) {
-                Logger.w(this, TAG, "Cached weather is NULL");
-            } else if (weather.getMain() == null) {
-                Logger.w(this, TAG, "Cached weather has NULL Main object");
-                Logger.w(this, TAG, "Weather object state: " + weather.toString());
-            }
-
-            Logger.d(this, TAG, "No valid cached weather available, attempting to fetch from API");
-            Toast.makeText(this, R.string.load_whether, Toast.LENGTH_SHORT).show();
-            Logger.d(this, TAG, "Toast shown: " + getString(R.string.load_whether));
 
             String apiKey = WeatherApiHelper.getApiKey(this);
             Logger.d(this, TAG, "API Key retrieved: " + (apiKey != null ? (apiKey.isEmpty() ? "EMPTY" : "present (length=" + apiKey.length() + ")") : "NULL"));
@@ -619,7 +578,7 @@ public class MainActivity extends AppCompatActivity {
                 Logger.e(this, TAG, "Cannot fetch weather data without valid API key");
                 Logger.e(this, TAG, "=== WEATHER NOTIFICATION FAILED: No API key ===");
             }
-        }
+
 
         Logger.d(this, TAG, "=== END: sendWeatherNotificationFromShortcut method ===");
     }
