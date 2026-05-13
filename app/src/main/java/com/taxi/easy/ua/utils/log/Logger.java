@@ -25,6 +25,9 @@ public class Logger {
 
     /** Записываем строку в лог и следим за размером файла */
     public static void writeLog(Context context, String log) {
+        if (context == null) {
+            return;
+        }
         File logFile = getLogFile(context);
         try {
             // Добавляем новую запись
@@ -73,21 +76,41 @@ public class Logger {
 
     // ========= Методы для разных уровней логов =========
     public static void e(Context context, String tag, String message) {
+        if (context == null) {
+            // Если context null - пишем только в logcat, но не в файл
+            Log.e(tag, message);
+            return;
+        }
         Log.e(tag, message);
         writeLog(context, "ERROR: " + tag + ": " + message);
     }
 
     public static void d(Context context, String tag, String message) {
+        if (context == null) {
+            // Если context null - пишем только в logcat, но не в файл
+            Log.d(tag, message);
+            return;
+        }
         Log.d(tag, message);
         writeLog(context, "DEBUG: " + tag + ": " + message);
     }
 
     public static void i(Context context, String tag, String message) {
+        if (context == null) {
+            // Если context null - пишем только в logcat, но не в файл
+            Log.i(tag, message);
+            return;
+        }
         Log.i(tag, message);
         writeLog(context, "INFO: " + tag + ": " + message);
     }
 
     public static void w(Context context, String tag, String message) {
+        if (context == null) {
+            // Если context null - пишем только в logcat, но не в файл
+            Log.w(tag, message);
+            return;
+        }
         Log.w(tag, message);
         writeLog(context, "WARN: " + tag + ": " + message);
     }

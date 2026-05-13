@@ -224,8 +224,16 @@ public class ActiveOrderFragment extends Fragment {
                     Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
                     Logger.w(context, TAG, "NO INTERNET - Showing toast message");
                 }
-                requireActivity().runOnUiThread(() -> {
-                    progressBar.setVisibility(View.GONE);
+                if (!isAdded() || isDetached() || getActivity() == null) {
+                    return;
+                }
+
+                // Безопасное выполнение на UI потоке
+                Handler mainHandler = new Handler(Looper.getMainLooper());
+                mainHandler.post(() -> {
+                    if (isAdded() && !isDetached() && progressBar != null) {
+                        progressBar.setVisibility(View.GONE);
+                    }
                 });
             }
 

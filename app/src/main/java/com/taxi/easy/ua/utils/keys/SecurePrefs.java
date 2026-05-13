@@ -13,39 +13,34 @@ public class SecurePrefs {
     private static final String PREFS_NAME = "secure_prefs";
     private static final String KEY_API_KEY = "api_key";
 
+    // ДОБАВИТЬ ЭТУ СТРОКУ - кеш для ключа
+    private static String cachedKey = null;
+
     /**
      * Сохраняет ключ в EncryptedSharedPreferences.
-     *
-     * @param context Контекст приложения
-     * @param key     Ключ для сохранения
-     * @throws GeneralSecurityException Если произошла ошибка шифрования
-     * @throws IOException              Если произошла ошибка ввода-вывода
      */
     public static void saveKey(Context context, String key) throws GeneralSecurityException, IOException {
         SharedPreferences prefs = getEncryptedSharedPreferences(context);
         prefs.edit().putString(KEY_API_KEY, key).apply();
+        cachedKey = key;  // ДОБАВИТЬ ЭТУ СТРОКУ - обновляем кеш
     }
 
     /**
      * Извлекает ключ из EncryptedSharedPreferences.
-     *
-     * @param context Контекст приложения
-     * @return Сохранённый ключ или null, если ключ не найден
-     * @throws GeneralSecurityException Если произошла ошибка шифрования
-     * @throws IOException              Если произошла ошибка ввода-вывода
      */
     public static String getKey(Context context) throws GeneralSecurityException, IOException {
+        // ДОБАВИТЬ ЭТИ 3 СТРОКИ - проверка кеша
+        if (cachedKey != null) {
+            return cachedKey;
+        }
+
         SharedPreferences prefs = getEncryptedSharedPreferences(context);
-        return prefs.getString(KEY_API_KEY, null);
+        cachedKey = prefs.getString(KEY_API_KEY, null);  // ИЗМЕНИТЬ - сохранить в кеш
+        return cachedKey;  // ИЗМЕНИТЬ - вернуть из кеша
     }
 
     /**
      * Создаёт или возвращает экземпляр EncryptedSharedPreferences.
-     *
-     * @param context Контекст приложения
-     * @return SharedPreferences с шифрованием
-     * @throws GeneralSecurityException Если не удалось создать мастер-ключ
-     * @throws IOException              Если произошла ошибка ввода-вывода
      */
     private static SharedPreferences getEncryptedSharedPreferences(Context context)
             throws GeneralSecurityException, IOException {

@@ -505,8 +505,7 @@ public class MainActivity extends AppCompatActivity {
             Logger.d(this, TAG, "Android version < 13, no permission check needed");
         }
 
-        // Получаем погоду
-
+        // Получаем  погоду
 
             String apiKey = WeatherApiHelper.getApiKey(this);
             Logger.d(this, TAG, "API Key retrieved: " + (apiKey != null ? (apiKey.isEmpty() ? "EMPTY" : "present (length=" + apiKey.length() + ")") : "NULL"));

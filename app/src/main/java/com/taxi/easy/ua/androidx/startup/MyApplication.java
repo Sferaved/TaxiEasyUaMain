@@ -42,6 +42,8 @@ import com.uxcam.datamodel.UXConfig;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class MyApplication extends MultiDexApplication {
@@ -63,6 +65,9 @@ public class MyApplication extends MultiDexApplication {
 
     FirestoreHelper firestoreHelper;
 
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private Handler mainHandler = new Handler(Looper.getMainLooper());
+    private static String cachedKey = null;
     @Override
     public void onCreate() {
         super.onCreate();
@@ -82,12 +87,13 @@ public class MyApplication extends MultiDexApplication {
             registerActivityLifecycleCallbacks(); // теперь запускаем/останавливаем WorkManager
             setupCrashHandler();
             setupANRWatchDog();
-            fetchUXCamKey(1);
-            weatherKeyFromFb();
-            visicomKeyFromFb();
-            mapboxKeyFromFb();
-            supportEmailFromFb();
-            scheduleInclusiveTransportWorker();
+            initializeAsync();
+//            fetchUXCamKey(1);
+//            weatherKeyFromFb();
+//            visicomKeyFromFb();
+//            mapboxKeyFromFb();
+//            supportEmailFromFb();
+//            scheduleInclusiveTransportWorker();
 
         } catch (Exception e) {
             Logger.e(this, TAG, "Initialization failed: " + e);
@@ -97,7 +103,22 @@ public class MyApplication extends MultiDexApplication {
     public static MyApplication getInstance() {
         return instance;
     }
+    private void initializeAsync() {
+        executorService.execute(() -> {
+            try {
+                fetchUXCamKey(1);
+                weatherKeyFromFb();
+                visicomKeyFromFb();
+                mapboxKeyFromFb();
+                supportEmailFromFb();
 
+                mainHandler.post(this::scheduleInclusiveTransportWorker);
+            } catch (Exception e) {
+                Logger.e(this, TAG, "Async initialization failed: " + e);
+                FirebaseCrashlytics.getInstance().recordException(e);
+            }
+        });
+    }
     // ---------- ЗАПУСК И ОСТАНОВКА WORKER ----------
 
     private void startOrderStatusWorker() {
@@ -296,8 +317,10 @@ public class MyApplication extends MultiDexApplication {
         firestoreHelper.getVisicomKey(new FirestoreHelper.OnVisicomKeyFetchedListener() {
             @Override
             public void onSuccess(String vKey) {
-                MainActivity.apiKey = vKey;
-                Logger.d(getApplicationContext(), TAG, "Visicom Key: " + vKey);
+                mainHandler.post(() -> {
+                    MainActivity.apiKey = vKey;
+                    Logger.d(getApplicationContext(), TAG, "Visicom Key: " + vKey);
+                });
             }
 
             @Override
@@ -311,11 +334,12 @@ public class MyApplication extends MultiDexApplication {
         firestoreHelper.getWeatherKey(new FirestoreHelper.OnVisicomKeyFetchedListener() {
             @Override
             public void onSuccess(String vKey) {
-                MainActivity.weatherKey = vKey;
-                SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-                prefs.edit().putString("weather_api_key", vKey).apply();
-
-                Logger.d(getApplicationContext(), TAG, "weatherKey: " + vKey);
+                mainHandler.post(() -> {
+                    MainActivity.weatherKey = vKey;
+                    SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
+                    prefs.edit().putString("weather_api_key", vKey).apply();
+                    Logger.d(getApplicationContext(), TAG, "weatherKey: " + vKey);
+                });
             }
 
             @Override
@@ -329,8 +353,10 @@ public class MyApplication extends MultiDexApplication {
         firestoreHelper.getSupportEmail(new FirestoreHelper.OnSupportEmailFetchedListener() {
             @Override
             public void onSuccess(String supportEmail) {
-                MainActivity.supportEmail = supportEmail;
-                Logger.d(getApplicationContext(), TAG, "supportEmail: " + supportEmail);
+                mainHandler.post(() -> {
+                    MainActivity.supportEmail = supportEmail;
+                    Logger.d(getApplicationContext(), TAG, "supportEmail: " + supportEmail);
+                });
             }
 
             @Override
@@ -345,8 +371,10 @@ public class MyApplication extends MultiDexApplication {
         firestoreHelper.getMapboxKey(new FirestoreHelper.OnMapboxKeyFetchedListener() {
             @Override
             public void onSuccess(String mKey) {
-                MainActivity.apiKeyMapBox = mKey;
-                Logger.d(getApplicationContext(), TAG, "Mapbox Key: " + MainActivity.apiKeyMapBox);
+                mainHandler.post(() -> {
+                    MainActivity.apiKeyMapBox = mKey;
+                    Logger.d(getApplicationContext(), TAG, "Mapbox Key: " + MainActivity.apiKeyMapBox);
+                });
             }
 
             @Override

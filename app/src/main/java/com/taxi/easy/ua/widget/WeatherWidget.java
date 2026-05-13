@@ -375,7 +375,7 @@ public class WeatherWidget extends AppWidgetProvider {
             // Можно установить 15 минут, но система может округлить до 1 часа
             PeriodicWorkRequest workRequest = new PeriodicWorkRequest.Builder(
                     WeatherWidgetWorker.class,
-                    1, TimeUnit.HOURS,  // Интервал обновления
+                    15, TimeUnit.HOURS,  // Интервал обновления
                     15, TimeUnit.MINUTES // Допустимое отклонение
             ).build();
 
