@@ -10,6 +10,8 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -28,7 +30,10 @@ import com.taxi.easy.ua.utils.log.Logger;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -46,6 +51,29 @@ public class CityFinder {
     double startLan;
     String position;
 
+    // ✅ Флаги для защиты от перезаписи
+    private static boolean isProcessing = false;
+    private static String lastProcessedCity = "";
+    private static long lastProcessedTime = 0;
+    private static final long PROCESSING_TIMEOUT = 5000; // 5 секунд
+    private static final Object lock = new Object();
+
+    // ✅ Флаг для защиты от повторного показа диалога
+    private static boolean isCityChangeDialogShowing = false;
+
+    public static boolean isCityFinderBusy() {
+        return isProcessing;
+    }
+
+    public static void resetFlags() {
+        synchronized (lock) {
+            isProcessing = false;
+            isCityChangeDialogShowing = false;
+            lastProcessedCity = "";
+            Logger.d(null, TAG, "CityFinder flags reset");
+        }
+    }
+
     public CityFinder() {
         // Пустой конструктор без аргументов
     }
@@ -53,6 +81,7 @@ public class CityFinder {
     private WeakReference<Activity> activityRef;
     String cityMenu;
     boolean cangedCity;
+
     public CityFinder(
             Context context,
             double startLat,
@@ -68,6 +97,15 @@ public class CityFinder {
     }
 
     public void findCity(double latitude, double longitude) {
+        // ✅ Защита от множественных вызовов
+        synchronized (lock) {
+            if (isProcessing) {
+                Logger.d(context, TAG, "CityFinder уже работает, пропускаем вызов");
+                return;
+            }
+            isProcessing = true;
+        }
+
         CityApiService apiService = RetrofitClient.getClient().create(CityApiService.class);
         Call<CityResponse> call = apiService.findCity(latitude, longitude);
 
@@ -77,10 +115,12 @@ public class CityFinder {
                 if (response.isSuccessful() && response.body() != null) {
                     String city = response.body().getCity();
                     Logger.d(context, TAG, "City: " + city);
-
                     cityVerify(city);
                 } else {
                     Logger.e(context, TAG, "Request failed: " + response.code());
+                    synchronized (lock) {
+                        isProcessing = false;
+                    }
                 }
             }
 
@@ -88,11 +128,27 @@ public class CityFinder {
             public void onFailure(@NonNull Call<CityResponse> call, @NonNull Throwable t) {
                 FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.e(context, TAG, "Error: " + t.getMessage());
+                synchronized (lock) {
+                    isProcessing = false;
+                }
             }
         });
     }
 
     private void cityVerify(String cityFromApi) {
+        // ✅ Защита от очень частых вызовов
+        synchronized (lock) {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastProcessedTime < PROCESSING_TIMEOUT &&
+                    cityFromApi.equals(lastProcessedCity)) {
+                Logger.d(context, TAG, "Слишком частые вызовы для одного города, пропускаем");
+                isProcessing = false;
+                return;
+            }
+            lastProcessedTime = currentTime;
+            lastProcessedCity = cityFromApi;
+        }
+
         String cityResult;
         switch (cityFromApi) {
             case "city_kiev":
@@ -162,7 +218,7 @@ public class CityFinder {
                 cityResult = "all";
         }
 
-        // Получаем город из БД
+        // ✅ Получаем город из БД
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         String currentCityFromDB = stringList.get(1);
 
@@ -170,13 +226,13 @@ public class CityFinder {
         Logger.d(context, TAG, "cityResult: " + cityResult);
         sharedPreferencesHelperMain.saveValue("setStatusX", false);
         VisicomFragment.updateGpsButtonCross(false);
-        // ☝️ ВОТ ЭТО УСЛОВИЕ - РАСКОММЕНТИРУЙТЕ И ПОПРАВЬТЕ
-        if (!cityResult.equals(currentCityFromDB)) {
 
-            Logger.d(context, TAG, "City: " + currentCityFromDB);
-            Logger.d(context, TAG, "cityResult: " + cityResult);
+        // ✅ Проверяем, отличается ли город
+        String normalizedCityResult = normalizeCityName(cityResult);
+        String normalizedCurrentCity = normalizeCityName(currentCityFromDB);
 
-            String newTitle;
+        if (!normalizedCityResult.equals(normalizedCurrentCity)) {
+            Logger.d(context, TAG, "City отличается: " + currentCityFromDB + " -> " + cityResult);
 
             String Kyiv_City_phone = "tel:0674443804";
             String Dnipropetrovsk_Oblast_phone = "tel:0667257070";
@@ -287,7 +343,7 @@ public class CityFinder {
                     break;
                 case "Lutsk":
                     phoneNumber = Kyiv_City_phone;
-                    cityMenu = context.getString(R.string.city_chernivtsi);
+                    cityMenu = context.getString(R.string.city_lutsk);
                     countryState = "UA";
                     break;
                 case "OdessaTest":
@@ -307,26 +363,25 @@ public class CityFinder {
                     break;
             }
 
-            newTitle = context.getString(R.string.menu_city) + " " + cityMenu;
+            String newTitle = context.getString(R.string.menu_city) + " " + cityMenu;
             sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
             sharedPreferencesHelperMain.saveValue("countryState", countryState);
 
             Logger.d(context, TAG, "onItemClick: pay_method" + pay_method);
 
-            updateMyPosition(
-                    cityResult,
-                    startLat,
-                    startLan,
-                    position
-            );
+            updateMyPosition(cityResult, startLat, startLan, position);
         } else {
             Logger.d(context, TAG, "Города одинаковые - диалог НЕ показываем");
 
             if (VisicomFragment.progressBar != null) {
                 VisicomFragment.progressBar.setVisibility(View.GONE);
             }
+            synchronized (lock) {
+                isProcessing = false;
+            }
         }
     }
+
     @SuppressLint("SetTextI18n")
     private void updateMyPosition(String city, double startLat, double startLan, String position) {
         String TAG = "updateMyPosition";
@@ -336,10 +391,14 @@ public class CityFinder {
         Activity activity = activityRef.get();
         if (activity == null || activity.isFinishing() || activity.isDestroyed()) {
             Logger.e(context, TAG, "Activity is null or destroyed, cannot navigate");
+            synchronized (lock) {
+                isProcessing = false;
+            }
             return;
         }
 
-        // 🔽 установка baseUrl как и было
+        // ✅ установка baseUrl
+        String finalCityForUrl = city;
         switch (city){
             case "Dnipropetrovsk Oblast":
             case "Odessa":
@@ -369,65 +428,256 @@ public class CityFinder {
                 break;
             default:
                 sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-                city = "foreign countries";
+                finalCityForUrl = "foreign countries";
+                break;
         }
+
+        // ✅ Используем finalCityForUrl для дальнейшей работы
+        final String finalCity = finalCityForUrl;
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         String cityOld = stringList.get(1);
-        Logger.d(context, TAG, "updateMyPosition:cityOld " + cityOld);
-// ✅ создаём final копию
-        final String finalCity = city;
-        VisicomFragment.progressBar.setVisibility(View.GONE);
-        if (!finalCity.equals(cityOld)) {
-            cangedCity  = true;
+        Logger.d(context, TAG, "updateMyPosition:cityOld '" + cityOld + "'");
+        Logger.d(context, TAG, "updateMyPosition:finalCity '" + finalCity + "'");
+
+        if (VisicomFragment.progressBar != null) {
+            VisicomFragment.progressBar.setVisibility(View.GONE);
+        }
+
+        // ✅ Нормализация названий городов для сравнения
+        String normalizedFinalCity = normalizeCityName(finalCity);
+        String normalizedCityOld = normalizeCityName(cityOld);
+
+        Logger.d(context, TAG, "normalizedFinalCity: '" + normalizedFinalCity + "'");
+        Logger.d(context, TAG, "normalizedCityOld: '" + normalizedCityOld + "'");
+
+        // ✅ Проверяем, действительно ли города разные
+        if (!normalizedFinalCity.equals(normalizedCityOld)) {
+            Logger.d(context, TAG, "Города разные, показываем диалог");
+
+            // ✅ Защита от повторного показа диалога
+            if (isCityChangeDialogShowing) {
+                Logger.d(context, TAG, "Диалог уже показывается, пропускаем");
+                synchronized (lock) {
+                    isProcessing = false;
+                }
+                return;
+            }
+
+            cangedCity = true;
+            isCityChangeDialogShowing = true;
+
+            // ✅ Получаем название города для отображения в диалоге
+            String cityDisplayName = getCityDisplayName(finalCity);
+
             new androidx.appcompat.app.AlertDialog.Builder(activity)
-                    .setTitle(R.string.city_change_dialog) // добавьте соответствующий заголовок в strings.xml
-                    .setMessage(activity.getString(R.string.find_new_city_mes) + cityMenu + activity.getString(R.string.turn_mes))
+                    .setTitle(R.string.city_change_dialog)
+                    .setMessage(activity.getString(R.string.find_new_city_mes) + cityDisplayName + activity.getString(R.string.turn_mes))
                     .setPositiveButton(R.string.ok, (dialog, which) -> {
+                        isCityChangeDialogShowing = false;
                         applyCityChange(finalCity, startLat, startLan, position);
+                        synchronized (lock) {
+                            isProcessing = false;
+                        }
                     })
                     .setNegativeButton(R.string.cancel, (dialog, which) -> {
+                        isCityChangeDialogShowing = false;
+                        synchronized (lock) {
+                            isProcessing = false;
+                        }
                         VisicomFragment.updateGpsButtonCross(true);
                         Logger.d(context, TAG, "User declined city change");
+                    })
+                    .setOnDismissListener(dialog -> {
+                        isCityChangeDialogShowing = false;
+                        synchronized (lock) {
+                            isProcessing = false;
+                        }
                     })
                     .setCancelable(false)
                     .show();
             return;
         } else {
+            Logger.d(context, TAG, "Города одинаковые, применяем изменения без диалога");
             cangedCity = false;
+            // ✅ Применяем изменения даже если город не менялся (обновляем позицию)
+            applyCityChange(finalCity, startLat, startLan, position);
+            synchronized (lock) {
+                isProcessing = false;
+            }
+        }
+    }
+
+    // Нормализация названий городов
+    private String normalizeCityName(String cityName) {
+        if (cityName == null) return "";
+
+        // Создаём множество синонимов для каждого города
+        Map<String, String> citySynonyms = new HashMap<>();
+
+        // Киев
+        citySynonyms.put("KYIV CITY", "Kyiv City");
+        citySynonyms.put("KYIV", "Kyiv City");
+        citySynonyms.put("KIEV", "Kyiv City");
+        citySynonyms.put("КИЕВ", "Kyiv City");
+        citySynonyms.put("КИЇВ", "Kyiv City");
+        citySynonyms.put("CITY_KIEV", "Kyiv City");
+        citySynonyms.put("CITY_KYIV", "Kyiv City");
+
+        // Одесса
+        citySynonyms.put("ODESSA", "Odessa");
+        citySynonyms.put("ОДЕССА", "Odessa");
+        citySynonyms.put("ОДЕСА", "Odessa");
+        citySynonyms.put("CITY_ODESSA", "Odessa");
+
+        // Днепр
+        citySynonyms.put("DNIPROPETROVSK OBLAST", "Dnipropetrovsk Oblast");
+        citySynonyms.put("DNIPRO", "Dnipropetrovsk Oblast");
+        citySynonyms.put("ДНЕПР", "Dnipropetrovsk Oblast");
+        citySynonyms.put("ДНІПРО", "Dnipropetrovsk Oblast");
+        citySynonyms.put("CITY_DNIPRO", "Dnipropetrovsk Oblast");
+
+        // Львов
+        citySynonyms.put("LVIV", "Lviv");
+        citySynonyms.put("ЛЬВОВ", "Lviv");
+        citySynonyms.put("ЛЬВІВ", "Lviv");
+        citySynonyms.put("CITY_LVIV", "Lviv");
+
+        // Запорожье
+        citySynonyms.put("ZAPORIZHZHIA", "Zaporizhzhia");
+        citySynonyms.put("ЗАПОРОЖЬЕ", "Zaporizhzhia");
+        citySynonyms.put("ЗАПОРІЖЖЯ", "Zaporizhzhia");
+        citySynonyms.put("CITY_ZAPORIZHZHIA", "Zaporizhzhia");
+
+        // Черкассы
+        citySynonyms.put("CHERKASY OBLAST", "Cherkasy Oblast");
+        citySynonyms.put("CHERKASY", "Cherkasy Oblast");
+        citySynonyms.put("ЧЕРКАССЫ", "Cherkasy Oblast");
+        citySynonyms.put("ЧЕРКАСИ", "Cherkasy Oblast");
+        citySynonyms.put("CITY_CHERKASY", "Cherkasy Oblast");
+
+        String upperCity = cityName.trim().toUpperCase(Locale.US);
+
+        if (citySynonyms.containsKey(upperCity)) {
+            return citySynonyms.get(upperCity);
         }
 
-// и тут тоже используем finalCity
-        applyCityChange(finalCity, startLat, startLan, position);
+        // Если не нашли в синонимах, возвращаем как есть
+        return cityName.trim();
     }
+
+    // Получение отображаемого названия города для диалога
+    private String getCityDisplayName(String city) {
+        if (city == null) return "";
+
+        switch (city) {
+            case "Kyiv City":
+                return context.getString(R.string.city_kyiv);
+            case "Dnipropetrovsk Oblast":
+                return context.getString(R.string.city_dnipro);
+            case "Odessa":
+                return context.getString(R.string.city_odessa);
+            case "Zaporizhzhia":
+                return context.getString(R.string.city_zaporizhzhia);
+            case "Cherkasy Oblast":
+                return context.getString(R.string.city_cherkassy);
+            case "Lviv":
+                return context.getString(R.string.city_lviv);
+            case "Ivano_frankivsk":
+                return context.getString(R.string.city_ivano_frankivsk);
+            case "Vinnytsia":
+                return context.getString(R.string.city_vinnytsia);
+            case "Poltava":
+                return context.getString(R.string.city_poltava);
+            case "Sumy":
+                return context.getString(R.string.city_sumy);
+            case "Kharkiv":
+                return context.getString(R.string.city_kharkiv);
+            case "Chernihiv":
+                return context.getString(R.string.city_chernihiv);
+            case "Rivne":
+                return context.getString(R.string.city_rivne);
+            case "Ternopil":
+                return context.getString(R.string.city_ternopil);
+            case "Khmelnytskyi":
+                return context.getString(R.string.city_khmelnytskyi);
+            case "Zakarpattya":
+                return context.getString(R.string.city_zakarpattya);
+            case "Zhytomyr":
+                return context.getString(R.string.city_zhytomyr);
+            case "Kropyvnytskyi":
+                return context.getString(R.string.city_kropyvnytskyi);
+            case "Mykolaiv":
+                return context.getString(R.string.city_mykolaiv);
+            case "Chernivtsi":
+                return context.getString(R.string.city_chernivtsi);
+            case "Lutsk":
+                return context.getString(R.string.city_lutsk);
+            case "foreign countries":
+                return context.getString(R.string.foreign_countries);
+            default:
+                return city;
+        }
+    }
+
     @SuppressLint("Range")
     private void applyCityChange(String city, double startLat, double startLan, String position) {
         String TAG = "applyCityChange";
         Logger.d(context, TAG, "applyCityChange: " + city);
 
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        // ✅ Проверяем актуальность данных перед обновлением
+        List<String> currentCityInfo = logCursor(MainActivity.CITY_INFO);
+        String currentCityInDb = currentCityInfo.get(1);
 
-        ContentValues cv = new ContentValues();
+        String normalizedNewCity = normalizeCityName(city);
+        String normalizedCurrentCity = normalizeCityName(currentCityInDb);
 
-        cv.put("city", city);
-        cv.put("phone", phoneNumber);
-        database.update(MainActivity.CITY_INFO, cv, "id = ?", new String[]{"1"});
+        // ✅ Если город в БД уже отличается от того, что мы хотим установить, и это не смена города
+        if (!normalizedNewCity.equals(normalizedCurrentCity) && !cangedCity) {
+            Logger.d(context, TAG, "Город уже был изменен другим процессом, пропускаем обновление");
+            Logger.d(context, TAG, "БД: " + normalizedCurrentCity + ", новый: " + normalizedNewCity);
+            return;
+        }
 
-        cv = new ContentValues();
-        cv.put("startLat", startLat);
-        cv.put("startLan", startLan);
-        cv.put("position", position);
-        database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?", new String[]{"1"});
+        SQLiteDatabase database = null;
+        try {
+            database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
-        cv = new ContentValues();
-        cv.put("tarif", " ");
-        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?", new String[]{"1"});
+            // ✅ Используем транзакцию для атомарности обновлений
+            database.beginTransaction();
 
-        cv = new ContentValues();
-        cv.put("payment_type", "nal_payment");
-        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?", new String[]{"1"});
+            ContentValues cv = new ContentValues();
+            cv.put("city", city);
+            cv.put("phone", phoneNumber);
+            database.update(MainActivity.CITY_INFO, cv, "id = ?", new String[]{"1"});
 
+            cv = new ContentValues();
+            cv.put("startLat", startLat);
+            cv.put("startLan", startLan);
+            cv.put("position", position);
+            database.update(MainActivity.TABLE_POSITION_INFO, cv, "id = ?", new String[]{"1"});
 
+            cv = new ContentValues();
+            cv.put("tarif", " ");
+            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?", new String[]{"1"});
+
+            cv = new ContentValues();
+            cv.put("payment_type", "nal_payment");
+            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?", new String[]{"1"});
+
+            database.setTransactionSuccessful();
+            Logger.d(context, TAG, "База данных успешно обновлена для города: " + city);
+
+        } catch (Exception e) {
+            Logger.e(context, TAG, "Ошибка при обновлении БД: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
+            return;
+        } finally {
+            if (database != null) {
+                database.endTransaction();
+                database.close();
+            }
+        }
 
         // 🔽 очистка состояний
         sharedPreferencesHelperMain.saveValue("time", "no_time");
@@ -436,26 +686,34 @@ public class CityFinder {
         sharedPreferencesHelperMain.saveValue("tarif", " ");
 
         double toLatitude = startLat;
-        double toLongitude =startLan;
+        double toLongitude = startLan;
         String finish = position;
+
         Logger.d(context, TAG, "cangedCity: " + cangedCity);
-        if( !cangedCity ) {
-            Logger.d(context, TAG, "cangedCity:  2" + cangedCity);
-            String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
-            @SuppressLint("Recycle") Cursor cr = database.rawQuery(query, null);
 
-            cr.moveToFirst();
-            toLatitude = cr.getDouble(cr.getColumnIndex("to_lat"));
-            toLongitude = cr.getDouble(cr.getColumnIndex("to_lng"));
-            finish = cr.getString(cr.getColumnIndex("finish"));
-
-            Logger.d(context, TAG, "toLongitude1:" + toLongitude);
-            Logger.d(context, TAG, "position1:" + position);
-            Logger.d(context, TAG, "finish1:" + finish);
-            cr.close();
+        if (!cangedCity) {
+            Logger.d(context, TAG, "cangedCity: 2 - " + cangedCity);
+            SQLiteDatabase dbForRead = null;
+            Cursor cr = null;
+            try {
+                dbForRead = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
+                cr = dbForRead.rawQuery(query, null);
+                if (cr.moveToFirst()) {
+                    toLatitude = cr.getDouble(cr.getColumnIndex("to_lat"));
+                    toLongitude = cr.getDouble(cr.getColumnIndex("to_lng"));
+                    finish = cr.getString(cr.getColumnIndex("finish"));
+                    Logger.d(context, TAG, "toLongitude1:" + toLongitude);
+                    Logger.d(context, TAG, "finish1:" + finish);
+                }
+            } catch (Exception e) {
+                Logger.e(context, TAG, "Ошибка при чтении маршрута: " + e.getMessage());
+            } finally {
+                if (cr != null) cr.close();
+                if (dbForRead != null) dbForRead.close();
+            }
         }
 
-        database.close();
         Logger.d(context, TAG, "startLat:" + startLat);
         Logger.d(context, TAG, "startLan:" + startLan);
         Logger.d(context, TAG, "toLatitude:" + toLatitude);
@@ -464,6 +722,9 @@ public class CityFinder {
         Logger.d(context, TAG, "finish:" + finish);
 
         // 🔽 обновление маршрута
+        if(position.equals(finish)) {
+            finish = "";
+        }
         List<String> settings = new ArrayList<>();
         settings.add(Double.toString(startLat));
         settings.add(Double.toString(startLan));
@@ -477,54 +738,71 @@ public class CityFinder {
 
         sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
 
-        // 🔽 навигация
+        // 🔽 навигация с задержкой
         Activity activity = activityRef.get();
         if (activity != null && !activity.isFinishing() && !activity.isDestroyed()) {
-            NavController navController = Navigation.findNavController(activity, R.id.nav_host_fragment_content_main);
-            navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_visicom, true)
-                    .build());
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                try {
+                    NavController navController = Navigation.findNavController(activity, R.id.nav_host_fragment_content_main);
+                    navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_visicom, true)
+                            .build());
+                    Logger.d(context, TAG, "Навигация выполнена успешно");
+                } catch (Exception e) {
+                    Logger.e(context, TAG, "Ошибка навигации: " + e.getMessage());
+                    FirebaseCrashlytics.getInstance().recordException(e);
+                }
+            }, 300);
         }
     }
-    private void clearTABLE_SERVICE_INFO () {
+
+    private void clearTABLE_SERVICE_INFO() {
         String[] arrayServiceCode = DataArr.arrayServiceCode();
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        for (int i = 0; i < arrayServiceCode.length; i++) {
-            ContentValues cv = new ContentValues();
-            cv.put(arrayServiceCode[i], "0");
-            database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?",
-                    new String[] { "1" });
+        try {
+            for (int i = 0; i < arrayServiceCode.length; i++) {
+                ContentValues cv = new ContentValues();
+                cv.put(arrayServiceCode[i], "0");
+                database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?",
+                        new String[]{"1"});
+            }
+        } catch (Exception e) {
+            Logger.e(context, "clearTABLE_SERVICE_INFO", "Ошибка: " + e.getMessage());
+        } finally {
+            database.close();
         }
-        database.close();
     }
 
     private void updateRoutMarker(List<String> settings) {
         String TAG = "updateRoutMarker";
         Logger.d(context, TAG, "updateRoutMarker: " + settings.toString());
-        ContentValues cv = new ContentValues();
 
-        cv.put("startLat", Double.parseDouble(settings.get(0)));
-        cv.put("startLan", Double.parseDouble(settings.get(1)));
-        cv.put("to_lat", Double.parseDouble(settings.get(2)));
-        cv.put("to_lng", Double.parseDouble(settings.get(3)));
-        cv.put("start", settings.get(4));
-        cv.put("finish", settings.get(5));
+        SQLiteDatabase database = null;
+        try {
+            ContentValues cv = new ContentValues();
+            cv.put("startLat", Double.parseDouble(settings.get(0)));
+            cv.put("startLan", Double.parseDouble(settings.get(1)));
+            cv.put("to_lat", Double.parseDouble(settings.get(2)));
+            cv.put("to_lng", Double.parseDouble(settings.get(3)));
+            cv.put("start", settings.get(4));
+            cv.put("finish", settings.get(5));
 
-        // обновляем по id
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
-                new String[]{"1"});
-        database.close();
+            database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            database.update(MainActivity.ROUT_MARKER, cv, "id = ?", new String[]{"1"});
+            Logger.d(context, TAG, "Маршрут успешно обновлен");
+        } catch (Exception e) {
+            Logger.e(context, TAG, "Ошибка обновления маршрута: " + e.getMessage());
+        } finally {
+            if (database != null) database.close();
+        }
     }
-
-
 
     public void getPublicIPAddress() {
         getCountryByIP();
     }
 
     private void getCountryByIP() {
-        ApiServiceCountry apiService =  com.taxi.easy.ua.utils.ip.RetrofitClient.getClient().create(ApiServiceCountry.class);
+        ApiServiceCountry apiService = com.taxi.easy.ua.utils.ip.RetrofitClient.getClient().create(ApiServiceCountry.class);
         Call<CountryResponse> call = apiService.getCountryByIP("ipAddress");
         call.enqueue(new Callback<CountryResponse>() {
             @Override
@@ -543,7 +821,9 @@ public class CityFinder {
             public void onFailure(@NonNull Call<CountryResponse> call, @NonNull Throwable t) {
                 Logger.d(context, TAG, "Error: " + t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
-                VisicomFragment.progressBar.setVisibility(GONE);;
+                if (VisicomFragment.progressBar != null) {
+                    VisicomFragment.progressBar.setVisibility(GONE);
+                }
                 sharedPreferencesHelperMain.saveValue("countryState", "UA");
             }
         });
@@ -552,23 +832,24 @@ public class CityFinder {
     @SuppressLint("Range")
     public List<String> logCursor(String table) {
         List<String> list = new ArrayList<>();
-        SQLiteDatabase db = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        @SuppressLint("Recycle") Cursor c = db.query(table, null, null, null, null, null, null);
-        if (c.moveToFirst()) {
-            String str;
-            do {
-                str = "";
-                for (String cn : c.getColumnNames()) {
-                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                    list.add(c.getString(c.getColumnIndex(cn)));
-
-                }
-
-            } while (c.moveToNext());
+        SQLiteDatabase db = null;
+        Cursor c = null;
+        try {
+            db = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            c = db.query(table, null, null, null, null, null, null);
+            if (c.moveToFirst()) {
+                do {
+                    for (String cn : c.getColumnNames()) {
+                        list.add(c.getString(c.getColumnIndex(cn)));
+                    }
+                } while (c.moveToNext());
+            }
+        } catch (Exception e) {
+            Logger.e(context, "logCursor", "Ошибка: " + e.getMessage());
+        } finally {
+            if (c != null) c.close();
+            if (db != null) db.close();
         }
-        db.close();
         return list;
     }
-
 }
-

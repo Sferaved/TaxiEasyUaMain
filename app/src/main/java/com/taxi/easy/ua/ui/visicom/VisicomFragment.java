@@ -996,7 +996,7 @@ public class VisicomFragment extends Fragment {
         // ✅ Отменяем активные запросы
         pendingAddressRequest = null;
         isUpdatingFromGPS = false;
-
+        CityFinder.resetFlags();
         // Удаляем observer жизненного цикла
         if (lifecycleObserver != null) {
             ProcessLifecycleOwner.get().getLifecycle().removeObserver(lifecycleObserver);
@@ -2026,16 +2026,16 @@ public class VisicomFragment extends Fragment {
         super.onResume();
         Logger.d(context, TAG, "onResume 1" );
 
-        // ✅ НЕ восстанавливаем из БД, если сейчас идет GPS обновление
-        if (!firstStart && !isUpdatingFromGPS) {
+        // ✅ Если есть активный запрос, не восстанавливаем из БД
+        if (!firstStart && !isUpdatingFromGPS && pendingAddressRequest == null) {
+            // Восстанавливаем адрес из БД только если нет активных обновлений
             List<String> startList = logCursor(MainActivity.ROUT_MARKER, context);
-            String fromAddressString = startList.get(5);
-            Logger.d(context, TAG, "address onResume fromAddressString" + fromAddressString);
-
-            // ✅ Проверяем, не установлен ли уже этот адрес
-            if (!binding.textGeo.getText().toString().equals(fromAddressString)) {
-                binding.textGeo.setText(fromAddressString);
-                Logger.d(context, TAG, "Restored address from DB: " + fromAddressString);
+            if (startList.size() > 5) {
+                String fromAddressString = startList.get(5);
+                if (!binding.textGeo.getText().toString().equals(fromAddressString) &&
+                        !fromAddressString.isEmpty()) {
+                    binding.textGeo.setText(fromAddressString);
+                }
             }
         }
 
@@ -2618,23 +2618,15 @@ public class VisicomFragment extends Fragment {
 
         FusedLocationProviderClient fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context);
 
-        gpsBtn.setText(R.string.change);
-        gpsBtn.setOnClickListener(v1 -> {
-            sharedPreferencesHelperMain.saveValue("old_cost", "0");
-            LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-            gpsButSetOnClickListener(locationManager);
-        });
-
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Logger.d(context, TAG, "Нет разрешения на геолокацию");
             progressBar.setVisibility(View.GONE);
             return;
         }
 
-        viewModel.setStatusX(false);
-
         // ✅ Устанавливаем флаг, что начали обновление
         isUpdatingFromGPS = true;
+        viewModel.setStatusX(false);
 
         // ✅ Одноразовое получение текущей локации
         fusedLocationProviderClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
@@ -2646,13 +2638,13 @@ public class VisicomFragment extends Fragment {
 
                         // ✅ Проверяем, изменились ли координаты
                         boolean coordinatesChanged = haveCoordinatesChanged(latitude, longitude);
-                        Logger.d(context, TAG, "getCurrentLocation: координаты изменились = " + coordinatesChanged +
-                                ", latitude=" + latitude + ", longitude=" + longitude);
+                        Logger.d(context, TAG, "getCurrentLocation: координаты изменились = " + coordinatesChanged);
 
                         if (!coordinatesChanged) {
                             progressBar.setVisibility(View.GONE);
                             updateGpsButtonCross(false);
-                            isUpdatingFromGPS = false; // ✅ Снимаем флаг
+                            isUpdatingFromGPS = false;
+                            pendingAddressRequest = null; // ✅ Сбрасываем запрос
                             Logger.d(context, TAG, "Пропускаем обновление - координаты не изменились");
                             return;
                         }
@@ -2663,6 +2655,7 @@ public class VisicomFragment extends Fragment {
                             Logger.d(context, TAG, "Too frequent updates, skipping");
                             progressBar.setVisibility(View.GONE);
                             isUpdatingFromGPS = false;
+                            pendingAddressRequest = null; // ✅ Сбрасываем запрос
                             return;
                         }
 
@@ -2675,7 +2668,7 @@ public class VisicomFragment extends Fragment {
                         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
                         String urlFrom = baseUrl + "/" + api + "/android/fromSearchGeoLocal/" + latitude + "/" + longitude + "/" + language;
 
-                        // ✅ Сохраняем идентификатор запроса
+                        // ✅ Сохраняем уникальный ключ запроса
                         final String requestKey = latitude + "_" + longitude + "_" + currentTime;
                         pendingAddressRequest = requestKey;
 
@@ -2690,6 +2683,7 @@ public class VisicomFragment extends Fragment {
 
                             if (!isAdded()) {
                                 isUpdatingFromGPS = false;
+                                pendingAddressRequest = null; // ✅ Сбрасываем запрос
                                 return;
                             }
 
@@ -2707,6 +2701,7 @@ public class VisicomFragment extends Fragment {
                                     Logger.d(context, TAG, "Same address, skipping update");
                                     progressBar.setVisibility(View.GONE);
                                     isUpdatingFromGPS = false;
+                                    pendingAddressRequest = null; // ✅ Сбрасываем запрос
                                     return;
                                 }
 
@@ -2715,6 +2710,13 @@ public class VisicomFragment extends Fragment {
                                 lastProcessedAddress = FromAdressString;
                                 lastSuccessfulLocationTime = currentTime;
 
+                                if (CityFinder.isCityFinderBusy()) {
+                                    Logger.d(context, TAG, "CityFinder занят, пропускаем обновление города");
+                                    progressBar.setVisibility(View.GONE);
+                                    isUpdatingFromGPS = false;
+                                    return;
+                                }
+                                // ✅ Обновляем город
                                 new CityFinder(
                                         context,
                                         latitude,
@@ -2723,6 +2725,7 @@ public class VisicomFragment extends Fragment {
                                         context
                                 ).findCity(latitude, longitude);
 
+                                // ✅ Обновляем координаты в БД
                                 updateCoordinatesInDatabase(latitude, longitude, FromAdressString);
 
                                 try {
@@ -2730,25 +2733,32 @@ public class VisicomFragment extends Fragment {
                                 } catch (MalformedURLException e) {
                                     throw new RuntimeException(e);
                                 }
-                                Logger.d(context, TAG, "ToAdressString: " + textViewTo.getText().toString());
+
+                                Logger.d(context, TAG, "Successfully updated address: " + FromAdressString);
+
+                                // ✅ Сбрасываем флаги ПОСЛЕ успешного обновления
+                                pendingAddressRequest = null;
+                                isUpdatingFromGPS = false;
+
                             } else {
                                 Logger.d(context, TAG, "Ошибка при получении адреса");
+                                progressBar.setVisibility(View.GONE);
+                                isUpdatingFromGPS = false;
+                                pendingAddressRequest = null; // ✅ Сбрасываем запрос
                             }
-
-                            progressBar.setVisibility(View.GONE);
-                            isUpdatingFromGPS = false; // ✅ Снимаем флаг
-                            pendingAddressRequest = null;
                         });
                     } else {
                         Logger.d(context, TAG, "Локация = null");
                         progressBar.setVisibility(View.GONE);
-                        isUpdatingFromGPS = false; // ✅ Снимаем флаг
+                        isUpdatingFromGPS = false;
+                        pendingAddressRequest = null; // ✅ Сбрасываем запрос
                     }
                 })
                 .addOnFailureListener(e -> {
                     Logger.e(context, TAG, "Failed to get location: " + e.getMessage());
                     progressBar.setVisibility(View.GONE);
-                    isUpdatingFromGPS = false; // ✅ Снимаем флаг
+                    isUpdatingFromGPS = false;
+                    pendingAddressRequest = null; // ✅ Сбрасываем запрос
                     Toast.makeText(context, R.string.location_failed, Toast.LENGTH_SHORT).show();
                 });
     }
@@ -2942,6 +2952,9 @@ public class VisicomFragment extends Fragment {
             cursor.close();
 
             // Обновляем только стартовую точку, сохраняя существующую конечную
+            if(address.equals(existingFinish)) {
+                existingFinish = "";
+            }
             ContentValues values = new ContentValues();
             values.put("startLat", newLat);
             values.put("startLan", newLon);
@@ -3000,13 +3013,16 @@ public class VisicomFragment extends Fragment {
     private void updateRoutMarker(List<String> settings) {
         Logger.d(context, TAG, "updateRoutMarker: " + settings.toString());
         ContentValues cv = new ContentValues();
-
+        String finish = settings.get(5);
+        if(settings.get(4).equals(finish)) {
+            finish = "";
+        }
         cv.put("startLat", Double.parseDouble(settings.get(0)));
         cv.put("startLan", Double.parseDouble(settings.get(1)));
         cv.put("to_lat", Double.parseDouble(settings.get(2)));
         cv.put("to_lng", Double.parseDouble(settings.get(3)));
         cv.put("start", settings.get(4));
-        cv.put("finish", settings.get(5));
+        cv.put("finish", finish);
         if (isAdded()) {
             // обновляем по id
             SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -3876,7 +3892,10 @@ public class VisicomFragment extends Fragment {
             settings.add("");
             Logger.d(context, TAG, "New settings for route finish point update: " + settings);
 
-
+            String finish = settings.get(5);
+            if(settings.get(4).equals(finish)) {
+                finish = "";
+            }
             // Обновление таблицы
             ContentValues values = new ContentValues();
             values.put("startLat", Double.parseDouble(settings.get(0)));
@@ -3884,7 +3903,7 @@ public class VisicomFragment extends Fragment {
             values.put("to_lat", Double.parseDouble(settings.get(2)));
             values.put("to_lng", Double.parseDouble(settings.get(3)));
             values.put("start", settings.get(4));
-            values.put("finish", settings.get(5));
+            values.put("finish", finish);
 
             int rowsUpdated = database.update(MainActivity.ROUT_MARKER, values, null, null);
             if (rowsUpdated == 0) {
