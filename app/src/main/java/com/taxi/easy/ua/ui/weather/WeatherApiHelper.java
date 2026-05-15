@@ -243,14 +243,23 @@ public class WeatherApiHelper {
     }
 
     private static String getLanguage(Context context) {
+        android.content.res.Configuration config = context.getResources().getConfiguration();
+        Locale locale;
+        locale = config.getLocales().get(0);
 
-        String localeCode = context.getResources().getConfiguration().locale.getLanguage();
-        Logger.d(context, TAG, "fetchWeatherOnly: запрашиваем погоду на языке - " + localeCode);
-        switch (localeCode) {
-            case "uk": return "ua";
-            case "ru": return "ru";
-            case "en": return "en";
-            default: return "ua";
+        String language = locale.getLanguage();
+        Logger.d(context, TAG, "getLanguage: системная локаль = " + language);
+
+        // OpenWeather поддерживает эти коды
+        switch (language) {
+            case "uk":
+                return "uk";  // ← ИСПРАВЛЕНО: "uk", а не "ua"
+            case "ru":
+                return "ru";
+            case "en":
+                return "en";
+            default:
+                return "uk";  // по умолчанию украинский
         }
     }
 
@@ -320,7 +329,7 @@ public class WeatherApiHelper {
      */
     private static String getOpenWeatherLang(String localeCode) {
         if (localeCode == null) {
-            return "ua";
+            return "uk";  // ← измените с "ua" на "uk"
         }
 
         switch (localeCode.toLowerCase()) {
@@ -330,8 +339,11 @@ public class WeatherApiHelper {
             case "en":
             case "english":
                 return "en";
+            case "uk":      // ← добавьте явную проверку
+            case "ukrainian":
+                return "uk";
             default:
-                return "ua";
+                return "uk";  // ← измените с "ua" на "uk"
         }
     }
 

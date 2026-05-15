@@ -1,10 +1,13 @@
 package com.taxi.easy.ua.ui.weather.finish;
 
+import android.content.Context;
+import android.content.res.Configuration;
 import android.os.Handler;
 import android.os.Looper;
 
 import org.json.JSONObject;
 
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -16,8 +19,10 @@ public class CityInfoHelper {
     private static final String TOKEN = "ari_iMYCEh8wbb4hQSVqlFDzN8G-9RAhPTbSxe7eO9rAGOA";
 
     private OkHttpClient client;
+    private Context context;
 
-    public CityInfoHelper() {
+    public CityInfoHelper(Context context) {
+        this.context = context.getApplicationContext();
         client = new OkHttpClient.Builder()
                 .connectTimeout(3, TimeUnit.SECONDS)
                 .readTimeout(3, TimeUnit.SECONDS)
@@ -31,9 +36,64 @@ public class CityInfoHelper {
 
     public void getCityInfo(String city, CityInfoCallback callback) {
         new Thread(() -> {
+            // Получаем текущую локаль приложения
+            String locale = getCurrentLocale();
+
             Request request = new Request.Builder()
-                    .url(BASE_URL + city)
+                    .url(BASE_URL + city + "?lang=" + locale)  // Добавляем параметр языка
                     .addHeader("Authorization", "Bearer " + TOKEN)
+                    .addHeader("Accept-Language", locale)      // Добавляем заголовок языка
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (response.isSuccessful()) {
+                    String json = response.body().string();
+                    CityInfo info = parseJson(json);
+                    new Handler(Looper.getMainLooper()).post(() -> callback.onSuccess(info));
+                } else {
+                    new Handler(Looper.getMainLooper()).post(() ->
+                            callback.onError("HTTP " + response.code()));
+                }
+            } catch (Exception e) {
+                new Handler(Looper.getMainLooper()).post(() ->
+                        callback.onError(e.getMessage()));
+            }
+        }).start();
+    }
+
+    /**
+     * Получает текущую локаль приложения
+     */
+    private String getCurrentLocale() {
+        if (context == null) {
+            return "en"; // Значение по умолчанию
+        }
+
+        Configuration config = context.getResources().getConfiguration();
+        Locale locale = config.getLocales().get(0);
+        String language = locale.getLanguage();
+
+        // Поддерживаемые языки
+        switch (language) {
+            case "uk":
+                return "uk";
+            case "ru":
+                return "ru";
+            case "en":
+            default:
+                return "en";
+        }
+    }
+
+    /**
+     * Альтернативный метод с явной передачей локали
+     */
+    public void getCityInfo(String city, String locale, CityInfoCallback callback) {
+        new Thread(() -> {
+            Request request = new Request.Builder()
+                    .url(BASE_URL + city + "?lang=" + locale)
+                    .addHeader("Authorization", "Bearer " + TOKEN)
+                    .addHeader("Accept-Language", locale)
                     .build();
 
             try (Response response = client.newCall(request).execute()) {

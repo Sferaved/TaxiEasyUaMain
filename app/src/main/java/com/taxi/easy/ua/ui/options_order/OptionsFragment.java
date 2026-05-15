@@ -12,6 +12,8 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -42,6 +44,7 @@ import com.taxi.easy.ua.ui.home.CustomListAdapter;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.sanitizer.InputSanitizerHelper;
 import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
 import com.uxcam.UXCam;
 
@@ -130,16 +133,16 @@ public class OptionsFragment extends Fragment {
 
 // Обработчик изменения состояния
         cbInclusive.setOnCheckedChangeListener((buttonView, isChecked) -> {
-
             InclusiveTransportPreferenceWorker.saveUserPreference(isChecked);
             if(!isChecked) {
                 komenterinp.setText("");
                 sharedPreferencesHelperMain.saveValue("comment", "no_comment");
             } else {
-                komenterinp.setText(context.getString(R.string.inclusive_transport_message_yes));
-
+                // Санитизация текста перед установкой
+                String inclusiveMessage = context.getString(R.string.inclusive_transport_message_yes);
+                String safeMessage = InputSanitizerHelper.sanitize(inclusiveMessage, InputSanitizerHelper.InputType.COMMENT);
+                komenterinp.setText(safeMessage);
             }
-
             Logger.d(context, TAG, "Инклюзивность: " + (isChecked ? "включена" : "выключена"));
         });
 
@@ -300,8 +303,71 @@ public class OptionsFragment extends Fragment {
         tvSelectedDate.setText(currentDate.format(formatter));
 
         tvSelectedDate.setOnClickListener(v -> showDataPickerDialog());
-
+        setupSanitizers();
         return view;
+    }
+    private void setupSanitizers() {
+        // Санитизация комментария
+        komenterinp.addTextChangedListener(new TextWatcher() {
+            private boolean isSanitizing = false;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (isSanitizing) return;
+
+                String original = s.toString();
+                String sanitized = InputSanitizerHelper.sanitize(original, InputSanitizerHelper.InputType.COMMENT);
+
+                // Проверка на SQL-инъекции
+                if (InputSanitizerHelper.containsSqlInjectionPatterns(original)) {
+                    sanitized = "";
+                    Toast.makeText(context, R.string.invalid_input_detected, Toast.LENGTH_SHORT).show();
+                }
+
+                if (!sanitized.equals(original)) {
+                    isSanitizing = true;
+                    s.replace(0, s.length(), sanitized);
+                    isSanitizing = false;
+                }
+            }
+        });
+
+        // Санитизация скидки (только цифры)
+        discount.addTextChangedListener(new TextWatcher() {
+            private boolean isSanitizing = false;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (isSanitizing) return;
+
+                String original = s.toString();
+                String sanitized = InputSanitizerHelper.sanitize(original, InputSanitizerHelper.InputType.NUMERIC);
+
+                // Также разрешаем знак + и -
+                sanitized = sanitized.replaceAll("[^\\d-]", "");
+                if (sanitized.startsWith("-") && sanitized.length() > 1) {
+                    sanitized = "-" + sanitized.replaceAll("-", "");
+                }
+
+                if (!sanitized.equals(original)) {
+                    isSanitizing = true;
+                    s.replace(0, s.length(), sanitized);
+                    isSanitizing = false;
+                }
+            }
+        });
     }
 
     private void clearAllData() {
@@ -312,18 +378,18 @@ public class OptionsFragment extends Fragment {
             cv.put(arrayServiceCode[i], "0");
             database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?", new String[]{"1"});
         }
-        listView.setAdapter(new CustomListAdapter(context, arrayService, arrayService.length)); // Refresh ListView
+        listView.setAdapter(new CustomListAdapter(context, arrayService, arrayService.length));
 
         // Clear tariff selection
         Spinner spinner = getView().findViewById(R.id.list_tariff);
         spinner.setSelection(0);
         sharedPreferencesHelperMain.saveValue("tarif", " ");
 
-        // Clear comment
+        // Clear comment (с санитизацией)
         komenterinp.setText("");
         sharedPreferencesHelperMain.saveValue("comment", "no_comment");
 
-        // Clear discount
+        // Clear discount (с санитизацией)
         discount.setText("0");
         discountFist = 0;
         ContentValues cv = new ContentValues();
@@ -371,21 +437,37 @@ public class OptionsFragment extends Fragment {
 
         database.close();
 
+        // САНИТИЗАЦИЯ комментария перед сохранением
         String commentText = komenterinp.getText().toString();
-        if (!commentText.isEmpty()) {
-            sharedPreferencesHelperMain.saveValue("comment", commentText);
-            Logger.d(context, TAG, "comment " + commentText);
+        String safeComment = InputSanitizerHelper.sanitize(commentText, InputSanitizerHelper.InputType.COMMENT);
+        safeComment = InputSanitizerHelper.escapeSql(safeComment);
+
+        if (!safeComment.isEmpty()) {
+            sharedPreferencesHelperMain.saveValue("comment", safeComment);
+            Logger.d(context, TAG, "comment " + safeComment);
+        } else {
+            sharedPreferencesHelperMain.saveValue("comment", "no_comment");
         }
+
+        // САНИТИЗАЦИЯ скидки перед сохранением
         String discountText = discount.getText().toString();
-        if (!discountText.isEmpty()) {
-            sharedPreferencesHelperMain.saveValue("discount", discountText);
+        String safeDiscount = InputSanitizerHelper.sanitize(discountText, InputSanitizerHelper.InputType.NUMERIC);
+
+        // Разрешаем отрицательные значения
+        if (discountText.startsWith("-") && safeDiscount.isEmpty()) {
+            safeDiscount = "-" + discountText.replaceAll("[^\\d]", "");
+        }
+
+        if (!safeDiscount.isEmpty()) {
+            sharedPreferencesHelperMain.saveValue("discount", safeDiscount);
 
             ContentValues cv = new ContentValues();
-            cv.put("discount", discountText);
+            cv.put("discount", safeDiscount);
             database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?", new String[]{"1"});
             database.close();
         }
+
         timeVerify();
         changeCost();
     }

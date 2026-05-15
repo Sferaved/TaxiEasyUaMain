@@ -16,7 +16,7 @@ public class Logger {
 
     private static final String TAG = "MyAppLogger";
     private static final String LOG_FILE_NAME = "app_log.txt";
-    private static final long MAX_LOG_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+    private static final long MAX_LOG_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 
     /** Получаем файл логов в приватной директории приложения */
     private static File getLogFile(Context context) {

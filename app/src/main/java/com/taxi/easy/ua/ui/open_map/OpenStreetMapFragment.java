@@ -7,6 +7,7 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -47,11 +48,13 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GestureDetectorCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
@@ -75,7 +78,9 @@ import com.taxi.easy.ua.ui.open_map.api.ApiResponse;
 import com.taxi.easy.ua.ui.open_map.api.ApiService;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
+import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 
@@ -166,14 +171,18 @@ public class OpenStreetMapFragment extends Fragment {
     private boolean isMapDragging = false;
     private float downX, downY;
     private static final float MIN_DRAG_DISTANCE = 20;
-    
-    
+    private String unuString;
+    private Overlay currentTextOverlay;
+    private ExecutionStatusViewModel viewModel;
+
     @SuppressLint({"MissingInflatedId", "InflateParams", "UseCompatLoadingForDrawables"})
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentOpenstreetmapBinding.inflate(inflater, container, false);
         map = binding.map;
         View root = binding.getRoot();
+        unuString = new String(Character.toChars(0x1F449));
+        viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
         ctx = requireContext();
         if(button1 != null) {
             button1.setVisibility(View.VISIBLE);
@@ -564,6 +573,7 @@ public class OpenStreetMapFragment extends Fragment {
 
         // Удалить все маркеры и наложения с карты
         map.getOverlays().clear();
+        currentTextOverlay = null; // Сбрасываем ссылку на оверлей
         map.invalidate();
 
         double savedStartLat = getFromTablePositionInfo(ctx, "startLat");
@@ -925,19 +935,18 @@ public class OpenStreetMapFragment extends Fragment {
             Logger.e(ctx, TAG, "startPoint is null");
             return;
         }
-        if (startMarkerObj == null) {
-            Logger.e(ctx, TAG, "startMarkerObj is null, cannot set marker position");
-            return;
-        }
+
         fromAddressString = result.equals("Точка на карте") ? localizedContext.getString(R.string.startPoint) : result;
         Logger.d(ctx, TAG, "fromAddressString set to: " + fromAddressString);
 
         if (previousMarker != null) {
             map.getOverlays().remove(previousMarker);
-            Logger.d(ctx, TAG, "Removed previousMarker from overlays");
         }
 
-        updateRouteSettings("start");
+        // ✅ ВЫЗЫВАЕМ ПРОВЕРКУ ГОРОДА ВМЕСТО ПРЯМОГО ОБНОВЛЕНИЯ
+        checkCityAndUpdateStartPoint(startLat, startLan, fromAddressString);
+
+        // Остальной код updateRouteSettings("start") будет выполнен в колбэке после подтверждения
     }
 
     // Обработка ответа для конечного маркера
@@ -971,10 +980,13 @@ public class OpenStreetMapFragment extends Fragment {
             // Удаляем маркер, если он есть
             if (finishMarkerObj != null) {
                 map.getOverlays().remove(finishMarkerObj);
+                finishMarkerObj = null;
             }
 
+            // Удаляем текстовый оверлей
+            removeTextOverlay();
+
             // Очищаем конечную точку
-            finishMarkerObj = null;
             endPoint = null;
 
             // Удаляем маршрут, если он есть
@@ -984,8 +996,6 @@ public class OpenStreetMapFragment extends Fragment {
             }
 
             map.invalidate();
-
-            // Не обновляем маршрут и не добавляем маркер
             return;
         }
 
@@ -1176,56 +1186,91 @@ public class OpenStreetMapFragment extends Fragment {
     }
 
     // Установка маркера
+// Установка маркера
+    // Установка маркера
     private void setMarker(double lat, double lon, String title, Context context, String prefix) {
         if (map == null) {
             Logger.e(context, TAG, "MapView is null, cannot set marker");
             return;
         }
 
-        // Create new marker
-        Marker marker = new Marker(map);
-//        marker.setTextLabelBackgroundColor(Color.TRANSPARENT);
-//        marker.setTextLabelForegroundColor(Color.RED);
-//        marker.setTextLabelFontSize(40);
-//        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-        String unuString = new String(Character.toChars(0x1F449));
-//
-//        // Set title for the marker (used by InfoWindow if clicked)
-//        marker.setTitle(prefix + unuString + title);
-//        Logger.d(context, TAG, "scaledDrawable: " + scaledDrawable);
-        marker.setVisible(false);
-//        // Set custom icon
-//        initializeMarkerIcon();
-//        if (scaledDrawable != null) {
-//            marker.setIcon(scaledDrawable);
-//        } else {
-//            marker.setIcon(null);
-//            Logger.w(context, TAG, "scaledDrawable is null, no icon set");
-//        }
+        // Проверяем, что мы на главном потоке
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            new Handler(Looper.getMainLooper()).post(() -> setMarker(lat, lon, title, context, prefix));
+            return;
+        }
 
-        // Set marker position
-        marker.setPosition(new GeoPoint(lat, lon));
+        try {
+            // Проверяем, что map всё ещё валиден
+            if (map.getRepository() == null) {
+                Logger.e(context, TAG, "Map repository is null, cannot create marker");
+                return;
+            }
 
-        // Add marker to map
-        map.getOverlays().add(marker);
+            // Удаляем старый маркер и текстовый оверлей для стартовой или конечной точки
+            if ("startMarker".equals(markerType)) {
+                if (startMarkerObj != null) {
+                    map.getOverlays().remove(startMarkerObj);
+                }
+                // Удаляем старый текстовый оверлей
+                removeTextOverlay();
+            } else if ("finishMarker".equals(markerType)) {
+                if (finishMarkerObj != null) {
+                    map.getOverlays().remove(finishMarkerObj);
+                }
+                // Удаляем старый текстовый оверлей
+                removeTextOverlay();
+            }
 
-        // Add custom text overlay for persistent label
-        addTextOverlay(new GeoPoint(lat, lon), prefix + unuString + title);
+            // Create new marker
+            Marker marker = new Marker(map);
+            marker.setVisible(false);
 
-        // Update map on the main thread
-        new Handler(Looper.getMainLooper()).post(() -> map.invalidate());
+            // Set marker position
+            marker.setPosition(new GeoPoint(lat, lon));
 
-        // Update marker references
-        if ("startMarker".equals(markerType)) {
-            startMarkerObj = marker;
-        } else if ("finishMarker".equals(markerType)) {
-            finishMarkerObj = marker;
+            // Add marker to map
+            map.getOverlays().add(marker);
+
+            // Удаляем старый оверлей перед добавлением нового
+            if (currentTextOverlay != null) {
+                map.getOverlays().remove(currentTextOverlay);
+            }
+
+            // Add custom text overlay for persistent label
+            currentTextOverlay = createTextOverlay(new GeoPoint(lat, lon), prefix + unuString + title);
+            map.getOverlays().add(currentTextOverlay);
+
+            // Update map
+            map.invalidate();
+
+            // Update marker references
+            if ("startMarker".equals(markerType)) {
+                startMarkerObj = marker;
+            } else if ("finishMarker".equals(markerType)) {
+                finishMarkerObj = marker;
+            }
+
+            Logger.d(context, TAG, "Marker set successfully at: " + lat + ", " + lon);
+
+        } catch (Exception e) {
+            Logger.e(context, TAG, "Error setting marker: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
+    }
+
+    // Новый метод для удаления текстового оверлея
+    private void removeTextOverlay() {
+        if (map != null && currentTextOverlay != null) {
+            map.getOverlays().remove(currentTextOverlay);
+            currentTextOverlay = null;
+            Logger.d(ctx, TAG, "Text overlay removed");
         }
     }
 
 
-    private void addTextOverlay(GeoPoint point, String text) {
-        Overlay textOverlay = new Overlay() {
+    private Overlay createTextOverlay(GeoPoint point, String text) {
+        return new Overlay() {
             @Override
             public void draw(Canvas canvas, MapView mapView, boolean shadow) {
                 if (shadow) return; // Skip shadow pass
@@ -1296,11 +1341,6 @@ public class OpenStreetMapFragment extends Fragment {
                 canvas.restore();
             }
         };
-
-        new Handler(Looper.getMainLooper()).post(() -> {
-            map.getOverlays().add(textOverlay);
-            map.invalidate();
-        });
     }
     // Отображение маршрута
     private void showRout(GeoPoint startP, GeoPoint endP) {
@@ -1521,5 +1561,225 @@ public class OpenStreetMapFragment extends Fragment {
 
         // Проверяем, содержит ли адрес эту фразу
         return address.contains(onCityPhrase);
+    }
+
+    private void checkCityAndUpdateStartPoint(double latitude, double longitude, String address) {
+        Logger.d(ctx, TAG, "checkCityAndUpdateStartPoint: lat=" + latitude + ", lon=" + longitude + ", address=" + address);
+
+        // Проверка, что фрагмент ещё активен
+        if (!isAdded() || getActivity() == null) {
+            Logger.d(ctx, TAG, "Fragment not attached, skipping city check");
+            return;
+        }
+
+        // ✅ Устанавливаем StatusX в false, чтобы показать крестик на GPS кнопке
+        sharedPreferencesHelperMain.saveValue("setStatusX", true);
+        if (viewModel != null) {
+            viewModel.setStatusX(true);
+        }
+        Logger.d(ctx, TAG, "setStatusX установлен в true - показываем крестик (выбор точки на карте)");
+
+        // Проверяем, не занят ли CityFinder
+        if (CityFinder.isCityFinderBusy()) {
+            Logger.d(ctx, TAG, "CityFinder занят, пропускаем обновление города");
+            return;
+        }
+
+        CityFinder cityFinder = new CityFinder(ctx, latitude, longitude, address, (Activity) ctx);
+
+        cityFinder.findCityWithCallback(latitude, longitude, (cityChanged, userConfirmed) -> {
+            // Проверка, что фрагмент всё ещё активен
+            if (!isAdded() || getActivity() == null || map == null) {
+                Logger.d(ctx, TAG, "Fragment detached or map null during city callback");
+                return;
+            }
+
+            Logger.d(ctx, TAG, "═══════════════════════════════════════════");
+            Logger.d(ctx, TAG, "🏁 CityCheckCallback ВЫЗВАН (OSM)");
+            Logger.d(ctx, TAG, "═══════════════════════════════════════════");
+            Logger.d(ctx, TAG, "cityChanged = " + cityChanged + ", userConfirmed = " + userConfirmed);
+
+            boolean shouldUpdatePosition = !cityChanged || (cityChanged && userConfirmed);
+
+            if (shouldUpdatePosition) {
+                Logger.d(ctx, TAG, "✅ Обновляем позицию");
+
+                // Сохраняем координаты
+                startLat = latitude;
+                startLan = longitude;
+                startPoint = new GeoPoint(latitude, longitude);
+                fromAddressString = address;
+
+                // Обновляем БД
+                updateStartPointInDatabase(latitude, longitude, address);
+
+                // Обновляем заголовок города в ActionBar
+                setCityAppbar();
+
+                // Обновляем маркер на карте (уже в UI потоке)
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    if (map != null && isAdded()) {
+                        // Удаляем старый маркер и текстовый оверлей
+                        if (startMarkerObj != null) {
+                            map.getOverlays().remove(startMarkerObj);
+                        }
+                        removeTextOverlay(); // Удаляем старый текстовый оверлей
+
+                        // Устанавливаем новый маркер
+                        setMarker(latitude, longitude, address, ctx, "1.");
+                        map.invalidate();
+                        mapController.setCenter(startPoint);
+
+                        Logger.d(ctx, TAG, "Marker and map updated successfully");
+                    }
+                });
+
+                // ❌ НЕ рисуем маршрут при выборе стартовой точки
+                // Маршрут будет нарисован только когда будет выбрана конечная точка
+
+            } else {
+                Logger.d(ctx, TAG, "❌ Пользователь отказался от смены города");
+                // Если пользователь отказался, возвращаем StatusX обратно в true
+                sharedPreferencesHelperMain.saveValue("setStatusX", true);
+                if (viewModel != null) {
+                    viewModel.setStatusX(true);
+                }
+            }
+
+            Logger.d(ctx, TAG, "═══════════════════════════════════════════");
+        });
+    }
+
+    // Новый метод для обновления маршрута после смены стартовой точки
+    private void updateRouteAfterStartPointChange() {
+        try {
+            // Получаем текущую конечную точку из БД
+            SQLiteDatabase database = ctx.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            Cursor cursor = database.rawQuery("SELECT to_lat, to_lng, finish FROM " + MainActivity.ROUT_MARKER + " LIMIT 1", null);
+
+            double toLat = 0.0;
+            double toLng = 0.0;
+            String finish = "";
+
+            if (cursor.moveToFirst()) {
+                toLat = cursor.getDouble(0);
+                toLng = cursor.getDouble(1);
+                finish = cursor.getString(2) != null ? cursor.getString(2) : "";
+            }
+            cursor.close();
+            database.close();
+
+            // Если есть конечная точка и это не "по городу", показываем маршрут
+            if (toLat != 0.0 && !isCityOnlyAddress(finish)) {
+                GeoPoint endGeoPoint = new GeoPoint(toLat, toLng);
+                showRout(startPoint, endGeoPoint);
+
+                // Добавляем маркер конечной точки
+                if (finishMarkerObj != null) {
+                    map.getOverlays().remove(finishMarkerObj);
+                }
+                setMarker(toLat, toLng, finish, ctx, "2.");
+            }
+
+        } catch (Exception e) {
+            Logger.e(ctx, TAG, "Error updating route: " + e.getMessage());
+        }
+    }
+
+    private void updateStartPointInDatabase(double latitude, double longitude, String address) {
+        SQLiteDatabase database = ctx.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        try {
+            // Сохраняем текущую конечную точку
+            Cursor cursor = database.rawQuery("SELECT to_lat, to_lng, finish FROM " + MainActivity.ROUT_MARKER + " LIMIT 1", null);
+            double existingToLat = 0.0;
+            double existingToLng = 0.0;
+            String existingFinish = "";
+
+            if (cursor.moveToFirst()) {
+                existingToLat = cursor.getDouble(0);
+                existingToLng = cursor.getDouble(1);
+                existingFinish = cursor.getString(2) != null ? cursor.getString(2) : "";
+            }
+            cursor.close();
+
+            ContentValues values = new ContentValues();
+            values.put("startLat", latitude);
+            values.put("startLan", longitude);
+            values.put("start", address);
+            values.put("to_lat", existingToLat);
+            values.put("to_lng", existingToLng);
+            values.put("finish", existingFinish);
+
+            int rowsUpdated = database.update(MainActivity.ROUT_MARKER, values, "id = ?", new String[]{"1"});
+            if (rowsUpdated == 0) {
+                database.insert(MainActivity.ROUT_MARKER, null, values);
+            }
+
+            // Также обновляем TABLE_POSITION_INFO
+            ContentValues posValues = new ContentValues();
+            posValues.put("startLat", latitude);
+            posValues.put("startLan", longitude);
+            posValues.put("position", address);
+            int posRows = database.update(MainActivity.TABLE_POSITION_INFO, posValues, "id = ?", new String[]{"1"});
+            if (posRows == 0) {
+                posValues.put("id", 1);
+                database.insert(MainActivity.TABLE_POSITION_INFO, null, posValues);
+            }
+
+            Logger.d(ctx, TAG, "✅ Стартовая точка обновлена в БД: (" + latitude + ", " + longitude + ") -> " + address);
+
+        } catch (Exception e) {
+            Logger.e(ctx, TAG, "Ошибка обновления стартовой точки: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
+        } finally {
+            database.close();
+        }
+    }
+
+    private void setCityAppbar() {
+        // Скопируйте этот метод из VisicomFragment или вызовите аналогичный
+        // Обновляет заголовок в ActionBar в зависимости от текущего города
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, ctx);
+        if (stringList.size() >= 2) {
+            String city = stringList.get(1);
+            String cityMenu = getCityDisplayName(city);
+            String newTitle = getString(R.string.menu_city) + " " + cityMenu;
+            sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
+
+            // Обновляем ActionBar, если Activity поддерживает
+            if (requireActivity() instanceof AppCompatActivity) {
+                androidx.appcompat.app.ActionBar actionBar = ((AppCompatActivity) requireActivity()).getSupportActionBar();
+                if (actionBar != null) {
+                    actionBar.setTitle(newTitle);
+                }
+            }
+        }
+    }
+
+    private String getCityDisplayName(String city) {
+        switch (city) {
+            case "Kyiv City": return getString(R.string.city_kyiv);
+            case "Dnipropetrovsk Oblast": return getString(R.string.city_dnipro);
+            case "Odessa": return getString(R.string.city_odessa);
+            case "Zaporizhzhia": return getString(R.string.city_zaporizhzhia);
+            case "Cherkasy Oblast": return getString(R.string.city_cherkassy);
+            case "Lviv": return getString(R.string.city_lviv);
+            case "Ivano_frankivsk": return getString(R.string.city_ivano_frankivsk);
+            case "Vinnytsia": return getString(R.string.city_vinnytsia);
+            case "Poltava": return getString(R.string.city_poltava);
+            case "Sumy": return getString(R.string.city_sumy);
+            case "Kharkiv": return getString(R.string.city_kharkiv);
+            case "Chernihiv": return getString(R.string.city_chernihiv);
+            case "Rivne": return getString(R.string.city_rivne);
+            case "Ternopil": return getString(R.string.city_ternopil);
+            case "Khmelnytskyi": return getString(R.string.city_khmelnytskyi);
+            case "Zakarpattya": return getString(R.string.city_zakarpattya);
+            case "Zhytomyr": return getString(R.string.city_zhytomyr);
+            case "Kropyvnytskyi": return getString(R.string.city_kropyvnytskyi);
+            case "Mykolaiv": return getString(R.string.city_mykolaiv);
+            case "Chernivtsi": return getString(R.string.city_chernivtsi);
+            case "Lutsk": return getString(R.string.city_lutsk);
+            default: return getString(R.string.foreign_countries);
+        }
     }
 }

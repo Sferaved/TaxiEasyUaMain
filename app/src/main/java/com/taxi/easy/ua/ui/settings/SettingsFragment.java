@@ -110,21 +110,32 @@ public class SettingsFragment extends Fragment {
         } else {
             localeCode = "en"; // Язык по умолчанию
         }
-        Logger.i(requireContext(), TAG, "locale Code" +  localeCode);
+
+        Logger.i(requireContext(), TAG, "locale Code: " + localeCode);
+
         // Сохранение нового языка
         sharedPreferencesHelperMain.saveValue("locale", localeCode);
 
-        // Установка локали
+        // Установка локали для текущего контекста
         Locale locale = new Locale(localeCode);
         Locale.setDefault(locale);
 
         Configuration config = new Configuration(getResources().getConfiguration());
         config.setLocale(locale);
+        getResources().updateConfiguration(config, getResources().getDisplayMetrics());
+
+        // Обновляем контекст приложения
+        requireActivity().getApplicationContext().getResources().updateConfiguration(
+                config, requireActivity().getApplicationContext().getResources().getDisplayMetrics()
+        );
 
         // Перезапуск приложения для применения локали
         Intent intent = new Intent(requireContext(), MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
+
+        // Завершаем текущую активность
+        requireActivity().finish();
     }
 }
 

@@ -169,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
     public static String order_id;
     public static String invoiceId;
 
-    public static final String DB_NAME = "data_21042026_0";
+    public static final String DB_NAME = "data_14052026_0";
 
     /**
      * Table section
@@ -268,8 +268,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Установка локали перед вызовом super.onCreate()
-        String localeCode = (String) MyApplication.sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().getLanguage());
-        applyLocale(localeCode);
+//        String localeCode = (String) MyApplication.sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().getLanguage());
+//        applyLocale(localeCode);
         super.onCreate(savedInstanceState);
         bugReportHelper = new BugReportHelper(this);
         PhoneCallHelper.initWithActivity(this);
@@ -913,6 +913,8 @@ public class MainActivity extends AppCompatActivity {
             hideNoInternetSnackbar();
         }
         if (!InclusiveTransportPreferenceWorker.hasBeenAsked() && !firstStart) {
+            String KEY_INCLUSIVE_TRANSPORT_ASKED = "inclusive_transport_asked";
+            sharedPreferencesHelperMain.saveValue(KEY_INCLUSIVE_TRANSPORT_ASKED, true);
             runOnUiThread(this::showInclusiveTransportDialog);
         }
         // ✅ ИСПРАВЛЕННЫЙ БЛОК - Toast показываются ТОЛЬКО ПРИ ПЕРВОМ ЗАПУСКЕ
@@ -953,7 +955,6 @@ public class MainActivity extends AppCompatActivity {
             gps_upd = false;
         }
         sharedPreferencesHelperMain.saveValue("gps_upd", gps_upd);
-
 
     }
 

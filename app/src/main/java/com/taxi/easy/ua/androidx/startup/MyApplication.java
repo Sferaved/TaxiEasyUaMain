@@ -11,6 +11,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -476,5 +477,22 @@ public class MyApplication extends MultiDexApplication {
         } else {
             Logger.d(this, TAG, "Вопрос уже был задан, Worker не запускается");
         }
+    }
+    public static Context updateContextLocale(Context context) {
+        SharedPreferencesHelper prefs = new SharedPreferencesHelper(context);
+        String localeCode = (String) prefs.getValue("locale", "uk");
+
+        Locale locale = new Locale(localeCode);
+        Locale.setDefault(locale);
+
+        Configuration config = new Configuration(context.getResources().getConfiguration());
+        config.setLocale(locale);
+
+        return context.createConfigurationContext(config);
+    }
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(updateContextLocale(base));
     }
 }

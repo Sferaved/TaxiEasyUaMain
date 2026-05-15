@@ -127,6 +127,23 @@ public class WeatherFragment extends Fragment {
 
         return root;
     }
+    private Locale getLocaleForDate() {
+        String savedLocale = sharedPreferencesHelperMain.getValue("locale", "uk").toString();
+
+        // OpenWeather использует "uk", а для даты нужно "uk" или "ua"
+        switch (savedLocale) {
+            case "uk":
+            case "ua":
+                return new Locale("uk", "UA");
+            case "ru":
+                return new Locale("ru", "RU");
+            case "en":
+                return Locale.ENGLISH;
+            default:
+                return new Locale("uk", "UA");
+        }
+    }
+
     private String getApiKey() {
         // Сначала проверяем в MainActivity
         if (MainActivity.weatherKey != null && !MainActivity.weatherKey.isEmpty()) {
@@ -260,7 +277,7 @@ public class WeatherFragment extends Fragment {
         }
 
         Logger.e(context, TAG, "fetchCurrentWeather API_KEY: " + API_KEY);
-        String localCode = sharedPreferencesHelperMain.getValue("locale", "uk").toString();
+        String localCode = getApiLanguageCode();
         Call<WeatherResponse> call = weatherApiService.getCurrentWeather(
                 city, API_KEY, "metric", localCode
         );
@@ -286,7 +303,23 @@ public class WeatherFragment extends Fragment {
             }
         });
     }
+    private String getApiLanguageCode() {
+        // Получаем сохранённую локаль из SharedPreferences
+        String savedLocale = sharedPreferencesHelperMain.getValue("locale", "uk").toString();
 
+        // Приводим к формату OpenWeather API
+        switch (savedLocale) {
+            case "uk":
+            case "ua":  // если вдруг сохранено "ua"
+                return "uk";
+            case "ru":
+                return "ru";
+            case "en":
+                return "en";
+            default:
+                return "uk";
+        }
+    }
     private void fetchForecast(String city) {
         if (API_KEY == null || API_KEY.isEmpty()) {
             Logger.e(context, TAG, "API_KEY пуст, ждем загрузки из Firestore");
@@ -294,11 +327,13 @@ public class WeatherFragment extends Fragment {
             checkAndHideProgress();
             return;
         }
-        Logger.e(context, TAG, "fetchCurrentWeather API_KEY: " + API_KEY);
-        String localCode = sharedPreferencesHelperMain.getValue("locale", "uk").toString();
+
+        Logger.d(context, TAG, "fetchForecast API_KEY: " + API_KEY);
+        String languageCode = getApiLanguageCode();  // для API
+        Logger.d(context, TAG, "fetchForecast: используем язык API=" + languageCode);
 
         Call<WeatherResponse> call = weatherApiService.getForecast(
-                city, API_KEY, "metric", localCode
+                city, API_KEY, "metric", languageCode
         );
 
         call.enqueue(new Callback<>() {
@@ -339,21 +374,19 @@ public class WeatherFragment extends Fragment {
     }
 
     private void updateCurrentWeatherUI(WeatherResponse weather) {
-
         String cityName = getCityFromDatabase();
-
         tvCityName.setText(cityName);
-//        tvCityName.setText(weather.getName());
-        String localCode = sharedPreferencesHelperMain.getValue("locale", "uk").toString();
-        // Дата
-        SimpleDateFormat dateFormat = new SimpleDateFormat("d MMMM, EEEE", new Locale(localCode));
+
+        // Используем правильную локаль для даты
+        Locale dateLocale = getLocaleForDate();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("d MMMM, EEEE", dateLocale);
         tvDate.setText(dateFormat.format(new Date()));
 
         // Температура
         int temp = (int) Math.round(weather.getMain().getTemp());
         tvTemperature.setText(temp + "°C");
 
-        // Описание
+        // Описание погоды (уже приходит на правильном языке от API)
         if (weather.getWeather() != null && !weather.getWeather().isEmpty()) {
             String description = weather.getWeather().get(0).getDescription();
             tvWeatherDescription.setText(capitalizeFirstLetter(description));

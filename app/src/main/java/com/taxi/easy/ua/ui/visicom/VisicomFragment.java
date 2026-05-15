@@ -105,6 +105,7 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
+import com.taxi.easy.ua.utils.bugreport.BugReportHelper;
 import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.data.DataArr;
@@ -120,6 +121,7 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.retrofit.cost_json_parser.CostJSONParserRetrofit;
+import com.taxi.easy.ua.utils.sanitizer.InputSanitizerHelper;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
@@ -246,6 +248,12 @@ public class VisicomFragment extends Fragment {
     private long lastSuccessfulLocationTime = 0;
     private String lastProcessedAddress = "";
     private String pendingAddressRequest = null;
+    private static boolean isFragmentVisible = false;
+
+    @SuppressLint("StaticFieldLeak")
+    public static AppCompatButton btnReset;
+    @SuppressLint("StaticFieldLeak")
+    public static AppCompatButton btnReport;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -378,7 +386,8 @@ public class VisicomFragment extends Fragment {
             }
         });
         sharedPreferencesHelperMain.saveValue("carFound", false);
-
+        btnReset = binding.btnReset;
+        btnReport = binding.btnReport;
         return root;
     }
     @Override
@@ -455,7 +464,21 @@ public class VisicomFragment extends Fragment {
         // Наблюдение за статусом GPS (X-кнопка)
         viewModel.getStatusX().observe(getViewLifecycleOwner(), aBoolean -> {
             Logger.d(context, TAG, "StatusXUpdate changed: " + aBoolean);
-            updateGpsButtonDrawable(aBoolean);
+
+            if (aBoolean != null && aBoolean) {
+                // true - показываем крестик
+                Logger.d(context, TAG, "Устанавливаем buttons_green_cross (крестик)");
+                gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_green_cross));
+                gpsBtn.setTextColor(Color.WHITE);
+            } else {
+                // false - убираем крестик, показываем обычную зеленую кнопку
+                Logger.d(context, TAG, "Убираем крестик, устанавливаем buttons_green");
+                gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_green));
+                gpsBtn.setTextColor(Color.WHITE);
+            }
+
+            // Принудительно перерисовываем кнопку
+            gpsBtn.invalidate();
         });
 
         // Наблюдение за обновлением GPS
@@ -497,9 +520,35 @@ public class VisicomFragment extends Fragment {
     public static void updateGpsButtonCross(boolean show) {
         if (gpsBtn != null && getCurrentActivity() != null) {
             if (show) {
+                // При show=true ВСЕГДА показываем крестик
                 gpsBtn.setBackground(ContextCompat.getDrawable(getCurrentActivity(), R.drawable.buttons_green_cross));
+                gpsBtn.setTextColor(Color.WHITE);
             } else {
-                gpsBtn.setBackground(ContextCompat.getDrawable(getCurrentActivity(), R.drawable.buttons_green));
+                // При show=false проверяем статус GPS и StatusX
+                Context context = MyApplication.getContext();
+                LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+
+                // Получаем текущее значение StatusX из ViewModel или SharedPreferences
+                boolean statusX = (boolean) sharedPreferencesHelperMain.getValue("setStatusX", true);
+
+                if (statusX) {
+                    // Если StatusX = true - показываем крестик
+                    gpsBtn.setBackground(ContextCompat.getDrawable(getCurrentActivity(), R.drawable.buttons_green_cross));
+                    gpsBtn.setTextColor(Color.WHITE);
+                } else if (locationManager != null && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                    // StatusX = false и GPS включен
+                    if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        gpsBtn.setBackground(ContextCompat.getDrawable(context, R.drawable.buttons_green));
+                        gpsBtn.setTextColor(Color.WHITE);
+                    } else {
+                        gpsBtn.setBackground(ContextCompat.getDrawable(context, R.drawable.buttons_yellow));
+                        gpsBtn.setTextColor(Color.BLACK);
+                    }
+                } else {
+                    // GPS выключен
+                    gpsBtn.setBackground(ContextCompat.getDrawable(context, R.drawable.btn_red));
+                    gpsBtn.setTextColor(Color.WHITE);
+                }
             }
         }
     }
@@ -851,6 +900,12 @@ public class VisicomFragment extends Fragment {
     private void showRetryMode() {
 
         binding.btnReset.setVisibility(VISIBLE);
+        binding.btnReport.setVisibility(VISIBLE);
+        binding.btnReport.setOnClickListener(v -> {
+            BugReportHelper bugReportHelper = new BugReportHelper((MainActivity) getCurrentActivity());
+            bugReportHelper.showBugReportManager();
+            progressBar.setVisibility(INVISIBLE);
+        });
 
         binding.btnReset.setOnClickListener(v -> {
             Logger.d(context,"BTN_VISIBLE", "Клик: Попробовать снова");
@@ -871,6 +926,7 @@ public class VisicomFragment extends Fragment {
     private void showNormalMode() {
         // Убираем gpsbut из этого списка
         binding.btnReset.setVisibility(GONE);
+        binding.btnReport.setVisibility(GONE);
         setViewsVisibility(VISIBLE,
                 binding.textfrom, binding.num1, binding.clearButtonFrom,
                 binding.textGeo, binding.textwhere, binding.num2,
@@ -886,13 +942,7 @@ public class VisicomFragment extends Fragment {
             if (view != null) view.setVisibility(visibility);
         }
     }
-    private void callAdmin() {
-        Logger.d(context, TAG, "Вызов администратора");
-        PhoneCallHelper.callWithFallback(() -> {
-            List<String> stringList = logCursor(MainActivity.CITY_INFO, MyApplication.getContext());
-            return stringList.size() > 3 ? stringList.get(3) : "";
-        });
-    }
+
 
 
     // Вспомогательный метод для логирования (добавьте в класс)
@@ -907,69 +957,170 @@ public class VisicomFragment extends Fragment {
         }
     }
 
-
-
-
     public static void btnStaticVisible(int visible) {
         Activity activity = MyApplication.getCurrentActivity();
 
+        if (activity == null || text_view_cost == null) {
+            Logger.d(null, TAG, "btnStaticVisible: activity or views are null");
+            return;
+        }
 
-        if (text_view_cost != null) {
-            if (visible == GONE) {
-                progressBar.setVisibility(VISIBLE);
-            } else {
-                progressBar.setVisibility(GONE);
-            }
-            if (visible == GONE) {
-                if (swipeRefreshLayout != null) {
-                    btnCallAdmin.setText(R.string.try_again);
-                    progressBar.setVisibility(VISIBLE);
-                    btnCallAdmin.setOnClickListener(v -> {
-                        swipeRefreshLayout.setRefreshing(true);
-                    });
+        // Управление ProgressBar
+        if (visible == GONE) {
+            progressBar.setVisibility(VISIBLE);
+        } else {
+            progressBar.setVisibility(GONE);
+        }
 
-                }
-            } else {
-                progressBar.setVisibility(GONE);
-                btnCallAdmin.setText(R.string.call_admin);
-                btnCallAdmin.setOnClickListener(v -> {
-                    PhoneCallHelper.callWithFallback(() -> {
-                        List<String> stringList = logCursor(MainActivity.CITY_INFO, MyApplication.getContext());
-                        return stringList.size() > 3 ? stringList.get(3) : "";
-                    });
-//                    Intent intent = new Intent(Intent.ACTION_DIAL);
-//                    List<String> stringList = logCursor(MainActivity.CITY_INFO, activity);
-//                    String phone = stringList.get(3);
-//                    intent.setData(Uri.parse(phone));
-//                    activity.startActivity(intent);
-                });
-            }
+        // Управление режимами отображения
+        if (visible == GONE) {
+            // Режим ошибки/загрузки (как showRetryMode)
+            showRetryModeStatic();
+        } else if (visible == VISIBLE) {
+            // Нормальный режим (как showNormalMode)
+            showNormalModeStatic();
+        }
 
-            linearLayout.setVisibility(visible);
+        // Групповая установка видимости для основных элементов
+        linearLayout.setVisibility(visible);
+        btnAdd.setVisibility(visible);
+        buttonBonus.setVisibility(visible);
+        btn_minus.setVisibility(visible);
+        text_view_cost.setVisibility(visible);
+        btn_plus.setVisibility(visible);
+        btnOrder.setVisibility(visible);
+        schedule.setVisibility(visible);
+        shed_down.setVisibility(visible);
 
-            btnAdd.setVisibility(visible);
+        // GPS кнопка всегда видна
+        if (gpsBtn != null) {
+            gpsBtn.setVisibility(VISIBLE);
+        }
 
-            buttonBonus.setVisibility(visible);
-            btn_minus.setVisibility(visible);
-            text_view_cost.setVisibility(visible);
-            btn_plus.setVisibility(visible);
-            btnOrder.setVisibility(visible);
-
-
-            schedule.setVisibility(visible);
-
-            shed_down.setVisibility(visible);
+        // Кнопка администратора всегда видна
+        if (btnCallAdmin != null) {
+            btnCallAdmin.setVisibility(VISIBLE);
         }
     }
+
+    private static void showRetryModeStatic() {
+        Activity activity = MyApplication.getCurrentActivity();
+        if (activity == null) return;
+
+        if (btnReset != null) btnReset.setVisibility(VISIBLE);
+        if (btnReport != null) btnReport.setVisibility(VISIBLE);
+
+        if (btnReport != null) {
+            btnReport.setOnClickListener(v -> {
+                BugReportHelper bugReportHelper = new BugReportHelper((MainActivity) activity);
+                bugReportHelper.showBugReportManager();
+                if (progressBar != null) progressBar.setVisibility(INVISIBLE);
+            });
+        }
+
+        if (btnReset != null) {
+            btnReset.setOnClickListener(v -> {
+                Logger.d(null, "btnStaticVisible", "Клик: Попробовать снова");
+                clearTABLE_SERVICE_INFOStatic();
+                sharedPreferencesHelperMain.saveValue("time", "no_time");
+                sharedPreferencesHelperMain.saveValue("date", "no_date");
+                sharedPreferencesHelperMain.saveValue("comment", "no_comment");
+                sharedPreferencesHelperMain.saveValue("tarif", " ");
+                sharedPreferencesHelperMain.saveValue("setStatusX", true);
+                if (svButton != null) svButton.setVisibility(GONE);
+                sharedPreferencesHelperMain.saveValue("old_cost", "0");
+                activity.startActivity(new Intent(activity, MainActivity.class));
+            });
+        }
+    }
+
+    private static void showNormalModeStatic() {
+        if (btnReset != null) btnReset.setVisibility(GONE);
+        if (btnReport != null) btnReport.setVisibility(GONE);
+
+        // Показываем текстовые поля
+        if (geoText != null) geoText.setVisibility(VISIBLE);
+        if (textfrom != null) textfrom.setVisibility(VISIBLE);
+        if (num1 != null) num1.setVisibility(VISIBLE);
+        if (textwhere != null) textwhere.setVisibility(VISIBLE);
+        if (num2 != null) num2.setVisibility(VISIBLE);
+        if (textViewTo != null) textViewTo.setVisibility(VISIBLE);
+    }
+
+    private static void clearTABLE_SERVICE_INFOStatic() {
+        String[] arrayServiceCode = DataArr.arrayServiceCode();
+        SQLiteDatabase database = MyApplication.getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        try {
+            for (String code : arrayServiceCode) {
+                ContentValues cv = new ContentValues();
+                cv.put(code, "0");
+                database.update(MainActivity.TABLE_SERVICE_INFO, cv, "id = ?", new String[]{"1"});
+            }
+        } catch (Exception e) {
+            Logger.e(null, "clearTABLE_SERVICE_INFO", "Ошибка: " + e.getMessage());
+        } finally {
+            database.close();
+        }
+    }
+
 
     @Override
     public void onPause() {
         super.onPause();
+        isFragmentVisible = false;
         if (alertDialog != null && alertDialog.isShowing()) {
             alertDialog.dismiss();
         }
     }
 
+    public static boolean isFragmentVisible() {
+        return isFragmentVisible;
+    }
+    /**
+     * Статический метод для обновления позиции из CityFinder
+     */
+    public static void updateMyPositionStatic(double lat, double lng, String address) {
+        Activity activity = MyApplication.getCurrentActivity();
+        if (activity == null) return;
+
+        activity.runOnUiThread(() -> {
+            // Обновляем TextView
+            if (geoText != null) {
+                geoText.setText(address);
+            }
+
+            // Обновляем базу данных
+            SQLiteDatabase database = activity.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            ContentValues cv = new ContentValues();
+            cv.put("startLat", lat);
+            cv.put("startLan", lng);
+            cv.put("start", address);
+            database.update(MainActivity.ROUT_MARKER, cv, "id = ?", new String[]{"1"});
+            database.close();
+            btnStaticVisible(VISIBLE);
+        });
+    }
+
+    /**
+     * Пересчёт стоимости после восстановления локации
+     */
+    public static void recalculateCost() {
+        Activity activity = MyApplication.getCurrentActivity();
+        if (activity == null) return;
+
+        activity.runOnUiThread(() -> {
+            try {
+                if (progressBar != null) {
+                    progressBar.setVisibility(View.VISIBLE);
+                }
+                // Вызываем метод через рефлексию или создайте публичный метод
+                btnStaticVisible(VISIBLE);
+//                 visicomCost();
+            } catch (Exception e) {
+                Logger.e(activity, TAG, "Error recalculating cost: " + e.getMessage());
+            }
+        });
+    }
 
     public void requestPermissions() {
         String[] permissions = new String[] {
@@ -1128,7 +1279,11 @@ public class VisicomFragment extends Fragment {
         String phoneNumber = "no phone";
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         String displayName = logCursor(MainActivity.TABLE_USER_INFO, context).get(4);
+        displayName = InputSanitizerHelper.sanitize(displayName, InputSanitizerHelper.InputType.USERNAME);
 
+        if (displayName.trim().isEmpty()) {
+            displayName = "No_name";
+        }
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
 
         if (urlAPI.equals("costSearchMarkersTimeMyApi")) {
@@ -2026,6 +2181,9 @@ public class VisicomFragment extends Fragment {
         super.onResume();
         Logger.d(context, TAG, "onResume 1" );
 
+
+        isFragmentVisible = true;
+
         // ✅ Если есть активный запрос, не восстанавливаем из БД
         if (!firstStart && !isUpdatingFromGPS && pendingAddressRequest == null) {
             // Восстанавливаем адрес из БД только если нет активных обновлений
@@ -2480,7 +2638,7 @@ public class VisicomFragment extends Fragment {
             viewModel.setStatusGpsUpdate(false);
         }
 
-
+        updateGpsButtonCross(Boolean.TRUE.equals(viewModel.getStatusX().getValue()));
         if (NetworkUtils.isNetworkAvailable(context)) {
             if (geoText.getText().toString().isEmpty()) {
 
@@ -2508,6 +2666,8 @@ public class VisicomFragment extends Fragment {
 
 
         updateApp();
+        boolean restartAfterFinderCity = (boolean) sharedPreferencesHelperMain.getValue("restartAfterFinderCity", false);
+        updateGpsButtonCross(restartAfterFinderCity);
     }
 
     private void gpsButSetOnClickListener(LocationManager locationManager) {
@@ -2566,12 +2726,12 @@ public class VisicomFragment extends Fragment {
         }
 
         // ✅ ЕДИНЫЙ ЦЕНТРАЛИЗОВАННЫЙ КОД ДЛЯ ОБНОВЛЕНИЯ ФОНА КНОПКИ
-        boolean gpsEnabled = locationManager != null && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        boolean hasPermission = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-        boolean xShow = !(gpsEnabled && hasPermission);
-
-        updateGpsButtonDrawable(xShow);
-        viewModel.setStatusX(!xShow);
+//        boolean gpsEnabled = locationManager != null && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+//        boolean hasPermission = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+//        boolean xShow = !(gpsEnabled && hasPermission);
+//
+//        updateGpsButtonCross(xShow);
+//        viewModel.setStatusX(!xShow);
     }
     private void checkPermission() {
 
@@ -2602,7 +2762,6 @@ public class VisicomFragment extends Fragment {
         buttonBonus.setText(btnBonusName);
     }
 
-
     private void firstLocation() {
         // ✅ Защита от повторных вызовов
         if (isUpdatingFromGPS) {
@@ -2632,7 +2791,7 @@ public class VisicomFragment extends Fragment {
         fusedLocationProviderClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
                 .addOnSuccessListener(location -> {
                     if (location != null) {
-                        updateGpsButtonDrawable(false);
+
                         double latitude = location.getLatitude();
                         double longitude = location.getLongitude();
 
@@ -2649,15 +2808,8 @@ public class VisicomFragment extends Fragment {
                             return;
                         }
 
-                        // ✅ Защита от слишком частых обновлений
-                        long currentTime = System.currentTimeMillis();
-                        if (currentTime - lastSuccessfulLocationTime < 3000) {
-                            Logger.d(context, TAG, "Too frequent updates, skipping");
-                            progressBar.setVisibility(View.GONE);
-                            isUpdatingFromGPS = false;
-                            pendingAddressRequest = null; // ✅ Сбрасываем запрос
-                            return;
-                        }
+
+
 
                         Logger.d(context, TAG, "getCurrentLocation: " + latitude + ", " + longitude);
 
@@ -2669,7 +2821,7 @@ public class VisicomFragment extends Fragment {
                         String urlFrom = baseUrl + "/" + api + "/android/fromSearchGeoLocal/" + latitude + "/" + longitude + "/" + language;
 
                         // ✅ Сохраняем уникальный ключ запроса
-                        final String requestKey = latitude + "_" + longitude + "_" + currentTime;
+                        final String requestKey = latitude + "_" + longitude + "_";
                         pendingAddressRequest = requestKey;
 
                         FromJSONParserRetrofit.sendURL(urlFrom, result -> {
@@ -2696,19 +2848,12 @@ public class VisicomFragment extends Fragment {
                                 }
 
                                 // ✅ Проверяем, не тот же ли это адрес
-                                if (lastProcessedAddress.equals(FromAdressString) &&
-                                        System.currentTimeMillis() - lastSuccessfulLocationTime < 10000) {
-                                    Logger.d(context, TAG, "Same address, skipping update");
-                                    progressBar.setVisibility(View.GONE);
-                                    isUpdatingFromGPS = false;
-                                    pendingAddressRequest = null; // ✅ Сбрасываем запрос
-                                    return;
-                                }
+
 
                                 // ✅ Обновляем UI
-                                geoText.setText(FromAdressString);
+//                                geoText.setText(FromAdressString);
                                 lastProcessedAddress = FromAdressString;
-                                lastSuccessfulLocationTime = currentTime;
+
 
                                 if (CityFinder.isCityFinderBusy()) {
                                     Logger.d(context, TAG, "CityFinder занят, пропускаем обновление города");
@@ -2717,29 +2862,146 @@ public class VisicomFragment extends Fragment {
                                     return;
                                 }
                                 // ✅ Обновляем город
-                                new CityFinder(
+                                CityFinder cityFinder = new CityFinder(
                                         context,
                                         latitude,
                                         longitude,
                                         FromAdressString,
                                         context
-                                ).findCity(latitude, longitude);
+                                );
 
-                                // ✅ Обновляем координаты в БД
-                                updateCoordinatesInDatabase(latitude, longitude, FromAdressString);
+// ✅ Используем callback для определения, нужно ли обновлять позицию
+                                // В методе firstLocation(), перед вызовом cityFinder.findCityWithCallback:
 
-                                try {
-                                    visicomCost();
-                                } catch (MalformedURLException e) {
-                                    throw new RuntimeException(e);
-                                }
+// ✅ Создаём финальную копию переменной
+                                final String finalAddress = FromAdressString;
+                                final double finalLatitude = latitude;
+                                final double finalLongitude = longitude;
 
-                                Logger.d(context, TAG, "Successfully updated address: " + FromAdressString);
+                                cityFinder.findCityWithCallback(latitude, longitude, (cityChanged, userConfirmed) -> {
+                                    // ========== НАЧАЛО КОЛБЭКА ==========
+                                    Logger.d(context, TAG, "═══════════════════════════════════════════");
+                                    Logger.d(context, TAG, "🏁 CityCheckCallback ВЫЗВАН");
+                                    Logger.d(context, TAG, "═══════════════════════════════════════════");
+                                    Logger.d(context, TAG, "📊 Параметры колбэка:");
+                                    Logger.d(context, TAG, "   ├─ cityChanged = " + cityChanged);
+                                    Logger.d(context, TAG, "   ├─ userConfirmed = " + userConfirmed);
+                                    Logger.d(context, TAG, "   ├─ finalLatitude = " + finalLatitude);
+                                    Logger.d(context, TAG, "   ├─ finalLongitude = " + finalLongitude);
+                                    Logger.d(context, TAG, "   └─ finalAddress = '" + finalAddress + "'");
 
-                                // ✅ Сбрасываем флаги ПОСЛЕ успешного обновления
-                                pendingAddressRequest = null;
-                                isUpdatingFromGPS = false;
+                                    // ========== ЛОГИКА РЕШЕНИЯ ==========
+                                    boolean shouldUpdatePosition = !cityChanged || (cityChanged && userConfirmed);
 
+                                    Logger.d(context, TAG, "───────────────────────────────────────────");
+                                    Logger.d(context, TAG, "🧠 Логика принятия решения:");
+                                    Logger.d(context, TAG, "   ├─ Формула: shouldUpdatePosition = !cityChanged || (cityChanged && userConfirmed)");
+                                    Logger.d(context, TAG, "   ├─ !cityChanged = " + (!cityChanged));
+                                    Logger.d(context, TAG, "   ├─ (cityChanged && userConfirmed) = " + (cityChanged && userConfirmed));
+                                    Logger.d(context, TAG, "   └─ РЕЗУЛЬТАТ: shouldUpdatePosition = " + shouldUpdatePosition);
+
+                                    // ========== РАСШИФРОВКА РЕШЕНИЯ ==========
+                                    if (!cityChanged) {
+                                        sharedPreferencesHelperMain.saveValue("setStatusX", false);
+                                        viewModel.setStatusX(false);
+                                        Logger.d(context, TAG, "📝 Расшифровка: Город НЕ ИЗМЕНИЛСЯ → обновляем позицию");
+                                    } else if (cityChanged && userConfirmed) {
+                                        sharedPreferencesHelperMain.saveValue("setStatusX", false);
+                                        viewModel.setStatusX(false);
+                                        Logger.d(context, TAG, "📝 Расшифровка: Город ИЗМЕНИЛСЯ И пользователь СОГЛАСИЛСЯ → обновляем позицию");
+                                    } else if (cityChanged && !userConfirmed) {
+                                        sharedPreferencesHelperMain.saveValue("setStatusX", true);
+                                        viewModel.setStatusX(true);
+                                        Logger.d(context, TAG, "📝 Расшифровка: Город ИЗМЕНИЛСЯ НО пользователь ОТКАЗАЛСЯ → НЕ обновляем позицию");
+                                    }
+
+                                    Logger.d(context, TAG, "───────────────────────────────────────────");
+
+                                    // ========== ВЕТКА: ОБНОВЛЕНИЕ ПОЗИЦИИ ==========
+                                    if (shouldUpdatePosition) {
+                                        Logger.d(context, TAG, "✅ ПРИНЯТО РЕШЕНИЕ: Обновляем позицию и стоимость");
+                                        Logger.d(context, TAG, "───────────────────────────────────────────");
+                                        Logger.d(context, TAG, "🔄 НАЧАЛО обновления данных:");
+                                        setCityAppbar();
+                                        // Обновление координат в БД
+                                        Logger.d(context, TAG, "   1️⃣ Обновление координат в БД...");
+                                        Logger.d(context, TAG, "      ├─ Вызов updateCoordinatesInDatabase(" + finalLatitude + ", " + finalLongitude + ", '" + finalAddress + "')");
+
+                                        long dbStartTime = System.currentTimeMillis();
+                                        updateCoordinatesInDatabase(finalLatitude, finalLongitude, finalAddress);
+                                        long dbEndTime = System.currentTimeMillis();
+                                        Logger.d(context, TAG, "      └─ ✅ БД обновлена за " + (dbEndTime - dbStartTime) + " мс");
+
+                                        // Пересчёт стоимости
+                                        Logger.d(context, TAG, "   2️⃣ Пересчёт стоимости...");
+                                        Logger.d(context, TAG, "      ├─ Вызов visicomCost()");
+                                        sharedPreferencesHelperMain.saveValue("setStatusX", false);
+                                        viewModel.setStatusX(false);
+//                                        updateGpsButtonCross(false);
+                                        long costStartTime = System.currentTimeMillis();
+                                        try {
+                                            visicomCost();
+                                            long costEndTime = System.currentTimeMillis();
+                                            Logger.d(context, TAG, "      └─ ✅ Стоимость пересчитана за " + (costEndTime - costStartTime) + " мс");
+                                        } catch (MalformedURLException e) {
+                                            long costEndTime = System.currentTimeMillis();
+                                            Logger.e(context, TAG, "      └─ ❌ ОШИБКА при пересчёте стоимости: " + e.getMessage());
+                                            Logger.e(context, TAG, "         └─ Время до ошибки: " + (costEndTime - costStartTime) + " мс");
+                                            FirebaseCrashlytics.getInstance().recordException(e);
+                                        }
+
+                                        Logger.d(context, TAG, "🔄 ЗАВЕРШЕНО обновление данных");
+
+                                    }
+                                    // ========== ВЕТКА: ОТКАЗ ОТ ОБНОВЛЕНИЯ ==========
+                                    else {
+                                        sharedPreferencesHelperMain.saveValue("setStatusX", true);
+                                        viewModel.setStatusX(true);
+                                        Logger.d(context, TAG, "❌ ПРИНЯТО РЕШЕНИЕ: НЕ обновляем позицию и стоимость");
+                                        Logger.d(context, TAG, "───────────────────────────────────────────");
+                                        Logger.d(context, TAG, "🚫 Причина отказа:");
+
+                                        if (cityChanged && !userConfirmed) {
+                                            Logger.d(context, TAG, "   └─ Пользователь ОТКАЗАЛСЯ от смены города");
+                                            Logger.d(context, TAG, "      └─ Старый город сохранён, новая позиция ИГНОРИРУЕТСЯ");
+                                        } else {
+                                            Logger.d(context, TAG, "   └─ Другая причина: cityChanged=" + cityChanged + ", userConfirmed=" + userConfirmed);
+                                        }
+
+                                        // Скрываем ProgressBar и показываем кнопки
+                                        Logger.d(context, TAG, "───────────────────────────────────────────");
+                                        Logger.d(context, TAG, "🎨 Восстановление UI:");
+
+
+                                        geoText.setText("");
+                                        textViewTo.setText("");
+                                        btnVisible(GONE);
+                                        if (progressBar != null) {
+                                            progressBar.setVisibility(View.GONE);
+                                            Logger.d(context, TAG, "   ├─ progressBar.setVisibility(GONE)");
+                                        } else {
+                                            Logger.w(context, TAG, "   ├─ ⚠️ progressBar = null, пропускаем");
+                                        }
+                                        Logger.d(context, TAG, "   └─ btnVisible(VISIBLE) - кнопки восстановлены");
+                                    }
+
+                                    // ========== ЗАВЕРШЕНИЕ КОЛБЭКА ==========
+                                    Logger.d(context, TAG, "───────────────────────────────────────────");
+                                    Logger.d(context, TAG, "🧹 Очистка флагов:");
+
+                                    boolean wasUpdating = isUpdatingFromGPS;
+                                    String wasPending = pendingAddressRequest;
+
+                                    isUpdatingFromGPS = false;
+                                    pendingAddressRequest = null;
+
+                                    Logger.d(context, TAG, "   ├─ isUpdatingFromGPS: " + wasUpdating + " → false");
+                                    Logger.d(context, TAG, "   ├─ pendingAddressRequest: " + (wasPending != null ? wasPending : "null") + " → null");
+
+                                    Logger.d(context, TAG, "═══════════════════════════════════════════");
+                                    Logger.d(context, TAG, "🏁 CityCheckCallback ЗАВЕРШЁН");
+                                    Logger.d(context, TAG, "═══════════════════════════════════════════\n");
+                                });
                             } else {
                                 Logger.d(context, TAG, "Ошибка при получении адреса");
                                 progressBar.setVisibility(View.GONE);
@@ -2748,6 +3010,8 @@ public class VisicomFragment extends Fragment {
                             }
                         });
                     } else {
+                        sharedPreferencesHelperMain.saveValue("setStatusX", true);
+                        viewModel.setStatusX(true);
                         Logger.d(context, TAG, "Локация = null");
                         progressBar.setVisibility(View.GONE);
                         isUpdatingFromGPS = false;
@@ -2755,23 +3019,14 @@ public class VisicomFragment extends Fragment {
                     }
                 })
                 .addOnFailureListener(e -> {
+                    sharedPreferencesHelperMain.saveValue("setStatusX", true);
+                    viewModel.setStatusX(true);
                     Logger.e(context, TAG, "Failed to get location: " + e.getMessage());
                     progressBar.setVisibility(View.GONE);
                     isUpdatingFromGPS = false;
                     pendingAddressRequest = null; // ✅ Сбрасываем запрос
                     Toast.makeText(context, R.string.location_failed, Toast.LENGTH_SHORT).show();
                 });
-    }
-
-    private void showGnssErrorSnackbar() {
-        View rootView = requireView();
-
-        String message = getString(R.string.gnss_error_message);
-        String actionText = getString(R.string.gnss_error_action);
-
-        Snackbar snackbar = Snackbar.make(rootView, message, Snackbar.LENGTH_LONG);
-        snackbar.setAction(actionText, v -> {});
-        snackbar.show();
     }
 
     private void showLocationErrorDialog(Location location) {
@@ -2959,9 +3214,9 @@ public class VisicomFragment extends Fragment {
             values.put("startLat", newLat);
             values.put("startLan", newLon);
             values.put("start", address);
-            values.put("to_lat", existingToLat);  // Сохраняем старую конечную точку
-            values.put("to_lng", existingToLng);  // Сохраняем старую конечную точку
-            values.put("finish", existingFinish);  // Сохраняем старый адрес назначения
+            values.put("to_lat", newLat);  // Сохраняем старую конечную точку
+            values.put("to_lng", newLon);  // Сохраняем старую конечную точку
+            values.put("finish", "");  // Сохраняем старый адрес назначения
 
             Logger.d(context, TAG, "Подготовлены значения для обновления:");
             Logger.d(context, TAG, "  startLat=" + newLat);
@@ -3935,27 +4190,6 @@ public class VisicomFragment extends Fragment {
 
     }
 
-    private void updateGpsButtonDrawable(boolean xShow) {
-        if (xShow) {
-            // Показываем крест (GPS выключен или нет разрешения)
-            gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_green_cross));
-            gpsBtn.setTextColor(Color.WHITE);
-        } else {
-            // ✅ Восстанавливаем обычное состояние (GPS включен и есть разрешения)
-            if (locationManager != null && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                    gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_green));
-                    gpsBtn.setTextColor(Color.WHITE);
-                } else {
-                    gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_yellow));
-                    gpsBtn.setTextColor(Color.BLACK);
-                }
-            } else {
-                gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.btn_red));
-                gpsBtn.setTextColor(Color.WHITE);
-            }
-        }
-    }
     private void statusOrder() throws ParseException {
         String uid =  (String) sharedPreferencesHelperMain.getValue("uid_fcm", "");
         Logger.d(context, TAG, "statusOrder: " + uid);

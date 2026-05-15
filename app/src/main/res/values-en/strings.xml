@@ -42,6 +42,7 @@
     <string name="firebase_false_message">UAH. Sorry, the order cannot be placed without verifying your Google account.</string>
     <string name="UAH">UAH</string>
     <string name="order">Order</string>
+    <string name="order_card">Order</string>
     <string name="thanks_message">"Thank you for ordering from "</string>
     <string name="call_of_order">" Wait for the operator to call. The cost of the trip: "</string>
     <string name="next_try">" Try again or call the operator."</string>
@@ -146,6 +147,7 @@
     <string name="email_sent">Message sent</string>
     <string name="send_like">👍 Rate the app</string>
     <string name="send_email_admin">📢 Report a problem</string>
+    <string name="send_report_admin">Report a problem</string>
     <string name="SA_subject">Message No. I-</string>
     <string name="SA_message_start">The text of your message: </string>
     <string name="SA_info_pas">App info: </string>
@@ -873,13 +875,13 @@ Tap "Settings" to check.</string>
     <string name="phone_permission_denied_message">No call permission. Dialing open.</string>
     <string name="phone_error_driver_empty">Driver number not specified</string>
     <!-- Verification Dialogs -->
-    <string name="verification_required_title">⚠️ Account Verification</string>
-    <string name="verification_required_message">Account verification is required to use the application.\n\nPlease sign in or register.</string>
-    <string name="verification_cancelled_title">⚠️ Verification Required</string>
-    <string name="verification_cancelled_message">You cannot use the application without account verification.\n\nPlease sign in to continue.</string>
-    <string name="verification_error_title">❌ Error</string>
-    <string name="verification_error_message">An error occurred:\n%s\n\nPlease try again.</string>
-    <string name="verification_mandatory_toast">Verification is required to use the application</string>
+    <string name="verification_required_title">📱 Login to your account</string>
+    <string name="verification_required_message">To fully use the app, we recommend logging in to your account or registering.\n\nIt only takes a minute!</string>
+    <string name="verification_cancelled_title">🔐 Continuing work</string>
+    <string name="verification_cancelled_message">To use all the features of the app, you need to log in to your account.\n\nYou can do this now or later.</string>
+    <string name="verification_error_title">🔧 Technical error</string>
+    <string name="verification_error_message">Something went wrong:\n%s\n\nPlease try again.</string>
+    <string name="verification_mandatory_toast">You need to log in to use the app.</string>
 
     <!-- Buttons -->
     <string name="verify_now">Sign in</string>
@@ -904,4 +906,10 @@ Tap "Settings" to check.</string>
     <string name="inclusiv_transport_yes">Inclusive transport required</string>
     <string name="location_failed">Failed to determine location</string>
     <string name="location_failed_message">Failed to obtain coordinates. Please check that GPS is enabled and allow location services.</string>
+    <string name="short_err">Short error description *</string>
+    <string name="step_err">Steps to reproduce</string>
+    <string name="resalt_err">Expected result</string>
+    <string name="fact_err">Actual result</string>
+    <string name="invalid_input_detected">Invalid input detected</string>
+    <string name="max_length_50">Maximum length is 50 characters</string>
 </resources>

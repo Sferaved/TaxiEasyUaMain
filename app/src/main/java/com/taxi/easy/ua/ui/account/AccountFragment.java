@@ -54,6 +54,7 @@ import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
+import com.taxi.easy.ua.utils.sanitizer.InputSanitizerHelper;
 import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 import com.uxcam.UXCam;
@@ -161,31 +162,8 @@ public class AccountFragment extends Fragment {
         out_but.setVisibility(GONE);
         del_but.setVisibility(GONE);
 
-        userName.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                upd_but.setVisibility(View.VISIBLE);
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
-
-        phoneNumber.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                upd_but.setVisibility(View.VISIBLE);
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
+        setupSanitizedTextWatcher(userName, InputSanitizerHelper.InputType.USERNAME, upd_but);
+        setupSanitizedTextWatcher(phoneNumber, InputSanitizerHelper.InputType.PHONE, upd_but);
 
         progressBar = binding.progressBar;
         email.setOnClickListener(v -> {
@@ -243,6 +221,40 @@ public class AccountFragment extends Fragment {
         });
 
         return root;
+    }
+    private void setupSanitizedTextWatcher(EditText editText, InputSanitizerHelper.InputType inputType, View updateButton) {
+        editText.addTextChangedListener(new TextWatcher() {
+            private boolean isSanitizing = false;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (updateButton != null) {
+                    updateButton.setVisibility(View.VISIBLE);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (isSanitizing) return;
+
+                String original = s.toString();
+                String sanitized = InputSanitizerHelper.sanitize(original, inputType);
+
+                if (InputSanitizerHelper.containsSqlInjectionPatterns(original)) {
+                    sanitized = "";
+                    Toast.makeText(requireActivity(), R.string.invalid_input_detected, Toast.LENGTH_SHORT).show();
+                }
+
+                if (!sanitized.equals(original)) {
+                    isSanitizing = true;
+                    s.replace(0, s.length(), sanitized);
+                    isSanitizing = false;
+                }
+            }
+        });
     }
 
     private void googleVerifyAccount() {
@@ -593,26 +605,36 @@ public class AccountFragment extends Fragment {
     private void accountSet() {
         Logger.d(requireActivity(), TAG, "phoneNumber.getText().toString() " + phoneNumber.getText().toString());
         String phone = formatPhoneNumber(phoneNumber.getText().toString());
-        Logger.d(requireActivity(), TAG, "phone " + phone);
-        Logger.d(requireActivity(), TAG, "onClick before validate: ");
 
+        // Санитизация телефона
+        String safePhone = InputSanitizerHelper.sanitize(phone, InputSanitizerHelper.InputType.PHONE);
+
+        // Валидация телефона
         String PHONE_PATTERN = "\\+38 \\d{3} \\d{3} \\d{2} \\d{2}";
-        boolean val = Pattern.compile(PHONE_PATTERN).matcher(phone).matches();
-        Logger.d(requireActivity(), TAG, "onClick No validate: " + val);
+        boolean val = Pattern.compile(PHONE_PATTERN).matcher(safePhone).matches();
 
         if (!val) {
             Toast.makeText(requireActivity(), getString(format_phone), Toast.LENGTH_SHORT).show();
             Logger.d(requireActivity(), TAG, "accountSet" + phoneNumber.getText().toString());
         } else {
-            phoneNumber.setText(phone);
-            updateRecordsUser("phone_number", phone);
-            userManager.saveUserPhone(phone);
+            // Санитизация имени
+            String safeName = InputSanitizerHelper.sanitize(userName.getText().toString(), InputSanitizerHelper.InputType.USERNAME);
 
-            String newName = userName.getText().toString();
-            if (newName.trim().isEmpty()) {
-                newName = "No_name";
+            if (safeName.trim().isEmpty()) {
+                safeName = "No_name";
             }
-            updateRecordsUser("username", newName);
+
+            // Дополнительная проверка на SQL-инъекции
+            if (InputSanitizerHelper.containsSqlInjectionPatterns(safeName) ||
+                    InputSanitizerHelper.containsSqlInjectionPatterns(safePhone)) {
+                Toast.makeText(requireActivity(), R.string.invalid_input_detected, Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            phoneNumber.setText(safePhone);
+            updateRecordsUser("phone_number", safePhone);
+            userManager.saveUserPhone(safePhone);
+            updateRecordsUser("username", safeName);
         }
     }
 
