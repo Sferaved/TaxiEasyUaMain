@@ -50,7 +50,7 @@ public class ErrorPayActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_error_pay);
         PhoneCallHelper.initWithActivity(this);
-        PhoneCallHelper.ensureCallPermission();
+        //PhoneCallHelper.ensureCallPermission();
         messageError = getIntent().getStringExtra("messageError");
         urlOrder = MainActivity.order_id;
         orderCost = getIntent().getStringExtra("orderCost") + "00";

@@ -136,10 +136,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import retrofit2.Call;
@@ -3335,19 +3337,16 @@ public class VisicomFragment extends Fragment {
         if ("run".equals(cityCheckActivity) && originLatitude != 0.0 && toLat != 0.0) {
             progressBar.setVisibility(View.VISIBLE);
 
+            orderRout();
+            requestCostFromServer(start, finish);
+            btnVisible(GONE);
 
-            btnVisible(VISIBLE);
-
-            String cost = (String) sharedPreferencesHelperMain.getValue("old_cost","0");
-            Logger.d(context,TAG, "onContextItemSelected parts[1] cost: " + cost);
-            if(!cost.equals("0")) {
-                applyDiscountAndUpdateUI(cost, context);
-                sharedPreferencesHelperMain.saveValue("old_cost","0");
-                requestCostFromServer(start, finish);
-            } else {
-
-                requestCostFromServer(start, finish);
-            }
+//            String cost = (String) sharedPreferencesHelperMain.getValue("old_cost","100");
+//            Logger.d(context,TAG, "onContextItemSelected parts[1] cost: " + cost);
+//            if(!cost.equals("0")) {
+//                applyDiscountAndUpdateUI(cost, context);
+//                sharedPreferencesHelperMain.saveValue("old_cost","0");
+//            }
         } else {
             sharedPreferencesHelperMain.saveValue("CityCheckActivity", "**");
 
@@ -3436,16 +3435,18 @@ public class VisicomFragment extends Fragment {
                         cost = map.get("order_cost");
                         applyDiscountAndUpdateUI(cost, context);
                     } else {
-
-                        if (map != null && Objects.equals(map.get("Message"), "Повторный запрос")) {
-                            String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
-                            cost = (String) sharedPreferencesHelperMain.getValue(tarif, "100");
-                            applyDiscountAndUpdateUI(cost, context);
-                        } else {
-//                            cost = "100";
-//                            applyDiscountAndUpdateUI(cost, context);
+                        if (map != null) {
+                            Set<String> errorMessages = new HashSet<>(Arrays.asList(
+                                    "Повторный запрос",
+                                    "Ошибка создания заказа"
+                            ));
+                            String message = map.get("Message");
+                            if (errorMessages.contains(message)) {
+                                String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
+                                cost = (String) sharedPreferencesHelperMain.getValue(tarif, "100");
+                                applyDiscountAndUpdateUI(cost, context);
+                            }
                         }
-
                     }
 
 
@@ -3478,14 +3479,6 @@ public class VisicomFragment extends Fragment {
         Logger.d(context, TAG, "applyDiscountAndUpdateUI() start — orderCost = " + orderCost);
         double costValue = Double.parseDouble(orderCost);
         orderCost = String.valueOf(Math.round(costValue));
-
-
-        // Проверяем, не совпадает ли стоимость с предыдущей
-//        if (orderCost.equals(lastAppliedCost)) {
-//            Logger.d(context, TAG, "Стоимость не изменилась, обновление UI пропущено: " + orderCost);
-//            return;
-//        }
-//        lastAppliedCost = orderCost;
 
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
         Logger.d(context, TAG, "Retrieved discountText = " + discountText);
@@ -3539,17 +3532,7 @@ public class VisicomFragment extends Fragment {
 
             Logger.d(context, TAG, "Setting UI visibility and values");
             btnVisible(VISIBLE);
-//            progressBar.setVisibility(View.GONE);
-//
-//            geoText.setVisibility(View.VISIBLE);
-//            geoText.setText(start);
-//
-//            textfrom.setVisibility(View.VISIBLE);
-//            num1.setVisibility(View.VISIBLE);
-//            textwhere.setVisibility(View.VISIBLE);
-//
-//            num2.setVisibility(View.VISIBLE);
-//            textViewTo.setVisibility(View.VISIBLE);
+
 
             if(!finish.isEmpty()) {
                 textViewTo.setText(finish);
