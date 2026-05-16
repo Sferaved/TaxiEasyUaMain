@@ -3216,9 +3216,9 @@ public class VisicomFragment extends Fragment {
             values.put("startLat", newLat);
             values.put("startLan", newLon);
             values.put("start", address);
-            values.put("to_lat", newLat);  // Сохраняем старую конечную точку
-            values.put("to_lng", newLon);  // Сохраняем старую конечную точку
-            values.put("finish", "");  // Сохраняем старый адрес назначения
+            values.put("to_lat", existingToLat);  // Сохраняем старую конечную точку
+            values.put("to_lng", existingToLng);  // Сохраняем старую конечную точку
+            values.put("finish", existingFinish);  // Сохраняем старый адрес назначения
 
             Logger.d(context, TAG, "Подготовлены значения для обновления:");
             Logger.d(context, TAG, "  startLat=" + newLat);
