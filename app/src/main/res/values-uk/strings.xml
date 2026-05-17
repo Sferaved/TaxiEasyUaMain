@@ -925,4 +925,8 @@
     <string name="fact_err">Фактичний результат</string>
     <string name="invalid_input_detected">Виявлено неприпустиме введення</string>
     <string name="max_length_50">Максимальна довжина 50 символів</string>
+    <string name="support_crisp">💬 Підтримка (Чат)</string>
+    <string name="crisp_error">Помилка відкриття чату підтримки</string>
+    <string name="support_subject">Підтримка додатку Таксі</string>
+    <string name="support">Підтримка</string>
 </resources>

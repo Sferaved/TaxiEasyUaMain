@@ -175,7 +175,7 @@ if ($pushConfirm -eq 'y' -or $pushConfirm -eq 'Y') {
     Write-Host "OK: Git push completed, tag $tagName created and pushed" -ForegroundColor Green
 } else {
     Write-Host "OK: Commit and tag created locally. Push skipped." -ForegroundColor Green
-    Write-Host "To push later use: git push && git push origin $tagName" -ForegroundColor Yellow
+    Write-Host "To push later use: git push && git push origin $tagName/actions" -ForegroundColor Yellow
 }
 
 Write-Host ""

@@ -5,6 +5,8 @@ import android.content.res.Configuration;
 import android.os.Handler;
 import android.os.Looper;
 
+import com.taxi.easy.ua.MainActivity;
+
 import org.json.JSONObject;
 
 import java.util.Locale;
@@ -16,7 +18,7 @@ import okhttp3.Response;
 
 public class CityInfoHelper {
     private static final String BASE_URL = "https://City-Info.utax.top/api/data/";
-    private static final String TOKEN = "ari_iMYCEh8wbb4hQSVqlFDzN8G-9RAhPTbSxe7eO9rAGOA";
+    private static final String TOKEN = MainActivity.utaxKey;
 
     private OkHttpClient client;
     private Context context;

@@ -922,4 +922,8 @@
     <string name="fact_err">Фактический результат</string>
     <string name="invalid_input_detected">Обнаружен недопустимый ввод</string>
     <string name="max_length_50">Максимальная длина 50 символов</string>
+    <string name="support_crisp">💬 Поддержка (Чат)</string>
+    <string name="crisp_error">Ошибка открытия чата поддержки</string>
+    <string name="support_subject">Поддержка приложения Такси</string>
+    <string name="support">Поддержка</string>
 </resources>

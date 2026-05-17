@@ -912,4 +912,8 @@ Tap "Settings" to check.</string>
     <string name="fact_err">Actual result</string>
     <string name="invalid_input_detected">Invalid input detected</string>
     <string name="max_length_50">Maximum length is 50 characters</string>
+    <string name="support_crisp">💬 Support (Chat)</string>
+    <string name="crisp_error">Error opening support chat</string>
+    <string name="support_subject">Taxi app support</string>
+    <string name="support">Support</string>
 </resources>

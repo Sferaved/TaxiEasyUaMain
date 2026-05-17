@@ -65,6 +65,17 @@
         android:paddingTop="0dp"
         android:paddingRight="0dp"
         android:paddingBottom="0dp" />
+
+    <item
+        android:id="@+id/support_crisp"
+        android:title="@string/support_crisp"
+        android:orderInCategory="100"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp"
+        app:showAsAction="never" />
+
     <item
         android:id="@+id/send_like"
         android:orderInCategory="100"

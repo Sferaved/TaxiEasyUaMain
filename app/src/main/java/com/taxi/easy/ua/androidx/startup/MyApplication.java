@@ -47,6 +47,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import im.crisp.client.external.Crisp;
+
+
 public class MyApplication extends MultiDexApplication {
 
     private final String TAG = "MyApplication";
@@ -112,7 +115,8 @@ public class MyApplication extends MultiDexApplication {
                 visicomKeyFromFb();
                 mapboxKeyFromFb();
                 supportEmailFromFb();
-
+                crispInit();
+                getUtaxKey();
                 mainHandler.post(this::scheduleInclusiveTransportWorker);
             } catch (Exception e) {
                 Logger.e(this, TAG, "Async initialization failed: " + e);
@@ -367,6 +371,42 @@ public class MyApplication extends MultiDexApplication {
             }
         });
     }
+    private void crispInit() {
+        firestoreHelper.getCrispKey(new FirestoreHelper.OnSupportCrispFetchedListener() {
+            @Override
+            public void onSuccess(String crispKey) {
+                mainHandler.post(() -> {
+                    Crisp.configure(getApplicationContext(), crispKey);
+                    Logger.d(getApplicationContext(), TAG, "crispKey: " + crispKey);
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
+                Logger.e(getApplicationContext(), TAG, "Ошибка: " + e.getMessage());
+            }
+        });
+    }
+    private void getUtaxKey() {
+            firestoreHelper.getUtaxKey(new FirestoreHelper.OnSupportUtaxFetchedListener() {
+                @Override
+                public void onSuccess(String utaxKey) {
+                    mainHandler.post(() -> {
+                        MainActivity.utaxKey = utaxKey;
+                        Logger.d(getApplicationContext(), TAG, "utaxKey: " + utaxKey);
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    FirebaseCrashlytics.getInstance().recordException(e);
+                    Logger.e(getApplicationContext(), TAG, "Ошибка: " + e.getMessage());
+                }
+            });
+        }
+
+
 
     private void mapboxKeyFromFb() {
         firestoreHelper.getMapboxKey(new FirestoreHelper.OnMapboxKeyFetchedListener() {

@@ -13,8 +13,8 @@ android {
         applicationId "com.taxi.easy.ua"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1931
-        versionName = '1.931'
+        versionCode = 1932
+        versionName = '1.932'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += ['en', 'ru', 'uk']
         multiDexEnabled = true
@@ -181,6 +181,7 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-process:2.6.2"
     implementation "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.2"
     implementation 'com.android.volley:volley:1.2.1'
+    implementation 'im.crisp:crisp-sdk:2.0.13'
 }
 
 

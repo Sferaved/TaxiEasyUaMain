@@ -12,7 +12,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
@@ -136,7 +135,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
@@ -144,6 +142,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import im.crisp.client.external.ChatActivity;
+import im.crisp.client.external.Crisp;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
@@ -162,6 +162,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     public static String supportEmail;
+    public static String utaxKey;
 
     @SuppressLint("StaticFieldLeak")
     private static AppUpdater appUpdater;
@@ -912,6 +913,7 @@ public class MainActivity extends AppCompatActivity {
         if (NetworkUtils.isNetworkAvailable(this)) {
             hideNoInternetSnackbar();
         }
+
         if (!InclusiveTransportPreferenceWorker.hasBeenAsked() && !firstStart) {
             String KEY_INCLUSIVE_TRANSPORT_ASKED = "inclusive_transport_asked";
             sharedPreferencesHelperMain.saveValue(KEY_INCLUSIVE_TRANSPORT_ASKED, true);
@@ -1452,7 +1454,11 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("IntentReset")
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-
+        if (item.getItemId() == R.id.support_crisp) {
+            openCrispChat();
+            return true;
+        }
+        
         if (item.getItemId() == R.id.action_exit) {
             FirebaseAnalytics firebaseAnalytics = FirebaseAnalytics.getInstance(getContext());
             firebaseAnalytics.setAnalyticsCollectionEnabled(false);
@@ -1728,6 +1734,110 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    private void openCrispChat() {
+        try {
+            // Устанавливаем данные пользователя ДО открытия чата
+            List<String> userList = logCursor(MainActivity.TABLE_USER_INFO);
+
+            // Проверяем, что список не null и содержит нужные элементы
+            if (userList != null && userList.size() >= 5) {
+                String userEmail = userList.get(3);
+                String userName = userList.get(4);
+
+                if (userEmail != null && !"email".equals(userEmail) && !"no_email".equals(userEmail) && !userEmail.isEmpty()) {
+                    Crisp.setUserEmail(userEmail);
+                }
+                if (userName != null && !"username".equals(userName) && !userName.isEmpty()) {
+                    Crisp.setUserNickname(userName);
+                }
+            }
+
+            // Устанавливаем телефон, если есть
+            if (userList != null && userList.size() >= 3) {
+                String phone = userList.get(2);
+                if (phone != null && !"+38".equals(phone) && !phone.isEmpty() && !"null".equals(phone)) {
+                    Crisp.setUserPhone(phone);
+                }
+            }
+
+            // Устанавливаем сессионные данные (город, версия)
+            List<String> cityList = logCursor(MainActivity.CITY_INFO);
+            if (cityList != null && cityList.size() >= 2) {
+                String city = cityList.get(1);
+                if (city != null && !city.isEmpty()) {
+                    Crisp.setSessionString("city", city);
+                }
+                String appVersion = getString(R.string.version);
+                if (appVersion != null) {
+                    Crisp.setSessionString("app_version", appVersion);
+                }
+            }
+
+            // Устанавливаем дополнительные данные о сессии
+            setCrispUserData();
+
+            // Открываем Crisp чат через Intent
+            Intent crispIntent = new Intent(this, ChatActivity.class);
+            startActivity(crispIntent);
+
+        } catch (Exception e) {
+            Logger.e(this, TAG, "Error opening Crisp chat: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
+
+            // Показываем Toast об ошибке
+            String errorMessage = getString(R.string.crisp_error);
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
+            }
+
+            // Fallback: открыть email
+            try {
+                Intent emailIntent = new Intent(Intent.ACTION_SENDTO);
+                emailIntent.setData(Uri.parse("mailto:support@easy-order-taxi.site"));
+                emailIntent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.support_subject));
+                startActivity(Intent.createChooser(emailIntent, getString(R.string.support)));
+            } catch (Exception emailError) {
+                Logger.e(this, TAG, "Error opening email fallback: " + emailError.getMessage());
+            }
+        }
+    }
+
+    private void setCrispUserData() {
+        try {
+            // Пытаемся получить email из Firebase
+            FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+            if (firebaseUser != null && firebaseUser.getEmail() != null) {
+                String email = firebaseUser.getEmail();
+                if (!email.isEmpty()) {
+                    Crisp.setUserEmail(email);
+                }
+            }
+
+            // Добавление метаданных о сессии
+            Crisp.setSessionString("platform", "Android");
+
+            String appVersion = getString(R.string.version);
+            if (appVersion != null && !appVersion.isEmpty()) {
+                Crisp.setSessionString("app_version", appVersion);
+            }
+
+            // Кастомные данные об устройстве
+            String deviceModel = Build.MODEL;
+            if (deviceModel != null && !deviceModel.isEmpty()) {
+                Crisp.setSessionString("device_model", deviceModel);
+            }
+
+            String androidVersion = Build.VERSION.RELEASE;
+            if (androidVersion != null && !androidVersion.isEmpty()) {
+                Crisp.setSessionString("android_version", androidVersion);
+            }
+
+            Logger.d(this, TAG, "Crisp user data set successfully");
+
+        } catch (Exception e) {
+            Logger.e(this, TAG, "Error setting Crisp user data: " + e.getMessage());
+        }
+    }
     public String generateEmailBody(String errorMessage) {
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
@@ -2222,6 +2332,7 @@ public class MainActivity extends AppCompatActivity {
 //                    );
 //                    pusherManager.connect();
 //                    pusherManager.subscribeToChannel();
+                    crispChat();
 
                     centrifugoManager = new CentrifugoManager(
                             getString(R.string.application),
@@ -2471,7 +2582,7 @@ public class MainActivity extends AppCompatActivity {
                     usernameForTest = "username";
 
                     settingsNewUser(user.getEmail());
-
+                    crispChat();
                     String sityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
                     Logger.d(this, TAG, "CityCheckActivity: " + sityCheckActivity);
 
@@ -2841,15 +2952,15 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
     }
+    private void crispChat() {
+        // Опционально: установка данных пользователя
+        List<String> stringList = logCursor(MainActivity.TABLE_USER_INFO);
+        String userEmail = stringList.get(3);
+        String username = stringList.get(4);
 
-    private void applyLocale(String localeCode) {
-        Locale locale = new Locale(localeCode);
-        Locale.setDefault(locale);
 
-        Configuration config = new Configuration(getResources().getConfiguration());
-        config.setLocale(locale);
-
-        getResources().updateConfiguration(config, getResources().getDisplayMetrics());
+        Crisp.setUserEmail(userEmail);
+        Crisp.setUserNickname(username);
     }
 
     void clearApplication(Context context) {

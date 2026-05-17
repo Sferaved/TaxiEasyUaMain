@@ -235,6 +235,52 @@ public class FirestoreHelper {
             }
         });
     }
+    public void getCrispKey(OnSupportCrispFetchedListener listener) {
+        DocumentReference docRef = firestore.collection("keys").document("crispKey");
+
+        listenerMapboxKey = docRef.addSnapshotListener((documentSnapshot, e) -> {
+            if (e != null) {
+                if (listener != null) {
+                    listener.onFailure(e);
+                }
+                return;
+            }
+
+            if (documentSnapshot != null && documentSnapshot.exists() && documentSnapshot.contains("crispKey")) {
+                String mKey = documentSnapshot.getString("crispKey");
+                if (listener != null) {
+                    listener.onSuccess(mKey);
+                }
+            } else {
+                if (listener != null) {
+                    listener.onFailure(new Exception("Поле crispKey не найдено в документе или документ отсутствует."));
+                }
+            }
+        });
+    }
+    public void getUtaxKey(OnSupportUtaxFetchedListener listener) {
+        DocumentReference docRef = firestore.collection("keys").document("utaxKey");
+
+        listenerMapboxKey = docRef.addSnapshotListener((documentSnapshot, e) -> {
+            if (e != null) {
+                if (listener != null) {
+                    listener.onFailure(e);
+                }
+                return;
+            }
+
+            if (documentSnapshot != null && documentSnapshot.exists() && documentSnapshot.contains("utaxKey")) {
+                String mKey = documentSnapshot.getString("utaxKey");
+                if (listener != null) {
+                    listener.onSuccess(mKey);
+                }
+            } else {
+                if (listener != null) {
+                    listener.onFailure(new Exception("Поле utaxKey не найдено в документе или документ отсутствует."));
+                }
+            }
+        });
+    }
 
     public void listenForResponseChanges() {
         firestore.collection("settings")
@@ -315,6 +361,14 @@ public class FirestoreHelper {
     }
     public interface OnSupportEmailFetchedListener {
         void onSuccess(String supportEmail);
+        void onFailure(Exception e);
+    }
+    public interface OnSupportUtaxFetchedListener {
+        void onSuccess(String utaxKey);
+        void onFailure(Exception e);
+    }
+    public interface OnSupportCrispFetchedListener {
+        void onSuccess(String crispKey);
         void onFailure(Exception e);
     }
 }
