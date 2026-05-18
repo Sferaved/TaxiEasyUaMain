@@ -929,4 +929,6 @@
     <string name="crisp_error">Помилка відкриття чату підтримки</string>
     <string name="support_subject">Підтримка додатку Таксі</string>
     <string name="support">Підтримка</string>
+    <string name="start">Старт</string>
+
 </resources>

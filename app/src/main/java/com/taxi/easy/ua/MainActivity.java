@@ -153,12 +153,6 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 
-// OkHttp
-
-
-// Java / Android
-
-
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     public static String supportEmail;
@@ -292,12 +286,8 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS}, 100);
-            }
+        if (!sharedPreferencesHelperMain.contains("notification_permission_requested")) {
+            sharedPreferencesHelperMain.saveValue("notification_permission_requested", false);
         }
 // Ініціалізація менеджера оцінювання
         appReviewManager = new AppReviewManager(this);
@@ -484,26 +474,23 @@ public class MainActivity extends AppCompatActivity {
 
         // Проверяем разрешение на уведомления для Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Logger.d(this, TAG, "Android 13+ detected, checking POST_NOTIFICATIONS permission");
-
             boolean hasPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     == PackageManager.PERMISSION_GRANTED;
-            Logger.d(this, TAG, "POST_NOTIFICATIONS permission granted: " + hasPermission);
 
             if (!hasPermission) {
-                Logger.w(this, TAG, "POST_NOTIFICATIONS permission NOT granted, requesting...");
-                // Запрашиваем разрешение
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS}, 100);
+                // Проверяем, запрашивали ли уже разрешение
+                boolean alreadyRequested = (boolean) sharedPreferencesHelperMain.getValue("notification_permission_requested", false);
+
+                if (!alreadyRequested) {
+                    // Если не запрашивали - запрашиваем
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.POST_NOTIFICATIONS}, 100);
+                    sharedPreferencesHelperMain.saveValue("notification_permission_requested", true);
+                }
+
                 Toast.makeText(this, R.string.notify_perm_toast, Toast.LENGTH_LONG).show();
-                Logger.d(this, TAG, "Permission requested with request code 100");
-                Logger.d(this, TAG, "=== END: Exiting due to missing permission ===");
                 return;
-            } else {
-                Logger.d(this, TAG, "POST_NOTIFICATIONS permission already granted");
             }
-        } else {
-            Logger.d(this, TAG, "Android version < 13, no permission check needed");
         }
 
         // Получаем  погоду
@@ -2333,7 +2320,7 @@ public class MainActivity extends AppCompatActivity {
 //                    pusherManager.connect();
 //                    pusherManager.subscribeToChannel();
                     crispChat();
-
+                    requestNotificationPermissionOnce();
                     centrifugoManager = new CentrifugoManager(
                             getString(R.string.application),
                             userEmail,
@@ -2583,6 +2570,9 @@ public class MainActivity extends AppCompatActivity {
 
                     settingsNewUser(user.getEmail());
                     crispChat();
+
+                    requestNotificationPermissionOnce();
+
                     String sityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
                     Logger.d(this, TAG, "CityCheckActivity: " + sityCheckActivity);
 
@@ -3383,15 +3373,13 @@ public class MainActivity extends AppCompatActivity {
                 isVerificationRequired = true;
                 isWaitingForVerification = true;
 
-                // Используем кастомный layout
-                View dialogView = getLayoutInflater().inflate(R.layout.dialog_verification_simple, null);
+                View dialogView = getLayoutInflater().inflate(R.layout.dialog_verification_simple_new, null);
 
                 TextView tvTitle = dialogView.findViewById(R.id.tvTitle);
                 TextView tvMessage = dialogView.findViewById(R.id.tvMessage);
                 Button btnPositive = dialogView.findViewById(R.id.btnPositive);
-                Button btnNegative = dialogView.findViewById(R.id.btnNegative);
+                ImageButton btnClose = dialogView.findViewById(R.id.btnClose); // Новая кнопка
 
-                // Устанавливаем сообщение
                 tvMessage.setText(getString(R.string.verification_required_message));
 
                 AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -3401,14 +3389,15 @@ public class MainActivity extends AppCompatActivity {
                 verificationDialog = builder.create();
                 verificationDialog.show();
 
-                // Обработчики кнопок
+                // Кнопка Старт
                 btnPositive.setOnClickListener(v -> {
                     isWaitingForVerification = true;
                     verificationDialog.dismiss();
                     startFireBase();
                 });
 
-                btnNegative.setOnClickListener(v -> {
+                // Красная кнопка с крестиком - закрывает приложение
+                btnClose.setOnClickListener(v -> {
                     verificationDialog.dismiss();
                     finishAffinity();
                     System.exit(0);
@@ -3434,17 +3423,16 @@ public class MainActivity extends AppCompatActivity {
 
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 if (isVerificationRequired && !isFinishing() && !isDestroyed()) {
-                    View dialogView = getLayoutInflater().inflate(R.layout.dialog_verification_simple, null);
+                    View dialogView = getLayoutInflater().inflate(R.layout.dialog_verification_simple_new, null);
 
                     TextView tvTitle = dialogView.findViewById(R.id.tvTitle);
                     TextView tvMessage = dialogView.findViewById(R.id.tvMessage);
                     Button btnPositive = dialogView.findViewById(R.id.btnPositive);
-                    Button btnNegative = dialogView.findViewById(R.id.btnNegative);
+                    ImageButton btnClose = dialogView.findViewById(R.id.btnClose);
 
                     tvTitle.setText(getString(R.string.verification_required_title));
                     tvMessage.setText(getString(R.string.verification_required_message));
-                    btnPositive.setText(getString(R.string.verify_now));
-                    btnNegative.setText(getString(R.string.exit_app));
+                    btnPositive.setText(getString(R.string.start));
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(this);
                     builder.setView(dialogView)
@@ -3453,12 +3441,14 @@ public class MainActivity extends AppCompatActivity {
                     verificationDialog = builder.create();
                     verificationDialog.show();
 
+                    // Кнопка Старт
                     btnPositive.setOnClickListener(v -> {
                         verificationDialog.dismiss();
                         startFireBase();
                     });
 
-                    btnNegative.setOnClickListener(v -> {
+                    // Красная кнопка с крестиком - закрывает приложение
+                    btnClose.setOnClickListener(v -> {
                         verificationDialog.dismiss();
                         finishAffinity();
                         System.exit(0);
@@ -3473,17 +3463,16 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             if (isFinishing() || isDestroyed()) return;
 
-            View dialogView = getLayoutInflater().inflate(R.layout.dialog_verification_simple, null);
+            View dialogView = getLayoutInflater().inflate(R.layout.dialog_verification_simple_new, null);
 
             TextView tvTitle = dialogView.findViewById(R.id.tvTitle);
             TextView tvMessage = dialogView.findViewById(R.id.tvMessage);
             Button btnPositive = dialogView.findViewById(R.id.btnPositive);
-            Button btnNegative = dialogView.findViewById(R.id.btnNegative);
+            ImageButton btnClose = dialogView.findViewById(R.id.btnClose);
 
             tvTitle.setText(getString(R.string.verification_error_title));
             tvMessage.setText(String.format(getString(R.string.verification_error_message), errorMessage));
             btnPositive.setText(getString(R.string.retry_v));
-            btnNegative.setText(getString(R.string.exit_app));
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setView(dialogView)
@@ -3492,12 +3481,14 @@ public class MainActivity extends AppCompatActivity {
             AlertDialog errorDialog = builder.create();
             errorDialog.show();
 
+            // Кнопка "Повторить"
             btnPositive.setOnClickListener(v -> {
                 errorDialog.dismiss();
                 startFireBase();
             });
 
-            btnNegative.setOnClickListener(v -> {
+            // Красная кнопка с крестиком - закрывает приложение
+            btnClose.setOnClickListener(v -> {
                 errorDialog.dismiss();
                 finishAffinity();
                 System.exit(0);
@@ -3540,5 +3531,31 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+    /**
+     * Запрашивает разрешение на уведомления (только один раз после верификации)
+     */
+    private void requestNotificationPermissionOnce() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            boolean alreadyRequested = (boolean) sharedPreferencesHelperMain.getValue("notification_permission_requested", false);
 
+            if (!alreadyRequested) {
+                boolean hasPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                        == PackageManager.PERMISSION_GRANTED;
+
+                if (!hasPermission) {
+                    // Откладываем запрос на 1.5 секунды, чтобы UI успел стабилизироваться
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                        ActivityCompat.requestPermissions(this,
+                                new String[]{Manifest.permission.POST_NOTIFICATIONS}, 100);
+                        sharedPreferencesHelperMain.saveValue("notification_permission_requested", true);
+                        Logger.d(this, TAG, "Запрос разрешения на уведомления отправлен");
+                    }, 1500);
+                } else {
+                    // Разрешение уже есть, отмечаем как запрошенное
+                    sharedPreferencesHelperMain.saveValue("notification_permission_requested", true);
+                    Logger.d(this, TAG, "Разрешение на уведомления уже есть");
+                }
+            }
+        }
+    }
 }

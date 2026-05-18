@@ -916,4 +916,6 @@ Tap "Settings" to check.</string>
     <string name="crisp_error">Error opening support chat</string>
     <string name="support_subject">Taxi app support</string>
     <string name="support">Support</string>
+    <string name="start">Start</string>
+
 </resources>

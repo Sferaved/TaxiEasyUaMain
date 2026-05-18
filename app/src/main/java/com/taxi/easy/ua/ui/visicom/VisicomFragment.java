@@ -463,25 +463,6 @@ public class VisicomFragment extends Fragment {
             button1.setVisibility(View.VISIBLE);
         }
 
-        // Наблюдение за статусом GPS (X-кнопка)
-        viewModel.getStatusX().observe(getViewLifecycleOwner(), aBoolean -> {
-            Logger.d(context, TAG, "StatusXUpdate changed: " + aBoolean);
-
-            if (aBoolean != null && aBoolean) {
-                // true - показываем крестик
-                Logger.d(context, TAG, "Устанавливаем buttons_green_cross (крестик)");
-                gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_green_cross));
-                gpsBtn.setTextColor(Color.WHITE);
-            } else {
-                // false - убираем крестик, показываем обычную зеленую кнопку
-                Logger.d(context, TAG, "Убираем крестик, устанавливаем buttons_green");
-                gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_green));
-                gpsBtn.setTextColor(Color.WHITE);
-            }
-
-            // Принудительно перерисовываем кнопку
-            gpsBtn.invalidate();
-        });
 
         // Наблюдение за обновлением GPS
         viewModel.getStatusGpsUpdate().observe(getViewLifecycleOwner(), aBoolean -> {
@@ -525,33 +506,35 @@ public class VisicomFragment extends Fragment {
                 // При show=true ВСЕГДА показываем крестик
                 gpsBtn.setBackground(ContextCompat.getDrawable(getCurrentActivity(), R.drawable.buttons_green_cross));
                 gpsBtn.setTextColor(Color.WHITE);
+                Logger.d(null, TAG, "updateGpsButtonCross: показан КРЕСТИК (show=true)");
             } else {
-                // При show=false проверяем статус GPS и StatusX
+                // При show=false проверяем статус GPS и разрешения
                 Context context = MyApplication.getContext();
                 LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
 
-                // Получаем текущее значение StatusX из ViewModel или SharedPreferences
-                boolean statusX = (boolean) sharedPreferencesHelperMain.getValue("setStatusX", true);
+                boolean hasFineLocationPermission = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                boolean gpsEnabled = locationManager != null && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
 
-                if (statusX) {
-                    // Если StatusX = true - показываем крестик
-                    gpsBtn.setBackground(ContextCompat.getDrawable(getCurrentActivity(), R.drawable.buttons_green_cross));
+                Logger.d(null, TAG, "updateGpsButtonCross: show=false, gpsEnabled=" + gpsEnabled + ", hasPermission=" + hasFineLocationPermission);
+
+                if (gpsEnabled && hasFineLocationPermission) {
+                    // GPS включен И есть разрешение - зеленая кнопка
+                    gpsBtn.setBackground(ContextCompat.getDrawable(getCurrentActivity(), R.drawable.buttons_green));
                     gpsBtn.setTextColor(Color.WHITE);
-                } else if (locationManager != null && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                    // StatusX = false и GPS включен
-                    if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                        gpsBtn.setBackground(ContextCompat.getDrawable(context, R.drawable.buttons_green));
-                        gpsBtn.setTextColor(Color.WHITE);
-                    } else {
-                        gpsBtn.setBackground(ContextCompat.getDrawable(context, R.drawable.buttons_yellow));
-                        gpsBtn.setTextColor(Color.BLACK);
-                    }
+                    Logger.d(null, TAG, "updateGpsButtonCross: ЗЕЛЕНАЯ кнопка");
+                } else if (gpsEnabled && !hasFineLocationPermission) {
+                    // GPS включен, НЕТ разрешения - желтая кнопка
+                    gpsBtn.setBackground(ContextCompat.getDrawable(getCurrentActivity(), R.drawable.buttons_yellow));
+                    gpsBtn.setTextColor(Color.BLACK);
+                    Logger.d(null, TAG, "updateGpsButtonCross: ЖЕЛТАЯ кнопка");
                 } else {
-                    // GPS выключен
-                    gpsBtn.setBackground(ContextCompat.getDrawable(context, R.drawable.btn_red));
+                    // GPS выключен - красная кнопка
+                    gpsBtn.setBackground(ContextCompat.getDrawable(getCurrentActivity(), R.drawable.btn_red));
                     gpsBtn.setTextColor(Color.WHITE);
+                    Logger.d(null, TAG, "updateGpsButtonCross: КРАСНАЯ кнопка");
                 }
             }
+            gpsBtn.invalidate();
         }
     }
 
@@ -2618,29 +2601,28 @@ public class VisicomFragment extends Fragment {
 
         });
 
-        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                    || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_yellow));
+        // Получаем текущее состояние
+        boolean gpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        boolean hasPermission = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        boolean xStatus = (boolean) sharedPreferencesHelperMain.getValue("setStatusX", true);
 
-                gpsBtn.setTextColor(Color.BLACK);
-                viewModel.setStatusX(false);
+        if (gpsEnabled) {
+            if (hasPermission) {
+                // Есть разрешение - зеленая, если не в режиме X
+                // НЕ вызываем setStatusX здесь, так как это сделает observer
+                updateGpsButtonCross(xStatus);
             } else {
-                gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.buttons_green));
-                gpsBtn.setTextColor(Color.WHITE);
-
-                viewModel.setStatusX((boolean) sharedPreferencesHelperMain.getValue("setStatusX", true));
-                Boolean statusX = viewModel.getStatusX().getValue(); // Get the boolean value
-                Logger.e(context,"setStatusX 4", "setStatusXUpdate: " + (statusX != null ? statusX.toString() : "null"));
+                // Нет разрешения - желтая (show=false покажет желтую)
+                updateGpsButtonCross(false);
             }
         } else {
-            gpsBtn.setBackground(ContextCompat.getDrawable(requireContext(), R.drawable.btn_red));
-            gpsBtn.setTextColor(Color.WHITE);
-            viewModel.setStatusX(false);
+            // GPS выключен - красная (show=false покажет красную)
+            updateGpsButtonCross(false);
             viewModel.setStatusGpsUpdate(false);
         }
+// Обновляем ViewModel, но НЕ вызываем updateGpsButtonCross повторно
+        viewModel.setStatusX(xStatus);
 
-        updateGpsButtonCross(Boolean.TRUE.equals(viewModel.getStatusX().getValue()));
         if (NetworkUtils.isNetworkAvailable(context)) {
             if (geoText.getText().toString().isEmpty()) {
 
@@ -2669,7 +2651,11 @@ public class VisicomFragment extends Fragment {
 
         updateApp();
         boolean restartAfterFinderCity = (boolean) sharedPreferencesHelperMain.getValue("restartAfterFinderCity", false);
-        updateGpsButtonCross(restartAfterFinderCity);
+        if (restartAfterFinderCity) {
+            updateGpsButtonCross(true);
+            sharedPreferencesHelperMain.saveValue("restartAfterFinderCity", false);
+        }
+
     }
 
     private void gpsButSetOnClickListener(LocationManager locationManager) {
@@ -2728,12 +2714,8 @@ public class VisicomFragment extends Fragment {
         }
 
         // ✅ ЕДИНЫЙ ЦЕНТРАЛИЗОВАННЫЙ КОД ДЛЯ ОБНОВЛЕНИЯ ФОНА КНОПКИ
-//        boolean gpsEnabled = locationManager != null && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-//        boolean hasPermission = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-//        boolean xShow = !(gpsEnabled && hasPermission);
-//
-//        updateGpsButtonCross(xShow);
-//        viewModel.setStatusX(!xShow);
+        updateGpsButtonCross(Boolean.TRUE.equals(viewModel.getStatusX().getValue()));
+
     }
     private void checkPermission() {
 
@@ -2914,6 +2896,7 @@ public class VisicomFragment extends Fragment {
                                     } else if (cityChanged && !userConfirmed) {
                                         sharedPreferencesHelperMain.saveValue("setStatusX", true);
                                         viewModel.setStatusX(true);
+                                        updateGpsButtonCross(true);
                                         Logger.d(context, TAG, "📝 Расшифровка: Город ИЗМЕНИЛСЯ НО пользователь ОТКАЗАЛСЯ → НЕ обновляем позицию");
                                     }
 
@@ -2939,7 +2922,7 @@ public class VisicomFragment extends Fragment {
                                         Logger.d(context, TAG, "      ├─ Вызов visicomCost()");
                                         sharedPreferencesHelperMain.saveValue("setStatusX", false);
                                         viewModel.setStatusX(false);
-//                                        updateGpsButtonCross(false);
+                                        updateGpsButtonCross(false);
                                         long costStartTime = System.currentTimeMillis();
                                         try {
                                             visicomCost();

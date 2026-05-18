@@ -926,4 +926,6 @@
     <string name="crisp_error">Ошибка открытия чата поддержки</string>
     <string name="support_subject">Поддержка приложения Такси</string>
     <string name="support">Поддержка</string>
+    <string name="start">Старт</string>
+
 </resources>
