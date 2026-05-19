@@ -199,6 +199,12 @@ public class AccountFragment extends Fragment {
                     .build());
         });
 
+        // Must be before googleVerifyAccount(): consent callback can run synchronously and call visibility(), which uses btnRestartApp.
+        btnRestartApp = binding.btnRestartApp;
+        btnRestartApp.setOnClickListener(v -> {
+            restartApplication();
+        });
+
         googleVerifyAccount();
 
         MaskedTextChangedListener listener = new MaskedTextChangedListener(
@@ -214,11 +220,6 @@ public class AccountFragment extends Fragment {
             Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
             Logger.w(context, TAG, "NO INTERNET - Showing toast message");
         }
-
-        btnRestartApp = binding.btnRestartApp;
-        btnRestartApp.setOnClickListener(v -> {
-            restartApplication();
-        });
 
         return root;
     }
