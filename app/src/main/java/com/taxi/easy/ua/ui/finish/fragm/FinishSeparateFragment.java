@@ -200,7 +200,7 @@ public class FinishSeparateFragment extends Fragment {
     private String pendingAddCost = "0";
     private boolean isTaskScheduled = false; // Флаг для отслеживания
     private PassengerNotifier notifier;
-    private Handler checkHandler = new Handler();
+    private final Handler checkHandler = new Handler(Looper.getMainLooper());
     private Runnable checkRunnable;
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -535,17 +535,16 @@ public class FinishSeparateFragment extends Fragment {
         }
 
         notifier = new PassengerNotifier(context);
-
-        // Когда начинаете поиск машины:
         notifier.onSearchStarted();
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
-        String city = listCity.get(1);
-
-        Logger.d(context, "PassengerNotifier", "city " + city);
-        // Проверка через 1 секунду
-        checkHandler.postDelayed(() -> {
-            notifier.checkAndNotify(context, city);
-        }, 1000);
+        String city = listCity.size() > 1 ? listCity.get(1) : "Kyiv City";
+        Logger.d(context, TAG, "PassengerNotifier city: " + city);
+        checkRunnable = () -> {
+            if (isAdded() && notifier != null) {
+                notifier.checkAndNotify(requireContext(), city);
+            }
+        };
+        checkHandler.postDelayed(checkRunnable, 1000);
 
 
         return root;
@@ -703,6 +702,10 @@ public class FinishSeparateFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        if (checkRunnable != null) {
+            checkHandler.removeCallbacks(checkRunnable);
+        }
+        notifier = null;
         super.onDestroyView();
         EventBus.getDefault().unregister(this);
         if (timeUtils != null) {

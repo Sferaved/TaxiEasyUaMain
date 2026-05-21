@@ -18,37 +18,42 @@ import okhttp3.Response;
 
 public class CityInfoHelper {
     private static final String BASE_URL = "https://City-Info.utax.top/api/data/";
-    private static final String TOKEN = MainActivity.utaxKey;
 
-    private OkHttpClient client;
-    private Context context;
+    private final OkHttpClient client;
+    private final Context context;
 
     public CityInfoHelper(Context context) {
         this.context = context.getApplicationContext();
         client = new OkHttpClient.Builder()
                 .connectTimeout(3, TimeUnit.SECONDS)
                 .readTimeout(3, TimeUnit.SECONDS)
+                .cache(null)
                 .build();
     }
 
     public interface CityInfoCallback {
         void onSuccess(CityInfo info);
+
         void onError(String error);
     }
 
     public void getCityInfo(String city, CityInfoCallback callback) {
         new Thread(() -> {
-            // Получаем текущую локаль приложения
             String locale = getCurrentLocale();
+            String token = MainActivity.utaxKey;
+            String url = BASE_URL + city + "?lang=" + locale + "&_=" + System.currentTimeMillis();
 
             Request request = new Request.Builder()
-                    .url(BASE_URL + city + "?lang=" + locale)  // Добавляем параметр языка
-                    .addHeader("Authorization", "Bearer " + TOKEN)
-                    .addHeader("Accept-Language", locale)      // Добавляем заголовок языка
+                    .url(url)
+                    .addHeader("Authorization", "Bearer " + token)
+                    .addHeader("Accept-Language", locale)
+                    .addHeader("Cache-Control", "no-cache, no-store")
+                    .addHeader("Pragma", "no-cache")
+                    .get()
                     .build();
 
             try (Response response = client.newCall(request).execute()) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     String json = response.body().string();
                     CityInfo info = parseJson(json);
                     new Handler(Looper.getMainLooper()).post(() -> callback.onSuccess(info));
@@ -63,43 +68,44 @@ public class CityInfoHelper {
         }).start();
     }
 
-    /**
-     * Получает текущую локаль приложения
-     */
     private String getCurrentLocale() {
         if (context == null) {
-            return "en"; // Значение по умолчанию
+            return "en";
         }
 
         Configuration config = context.getResources().getConfiguration();
-        Locale locale = config.getLocales().get(0);
+        Locale locale;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+            locale = config.getLocales().get(0);
+        } else {
+            locale = config.locale;
+        }
         String language = locale.getLanguage();
-
-        // Поддерживаемые языки
         switch (language) {
             case "uk":
                 return "uk";
             case "ru":
                 return "ru";
-            case "en":
             default:
                 return "en";
         }
     }
 
-    /**
-     * Альтернативный метод с явной передачей локали
-     */
     public void getCityInfo(String city, String locale, CityInfoCallback callback) {
         new Thread(() -> {
+            String token = MainActivity.utaxKey;
+            String url = BASE_URL + city + "?lang=" + locale + "&_=" + System.currentTimeMillis();
             Request request = new Request.Builder()
-                    .url(BASE_URL + city + "?lang=" + locale)
-                    .addHeader("Authorization", "Bearer " + TOKEN)
+                    .url(url)
+                    .addHeader("Authorization", "Bearer " + token)
                     .addHeader("Accept-Language", locale)
+                    .addHeader("Cache-Control", "no-cache, no-store")
+                    .addHeader("Pragma", "no-cache")
+                    .get()
                     .build();
 
             try (Response response = client.newCall(request).execute()) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     String json = response.body().string();
                     CityInfo info = parseJson(json);
                     new Handler(Looper.getMainLooper()).post(() -> callback.onSuccess(info));

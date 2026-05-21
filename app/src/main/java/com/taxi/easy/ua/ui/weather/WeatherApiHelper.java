@@ -281,10 +281,10 @@ public class WeatherApiHelper {
         // Преобразуем код локали в формат OpenWeather
         String lang = getOpenWeatherLang(localeCode);
 
-        // Формируем URL с параметром lang
+        // Свежий запрос: cache-bust, без записи в SharedPreferences, без дискового кеша Volley
         String url = String.format(Locale.US,
-                "https://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric&lang=%s",
-                city, apiKey, lang);
+                "https://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric&lang=%s&_=%d",
+                city, apiKey, lang, System.currentTimeMillis());
 
         Logger.d(context, TAG, "fetchWeatherAsyncWithLocale: запрос к OpenWeather с локалью " + lang);
         Logger.d(context, TAG, "fetchWeatherAsyncWithLocale: URL=" + url);
@@ -320,6 +320,7 @@ public class WeatherApiHelper {
                         callback.onFailure(errorMsg);
                     }
                 });
+        request.setShouldCache(false);
 
         queue.add(request);
     }
