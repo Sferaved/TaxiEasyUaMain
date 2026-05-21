@@ -1434,6 +1434,7 @@ public class VisicomSearchFragment extends Fragment {
         }
         Logger.d(context, TAG, "processAddressData: 44444444");
         if (!addresses.isEmpty()) {
+            final List<double[]> coordinatesSnapshot = new ArrayList<>(coordinatesList);
 
             new Handler(Looper.getMainLooper()).post(() -> {
                 addressesList = new ArrayList<>();
@@ -1519,6 +1520,13 @@ public class VisicomSearchFragment extends Fragment {
                 addressListView.setOnItemClickListener((parent, viewC, position, id) -> {
                     Logger.d(context, TAG, "processAddressData:position3333 " + position);
 
+                    if (position < 0 || position >= coordinatesSnapshot.size()
+                            || addressesList == null || position >= addressesList.size()) {
+                        Logger.w(context, TAG, "processAddressData: invalid position " + position
+                                + " coords=" + coordinatesSnapshot.size()
+                                + " addresses=" + (addressesList != null ? addressesList.size() : 0));
+                        return;
+                    }
 
                     positionChecked = position;
                     startMarker = "ok";
@@ -1540,7 +1548,7 @@ public class VisicomSearchFragment extends Fragment {
                     }
 
 
-                        double[] coordinates = coordinatesList.get(position);
+                        double[] coordinates = coordinatesSnapshot.get(position);
 
                         if (point.equals("start")) {
                             Logger.d(context, TAG, "processAddressData:coordinates " + Arrays.toString(coordinates));
@@ -1833,7 +1841,12 @@ public class VisicomSearchFragment extends Fragment {
 
         addressListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         addressListView.setItemChecked(0, true);
+        final List<double[]> oldAddressesCoordinatesSnapshot = new ArrayList<>(coordinatesList);
         addressListView.setOnItemClickListener((parent, viewC, position, id) -> {
+            if (position < 0 || position >= oldAddressesCoordinatesSnapshot.size()
+                    || addressesList == null || position >= addressesList.size()) {
+                return;
+            }
             positionChecked = position;
             startMarker = "ok";
             finishMarker = "no";
@@ -1854,7 +1867,7 @@ public class VisicomSearchFragment extends Fragment {
             }
 
 
-                double[] coordinates = coordinatesList.get(position);
+                double[] coordinates = oldAddressesCoordinatesSnapshot.get(position);
 
                 if (point.equals("start")) {
                     startPoint = addressesList.get(position);
@@ -2060,6 +2073,7 @@ public class VisicomSearchFragment extends Fragment {
 //            addresses.add(new String[]{newAddress, "", "", ""});
 //        }
 
+        final List<double[]> mapboxCoordinatesSnapshot = new ArrayList<>(coordinatesList);
         new Handler(Looper.getMainLooper()).post(() -> {
             addressesList = new ArrayList<>();
             List<String> nameList = new ArrayList<>();
@@ -2085,6 +2099,10 @@ public class VisicomSearchFragment extends Fragment {
             addressListView.setItemChecked(0, true);
 
             addressListView.setOnItemClickListener((parent, viewC, position, id) -> {
+                if (position < 0 || position >= mapboxCoordinatesSnapshot.size()
+                        || addressesList == null || position >= addressesList.size()) {
+                    return;
+                }
 
                 positionChecked = position;
                 startMarker = "ok";
@@ -2105,7 +2123,7 @@ public class VisicomSearchFragment extends Fragment {
                 }
 
 
-                    double[] coordinates = coordinatesList.get(position);
+                    double[] coordinates = mapboxCoordinatesSnapshot.get(position);
 
                     if (point.equals("start")) {
                         startPoint = addressesList.get(position);

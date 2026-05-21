@@ -294,8 +294,19 @@ public class FirestoreHelper {
                     if (documentSnapshot != null && documentSnapshot.exists()) {
                         Boolean respons = documentSnapshot.getBoolean("respons");
                         if (respons != null && !respons) {
+                            if (MyApplication.sharedPreferencesHelperMain != null
+                                    && "**".equals(MyApplication.sharedPreferencesHelperMain
+                                    .getValue("CityCheckActivity", "**"))) {
+                                Log.d("FirestoreHelper", "Skip nav_anr during first setup");
+                                return;
+                            }
                             new Handler(Looper.getMainLooper()).post(() -> {
-                                NavController navController = Navigation.findNavController(MyApplication.getCurrentActivity(), R.id.nav_host_fragment_content_main);
+                                Activity activity = MyApplication.getCurrentActivity();
+                                if (activity == null) {
+                                    return;
+                                }
+                                NavController navController = Navigation.findNavController(
+                                        activity, R.id.nav_host_fragment_content_main);
                                 navController.navigate(R.id.nav_anr, null, new NavOptions.Builder()
                                         .build());
 //                                Intent intent = new Intent(context, AnrActivity.class);

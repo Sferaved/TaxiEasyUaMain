@@ -15,6 +15,7 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -27,6 +28,7 @@ import androidx.work.WorkManager;
 import com.github.anrwatchdog.ANRWatchDog;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import com.taxi.easy.ua.BuildConfig;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.exit.AnrActivity;
@@ -67,15 +69,20 @@ public class MyApplication extends MultiDexApplication {
     private int activityReferences = 0;
     private boolean isActivityChangingConfigurations = false;
 
-    FirestoreHelper firestoreHelper;
+    volatile FirestoreHelper firestoreHelper;
 
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
     private Handler mainHandler = new Handler(Looper.getMainLooper());
     private static String cachedKey = null;
+    private long applicationStartElapsedMs;
+    private static final long ANR_ACTIVITY_LAUNCH_GRACE_MS = 45_000;
+    private static final long ANR_WATCHDOG_START_DELAY_MS = 45_000;
+    private static final int ANR_WATCHDOG_TIMEOUT_MS = 12_000;
     @Override
     public void onCreate() {
         super.onCreate();
         instance = this;
+        applicationStartElapsedMs = SystemClock.elapsedRealtime();
 
         Locale currentLocale = getResources().getConfiguration().getLocales().get(0);
         Log.d("LocaleDebug", "Current locale: " + currentLocale);
@@ -84,9 +91,6 @@ public class MyApplication extends MultiDexApplication {
             initializeFirebaseAndCrashlytics();
             setDefaultOrientation();
             sharedPreferencesHelperMain = new SharedPreferencesHelper(this);
-
-            firestoreHelper = new FirestoreHelper(this);
-            firestoreHelper.listenForResponseChanges();
 
             registerActivityLifecycleCallbacks(); // теперь запускаем/останавливаем WorkManager
             setupCrashHandler();
@@ -110,6 +114,10 @@ public class MyApplication extends MultiDexApplication {
     private void initializeAsync() {
         executorService.execute(() -> {
             try {
+                FirestoreHelper helper = new FirestoreHelper(this);
+                helper.listenForResponseChanges();
+                firestoreHelper = helper;
+
                 fetchUXCamKey(1);
                 weatherKeyFromFb();
                 visicomKeyFromFb();
@@ -185,7 +193,9 @@ public class MyApplication extends MultiDexApplication {
 
             @Override
             public void onActivityDestroyed(@NonNull Activity activity) {
-                firestoreHelper.stopListening();
+                if (firestoreHelper != null) {
+                    firestoreHelper.stopListening();
+                }
                 if (currentActivity == activity) {
                     currentActivity = null;
                 }
@@ -255,6 +265,12 @@ public class MyApplication extends MultiDexApplication {
 
 
     private void setupANRWatchDog() {
+        // В release даёт много ложных ANR (main state = NEW + AppUpdateService).
+        // Реальные зависания UI отслеживает Play Console / системный ANR.
+        if (!BuildConfig.DEBUG) {
+            return;
+        }
+
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         String savedVersion = prefs.getString("app_version", "");
         String currentVersion;
@@ -269,26 +285,44 @@ public class MyApplication extends MultiDexApplication {
         if (!currentVersion.equals(savedVersion)) {
             prefs.edit().putString("app_version", currentVersion).apply();
         } else {
-            startANRWatchDog(this);
+            mainHandler.postDelayed(() -> startANRWatchDog(this), ANR_WATCHDOG_START_DELAY_MS);
         }
     }
 
+    private boolean isLikelyAnrWatchDogFalsePositive(Throwable error) {
+        String stack = Log.getStackTraceString(error);
+        return stack.contains("main (state = NEW)")
+                || stack.contains("main (state = TERMINATED)");
+    }
+
     private void startANRWatchDog(Context context) {
-        new ANRWatchDog(8000)
+        new ANRWatchDog(ANR_WATCHDOG_TIMEOUT_MS)
                 .setANRListener(error -> {
+                    if (isLikelyAnrWatchDogFalsePositive(error)) {
+                        Logger.w(context, TAG, "Ignoring ANRWatchDog false-positive (main thread stack unavailable)");
+                        return;
+                    }
+
+                    long sinceAppStart = SystemClock.elapsedRealtime() - applicationStartElapsedMs;
+                    if (sinceAppStart < ANR_ACTIVITY_LAUNCH_GRACE_MS) {
+                        Logger.w(context, TAG, "ANR during cold start — ignored");
+                        return;
+                    }
+
                     Logger.e(context, TAG, "ANR occurred: " + error);
                     FirebaseCrashlytics.getInstance().recordException(error);
 
+                    if (getCurrentActivity() == null) {
+                        return;
+                    }
+
                     try {
-                        // Запуск AnrActivity напрямую
                         Intent intent = new Intent(context.getApplicationContext(), AnrActivity.class);
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         context.getApplicationContext().startActivity(intent);
                     } catch (Exception e) {
                         Logger.e(context, TAG, "Failed to start AnrActivity: " + e.getMessage());
                         FirebaseCrashlytics.getInstance().recordException(e);
-
-                        // Если не удалось запустить активность, показываем уведомление
                         showNotification(context);
                     }
                 })
@@ -319,6 +353,9 @@ public class MyApplication extends MultiDexApplication {
 
     // ---------- FIRESTORE ЗАПРОСЫ ----------
     private void visicomKeyFromFb() {
+        if (firestoreHelper == null) {
+            return;
+        }
         firestoreHelper.getVisicomKey(new FirestoreHelper.OnVisicomKeyFetchedListener() {
             @Override
             public void onSuccess(String vKey) {

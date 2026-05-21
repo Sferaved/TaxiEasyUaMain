@@ -2648,8 +2648,12 @@ public class VisicomFragment extends Fragment {
         scheduleUpdate();
         addCheck(context);
 
-
-        updateApp();
+        View rootView = getView();
+        if (rootView != null) {
+            rootView.postDelayed(this::updateApp, 8_000);
+        } else {
+            new Handler(Looper.getMainLooper()).postDelayed(this::updateApp, 8_000);
+        }
         boolean restartAfterFinderCity = (boolean) sharedPreferencesHelperMain.getValue("restartAfterFinderCity", false);
         if (restartAfterFinderCity) {
             updateGpsButtonCross(true);
