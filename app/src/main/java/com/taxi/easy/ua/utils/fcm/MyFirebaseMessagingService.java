@@ -1,6 +1,8 @@
 package com.taxi.easy.ua.utils.fcm;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -8,6 +10,7 @@ import androidx.annotation.NonNull;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -82,7 +85,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         // Специальная обработка пуша с стоимостью заказа
         if (data.containsKey("order_cost")) {
             handleOrderCostMessage(data);
-            // Можно продолжить обработку других полей, если нужно
+            return;
+        }
+
+        // Автоотмена заказа (sendNotificationCancel с бэкенда)
+        if (isCancelMessage(data)) {
+            handleCancelMessage(data);
+            return;
         }
 
         // Обычное уведомление "Найдено авто"
@@ -106,6 +115,57 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         Logger.d(this, TAG, "uid: " + uid);
 
         notifyUser(message, uid);
+    }
+
+    private boolean isCancelMessage(Map<String, String> data) {
+        String status = data.get("status");
+        if (status != null && (status.equalsIgnoreCase("cancelled") || status.equalsIgnoreCase("canceled"))) {
+            return true;
+        }
+        String messageUk = data.get("message_uk");
+        if (messageUk != null) {
+            String lower = messageUk.toLowerCase(Locale.ROOT);
+            return lower.contains("скасован") || lower.contains("отмен");
+        }
+        return false;
+    }
+
+    private void handleCancelMessage(Map<String, String> data) {
+        String locale = LocaleHelper.getLocale();
+        String message = data.get("message_" + locale);
+        if (message == null || message.isEmpty()) {
+            message = data.get("message_uk");
+        }
+        if (message == null || message.isEmpty()) {
+            message = getString(R.string.ex_st_canceled);
+        }
+
+        String uid = data.get("uid");
+        Logger.d(this, TAG, "Отмена заказа FCM: " + message + ", uid=" + uid);
+
+        notifyCancel(message, uid);
+        applyCanceledStatusToActiveOrder(uid);
+    }
+
+    private void applyCanceledStatusToActiveOrder(String uid) {
+        if (uid == null || uid.isEmpty()) {
+            return;
+        }
+        new Handler(Looper.getMainLooper()).post(() -> {
+            if (MainActivity.uid != null && MainActivity.uid.equals(uid) && MainActivity.viewModel != null) {
+                MainActivity.viewModel.setCanceledStatus("canceled");
+                Logger.d(this, TAG, "setCanceledStatus(canceled) для uid=" + uid);
+            } else {
+                Logger.d(this, TAG, "Отмена FCM: uid не совпадает с активным заказом (active=" + MainActivity.uid + ")");
+            }
+        });
+    }
+
+    private void notifyCancel(String message, String uid) {
+        Context context = getApplicationContext();
+        String localeCode = LocaleHelper.getLocale();
+        Context localizedContext = getLocalizedContext(context, localeCode);
+        NotificationHelper.showNotificationCancelMessage(localizedContext, message, uid);
     }
 
     // ============================================================

@@ -169,6 +169,50 @@ public class NotificationHelper {
     }
 
     /**
+     * Уведомление об отмене заказа (FCM status=cancelled).
+     */
+    public static void showNotificationCancelMessage(Context context, String message, String uid) {
+        Logger.d(context, TAG, "showNotificationCancelMessage: " + message + ", uid=" + uid);
+
+        int notificationId = generateUniqueNotificationId();
+
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        intent.putExtra("notification_id", notificationId);
+        intent.putExtra("fcm_action", "order_cancelled");
+        if (uid != null) {
+            intent.putExtra("order_uid", uid);
+        }
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context,
+                notificationId,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        String title = context.getString(R.string.status_cancelled);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setContentIntent(pendingIntent)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
+
+        if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            Logger.d(context, TAG, "POST_NOTIFICATIONS не предоставлено — уведомление об отмене не показано");
+            return;
+        }
+
+        notificationManager.notify(notificationId, builder.build());
+    }
+
+    /**
      * Удаляет уведомление, если в Intent передан notification_id.
      */
     public static void cancelNotificationFromIntent(Context context, Intent intent) {
