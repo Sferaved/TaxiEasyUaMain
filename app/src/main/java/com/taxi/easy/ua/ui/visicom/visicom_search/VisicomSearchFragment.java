@@ -76,6 +76,7 @@ import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
+import com.taxi.easy.ua.utils.ui.ListScrollPaginationHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -133,7 +134,8 @@ public class VisicomSearchFragment extends Fragment {
     LocationManager locationManager;
 
     private boolean location_update;
-    private ImageButton scrollButtonDown, scrollButtonUp;
+    private View scrollButtonDown, scrollButtonUp;
+    private ListScrollPaginationHelper addressScrollPagination;
     private final int desiredHeight = 630;
     private final int max_length_string_size = 4;
     List<String> addressesList;
@@ -183,26 +185,15 @@ public class VisicomSearchFragment extends Fragment {
 
     }
     private void updateScrollButtonsVisibility() {
-        if (addressListView != null && addressAdapter != null) {
-            addressListView.post(() -> {
-                int totalHeight = 0;
-                int desiredWidth = View.MeasureSpec.makeMeasureSpec(addressListView.getWidth(), View.MeasureSpec.AT_MOST);
+        if (addressScrollPagination != null) {
+            addressListView.post(addressScrollPagination::update);
+        }
+    }
 
-                for (int i = 0; i < addressAdapter.getCount(); i++) {
-                    View listItem = addressAdapter.getView(i, null, addressListView);
-                    listItem.measure(desiredWidth, View.MeasureSpec.UNSPECIFIED);
-                    totalHeight += listItem.getMeasuredHeight();
-                }
-
-                int listViewHeight = addressListView.getHeight();
-                LinearLayout scrollContainer = root.findViewById(R.id.scroll_buttons_container);
-
-                if (totalHeight > listViewHeight && listViewHeight > 0) {
-                    scrollContainer.setVisibility(View.VISIBLE);
-                } else {
-                    scrollContainer.setVisibility(View.GONE);
-                }
-            });
+    private void hideAddressScrollControls() {
+        View scrollContainer = root.findViewById(R.id.scroll_buttons_container);
+        if (scrollContainer != null) {
+            scrollContainer.setVisibility(View.GONE);
         }
     }
     private void scrollSetVisibility() {
@@ -541,10 +532,18 @@ public class VisicomSearchFragment extends Fragment {
         addressesList = new ArrayList<>();
         addressAdapter = new ArrayAdapter<>(context, R.layout.custom_list_item, addressesList);
         addressListView.setAdapter(addressAdapter);
-        updateScrollButtonsVisibility();
         scrollButtonUp = root.findViewById(R.id.scrollButtonUp);
         scrollButtonDown = root.findViewById(R.id.scrollButtonDown);
-
+        TextView tvScrollPosition = root.findViewById(R.id.tvScrollPosition);
+        View scrollContainer = root.findViewById(R.id.scroll_buttons_container);
+        addressScrollPagination = new ListScrollPaginationHelper(
+                addressListView,
+                tvScrollPosition,
+                scrollButtonUp,
+                scrollButtonDown,
+                scrollContainer);
+        addressScrollPagination.bind();
+        updateScrollButtonsVisibility();
         scrollSetVisibility();
 
 
@@ -653,12 +652,20 @@ public class VisicomSearchFragment extends Fragment {
 
         scrollButtonDown.setOnClickListener(v -> {
             int nextVisiblePosition = addressListView.getLastVisiblePosition() + 1;
-            addressListView.smoothScrollToPosition(nextVisiblePosition);
+            if (addressAdapter != null && nextVisiblePosition < addressAdapter.getCount()) {
+                addressListView.smoothScrollToPosition(nextVisiblePosition);
+            }
+            addressListView.postDelayed(() -> addressScrollPagination.update(), 150);
         });
 
         scrollButtonUp.setOnClickListener(v -> {
-            int offset = -1; // или другое значение, чтобы указать направление прокрутки
-            addressListView.smoothScrollByOffset(offset);
+            int prev = addressListView.getFirstVisiblePosition() - 1;
+            if (prev >= 0) {
+                addressListView.smoothScrollToPosition(prev);
+            } else {
+                addressListView.smoothScrollByOffset(-1);
+            }
+            addressListView.postDelayed(() -> addressScrollPagination.update(), 150);
         });
 
         layoutParams = addressListView.getLayoutParams();
@@ -1456,8 +1463,7 @@ public class VisicomSearchFragment extends Fragment {
 
 
                 if(addressesList.size() == 1) {
-                    scrollButtonDown.setVisibility(View.GONE);
-                    scrollButtonUp.setVisibility(View.GONE);
+                    hideAddressScrollControls();
                     if (start.equals("ok")) {
                         String textEdit = fromEditAddress.getText().toString();
                         Logger.d(context, TAG, "textEdit" + textEdit);
@@ -1467,15 +1473,13 @@ public class VisicomSearchFragment extends Fragment {
                                 textGeoError.setText(R.string.no_house_vis_mes);
                                 layoutParams.height = desiredHeight/3;
                                 addressListView.setLayoutParams(layoutParams);
-                                scrollButtonDown.setVisibility(View.GONE);
-                                scrollButtonUp.setVisibility(View.GONE);
+                                hideAddressScrollControls();
 
                                 btnCallAdmin.setVisibility(View.VISIBLE);
                             } else {
                                 textGeoError.setVisibility(View.VISIBLE);
                                 textGeoError.setText(R.string.no_adrees_mes);
-                                scrollButtonDown.setVisibility(View.GONE);
-                                scrollButtonUp.setVisibility(View.GONE);
+                                hideAddressScrollControls();
                                 layoutParams.height = desiredHeight/3;
                                 addressListView.setLayoutParams(layoutParams);
                                 btnCallAdmin.setVisibility(View.VISIBLE);
@@ -1491,14 +1495,12 @@ public class VisicomSearchFragment extends Fragment {
                                 text_toError.setText(R.string.no_house_vis_mes);
                                 layoutParams.height = desiredHeight/3;
                                 addressListView.setLayoutParams(layoutParams);
-                                scrollButtonDown.setVisibility(View.GONE);
-                                scrollButtonUp.setVisibility(View.GONE);
+                                hideAddressScrollControls();
 
                                 btnCallAdmin.setVisibility(View.VISIBLE);
                             } else {
 
-                                scrollButtonDown.setVisibility(View.GONE);
-                                scrollButtonUp.setVisibility(View.GONE);
+                                hideAddressScrollControls();
                                 text_toError.setVisibility(View.VISIBLE);
                                 text_toError.setText(R.string.no_adrees_mes);
                                 layoutParams.height = desiredHeight/3;
@@ -1606,8 +1608,7 @@ public class VisicomSearchFragment extends Fragment {
                             } else {
                                 textGeoError.setVisibility(View.VISIBLE);
                                 textGeoError.setText(R.string.house_vis_mes);
-                                scrollButtonDown.setVisibility(View.GONE);
-                                scrollButtonUp.setVisibility(View.GONE);
+                                hideAddressScrollControls();
                             }
 
                         }
@@ -1664,8 +1665,7 @@ public class VisicomSearchFragment extends Fragment {
                             } else {
                                 text_toError.setVisibility(View.VISIBLE);
                                 text_toError.setText(R.string.house_vis_mes);
-                                scrollButtonDown.setVisibility(View.GONE);
-                                scrollButtonUp.setVisibility(View.GONE);
+                                hideAddressScrollControls();
                             }
 
                         }

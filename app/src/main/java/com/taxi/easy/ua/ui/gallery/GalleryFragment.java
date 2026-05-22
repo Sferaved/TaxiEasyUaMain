@@ -43,6 +43,7 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetDialogFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGalleryFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.ui.ListScrollPaginationHelper;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
@@ -88,7 +89,8 @@ public class GalleryFragment extends Fragment {
     private ArrayAdapter<String> listAdapter;
     private String urlOrder;
     private long discount;
-    private ImageButton scrollButtonDown, scrollButtonUp;
+    private View scrollButtonDown, scrollButtonUp;
+    private ListScrollPaginationHelper scrollPagination;
     private AlertDialog alertDialog;
     FragmentManager fragmentManager;
 
@@ -118,8 +120,8 @@ public class GalleryFragment extends Fragment {
         }
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
-        scrollButtonUp = binding.scrollButtonUp;
-        scrollButtonDown = binding.scrollButtonDown;
+        scrollButtonUp = binding.layout.scrollButtonUp;
+        scrollButtonDown = binding.layout.scrollButtonDown;
 
         addCost = 0;
         updateAddCost(String.valueOf(addCost));
@@ -130,6 +132,13 @@ public class GalleryFragment extends Fragment {
         textView.setText(R.string.my_routs);
 
         listView = binding.listView;
+        scrollPagination = new ListScrollPaginationHelper(
+                listView,
+                binding.layout.tvScrollPosition,
+                scrollButtonUp,
+                scrollButtonDown,
+                binding.layout.getRoot());
+        scrollPagination.bind();
 
         btnCallAdmin = binding.btnCallAdmin;
         btnCallAdmin.setOnClickListener(v -> {
@@ -195,26 +204,22 @@ public class GalleryFragment extends Fragment {
         array = arrayToRoutsAdapter ();
 
         if(array != null) {
-            scrollButtonDown.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    // Определяем следующую позицию для прокрутки
-                    int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
-
-                    // Проверяем, чтобы не прокручивать за пределы списка
-                    if (nextVisiblePosition < array.length) {
-                        // Плавно прокручиваем к следующей позиции
-                        listView.smoothScrollToPosition(nextVisiblePosition);
-                    }
+            scrollButtonDown.setOnClickListener(v -> {
+                int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
+                if (nextVisiblePosition < array.length) {
+                    listView.smoothScrollToPosition(nextVisiblePosition);
                 }
+                listView.postDelayed(() -> scrollPagination.update(), 150);
             });
 
-            scrollButtonUp.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    int offset = -1; // или другое значение, чтобы указать направление прокрутки
-                    listView.smoothScrollByOffset(offset);
+            scrollButtonUp.setOnClickListener(v -> {
+                int prev = listView.getFirstVisiblePosition() - 1;
+                if (prev >= 0) {
+                    listView.smoothScrollToPosition(prev);
+                } else {
+                    listView.smoothScrollByOffset(-1);
                 }
+                listView.postDelayed(() -> scrollPagination.update(), 150);
             });
 
             listAdapter = new ArrayAdapter<>(context, R.layout.services_adapter_layout, array);
@@ -223,55 +228,17 @@ public class GalleryFragment extends Fragment {
 
             registerForContextMenu(listView);
 
-
-            listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    root.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-
-                    // Теперь мы можем получить высоту фрагмента
-                    desiredHeight = root.getHeight() - 100;
-                    ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
-                    layoutParams.height = desiredHeight;
-                    listView.setLayoutParams(layoutParams);
-
-                    int totalItemHeight = 0;
-                    for (int i = 0; i < listView.getChildCount(); i++) {
-                        totalItemHeight += listView.getChildAt(i).getHeight();
-                    }
-
-                    if (totalItemHeight > desiredHeight) {
-                        scrollButtonUp.setVisibility(View.VISIBLE);
-                        scrollButtonDown.setVisibility(View.VISIBLE);
-                    } else {
-                        scrollButtonUp.setVisibility(View.GONE);
-                        scrollButtonDown.setVisibility(View.GONE);
-                    }
-
-                    // Убираем слушатель, чтобы он не срабатывал многократно
-//                    listView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                }
-            });
+            listView.post(() -> scrollPagination.update());
 
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     progressbar.setVisibility(View.VISIBLE);
-                    desiredHeight = 500; // Ваше желаемое значение высоты в пикселях
+                    desiredHeight = 500;
                     ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
                     layoutParams.height = desiredHeight;
-                    int totalItemHeight = 0;
-                    for (int i = 0; i < listView.getChildCount(); i++) {
-                        totalItemHeight += listView.getChildAt(i).getHeight();
-                    }
-
-                    if (totalItemHeight > desiredHeight) {
-                        scrollButtonUp.setVisibility(View.VISIBLE);
-                        scrollButtonDown.setVisibility(View.VISIBLE);
-                    } else {
-                        scrollButtonUp.setVisibility(View.GONE);
-                        scrollButtonDown.setVisibility(View.GONE);
-                    }
+                    listView.setLayoutParams(layoutParams);
+                    listView.post(() -> scrollPagination.update());
 
                     selectedItem = position + 1;
                     Logger.d(getActivity(), TAG, "onItemClick: selectedItem " + selectedItem);

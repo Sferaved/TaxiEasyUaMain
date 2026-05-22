@@ -44,6 +44,7 @@ import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
+import com.taxi.easy.ua.utils.ui.ListScrollPaginationHelper;
 import com.uxcam.UXCam;
 
 import java.io.File;
@@ -72,8 +73,9 @@ public class HistoryFragment extends Fragment {
     private List<RouteResponse> routeList;
 
     AppCompatButton upd_but;
-    private ImageButton scrollButtonDown, scrollButtonUp;
+    private View scrollButtonDown, scrollButtonUp;
     private TextView textUid;
+    private ListScrollPaginationHelper scrollPagination;
 
     private int desiredHeight;
     Context context;
@@ -123,34 +125,18 @@ public class HistoryFragment extends Fragment {
             }
 
         });
-        scrollButtonUp = binding.scrollButtonUp;
-        scrollButtonDown = binding.scrollButtonDown;
-
+        scrollButtonUp = binding.scrollControls.scrollButtonUp;
+        scrollButtonDown = binding.scrollControls.scrollButtonDown;
+        scrollPagination = new ListScrollPaginationHelper(
+                listView,
+                binding.scrollControls.tvScrollPosition,
+                scrollButtonUp,
+                scrollButtonDown);
+        scrollPagination.bind();
+        setupListScrollButtons();
 
         progressBar.setVisibility(View.VISIBLE);
-        scrollButtonDown.setVisibility(View.GONE);
-        scrollButtonUp.setVisibility(View.GONE);
-        scrollButtonDown.setOnClickListener(v -> {
-            // Определяем следующую позицию для прокрутки
-            int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
-
-            // Проверяем, чтобы не прокручивать за пределы списка
-            if (nextVisiblePosition < array.length) {
-                // Плавно прокручиваем к следующей позиции
-                listView.smoothScrollToPosition(nextVisiblePosition);
-            }
-        });
-
-        scrollButtonUp.setOnClickListener(v -> {
-            // Определяем следующую позицию для прокрутки
-            int nextVisiblePosition = listView.getFirstVisiblePosition() - 1;
-
-            // Проверяем, чтобы не прокручивать за пределы списка
-            if (nextVisiblePosition >= 0) {
-                // Плавно прокручиваем к предыдущей позиции
-                listView.smoothScrollToPosition(nextVisiblePosition);
-            }
-        });
+        scrollPagination.update();
 
         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
             Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
@@ -479,67 +465,7 @@ public class HistoryFragment extends Fragment {
                     R.id.text5,  // ID TextView в вашем макете
                     itemList  // Список строк
             );
-            listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    root.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                    // Теперь мы можем получить высоту фрагмента
-                    desiredHeight = root.getHeight()/2;
-                    ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
-                    layoutParams.height = desiredHeight;
-                    listView.setLayoutParams(layoutParams);
-
-                    int totalItemHeight = 0;
-                    for (int i = 0; i < listView.getChildCount(); i++) {
-                        totalItemHeight += listView.getChildAt(i).getHeight();
-                    }
-                    Log.d(TAG, "totalItemHeight: " + totalItemHeight);
-                    Log.d(TAG, "desiredHeight: " + desiredHeight);
-                    if (totalItemHeight > desiredHeight) {
-                        scrollButtonUp.setVisibility(View.VISIBLE);
-                        scrollButtonDown.setVisibility(View.VISIBLE);
-                    } else {
-                        scrollButtonUp.setVisibility(View.GONE);
-                        scrollButtonDown.setVisibility(View.GONE);
-                    }
-                }
-            });
-
-
-
-            listView.setVisibility(View.VISIBLE);
-            progressBar.setVisibility(View.GONE);
-            upd_but.setVisibility(View.VISIBLE);
-
-            listView.setAdapter(adapter);
-
-
-            ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
-            layoutParams.height = desiredHeight;
-            listView.setLayoutParams(layoutParams);
-//            registerForContextMenu(listView);
-
-            scrollButtonDown.setOnClickListener(v -> {
-                // Определяем следующую позицию для прокрутки
-                int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
-
-                // Проверяем, чтобы не прокручивать за пределы списка
-                if (nextVisiblePosition < array.length) {
-                    // Плавно прокручиваем к следующей позиции
-                    listView.smoothScrollToPosition(nextVisiblePosition);
-                }
-            });
-
-            scrollButtonUp.setOnClickListener(v -> {
-                // Определяем следующую позицию для прокрутки
-                int nextVisiblePosition = listView.getFirstVisiblePosition() - 1;
-
-                // Проверяем, чтобы не прокручивать за пределы списка
-                if (nextVisiblePosition >= 0) {
-                    // Плавно прокручиваем к предыдущей позиции
-                    listView.smoothScrollToPosition(nextVisiblePosition);
-                }
-            });
+            bindUidRouteAdapter(adapter);
         }
     }
 
@@ -561,68 +487,36 @@ public class HistoryFragment extends Fragment {
                     itemList //// Список строк
 
             );
-            listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    root.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                    // Теперь мы можем получить высоту фрагмента
-                    desiredHeight = root.getHeight()/2;
-                    ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
-                    layoutParams.height = desiredHeight;
-                    listView.setLayoutParams(layoutParams);
-
-                    int totalItemHeight = 0;
-                    for (int i = 0; i < listView.getChildCount(); i++) {
-                        totalItemHeight += listView.getChildAt(i).getHeight();
-                    }
-                    Log.d(TAG, "totalItemHeight: " + totalItemHeight);
-                    Log.d(TAG, "desiredHeight: " + desiredHeight);
-                    if (totalItemHeight > desiredHeight) {
-                        scrollButtonUp.setVisibility(View.VISIBLE);
-                        scrollButtonDown.setVisibility(View.VISIBLE);
-                    } else {
-                        scrollButtonUp.setVisibility(View.GONE);
-                        scrollButtonDown.setVisibility(View.GONE);
-                    }
-                }
-            });
-
-
-
-            listView.setVisibility(View.VISIBLE);
-            progressBar.setVisibility(View.GONE);
-            upd_but.setVisibility(View.VISIBLE);
-
-            listView.setAdapter(adapter);
-
-
-            ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
-            layoutParams.height = desiredHeight;
-            listView.setLayoutParams(layoutParams);
-//            registerForContextMenu(listView);
-
-            scrollButtonDown.setOnClickListener(v -> {
-                // Определяем следующую позицию для прокрутки
-                int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
-
-                // Проверяем, чтобы не прокручивать за пределы списка
-                if (nextVisiblePosition < array.length) {
-                    // Плавно прокручиваем к следующей позиции
-                    listView.smoothScrollToPosition(nextVisiblePosition);
-                }
-            });
-
-            scrollButtonUp.setOnClickListener(v -> {
-                // Определяем следующую позицию для прокрутки
-                int nextVisiblePosition = listView.getFirstVisiblePosition() - 1;
-
-                // Проверяем, чтобы не прокручивать за пределы списка
-                if (nextVisiblePosition >= 0) {
-                    // Плавно прокручиваем к предыдущей позиции
-                    listView.smoothScrollToPosition(nextVisiblePosition);
-                }
-            });
+            bindUidRouteAdapter(adapter);
         }
+    }
+
+    private void setupListScrollButtons() {
+        scrollButtonDown.setOnClickListener(v -> {
+            if (array == null) {
+                return;
+            }
+            int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
+            if (nextVisiblePosition < array.length) {
+                listView.smoothScrollToPosition(nextVisiblePosition);
+            }
+            listView.postDelayed(() -> scrollPagination.update(), 150);
+        });
+        scrollButtonUp.setOnClickListener(v -> {
+            int nextVisiblePosition = listView.getFirstVisiblePosition() - 1;
+            if (nextVisiblePosition >= 0) {
+                listView.smoothScrollToPosition(nextVisiblePosition);
+            }
+            listView.postDelayed(() -> scrollPagination.update(), 150);
+        });
+    }
+
+    private void bindUidRouteAdapter(CustomArrayUidAdapter adapter) {
+        listView.setVisibility(View.VISIBLE);
+        progressBar.setVisibility(View.GONE);
+        upd_but.setVisibility(View.VISIBLE);
+        listView.setAdapter(adapter);
+        listView.post(() -> scrollPagination.update());
     }
 
      @SuppressLint("Range")

@@ -27,54 +27,35 @@
 
     <ListView
         android:id="@+id/listView"
-        android:layout_width="match_parent"
-        android:layout_height="400dp"
-        android:layout_margin="8dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
         android:layout_marginTop="4dp"
+        android:layout_marginEnd="8dp"
+        android:clipToPadding="false"
         android:divider="@color/colorAccent"
         android:dividerHeight="1sp"
         android:fontFamily="@font/regular"
         android:scrollbarThumbVertical="@drawable/scrollbar_track"
+        app:layout_constraintBottom_toTopOf="@+id/layout"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/text_gallery" />
 
-    <LinearLayout
+    <include
         android:id="@+id/layout"
-        android:layout_width="match_parent"
+        layout="@layout/include_list_scroll_controls"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="horizontal"
-        app:layout_constraintTop_toBottomOf="@+id/listView">
-
-        <ImageButton
-            android:id="@+id/scrollButtonUp"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_margin="8dp"
-            android:background="@drawable/round_button_background"
-            android:src="@drawable/up_arrow"
-            android:visibility="gone"
-            app:layout_constraintEnd_toStartOf="@+id/scrollButtonDown"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toStartOf="parent"
-            tools:ignore="ContentDescription" />
-
-
-        <ImageButton
-            android:id="@+id/scrollButtonDown"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_margin="8dp"
-            android:background="@drawable/round_button_background"
-            android:src="@drawable/down_arrow"
-            android:visibility="gone"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toEndOf="@+id/scrollButtonUp"
-            tools:ignore="ContentDescription" />
-
-    </LinearLayout>
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="4dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/constr_2"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/listView"
+        app:layout_constraintWidth_percent="@dimen/button_width" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/constr_2"

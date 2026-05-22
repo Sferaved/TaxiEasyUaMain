@@ -137,7 +137,7 @@
         android:layout_margin="8dp"
         android:layout_marginTop="8dp"
         android:scrollbarThumbVertical="@color/colorYellow"
-        app:layout_constraintBottom_toTopOf="@+id/bottomBar"
+        app:layout_constraintBottom_toTopOf="@+id/scroll_buttons_container"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/text_toError"
@@ -205,33 +205,19 @@
 
     </LinearLayout>
 
-    <!-- scroll_buttons_container (не трогаем) -->
-    <LinearLayout
+    <include
         android:id="@+id/scroll_buttons_container"
-        android:layout_width="wrap_content"
+        layout="@layout/include_list_scroll_controls"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="4dp"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@+id/bottomBar"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <ImageButton
-            android:id="@+id/scrollButtonUp"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_margin="8dp"
-            android:background="@drawable/round_button_background"
-            android:src="@drawable/up_arrow" />
-
-        <ImageButton
-            android:id="@+id/scrollButtonDown"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_margin="8dp"
-            android:background="@drawable/round_button_background"
-            android:src="@drawable/down_arrow" />
-    </LinearLayout>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintWidth_percent="@dimen/button_width" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnCallAdmin"

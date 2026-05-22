@@ -9,16 +9,17 @@
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/upd_but"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_height="42dp"
+        android:layout_marginTop="8dp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
+        android:paddingTop="0dp"
+        android:paddingBottom="0dp"
         android:text="@string/order"
         android:textAlignment="center"
         android:textColor="@color/colorAccent"
-        android:textSize="@dimen/textView_textSize"
+        android:textSize="16sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.525"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintWidth_percent="@dimen/button_width" />
@@ -26,16 +27,17 @@
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnCallAdmin"
         android:layout_width="0dp"
-        android:layout_height="@dimen/button_height"
-        android:layout_marginTop="12sp"
+        android:layout_height="42dp"
+        android:layout_marginTop="6dp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
+        android:paddingTop="0dp"
+        android:paddingBottom="0dp"
         android:text="@string/call_admin"
         android:textAlignment="center"
         android:textColor="@color/white"
-        android:textSize="@dimen/textView_textSize"
+        android:textSize="16sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.525"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/upd_but"
         app:layout_constraintWidth_percent="@dimen/button_width" />
@@ -43,21 +45,21 @@
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/text_uid"
         android:layout_width="0dp"
-        android:layout_height="@dimen/button_height"
-        android:layout_marginTop="12sp"
+        android:layout_height="42dp"
+        android:layout_marginTop="6dp"
         android:background="@drawable/buttons"
         android:fontFamily="@font/regular"
+        android:paddingTop="0dp"
+        android:paddingBottom="0dp"
         android:text="@string/email_history_order"
         android:textAlignment="center"
         android:textColor="@color/white"
-        android:textSize="@dimen/textView_textSize"
+        android:textSize="16sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btnCallAdmin"
         app:layout_constraintWidth_percent="@dimen/button_width"
         tools:ignore="RtlCompat" />
-
 
     <ProgressBar
         android:id="@+id/progress_bar"
@@ -69,50 +71,35 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btnCallAdmin" />
 
-
     <ListView
         android:id="@+id/listView"
-        android:layout_width="match_parent"
-        android:layout_height="400dp"
-        android:layout_margin="8dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
         android:layout_marginTop="4dp"
+        android:layout_marginEnd="8dp"
+        android:clipToPadding="false"
         android:divider="@color/colorAccent"
         android:dividerHeight="1sp"
         android:fontFamily="@font/regular"
+        android:paddingBottom="2dp"
         android:scrollbarThumbVertical="@drawable/scrollbar_track"
+        app:layout_constraintBottom_toTopOf="@+id/scrollControls"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/text_uid">
+        app:layout_constraintTop_toBottomOf="@+id/text_uid" />
 
-
-    </ListView>
-
-    <ImageButton
-        android:id="@+id/scrollButtonUp"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_margin="8dp"
-        android:background="@drawable/round_button_background"
-        android:src="@drawable/up_arrow"
-
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/scrollButtonDown"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/listView" />
-
-    <ImageButton
-        android:id="@+id/scrollButtonDown"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_margin="8dp"
-
-        android:background="@drawable/round_button_background"
-        android:src="@drawable/down_arrow"
+    <include
+        android:id="@+id/scrollControls"
+        layout="@layout/include_list_scroll_controls"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="4dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/scrollButtonUp"
-        app:layout_constraintTop_toBottomOf="@+id/listView" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintWidth_percent="@dimen/button_width" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

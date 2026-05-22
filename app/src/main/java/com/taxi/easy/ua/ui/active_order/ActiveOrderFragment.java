@@ -41,6 +41,7 @@ import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
+import com.taxi.easy.ua.utils.ui.ListScrollPaginationHelper;
 import com.uxcam.UXCam;
 
 import java.time.LocalDateTime;
@@ -75,7 +76,8 @@ public class ActiveOrderFragment extends Fragment {
     private List<RouteResponseCancel> routeList;
 
     AppCompatButton upd_but;
-    private ImageButton scrollButtonDown, scrollButtonUp;
+    private View scrollButtonDown, scrollButtonUp;
+    private ListScrollPaginationHelper scrollPagination;
     private TextView textUid;
     private String email;
     private FragmentManager fragmentManager;
@@ -140,22 +142,32 @@ public class ActiveOrderFragment extends Fragment {
 //                
             }
         });
-        scrollButtonUp = binding.scrollButtonUp;
-        scrollButtonDown = binding.scrollButtonDown;
+        scrollButtonUp = binding.scrollControls.scrollButtonUp;
+        scrollButtonDown = binding.scrollControls.scrollButtonDown;
+        scrollPagination = new ListScrollPaginationHelper(
+                listView,
+                binding.scrollControls.tvScrollPosition,
+                scrollButtonUp,
+                scrollButtonDown);
+        scrollPagination.bind();
         scrollButtonDown.setOnClickListener(v -> {
-            // Определяем следующую позицию для прокрутки
+            if (array == null) {
+                return;
+            }
             int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
-
-            // Проверяем, чтобы не прокручивать за пределы списка
             if (nextVisiblePosition < array.length) {
-                // Плавно прокручиваем к следующей позиции
                 listView.smoothScrollToPosition(nextVisiblePosition);
             }
+            listView.postDelayed(() -> scrollPagination.update(), 150);
         });
-
         scrollButtonUp.setOnClickListener(v -> {
-            int offset = -1; // или другое значение, чтобы указать направление прокрутки
-            listView.smoothScrollByOffset(offset);
+            int prev = listView.getFirstVisiblePosition() - 1;
+            if (prev >= 0) {
+                listView.smoothScrollToPosition(prev);
+            } else {
+                listView.smoothScrollByOffset(-1);
+            }
+            listView.postDelayed(() -> scrollPagination.update(), 150);
         });
 
         startRepeatingTask();
@@ -165,8 +177,9 @@ public class ActiveOrderFragment extends Fragment {
     private void fetchRoutesCancel(String value) {
         progressBar.setVisibility(VISIBLE);
         listView.setVisibility(View.GONE);
-        scrollButtonDown.setVisibility(View.GONE);
-        scrollButtonUp.setVisibility(View.GONE);
+        if (scrollPagination != null) {
+            scrollPagination.update();
+        }
 
         databaseHelper.clearTableCancel();
         databaseHelperUid.clearTableCancel();
@@ -411,36 +424,14 @@ public class ActiveOrderFragment extends Fragment {
             listView.setAdapter(adapter);
 
             listView.setVisibility(VISIBLE);
-            scrollButtonDown.setVisibility(VISIBLE);
-            scrollButtonUp.setVisibility(VISIBLE);
             progressBar.setVisibility(View.GONE);
             upd_but.setVisibility(VISIBLE);
+            listView.post(() -> scrollPagination.update());
 
-            ViewGroup.LayoutParams layoutParams = listView.getLayoutParams();
-            layoutParams.height = desiredHeight;
-            listView.setLayoutParams(layoutParams);
-
-            listView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
-                int totalItemHeight = 0;
-                for (int i = 0; i < listView.getChildCount(); i++) {
-                    totalItemHeight += listView.getChildAt(i).getHeight();
-                }
-
-                if (totalItemHeight > desiredHeight) {
-                    scrollButtonUp.setVisibility(VISIBLE);
-                    scrollButtonDown.setVisibility(VISIBLE);
-                } else {
-                    scrollButtonUp.setVisibility(View.GONE);
-                    scrollButtonDown.setVisibility(View.GONE);
-                }
-            });
-
-            // Останавливаем автообновление после получения данных
             stopRepeatingTask();
         } else {
             listView.setVisibility(View.GONE);
-            scrollButtonDown.setVisibility(View.GONE);
-            scrollButtonUp.setVisibility(View.GONE);
+            scrollPagination.update();
         }
     }
 

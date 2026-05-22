@@ -508,6 +508,8 @@
     <string name="clearApp">🧹 Clear data</string>
     <string name="clearAppMess">Warning! Clearing app data will delete all settings, databases, internal and external cache, and the app will be restarted. This action is irreversible and may affect the functionality of the app. Make sure you have saved important data before continuing. Continue?</string>
     <string name="email_history_order">Request history</string>
+    <string name="scroll_list_up">Up</string>
+    <string name="scroll_list_down">Down</string>
     <string name="SA_message_history">Please send me the history of my trips for the period from ..... to .....</string>
     <string name="anr_detected">Error detected</string>
     <string name="application_is_not_responding">The application is not responding.</string>
