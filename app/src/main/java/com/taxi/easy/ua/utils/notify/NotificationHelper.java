@@ -30,17 +30,24 @@ public class NotificationHelper {
     private static final int REQUEST_CODE_OPEN_URL = 1;
     private static final String TAG = "NotificationHelper";
 
-    public static void showNotification(Context context, String title, String message, String url) {
-        // Создание канала уведомлений для Android 8.0 (API level 26) и выше
+    private static void ensureNotificationChannel(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
-            channel.setDescription(CHANNEL_DESCRIPTION);
-            channel.enableLights(true);
-            channel.setLightColor(Color.RED);
-            channel.enableVibration(true);
             NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
+            if (notificationManager.getNotificationChannel(CHANNEL_ID) == null) {
+                NotificationChannel channel = new NotificationChannel(
+                        CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH);
+                channel.setDescription(CHANNEL_DESCRIPTION);
+                channel.enableLights(true);
+                channel.setLightColor(Color.RED);
+                channel.enableVibration(true);
+                notificationManager.createNotificationChannel(channel);
+                Logger.d(context, TAG, "Создан канал уведомлений: " + CHANNEL_ID);
+            }
         }
+    }
+
+    public static void showNotification(Context context, String title, String message, String url) {
+        ensureNotificationChannel(context);
 
         // Интент для открытия URL-адреса при нажатии на уведомление
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
@@ -67,16 +74,7 @@ public class NotificationHelper {
     }
 
     public static void showNotificationMessage(Context context, String title, String message) {
-        // Создание канала уведомлений для Android 8.0 (API level 26) и выше
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
-            channel.setDescription(CHANNEL_DESCRIPTION);
-            channel.enableLights(true);
-            channel.setLightColor(Color.RED);
-            channel.enableVibration(true);
-            NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
+        ensureNotificationChannel(context);
 
         // Интент для открытия URL-адреса при нажатии на уведомление
 
@@ -100,6 +98,7 @@ public class NotificationHelper {
     }
 
     public static void showNotificationFindAutoMessage(Context context, String message, String uid) {
+        ensureNotificationChannel(context);
         Logger.d(context, TAG, "Вызван showNotificationFindAutoMessage()");
         Logger.d(context, TAG, "Текст уведомления: " + message);
         Logger.d(context, TAG, "uid: " + uid);
@@ -173,6 +172,7 @@ public class NotificationHelper {
      */
     public static void showNotificationCancelMessage(Context context, String message, String uid) {
         Logger.d(context, TAG, "showNotificationCancelMessage: " + message + ", uid=" + uid);
+        ensureNotificationChannel(context);
 
         int notificationId = generateUniqueNotificationId();
 
@@ -210,6 +210,7 @@ public class NotificationHelper {
         }
 
         notificationManager.notify(notificationId, builder.build());
+        Logger.d(context, TAG, "Уведомление об отмене показано, id=" + notificationId);
     }
 
     /**

@@ -1,15 +1,41 @@
+# Gradle
+.gradle/
+build/
+*/build/
+app/build/
+
+# Local SDK path (per developer machine)
+local.properties
+
+# IDE — не коммитить настройки студии
+.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+*.iws
+*.ipr
+
+# OS
 .DS_Store
-/build
-/captures
+Thumbs.db
+
+# Android build / native
+captures/
 .externalNativeBuild
 .cxx
-#local.properties
+app/release/
+
+# Артефакты сборки
+*.aab
+*.apk
+
+# JVM / crash dumps
+*.hprof
+hs_err_pid*.log
+replay_pid*.log
+
+# Generated
+generated/
+
+# Keystore (*.jks) — в репозитории намеренно для CI (app/keystore, keystore/)
+# service-account.json лучше хранить только в GitHub Secret SERVICE_ACCOUNT_JSON
+# app/keystore/service-account.json
+# keystore/service-account.json
