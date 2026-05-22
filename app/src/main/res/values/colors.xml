@@ -52,4 +52,10 @@
     <color name="text_secondary_old">#A0A0A0</color>
     <color name="text_primary">#212121</color>
     <color name="text_secondary">#E0E0E0</color>
+
+    <!-- Кнопки прокрутки списка (контраст на тёмном фоне) -->
+    <color name="scroll_arrow_up">#FFFFFFFF</color>
+    <color name="scroll_arrow_down">#FFFFFFFF</color>
+    <color name="scroll_button_stroke_up">#B3FFFFFF</color>
+    <color name="scroll_button_stroke_down">#B3FFFFFF</color>
 </resources>

@@ -231,33 +231,37 @@
 
     <ImageButton
         android:id="@+id/scrollButtonUp"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_margin="8dp"
-        android:visibility="gone"
         android:layout_marginTop="8dp"
-        android:background="@drawable/round_button_background"
-        android:src="@drawable/up_arrow"
+        android:background="@drawable/button_outline_scroll_up"
+        android:contentDescription="@string/scroll_list_up"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_scroll_chevron_up"
+        android:visibility="gone"
         app:layout_constraintEnd_toStartOf="@+id/scrollButtonDown"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/listAddress"
-        tools:ignore="ContentDescription" />
+        app:layout_constraintTop_toBottomOf="@+id/listAddress" />
 
     <ImageButton
         android:id="@+id/scrollButtonDown"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_margin="8dp"
-        android:visibility="gone"
         android:layout_marginTop="8dp"
-        android:background="@drawable/round_button_background"
-        android:src="@drawable/down_arrow"
+        android:background="@drawable/button_outline_scroll_down"
+        android:contentDescription="@string/scroll_list_down"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_scroll_chevron_down"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toEndOf="@+id/scrollButtonUp"
-        app:layout_constraintTop_toBottomOf="@+id/listAddress"
-        tools:ignore="ContentDescription" />
+        app:layout_constraintTop_toBottomOf="@+id/listAddress" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnCallAdmin"
