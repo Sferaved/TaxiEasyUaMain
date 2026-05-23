@@ -116,6 +116,7 @@ import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.kafka.KafkaRequest;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
+import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
 import com.taxi.easy.ua.utils.location.TaxiLocationValidator;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.route.RoutePlaceMatcher;
@@ -248,6 +249,8 @@ public class VisicomFragment extends Fragment {
     private static final double DEFAULT_LAT = 50.4501; // Киев по умолчанию
     private static final double DEFAULT_LON = 30.5234;
     private boolean isUpdatingFromGPS = false;
+    /** Авто-геолокация после выбора города (для состояния кнопки GPS). */
+    private boolean autoLocationFromCityLoad = false;
     private long lastSuccessfulLocationTime = 0;
     private String lastProcessedAddress = "";
     private String pendingAddressRequest = null;
@@ -268,20 +271,32 @@ public class VisicomFragment extends Fragment {
         permissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestMultiplePermissions(),
                 result -> {
-                    // result — Map<String, Boolean>, где ключ — имя разрешения, значение — результат (granted or not)
+                    boolean fineGranted = Boolean.TRUE.equals(result.get(Manifest.permission.ACCESS_FINE_LOCATION));
+                    boolean coarseGranted = Boolean.TRUE.equals(result.get(Manifest.permission.ACCESS_COARSE_LOCATION));
+                    boolean locationGranted = fineGranted && coarseGranted;
+
                     for (Map.Entry<String, Boolean> entry : result.entrySet()) {
                         String permission = entry.getKey();
                         boolean granted = entry.getValue();
-
-                        // Сохраняем результат
                         sharedPreferencesHelperMain.saveValue(permission, granted ? PackageManager.PERMISSION_GRANTED : PackageManager.PERMISSION_DENIED);
                     }
 
-                    // Можно обновить счетчик запросов разрешений, если нужно
                     int permissionRequestCount = loadPermissionRequestCount();
                     permissionRequestCount++;
                     savePermissionRequestCount(permissionRequestCount);
-                    Logger.d(context,"loadPermission", "permissionRequestCount: " + permissionRequestCount);
+                    Logger.d(context, "loadPermission", "permissionRequestCount: " + permissionRequestCount);
+
+                    if (locationGranted) {
+                        location_update = true;
+                        AutoLocationAfterCityHelper.markEverGranted();
+                        if (AutoLocationAfterCityHelper.isPending() || AutoLocationAfterCityHelper.wasEverGranted()) {
+                            AutoLocationAfterCityHelper.clearPending();
+                            startAutoLocationAfterCityIfPossible();
+                        }
+                    } else if (AutoLocationAfterCityHelper.isPending()) {
+                        AutoLocationAfterCityHelper.clearPending();
+                        applyLastOrderAddressFromRouteMarker();
+                    }
                 }
         );
         // Включаем блокировку кнопки "Назад" Применяем блокировку кнопки "Назад"
@@ -2660,12 +2675,113 @@ public class VisicomFragment extends Fragment {
         } else {
             new Handler(Looper.getMainLooper()).postDelayed(this::updateApp, 8_000);
         }
-        boolean restartAfterFinderCity = (boolean) sharedPreferencesHelperMain.getValue("restartAfterFinderCity", false);
-        if (restartAfterFinderCity) {
-            updateGpsButtonCross(true);
-            sharedPreferencesHelperMain.saveValue("restartAfterFinderCity", false);
+        maybeAutoApplyLocationAfterCity();
+
+    }
+
+    /**
+     * После загрузки города: один раз запросить геолокацию, при согласии — GPS без кнопки,
+     * при отказе или без разрешения — адрес из последнего заказа в ROUT_MARKER.
+     */
+    private void maybeAutoApplyLocationAfterCity() {
+        if (!isAdded() || binding == null || context == null) {
+            return;
+        }
+        if (!AutoLocationAfterCityHelper.isCityReady() || isUpdatingFromGPS) {
+            return;
         }
 
+        AutoLocationAfterCityHelper.syncFromSystemPermission(context);
+
+        boolean pending = AutoLocationAfterCityHelper.isPending();
+        boolean hasPermission = AutoLocationAfterCityHelper.hasLocationPermission(context);
+        boolean everGranted = AutoLocationAfterCityHelper.wasEverGranted();
+
+        if (!pending && !(everGranted && hasPermission)) {
+            return;
+        }
+
+        if (!hasPermission) {
+            if (!AutoLocationAfterCityHelper.wasPromptShown()) {
+                AutoLocationAfterCityHelper.markPromptShown();
+                requestLocationPermissions();
+                return;
+            }
+            AutoLocationAfterCityHelper.clearPending();
+            applyLastOrderAddressFromRouteMarker();
+            return;
+        }
+
+        AutoLocationAfterCityHelper.markEverGranted();
+        AutoLocationAfterCityHelper.clearPending();
+        startAutoLocationAfterCityIfPossible();
+    }
+
+    private void startAutoLocationAfterCityIfPossible() {
+        if (!isAdded() || locationManager == null) {
+            return;
+        }
+        location_update = true;
+        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            Logger.d(context, TAG, "Авто-геолокация после выбора города");
+            autoLocationFromCityLoad = true;
+            sharedPreferencesHelperMain.saveValue("setStatusX", true);
+            viewModel.setStatusX(true);
+            updateGpsButtonCross(true);
+            firstLocation();
+        } else {
+            applyLastOrderAddressFromRouteMarker();
+        }
+    }
+
+    private void finishAutoLocationGpsButtonState() {
+        autoLocationFromCityLoad = false;
+        sharedPreferencesHelperMain.saveValue("setStatusX", false);
+        viewModel.setStatusX(false);
+        updateGpsButtonCross(false);
+    }
+
+    private void applyLastOrderAddressFromRouteMarker() {
+        if (!isAdded() || binding == null) {
+            return;
+        }
+        Logger.d(context, TAG, "Подстановка адреса из последнего заказа (без GPS)");
+
+        List<String> route = logCursor(MainActivity.ROUT_MARKER, context);
+        if (route.size() <= 5) {
+            return;
+        }
+
+        String startAddress;
+        try {
+            double startLat = Double.parseDouble(route.get(1));
+            if (startLat == 0.0) {
+                return;
+            }
+            startAddress = route.get(5);
+        } catch (NumberFormatException e) {
+            Logger.e(context, TAG, "Некорректные координаты в ROUT_MARKER: " + e.getMessage());
+            return;
+        }
+
+        if (startAddress == null || startAddress.trim().isEmpty()) {
+            return;
+        }
+
+        geoText.setText(startAddress);
+        sharedPreferencesHelperMain.saveValue("setStatusX", false);
+        viewModel.setStatusX(false);
+        updateGpsButtonCross(false);
+
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+        if (!"email".equals(userEmail) && NetworkUtils.isNetworkAvailable(context)) {
+            try {
+                visicomCost();
+                readTariffInfo();
+            } catch (MalformedURLException e) {
+                Logger.e(context, TAG, "visicomCost после последнего адреса: " + e.getMessage());
+            }
+        }
     }
 
     private void gpsButSetOnClickListener(LocationManager locationManager) {
@@ -2795,9 +2911,9 @@ public class VisicomFragment extends Fragment {
 
                         if (!coordinatesChanged) {
                             progressBar.setVisibility(View.GONE);
-                            updateGpsButtonCross(false);
+                            finishAutoLocationGpsButtonState();
                             isUpdatingFromGPS = false;
-                            pendingAddressRequest = null; // ✅ Сбрасываем запрос
+                            pendingAddressRequest = null;
                             Logger.d(context, TAG, "Пропускаем обновление - координаты не изменились");
                             return;
                         }
@@ -2853,6 +2969,7 @@ public class VisicomFragment extends Fragment {
                                     Logger.d(context, TAG, "CityFinder занят, пропускаем обновление города");
                                     progressBar.setVisibility(View.GONE);
                                     isUpdatingFromGPS = false;
+                                    finishAutoLocationGpsButtonState();
                                     return;
                                 }
                                 // ✅ Обновляем город
@@ -2930,9 +3047,7 @@ public class VisicomFragment extends Fragment {
                                         // Пересчёт стоимости
                                         Logger.d(context, TAG, "   2️⃣ Пересчёт стоимости...");
                                         Logger.d(context, TAG, "      ├─ Вызов visicomCost()");
-                                        sharedPreferencesHelperMain.saveValue("setStatusX", false);
-                                        viewModel.setStatusX(false);
-                                        updateGpsButtonCross(false);
+                                        finishAutoLocationGpsButtonState();
                                         long costStartTime = System.currentTimeMillis();
                                         try {
                                             visicomCost();
@@ -2989,6 +3104,7 @@ public class VisicomFragment extends Fragment {
 
                                     isUpdatingFromGPS = false;
                                     pendingAddressRequest = null;
+                                    autoLocationFromCityLoad = false;
 
                                     Logger.d(context, TAG, "   ├─ isUpdatingFromGPS: " + wasUpdating + " → false");
                                     Logger.d(context, TAG, "   ├─ pendingAddressRequest: " + (wasPending != null ? wasPending : "null") + " → null");
@@ -3001,25 +3117,38 @@ public class VisicomFragment extends Fragment {
                                 Logger.d(context, TAG, "Ошибка при получении адреса");
                                 progressBar.setVisibility(View.GONE);
                                 isUpdatingFromGPS = false;
-                                pendingAddressRequest = null; // ✅ Сбрасываем запрос
+                                pendingAddressRequest = null;
+                                if (autoLocationFromCityLoad) {
+                                    finishAutoLocationGpsButtonState();
+                                }
                             }
                         });
                     } else {
-                        sharedPreferencesHelperMain.saveValue("setStatusX", true);
-                        viewModel.setStatusX(true);
                         Logger.d(context, TAG, "Локация = null");
                         progressBar.setVisibility(View.GONE);
                         isUpdatingFromGPS = false;
-                        pendingAddressRequest = null; // ✅ Сбрасываем запрос
+                        pendingAddressRequest = null;
+                        if (autoLocationFromCityLoad) {
+                            finishAutoLocationGpsButtonState();
+                        } else {
+                            sharedPreferencesHelperMain.saveValue("setStatusX", true);
+                            viewModel.setStatusX(true);
+                            updateGpsButtonCross(true);
+                        }
                     }
                 })
                 .addOnFailureListener(e -> {
-                    sharedPreferencesHelperMain.saveValue("setStatusX", true);
-                    viewModel.setStatusX(true);
                     Logger.e(context, TAG, "Failed to get location: " + e.getMessage());
                     progressBar.setVisibility(View.GONE);
                     isUpdatingFromGPS = false;
-                    pendingAddressRequest = null; // ✅ Сбрасываем запрос
+                    pendingAddressRequest = null;
+                    if (autoLocationFromCityLoad) {
+                        finishAutoLocationGpsButtonState();
+                    } else {
+                        sharedPreferencesHelperMain.saveValue("setStatusX", true);
+                        viewModel.setStatusX(true);
+                        updateGpsButtonCross(true);
+                    }
                     Toast.makeText(context, R.string.location_failed, Toast.LENGTH_SHORT).show();
                 });
     }

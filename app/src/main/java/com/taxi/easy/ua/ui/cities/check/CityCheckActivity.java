@@ -33,6 +33,7 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
+import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.worker.TilePreloadWorker;
@@ -936,6 +937,7 @@ public class CityCheckActivity extends AppCompatActivity {
                 new String[]{"1"});
         database.close();
         sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
+        AutoLocationAfterCityHelper.markCityLoaded();
 
         startTilePreloadWorker();
 

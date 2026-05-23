@@ -25,6 +25,7 @@ import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
+import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.lang.ref.WeakReference;
@@ -705,6 +706,7 @@ public class CityFinder {
             clearTABLE_SERVICE_INFO();
 
             sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
+            AutoLocationAfterCityHelper.markCityLoaded();
 
             // Навигация
             Activity activity = activityRef.get();
