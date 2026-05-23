@@ -245,6 +245,9 @@ public class VisicomFragment extends Fragment {
     private String lastCost = null;
     static SwipeRefreshLayout swipeRefreshLayout;
     private LifecycleObserver lifecycleObserver;
+    private boolean appProcessWasInBackground = false;
+    private static final long VISICOM_COST_DEBOUNCE_MS = 2500;
+    private long lastVisicomCostRequestMs = 0;
 
     private static final double DEFAULT_LAT = 50.4501; // Киев по умолчанию
     private static final double DEFAULT_LON = 30.5234;
@@ -437,15 +440,8 @@ public class VisicomFragment extends Fragment {
                         // Небольшая задержка для восстановления всех сервисов
                         new Handler(Looper.getMainLooper()).postDelayed(() -> {
                             if (isAdded()) {
-                                try {
-                                    Logger.d(context,TAG, "Запускаем visicomCost после возврата из фона");
-                                    visicomCost();
-                                    // Сбрасываем флаг после выполнения
-                                    visicomViewModel.costReloaded();
-                                } catch (MalformedURLException e) {
-                                    Logger.e(context,TAG, "Ошибка в visicomCost при возврате из фона: " + e.getMessage());
-                                    visicomViewModel.costReloaded();
-                                }
+                                requestVisicomCost("foreground");
+                                visicomViewModel.costReloaded();
                             }
                         }, 500); // Задержка 500 мс
                     } else {
@@ -461,9 +457,19 @@ public class VisicomFragment extends Fragment {
 
         // Создаем observer для жизненного цикла приложения
         lifecycleObserver = new LifecycleObserver() {
+            @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
+            public void onAppBackgrounded() {
+                appProcessWasInBackground = true;
+            }
+
             @OnLifecycleEvent(Lifecycle.Event.ON_START)
             public void onAppForegrounded() {
-                Logger.d(context,TAG, "Приложение вернулось из фона - устанавливаем сигнал перезагрузки");
+                if (!appProcessWasInBackground) {
+                    Logger.d(context, TAG, "Process ON_START без ON_STOP — перезагрузку стоимости не ставим");
+                    return;
+                }
+                appProcessWasInBackground = false;
+                Logger.d(context, TAG, "Приложение вернулось из фона - устанавливаем сигнал перезагрузки");
                 if (visicomViewModel != null) {
                     visicomViewModel.onAppForegrounded();
                 }
@@ -2653,11 +2659,7 @@ public class VisicomFragment extends Fragment {
             }
             String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
             if (!userEmail.equals("email")) {
-                try {
-                    visicomCost();
-                } catch (MalformedURLException e) {
-                    throw new RuntimeException(e);
-                }
+                requestVisicomCost("onResume");
                 readTariffInfo();
             }
 
@@ -2917,12 +2919,33 @@ public class VisicomFragment extends Fragment {
 
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         if (!"email".equals(userEmail) && NetworkUtils.isNetworkAvailable(context)) {
-            try {
-                visicomCost();
-                readTariffInfo();
-            } catch (MalformedURLException e) {
-                Logger.e(context, TAG, "visicomCost после последнего адреса: " + e.getMessage());
-            }
+            requestVisicomCost("lastOrderAddress");
+            readTariffInfo();
+        }
+    }
+
+    private void requestVisicomCost(String source) {
+        if (!isAdded() || context == null) {
+            return;
+        }
+        List<String> userInfo = logCursor(MainActivity.TABLE_USER_INFO, context);
+        if (userInfo.size() <= 3 || "email".equals(userInfo.get(3))) {
+            return;
+        }
+        if (!NetworkUtils.isNetworkAvailable(context)) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastVisicomCostRequestMs < VISICOM_COST_DEBOUNCE_MS) {
+            Logger.d(context, TAG, "visicomCost пропущен (debounce), источник: " + source);
+            return;
+        }
+        lastVisicomCostRequestMs = now;
+        try {
+            Logger.d(context, TAG, "visicomCost, источник: " + source);
+            visicomCost();
+        } catch (MalformedURLException e) {
+            Logger.e(context, TAG, "visicomCost (" + source + "): " + e.getMessage());
         }
     }
 
@@ -3631,8 +3654,6 @@ public class VisicomFragment extends Fragment {
 
     private void requestCostFromServer(String start, String finish) throws MalformedURLException {
         String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTimeMyApi", context);
-        Logger.d(context, TAG, "Попытка #" + ( 1) + ", URL: " + urlCost);
-
         reserveCost(start, finish, urlCost);
 
         if (costHandler == null) costHandler = new Handler(Looper.getMainLooper());
