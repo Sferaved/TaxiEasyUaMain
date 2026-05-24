@@ -549,6 +549,8 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                                     break;
                                 default:
                                     sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
+                                    com.taxi.easy.ua.utils.payment.PaymentSessionHelper.markPaymentFailedForOrder(
+                                            MainActivity.uid);
                                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
                                     callOrderIdMemory(MainActivity.order_id, MainActivity.uid, pay_method);
 

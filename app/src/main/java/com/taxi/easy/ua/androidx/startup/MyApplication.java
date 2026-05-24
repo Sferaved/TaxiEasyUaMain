@@ -213,6 +213,14 @@ public class MyApplication extends MultiDexApplication {
         return currentActivity;
     }
 
+    /** Приложение видимо пользователю (есть активная Activity). */
+    public static boolean isInForeground() {
+        if (instance == null) {
+            return false;
+        }
+        return instance.activityReferences > 0 && !instance.isActivityChangingConfigurations;
+    }
+
     public static Context getContext() {
         return instance.getApplicationContext();
     }

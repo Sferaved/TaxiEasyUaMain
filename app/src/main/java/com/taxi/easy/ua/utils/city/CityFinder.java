@@ -476,6 +476,7 @@ public class CityFinder {
                     .setPositiveButton(R.string.ok, (dialog, which) -> {
                         VisicomFragment.updateGpsButtonCross(false);
                         isCityChangeDialogShowing = false;
+                        AutoLocationAfterCityHelper.markCityChangedViaGeo();
                         applyCityChange(finalCity, startLat, startLan, position);
                         synchronized (lock) {
                             isProcessing = false;
@@ -934,6 +935,7 @@ public class CityFinder {
                         .setPositiveButton(R.string.ok, (dialog, which) -> {
                             isCityChangeDialogShowing = false;
                             userConfirmed[0] = true;  // ✅ Устанавливаем значение в массиве
+                            AutoLocationAfterCityHelper.markCityChangedViaGeo();
                             applyCityChange(cityResult, startLat, startLan, position);
                             synchronized (lock) {
                                 isProcessing = false;

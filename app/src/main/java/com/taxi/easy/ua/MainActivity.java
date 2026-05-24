@@ -977,7 +977,10 @@ public class MainActivity extends AppCompatActivity {
             });
         }).start(), 8_000);
 
-        sharedPreferencesHelperMain.saveValue("pay_error", "**");
+        // Не сбрасываем ошибку оплаты, пока есть активный заказ (иначе шторка на финише не сразу)
+        if (uid == null || uid.isEmpty()) {
+            sharedPreferencesHelperMain.saveValue("pay_error", "**");
+        }
 
 
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
@@ -2357,6 +2360,7 @@ public class MainActivity extends AppCompatActivity {
 //                    pusherManager.subscribeToChannel();
                     crispChat();
                     requestNotificationPermissionOnce();
+                    releaseCentrifugoManager();
                     centrifugoManager = new CentrifugoManager(
                             getString(R.string.application),
                             userEmail,
@@ -2618,6 +2622,7 @@ public class MainActivity extends AppCompatActivity {
                         startActivity(intent);
                     }
 
+                    releaseCentrifugoManager();
                     centrifugoManager = new CentrifugoManager(
                             getString(R.string.application),
                             user.getEmail(),
@@ -2989,12 +2994,20 @@ public class MainActivity extends AppCompatActivity {
         Crisp.setUserNickname(username);
     }
 
+    private void releaseCentrifugoManager() {
+        if (centrifugoManager != null) {
+            centrifugoManager.disconnect();
+            centrifugoManager = null;
+        }
+    }
+
     void clearApplication(Context context) {
         Logger.d(context, TAG, "Starting clearApplication");
         // Скидаємо дані про оцінки
         if (appReviewManager != null) {
             appReviewManager.resetReviewData();
         }
+        releaseCentrifugoManager();
 
         // 1. Разлогиниваем пользователя из Firebase Auth
         try {

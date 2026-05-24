@@ -46,6 +46,7 @@ import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.content.ContextCompat;
 import androidx.core.os.HandlerCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
@@ -63,6 +64,8 @@ import com.taxi.easy.ua.ui.finish.BonusResponse;
 import com.taxi.easy.ua.ui.finish.FinishCostResponse;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
 import com.taxi.easy.ua.ui.finish.Status;
+import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
+import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
 import com.taxi.easy.ua.ui.weather.finish.PassengerNotifier;
 import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetAddCostFragment;
@@ -79,7 +82,10 @@ import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.pusher.events.AddCostUpdateEvent;
 import com.taxi.easy.ua.utils.pusher.events.CanceledStatusEvent;
-import com.taxi.easy.ua.utils.pusher.events.TransactionStatusEvent;
+import com.taxi.easy.ua.utils.payment.PaymentDeclinedNotifier;
+import com.taxi.easy.ua.utils.payment.PaymentErrorSheetHelper;
+import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
+import com.taxi.easy.ua.utils.payment.PendingTransactionHelper;
 import com.taxi.easy.ua.utils.review.AppReviewManager;
 import com.taxi.easy.ua.utils.time_ut.TimeUtils;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
@@ -156,6 +162,8 @@ public class FinishSeparateFragment extends Fragment {
     long delayMillisStatus;
     boolean no_pay;
     boolean canceled = false;
+    private int paymentCheckGeneration;
+    private boolean paymentCheckInProgress;
     @SuppressLint("StaticFieldLeak")
     public static  CarProgressBar carProgressBar;
     // Получаем доступ к кружочкам
@@ -192,6 +200,9 @@ public class FinishSeparateFragment extends Fragment {
     private Observer<Boolean> observer;
     private WeakReference<Activity> activityRef;
     private Call<OrderResponse> retrofitCall;
+    private Call<StatusResponse> wfpStatusCheckCall;
+    private Call<HoldResponse> holdVerifyCall;
+    private int holdCheckGeneration;
 
     private ExecutionStatusViewModel viewModel;
     private String action;
@@ -200,7 +211,7 @@ public class FinishSeparateFragment extends Fragment {
     private String pendingAddCost = "0";
     private boolean isTaskScheduled = false; // Флаг для отслеживания
     private PassengerNotifier notifier;
-    private final Handler checkHandler = new Handler(Looper.getMainLooper());
+    private Handler checkHandler = new Handler();
     private Runnable checkRunnable;
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -400,6 +411,10 @@ public class FinishSeparateFragment extends Fragment {
 
         Logger.d(context, TAG, "MainActivity.uid: " + uid);
 
+        if (uid != null && MainActivity.order_id != null && !MainActivity.order_id.isEmpty()) {
+            PaymentSessionHelper.saveWfpOrderRef(uid, MainActivity.order_id);
+        }
+
         uid_Double = receivedMap.get("dispatching_order_uid_Double");
 
 
@@ -535,16 +550,17 @@ public class FinishSeparateFragment extends Fragment {
         }
 
         notifier = new PassengerNotifier(context);
+
+        // Когда начинаете поиск машины:
         notifier.onSearchStarted();
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
-        String city = listCity.size() > 1 ? listCity.get(1) : "Kyiv City";
-        Logger.d(context, TAG, "PassengerNotifier city: " + city);
-        checkRunnable = () -> {
-            if (isAdded() && notifier != null) {
-                notifier.checkAndNotify(requireContext(), city);
-            }
-        };
-        checkHandler.postDelayed(checkRunnable, 1000);
+        String city = listCity.get(1);
+
+        Logger.d(context, "PassengerNotifier", "city " + city);
+        // Проверка через 1 секунду
+        checkHandler.postDelayed(() -> {
+            notifier.checkAndNotify(context, city);
+        }, 1000);
 
 
         return root;
@@ -599,18 +615,114 @@ public class FinishSeparateFragment extends Fragment {
 
     }
 
-    public  void handleTransactionStatusDeclined(
-            String status,
-            Context context
-    ) {
+    public void handleTransactionStatusDeclined(String status, Context context) {
         Logger.d(context, TAG, "Transaction Status: " + status);
-        Logger.d(context, TAG, "Transaction Status amount: " + amount);
-
         if ("Declined".equals(status)) {
-            sharedPreferencesHelperMain.saveValue("add_show_flag", false);
-            MyBottomSheetErrorPaymentFragment bottomSheetDialogFragment =
-                    new MyBottomSheetErrorPaymentFragment("wfp_payment", messageFondy, amount, context);
-            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+            presentDeclinedUiOnFinish();
+        }
+    }
+
+    private boolean isCardPayMethod() {
+        return "wfp_payment".equals(pay_method)
+                || "fondy_payment".equals(pay_method)
+                || "mono_payment".equals(pay_method)
+                || "card_payment".equals(pay_method);
+    }
+
+    private static boolean isApprovedPaymentStatus(@Nullable String status) {
+        return "Approved".equals(status) || "WaitingAuthComplete".equals(status);
+    }
+
+    /** Шторка смены способа оплаты после подтверждённого Declined. */
+    public void presentDeclinedUiOnFinish() {
+        if (!isAdded() || canceled) {
+            return;
+        }
+        if (!PaymentDeclinedNotifier.shouldShowSheetNow()) {
+            Logger.d(context, TAG, "presentDeclinedUiOnFinish: debounce skip");
+            return;
+        }
+        PaymentSessionHelper.markPaymentFailedForOrder(resolveActiveOrderUid());
+        PaymentDeclinedNotifier.prepareDeclinedOrderState();
+        PaymentDeclinedNotifier.markSheetShown();
+        PendingTransactionHelper.clear();
+        showPaymentErrorBottomSheet();
+    }
+
+    private void clearDeclinedPaymentUi() {
+        PaymentErrorSheetHelper.dismiss(getParentFragmentManager());
+        PaymentSessionHelper.clearPaymentFailedForOrder(resolveActiveOrderUid());
+        sharedPreferencesHelperMain.saveValue("add_show_flag", true);
+        if (viewModel != null) {
+            String current = viewModel.getTransactionStatus().getValue();
+            if ("Declined".equals(current)) {
+                viewModel.setTransactionStatus(null);
+            }
+        }
+    }
+
+    private boolean hasKnownPaymentFailure() {
+        String orderUid = resolveActiveOrderUid();
+        if (PaymentSessionHelper.hasPaymentFailedForOrder(orderUid)) {
+            return true;
+        }
+        if (no_pay && isCardPayMethod()) {
+            return true;
+        }
+        if (viewModel != null && "Declined".equals(viewModel.getTransactionStatus().getValue())) {
+            return true;
+        }
+        if (PendingTransactionHelper.hasPendingDeclinedForActiveOrder()) {
+            return true;
+        }
+        // prepareDeclinedOrderState() сбрасывает флаг — признак незавершённой оплаты
+        return !(boolean) sharedPreferencesHelperMain.getValue("add_show_flag", true);
+    }
+
+    private void applyPaymentStatusFromServer(
+            @Nullable String transactionStatus,
+            boolean pendingDeclined,
+            boolean knownFailureAtCheck
+    ) {
+        if (!isAdded() || canceled) {
+            return;
+        }
+        Logger.d(context, TAG, "applyPaymentStatusFromServer: status=" + transactionStatus
+                + " pendingDeclined=" + pendingDeclined
+                + " knownFailureAtCheck=" + knownFailureAtCheck);
+
+        if (isApprovedPaymentStatus(transactionStatus)) {
+            if (!knownFailureAtCheck && !hasKnownPaymentFailure()) {
+                clearDeclinedPaymentUi();
+            } else {
+                Logger.d(context, TAG, "ignore Approved from checkStatus — payment error state active");
+            }
+            return;
+        }
+        if ("Declined".equals(transactionStatus) || pendingDeclined || knownFailureAtCheck) {
+            presentDeclinedUiOnFinish();
+        }
+    }
+
+    private void showPaymentErrorBottomSheet() {
+        Runnable show = () -> {
+            if (!isAdded() || canceled || getActivity() == null) {
+                return;
+            }
+            FragmentManager fm = getParentFragmentManager();
+            if (PaymentErrorSheetHelper.isShowing(fm)) {
+                return;
+            }
+            String sheetPayMethod = isCardPayMethod() ? pay_method : "wfp_payment";
+            MyBottomSheetErrorPaymentFragment sheet =
+                    new MyBottomSheetErrorPaymentFragment(sheetPayMethod, messageFondy, amount, context);
+            sheet.show(fm, PaymentErrorSheetHelper.SHEET_TAG);
+        };
+        View root = getView();
+        if (root != null) {
+            root.post(show);
+        } else {
+            new Handler(Looper.getMainLooper()).post(show);
         }
     }
 
@@ -680,16 +792,10 @@ public class FinishSeparateFragment extends Fragment {
     private void startCycle() {
         Log.d("HandlerDebug startCycle", "startCycle called from: " + new Exception().getStackTrace()[1]);
         if (isAdded() && handlerStatus != null && myTaskStatus != null && !isTaskRunning && !isTaskCancelled) {
-//        if (isAdded() && handlerStatus != null && myTaskStatus != null) {
-//            if (isTaskRunning) {
-//                Log.d("HandlerDebug", "Task startCycle is already scheduled, skipping");
-//                return; // Не добавляем, если задача уже в очереди
-//            }
-            Log.d("FinishSeparateFragment", "Starting cycle with delay: " + delayMillisStatus);
-//            handlerStatus.postDelayed(myTaskStatus, delayMillisStatus);
-            delayMillisStatus = 10 * 1000; // Set delay to 10 seconds
-            HandlerCompat.postDelayed(handlerStatus, myTaskStatus, null, delayMillisStatus);
-            isTaskRunning = true;
+            handlerStatus.removeCallbacks(myTaskStatus);
+            long delay = delayMillisStatus > 0 ? delayMillisStatus : 5000;
+            Log.d("FinishSeparateFragment", "Starting cycle with delay: " + delay);
+            HandlerCompat.postDelayed(handlerStatus, myTaskStatus, null, delay);
         } else {
             Log.e("FinishSeparateFragment", "Cannot start cycle: " +
                     "isAdded=" + isAdded() +
@@ -702,10 +808,6 @@ public class FinishSeparateFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        if (checkRunnable != null) {
-            checkHandler.removeCallbacks(checkRunnable);
-        }
-        notifier = null;
         super.onDestroyView();
         EventBus.getDefault().unregister(this);
         if (timeUtils != null) {
@@ -903,6 +1005,91 @@ public class FinishSeparateFragment extends Fragment {
 
     }
 
+    /**
+     * Полная отмена заказа из шторки смены/ошибки оплаты: UI + запрос на сервер.
+     */
+    public void cancelOrderFromPaymentErrorSheet() {
+        if (context == null) {
+            return;
+        }
+        cancel_btn_click = true;
+        if (handlerStatus != null && myTaskStatus != null) {
+            handlerStatus.removeCallbacks(myTaskStatus);
+        }
+        cancelShowDialogAddCost();
+        PaymentSessionHelper.clearPaymentFailedForOrder(uid);
+        String message = context.getString(R.string.ex_st_canceled_no_pay);
+        orderCanceled(message);
+        if (uid_Double != null && !uid_Double.equals(" ")) {
+            cancelOrderDouble(context);
+        } else {
+            try {
+                cancelOrder(uid, context);
+            } catch (ParseException e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
+            }
+        }
+    }
+
+    /** Единая точка Declined (карта, Centrifugo, FCM) — без второй шторки. */
+    public static void notifyPaymentDeclinedIfNeeded(@NonNull Context context) {
+        FragmentActivity activity = null;
+        if (context instanceof FragmentActivity) {
+            activity = (FragmentActivity) context;
+        } else if (context instanceof android.content.ContextWrapper) {
+            Context base = ((android.content.ContextWrapper) context).getBaseContext();
+            if (base instanceof FragmentActivity) {
+                activity = (FragmentActivity) base;
+            }
+        }
+        if (activity != null) {
+            FinishSeparateFragment finish = findFinishFragment(activity.getSupportFragmentManager());
+            if (finish != null && finish.isAdded()) {
+                finish.presentDeclinedUiOnFinish();
+                return;
+            }
+        }
+        PaymentDeclinedNotifier.maybeSendPaymentErrorPush(context, MainActivity.uid);
+    }
+
+    public static boolean cancelFromPaymentBottomSheet(@NonNull Context context) {
+        FragmentActivity activity = null;
+        if (context instanceof FragmentActivity) {
+            activity = (FragmentActivity) context;
+        } else if (context instanceof android.content.ContextWrapper) {
+            Context base = ((android.content.ContextWrapper) context).getBaseContext();
+            if (base instanceof FragmentActivity) {
+                activity = (FragmentActivity) base;
+            }
+        }
+        if (activity == null) {
+            return false;
+        }
+        FinishSeparateFragment finish = findFinishFragment(activity.getSupportFragmentManager());
+        if (finish != null && finish.isAdded()) {
+            finish.cancelOrderFromPaymentErrorSheet();
+            return true;
+        }
+        return false;
+    }
+
+    @Nullable
+    private static FinishSeparateFragment findFinishFragment(@Nullable FragmentManager fragmentManager) {
+        if (fragmentManager == null) {
+            return null;
+        }
+        for (Fragment fragment : fragmentManager.getFragments()) {
+            if (fragment instanceof FinishSeparateFragment finish && fragment.isAdded()) {
+                return finish;
+            }
+            FinishSeparateFragment nested = findFinishFragment(fragment.getChildFragmentManager());
+            if (nested != null) {
+                return nested;
+            }
+        }
+        return null;
+    }
+
     public void statusOrder() throws ParseException {
 
         btn_cancel_order.setEnabled(true);
@@ -1023,6 +1210,7 @@ public class FinishSeparateFragment extends Fragment {
                 public void onResponse(@NonNull Call<OrderResponse> call, @NonNull Response<OrderResponse> response) {
                     Log.d("RetrofitCall", "Request URL: " + call.request().url());
                     if (response.isSuccessful()) {
+                        delayMillisStatus = 5 * 1000;
                         if (response.body() != null) {
                             OrderResponse orderResponse = response.body();
                             Log.i("RetrofitCall", "Response successful. OrderResponse: " + orderResponse.toString());
@@ -1054,6 +1242,8 @@ public class FinishSeparateFragment extends Fragment {
                     if (!call.isCanceled()) {
                         Log.e("RetrofitCall", "Request failed: " + t.getMessage(), t);
                         FirebaseCrashlytics.getInstance().recordException(t);
+                        delayMillisStatus = Math.min(delayMillisStatus + 5000, 30_000);
+                        Logger.w(context, TAG, "status poll backoff ms=" + delayMillisStatus);
                     } else {
                         Log.d("RetrofitCall", "Request was canceled.");
                     }
@@ -1494,7 +1684,7 @@ public class FinishSeparateFragment extends Fragment {
          });
      }
     private void orderCanceled(String message) {
-//        new Handler(Looper.getMainLooper()).post(() -> {
+            PaymentErrorSheetHelper.dismiss(getParentFragmentManager());
             sharedPreferencesHelperMain.saveValue("carFound", false);
             text_status.setText(R.string.recounting_order);
 
@@ -1858,20 +2048,20 @@ public class FinishSeparateFragment extends Fragment {
             }
         });
 
-        // Наблюдение за статусом транзакции
+        // Centrifugo/FCM во время экрана (не при входе — там refreshPaymentStatusOnEnter)
         viewModel.getTransactionStatus().observe(getViewLifecycleOwner(), status -> {
-            if (status != null) {
-                Logger.d(context,"getTransactionStatus", "Finish transaction status set: " + status);
-                String declined_invoice = (String) sharedPreferencesHelperMain.getValue("declined_invoice", "**");
-                Logger.d(context,"getTransactionStatus", "Finish declined_invoice: " + declined_invoice);
-                Logger.d(context,"getTransactionStatus", "Finish MainActivity.order_id: " + MainActivity.order_id);
-                if ("Declined".equals(status) && !declined_invoice.equals(MainActivity.order_id)) {
-                    sharedPreferencesHelperMain.saveValue("declined_invoice", MainActivity.order_id);
-                    handleTransactionStatusDeclined(status, context);
-                    viewModel.setCancelStatus(true);
-                }
+            if (status == null) {
+                return;
             }
-
+            Logger.d(context, "getTransactionStatus", "Finish transaction status: " + status);
+            if (paymentCheckInProgress) {
+                return;
+            }
+            if ("Declined".equals(status)) {
+                presentDeclinedUiOnFinish();
+            } else if (isApprovedPaymentStatus(status)) {
+                clearDeclinedPaymentUi();
+            }
         });
 
         if(!paySystemStatus.equals("nal_payment")) {
@@ -2048,10 +2238,245 @@ public class FinishSeparateFragment extends Fragment {
         }
     }
 
+    @Nullable
+    private String resolveActiveOrderUid() {
+        if (uid != null && !uid.isEmpty()) {
+            return uid;
+        }
+        if (MainActivity.uid != null && !MainActivity.uid.isEmpty()) {
+            return MainActivity.uid;
+        }
+        if (viewModel != null && viewModel.getUid().getValue() != null
+                && !viewModel.getUid().getValue().isEmpty()) {
+            return viewModel.getUid().getValue();
+        }
+        return null;
+    }
+
+    @Nullable
+    private String resolveWfpOrderReference() {
+        if (MainActivity.order_id != null && !MainActivity.order_id.isEmpty()) {
+            return MainActivity.order_id;
+        }
+        if (MainActivity.invoiceId != null && !MainActivity.invoiceId.isEmpty()) {
+            return MainActivity.invoiceId;
+        }
+        String activeUid = resolveActiveOrderUid();
+        String saved = PaymentSessionHelper.getWfpOrderRef(activeUid);
+        if (saved != null) {
+            MainActivity.order_id = saved;
+            return saved;
+        }
+        Logger.w(context, TAG, "resolveWfpOrderReference: empty for uid=" + activeUid);
+        return null;
+    }
+
+    /**
+     * WFP: нет hold на сервере = оплата не прошла — шторка сразу, без ожидания push/checkStatus.
+     */
+    private void verifyPaymentHoldOnEnter(int holdGen) {
+        if (!isAdded() || canceled || uid == null || uid.isEmpty()) {
+            return;
+        }
+        if (!"wfp_payment".equals(pay_method)) {
+            return;
+        }
+
+        String baseUrlValue = (String) sharedPreferencesHelperMain.getValue(
+                "baseUrl", "https://m.easy-order-taxi.site");
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(5, TimeUnit.SECONDS)
+                .readTimeout(8, TimeUnit.SECONDS)
+                .writeTimeout(8, TimeUnit.SECONDS)
+                .build();
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrlValue)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+
+        if (holdVerifyCall != null && !holdVerifyCall.isCanceled()) {
+            holdVerifyCall.cancel();
+        }
+        holdVerifyCall = retrofit.create(APIHoldService.class).verifyHold(uid);
+        holdVerifyCall.enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<HoldResponse> call, @NonNull Response<HoldResponse> response) {
+                if (holdGen != holdCheckGeneration || !isAdded() || canceled) {
+                    return;
+                }
+                String result = response.isSuccessful() && response.body() != null
+                        ? response.body().getResult()
+                        : null;
+                Logger.d(context, TAG, "verifyHold on enter: " + result);
+                if (result == null || !"hold".equals(result)) {
+                    applyPaymentStatusFromServer("Declined", false, true);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<HoldResponse> call, @NonNull Throwable t) {
+                if (holdGen != holdCheckGeneration || !isAdded() || call.isCanceled()) {
+                    return;
+                }
+                Logger.w(context, TAG, "verifyHold on enter failed: " + t.getMessage());
+            }
+        });
+    }
+
+    /**
+     * При заходе на финиш: verifyHold + checkStatus для карты, затем шторка или снятие Declined.
+     */
+    private void refreshPaymentStatusOnEnter() {
+        if (!isAdded() || canceled) {
+            return;
+        }
+
+        PaymentDeclinedNotifier.clearSheetDebounce();
+        paymentCheckGeneration++;
+        holdCheckGeneration++;
+        final int checkGen = paymentCheckGeneration;
+        final int holdGen = holdCheckGeneration;
+        final boolean pendingDeclined = PendingTransactionHelper.hasPendingDeclinedForActiveOrder();
+        final boolean knownFailure = pendingDeclined || hasKnownPaymentFailure();
+
+        String orderUid = resolveActiveOrderUid();
+        if (orderUid != null) {
+            uid = orderUid;
+        }
+
+        if (retrofitCall != null && !retrofitCall.isCanceled()) {
+            retrofitCall.cancel();
+        }
+
+        verifyPaymentHoldOnEnter(holdGen);
+
+        if (isCardPayMethod()) {
+            if (knownFailure) {
+                Logger.d(context, TAG, "refreshPaymentStatusOnEnter: known payment failure — show sheet now");
+                presentDeclinedUiOnFinish();
+                paymentCheckInProgress = false;
+            } else {
+                paymentCheckInProgress = true;
+            }
+            requestWfpPaymentStatusCheck(true, checkGen, pendingDeclined, knownFailure);
+        } else if (pendingDeclined) {
+            applyPaymentStatusFromServer("Declined", true, true);
+        }
+
+        if (uid != null && !uid.isEmpty()) {
+            try {
+                Logger.d(context, TAG, "refreshPaymentStatusOnEnter: statusOrder");
+                statusOrder();
+            } catch (ParseException e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
+            }
+        } else {
+            Logger.w(context, TAG, "refreshPaymentStatusOnEnter: uid empty");
+        }
+    }
+
+    private void requestWfpPaymentStatusCheck() {
+        requestWfpPaymentStatusCheck(false, paymentCheckGeneration, false, false);
+    }
+
+    private void requestWfpPaymentStatusCheck(
+            boolean fastOnResume,
+            int checkGen,
+            boolean pendingDeclined,
+            boolean knownFailure
+    ) {
+        String orderRef = resolveWfpOrderReference();
+        if (!isAdded() || orderRef == null) {
+            paymentCheckInProgress = false;
+            Logger.w(context, TAG, "checkStatus skipped: no orderReference");
+            if (pendingDeclined || knownFailure) {
+                applyPaymentStatusFromServer("Declined", true, true);
+            }
+            return;
+        }
+        Logger.d(context, TAG, "checkStatus orderRef=" + orderRef);
+        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
+        if (listCity.size() < 2) {
+            paymentCheckInProgress = false;
+            if (knownFailure || pendingDeclined) {
+                applyPaymentStatusFromServer("Declined", true, true);
+            }
+            return;
+        }
+        String city = listCity.get(1);
+
+        OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
+        if (fastOnResume) {
+            clientBuilder
+                    .connectTimeout(5, TimeUnit.SECONDS)
+                    .readTimeout(8, TimeUnit.SECONDS)
+                    .writeTimeout(8, TimeUnit.SECONDS);
+        } else {
+            HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+            loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+            clientBuilder
+                    .addInterceptor(new RetryInterceptor())
+                    .addInterceptor(loggingInterceptor)
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(30, TimeUnit.SECONDS);
+        }
+        OkHttpClient client = clientBuilder.build();
+
+        String baseUrlValue = (String) sharedPreferencesHelperMain.getValue(
+                "baseUrl", "https://m.easy-order-taxi.site");
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrlValue + "/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+
+        StatusService service = retrofit.create(StatusService.class);
+        if (wfpStatusCheckCall != null && !wfpStatusCheckCall.isCanceled()) {
+            wfpStatusCheckCall.cancel();
+        }
+        wfpStatusCheckCall = service.checkStatus(
+                context.getString(R.string.application),
+                city,
+                orderRef
+        );
+        wfpStatusCheckCall.enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<StatusResponse> call,
+                                   @NonNull Response<StatusResponse> response) {
+                if (checkGen != paymentCheckGeneration || !isAdded()) {
+                    return;
+                }
+                paymentCheckInProgress = false;
+                String orderStatus = response.body() != null
+                        ? response.body().getTransactionStatus()
+                        : null;
+                Logger.d(context, TAG, "WFP checkStatus on enter: " + orderStatus);
+                applyPaymentStatusFromServer(orderStatus, pendingDeclined, knownFailure);
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
+                if (checkGen != paymentCheckGeneration || !isAdded()) {
+                    return;
+                }
+                paymentCheckInProgress = false;
+                if (!call.isCanceled()) {
+                    FirebaseCrashlytics.getInstance().recordException(t);
+                    Logger.w(context, TAG, "WFP checkStatus failed, pendingDeclined=" + pendingDeclined);
+                }
+                if (pendingDeclined || knownFailure || hasKnownPaymentFailure()) {
+                    applyPaymentStatusFromServer("Declined", true, true);
+                }
+            }
+        });
+    }
+
     @Override
     public void onResume() {
         super.onResume();
-        sharedPreferencesHelperMain.saveValue("add_show_flag", true);
         timeUtils = new TimeUtils(required_time, viewModel);
         timeUtils.startTimer();
 
@@ -2070,6 +2495,14 @@ public class FinishSeparateFragment extends Fragment {
         addCheck(context);
         isTaskRunning = false;
         isTaskCancelled = false;
+        delayMillisStatus = 5 * 1000;
+        if (handlerStatus != null) {
+            handlerStatus.removeCallbacks(myTaskStatus);
+        }
+        if (!canceled) {
+            refreshPaymentStatusOnEnter();
+            PendingTransactionHelper.consumePendingDeclined(context, this::presentDeclinedUiOnFinish);
+        }
         startCycle();
 
         btn_open.setOnClickListener(v -> btnOpen());
@@ -2093,25 +2526,36 @@ public class FinishSeparateFragment extends Fragment {
         if (retrofitCall != null && !retrofitCall.isCanceled()) {
             retrofitCall.cancel(); // Отмена вызова Retrofit
         }
+        if (wfpStatusCheckCall != null && !wfpStatusCheckCall.isCanceled()) {
+            wfpStatusCheckCall.cancel();
+        }
+        if (holdVerifyCall != null && !holdVerifyCall.isCanceled()) {
+            holdVerifyCall.cancel();
+        }
+        paymentCheckGeneration++;
+        holdCheckGeneration++;
+        paymentCheckInProgress = false;
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onTransactionStatusEvent(TransactionStatusEvent event) {
-        Log.d("FRAGMENT", "🔔 EventBus received status: " + event.getStatus());
-
-        String status = event.getStatus();
-        // Ваша логика обработки статуса
-        if ("Declined".equals(status)) {
-            String declined_invoice = (String) sharedPreferencesHelperMain.getValue("declined_invoice", "**");
-            if (!declined_invoice.equals(MainActivity.order_id)) {
-                sharedPreferencesHelperMain.saveValue("declined_invoice", MainActivity.order_id);
-                handleTransactionStatusDeclined(status, getContext());
-                if (viewModel != null) {
-                    viewModel.setCancelStatus(true);
-                }
+    @Override
+    public void onHiddenChanged(boolean hidden) {
+        super.onHiddenChanged(hidden);
+        if (!hidden && isResumed() && isAdded()) {
+            pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
+            isTaskRunning = false;
+            isTaskCancelled = false;
+            delayMillisStatus = 5 * 1000;
+            if (handlerStatus != null) {
+                handlerStatus.removeCallbacks(myTaskStatus);
             }
+            if (!canceled) {
+                refreshPaymentStatusOnEnter();
+                PendingTransactionHelper.consumePendingDeclined(context, this::presentDeclinedUiOnFinish);
+            }
+            startCycle();
         }
     }
+
     @Override
     public void onStart() {
         super.onStart();

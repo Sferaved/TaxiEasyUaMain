@@ -46,7 +46,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.ProgressBar;
+import com.taxi.easy.ua.utils.ui.CostCalculationProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -154,7 +154,7 @@ public class VisicomFragment extends Fragment {
 
 
     @SuppressLint("StaticFieldLeak")
-    public static ProgressBar progressBar;
+    public static CostCalculationProgressBar progressBar;
 
     private FragmentVisicomBinding binding;
     private static final String TAG = "VisicomFragment";
@@ -247,7 +247,9 @@ public class VisicomFragment extends Fragment {
     private LifecycleObserver lifecycleObserver;
     private boolean appProcessWasInBackground = false;
     private static final long VISICOM_COST_DEBOUNCE_MS = 2500;
+    private static final long VISICOM_COST_LAST_ADDRESS_COOLDOWN_MS = 30_000;
     private long lastVisicomCostRequestMs = 0;
+    private long lastCostCalculationFailureMs = 0;
 
     private static final double DEFAULT_LAT = 50.4501; // Киев по умолчанию
     private static final double DEFAULT_LON = 30.5234;
@@ -885,21 +887,34 @@ public class VisicomFragment extends Fragment {
         binding.gpsbut.setVisibility(View.VISIBLE);
 
         if (visible == GONE || visible == INVISIBLE) {
-            showRetryMode();
+            if (!CostCalculationProgressBar.isCalculationInProgress()) {
+                showRetryMode();
+            }
         } else if (visible == VISIBLE) {
             showNormalMode();
         }
 
-        // Управление ProgressBar
-        binding.progressBar.setVisibility(visible == GONE ? View.VISIBLE : View.GONE);
+        if (!CostCalculationProgressBar.isCalculationInProgress()) {
+            binding.progressBar.setVisibility(visible == GONE ? View.VISIBLE : View.GONE);
+        }
 
-        // Групповая установка видимости для основных элементов (исключаем gpsbut)
-        setViewsVisibility(visible,
-                binding.linearLayoutButtons,
-                binding.btnAdd, binding.btnBonus, binding.btnMinus,
-                binding.textViewCost, binding.btnPlus, binding.btnOrder,
-                binding.schedule, binding.shedDown
-        );
+        if (CostCalculationProgressBar.isCalculationInProgress()) {
+            binding.textViewCost.setVisibility(VISIBLE);
+            progressBar.forceShow();
+            setViewsVisibility(visible,
+                    binding.linearLayoutButtons,
+                    binding.btnAdd, binding.btnBonus, binding.btnMinus,
+                    binding.btnPlus, binding.btnOrder,
+                    binding.schedule, binding.shedDown
+            );
+        } else {
+            setViewsVisibility(visible,
+                    binding.linearLayoutButtons,
+                    binding.btnAdd, binding.btnBonus, binding.btnMinus,
+                    binding.textViewCost, binding.btnPlus, binding.btnOrder,
+                    binding.schedule, binding.shedDown
+            );
+        }
 
         Logger.d(context,"BTN_VISIBLE", "Метод завершен. Текущий режим: " + getVisibilityString(visible));
     }
@@ -951,6 +966,143 @@ public class VisicomFragment extends Fragment {
     }
 
 
+
+    private void showCostCalculationProgress() {
+        if (!isAdded() || binding == null) {
+            return;
+        }
+        CostCalculationProgressBar.setCalculationInProgress(true);
+        binding.btnReset.setVisibility(GONE);
+        binding.btnReport.setVisibility(GONE);
+        binding.textViewCost.setVisibility(VISIBLE);
+        text_view_cost.setText("");
+        progressBar.forceShow();
+        progressBar.bringToFront();
+        btn_minus.setVisibility(GONE);
+        btn_plus.setVisibility(GONE);
+        btnOrder.setVisibility(GONE);
+        binding.btnAdd.setVisibility(INVISIBLE);
+        binding.btnBonus.setVisibility(INVISIBLE);
+        binding.linearLayoutButtons.setVisibility(GONE);
+        binding.schedule.setVisibility(INVISIBLE);
+        binding.shedDown.setVisibility(INVISIBLE);
+        binding.getRoot().post(this::restoreCostCalculationProgressIfNeeded);
+    }
+
+    private void hideCostCalculationProgress() {
+        CostCalculationProgressBar.setCalculationInProgress(false);
+        if (progressBar != null) {
+            progressBar.forceHide();
+        }
+    }
+
+    private void restoreCostCalculationProgressIfNeeded() {
+        if (!CostCalculationProgressBar.isCalculationInProgress() || binding == null) {
+            return;
+        }
+        CharSequence priceText = text_view_cost != null ? text_view_cost.getText() : null;
+        if (priceText != null && !priceText.toString().trim().isEmpty()) {
+            return;
+        }
+        binding.textViewCost.setVisibility(VISIBLE);
+        progressBar.forceShow();
+        progressBar.bringToFront();
+    }
+
+    private void hideOrderControlsDuringCostCalculation() {
+        if (binding == null) {
+            return;
+        }
+        binding.linearLayoutButtons.setVisibility(GONE);
+        binding.btnAdd.setVisibility(INVISIBLE);
+        binding.btnBonus.setVisibility(INVISIBLE);
+        binding.btnMinus.setVisibility(GONE);
+        binding.btnPlus.setVisibility(GONE);
+        binding.btnOrder.setVisibility(GONE);
+        binding.schedule.setVisibility(INVISIBLE);
+        binding.shedDown.setVisibility(INVISIBLE);
+    }
+
+    private void finishCostCalculationWithPrice() {
+        if (text_view_cost == null) {
+            return;
+        }
+        CharSequence priceText = text_view_cost.getText();
+        if (priceText == null || priceText.toString().trim().isEmpty()) {
+            showCostCalculationProgress();
+            return;
+        }
+        hideCostCalculationProgress();
+        btnVisible(VISIBLE);
+        btnAdd.setVisibility(View.VISIBLE);
+        buttonBonus.setVisibility(View.VISIBLE);
+        btn_minus.setVisibility(View.VISIBLE);
+        text_view_cost.setVisibility(View.VISIBLE);
+        btn_plus.setVisibility(View.VISIBLE);
+        btnOrder.setVisibility(View.VISIBLE);
+        constr2.setVisibility(View.VISIBLE);
+        schedule.setVisibility(View.VISIBLE);
+        shed_down.setVisibility(View.VISIBLE);
+    }
+
+    private static boolean hasDisplayableCost(String cost) {
+        if (cost == null || cost.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            return Long.parseLong(cost.trim()) > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private static boolean isTerminalCostMessage(String message) {
+        if (message == null) {
+            return false;
+        }
+        return "ErrorMessage".equals(message)
+                || "ErrorCardPayment".equals(message)
+                || message.startsWith("Ошибка от сервера")
+                || message.startsWith("Ошибка подключения");
+    }
+
+    private void cancelPendingReserveCost() {
+        if (costHandler != null && reserveRunnable != null) {
+            costHandler.removeCallbacks(reserveRunnable);
+        }
+    }
+
+    private void showCostCalculationError(String serverMessage) {
+        cancelPendingReserveCost();
+        hideCostCalculationProgress();
+        long now = System.currentTimeMillis();
+        lastVisicomCostRequestMs = now;
+        lastCostCalculationFailureMs = now;
+        btnVisible(VISIBLE);
+        if (!isAdded() || isStateSaved()) {
+            return;
+        }
+        MyBottomSheetErrorFragment sheet = new MyBottomSheetErrorFragment(resolveCostErrorMessage(serverMessage));
+        sheet.show(getChildFragmentManager(), sheet.getTag());
+    }
+
+    private String resolveCostErrorMessage(String serverMessage) {
+        if (serverMessage == null || serverMessage.trim().isEmpty()) {
+            return getString(R.string.server_error_connected);
+        }
+        if ("ErrorMessage".equals(serverMessage)) {
+            return getString(R.string.server_error_connected);
+        }
+        if ("ErrorCardPayment".equals(serverMessage)) {
+            return getString(R.string.server_error_card_payment);
+        }
+        if (serverMessage.startsWith("Ошибка подключения")
+                || serverMessage.startsWith("Ошибка от сервера")
+                || serverMessage.toLowerCase().contains("timeout")) {
+            return getString(R.string.server_error_connected);
+        }
+        return serverMessage;
+    }
 
     // Вспомогательный метод для логирования (добавьте в класс)
     private String getVisibilityString(int visibility) {
@@ -2679,11 +2831,32 @@ public class VisicomFragment extends Fragment {
         }
         maybeAutoApplyLocationAfterCity();
         restoreGpsCrossIfPendingUserApply();
+        dismissGpsCrossAfterGeoCityChangeIfReady();
 
+    }
+
+    /** После смены города по геопозиции — снять крестик, если авто-GPS уже не идёт. */
+    private void dismissGpsCrossAfterGeoCityChangeIfReady() {
+        if (!isAdded() || binding == null) {
+            return;
+        }
+        if (!AutoLocationAfterCityHelper.isCityChangedViaGeo()) {
+            return;
+        }
+        if (AutoLocationAfterCityHelper.isCityReady()
+                && !AutoLocationAfterCityHelper.isPending()
+                && !autoLocationFromCityLoad
+                && !isUpdatingFromGPS) {
+            AutoLocationAfterCityHelper.clearCityChangedViaGeo();
+            finishAutoLocationGpsButtonState();
+        }
     }
 
     private void restoreGpsCrossIfPendingUserApply() {
         if (!isAdded() || binding == null) {
+            return;
+        }
+        if (AutoLocationAfterCityHelper.isCityChangedViaGeo()) {
             return;
         }
         if (AutoLocationAfterCityHelper.isGpsPendingUserApply()) {
@@ -2739,9 +2912,11 @@ public class VisicomFragment extends Fragment {
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             Logger.d(context, TAG, "Авто-геолокация после выбора города");
             autoLocationFromCityLoad = true;
-            sharedPreferencesHelperMain.saveValue("setStatusX", true);
-            viewModel.setStatusX(true);
-            updateGpsButtonCross(true);
+            if (!AutoLocationAfterCityHelper.isCityChangedViaGeo()) {
+                sharedPreferencesHelperMain.saveValue("setStatusX", true);
+                viewModel.setStatusX(true);
+                updateGpsButtonCross(true);
+            }
             detectAndStoreAutoLocationAfterCity();
         } else {
             applyLastOrderAddressFromRouteMarker();
@@ -2834,6 +3009,13 @@ public class VisicomFragment extends Fragment {
         progressBar.setVisibility(View.GONE);
         isUpdatingFromGPS = false;
         autoLocationFromCityLoad = false;
+
+        if (AutoLocationAfterCityHelper.isCityChangedViaGeo()) {
+            AutoLocationAfterCityHelper.clearCityChangedViaGeo();
+            finishAutoLocationGpsButtonState();
+            applyLastOrderAddressFromRouteMarker(false);
+            return;
+        }
 
         boolean gpsDetectedNotApplied = AutoLocationAfterCityHelper.hasDetectedCoordinates();
         if (gpsDetectedNotApplied) {
@@ -2936,16 +3118,40 @@ public class VisicomFragment extends Fragment {
             return;
         }
         long now = System.currentTimeMillis();
+
+        if ("lastOrderAddress".equals(source) || "foreground".equals(source)) {
+            if (CostCalculationProgressBar.isCalculationInProgress()) {
+                Logger.d(context, TAG, "visicomCost пропущен (расчёт идёт), источник: " + source);
+                return;
+            }
+            if (lastCostCalculationFailureMs > 0
+                    && now - lastCostCalculationFailureMs < VISICOM_COST_LAST_ADDRESS_COOLDOWN_MS) {
+                Logger.d(context, TAG, "visicomCost пропущен (после ошибки расчёта), источник: " + source);
+                return;
+            }
+            if (lastVisicomCostRequestMs > 0
+                    && now - lastVisicomCostRequestMs < VISICOM_COST_LAST_ADDRESS_COOLDOWN_MS) {
+                Logger.d(context, TAG, "visicomCost пропущен (cooldown "
+                        + (VISICOM_COST_LAST_ADDRESS_COOLDOWN_MS / 1000) + "s), источник: " + source);
+                return;
+            }
+        }
+
         if (now - lastVisicomCostRequestMs < VISICOM_COST_DEBOUNCE_MS) {
             Logger.d(context, TAG, "visicomCost пропущен (debounce), источник: " + source);
             return;
         }
         lastVisicomCostRequestMs = now;
+        showCostCalculationProgress();
         try {
             Logger.d(context, TAG, "visicomCost, источник: " + source);
             visicomCost();
         } catch (MalformedURLException e) {
             Logger.e(context, TAG, "visicomCost (" + source + "): " + e.getMessage());
+            hideCostCalculationProgress();
+            if (isAdded()) {
+                btnVisible(VISIBLE);
+            }
         }
     }
 
@@ -3610,6 +3816,7 @@ public class VisicomFragment extends Fragment {
             Logger.w(context, TAG, "Маршрут не найден — cursor пуст");
             cursor.close();
             database.close();
+            hideCostCalculationProgress();
             return;
         }
 
@@ -3626,11 +3833,10 @@ public class VisicomFragment extends Fragment {
         Logger.d(context, TAG, "originLatitude = " + originLatitude + ", toLat = " + toLat);
 
         if ("run".equals(cityCheckActivity) && originLatitude != 0.0 && toLat != 0.0) {
-            progressBar.setVisibility(View.VISIBLE);
-
+            showCostCalculationProgress();
             orderRout();
             requestCostFromServer(start, finish);
-            btnVisible(GONE);
+            hideOrderControlsDuringCostCalculation();
 
 //            String cost = (String) sharedPreferencesHelperMain.getValue("old_cost","100");
 //            Logger.d(context,TAG, "onContextItemSelected parts[1] cost: " + cost);
@@ -3671,24 +3877,28 @@ public class VisicomFragment extends Fragment {
 
         orderViewModel.getOrderCost().observe(getViewLifecycleOwner(), cost -> {
             if (cost != null && cost.equals(lastCost)) {
-                // Игнорируем повтор
                 return;
             }
             lastCost = cost;
 
             Logger.d(context, TAG, "Updated order_cost: " + cost);
 
+            if (!hasDisplayableCost(cost)) {
+                showCostCalculationProgress();
+                if (costHandler != null && reserveRunnable != null) {
+                    costHandler.postDelayed(reserveRunnable, 10_000);
+                }
+                return;
+            }
+
+            if (costHandler != null && reserveRunnable != null) {
+                costHandler.removeCallbacks(reserveRunnable);
+            }
+
             if (binding != null) {
-                btnVisible(View.VISIBLE);
                 geoText.setText(start);
                 binding.textTo.setText(finish.trim().equals(start.trim()) ? "" : finish);
                 applyDiscountAndUpdateUI(cost, context);
-            }
-
-            if (cost.isEmpty()) {
-                costHandler.postDelayed(reserveRunnable, 10_000);
-            } else {
-                costHandler.removeCallbacks(reserveRunnable);
             }
         });
 
@@ -3720,21 +3930,17 @@ public class VisicomFragment extends Fragment {
 
                     Map<String, String> map = response.body();
                     String cost;
-                    if (map != null && !"0".equals(map.get("order_cost"))) {
+                    if (map != null && hasDisplayableCost(map.get("order_cost"))) {
                         cost = map.get("order_cost");
                         applyDiscountAndUpdateUI(cost, context);
+                    } else if (map != null && isTerminalCostMessage(map.get("Message"))) {
+                        Logger.d(context, TAG, "reserveCost: ошибка расчёта, Message=" + map.get("Message"));
+                        showCostCalculationError(map.get("Message"));
                     } else {
+                        showCostCalculationProgress();
                         if (map != null) {
-                            Set<String> errorMessages = new HashSet<>(Arrays.asList(
-                                    "Повторный запрос",
-                                    "Ошибка создания заказа"
-                            ));
-                            String message = map.get("Message");
-                            if (errorMessages.contains(message)) {
-                                String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
-                                cost = (String) sharedPreferencesHelperMain.getValue(tarif, "100");
-                                applyDiscountAndUpdateUI(cost, context);
-                            }
+                            Logger.d(context, TAG, "reserveCost: цена ещё не готова, Message="
+                                    + map.get("Message") + ", order_cost=" + map.get("order_cost"));
                         }
                     }
 
@@ -3746,7 +3952,7 @@ public class VisicomFragment extends Fragment {
             public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
                 FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.e(context, TAG, "Ошибка подключения к серверу: " + t.getMessage());
-                applyDiscountAndUpdateUI("0", context);
+                showCostCalculationError("Ошибка подключения: " + t.getLocalizedMessage());
             }
         });
     }
@@ -3820,26 +4026,17 @@ public class VisicomFragment extends Fragment {
             firstCostForMin = firstCost;
 
             Logger.d(context, TAG, "Setting UI visibility and values");
-            btnVisible(VISIBLE);
 
-
-            if(!finish.isEmpty()) {
+            if (!finish.isEmpty()) {
                 textViewTo.setText(finish);
             }
 
-            btnAdd.setVisibility(View.VISIBLE);
-            buttonBonus.setVisibility(View.VISIBLE);
-            btn_minus.setVisibility(View.VISIBLE);
-            text_view_cost.setVisibility(View.VISIBLE);
-            btn_plus.setVisibility(View.VISIBLE);
-            btnOrder.setVisibility(View.VISIBLE);
-            constr2.setVisibility(View.VISIBLE);
-            schedule.setVisibility(View.VISIBLE);
-            shed_down.setVisibility(View.VISIBLE);
+            finishCostCalculationWithPrice();
 
         } catch (NumberFormatException e) {
             FirebaseCrashlytics.getInstance().recordException(e);
             Logger.e(context, TAG, "NumberFormatException в applyDiscountAndUpdateUI: " + e.getMessage());
+            showCostCalculationProgress();
         }
 
         btnVisible(View.VISIBLE);

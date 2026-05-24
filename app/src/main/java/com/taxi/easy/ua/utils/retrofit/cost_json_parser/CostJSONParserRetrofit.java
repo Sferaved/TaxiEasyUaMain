@@ -7,6 +7,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.taxi.easy.ua.utils.cost.CostParseHelper;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.retrofit.APIService;
 
@@ -98,10 +99,14 @@ public class CostJSONParserRetrofit {
                         Log.e(TAG, "orderCost" + orderCost);
                         Log.e(TAG, "message" + message);
 
-                        if (!"0".equals(orderCost)) {
+                        if (CostParseHelper.hasDisplayableCost(orderCost)) {
                             costMap.putAll(jsonResponse);
+                            String normalized = CostParseHelper.normalizeCostString(orderCost);
+                            if (normalized != null) {
+                                costMap.put("order_cost", normalized);
+                            }
                             String tarif = (String) sharedPreferencesHelperMain.getValue("tarif", " ");
-                            sharedPreferencesHelperMain.saveValue(tarif, orderCost);
+                            sharedPreferencesHelperMain.saveValue(tarif, normalized != null ? normalized : orderCost);
                         } else {
                             costMap.put("order_cost", "0");
                             costMap.put("Message", message);

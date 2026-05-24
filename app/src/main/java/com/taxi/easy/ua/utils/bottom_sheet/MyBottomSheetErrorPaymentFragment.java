@@ -109,6 +109,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
     // Флаг для отслеживания действий пользователя
     private boolean actionPerformed = false;
+    private boolean dismissCancelHandled = false;
 
     // Интерфейс для слушателя состояния диалога
     private DialogStateListener dialogStateListener;
@@ -234,10 +235,8 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
         btn_cancel = view.findViewById(R.id.btn_cancel_order);
         btn_cancel.setOnClickListener(v -> {
-            actionPerformed = true; // Отмечаем, что действие было выполнено
-            cancelOrderDouble();
-            sharedPreferencesHelperMain.saveValue("pay_error", "**");
-            dismiss();
+            actionPerformed = true;
+            performOrderCancelAndDismiss();
         });
 
         listView = view.findViewById(R.id.listView);
@@ -254,13 +253,11 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
         // Проверяем, было ли совершено действие
         if (!actionPerformed) {
-            // Пользователь просто закрыл шторку без каких-либо действий
             handleDismissWithoutAction();
         } else {
             sharedPreferencesHelperMain.saveValue("add_show_flag", true);
         }
 
-        // Уведомляем слушателя об отмене
         if (dialogStateListener != null) {
             dialogStateListener.onDialogCancelled();
         }
@@ -270,11 +267,10 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     public void onDismiss(@NonNull DialogInterface dialog) {
         super.onDismiss(dialog);
 
-        // Проверяем, было ли совершено действие (на случай, если onCancel не сработал)
-        if (!actionPerformed) {
+        if (!actionPerformed && !dismissCancelHandled) {
             Log.d(TAG, "Диалог закрыт без действий (onDismiss)");
             handleDismissWithoutAction();
-        } else {
+        } else if (actionPerformed) {
             sharedPreferencesHelperMain.saveValue("add_show_flag", true);
         }
 
@@ -288,21 +284,35 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
      * Обработка закрытия диалога без выполнения действий
      */
     private void handleDismissWithoutAction() {
-        Log.d(TAG, "Пользователь закрыл шторку без каких-либо действий");
-
-        // Здесь можно выполнить нужные действия
-        // Например, отменить заказ
-        cancelOrderDouble();
-
-        // Или показать сообщение (если фрагмент еще добавлен)
+        if (dismissCancelHandled) {
+            return;
+        }
+        dismissCancelHandled = true;
+        actionPerformed = true;
+        Log.d(TAG, "Закрытие шторки оплаты — немедленная отмена заказа");
+        sharedPreferencesHelperMain.saveValue("pay_error", "**");
+        if (!FinishSeparateFragment.cancelFromPaymentBottomSheet(context)) {
+            cancelOrderOnServer();
+        }
         if (isAdded() && getContext() != null) {
             Toast.makeText(getContext(), context.getString(R.string.ex_st_canceled_no_pay), Toast.LENGTH_SHORT).show();
         }
-
-        // Уведомляем слушателя
         if (dialogStateListener != null) {
             dialogStateListener.onDialogDismissedWithoutAction();
         }
+    }
+
+    private void performOrderCancelAndDismiss() {
+        dismissCancelHandled = true;
+        actionPerformed = true;
+        sharedPreferencesHelperMain.saveValue("pay_error", "**");
+        if (!FinishSeparateFragment.cancelFromPaymentBottomSheet(context)) {
+            cancelOrderOnServer();
+        }
+        if (isAdded() && getContext() != null) {
+            Toast.makeText(getContext(), context.getString(R.string.ex_st_canceled_no_pay), Toast.LENGTH_SHORT).show();
+        }
+        dismiss();
     }
 
     private boolean verifyOrder() {
@@ -435,6 +445,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     }
 
     void callOrderIdMemory(String orderId, String uid, String paySystem) {
+        com.taxi.easy.ua.utils.payment.PaymentSessionHelper.saveWfpOrderRef(uid, orderId);
         String baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
@@ -846,20 +857,38 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     }
 
     private void cancelOrderDouble() {
+        if (!FinishSeparateFragment.cancelFromPaymentBottomSheet(context)) {
+            cancelOrderOnServer();
+        }
+        dismiss();
+    }
+
+    private void cancelOrderOnServer() {
+        if (context == null) {
+            return;
+        }
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         String city = listCity.get(1);
         String api = listCity.get(2);
+        String paymentMethod = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-        String url = baseUrl + api + "/android/webordersCancelDouble/" + MainActivity.uid + "/" + uid_Double + "/" + pay_method + "/" + city + "/" + context.getString(R.string.application);
+        boolean orderInMyVod = (boolean) sharedPreferencesHelperMain.getValue("order_in_my_vod", false);
+        String url = baseUrl + api;
+        if (!orderInMyVod) {
+            url += "/android/webordersCancelDouble/" + uid + "/" + uid_Double + "/"
+                    + paymentMethod + "/" + city + "/" + context.getString(R.string.application);
+        } else {
+            url += "/android/webordersCancelVod/" + uid;
+        }
 
         Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
-        Logger.d(context, TAG, "cancelOrderDouble: " + url);
+        Logger.d(context, TAG, "cancelOrderOnServer: " + url);
 
         call.enqueue(new Callback<Status>() {
             @Override
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    Logger.d(context, TAG, "cancelOrderDouble response: " + response.toString());
+                    Logger.d(context, TAG, "cancelOrderOnServer response: " + response);
                 }
             }
 
@@ -873,11 +902,9 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                     Logger.d(context, TAG, "onFailure: Непредвиденная ошибка");
                 }
                 FirebaseCrashlytics.getInstance().recordException(t);
-                String errorMessage = t.getMessage();
-                Logger.d(context, TAG, "onFailure: Ошибка: " + errorMessage);
+                Logger.d(context, TAG, "onFailure: Ошибка: " + t.getMessage());
             }
         });
-        dismiss();
     }
 
     private void cancelOrderDoubleForNal() {

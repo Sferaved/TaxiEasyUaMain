@@ -27,8 +27,10 @@ import com.pusher.client.connection.ConnectionStateChange;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.cost.CostParseHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
+import com.taxi.easy.ua.utils.payment.PendingTransactionHelper;
 import com.taxi.easy.ua.utils.pusher.events.TransactionStatusEvent;
 
 import org.greenrobot.eventbus.EventBus;
@@ -551,6 +553,7 @@ public class PusherManager {
                 }
             } else {
                 Log.d("Pusher", "UID mismatch. Event uid: " + uid + ", MainActivity.uid: " + MainActivity.uid);
+                PendingTransactionHelper.save(uid, transactionStatus);
             }
         });
     }
@@ -574,7 +577,11 @@ public class PusherManager {
      */
     private void handleOrderCostEvent(String eventData) {
         handleJsonEvent("OrderCost", eventData, json -> {
-            String orderCost = json.optString("order_cost", "0");
+            String rawCost = json.optString("order_cost", "0");
+            String orderCost = CostParseHelper.normalizeCostString(rawCost);
+            if (orderCost == null) {
+                return;
+            }
 
             if (orderCost.equals(lastProcessedCost)) {
                 Log.d(TAG, "Duplicate cost ignored: " + orderCost);

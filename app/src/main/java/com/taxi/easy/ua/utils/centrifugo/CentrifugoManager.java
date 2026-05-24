@@ -19,9 +19,10 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.cost.CostParseHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
-import com.taxi.easy.ua.utils.pusher.events.TransactionStatusEvent;
+import com.taxi.easy.ua.utils.payment.PendingTransactionHelper;
 
 import org.greenrobot.eventbus.EventBus;
 import org.json.JSONException;
@@ -74,6 +75,9 @@ public class CentrifugoManager {
     private final String eventCanceled;
     private final String eventBlackUserStatus;
     private final String eventOrderCost;
+    /** Текущий пользователь и приложение — для строгой фильтрации общего канала. */
+    private final String eventSuffix;
+    private final String userEmail;
 
     private Client client;
     private Subscription subscription;
@@ -112,6 +116,8 @@ public class CentrifugoManager {
 
     public CentrifugoManager(String eventSuffix, String userEmail, Activity context,
                              ExecutionStatusViewModel viewModel) {
+        this.eventSuffix = eventSuffix;
+        this.userEmail = userEmail;
         this.eventUid = "order_uid_new-" + eventSuffix + "-" + userEmail;
         this.eventUidDouble = "orderDouble-status-updated-" + eventSuffix + "-" + userEmail;
         this.eventOrder = "order-" + eventSuffix + "-" + userEmail;
@@ -173,6 +179,7 @@ public class CentrifugoManager {
      * Подключение к Centrifugo
      */
     public void connect() {
+        isShuttingDown = false;
         if (!isContextValid()) {
             Log.w(TAG, "Context is invalid, skipping connection");
             return;
@@ -295,23 +302,13 @@ public class CentrifugoManager {
                 Log.d(TAG, "⚠️ TRANSACTION EVENT DETECTED: " + eventName);
             }
 
-            // ФИЛЬТРАЦИЯ: проверяем, относится ли событие к этому клиенту
-            if (!eventName.isEmpty()) {
-                // Проверяем, содержит ли eventName наши параметры
-                if (!eventName.contains(eventUid) &&
-                        !eventName.contains(eventUidDouble) &&
-                        !eventName.contains(eventOrder) &&
-                        !eventName.contains(eventAutoOrder) &&
-                        !eventName.contains(eventTransactionStatus) &&
-                        !eventName.contains(eventCanceled) &&
-                        !eventName.contains(eventBlackUserStatus) &&
-                        !eventName.contains(eventOrderCost)) {
-                    // Если событие не относится к этому клиенту - игнорируем
-                    Log.d(TAG, "Event ignored - not for this client: " + eventName);
-                    return;
-                }
-                Log.d(TAG, "Event accepted for this client: " + eventName);
+            // Общий канал teal-towel-48: принимаем только события своего email + PAS
+            if (!isEventForThisClient(eventName)) {
+                Log.d(TAG, "Event ignored - not for this client: " + eventName
+                        + " (expected suffix=" + eventSuffix + ", email=" + userEmail + ")");
+                return;
             }
+            Log.d(TAG, "Event accepted for this client: " + eventName);
 
             // Создаем уникальный ключ для события
             String uniqueKey = "pub_" + data.hashCode();
@@ -363,6 +360,23 @@ public class CentrifugoManager {
             logErrorToContext(TAG, "JSON Parsing error", e);
             FirebaseCrashlytics.getInstance().recordException(e);
         }
+    }
+
+    /**
+     * Строгая проверка: событие адресовано этому пользователю (не чужой PAS/email).
+     */
+    private boolean isEventForThisClient(String eventName) {
+        if (eventName == null || eventName.isEmpty()) {
+            return false;
+        }
+        if (!eventName.endsWith(userEmail)) {
+            return false;
+        }
+        if (eventName.startsWith("black-user-status")) {
+            return eventName.equals(eventBlackUserStatus)
+                    || eventName.endsWith("--" + userEmail);
+        }
+        return eventName.contains("-" + eventSuffix + "-");
     }
 
     /**
@@ -458,42 +472,17 @@ public class CentrifugoManager {
             // Проверяем, есть ли совпадение
             if (Objects.equals(viewModelUid, uid)) {
                 Log.d(TAG, "✅ UID MATCH with ViewModel!");
-
-                // Отправляем событие через EventBus
-                EventBus.getDefault().post(new TransactionStatusEvent(transactionStatus));
-                Log.d(TAG, "📢 EventBus post sent");
-
-                if (isContextValid()) {
-                    mainHandler.postSafe(() -> {
-                        try {
-                            viewModel.setTransactionStatus(transactionStatus);
-                            Log.d(TAG, "✅ Transaction status set in ViewModel: " + transactionStatus);
-
-
-                        } catch (Exception e) {
-                            Log.e(TAG, "❌ Error in postSafe", e);
-                        }
-                    });
-                }
+                publishTransactionStatus(transactionStatus);
             } else if (Objects.equals(MainActivity.uid, uid)) {
                 Log.d(TAG, "✅ UID MATCH with MainActivity.uid!");
-
-                EventBus.getDefault().post(new TransactionStatusEvent(transactionStatus));
-
-                if (isContextValid()) {
-                    mainHandler.postSafe(() -> {
-                        viewModel.setTransactionStatus(transactionStatus);
-                        Log.d(TAG, "✅ Transaction status set from MainActivity.uid");
-                    });
-                }
+                publishTransactionStatus(transactionStatus);
             } else {
                 Log.d(TAG, "❌ UID MISMATCH:");
                 Log.d(TAG, "   Event UID: " + uid);
                 Log.d(TAG, "   ViewModel UID: " + viewModelUid);
                 Log.d(TAG, "   MainActivity.uid: " + MainActivity.uid);
 
-                // Сохраняем для отладки
-                savePendingTransaction(uid, transactionStatus);
+                PendingTransactionHelper.save(uid, transactionStatus);
             }
         } catch (JSONException e) {
             Log.e(TAG, "❌ JSONException in handleTransactionStatusEvent", e);
@@ -505,12 +494,19 @@ public class CentrifugoManager {
         Log.d(TAG, "========== handleTransactionStatusEvent END ==========");
     }
 
-    // Временный метод для сохранения пропущенных транзакций
-    private void savePendingTransaction(String uid, String status) {
-        Log.d(TAG, "💾 Saving pending transaction - UID: " + uid + ", Status: " + status);
-        sharedPreferencesHelperMain.saveValue("pending_transaction_uid", uid);
-        sharedPreferencesHelperMain.saveValue("pending_transaction_status", status);
-        sharedPreferencesHelperMain.saveValue("pending_transaction_time", String.valueOf(System.currentTimeMillis()));
+    /** Только ViewModel — без EventBus (иначе двойная шторка на Finish). */
+    private void publishTransactionStatus(String transactionStatus) {
+        if (!isContextValid()) {
+            return;
+        }
+        mainHandler.postSafe(() -> {
+            try {
+                viewModel.setTransactionStatus(transactionStatus);
+                Log.d(TAG, "Transaction status in ViewModel: " + transactionStatus);
+            } catch (Exception e) {
+                Log.e(TAG, "Error publishing transaction status", e);
+            }
+        });
     }
 
     /**
@@ -529,8 +525,12 @@ public class CentrifugoManager {
      * Обработка стоимости заказа
      */
     private void handleOrderCostEvent(JSONObject json) throws JSONException {
-        String orderCost = json.optString("order_cost", "0");
-        Log.d(TAG, "order_cost " + orderCost);
+        String rawCost = json.optString("order_cost", "0");
+        String orderCost = CostParseHelper.normalizeCostString(rawCost);
+        Log.d(TAG, "order_cost raw=" + rawCost + " normalized=" + orderCost);
+        if (orderCost == null) {
+            return;
+        }
         if (orderCost.equals(lastProcessedCost)) {
             Log.d(TAG, "Duplicate cost ignored: " + orderCost);
             return;
