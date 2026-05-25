@@ -60,6 +60,8 @@ import com.taxi.easy.ua.ui.wfp.purchase.PurchaseService;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.payment.PaymentErrorSheetHelper;
+import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
@@ -110,6 +112,11 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     // Флаг для отслеживания действий пользователя
     private boolean actionPerformed = false;
     private boolean dismissCancelHandled = false;
+    private boolean cashReorderNavigating = false;
+    @Nullable
+    private String orderUidSnapshot;
+    @Nullable
+    private String orderUidDoubleSnapshot;
 
     // Интерфейс для слушателя состояния диалога
     private DialogStateListener dialogStateListener;
@@ -180,14 +187,28 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             btn_ok.setVisibility(View.GONE);
         }
         btn_ok.setOnClickListener(v -> {
-            actionPerformed = true; // Отмечаем, что действие было выполнено
+            if (cashReorderNavigating) {
+                Logger.w(context, TAG,
+                        "[cashReorder] btn_ok IGNORED: duplicate tap (cashReorderNavigating=true)");
+                return;
+            }
+            cashReorderNavigating = true;
+            actionPerformed = true;
+            Logger.d(context, TAG,
+                    "[cashReorder] btn_ok CASH tapped | snapshot uid=" + orderUidSnapshot
+                            + " double=" + orderUidDoubleSnapshot
+                            + " MainActivity.uid=" + uid);
+            btn_ok.setEnabled(false);
             btn_ok.setVisibility(View.INVISIBLE);
             view.findViewById(R.id.progress_bar).setVisibility(View.VISIBLE);
 
             FinishSeparateFragment.handlerStatus.removeCallbacks(FinishSeparateFragment.myTaskStatus);
-            FinishSeparateFragment.text_status.setText(context.getString(R.string.recounting_order));
-            cancelOrderDoubleForNal();
+            if (FinishSeparateFragment.text_status != null) {
+                FinishSeparateFragment.text_status.setText(context.getString(R.string.recounting_order));
+            }
             sharedPreferencesHelperMain.saveValue("pay_error", "**");
+            PaymentErrorSheetHelper.dismiss(fragmentManager);
+            cancelOrderDoubleForNal();
         });
 
         textViewInfo = view.findViewById(R.id.textViewInfo);
@@ -908,16 +929,48 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     }
 
     private void cancelOrderDoubleForNal() {
+        int currentDest = -1;
+        if (MainActivity.navController != null && MainActivity.navController.getCurrentDestination() != null) {
+            currentDest = MainActivity.navController.getCurrentDestination().getId();
+        }
+        if (cashReorderNavigating && currentDest == R.id.nav_cacheOrder) {
+            Logger.w(context, TAG,
+                    "[cashReorder] navigate SKIPPED: already on nav_cacheOrder");
+            dismiss();
+            return;
+        }
+        String reorderUid = orderUidSnapshot != null ? orderUidSnapshot : uid;
+        String reorderUidDouble = orderUidDoubleSnapshot != null ? orderUidDoubleSnapshot : uid_Double;
+        if (reorderUid == null || reorderUid.isEmpty()) {
+            cashReorderNavigating = false;
+            Logger.e(context, TAG,
+                    "[cashReorder] navigate ABORT: uid missing"
+                            + " snapshot=" + orderUidSnapshot
+                            + " static uid=" + uid
+                            + " prefs=" + PaymentSessionHelper.getCashReorderUid());
+            if (isAdded()) {
+                Toast.makeText(requireContext(), R.string.error_message, Toast.LENGTH_LONG).show();
+            }
+            return;
+        }
+        PaymentSessionHelper.saveCashReorderContext(reorderUid, reorderUidDouble);
         try {
             VisicomFragment.sendUrlMap = null;
             paymentType();
             Bundle bundle = new Bundle();
 
-            bundle.putString("text_full_message", FinishSeparateFragment.text_full_message.getText().toString());
-            bundle.putString("uid", uid);
-            bundle.putString("uid_Double", uid_Double);
-            Logger.d(context, TAG, "uid " + uid);
-            Logger.d(context, TAG, "uid_Double " + uid_Double);
+            CharSequence routeText = FinishSeparateFragment.text_full_message != null
+                    ? FinishSeparateFragment.text_full_message.getText()
+                    : "";
+            bundle.putString("text_full_message", routeText != null ? routeText.toString() : "");
+            bundle.putString("uid", reorderUid);
+            bundle.putString("uid_Double", reorderUidDouble != null ? reorderUidDouble : " ");
+            Logger.d(context, TAG,
+                    "[cashReorder] navigate -> nav_cacheOrder"
+                            + " uid=" + reorderUid
+                            + " uid_Double=" + reorderUidDouble
+                            + " route=" + bundle.getString("text_full_message")
+                            + " fromDest=" + currentDest);
 
             MainActivity.navController.navigate(
                     R.id.nav_cacheOrder,
@@ -928,8 +981,30 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
             );
             dismiss();
         } catch (IllegalArgumentException e) {
-            Logger.e(context, TAG, "Ошибка навигации: " + e.getMessage());
+            cashReorderNavigating = false;
+            Logger.e(context, TAG, "[cashReorder] navigate ERROR: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        orderUidSnapshot = uid;
+        orderUidDoubleSnapshot = uid_Double;
+        String uidSource = "MainActivity";
+        if (orderUidSnapshot == null || orderUidSnapshot.isEmpty()) {
+            orderUidSnapshot = PaymentSessionHelper.getCashReorderUid();
+            uidSource = "prefs";
+        }
+        if (orderUidDoubleSnapshot == null || orderUidDoubleSnapshot.isEmpty()) {
+            orderUidDoubleSnapshot = PaymentSessionHelper.getCashReorderUidDouble();
+        }
+        Logger.d(context, TAG,
+                "[cashReorder] sheet onCreate: uid=" + orderUidSnapshot
+                        + " uid_Double=" + orderUidDoubleSnapshot
+                        + " source=" + uidSource
+                        + " pay_method=" + pay_method);
     }
 
     @Override

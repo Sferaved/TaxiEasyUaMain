@@ -642,7 +642,14 @@ public class FinishSeparateFragment extends Fragment {
             Logger.d(context, TAG, "presentDeclinedUiOnFinish: debounce skip");
             return;
         }
-        PaymentSessionHelper.markPaymentFailedForOrder(resolveActiveOrderUid());
+        String activeUid = resolveActiveOrderUid();
+        PaymentSessionHelper.markPaymentFailedForOrder(activeUid);
+        PaymentSessionHelper.saveCashReorderContext(activeUid, uid_Double);
+        Logger.w(context, TAG,
+                "[cashReorder] presentDeclinedUiOnFinish"
+                        + " uid=" + activeUid
+                        + " uid_Double=" + uid_Double
+                        + " amount=" + amount);
         PaymentDeclinedNotifier.prepareDeclinedOrderState();
         PaymentDeclinedNotifier.markSheetShown();
         PendingTransactionHelper.clear();
@@ -711,9 +718,15 @@ public class FinishSeparateFragment extends Fragment {
             }
             FragmentManager fm = getParentFragmentManager();
             if (PaymentErrorSheetHelper.isShowing(fm)) {
+                Logger.w(context, TAG,
+                        "[cashReorder] showPaymentErrorBottomSheet SKIPPED: already showing");
                 return;
             }
             String sheetPayMethod = isCardPayMethod() ? pay_method : "wfp_payment";
+            Logger.d(context, TAG,
+                    "[cashReorder] showPaymentErrorBottomSheet"
+                            + " pay_method=" + sheetPayMethod
+                            + " uid=" + uid);
             MyBottomSheetErrorPaymentFragment sheet =
                     new MyBottomSheetErrorPaymentFragment(sheetPayMethod, messageFondy, amount, context);
             sheet.show(fm, PaymentErrorSheetHelper.SHEET_TAG);

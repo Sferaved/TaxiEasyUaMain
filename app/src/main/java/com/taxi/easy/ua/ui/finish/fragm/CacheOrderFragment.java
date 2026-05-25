@@ -29,6 +29,7 @@ import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
@@ -58,6 +59,8 @@ import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
+import com.taxi.easy.ua.utils.payment.PaymentErrorSheetHelper;
+import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
@@ -141,6 +144,8 @@ public class CacheOrderFragment extends Fragment {
 
     String uid, uid_Double;
     private ExecutionStatusViewModel viewModel;
+    private boolean reorderCancelStarted;
+    private boolean reorderSubmitStarted;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -203,6 +208,13 @@ public class CacheOrderFragment extends Fragment {
         assert arguments != null;
 
         text_full_message_string = arguments.getString("text_full_message");
+        uid = arguments.getString("uid");
+        uid_Double = arguments.getString("uid_Double");
+        Logger.d(context, TAG,
+                "[cashReorder] onCreateView"
+                        + " bundle.uid=" + uid
+                        + " bundle.uid_Double=" + uid_Double
+                        + " route=" + text_full_message_string);
 
         String messageResult = text_full_message_string;
 
@@ -311,9 +323,34 @@ public class CacheOrderFragment extends Fragment {
         double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
         double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
         String start = cursor.getString(cursor.getColumnIndex("start"));
-        String finish = cursor.getString(cursor.getColumnIndex("finish"));
-        if (finish.equals(context.getString(R.string.on_city_tv)) || finish.isEmpty()) {
+        String finishRaw = cursor.getString(cursor.getColumnIndex("finish"));
+        String finish = finishRaw;
+        String onCityLabel = context.getString(R.string.on_city_tv);
+        boolean onCityTrip = finish != null
+                && (finish.equals(onCityLabel) || finish.trim().isEmpty());
+        double toLatBefore = toLatitude;
+        double toLngBefore = toLongitude;
+        if ("orderCacheReorder".equals(urlAPI)) {
+            if (onCityTrip) {
+                finish = onCityLabel;
+                toLatitude = originLatitude;
+                toLongitude = originLongitude;
+                Logger.d(context, TAG,
+                        "[cashReorder] route FIX on_city: finish was '" + finishRaw
+                                + "' -> '" + finish + "', coords "
+                                + toLatBefore + "," + toLngBefore + " -> "
+                                + toLatitude + "," + toLongitude);
+            } else {
+                Logger.d(context, TAG,
+                        "[cashReorder] route: on_city=false, start='" + start
+                                + "' finish='" + finish + "' dest=" + toLatitude + "," + toLongitude);
+            }
+        } else if (onCityTrip) {
             finish = start;
+            toLatitude = originLatitude;
+            toLongitude = originLongitude;
+            Logger.d(context, TAG,
+                    "getTaxiUrlSearchMarkers: on_city legacy (" + urlAPI + ") finish->start");
         }
 
         Logger.d(context, TAG, "getTaxiUrlSearchMarkers: start " + start);
@@ -483,6 +520,15 @@ public class CacheOrderFragment extends Fragment {
 
         String url = "/" + api + "/android/" + urlAPI + "/"
                 + parameters + "/" + result + "/" + city + "/" + context.getString(R.string.application)+ "/" + uid ;
+
+        if ("orderCacheReorder".equals(urlAPI)) {
+            Logger.d(context, TAG,
+                    "[cashReorder] orderCacheReorder URL built"
+                            + " reorderUid=" + uid
+                            + " origin=" + str_origin
+                            + " dest=" + str_dest
+                            + " start/finish in params");
+        }
 
         database.close();
 
@@ -733,6 +779,10 @@ public class CacheOrderFragment extends Fragment {
 
             MainActivity.uid = sendUrlMap.get("dispatching_order_uid");
             Logger.d(context, "MainActivity.uid", "MainActivity.uid 3 " + MainActivity.uid);
+            PaymentSessionHelper.clearCashReorderContext();
+            reorderSubmitStarted = false;
+            reorderCancelStarted = false;
+            logCashReorderState("orderFinished SUCCESS newUid=" + sendUrlMap.get("dispatching_order_uid"));
             Bundle bundle = new Bundle();
             bundle.putString("messageResult_key", messageResult);
             bundle.putString("messagePay_key", messagePayment);
@@ -758,7 +808,20 @@ public class CacheOrderFragment extends Fragment {
 
         } else {
             sharedPreferencesHelperMain.saveValue("CachOrderBackPressed", false);
-            postIfAttached(this::showAddCostDoubleDialog);
+            reorderSubmitStarted = true;
+            logCashReorderState("orderFinished FAILED order_cost=0");
+            Logger.e(context, TAG,
+                    "[cashReorder] reorder rejected: message='" + message
+                            + "' orderWeb=" + orderWeb
+                            + " routeError=" + isRouteFormationError(message));
+            stopReorderProgressUi();
+            if (isRouteFormationError(message)) {
+                Logger.w(context, TAG, "[cashReorder] showing route error dialog");
+                showRouteReorderErrorDialog(message);
+            } else {
+                Logger.w(context, TAG, "[cashReorder] showing cash-unavailable dialog");
+                postIfAttached(this::showAddCostDoubleDialog);
+            }
         }
 
 //        else if (!CachOrderBackPressed) {
@@ -970,13 +1033,13 @@ public class CacheOrderFragment extends Fragment {
 
 
         sendUrlMap = null;
-        MainActivity.uid = null;
-//        MainActivity.action = null;
+        if (!reorderSubmitStarted) {
+            MainActivity.orderResponse = null;
+            viewModel.updateOrderResponse(null);
+            viewModel.setTransactionStatus(null);
+            viewModel.setCanceledStatus("no_canceled");
+        }
         Logger.d(context, "MainActivity.uid", "MainActivity.uid 4 " + MainActivity.uid);
-        MainActivity.orderResponse = null;
-        viewModel.updateOrderResponse(null);
-        viewModel.setTransactionStatus(null);
-        viewModel.setCanceledStatus("no_canceled");
 
         String cityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
         Logger.d(context, TAG, "CityCheckActivity: " + cityCheckActivity);
@@ -1075,7 +1138,110 @@ public class CacheOrderFragment extends Fragment {
         AppCompatActivity activity = (AppCompatActivity) context;
         Objects.requireNonNull(activity.getSupportActionBar()).setTitle(newTitle);
 
-        cancelOrderDoubleForNal();
+        logCashReorderState("onResume before cancel decision");
+        resolveReorderUidsFromArguments();
+        if (!reorderCancelStarted && hasValidReorderUid()) {
+            reorderCancelStarted = true;
+            Logger.d(context, TAG, "[cashReorder] onResume -> start cancelOrderDoubleForNal");
+            cancelOrderDoubleForNal();
+        } else if (reorderSubmitStarted) {
+            Logger.d(context, TAG,
+                    "[cashReorder] onResume: reorder already finished with error, skip cancel");
+        } else {
+            Logger.w(context, TAG,
+                    "[cashReorder] onResume: skip cancel — uid missing"
+                            + " bundleUid=" + (arguments != null ? arguments.getString("uid") : "no_args")
+                            + " prefsUid=" + PaymentSessionHelper.getCashReorderUid());
+            stopReorderProgressUi();
+            postIfAttached(() -> showRouteReorderErrorDialog(getString(R.string.error_message)));
+        }
+    }
+
+    private void logCashReorderState(String step) {
+        String bundleUid = arguments != null ? arguments.getString("uid") : null;
+        Logger.d(context, TAG,
+                "[cashReorder] " + step
+                        + " | uid=" + uid
+                        + " uid_Double=" + uid_Double
+                        + " bundle.uid=" + bundleUid
+                        + " MainActivity.uid=" + MainActivity.uid
+                        + " cancelStarted=" + reorderCancelStarted
+                        + " submitStarted=" + reorderSubmitStarted);
+    }
+
+    private void resolveReorderUidsFromArguments() {
+        String uidBefore = uid;
+        if (arguments != null) {
+            String bundleUid = arguments.getString("uid");
+            String bundleDouble = arguments.getString("uid_Double");
+            if (bundleUid != null && !bundleUid.isEmpty()) {
+                uid = bundleUid;
+            }
+            if (bundleDouble != null && !bundleDouble.isEmpty()) {
+                uid_Double = bundleDouble;
+            }
+            Logger.d(context, TAG,
+                    "[cashReorder] resolveUids from bundle: uid=" + bundleUid + " double=" + bundleDouble);
+        }
+        if (uid == null || uid.isEmpty()) {
+            uid = PaymentSessionHelper.getCashReorderUid();
+            if (uid != null) {
+                Logger.d(context, TAG, "[cashReorder] resolveUids: uid restored from prefs");
+            }
+        }
+        if (uid_Double == null || uid_Double.isEmpty()) {
+            uid_Double = PaymentSessionHelper.getCashReorderUidDouble();
+        }
+        if (!Objects.equals(uidBefore, uid)) {
+            Logger.d(context, TAG, "[cashReorder] resolveUids: uid changed " + uidBefore + " -> " + uid);
+        }
+    }
+
+    private boolean hasValidReorderUid() {
+        return uid != null && !uid.isEmpty() && !"null".equals(uid);
+    }
+
+    private static boolean isRouteFormationError(@Nullable String message) {
+        if (message == null) {
+            return false;
+        }
+        String lower = message.toLowerCase();
+        return lower.contains("маршрут") || lower.contains("route");
+    }
+
+    private void stopReorderProgressUi() {
+        Logger.d(context, TAG, "[cashReorder] stopReorderProgressUi");
+        if (carProgressBar != null) {
+            carProgressBar.stopAnimation();
+        }
+        if (textStatusCar != null) {
+            textStatusCar.clearAnimation();
+        }
+        PaymentSessionHelper.clearCashReorderContext();
+    }
+
+    private void showRouteReorderErrorDialog(@Nullable String serverMessage) {
+        if (!isAdded()) {
+            Logger.w(context, TAG, "[cashReorder] showRouteReorderErrorDialog: fragment not added");
+            return;
+        }
+        Logger.w(context, TAG, "[cashReorder] showRouteReorderErrorDialog: " + serverMessage);
+        String text = serverMessage != null && !serverMessage.isEmpty()
+                ? serverMessage
+                : getString(R.string.error_message);
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext());
+        builder.setMessage(text)
+                .setCancelable(false)
+                .setPositiveButton(R.string.ok_error, (dialog, which) -> {
+                    PaymentErrorSheetHelper.dismiss(getParentFragmentManager());
+                    if (MainActivity.navController != null) {
+                        MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_visicom, true)
+                                .build());
+                    }
+                });
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
 
@@ -1253,6 +1419,7 @@ public class CacheOrderFragment extends Fragment {
 
     }
     }
+
     private void createBlackList() {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
@@ -1353,6 +1520,7 @@ public class CacheOrderFragment extends Fragment {
                 @Override
                 public void onConsentValid() {
                     Logger.d(context, TAG, "Согласие пользователя действительное.");
+                    logCashReorderState("consent OK -> orderFinished (orderCacheReorder)");
                     postIfAttached(() -> {
                         try {
                             orderFinished();
@@ -1378,6 +1546,14 @@ public class CacheOrderFragment extends Fragment {
     }
 
     private void cancelOrderDoubleForNal() {
+        logCashReorderState("cancelOrderDoubleForNal START");
+        resolveReorderUidsFromArguments();
+        if (!hasValidReorderUid()) {
+            Logger.e(context, TAG, "[cashReorder] cancelOrderDoubleForNal ABORT: invalid uid");
+            stopReorderProgressUi();
+            postIfAttached(() -> showRouteReorderErrorDialog(getString(R.string.error_message)));
+            return;
+        }
 
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         String city = listCity.get(1);
@@ -1385,8 +1561,6 @@ public class CacheOrderFragment extends Fragment {
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
 
         baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-        uid = arguments.getString("uid");
-        uid_Double = arguments.getString("uid_Double");
 
         String url = baseUrl + api + "/android/webordersCancelDouble/" + uid + "/" + uid_Double + "/" + pay_method + "/" + city + "/" + context.getString(R.string.application);
 
@@ -1398,17 +1572,27 @@ public class CacheOrderFragment extends Fragment {
             @Override
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    Logger.d(context, TAG, "cancelOrderDouble response: " + response.toString());
+                    Logger.d(context, TAG,
+                            "[cashReorder] cancelOrderDouble OK code=" + response.code()
+                                    + " -> googleVerifyAccount/orderFinished");
+                    Logger.d(context, TAG, "cancelOrderDouble response: " + response);
 
                     postIfAttached(CacheOrderFragment.this::googleVerifyAccount);
-
-
-
+                } else {
+                    reorderCancelStarted = false;
+                    Logger.e(context, TAG,
+                            "[cashReorder] cancelOrderDouble HTTP fail code="
+                                    + response.code() + " body=" + response.body());
+                    postIfAttached(() -> {
+                        stopReorderProgressUi();
+                        showRouteReorderErrorDialog(getString(R.string.error_message));
+                    });
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
+                reorderCancelStarted = false;
                 if (t instanceof SocketTimeoutException) {
                     Logger.d(context, TAG, "onFailure: Тайм-аут соединения");
                 } else if (t instanceof IOException) {
@@ -1417,13 +1601,14 @@ public class CacheOrderFragment extends Fragment {
                     Logger.d(context, TAG, "onFailure: Непредвиденная ошибка");
                 }
 
-                // Логируем исключение
                 FirebaseCrashlytics.getInstance().recordException(t);
-
-                // Выводим сообщение пользователю
                 String errorMessage = t.getMessage();
-                Logger.d(context, TAG, "onFailure: Ошибка: " + errorMessage);
-
+                Logger.e(context, TAG,
+                        "[cashReorder] cancelOrderDouble FAILURE after retries: " + errorMessage);
+                postIfAttached(() -> {
+                    stopReorderProgressUi();
+                    showRouteReorderErrorDialog(getString(R.string.network_no_internet));
+                });
             }
 
         });

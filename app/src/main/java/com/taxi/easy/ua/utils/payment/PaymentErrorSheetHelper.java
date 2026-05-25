@@ -5,12 +5,16 @@ import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
+import com.taxi.easy.ua.utils.log.Logger;
 
 /**
  * Закрытие шторки ошибки оплаты (автоотмена, отмена заказа).
  */
 public final class PaymentErrorSheetHelper {
+
+    private static final String TAG = "PaymentErrorSheetHelper";
 
     public static final String SHEET_TAG = "payment_error_sheet";
 
@@ -26,7 +30,12 @@ public final class PaymentErrorSheetHelper {
             found = fragmentManager.findFragmentByTag(MyBottomSheetErrorPaymentFragment.class.getSimpleName());
         }
         if (found instanceof DialogFragment dialog && dialog.isAdded()) {
+            Logger.d(MyApplication.getContext(), TAG,
+                    "[cashReorder] dismiss payment sheet tag="
+                            + (found.getTag() != null ? found.getTag() : "?"));
             dialog.dismissAllowingStateLoss();
+        } else {
+            Logger.d(MyApplication.getContext(), TAG, "[cashReorder] dismiss: sheet not found");
         }
     }
 
@@ -39,6 +48,11 @@ public final class PaymentErrorSheetHelper {
             found = fragmentManager.findFragmentByTag(
                     MyBottomSheetErrorPaymentFragment.class.getSimpleName());
         }
-        return found != null && found.isAdded();
+        boolean showing = found != null && found.isAdded();
+        if (showing) {
+            Logger.d(MyApplication.getContext(), TAG,
+                    "[cashReorder] isShowing=true tag=" + (found != null ? found.getTag() : "?"));
+        }
+        return showing;
     }
 }
