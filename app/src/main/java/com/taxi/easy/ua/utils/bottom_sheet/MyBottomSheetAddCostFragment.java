@@ -153,11 +153,9 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         String  baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
 
         if ("nal_payment".equals(pay_method)) {
-            viewModel.setAddCostViewUpdate(addCost);
             viewModel.setCancelStatus(false);
-
-            startAddCostWithUpdate(uid, addCost, baseUrl );
-       }
+            startAddCostWithUpdate(uid, addCost, baseUrl);
+        }
         if ("wfp_payment".equals(pay_method)) {
             viewModel.setCancelStatus(false);
             startAddCostCardUpdate(addCost);
@@ -181,23 +179,58 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                 @Override
                 public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
                     if (response.isSuccessful() && response.body() != null) {
-                        Status status = response.body();
-                        String responseStatus = status.getResponse();
+                        String responseStatus = response.body().getResponse();
                         Logger.d(context, TAG, "startAddCostUpdate nal_payment: " + responseStatus);
+                        if (isNalAddCostError(responseStatus)) {
+                            if (isAdded()) {
+                                showNalAddCostError(responseStatus);
+                            }
+                            viewModel.setCancelStatus(true);
+                            return;
+                        }
+                        viewModel.setAddCostViewUpdate(addCost);
                         viewModel.setCancelStatus(true);
+                        return;
                     }
+                    if (isAdded()) {
+                        showNalAddCostError(null);
+                    }
+                    viewModel.setCancelStatus(true);
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
                     FirebaseCrashlytics.getInstance().recordException(t);
-                    Logger.d(context, TAG, "URL запроса nal_payment: " + t.getMessage());
-                    // Обработать ошибку выполнения запроса
-                    FirebaseCrashlytics.getInstance().recordException(t);
+                    Logger.e(context, TAG, "startAddCostWithUpdate failed: " + t.getMessage());
+                    if (isAdded()) {
+                        Toast.makeText(context, R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                    }
                     viewModel.setCancelStatus(true);
                 }
             });
 
+    }
+
+    private static boolean isNalAddCostError(@Nullable String response) {
+        if (response == null || response.trim().isEmpty()) {
+            return false;
+        }
+        String lower = response.toLowerCase();
+        return lower.contains("дублир")
+                || lower.contains("дублюван")
+                || lower.contains("не можете")
+                || lower.contains("не можете")
+                || lower.contains("cannot");
+    }
+
+    private void showNalAddCostError(@Nullable String serverMessage) {
+        if (!isAdded()) {
+            return;
+        }
+        String text = serverMessage != null && !serverMessage.trim().isEmpty()
+                ? serverMessage
+                : getString(R.string.double_order_error);
+        Toast.makeText(requireContext(), text, Toast.LENGTH_LONG).show();
     }
 
     private void startAddCostCardUpdate(String addCost) {

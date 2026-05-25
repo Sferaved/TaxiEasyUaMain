@@ -1193,14 +1193,17 @@ public class FinishSeparateFragment extends Fragment {
                         }
 
                         if (isAdded() && context != null) {
-                                context.runOnUiThread(() -> closeReasonReactNal(
-                                    closeReason,
-                                    executionStatus,
-                                    driverPhone,
-                                    time_to_start_point,
-                                    orderCarInfo
-                            ));
-                            }
+                            context.runOnUiThread(() -> {
+                                refreshFinishCostFromOrder(orderResponse);
+                                closeReasonReactNal(
+                                        closeReason,
+                                        executionStatus,
+                                        driverPhone,
+                                        time_to_start_point,
+                                        orderCarInfo
+                                );
+                            });
+                        }
                     } else {
                         int closeReason = -1;
                         String executionStatus = "*";
@@ -2067,13 +2070,14 @@ public class FinishSeparateFragment extends Fragment {
         }
         cancel_btn_click = false;
 
-//        viewModel.getAddCostViewUpdate().observe(getViewLifecycleOwner(), addCost -> {
-//            Logger.d(context,"Pusher addCostViewUpdate", "Finish addCostViewUpdate status set: " + addCost);
-//            if (!addCost.equals("0")) {
-////                viewModel.getAddCostViewUpdate().removeObservers(getViewLifecycleOwner());
-//                addCostView(addCost);
-//            }
-//        });
+        viewModel.getAddCostViewUpdate().observe(getViewLifecycleOwner(), addCost -> {
+            if (addCost != null && !addCost.equals("0")) {
+                Logger.d(context, TAG, "addCostViewUpdate observe: " + addCost);
+                pendingAddCost = addCost;
+                sharedPreferencesHelperMain.saveValue("pendingAddCost", addCost);
+                addCostView(addCost);
+            }
+        });
 
         viewModel.getCancelStatus().observe(getViewLifecycleOwner(), status -> {
             Logger.d(context,"Pusher getCancelStatus", "Finish getCancelStatus status set: " + status);
@@ -2162,13 +2166,21 @@ public class FinishSeparateFragment extends Fragment {
                 return;
             }
             String previous = uid;
-            if (previous != null && !previous.isEmpty() && !previous.equals(newUid)) {
+            boolean uidChanged = previous != null && !previous.isEmpty() && !previous.equals(newUid);
+            if (uidChanged) {
                 uid_Double = previous;
                 MainActivity.uid_Double = previous;
             }
             uid = newUid;
             MainActivity.uid = newUid;
             Logger.d(context, TAG, "order uid updated: active=" + newUid + " double=" + uid_Double);
+            if (uidChanged && isAdded() && "nal_payment".equals(pay_method)) {
+                try {
+                    statusOrder();
+                } catch (ParseException e) {
+                    Logger.e(context, TAG, "statusOrder after uid change: " + e.getMessage());
+                }
+            }
         });
 
         // Observe paySystemStatus changes
@@ -2199,17 +2211,7 @@ public class FinishSeparateFragment extends Fragment {
     // Добавьте этот метод в класс FinishSeparateFragment
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onAddCostUpdateEvent(AddCostUpdateEvent event) {
-        String addCost = event.getAddCost();
-        Logger.d(context, "EventBus", "Received addCost update: " + addCost);
-
-        if (!addCost.equals("0")) {
-            // Сохраняем для восстановления после фона
-            pendingAddCost = addCost;
-            sharedPreferencesHelperMain.saveValue("pendingAddCost", addCost);
-
-            // Обновляем UI
-            addCostView(addCost);
-        }
+        Logger.d(context, "EventBus", "AddCostUpdateEvent ignored (LiveData path): " + event.getAddCost());
     }
 
     // Добавьте этот метод для восстановления после возврата из фона
@@ -2248,40 +2250,81 @@ public class FinishSeparateFragment extends Fragment {
         }
     }
 
-    private void addCostView (String addCost) {
+    private void addCostView(String addCost) {
         Pattern pattern = Pattern.compile("(\\d+)");
         Matcher matcher = pattern.matcher(textCostMessage.getText().toString());
 
         if (matcher.find()) {
-
             btn_cancel_order.setEnabled(false);
             btn_cancel_order.setClickable(false);
 
             int originalNumber = Integer.parseInt(Objects.requireNonNull(matcher.group(1)));
             int updatedNumber = originalNumber + Integer.parseInt(addCost);
+            applyNalCostToFinishUi(String.valueOf(updatedNumber));
 
-            // Заменяем старое значение на новое
-            String updatedCost = matcher.replaceFirst(String.valueOf(updatedNumber));
             textCost.setVisibility(View.VISIBLE);
             textCostMessage.setVisibility(View.VISIBLE);
             carProgressBar.setVisibility(View.VISIBLE);
             progressSteps.setVisibility(View.VISIBLE);
             btn_options.setVisibility(View.VISIBLE);
             btn_open.setVisibility(View.VISIBLE);
-            textCostMessage.setText(updatedCost);
             text_status.setText(context.getString(R.string.ex_st_0));
-            Logger.d(context, TAG, "Обновленная строка: " + updatedCost);
             viewModel.setCancelStatus(true);
-
             viewModel.setAddCostViewUpdate("0");
-
-            // ✅ ДОБАВЬТЕ ЭТИ ДВЕ СТРОКИ - очищаем pending
             pendingAddCost = "0";
             sharedPreferencesHelperMain.saveValue("pendingAddCost", "0");
-
         } else {
             Logger.d(context, TAG, "Число не найдено в строке.");
         }
+    }
+
+    private void refreshFinishCostFromOrder(@Nullable OrderResponse orderResponse) {
+        if (orderResponse == null || textCostMessage == null || !"nal_payment".equals(pay_method)) {
+            return;
+        }
+        String activeUid = resolveActiveOrderUid();
+        String responseUid = orderResponse.getDispatchingOrderUid();
+        if (activeUid != null && responseUid != null && !responseUid.isEmpty()
+                && !activeUid.equals(responseUid)) {
+            return;
+        }
+        String baseCost = orderResponse.getOrderCost();
+        if (baseCost == null || baseCost.isEmpty()) {
+            return;
+        }
+        try {
+            int total = (int) Math.round(Double.parseDouble(baseCost.replace(',', '.').trim()));
+            int displayed = parseDisplayedCostGrivna();
+            if (total != displayed) {
+                applyNalCostToFinishUi(String.valueOf(total));
+                Logger.d(context, TAG, "refreshFinishCostFromOrder order_cost=" + total
+                        + " add_cost(meta)=" + orderResponse.getAddCost());
+            }
+        } catch (NumberFormatException e) {
+            Logger.w(context, TAG, "refreshFinishCostFromOrder parse failed: " + baseCost);
+        }
+    }
+
+    private int parseDisplayedCostGrivna() {
+        if (textCostMessage == null) {
+            return 0;
+        }
+        Matcher matcher = Pattern.compile("(\\d+)").matcher(textCostMessage.getText().toString());
+        if (matcher.find()) {
+            return Integer.parseInt(Objects.requireNonNull(matcher.group(1)));
+        }
+        return 0;
+    }
+
+    private void applyNalCostToFinishUi(String costGrivna) {
+        if (textCostMessage == null) {
+            return;
+        }
+        String message = costGrivna + " " + context.getString(R.string.UAH) + "  "
+                + context.getString(R.string.pay_method_message_nal);
+        textCostMessage.setText(message);
+        amount = costGrivna;
+        Logger.d(context, TAG, "applyNalCostToFinishUi: " + message);
     }
 
     @Nullable

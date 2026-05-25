@@ -9,7 +9,6 @@ import androidx.lifecycle.ViewModel;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
-import com.taxi.easy.ua.utils.pusher.events.AddCostUpdateEvent;
 import com.taxi.easy.ua.utils.pusher.events.CanceledStatusEvent;
 import com.taxi.easy.ua.utils.pusher.events.OrderResponseEvent;
 
@@ -62,11 +61,7 @@ public class ExecutionStatusViewModel extends ViewModel {
             addCostViewUpdate.postValue(addCost);
         }
 
-        // Отправляем событие через EventBus только для значимых обновлений
-        if (addCost != null && !addCost.equals("0")) {
-            Log.d("EventBus", "Posting AddCostUpdateEvent with value: " + addCost);
-            EventBus.getDefault().post(new AddCostUpdateEvent(addCost));
-        }
+        // UI финише — через LiveData observer (без EventBus, иначе +доплата дважды)
     }
 
     private final MutableLiveData<Boolean> cancelStatus = new MutableLiveData<>();
