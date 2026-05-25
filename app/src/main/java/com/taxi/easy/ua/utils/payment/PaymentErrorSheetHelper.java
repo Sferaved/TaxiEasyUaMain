@@ -9,6 +9,8 @@ import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Закрытие шторки ошибки оплаты (автоотмена, отмена заказа).
  */
@@ -18,7 +20,22 @@ public final class PaymentErrorSheetHelper {
 
     public static final String SHEET_TAG = "payment_error_sheet";
 
+    private static final AtomicBoolean SHOW_IN_FLIGHT = new AtomicBoolean(false);
+
     private PaymentErrorSheetHelper() {
+    }
+
+    /** Один показ шторки за раз (гонка observer + refresh + view.post). */
+    public static boolean beginShowAttempt() {
+        boolean acquired = SHOW_IN_FLIGHT.compareAndSet(false, true);
+        if (!acquired) {
+            Logger.d(MyApplication.getContext(), TAG, "beginShowAttempt: already in flight");
+        }
+        return acquired;
+    }
+
+    public static void releaseShowLock() {
+        SHOW_IN_FLIGHT.set(false);
     }
 
     public static void dismiss(@Nullable FragmentManager fragmentManager) {
@@ -37,6 +54,7 @@ public final class PaymentErrorSheetHelper {
         } else {
             Logger.d(MyApplication.getContext(), TAG, "[cashReorder] dismiss: sheet not found");
         }
+        releaseShowLock();
     }
 
     public static boolean isShowing(@Nullable FragmentManager fragmentManager) {

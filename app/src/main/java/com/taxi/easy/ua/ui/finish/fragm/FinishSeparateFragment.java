@@ -164,6 +164,7 @@ public class FinishSeparateFragment extends Fragment {
     boolean canceled = false;
     private int paymentCheckGeneration;
     private boolean paymentCheckInProgress;
+    private Runnable pendingPaymentErrorSheetShow;
     @SuppressLint("StaticFieldLeak")
     public static  CarProgressBar carProgressBar;
     // Получаем доступ к кружочкам
@@ -638,7 +639,17 @@ public class FinishSeparateFragment extends Fragment {
         if (!isAdded() || canceled) {
             return;
         }
+        FragmentManager fm = getParentFragmentManager();
+        if (PaymentErrorSheetHelper.isShowing(fm)) {
+            Logger.d(context, TAG, "presentDeclinedUiOnFinish: sheet already showing");
+            return;
+        }
+        if (!PaymentErrorSheetHelper.beginShowAttempt()) {
+            Logger.d(context, TAG, "presentDeclinedUiOnFinish: show in flight");
+            return;
+        }
         if (!PaymentDeclinedNotifier.shouldShowSheetNow()) {
+            PaymentErrorSheetHelper.releaseShowLock();
             Logger.d(context, TAG, "presentDeclinedUiOnFinish: debounce skip");
             return;
         }
@@ -712,14 +723,25 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     private void showPaymentErrorBottomSheet() {
-        Runnable show = () -> {
+        if (pendingPaymentErrorSheetShow != null) {
+            View root = getView();
+            if (root != null) {
+                root.removeCallbacks(pendingPaymentErrorSheetShow);
+            } else {
+                new Handler(Looper.getMainLooper()).removeCallbacks(pendingPaymentErrorSheetShow);
+            }
+        }
+        pendingPaymentErrorSheetShow = () -> {
+            pendingPaymentErrorSheetShow = null;
             if (!isAdded() || canceled || getActivity() == null) {
+                PaymentErrorSheetHelper.releaseShowLock();
                 return;
             }
             FragmentManager fm = getParentFragmentManager();
             if (PaymentErrorSheetHelper.isShowing(fm)) {
                 Logger.w(context, TAG,
                         "[cashReorder] showPaymentErrorBottomSheet SKIPPED: already showing");
+                PaymentErrorSheetHelper.releaseShowLock();
                 return;
             }
             String sheetPayMethod = isCardPayMethod() ? pay_method : "wfp_payment";
@@ -733,9 +755,9 @@ public class FinishSeparateFragment extends Fragment {
         };
         View root = getView();
         if (root != null) {
-            root.post(show);
+            root.post(pendingPaymentErrorSheetShow);
         } else {
-            new Handler(Looper.getMainLooper()).post(show);
+            new Handler(Looper.getMainLooper()).post(pendingPaymentErrorSheetShow);
         }
     }
 
@@ -1030,14 +1052,15 @@ public class FinishSeparateFragment extends Fragment {
             handlerStatus.removeCallbacks(myTaskStatus);
         }
         cancelShowDialogAddCost();
-        PaymentSessionHelper.clearPaymentFailedForOrder(uid);
+        String activeUid = resolveActiveOrderUid();
+        PaymentSessionHelper.clearPaymentFailedForOrder(activeUid);
         String message = context.getString(R.string.ex_st_canceled_no_pay);
         orderCanceled(message);
-        if (uid_Double != null && !uid_Double.equals(" ")) {
+        if (hasLinkedDoubleOrder()) {
             cancelOrderDouble(context);
-        } else {
+        } else if (activeUid != null) {
             try {
-                cancelOrder(uid, context);
+                cancelOrder(activeUid, context);
             } catch (ParseException e) {
                 FirebaseCrashlytics.getInstance().recordException(e);
             }
@@ -1112,7 +1135,11 @@ public class FinishSeparateFragment extends Fragment {
         if(pay_method.equals("nal_payment")) {
 
 
-            String value = uid;
+            String value = resolveActiveOrderUid();
+            if (value == null || value.isEmpty()) {
+                Logger.w(context, TAG, "statusOrder: active uid missing");
+                return;
+            }
             Logger.d(context, "Pusher", "statusCacheOrder: " + value);
 
 
@@ -2070,6 +2097,9 @@ public class FinishSeparateFragment extends Fragment {
             if (paymentCheckInProgress) {
                 return;
             }
+            if (PaymentErrorSheetHelper.isShowing(getParentFragmentManager())) {
+                return;
+            }
             if ("Declined".equals(status)) {
                 presentDeclinedUiOnFinish();
             } else if (isApprovedPaymentStatus(status)) {
@@ -2127,16 +2157,19 @@ public class FinishSeparateFragment extends Fragment {
         // Начинаем наблюдение
         viewModel.isTenMinutesRemaining.observe(getViewLifecycleOwner(), observer);
 
-// Observe uid changes
-//        viewModel.getUid().observe(requireActivity(), newUid -> {
-//            Log.d("UID 11123", "UID updated: " + newUid);
-//            // Update UI or perform other actions
-//            if(newUid != null)  {
-//                MainActivity.uid = newUid;
-//                Logger.d(context, "MainActivity.uid", "MainActivity.uid 5 " + MainActivity.uid);
-//            }
-//
-//        });
+        viewModel.getUid().observe(getViewLifecycleOwner(), newUid -> {
+            if (newUid == null || newUid.isEmpty()) {
+                return;
+            }
+            String previous = uid;
+            if (previous != null && !previous.isEmpty() && !previous.equals(newUid)) {
+                uid_Double = previous;
+                MainActivity.uid_Double = previous;
+            }
+            uid = newUid;
+            MainActivity.uid = newUid;
+            Logger.d(context, TAG, "order uid updated: active=" + newUid + " double=" + uid_Double);
+        });
 
         // Observe paySystemStatus changes
         viewModel.getPaySystemStatus().observe(requireActivity(), newPaySystemStatus -> {
@@ -2253,17 +2286,28 @@ public class FinishSeparateFragment extends Fragment {
 
     @Nullable
     private String resolveActiveOrderUid() {
-        if (uid != null && !uid.isEmpty()) {
-            return uid;
+        if (viewModel != null) {
+            String vmUid = viewModel.getUid().getValue();
+            if (vmUid != null && !vmUid.isEmpty()) {
+                return vmUid;
+            }
         }
         if (MainActivity.uid != null && !MainActivity.uid.isEmpty()) {
             return MainActivity.uid;
         }
-        if (viewModel != null && viewModel.getUid().getValue() != null
-                && !viewModel.getUid().getValue().isEmpty()) {
-            return viewModel.getUid().getValue();
+        if (uid != null && !uid.isEmpty()) {
+            return uid;
         }
         return null;
+    }
+
+    /** После доплаты наличными — два uid, отменять нужно парой (webordersCancelDouble). */
+    private boolean hasLinkedDoubleOrder() {
+        if (uid_Double == null) {
+            return false;
+        }
+        String trimmed = uid_Double.trim();
+        return !trimmed.isEmpty();
     }
 
     @Nullable
@@ -2346,7 +2390,6 @@ public class FinishSeparateFragment extends Fragment {
             return;
         }
 
-        PaymentDeclinedNotifier.clearSheetDebounce();
         paymentCheckGeneration++;
         holdCheckGeneration++;
         final int checkGen = paymentCheckGeneration;
@@ -2514,7 +2557,6 @@ public class FinishSeparateFragment extends Fragment {
         }
         if (!canceled) {
             refreshPaymentStatusOnEnter();
-            PendingTransactionHelper.consumePendingDeclined(context, this::presentDeclinedUiOnFinish);
         }
         startCycle();
 
@@ -2563,7 +2605,6 @@ public class FinishSeparateFragment extends Fragment {
             }
             if (!canceled) {
                 refreshPaymentStatusOnEnter();
-                PendingTransactionHelper.consumePendingDeclined(context, this::presentDeclinedUiOnFinish);
             }
             startCycle();
         }
@@ -2916,16 +2957,17 @@ public class FinishSeparateFragment extends Fragment {
                         cancel_btn_click = true;
                         String message = context.getString(R.string.ex_st_canceled);
                         orderCanceled(message);
-                        if(!uid_Double.equals(" ")) {
+                        if (hasLinkedDoubleOrder()) {
                             cancelOrderDouble(context);
-                        } else{
-                            try {
-                                cancelOrder(uid, context);
-//                                statusOrder();
-                            } catch (ParseException e) {
-                                throw new RuntimeException(e);
+                        } else {
+                            String activeUid = resolveActiveOrderUid();
+                            if (activeUid != null) {
+                                try {
+                                    cancelOrder(activeUid, context);
+                                } catch (ParseException e) {
+                                    throw new RuntimeException(e);
+                                }
                             }
-
                         }
 //                        cancel_30();
                         dialog.dismiss();
@@ -2986,17 +3028,18 @@ public class FinishSeparateFragment extends Fragment {
                 .setCancelable(false)
                 .setPositiveButton(R.string.ok_button, (dialog, which) -> {
                     dialog.dismiss();
-                    if(!uid_Double.equals(" ")) {
+                    if (hasLinkedDoubleOrder()) {
                         cancelOrderDouble(context);
-                    } else{
-                        try {
-                            cancelOrder(uid, context);
-                        } catch (ParseException e) {
-                            throw new RuntimeException(e);
+                    } else {
+                        String activeUid = resolveActiveOrderUid();
+                        if (activeUid != null) {
+                            try {
+                                cancelOrder(activeUid, context);
+                            } catch (ParseException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     }
-
-
 
                 })
                 .setNegativeButton(R.string.cancel_button, (dialog, which) -> dialog.dismiss());

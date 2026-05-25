@@ -63,6 +63,7 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.payment.PaymentErrorSheetHelper;
 import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
+import com.taxi.easy.ua.utils.payment.PaymentErrorSheetHelper;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
@@ -282,6 +283,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         if (dialogStateListener != null) {
             dialogStateListener.onDialogCancelled();
         }
+        PaymentErrorSheetHelper.releaseShowLock();
     }
 
     @Override
@@ -299,6 +301,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         if (dialogStateListener != null) {
             dialogStateListener.onDialogClosed();
         }
+        PaymentErrorSheetHelper.releaseShowLock();
     }
 
     /**

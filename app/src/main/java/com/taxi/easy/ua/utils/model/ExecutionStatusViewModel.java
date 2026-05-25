@@ -139,8 +139,22 @@ public class ExecutionStatusViewModel extends ViewModel {
         return paySystemStatusLiveData;
     }
 
-    // Method to update uid
+    /**
+     * Новый uid заказа (после доплаты / пересоздания): предыдущий сохраняем в uid_Double для отмены пары.
+     */
     public void updateUid(String newUid) {
+        if (newUid == null || newUid.isEmpty()) {
+            return;
+        }
+        String current = uidLiveData.getValue();
+        if (current == null || current.isEmpty()) {
+            current = MainActivity.uid;
+        }
+        if (current != null && !current.isEmpty() && !current.equals(newUid)) {
+            MainActivity.uid_Double = current;
+            Log.d("VIEWMODEL", "updateUid: previous uid -> uid_Double=" + current + ", new=" + newUid);
+        }
+        MainActivity.uid = newUid;
         uidLiveData.setValue(newUid);
     }
 
