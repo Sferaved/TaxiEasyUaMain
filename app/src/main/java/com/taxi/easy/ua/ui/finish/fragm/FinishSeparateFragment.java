@@ -159,6 +159,9 @@ public class FinishSeparateFragment extends Fragment {
 
     public static String phoneNumber;
     boolean cancel_btn_click = false;
+    private boolean cancelRequestInFlight = false;
+    @Nullable
+    private Call<Status> activeCancelCall;
     long delayMillisStatus;
     boolean no_pay;
     boolean canceled = false;
@@ -952,119 +955,153 @@ public class FinishSeparateFragment extends Fragment {
         c.close();
         return list;
     }
-    private void cancelOrder(String value, Context context) throws ParseException {
-
-//        if (handlerAddcost != null) {
-//            handlerAddcost.removeCallbacks(showDialogAddcost);
-//        }
-        cancelShowDialogAddCost();
-
-        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
-        String city = listCity.get(1);
-        String api = listCity.get(2);
-
-        String url = baseUrl  + api + "/android/webordersCancel/" + value + "/" + city  + "/" +  context.getString(R.string.application);
-
-        Call<Status> call = ApiClient.getApiService().cancelOrder(url);
-        Logger.d(context, TAG, "cancelOrderWithDifferentValue cancelOrderUrl: " + url);
-        text_status.setText(R.string.sent_cancel_message);
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    Status status = response.body();
-                    Logger.d(context, TAG, "cancelOrderDouble status: " + status);
-
-                } else {
-                    Logger.d(context, TAG, "Ошибка ответа: " + response.code());
-                    // Обработка неуспешного ответа (например, HTTP-ошибки)
-//                    cancelOrderDouble(context);
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
-                // Обработка ошибок сети или других ошибок
-                String errorMessage = t.getMessage();
-                FirebaseCrashlytics.getInstance().recordException(t);
-                Logger.d(context, TAG, "onFailure: " + errorMessage);
-                text_status.setText(R.string.verify_internet);
-            }
-        });
-
-    }
-    private void cancelOrderDouble(Context context) {
-//        if (handlerAddcost != null) {
-//            handlerAddcost.removeCallbacks(showDialogAddcost);
-//        }
-
-        cancelShowDialogAddCost();
-
-        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
-        String city = listCity.get(1);
-        String api = listCity.get(2);
-        pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
-
-        baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") +"/";
-        boolean order_in_my_vod = (boolean) sharedPreferencesHelperMain.getValue("order_in_my_vod", false);
-        String url = baseUrl + api;
-        if(!order_in_my_vod) {
-            url += "/android/webordersCancelDouble/" + uid + "/" + uid_Double + "/" + pay_method + "/" + city  + "/" +  context.getString(R.string.application);
-        } else {
-            url += "/android/webordersCancelVod/" + uid;
+    @Nullable
+    private String buildCancelRequestUrl() {
+        if (context == null) {
+            return null;
         }
-
-        Call<Status> call = ApiClient.getApiService().cancelOrderDouble(url);
-        Logger.d(context, TAG, "cancelOrderDouble: " + url);
-        text_status.setText(R.string.sent_cancel_message);
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    Status status = response.body();
-                    Logger.d(context, TAG, "cancelOrderDouble status: " + status);
-                } else {
-                    Logger.d(context, TAG, "Ошибка ответа: " + response.code());
-                }
+        cancelShowDialogAddCost();
+        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
+        String city = listCity.get(1);
+        String api = listCity.get(2);
+        baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        boolean orderInMyVod = (boolean) sharedPreferencesHelperMain.getValue("order_in_my_vod", false);
+        String activeUid = resolveActiveOrderUid();
+        if (activeUid == null || activeUid.trim().isEmpty()) {
+            return null;
+        }
+        if (orderInMyVod) {
+            return baseUrl + api + "/android/webordersCancelVod/" + activeUid;
+        }
+        if (hasLinkedDoubleOrder()) {
+            pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
+            String doubleUid = uid_Double != null ? uid_Double.trim() : "";
+            if (doubleUid.isEmpty()) {
+                return null;
             }
+            return baseUrl + api + "/android/webordersCancelDouble/" + activeUid + "/" + doubleUid
+                    + "/" + pay_method + "/" + city + "/" + context.getString(R.string.application);
+        }
+        return baseUrl + api + "/android/webordersCancel/" + activeUid + "/" + city
+                + "/" + context.getString(R.string.application);
+    }
 
+    private void setCancelButtonBusy(boolean busy) {
+        if (btn_cancel_order != null) {
+            btn_cancel_order.setEnabled(!busy);
+            btn_cancel_order.setClickable(!busy);
+        }
+    }
 
-            @Override
-            public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
-                // Обработка ошибок сети или других ошибок
-                String errorMessage = t.getMessage();
-                FirebaseCrashlytics.getInstance().recordException(t);
-                Logger.d(context, TAG, "onFailure: " + errorMessage);
-            }
-        });
+    private void clearActiveOrderUidsAfterCancel() {
+        if (viewModel != null) {
+            viewModel.clearOrderUid();
+        } else {
+            MainActivity.uid = null;
+            MainActivity.uid_Double = null;
+        }
+    }
 
+    private void handleCancelRequestFailed() {
+        cancelRequestInFlight = false;
+        activeCancelCall = null;
+        cancel_btn_click = false;
+        canceled = false;
+        if (context == null || !isAdded()) {
+            return;
+        }
+        setCancelButtonBusy(false);
+        Toast.makeText(context, R.string.error_cancelling_order, Toast.LENGTH_LONG).show();
+        if (text_status != null) {
+            text_status.setText(R.string.verify_internet);
+        }
+        if (viewModel != null) {
+            viewModel.setStatusNalUpdate(false);
+        }
+        try {
+            statusOrder();
+        } catch (ParseException e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+            startCycle();
+        }
     }
 
     /**
-     * Полная отмена заказа из шторки смены/ошибки оплаты: UI + запрос на сервер.
+     * Отмена на сервере; UI «заказ снят» только после успешного ответа.
+     */
+    private void submitOrderCancelRequest(@NonNull String successMessage) {
+        if (context == null || !isAdded()) {
+            return;
+        }
+        if (cancelRequestInFlight) {
+            Toast.makeText(context, R.string.sent_cancel_message, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String url = buildCancelRequestUrl();
+        if (url == null || url.contains("/null")) {
+            Toast.makeText(context, R.string.error_cancelling_order, Toast.LENGTH_LONG).show();
+            return;
+        }
+        cancelRequestInFlight = true;
+        setCancelButtonBusy(true);
+        if (handlerStatus != null && myTaskStatus != null) {
+            handlerStatus.removeCallbacks(myTaskStatus);
+        }
+        if (text_status != null) {
+            text_status.setText(R.string.sent_cancel_message);
+        }
+        Logger.d(context, TAG, "submitOrderCancelRequest: " + url);
+        final boolean useDoubleEndpoint = url.contains("webordersCancelDouble")
+                || url.contains("webordersCancelVod");
+        activeCancelCall = useDoubleEndpoint
+                ? ApiClient.getApiService().cancelOrderDouble(url)
+                : ApiClient.getApiService().cancelOrder(url);
+        activeCancelCall.enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
+                cancelRequestInFlight = false;
+                activeCancelCall = null;
+                if (context == null || !isAdded()) {
+                    return;
+                }
+                setCancelButtonBusy(false);
+                if (response.isSuccessful() && response.body() != null) {
+                    Logger.d(context, TAG, "submitOrderCancelRequest OK: " + response.body());
+                    clearActiveOrderUidsAfterCancel();
+                    if (isAdded()) {
+                        cancel_btn_click = true;
+                        orderCanceled(successMessage);
+                    }
+                } else {
+                    Logger.d(context, TAG, "submitOrderCancelRequest HTTP " + response.code());
+                    handleCancelRequestFailed();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
+                if (call.isCanceled()) {
+                    cancelRequestInFlight = false;
+                    activeCancelCall = null;
+                    return;
+                }
+                FirebaseCrashlytics.getInstance().recordException(t);
+                Logger.d(context, TAG, "submitOrderCancelRequest onFailure: " + t.getMessage());
+                handleCancelRequestFailed();
+            }
+        });
+    }
+
+    /**
+     * Полная отмена заказа из шторки смены/ошибки оплаты — сначала сервер, потом UI.
      */
     public void cancelOrderFromPaymentErrorSheet() {
         if (context == null) {
             return;
         }
-        cancel_btn_click = true;
-        if (handlerStatus != null && myTaskStatus != null) {
-            handlerStatus.removeCallbacks(myTaskStatus);
-        }
         cancelShowDialogAddCost();
-        String activeUid = resolveActiveOrderUid();
-        PaymentSessionHelper.clearPaymentFailedForOrder(activeUid);
-        String message = context.getString(R.string.ex_st_canceled_no_pay);
-        orderCanceled(message);
-        if (hasLinkedDoubleOrder()) {
-            cancelOrderDouble(context);
-        } else if (activeUid != null) {
-            try {
-                cancelOrder(activeUid, context);
-            } catch (ParseException e) {
-                FirebaseCrashlytics.getInstance().recordException(e);
-            }
-        }
+        PaymentSessionHelper.clearPaymentFailedForOrder(resolveActiveOrderUid());
+        submitOrderCancelRequest(context.getString(R.string.ex_st_canceled_no_pay));
     }
 
     /** Единая точка Declined (карта, Centrifugo, FCM) — без второй шторки. */
@@ -2996,26 +3033,8 @@ public class FinishSeparateFragment extends Fragment {
             builder.setView(dialogView)
                     .setCancelable(false)
                     .setPositiveButton(R.string.ok_button, (dialog, which) -> {
-                        // Действие для кнопки "OK"
-                        cancel_btn_click = true;
-                        String message = context.getString(R.string.ex_st_canceled);
-                        orderCanceled(message);
-                        if (hasLinkedDoubleOrder()) {
-                            cancelOrderDouble(context);
-                        } else {
-                            String activeUid = resolveActiveOrderUid();
-                            if (activeUid != null) {
-                                try {
-                                    cancelOrder(activeUid, context);
-                                } catch (ParseException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            }
-                        }
-//                        cancel_30();
                         dialog.dismiss();
-
-
+                        submitOrderCancelRequest(context.getString(R.string.ex_st_canceled));
                     })
                     .setNegativeButton(R.string.cancel_button, (dialog, which) -> {
                         // Действие для кнопки "Отмена"
@@ -3071,19 +3090,7 @@ public class FinishSeparateFragment extends Fragment {
                 .setCancelable(false)
                 .setPositiveButton(R.string.ok_button, (dialog, which) -> {
                     dialog.dismiss();
-                    if (hasLinkedDoubleOrder()) {
-                        cancelOrderDouble(context);
-                    } else {
-                        String activeUid = resolveActiveOrderUid();
-                        if (activeUid != null) {
-                            try {
-                                cancelOrder(activeUid, context);
-                            } catch (ParseException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    }
-
+                    submitOrderCancelRequest(context.getString(R.string.ex_st_canceled));
                 })
                 .setNegativeButton(R.string.cancel_button, (dialog, which) -> dialog.dismiss());
 

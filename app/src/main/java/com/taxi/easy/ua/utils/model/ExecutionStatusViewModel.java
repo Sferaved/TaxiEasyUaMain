@@ -153,6 +153,13 @@ public class ExecutionStatusViewModel extends ViewModel {
         uidLiveData.setValue(newUid);
     }
 
+    /** После успешной отмены на сервере — сброс uid в приложении. */
+    public void clearOrderUid() {
+        MainActivity.uid = null;
+        MainActivity.uid_Double = null;
+        uidLiveData.setValue(null);
+    }
+
     // Method to update paySystemStatus
     public void updatePaySystemStatus(String newPaySystemStatus) {
         paySystemStatusLiveData.setValue(newPaySystemStatus);
