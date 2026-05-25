@@ -566,7 +566,16 @@ public class PusherManager {
             String canceled = json.getString("canceled");
             String uid = json.getString("uid");
 
-            if (MainActivity.uid != null && MainActivity.uid.equals(uid) && isContextValid()) {
+            String activeUid = MainActivity.uid;
+            if (activeUid == null || activeUid.isEmpty()) {
+                activeUid = ExecutionStatusViewModel.getPersistedActiveUid();
+            }
+            String canceledUid = ExecutionStatusViewModel.getCanceledOrderUid();
+            boolean uidMatches = activeUid != null && activeUid.equals(uid);
+            if (!uidMatches && canceledUid != null && canceledUid.equals(uid)) {
+                uidMatches = true;
+            }
+            if (uidMatches && isContextValid()) {
                 viewModel.setCanceledStatus(canceled);
             }
         });

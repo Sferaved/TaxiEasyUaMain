@@ -129,6 +129,12 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         });
         btn_ok.setOnClickListener(v -> {
             Logger.d(getActivity(), TAG, "btn_ok: " + currentAddCost[0]);
+            if (ExecutionStatusViewModel.shouldBlockAddCost(uid)) {
+                Logger.d(getActivity(), TAG, "btn_ok blocked for uid=" + uid);
+                Toast.makeText(context, R.string.error_cancelling_order, Toast.LENGTH_SHORT).show();
+                dismiss();
+                return;
+            }
             if (currentAddCost[0] > 0) {
                 // Проверка на null
                 if (viewModel == null) {
@@ -162,6 +168,10 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         }
     }
     public void startAddCostWithUpdate(String uid, String addCost, String baseUrl) {
+            if (ExecutionStatusViewModel.shouldBlockAddCost(uid)) {
+                Logger.d(context, TAG, "startAddCostWithUpdate skipped: cancel for uid=" + uid);
+                return;
+            }
 
             Retrofit retrofit = new Retrofit.Builder()
                     .baseUrl(baseUrl) // Замените BASE_URL на ваш базовый URL сервера
@@ -178,6 +188,10 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             call.enqueue(new Callback<>() {
                 @Override
                 public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
+                    if (ExecutionStatusViewModel.shouldBlockAddCost(uid)) {
+                        Logger.d(context, TAG, "startAddCost response ignored: order canceled uid=" + uid);
+                        return;
+                    }
                     if (response.isSuccessful() && response.body() != null) {
                         String responseStatus = response.body().getResponse();
                         Logger.d(context, TAG, "startAddCostUpdate nal_payment: " + responseStatus);

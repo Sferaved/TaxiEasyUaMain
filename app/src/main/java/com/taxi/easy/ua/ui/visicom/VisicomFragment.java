@@ -2066,6 +2066,7 @@ public class VisicomFragment extends Fragment {
             Logger.d(context, TAG, "sendUrlMap: extra_charge_codes " + sendUrlMap.get("extra_charge_codes"));
 
             MainActivity.uid = sendUrlMap.get("dispatching_order_uid");
+            ExecutionStatusViewModel.resetNewOrderSession(MainActivity.uid);
             Logger.d(context, "MainActivity.uid", "MainActivity.uid 1 " + MainActivity.uid);
 
             Bundle bundle = new Bundle();

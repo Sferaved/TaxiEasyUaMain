@@ -3,12 +3,16 @@ package com.taxi.easy.ua.utils.model;
 import android.os.Looper;
 import android.util.Log;
 
+import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
+
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 import com.taxi.easy.ua.utils.pusher.events.CanceledStatusEvent;
 import com.taxi.easy.ua.utils.pusher.events.OrderResponseEvent;
 
@@ -16,6 +20,12 @@ import org.greenrobot.eventbus.EventBus;
 
 public class ExecutionStatusViewModel extends ViewModel {
 
+    public static final String PREF_FINISH_ACTIVE_UID = "finish_active_uid";
+    public static final String PREF_FINISH_DOUBLE_UID = "finish_double_uid";
+    public static final String PREF_FINISH_DISPLAY_COST = "finish_display_cost_grivna";
+    public static final String PREF_FINISH_CANCEL_IN_FLIGHT = "finish_cancel_in_flight";
+    public static final String PREF_FINISH_USER_CANCELED = "finish_user_canceled";
+    public static final String PREF_FINISH_CANCELED_UID = "finish_canceled_uid";
 
     private final MutableLiveData<String> canceledStatus = new MutableLiveData<>();
     private final MutableLiveData<OrderResponse> orderResponse = new MutableLiveData<>();
@@ -43,9 +53,12 @@ public class ExecutionStatusViewModel extends ViewModel {
     public LiveData<String> getCanceledStatus() {return canceledStatus;}
     public void setCanceledStatus(String canceled) {
         Log.e("Pusher eventCanceled", "setCanceledStatus:" + canceled);
-        canceledStatus.postValue(canceled);
+        if (Looper.getMainLooper().isCurrentThread()) {
+            canceledStatus.setValue(canceled);
+        } else {
+            canceledStatus.postValue(canceled);
+        }
         EventBus.getDefault().post(new CanceledStatusEvent(canceled));
-
     }
     // Добавление стоимости
 
@@ -151,13 +164,116 @@ public class ExecutionStatusViewModel extends ViewModel {
         }
         MainActivity.uid = newUid;
         uidLiveData.setValue(newUid);
+        persistFinishOrderSnapshot();
     }
 
-    /** После успешной отмены на сервере — сброс uid в приложении. */
+    public void restoreUidFromPersisted(@Nullable String activeUid, @Nullable String doubleUid) {
+        if (activeUid == null || activeUid.isEmpty()) {
+            return;
+        }
+        MainActivity.uid = activeUid;
+        MainActivity.uid_Double = doubleUid != null ? doubleUid : "";
+        uidLiveData.setValue(activeUid);
+    }
+
+    public void persistDisplayCostGrivna(@Nullable String costGrivna) {
+        if (costGrivna == null || costGrivna.isEmpty()) {
+            return;
+        }
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_DISPLAY_COST, costGrivna);
+    }
+
+    public static void setCancelInFlightPref(boolean inFlight) {
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_CANCEL_IN_FLIGHT, inFlight);
+    }
+
+    public static boolean isCancelInFlightPref() {
+        Object v = sharedPreferencesHelperMain.getValue(PREF_FINISH_CANCEL_IN_FLIGHT, false);
+        return v instanceof Boolean && (Boolean) v;
+    }
+
+    public static void setUserCanceledPref(boolean canceled) {
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_USER_CANCELED, canceled);
+    }
+
+    public static boolean isUserCanceledPref() {
+        Object v = sharedPreferencesHelperMain.getValue(PREF_FINISH_USER_CANCELED, false);
+        return v instanceof Boolean && (Boolean) v;
+    }
+
+    @Nullable
+    public static String getCanceledOrderUid() {
+        Object v = sharedPreferencesHelperMain.getValue(PREF_FINISH_CANCELED_UID, "");
+        return v instanceof String && !((String) v).isEmpty() ? (String) v : null;
+    }
+
+    public static void resetNewOrderSession(@Nullable String activeOrderUid) {
+        setCancelInFlightPref(false);
+        setUserCanceledPref(false);
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_CANCELED_UID, "");
+        if (activeOrderUid != null && !activeOrderUid.isEmpty()) {
+            MainActivity.uid = activeOrderUid;
+            sharedPreferencesHelperMain.saveValue(PREF_FINISH_ACTIVE_UID, activeOrderUid);
+        }
+    }
+
+    public static void markUserCanceledOrder(@Nullable String orderUid) {
+        setUserCanceledPref(true);
+        if (orderUid != null && !orderUid.isEmpty()) {
+            sharedPreferencesHelperMain.saveValue(PREF_FINISH_CANCELED_UID, orderUid);
+        }
+    }
+
+    public static boolean shouldBlockAddCost(@Nullable String orderUid) {
+        if (isCancelInFlightPref()) {
+            return true;
+        }
+        if (!isUserCanceledPref()) {
+            return false;
+        }
+        String canceledUid = getCanceledOrderUid();
+        if (canceledUid == null || canceledUid.isEmpty()) {
+            return false;
+        }
+        return orderUid != null && orderUid.equals(canceledUid);
+    }
+
+    @Nullable
+    public static String getPersistedActiveUid() {
+        Object v = sharedPreferencesHelperMain.getValue(PREF_FINISH_ACTIVE_UID, "");
+        return v instanceof String && !((String) v).isEmpty() ? (String) v : null;
+    }
+
+    @Nullable
+    public static String getPersistedDoubleUid() {
+        Object v = sharedPreferencesHelperMain.getValue(PREF_FINISH_DOUBLE_UID, "");
+        return v instanceof String ? (String) v : null;
+    }
+
+    @Nullable
+    public static String getPersistedDisplayCost() {
+        Object v = sharedPreferencesHelperMain.getValue(PREF_FINISH_DISPLAY_COST, "");
+        return v instanceof String && !((String) v).isEmpty() ? (String) v : null;
+    }
+
+    private void persistFinishOrderSnapshot() {
+        if (MainActivity.uid != null && !MainActivity.uid.isEmpty()) {
+            sharedPreferencesHelperMain.saveValue(PREF_FINISH_ACTIVE_UID, MainActivity.uid);
+        }
+        if (MainActivity.uid_Double != null) {
+            sharedPreferencesHelperMain.saveValue(PREF_FINISH_DOUBLE_UID, MainActivity.uid_Double);
+        }
+    }
+
+    /** После успешной отмены на сервере — сброс uid в приложении (флаги отмены не трогаем). */
     public void clearOrderUid() {
         MainActivity.uid = null;
         MainActivity.uid_Double = null;
         uidLiveData.setValue(null);
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_ACTIVE_UID, "");
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_DOUBLE_UID, "");
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_DISPLAY_COST, "");
+        setCancelInFlightPref(false);
     }
 
     // Method to update paySystemStatus

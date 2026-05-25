@@ -516,8 +516,20 @@ public class CentrifugoManager {
         String canceled = json.getString("canceled");
         String uid = json.getString("uid");
 
-        if (MainActivity.uid != null && MainActivity.uid.equals(uid) && isContextValid()) {
+        String activeUid = MainActivity.uid;
+        if (activeUid == null || activeUid.isEmpty()) {
+            activeUid = ExecutionStatusViewModel.getPersistedActiveUid();
+        }
+        String canceledUid = ExecutionStatusViewModel.getCanceledOrderUid();
+        boolean uidMatches = activeUid != null && activeUid.equals(uid);
+        if (!uidMatches && canceledUid != null && canceledUid.equals(uid)) {
+            uidMatches = true;
+        }
+        if (uidMatches && isContextValid()) {
+            Log.d(TAG, "handleCanceledEvent: uid=" + uid + " canceled=" + canceled);
             viewModel.setCanceledStatus(canceled);
+        } else {
+            Log.d(TAG, "handleCanceledEvent ignored: eventUid=" + uid + " activeUid=" + activeUid);
         }
     }
 
@@ -525,6 +537,10 @@ public class CentrifugoManager {
      * Обработка стоимости заказа
      */
     private void handleOrderCostEvent(JSONObject json) throws JSONException {
+        if (MainActivity.currentNavDestination == R.id.nav_finish_separate) {
+            Log.d(TAG, "order-cost ignored on finish screen (use statusOrder)");
+            return;
+        }
         String rawCost = json.optString("order_cost", "0");
         String orderCost = CostParseHelper.normalizeCostString(rawCost);
         Log.d(TAG, "order_cost raw=" + rawCost + " normalized=" + orderCost);
