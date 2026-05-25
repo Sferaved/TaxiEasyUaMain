@@ -742,7 +742,10 @@ public class CacheOrderFragment extends Fragment {
             bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
 
             viewModel.setStatusNalUpdate(true); //наюлюдение за опросом статусом нала
-            new Handler(Looper.getMainLooper()).post (() -> {
+            postIfAttached(() -> {
+                if (MainActivity.navController == null) {
+                    return;
+                }
                 MainActivity.navController.navigate(
                         R.id.nav_finish_separate,
                         bundle,
@@ -750,12 +753,12 @@ public class CacheOrderFragment extends Fragment {
                                 .setPopUpTo(R.id.nav_visicom, true)
                                 .build()
                 );
-            } ); // 5000 миллисекунд = 5 секунд
+            });
 
 
         } else {
             sharedPreferencesHelperMain.saveValue("CachOrderBackPressed", false);
-            new Handler(Looper.getMainLooper()).post (this::showAddCostDoubleDialog);
+            postIfAttached(this::showAddCostDoubleDialog);
         }
 
 //        else if (!CachOrderBackPressed) {
@@ -1187,9 +1190,28 @@ public class CacheOrderFragment extends Fragment {
 //
 //        }
 //    }
+    private void postIfAttached(Runnable action) {
+        if (action == null) {
+            return;
+        }
+        Runnable guarded = () -> {
+            if (isAdded() && getActivity() != null && !getActivity().isFinishing()) {
+                action.run();
+            }
+        };
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            guarded.run();
+        } else {
+            new Handler(Looper.getMainLooper()).post(guarded);
+        }
+    }
+
     private void showAddCostDoubleDialog() {
-    MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context);
-    LayoutInflater inflater = requireActivity().getLayoutInflater();
+        if (!isAdded() || getActivity() == null) {
+            return;
+        }
+    MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext());
+    LayoutInflater inflater = getLayoutInflater();
     int dialogViewInt = R.layout.dialog_add_cost;
 
 
@@ -1206,9 +1228,11 @@ public class CacheOrderFragment extends Fragment {
     builder.setView(dialogView)
             .setCancelable(false)
             .setPositiveButton(R.string.ok_error, (dialog, which) -> {
-                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                        .setPopUpTo(R.id.nav_visicom, true)
-                        .build());
+                if (MainActivity.navController != null && isAdded()) {
+                    MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_visicom, true)
+                            .build());
+                }
             });
 
     AlertDialog dialog = builder.create();
@@ -1228,8 +1252,7 @@ public class CacheOrderFragment extends Fragment {
         }
 
     }
-
-}
+    }
     private void createBlackList() {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
@@ -1330,7 +1353,7 @@ public class CacheOrderFragment extends Fragment {
                 @Override
                 public void onConsentValid() {
                     Logger.d(context, TAG, "Согласие пользователя действительное.");
-                    new Handler(Looper.getMainLooper()).post(() -> {
+                    postIfAttached(() -> {
                         try {
                             orderFinished();
                         } catch (MalformedURLException e) {
@@ -1342,9 +1365,12 @@ public class CacheOrderFragment extends Fragment {
                 @Override
                 public void onConsentInvalid() {
                     Logger.d(context, TAG, "Согласие пользователя НЕ действительное.");
-                    String message = getString(R.string.google_verify_mes);
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    postIfAttached(() -> {
+                        String message = getString(R.string.google_verify_mes);
+                        MyBottomSheetErrorFragment bottomSheetDialogFragment =
+                                new MyBottomSheetErrorFragment(message);
+                        bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    });
                 }
             });
         }
@@ -1374,9 +1400,7 @@ public class CacheOrderFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null) {
                     Logger.d(context, TAG, "cancelOrderDouble response: " + response.toString());
 
-                    new Handler(Looper.getMainLooper()).post(() -> {
-                        googleVerifyAccount();
-                    });
+                    postIfAttached(CacheOrderFragment.this::googleVerifyAccount);
 
 
 
