@@ -124,15 +124,8 @@ public class CityCheckActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                // Ваш код вместо onBackPressed()
-                sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
-                city = "Kyiv City";
-                updateMyPosition();
-
-                // Если нужно, чтобы при этом действие назад было заблокировано,
-                // ничего не вызывайте дальше.
-                // Если хотите завершить Activity:
-                // finish();
+                sharedPreferencesHelperMain.saveValue("CityCheckActivity", "**");
+                finish();
             }
         });
         fragmentManager = getSupportFragmentManager();

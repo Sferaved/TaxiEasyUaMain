@@ -34,6 +34,7 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.exit.AnrActivity;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.keys.SecurePrefs;
+import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.time_ut.IdleTimeoutManager;
@@ -84,13 +85,12 @@ public class MyApplication extends MultiDexApplication {
         instance = this;
         applicationStartElapsedMs = SystemClock.elapsedRealtime();
 
-        Locale currentLocale = getResources().getConfiguration().getLocales().get(0);
-        Log.d("LocaleDebug", "Current locale: " + currentLocale);
-
         try {
             initializeFirebaseAndCrashlytics();
             setDefaultOrientation();
             sharedPreferencesHelperMain = new SharedPreferencesHelper(this);
+            LocaleHelper.applyAppLocale(this);
+            Log.d("LocaleDebug", "App locale: " + LocaleHelper.getSavedLocaleCode(this));
 
             registerActivityLifecycleCallbacks(); // теперь запускаем/останавливаем WorkManager
             setupCrashHandler();
@@ -564,20 +564,11 @@ public class MyApplication extends MultiDexApplication {
         }
     }
     public static Context updateContextLocale(Context context) {
-        SharedPreferencesHelper prefs = new SharedPreferencesHelper(context);
-        String localeCode = (String) prefs.getValue("locale", "uk");
-
-        Locale locale = new Locale(localeCode);
-        Locale.setDefault(locale);
-
-        Configuration config = new Configuration(context.getResources().getConfiguration());
-        config.setLocale(locale);
-
-        return context.createConfigurationContext(config);
+        return LocaleHelper.wrapContext(context);
     }
 
     @Override
     protected void attachBaseContext(Context base) {
-        super.attachBaseContext(updateContextLocale(base));
+        super.attachBaseContext(LocaleHelper.wrapContext(base));
     }
 }

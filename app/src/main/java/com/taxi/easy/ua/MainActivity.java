@@ -159,6 +159,11 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
+
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(com.taxi.easy.ua.utils.helpers.LocaleHelper.wrapContext(newBase));
+    }
     private static final ExecutorService DB_INIT_EXECUTOR = Executors.newSingleThreadExecutor();
     public static String supportEmail;
     public static String utaxKey;

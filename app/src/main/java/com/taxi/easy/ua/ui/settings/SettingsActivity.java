@@ -22,6 +22,7 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetCityFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.ArrayList;
@@ -33,6 +34,11 @@ public class SettingsActivity extends AppCompatActivity {
     private static final String TAG = "SettingsActivity";
     private String city;
     private String newTitle;
+
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(LocaleHelper.wrapContext(newBase));
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,27 +56,13 @@ public class SettingsActivity extends AppCompatActivity {
         languageSpinner.setAdapter(adapter);
 
 
-        // Получение текущего языка из SharedPreferences
-        String currentLocale = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
-        Logger.i(this, "locale currentLocale", String.valueOf(currentLocale));
-        // Установка текущего языка в Spinner
+        String currentLocale = LocaleHelper.getSavedLocaleCode(this);
+        Logger.i(this, "locale currentLocale", currentLocale);
+        languageSpinner.setSelection(LocaleHelper.localeCodeToSpinnerIndex(currentLocale));
 
-
-        switch (currentLocale) {
-            case "en":
-                languageSpinner.setSelection(0);
-                break;
-            case "ru":
-                languageSpinner.setSelection(1);
-                break;
-            default:
-                languageSpinner.setSelection(2);
-        }
-
-        // Обработчик кнопки сохранения
         findViewById(R.id.save_button).setOnClickListener(view -> {
-            String selectedLanguage = languageSpinner.getSelectedItem().toString();
-            setLocale(selectedLanguage);
+            int selectedIndex = languageSpinner.getSelectedItemPosition();
+            setLocale(LocaleHelper.spinnerIndexToLocaleCode(selectedIndex));
         });
     }
     private void applyLocale(String localeCode) {
@@ -250,37 +242,9 @@ public class SettingsActivity extends AppCompatActivity {
         db.close();
         return list;
     }
-    private void setLocale(String selectedLanguage) {
-        // Определение кода локали
-        String localeCode;
-        if (selectedLanguage.equals(getString(R.string.language_en))) {
-            localeCode = "en";
-        } else if (selectedLanguage.equals(getString(R.string.language_ru))) {
-            localeCode = "ru";
-        } else if (selectedLanguage.equals(getString(R.string.language_uk))) {
-            localeCode = "uk";
-        } else {
-            localeCode = "en"; // Язык по умолчанию
-        }
+    private void setLocale(String localeCode) {
         Logger.i(this, "locale Code", localeCode);
-        // Сохранение нового языка
-        sharedPreferencesHelperMain.saveValue("locale", localeCode);
-
-        // Установка локали
-        Locale locale = new Locale(localeCode);
-        Locale.setDefault(locale);
-
-        Configuration config = new Configuration(getResources().getConfiguration());
-        config.setLocale(locale);
-
-        // Создаем новый контекст с нужной локалью (если понадобится использовать дальше)
-        Context context = createConfigurationContext(config);
-
-        // Перезапуск приложения для применения локали
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
+        LocaleHelper.changeLanguage(this, localeCode);
     }
 
 
