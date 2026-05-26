@@ -16,6 +16,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.FragmentManager;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
@@ -91,13 +96,30 @@ public class CityCheckActivity extends AppCompatActivity {
     String countryState;
     SharedPreferencesHelper sharedPreferencesHelper;
 
+    private void setupCityListScrolling() {
+        NestedScrollView scroll = findViewById(R.id.city_check_scroll);
+        if (scroll == null) {
+            return;
+        }
+        scroll.setNestedScrollingEnabled(true);
+        scroll.setVerticalScrollBarEnabled(true);
+        scroll.setScrollbarFadingEnabled(false);
+        ViewCompat.setOnApplyWindowInsetsListener(scroll, (v, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(v.getPaddingLeft(), insets.top, v.getPaddingRight(), insets.bottom);
+            return windowInsets;
+        });
+        ViewCompat.requestApplyInsets(scroll);
+    }
 
     @SuppressLint("MissingInflatedId")
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.city_activity_layout);
+        setupCityListScrolling();
 // Регистрация обработчика кнопки "Назад"
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override

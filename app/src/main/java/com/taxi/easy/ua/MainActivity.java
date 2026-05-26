@@ -23,6 +23,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
@@ -1456,10 +1458,29 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
-
+        applyPopupMenuTextColors(menu);
         return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        applyPopupMenuTextColors(menu);
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    private void applyPopupMenuTextColors(Menu menu) {
+        int color = ContextCompat.getColor(this, R.color.popup_menu_text);
+        for (int i = 0; i < menu.size(); i++) {
+            MenuItem item = menu.getItem(i);
+            CharSequence title = item.getTitle();
+            if (title == null) {
+                continue;
+            }
+            SpannableString styled = new SpannableString(title);
+            styled.setSpan(new ForegroundColorSpan(color), 0, styled.length(), 0);
+            item.setTitle(styled);
+        }
     }
 
     @Override

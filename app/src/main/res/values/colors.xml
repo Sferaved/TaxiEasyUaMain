@@ -58,4 +58,15 @@
     <color name="scroll_arrow_down">#FFFFFFFF</color>
     <color name="scroll_button_stroke_up">#B3FFFFFF</color>
     <color name="scroll_button_stroke_down">#B3FFFFFF</color>
+
+    <!-- Светлая системная тема: тёмный текст на светлом фоне (popup / общий текст) -->
+    <color name="app_primary_text">#212121</color>
+    <color name="popup_menu_background">#FFFFFF</color>
+    <color name="popup_menu_text">#212121</color>
+
+    <color name="dialog_background">#FFFFFF</color>
+    <color name="dialog_text_primary">#212121</color>
+    <color name="dialog_text_secondary">#666666</color>
+    <color name="dialog_input_stroke">#9E9E9E</color>
+    <color name="dialog_button_outline_text">#757575</color>
 </resources>

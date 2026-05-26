@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#FFFFFF">
+    android:background="@color/dialog_background">
 
 
 
@@ -51,6 +51,7 @@
                         android:text="🛠️ Системні операції"
                         android:textStyle="bold"
                         android:textSize="14sp"
+                        android:textColor="@color/dialog_text_primary"
                         android:layout_marginBottom="12dp" />
 
                     <LinearLayout

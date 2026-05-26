@@ -1364,12 +1364,55 @@ public class VisicomFragment extends Fragment {
         return input.trim().replaceAll("\\s+", " ").replaceAll("\\s{2,}$", " ");
     }
 
+    private boolean isCityOnlyFinishInDatabase(String finish) {
+        if (finish == null) {
+            return true;
+        }
+        String trimmed = finish.trim();
+        return trimmed.isEmpty()
+                || trimmed.equals(getString(R.string.on_city_tv))
+                || trimmed.equals(getString(R.string.on_city));
+    }
+
+    /** Восстанавливает «Куда» из БД после возврата с экрана поиска (view мог пересоздаться). */
+    private void restoreDestinationFieldFromDatabase() {
+        if (!isAdded() || textViewTo == null || context == null) {
+            return;
+        }
+        if (!textViewTo.getText().toString().trim().isEmpty()) {
+            return;
+        }
+        SQLiteDatabase database = null;
+        Cursor cursor = null;
+        try {
+            database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            cursor = database.rawQuery("SELECT finish FROM " + MainActivity.ROUT_MARKER + " LIMIT 1", null);
+            if (!cursor.moveToFirst()) {
+                return;
+            }
+            String finish = cursor.getString(0);
+            if (!isCityOnlyFinishInDatabase(finish)) {
+                textViewTo.setText(finish);
+            }
+        } catch (Exception e) {
+            Logger.e(context, TAG, "restoreDestinationFieldFromDatabase: " + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            if (database != null && database.isOpen()) {
+                database.close();
+            }
+        }
+    }
+
 
     @SuppressLint({"Range", "ResourceAsColor"})
     public String getTaxiUrlSearchMarkers(String urlAPI, Context context) {
 
         Logger.d(context, TAG, "getTaxiUrlSearchMarkers: " + urlAPI);
         startTilePreloadWorker();
+        restoreDestinationFieldFromDatabase();
 
         String query = "SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
@@ -1382,6 +1425,12 @@ public class VisicomFragment extends Fragment {
         double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
         String start = cursor.getString(cursor.getColumnIndex("start"));
         String finish = cursor.getString(cursor.getColumnIndex("finish"));
+        if (start == null) {
+            start = "";
+        }
+        if (finish == null) {
+            finish = "";
+        }
 
 //        if (start.trim().isEmpty() || geoText.getText().toString().trim().isEmpty()) {
 //            start = context.getString(R.string.startPoint);
@@ -1392,13 +1441,8 @@ public class VisicomFragment extends Fragment {
             geoText.setBackgroundColor(R.color.selected_text_color);
             return "error";
         }
-        if (finish.equals(context.getString(R.string.on_city_tv)) || finish.trim().isEmpty()) {
-            finish = start;
-            toLatitude = originLatitude;
-            toLongitude = originLongitude;
-        }
-        if (finish.trim().equals(start.trim())) {
-            textViewTo.setText("");
+        if (isCityOnlyFinishInDatabase(finish)) {
+            finish = context.getString(R.string.on_city_tv);
             toLatitude = originLatitude;
             toLongitude = originLongitude;
         }
@@ -1784,6 +1828,7 @@ public class VisicomFragment extends Fragment {
             Toast.makeText(context, R.string.no_start_point_message, Toast.LENGTH_SHORT).show();
             return false;
         }
+        restoreDestinationFieldFromDatabase();
         urlOrder = getTaxiUrlSearchMarkers("orderClientCostMyApi", context );
         Logger.d(context, TAG, "order: urlOrder " + urlOrder);
         if(urlOrder.equals("error")) {
@@ -2360,6 +2405,9 @@ public class VisicomFragment extends Fragment {
                     binding.textGeo.setText(fromAddressString);
                 }
             }
+            if (startList.size() > 6) {
+                restoreDestinationFieldFromDatabase();
+            }
         }
 
 
@@ -2566,6 +2614,7 @@ public class VisicomFragment extends Fragment {
         textViewTo = binding.textTo;
         textViewTo.setOnClickListener(v -> {
             textViewTo.setText("");
+            updateRouteSettings();
 
             Bundle bundle = new Bundle();
             bundle.putString("start", "no");
@@ -2577,13 +2626,13 @@ public class VisicomFragment extends Fragment {
         });
 
         binding.clearButtonTo.setOnClickListener(v -> {
+            textViewTo.setText("");
             updateRouteSettings();
             try {
                 visicomCost();
             } catch (MalformedURLException e) {
                 throw new RuntimeException(e);
             }
-            textViewTo.setText("");
         });
 
         btn_minus = binding.btnMinus;
@@ -3707,8 +3756,13 @@ public class VisicomFragment extends Fragment {
             cursor.close();
 
             // Обновляем только стартовую точку, сохраняя существующую конечную
-            if(address.equals(existingFinish)) {
+            if (address.equals(existingFinish)) {
                 existingFinish = "";
+            }
+            if (isCityOnlyFinishInDatabase(existingFinish)) {
+                existingFinish = "";
+                existingToLat = newLat;
+                existingToLng = newLon;
             }
             ContentValues values = new ContentValues();
             values.put("startLat", newLat);
@@ -3806,6 +3860,7 @@ public class VisicomFragment extends Fragment {
 
     private void visicomCost() throws MalformedURLException {
         Logger.d(context, TAG, "=== visicomCost() started ===");
+        restoreDestinationFieldFromDatabase();
         constr2.setVisibility(GONE);
 
         MainActivity.costMap = null;
@@ -4028,7 +4083,7 @@ public class VisicomFragment extends Fragment {
 
             Logger.d(context, TAG, "Setting UI visibility and values");
 
-            if (!finish.isEmpty()) {
+            if (!isCityOnlyFinishInDatabase(finish)) {
                 textViewTo.setText(finish);
             }
 

@@ -4,9 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="#FFFFFF">
+    android:background="@color/dialog_background">
 
-    <!-- ScrollView с уменьшенной высотой для узких экранов -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -20,12 +19,11 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Описание (обязательное поле) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="2dp"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/BugReportTextInputLayout"
                 app:boxCornerRadiusTopStart="8dp"
                 app:boxCornerRadiusTopEnd="8dp"
                 app:boxCornerRadiusBottomStart="8dp"
@@ -40,10 +38,10 @@
                     android:maxLines="3"
                     android:inputType="textMultiLine"
                     android:gravity="top"
-                    android:textSize="13sp" />
+                    android:textSize="13sp"
+                    android:textColor="@color/dialog_text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Счетчик символов -->
             <TextView
                 android:id="@+id/tvCharCounter"
                 android:layout_width="match_parent"
@@ -53,14 +51,13 @@
                 android:gravity="end"
                 android:layout_marginBottom="6dp"
                 android:paddingEnd="2dp"
-                android:textColor="#666666" />
+                android:textColor="@color/dialog_text_secondary" />
 
-            <!-- Шаги для воспроизведения -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="6dp"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/BugReportTextInputLayout"
                 app:boxCornerRadiusTopStart="8dp"
                 app:boxCornerRadiusTopEnd="8dp"
                 app:boxCornerRadiusBottomStart="8dp"
@@ -75,15 +72,15 @@
                     android:maxLines="4"
                     android:inputType="textMultiLine"
                     android:gravity="top"
-                    android:textSize="13sp" />
+                    android:textSize="13sp"
+                    android:textColor="@color/dialog_text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Ожидаемый результат -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="6dp"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/BugReportTextInputLayout"
                 app:boxCornerRadiusTopStart="8dp"
                 app:boxCornerRadiusTopEnd="8dp"
                 app:boxCornerRadiusBottomStart="8dp"
@@ -98,15 +95,15 @@
                     android:maxLines="3"
                     android:inputType="textMultiLine"
                     android:gravity="top"
-                    android:textSize="13sp" />
+                    android:textSize="13sp"
+                    android:textColor="@color/dialog_text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Фактический результат -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="6dp"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/BugReportTextInputLayout"
                 app:boxCornerRadiusTopStart="8dp"
                 app:boxCornerRadiusTopEnd="8dp"
                 app:boxCornerRadiusBottomStart="8dp"
@@ -121,10 +118,10 @@
                     android:maxLines="3"
                     android:inputType="textMultiLine"
                     android:gravity="top"
-                    android:textSize="13sp" />
+                    android:textSize="13sp"
+                    android:textColor="@color/dialog_text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Прогресс -->
             <ProgressBar
                 android:id="@+id/progressBar"
                 android:layout_width="match_parent"
@@ -136,13 +133,12 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Кнопки - полностью адаптированы для узких экранов -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="12dp"
-        android:background="#FFFFFF"
+        android:background="@color/dialog_background"
         android:elevation="4dp">
 
         <com.google.android.material.button.MaterialButton
@@ -154,10 +150,10 @@
             android:text="@string/cancel"
             android:textSize="13sp"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            app:strokeColor="#9E9E9E"
+            app:strokeColor="@color/dialog_input_stroke"
             app:strokeWidth="1.5dp"
             app:cornerRadius="22dp"
-            android:textColor="#757575" />
+            android:textColor="@color/dialog_button_outline_text" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSend"

@@ -227,13 +227,13 @@ public class BugReportHelper {
                 tvCharCounter.setText(length + "/500");
                 tvCharCounter.setTextColor(length > 500 ?
                         ContextCompat.getColor(context, android.R.color.holo_red_dark) :
-                        ContextCompat.getColor(context, android.R.color.darker_gray));
+                        ContextCompat.getColor(context, R.color.dialog_text_secondary));
             }
             @Override
             public void afterTextChanged(android.text.Editable s) {}
         });
 
-        AlertDialog dialog = new AlertDialog.Builder(context)
+        AlertDialog dialog = new AlertDialog.Builder(context, R.style.BugReportDialogTheme)
                 .setTitle(context.getString(R.string.problem_description_title))
                 .setView(view)
                 .setCancelable(false)

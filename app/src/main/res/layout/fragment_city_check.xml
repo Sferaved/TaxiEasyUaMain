@@ -2,26 +2,35 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/city_check_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/new_background_color">
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/city_check_scroll"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:fillViewport="false"
+        android:overScrollMode="always"
+        android:scrollbars="vertical"
+        android:scrollbarStyle="outsideOverlay">
 
         <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/city_check_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:clipChildren="false"
-            android:clipToPadding="false">
+            android:clipToPadding="false"
+            android:paddingBottom="24dp">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_city_1"
                 android:layout_width="0dp"
                 app:layout_constraintWidth_percent="0.8"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="8dp"
                 android:fontFamily="@font/regular"
                 android:textAlignment="center"
                 android:textColor="#D9D9D9"
@@ -396,6 +405,7 @@
                 app:layout_constraintWidth_percent="0.8"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
+                android:layout_marginBottom="16dp"
                 android:fontFamily="@font/regular"
                 android:textAlignment="center"
                 android:textColor="#D9D9D9"
@@ -407,7 +417,6 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/btn_city_22" />
 
-
         </androidx.constraintlayout.widget.ConstraintLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>
