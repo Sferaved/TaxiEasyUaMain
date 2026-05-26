@@ -73,7 +73,12 @@ public class NetworkMonitor {
         isRegistered = true;
         Logger.i(context, TAG, "Network monitoring started");
 
+        isCurrentlyConnected = checkInternetSync();
         notifyListeners(isCurrentlyConnected);
+    }
+
+    public boolean isMonitoring() {
+        return isRegistered;
     }
 
     public void stopMonitoring() {
@@ -102,8 +107,8 @@ public class NetworkMonitor {
             if (newState != isCurrentlyConnected) {
                 isCurrentlyConnected = newState;
                 Logger.i(context, TAG, "Network state changed: " + (newState ? "connected" : "disconnected"));
-                notifyListeners(newState);
             }
+            notifyListeners(isCurrentlyConnected);
             pendingNetworkAction = null;
         };
 
@@ -129,6 +134,13 @@ public class NetworkMonitor {
         NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(activeNetwork);
         if (capabilities == null) return false;
 
+        boolean hasTransport = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+                || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+                || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH);
+        if (!hasTransport) {
+            return false;
+        }
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                 && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
     }

@@ -45,6 +45,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
@@ -66,7 +67,6 @@ import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.navigation.NavigationView;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
@@ -89,6 +89,9 @@ import com.taxi.easy.ua.ui.clear.AppDataUtils;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.ui.CostCalculationProgressBar;
+
+import androidx.navigation.fragment.NavHostFragment;
 import com.taxi.easy.ua.ui.weather.WeatherApiHelper;
 import com.taxi.easy.ua.ui.weather.WeatherResponse;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
@@ -257,8 +260,9 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("StaticFieldLeak")
     public static ImageButton button1;
     private CentrifugoManager centrifugoManager;
-    private Snackbar noInternetSnackbar;
-    private boolean isSnackbarShowing = false;
+    private final Handler networkUiHandler = new Handler(Looper.getMainLooper());
+    private Runnable bannerRecheckRunnable;
+    private Runnable networkRestoredRunnable;
     private AppReviewManager appReviewManager;
     public AppReviewManager getAppReviewManager() {
         return appReviewManager;
@@ -329,6 +333,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Установка Toolbar как ActionBar
         setSupportActionBar(binding.appBarMain.toolbar);
+        setupNoInternetBanner();
 
         // Настройка Navigation
         DrawerLayout drawer = binding.drawerLayout;
@@ -419,15 +424,12 @@ public class MainActivity extends AppCompatActivity {
         // Инициализация ресивера для отслеживания сети
 
         networkMonitor = new NetworkMonitor(this);
-        networkMonitor.setListener(isConnected -> {
-            runOnUiThread(() -> {
-                if (isConnected) {
-                    hideNoInternetSnackbar();
-                } else {
-                    showNoInternetSnackbar();
-                }
-            });
-        });
+        networkMonitor.setListener(isConnected -> runOnUiThread(() -> {
+            updateInternetBannerVisibility();
+            if (isConnected) {
+                scheduleReloadAfterNetworkRestored();
+            }
+        }));
         networkMonitor.startMonitoring();
         if (databaseAlreadyInitialized) {
             DB_INIT_EXECUTOR.execute(() -> {
@@ -706,91 +708,134 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void showNoInternetSnackbar() {
-        // Не показываем, если уже показываем или Activity уничтожена
-        if (isSnackbarShowing || isFinishing() || isDestroyed()) {
+    private View getNoInternetBannerView() {
+        return binding.appBarMain.noInternetBanner.getRoot();
+    }
+
+    private void setupNoInternetBanner() {
+        View retryButton = binding.appBarMain.noInternetBanner.bannerRetryButton;
+        retryButton.setOnClickListener(v -> {
+            if (networkMonitor != null) {
+                networkMonitor.forceCheck();
+            }
+            updateInternetBannerVisibility();
+            if (isOnlineForUser()) {
+                onNetworkConnectivityRestored();
+            } else {
+                Toast.makeText(this, R.string.network_still_down, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private boolean isOnlineForUser() {
+        return NetworkUtils.isNetworkAvailable(this);
+    }
+
+    private void scheduleReloadAfterNetworkRestored() {
+        if (networkRestoredRunnable != null) {
+            networkUiHandler.removeCallbacks(networkRestoredRunnable);
+        }
+        networkRestoredRunnable = () -> {
+            updateInternetBannerVisibility();
+            if (!isFinishing() && !isDestroyed() && isOnlineForUser()) {
+                onNetworkConnectivityRestored();
+            }
+        };
+        networkUiHandler.postDelayed(networkRestoredRunnable, 500);
+    }
+
+    private void onNetworkConnectivityRestored() {
+        hideNoInternetBanner();
+        CostCalculationProgressBar.setCalculationInProgress(false);
+        reloadVisicomOrderIfVisible();
+    }
+
+    private void reloadVisicomOrderIfVisible() {
+        if (navController == null) {
             return;
         }
-
-        // Находим корневое View
-        View rootView = findViewById(android.R.id.content);
-        if (rootView == null) {
+        if (navController.getCurrentDestination() == null
+                || navController.getCurrentDestination().getId() != R.id.nav_visicom) {
             return;
         }
-
-        try {
-            // Сначала скрываем старый, если есть
-            if (noInternetSnackbar != null && noInternetSnackbar.isShown()) {
-                noInternetSnackbar.dismiss();
-            }
-
-            noInternetSnackbar = Snackbar.make(rootView, R.string.network_no_internet, Snackbar.LENGTH_INDEFINITE)
-                    .setAction(R.string.retry, v -> {
-                        if (networkMonitor != null) {
-                            networkMonitor.forceCheck();
-                        }
-                        if (NetworkUtils.isNetworkAvailable(MainActivity.this)) {
-                            Toast.makeText(MainActivity.this, R.string.network_available_check, Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(MainActivity.this, R.string.network_still_down, Toast.LENGTH_SHORT).show();
-                        }
-                    })
-                    .setActionTextColor(ContextCompat.getColor(this, R.color.white))
-                    .setTextColor(ContextCompat.getColor(this, R.color.white));
-
-            View snackbarView = noInternetSnackbar.getView();
-            if (snackbarView != null) {
-                snackbarView.setBackgroundColor(ContextCompat.getColor(this, R.color.error_red));
-            }
-
-            noInternetSnackbar.addCallback(new Snackbar.Callback() {
-                @Override
-                public void onDismissed(Snackbar transientBottomBar, int event) {
-                    isSnackbarShowing = false;
-                    noInternetSnackbar = null;  // ← важно: обнуляем ссылку
-                }
-
-                @Override
-                public void onShown(Snackbar transientBottomBar) {
-                    isSnackbarShowing = true;
-                }
-            });
-
-            noInternetSnackbar.show();
-            Logger.d(this, TAG, "No internet Snackbar shown");
-
-        } catch (Exception e) {
-            Logger.e(this, TAG, "Error showing snackbar: " + e.getMessage());
+        Fragment navHost = getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment_content_main);
+        if (!(navHost instanceof NavHostFragment)) {
+            return;
+        }
+        Fragment current = ((NavHostFragment) navHost).getChildFragmentManager().getPrimaryNavigationFragment();
+        if (current instanceof VisicomFragment) {
+            ((VisicomFragment) current).reloadOrderAfterNetworkRestored();
         }
     }
 
-    private void hideNoInternetSnackbar() {
-        // Проверяем через флаг и прямо через snackbar
-        if (noInternetSnackbar != null && noInternetSnackbar.isShown()) {
-            try {
-                noInternetSnackbar.dismiss();
-                // isSnackbarShowing сбросится в onDismissed
-                Logger.d(this, TAG, "No internet Snackbar hidden");
-            } catch (Exception e) {
-                Logger.e(this, TAG, "Error hiding snackbar: " + e.getMessage());
+    /** Синхронизирует красную плашку «нет интернета» (после onStop / возврата из фона). */
+    public void syncNetworkBanner() {
+        if (networkMonitor != null) {
+            if (!networkMonitor.isMonitoring()) {
+                networkMonitor.startMonitoring();
+            } else {
+                networkMonitor.forceCheck();
             }
+        }
+        updateInternetBannerVisibility();
+    }
+
+    private void updateInternetBannerVisibility() {
+        if (isFinishing() || isDestroyed() || binding == null) {
+            return;
+        }
+        if (isOnlineForUser()) {
+            hideNoInternetBanner();
+            stopBannerRecheck();
         } else {
-            // Флаг мог остаться true, а snackbar уже нет - сбрасываем
-            if (isSnackbarShowing) {
-                isSnackbarShowing = false;
-                Logger.d(this, TAG, "Snackbar flag reset");
-            }
+            showNoInternetBanner();
+            startBannerRecheck();
         }
     }
 
-    /**
-     * Обновляет Snackbar при смене фрагмента (чтобы привязать к новому корневому View)
-     */
-    private void refreshSnackbarIfNeeded() {
-        if (isSnackbarShowing && !NetworkUtils.isNetworkAvailable(this)) {
-            // Скрываем текущий и показываем новый
-            hideNoInternetSnackbar();
-            showNoInternetSnackbar();
+    private void showNoInternetBanner() {
+        View banner = getNoInternetBannerView();
+        if (banner == null || banner.getVisibility() == View.VISIBLE) {
+            return;
+        }
+        banner.setAlpha(0f);
+        banner.setVisibility(View.VISIBLE);
+        banner.animate().alpha(1f).setDuration(220).start();
+        Logger.d(this, TAG, "No internet banner shown");
+    }
+
+    private void hideNoInternetBanner() {
+        View banner = binding != null ? getNoInternetBannerView() : null;
+        if (banner == null || banner.getVisibility() != View.VISIBLE) {
+            return;
+        }
+        banner.animate().alpha(0f).setDuration(180).withEndAction(() -> {
+            if (banner.getVisibility() == View.VISIBLE) {
+                banner.setVisibility(View.GONE);
+                banner.setAlpha(1f);
+            }
+        }).start();
+        Logger.d(this, TAG, "No internet banner hidden");
+    }
+
+    private void startBannerRecheck() {
+        stopBannerRecheck();
+        bannerRecheckRunnable = () -> {
+            if (isFinishing() || isDestroyed()) {
+                return;
+            }
+            updateInternetBannerVisibility();
+            if (!isOnlineForUser() && getNoInternetBannerView().getVisibility() == View.VISIBLE) {
+                networkUiHandler.postDelayed(bannerRecheckRunnable, 1500);
+            }
+        };
+        networkUiHandler.postDelayed(bannerRecheckRunnable, 1500);
+    }
+
+    private void stopBannerRecheck() {
+        if (bannerRecheckRunnable != null) {
+            networkUiHandler.removeCallbacks(bannerRecheckRunnable);
+            bannerRecheckRunnable = null;
         }
     }
 
@@ -947,9 +992,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (NetworkUtils.isNetworkAvailable(this)) {
-            hideNoInternetSnackbar();
-        }
+        syncNetworkBanner();
 
         if (!InclusiveTransportPreferenceWorker.hasBeenAsked() && !firstStart) {
             String KEY_INCLUSIVE_TRANSPORT_ASKED = "inclusive_transport_asked";
@@ -1982,7 +2025,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        hideNoInternetSnackbar();
+        stopBannerRecheck();
+        if (networkRestoredRunnable != null) {
+            networkUiHandler.removeCallbacks(networkRestoredRunnable);
+        }
+        hideNoInternetBanner();
         if (networkMonitor != null) {
             networkMonitor.stopMonitoring();
         }
@@ -2286,6 +2333,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        syncNetworkBanner();
     }
 
     @Override

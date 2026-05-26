@@ -18,6 +18,10 @@
             android:background="?attr/colorPrimary"
             app:popupTheme="@style/Theme.TaxiEasyUa.PopupOverlay" />
 
+        <include
+            android:id="@+id/no_internet_banner"
+            layout="@layout/view_no_internet_banner" />
+
     </com.google.android.material.appbar.AppBarLayout>
 
     <include layout="@layout/content_main" />

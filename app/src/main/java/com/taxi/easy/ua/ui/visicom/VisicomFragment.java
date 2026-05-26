@@ -330,7 +330,6 @@ public class VisicomFragment extends Fragment {
         text_view_cost = binding.textViewCost;
 // Устанавливаем слушатель для распознавания жеста свайпа вниз
         swipeRefreshLayout.setOnRefreshListener(() -> {
-            // Скрываем TextView (⬇️) сразу после появления индикатора свайпа
             clearTABLE_SERVICE_INFO();
             sharedPreferencesHelperMain.saveValue("time", "no_time");
             sharedPreferencesHelperMain.saveValue("date", "no_date");
@@ -340,17 +339,22 @@ public class VisicomFragment extends Fragment {
             svButton.setVisibility(GONE);
             sharedPreferencesHelperMain.saveValue("old_cost", "0");
 
-            // Выполняем необходимое действие (например, запуск новой активности)
-            startActivity(new Intent(context, MainActivity.class));
-
-            // Эмулируем окончание обновления с задержкой
-            swipeRefreshLayout.postDelayed(() -> {
-                // Отключаем индикатор загрузки
-                swipeRefreshLayout.setRefreshing(false);
-
-                // Показываем TextView (⬇️) снова после завершения обновления
-                svButton.setVisibility(VISIBLE);
-            }, 500); // Задержка 500 мс
+            if (NetworkUtils.isNetworkAvailable(context)) {
+                reloadOrderAfterNetworkRestored();
+                swipeRefreshLayout.postDelayed(() -> {
+                    swipeRefreshLayout.setRefreshing(false);
+                    svButton.setVisibility(VISIBLE);
+                }, 500);
+            } else {
+                if (requireActivity() instanceof MainActivity) {
+                    ((MainActivity) requireActivity()).syncNetworkBanner();
+                }
+                startActivity(new Intent(context, MainActivity.class));
+                swipeRefreshLayout.postDelayed(() -> {
+                    swipeRefreshLayout.setRefreshing(false);
+                    svButton.setVisibility(VISIBLE);
+                }, 500);
+            }
         });
 
 
@@ -448,6 +452,9 @@ public class VisicomFragment extends Fragment {
                         }, 500); // Задержка 500 мс
                     } else {
                         Logger.d(context,TAG, "Нет интернета при возврате из фона");
+                        if (requireActivity() instanceof MainActivity) {
+                            ((MainActivity) requireActivity()).syncNetworkBanner();
+                        }
                         visicomViewModel.costReloaded();
                     }
                 } else {
@@ -939,7 +946,14 @@ public class VisicomFragment extends Fragment {
             sharedPreferencesHelperMain.saveValue("setStatusX", true);
             svButton.setVisibility(GONE);
             sharedPreferencesHelperMain.saveValue("old_cost", "0");
-            startActivity(new Intent(context, MainActivity.class));
+            if (NetworkUtils.isNetworkAvailable(context)) {
+                reloadOrderAfterNetworkRestored();
+            } else if (requireActivity() instanceof MainActivity) {
+                ((MainActivity) requireActivity()).syncNetworkBanner();
+                startActivity(new Intent(context, MainActivity.class));
+            } else {
+                startActivity(new Intent(context, MainActivity.class));
+            }
         });
 
 
@@ -1077,6 +1091,12 @@ public class VisicomFragment extends Fragment {
         hideCostCalculationProgress();
         long now = System.currentTimeMillis();
         lastVisicomCostRequestMs = now;
+        if (isNetworkRelatedCostError(serverMessage)) {
+            lastCostCalculationFailureMs = 0;
+            btnVisible(GONE);
+            Logger.w(context, TAG, "Ошибка сети при расчёте стоимости: " + serverMessage);
+            return;
+        }
         lastCostCalculationFailureMs = now;
         btnVisible(VISIBLE);
         if (!isAdded() || isStateSaved()) {
@@ -1084,6 +1104,42 @@ public class VisicomFragment extends Fragment {
         }
         MyBottomSheetErrorFragment sheet = new MyBottomSheetErrorFragment(resolveCostErrorMessage(serverMessage));
         sheet.show(getChildFragmentManager(), sheet.getTag());
+    }
+
+    private static boolean isNetworkRelatedCostError(String serverMessage) {
+        if (serverMessage == null || serverMessage.trim().isEmpty()) {
+            return true;
+        }
+        String lower = serverMessage.toLowerCase(Locale.ROOT);
+        return lower.contains("подключ")
+                || lower.contains("connect")
+                || lower.contains("timeout")
+                || lower.contains("unable to resolve")
+                || lower.contains("network")
+                || lower.contains("hostname")
+                || lower.contains("internet");
+    }
+
+    private static boolean isForceRetrySource(String source) {
+        return "networkRestored".equals(source)
+                || "swipeRefresh".equals(source)
+                || "manualRetry".equals(source);
+    }
+
+    public void reloadOrderAfterNetworkRestored() {
+        if (!isAdded() || context == null) {
+            return;
+        }
+        resetCostCalculationState("networkRestored");
+        requestVisicomCost("networkRestored");
+    }
+
+    private void resetCostCalculationState(String reason) {
+        Logger.d(context, TAG, "resetCostCalculationState: " + reason);
+        cancelPendingReserveCost();
+        hideCostCalculationProgress();
+        lastCostCalculationFailureMs = 0;
+        lastVisicomCostRequestMs = 0;
     }
 
     private String resolveCostErrorMessage(String serverMessage) {
@@ -2412,8 +2468,10 @@ public class VisicomFragment extends Fragment {
 
 
         if (!NetworkUtils.isNetworkAvailable(requireActivity())) {
-            Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
-            Logger.w(context, TAG, "NO INTERNET - Showing toast message");
+            Logger.w(context, TAG, "NO INTERNET - sync network banner");
+            if (requireActivity() instanceof MainActivity) {
+                ((MainActivity) requireActivity()).syncNetworkBanner();
+            }
         }
 
 
@@ -3168,8 +3226,9 @@ public class VisicomFragment extends Fragment {
             return;
         }
         long now = System.currentTimeMillis();
+        boolean forceRetry = isForceRetrySource(source);
 
-        if ("lastOrderAddress".equals(source) || "foreground".equals(source)) {
+        if (!forceRetry && ("lastOrderAddress".equals(source) || "foreground".equals(source))) {
             if (CostCalculationProgressBar.isCalculationInProgress()) {
                 Logger.d(context, TAG, "visicomCost пропущен (расчёт идёт), источник: " + source);
                 return;
@@ -3187,7 +3246,7 @@ public class VisicomFragment extends Fragment {
             }
         }
 
-        if (now - lastVisicomCostRequestMs < VISICOM_COST_DEBOUNCE_MS) {
+        if (!forceRetry && now - lastVisicomCostRequestMs < VISICOM_COST_DEBOUNCE_MS) {
             Logger.d(context, TAG, "visicomCost пропущен (debounce), источник: " + source);
             return;
         }
