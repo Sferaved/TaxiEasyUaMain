@@ -87,6 +87,10 @@ public class CentrifugoManager {
     private final CentrifugoHandler mainHandler;
 
     private String lastProcessedCost = "";
+
+    public void resetOrderCostDedup() {
+        lastProcessedCost = "";
+    }
     private boolean isShuttingDown = false;
     private int reconnectAttempts = 0;
     // Флаг для отслеживания состояния подключения

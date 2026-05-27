@@ -5,6 +5,7 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 
 import androidx.appcompat.app.AppCompatDelegate;
@@ -65,6 +66,14 @@ public final class LocaleHelper {
     }
 
     public static String getSavedLocaleCode(Context context) {
+        Context storage = prefsStorageContext(context);
+        if (storage != null) {
+            SharedPreferences prefs = storage.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            if (prefs.contains(PREF_LOCALE)) {
+                return normalizeLocaleCode(prefs.getString(PREF_LOCALE, "uk"));
+            }
+        }
+
         LocaleListCompat appLocales = AppCompatDelegate.getApplicationLocales();
         if (!appLocales.isEmpty()) {
             Locale locale = appLocales.get(0);
@@ -73,12 +82,11 @@ public final class LocaleHelper {
             }
         }
 
-        Context storage = prefsStorageContext(context);
         if (storage == null) {
             return "uk";
         }
-        SharedPreferencesHelper prefs = new SharedPreferencesHelper(storage);
-        Object stored = prefs.getValue(PREF_LOCALE, "uk");
+        SharedPreferencesHelper helper = new SharedPreferencesHelper(storage);
+        Object stored = helper.getValue(PREF_LOCALE, "uk");
         return normalizeLocaleCode(stored != null ? stored.toString() : "uk");
     }
 

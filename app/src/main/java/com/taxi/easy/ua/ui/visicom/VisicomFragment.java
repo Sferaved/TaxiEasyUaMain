@@ -248,6 +248,7 @@ public class VisicomFragment extends Fragment {
     private boolean appProcessWasInBackground = false;
     private static final long VISICOM_COST_DEBOUNCE_MS = 2500;
     private static final long VISICOM_COST_LAST_ADDRESS_COOLDOWN_MS = 30_000;
+    private static final long NETWORK_RESTORE_RELOAD_COOLDOWN_MS = 12_000;
     private long lastVisicomCostRequestMs = 0;
     private long lastCostCalculationFailureMs = 0;
 
@@ -1131,6 +1132,16 @@ public class VisicomFragment extends Fragment {
         if (!isAdded() || context == null) {
             return;
         }
+        long now = System.currentTimeMillis();
+        if (CostCalculationProgressBar.isCalculationInProgress()) {
+            Logger.d(context, TAG, "reloadOrderAfterNetworkRestored: пропуск — расчёт уже идёт");
+            return;
+        }
+        if (lastVisicomCostRequestMs > 0
+                && now - lastVisicomCostRequestMs < NETWORK_RESTORE_RELOAD_COOLDOWN_MS) {
+            Logger.d(context, TAG, "reloadOrderAfterNetworkRestored: пропуск — недавний расчёт (onResume)");
+            return;
+        }
         resetCostCalculationState("networkRestored");
         requestVisicomCost("networkRestored");
     }
@@ -1141,6 +1152,18 @@ public class VisicomFragment extends Fragment {
         hideCostCalculationProgress();
         lastCostCalculationFailureMs = 0;
         lastVisicomCostRequestMs = 0;
+        lastCost = null;
+        resetRealtimeOrderCostDedup();
+    }
+
+    private void resetRealtimeOrderCostDedup() {
+        if (!isAdded()) {
+            return;
+        }
+        Activity activity = getActivity();
+        if (activity instanceof MainActivity mainActivity) {
+            mainActivity.resetCentrifugoOrderCostDedup();
+        }
     }
 
     private String resolveCostErrorMessage(String serverMessage) {
@@ -3271,6 +3294,8 @@ public class VisicomFragment extends Fragment {
             return;
         }
         lastVisicomCostRequestMs = now;
+        lastCost = null;
+        resetRealtimeOrderCostDedup();
         showCostCalculationProgress();
         try {
             Logger.d(context, TAG, "visicomCost, источник: " + source);
@@ -4837,7 +4862,9 @@ public class VisicomFragment extends Fragment {
                     if ("success".equals(orderResponse.getStatus()) && orderResponse.getMessage() != null) {
                         String message = orderResponse.getMessage();
                         // Проверяем, что сообщение не "Заказ снят" или "Заказ не найден"
-                        if (!message.equals("Заказ снят") && !message.equals("Заказ не найден") && !message.equals("Автоматический заказ не найден")) {
+                        if (message.equals("Заказ снят")
+                                || message.equals("Заказ не найден")
+                                || message.equals("Автоматический заказ не найден")) {
                             sharedPreferencesHelperMain.saveValue("uid_fcm", "");
                         }
                     }

@@ -90,6 +90,10 @@ public class PusherManager {
     private final PusherHandler mainHandler;
 
     private String lastProcessedCost = "";
+
+    public void resetOrderCostDedup() {
+        lastProcessedCost = "";
+    }
     private boolean isSubscribed = false;
     private boolean isShuttingDown = false;
     private int reconnectAttempts = 0;

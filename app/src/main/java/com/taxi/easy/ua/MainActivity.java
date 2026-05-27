@@ -263,6 +263,8 @@ public class MainActivity extends AppCompatActivity {
     private final Handler networkUiHandler = new Handler(Looper.getMainLooper());
     private Runnable bannerRecheckRunnable;
     private Runnable networkRestoredRunnable;
+    /** true после события «нет сети» — пересчёт заказа только при восстановлении. */
+    private boolean networkWasOfflineForReload;
     private AppReviewManager appReviewManager;
     public AppReviewManager getAppReviewManager() {
         return appReviewManager;
@@ -427,7 +429,12 @@ public class MainActivity extends AppCompatActivity {
         networkMonitor.setListener(isConnected -> runOnUiThread(() -> {
             updateInternetBannerVisibility();
             if (isConnected) {
-                scheduleReloadAfterNetworkRestored();
+                if (networkWasOfflineForReload) {
+                    networkWasOfflineForReload = false;
+                    scheduleReloadAfterNetworkRestored();
+                }
+            } else {
+                networkWasOfflineForReload = true;
             }
         }));
         networkMonitor.startMonitoring();
@@ -3066,6 +3073,15 @@ public class MainActivity extends AppCompatActivity {
 
         Crisp.setUserEmail(userEmail);
         Crisp.setUserNickname(username);
+    }
+
+    public void resetCentrifugoOrderCostDedup() {
+        if (centrifugoManager != null) {
+            centrifugoManager.resetOrderCostDedup();
+        }
+        if (pusherManager != null) {
+            pusherManager.resetOrderCostDedup();
+        }
     }
 
     private void releaseCentrifugoManager() {

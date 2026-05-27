@@ -162,8 +162,6 @@ public class NetworkMonitor {
                 notifyListeners(newState);
             } else {
                 Logger.d(context, TAG, "Force check - state unchanged: " + (newState ? "connected" : "disconnected"));
-                // Всё равно уведомляем, чтобы обновить UI
-                notifyListeners(newState);
             }
         });
     }
