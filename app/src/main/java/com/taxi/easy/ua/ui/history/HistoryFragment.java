@@ -133,7 +133,7 @@ public class HistoryFragment extends Fragment {
                 scrollButtonUp,
                 scrollButtonDown);
         scrollPagination.bind();
-        setupListScrollButtons();
+        scrollPagination.wireScrollButtons();
 
         progressBar.setVisibility(View.VISIBLE);
         scrollPagination.update();
@@ -489,26 +489,6 @@ public class HistoryFragment extends Fragment {
             );
             bindUidRouteAdapter(adapter);
         }
-    }
-
-    private void setupListScrollButtons() {
-        scrollButtonDown.setOnClickListener(v -> {
-            if (array == null) {
-                return;
-            }
-            int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
-            if (nextVisiblePosition < array.length) {
-                listView.smoothScrollToPosition(nextVisiblePosition);
-            }
-            listView.postDelayed(() -> scrollPagination.update(), 150);
-        });
-        scrollButtonUp.setOnClickListener(v -> {
-            int nextVisiblePosition = listView.getFirstVisiblePosition() - 1;
-            if (nextVisiblePosition >= 0) {
-                listView.smoothScrollToPosition(nextVisiblePosition);
-            }
-            listView.postDelayed(() -> scrollPagination.update(), 150);
-        });
     }
 
     private void bindUidRouteAdapter(CustomArrayUidAdapter adapter) {

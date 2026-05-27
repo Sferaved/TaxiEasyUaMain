@@ -150,25 +150,7 @@ public class ActiveOrderFragment extends Fragment {
                 scrollButtonUp,
                 scrollButtonDown);
         scrollPagination.bind();
-        scrollButtonDown.setOnClickListener(v -> {
-            if (array == null) {
-                return;
-            }
-            int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
-            if (nextVisiblePosition < array.length) {
-                listView.smoothScrollToPosition(nextVisiblePosition);
-            }
-            listView.postDelayed(() -> scrollPagination.update(), 150);
-        });
-        scrollButtonUp.setOnClickListener(v -> {
-            int prev = listView.getFirstVisiblePosition() - 1;
-            if (prev >= 0) {
-                listView.smoothScrollToPosition(prev);
-            } else {
-                listView.smoothScrollByOffset(-1);
-            }
-            listView.postDelayed(() -> scrollPagination.update(), 150);
-        });
+        scrollPagination.wireScrollButtons();
 
         startRepeatingTask();
         return root;

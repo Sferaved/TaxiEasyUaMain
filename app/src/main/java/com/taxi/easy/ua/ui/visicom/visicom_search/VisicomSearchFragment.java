@@ -543,6 +543,7 @@ public class VisicomSearchFragment extends Fragment {
                 scrollButtonDown,
                 scrollContainer);
         addressScrollPagination.bind();
+        addressScrollPagination.wireScrollButtons();
         updateScrollButtonsVisibility();
         scrollSetVisibility();
 
@@ -648,24 +649,6 @@ public class VisicomSearchFragment extends Fragment {
                 // Handle the case where the Fragment is not attached
             }
 //            startActivity(new Intent(context, MainActivity.class));
-        });
-
-        scrollButtonDown.setOnClickListener(v -> {
-            int nextVisiblePosition = addressListView.getLastVisiblePosition() + 1;
-            if (addressAdapter != null && nextVisiblePosition < addressAdapter.getCount()) {
-                addressListView.smoothScrollToPosition(nextVisiblePosition);
-            }
-            addressListView.postDelayed(() -> addressScrollPagination.update(), 150);
-        });
-
-        scrollButtonUp.setOnClickListener(v -> {
-            int prev = addressListView.getFirstVisiblePosition() - 1;
-            if (prev >= 0) {
-                addressListView.smoothScrollToPosition(prev);
-            } else {
-                addressListView.smoothScrollByOffset(-1);
-            }
-            addressListView.postDelayed(() -> addressScrollPagination.update(), 150);
         });
 
         layoutParams = addressListView.getLayoutParams();

@@ -139,6 +139,7 @@ public class GalleryFragment extends Fragment {
                 scrollButtonDown,
                 binding.layout.getRoot());
         scrollPagination.bind();
+        scrollPagination.wireScrollButtons();
 
         btnCallAdmin = binding.btnCallAdmin;
         btnCallAdmin.setOnClickListener(v -> {
@@ -204,24 +205,6 @@ public class GalleryFragment extends Fragment {
         array = arrayToRoutsAdapter ();
 
         if(array != null) {
-            scrollButtonDown.setOnClickListener(v -> {
-                int nextVisiblePosition = listView.getLastVisiblePosition() + 1;
-                if (nextVisiblePosition < array.length) {
-                    listView.smoothScrollToPosition(nextVisiblePosition);
-                }
-                listView.postDelayed(() -> scrollPagination.update(), 150);
-            });
-
-            scrollButtonUp.setOnClickListener(v -> {
-                int prev = listView.getFirstVisiblePosition() - 1;
-                if (prev >= 0) {
-                    listView.smoothScrollToPosition(prev);
-                } else {
-                    listView.smoothScrollByOffset(-1);
-                }
-                listView.postDelayed(() -> scrollPagination.update(), 150);
-            });
-
             listAdapter = new ArrayAdapter<>(context, R.layout.services_adapter_layout, array);
             listView.setAdapter(listAdapter);
             listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
