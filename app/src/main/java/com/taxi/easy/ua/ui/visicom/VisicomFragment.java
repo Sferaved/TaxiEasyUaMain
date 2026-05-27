@@ -1123,7 +1123,8 @@ public class VisicomFragment extends Fragment {
     private static boolean isForceRetrySource(String source) {
         return "networkRestored".equals(source)
                 || "swipeRefresh".equals(source)
-                || "manualRetry".equals(source);
+                || "manualRetry".equals(source)
+                || "manualGps".equals(source);
     }
 
     public void reloadOrderAfterNetworkRestored() {
@@ -3032,8 +3033,7 @@ public class VisicomFragment extends Fragment {
     }
 
     /**
-     * После города: только определить GPS и сохранить в prefs, не менять ROUT_MARKER и поле «Откуда».
-     * В UI — адрес из последнего заказа; маршрут и координаты — в логах.
+     * После города: определить GPS и записать в prefs + лог; заказ не меняется до нажатия кнопки GPS.
      */
     private void detectAndStoreAutoLocationAfterCity() {
         if (!isAdded() || context == null || !autoLocationFromCityLoad) {
@@ -3106,6 +3106,26 @@ public class VisicomFragment extends Fragment {
                     Logger.e(context, TAG, "Авто-GPS: ошибка определения: " + e.getMessage());
                     finishAutoLocationAfterCityWithLastOrderAddress();
                 });
+    }
+
+    /** Нажатие GPS: перезаписать «Откуда» и ROUT_MARKER по геолокации. */
+    private void applyGpsLocationToOrder(double latitude, double longitude, String address) {
+        if (!isAdded() || binding == null) {
+            isUpdatingFromGPS = false;
+            return;
+        }
+        Logger.d(context, TAG, String.format(Locale.US,
+                "GPS: применяем к заказу lat=%.6f, lon=%.6f, address='%s'", latitude, longitude, address));
+        updateCoordinatesInDatabase(latitude, longitude, address);
+        geoText.setText(address);
+        progressBar.setVisibility(View.GONE);
+        isUpdatingFromGPS = false;
+        finishAutoLocationGpsButtonState();
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+        if (!"email".equals(userEmail) && NetworkUtils.isNetworkAvailable(context)) {
+            requestVisicomCost("manualGps");
+            readTariffInfo();
+        }
     }
 
     private void finishAutoLocationAfterCityWithLastOrderAddress() {
@@ -3353,10 +3373,20 @@ public class VisicomFragment extends Fragment {
     }
 
     private void firstLocation() {
-        if (autoLocationFromCityLoad) {
-            detectAndStoreAutoLocationAfterCity();
-            return;
+        autoLocationFromCityLoad = false;
+
+        if (AutoLocationAfterCityHelper.isGpsPendingUserApply()
+                && AutoLocationAfterCityHelper.hasDetectedCoordinates()) {
+            String pendingAddress = AutoLocationAfterCityHelper.getDetectedAddress();
+            if (pendingAddress != null && !pendingAddress.trim().isEmpty()) {
+                applyGpsLocationToOrder(
+                        AutoLocationAfterCityHelper.getDetectedLat(),
+                        AutoLocationAfterCityHelper.getDetectedLon(),
+                        pendingAddress);
+                return;
+            }
         }
+
         // ✅ Защита от повторных вызовов
         if (isUpdatingFromGPS) {
             Logger.d(context, TAG, "GPS update already in progress, skipping");
