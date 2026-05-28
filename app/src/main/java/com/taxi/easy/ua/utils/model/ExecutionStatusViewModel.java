@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
+import com.taxi.easy.ua.ui.weather.finish.PassengerNotifier;
 
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 import com.taxi.easy.ua.utils.pusher.events.CanceledStatusEvent;
@@ -165,6 +166,7 @@ public class ExecutionStatusViewModel extends ViewModel {
         MainActivity.uid = newUid;
         uidLiveData.setValue(newUid);
         persistFinishOrderSnapshot();
+        PassengerNotifier.linkFinishOrderUidsAfterUidChange(current, newUid);
     }
 
     public void restoreUidFromPersisted(@Nullable String activeUid, @Nullable String doubleUid) {
@@ -274,6 +276,7 @@ public class ExecutionStatusViewModel extends ViewModel {
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_DOUBLE_UID, "");
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_DISPLAY_COST, "");
         setCancelInFlightPref(false);
+        PassengerNotifier.clearWeatherNoticePrefs();
     }
 
     // Method to update paySystemStatus

@@ -580,7 +580,14 @@ public class FinishSeparateFragment extends Fragment {
         Logger.d(context, "PassengerNotifier", "city " + city);
         // Проверка через 1 секунду
         checkHandler.postDelayed(() -> {
-            notifier.checkAndNotify(context, city, resolveActiveOrderUid());
+            if (!isAdded() || notifier == null) {
+                return;
+            }
+            String orderUid = resolveActiveOrderUid();
+            if (PassengerNotifier.isWeatherAlreadyShownForOrder(orderUid)) {
+                return;
+            }
+            notifier.checkAndNotify(context, city, orderUid);
         }, 1000);
 
 
@@ -918,6 +925,12 @@ public class FinishSeparateFragment extends Fragment {
         cancelShowDialogAddCost();
         if (handlerCheckTask != null) {
             handlerCheckTask.removeCallbacks(checkTask);
+        }
+        if (checkHandler != null) {
+            checkHandler.removeCallbacksAndMessages(null);
+        }
+        if (notifier != null) {
+            notifier.cancelPendingWeatherRequests();
         }
     }
 
@@ -2369,6 +2382,7 @@ public class FinishSeparateFragment extends Fragment {
             if (uidChanged) {
                 uid_Double = previous;
                 MainActivity.uid_Double = previous;
+                PassengerNotifier.linkFinishOrderUidsAfterUidChange(previous, newUid);
             }
             uid = newUid;
             MainActivity.uid = newUid;
@@ -2574,6 +2588,7 @@ public class FinishSeparateFragment extends Fragment {
         if (persistedCost != null && "nal_payment".equals(pay_method) && textCostMessage != null) {
             applyNalCostToFinishUi(persistedCost);
         }
+        PassengerNotifier.syncWeatherNoticeWithFinishUids(uid, uid_Double);
     }
 
     @Nullable

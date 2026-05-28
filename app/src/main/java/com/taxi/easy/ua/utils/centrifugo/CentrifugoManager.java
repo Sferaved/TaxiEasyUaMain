@@ -19,6 +19,7 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.ui.weather.finish.PassengerNotifier;
 import com.taxi.easy.ua.utils.cost.CostParseHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
@@ -447,6 +448,11 @@ public class CentrifugoManager {
         mainHandler.postSafe(() -> {
             MainActivity.uid_Double = orderDouble;
             MainActivity.paySystemStatus = paySystemStatus;
+            if (orderDouble != null && !orderDouble.trim().isEmpty()) {
+                sharedPreferencesHelperMain.saveValue(
+                        ExecutionStatusViewModel.PREF_FINISH_DOUBLE_UID, orderDouble.trim());
+            }
+            PassengerNotifier.syncWeatherNoticeWithFinishUids(MainActivity.uid, orderDouble);
         });
     }
 
