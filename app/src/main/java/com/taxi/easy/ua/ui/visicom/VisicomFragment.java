@@ -260,6 +260,12 @@ public class VisicomFragment extends Fragment {
     private long lastSuccessfulLocationTime = 0;
     private String lastProcessedAddress = "";
     private String pendingAddressRequest = null;
+    /**
+     * Пользователь нажал GPS, пока авто-GPS (после города) ещё определяет адрес.
+     * В этом случае применяем найденные координаты сразу по завершению авто-определения,
+     * чтобы не брать кэшированную локацию.
+     */
+    private boolean gpsClickAwaitingAutoDetected = false;
     private static boolean isFragmentVisible = false;
 
     @SuppressLint("StaticFieldLeak")
@@ -3122,6 +3128,16 @@ public class VisicomFragment extends Fragment {
                         }
                         AutoLocationAfterCityHelper.saveDetectedCoordinates(latitude, longitude, address);
                         logAutoDetectedRouteAndPath(latitude, longitude, address);
+                        if (gpsClickAwaitingAutoDetected
+                                && address != null
+                                && !address.trim().isEmpty()
+                                && isAdded()
+                                && binding != null) {
+                            gpsClickAwaitingAutoDetected = false;
+                            Logger.d(context, TAG, "Авто-GPS: пользователь уже нажал GPS — применяем найденный адрес к заказу");
+                            applyGpsLocationToOrder(latitude, longitude, address);
+                            return;
+                        }
                         finishAutoLocationAfterCityWithLastOrderAddress();
                     });
                 })
@@ -3174,10 +3190,13 @@ public class VisicomFragment extends Fragment {
             viewModel.setStatusX(true);
             updateGpsButtonCross(true);
             Logger.d(context, TAG, "Авто-GPS: крестик на кнопке GPS — координаты не применены, нужно нажать GPS");
-        } else {
-            finishAutoLocationGpsButtonState();
+            // Важно: не трогаем текущий адрес в UI/заказе, чтобы он не «дергался».
+            // Авто-GPS после города должен лишь подготовить координаты и ждать нажатия кнопки GPS.
+            return;
         }
-        applyLastOrderAddressFromRouteMarker(gpsDetectedNotApplied);
+
+        finishAutoLocationGpsButtonState();
+        applyLastOrderAddressFromRouteMarker(false);
     }
 
     private void logAutoDetectedRouteAndPath(double detectedLat, double detectedLon, String detectedAddress) {
@@ -3351,6 +3370,11 @@ public class VisicomFragment extends Fragment {
                     String searchText = getString(R.string.search_text) + "...";
                     progressBar.setVisibility(View.VISIBLE);
                     Toast.makeText(context, searchText, Toast.LENGTH_SHORT).show();
+                    if (autoLocationFromCityLoad && isUpdatingFromGPS) {
+                        gpsClickAwaitingAutoDetected = true;
+                        Logger.d(context, TAG, "GPS: ждём завершения авто-GPS после города (применим свежую локацию)");
+                        return;
+                    }
                     firstLocation();
                 }
             } else {
