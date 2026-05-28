@@ -29,6 +29,8 @@ public class NotificationHelper {
     private static final String CHANNEL_DESCRIPTION = "This is my notification channel";
     private static final int REQUEST_CODE_OPEN_URL = 1;
     private static final String TAG = "NotificationHelper";
+    /** UID заказа, для которого уже показали push «авто найдено» (отдельно от uid_fcm). */
+    private static final String PREF_LAST_CAR_FOUND_NOTIFY_UID = "last_car_found_notify_uid";
 
     private static void ensureNotificationChannel(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -103,19 +105,13 @@ public class NotificationHelper {
         Logger.d(context, TAG, "Текст уведомления: " + message);
         Logger.d(context, TAG, "uid: " + uid);
 
-        String uidOld = (String) sharedPreferencesHelperMain.getValue("uid_fcm", "");
-
-        if (uidOld.equals(uid)) {
-            Logger.d(context, TAG, "UID совпадает с предыдущим, уведомление не показывается.");
+        String lastCarFoundUid = (String) sharedPreferencesHelperMain.getValue(PREF_LAST_CAR_FOUND_NOTIFY_UID, "");
+        if (uid != null && uid.equals(lastCarFoundUid)) {
+            Logger.d(context, TAG, "Push «авто найдено» уже показывали для uid=" + uid);
             return;
-        } else {
-            if (uid != null) {
-                sharedPreferencesHelperMain.saveValue("uid_fcm", uid);
-            } else {
-                Logger.d(context, TAG,  "uid is null, skipping save");
-                // Optionally, save a default value or skip saving
-                sharedPreferencesHelperMain.saveValue("uid_fcm", "");
-            }
+        }
+        if (uid != null && !uid.isEmpty()) {
+            sharedPreferencesHelperMain.saveValue(PREF_LAST_CAR_FOUND_NOTIFY_UID, uid);
         }
 
         // Генерация уникального ID уведомления

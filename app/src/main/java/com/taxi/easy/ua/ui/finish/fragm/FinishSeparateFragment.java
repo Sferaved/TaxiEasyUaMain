@@ -77,6 +77,7 @@ import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.hold.APIHoldService;
 import com.taxi.easy.ua.utils.hold.HoldResponse;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
@@ -1648,8 +1649,15 @@ public class FinishSeparateFragment extends Fragment {
             String time_to_start_point,
             String orderCarInfo
     ) {
+        boolean wasCarFound = (boolean) sharedPreferencesHelperMain.getValue("carFound", false);
 
         sharedPreferencesHelperMain.saveValue("carFound", true);
+
+        if (!wasCarFound && !com.taxi.easy.ua.androidx.startup.MyApplication.isInForeground()
+                && uid != null && !uid.isEmpty()) {
+            NotificationHelper.showNotificationFindAutoMessage(
+                    context, context.getString(R.string.ex_st_2), uid);
+        }
 //        if (handlerAddcost != null) {
 //            handlerAddcost.removeCallbacks(showDialogAddcost);
 //        }

@@ -4,6 +4,7 @@ package com.taxi.easy.ua.ui.visicom.visicom_search;
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.GONE;
 import static com.taxi.easy.ua.MainActivity.button1;
+import static com.taxi.easy.ua.MainActivity.orderViewModel;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.Manifest;
@@ -1776,11 +1777,13 @@ public class VisicomSearchFragment extends Fragment {
                 List<String> settings = new ArrayList<>();
                 settings.add(String.valueOf(originLat));
                 settings.add(String.valueOf(originLon));
-                settings.add(String.valueOf(originLat));
-                settings.add(String.valueOf(originLon));
+                settings.add("0");
+                settings.add("0");
                 settings.add(startAddress);
                 settings.add("");
                 updateRoutMarker(settings);
+                sharedPreferencesHelperMain.saveValue("order_cost", "0");
+                MainActivity.orderViewModel.setOrderCost("0");
             }
         } catch (Exception e) {
             Logger.e(context, TAG, "clearFinishAddressOnSearch: " + e.getMessage());

@@ -2028,6 +2028,29 @@ public class VisicomFragment extends Fragment {
         Logger.d(context, TAG, "orderFinished: message " + message);
         assert orderWeb != null;
 
+        String dispatchUid = sendUrlMap.get("dispatching_order_uid");
+        if (MainActivity.uid != null && !MainActivity.uid.isEmpty()
+                && dispatchUid != null && MainActivity.uid.equals(dispatchUid)) {
+            int dest = MainActivity.currentNavDestination;
+            if (dest == R.id.nav_finish_separate) {
+                Logger.d(context, TAG, "handleOrderFinished: повторный ответ для активного заказа, пропуск");
+                return;
+            }
+        }
+
+        if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))
+                && Objects.equals(sendUrlMap.get("lat"), sendUrlMap.get("from_lat"))
+                && Objects.equals(sendUrlMap.get("lng"), sendUrlMap.get("from_lng"))
+                && (message == null || message.isEmpty())) {
+            Logger.w(context, TAG, "handleOrderFinished: некорректный маршрут (from==to), пропуск");
+            if (isAdded()) {
+                btnVisible(VISIBLE);
+                constraintLayoutVisicomFinish.setVisibility(GONE);
+                constraintLayoutVisicomMain.setVisibility(VISIBLE);
+            }
+            return;
+        }
+
         boolean VisicomBackPressed = (boolean) sharedPreferencesHelperMain.getValue("VisicomBackPressed", false);
 
         if (!"0".equals(orderWeb)) {
@@ -2197,6 +2220,10 @@ public class VisicomFragment extends Fragment {
             Logger.d(context, TAG, "sendUrlMap: extra_charge_codes " + sendUrlMap.get("extra_charge_codes"));
 
             MainActivity.uid = sendUrlMap.get("dispatching_order_uid");
+            if (MainActivity.uid != null && !MainActivity.uid.isEmpty()) {
+                sharedPreferencesHelperMain.saveValue("uid_fcm", MainActivity.uid);
+                sharedPreferencesHelperMain.saveValue("last_car_found_notify_uid", "");
+            }
             ExecutionStatusViewModel.resetNewOrderSession(MainActivity.uid);
             Logger.d(context, "MainActivity.uid", "MainActivity.uid 1 " + MainActivity.uid);
 
