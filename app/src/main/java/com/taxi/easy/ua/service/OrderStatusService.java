@@ -14,6 +14,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
 
 import androidx.annotation.NonNull;
@@ -43,6 +44,7 @@ public class OrderStatusService extends Service {
     private Handler handler;
     private Runnable statusTask;
     private Context context;
+    private HandlerThread handlerThread;
 
     @Override
     public void onCreate() {
@@ -52,7 +54,9 @@ public class OrderStatusService extends Service {
 
         createNotificationChannel();
 
-        handler = new Handler();
+        handlerThread = new HandlerThread("OrderStatusService");
+        handlerThread.start();
+        handler = new Handler(handlerThread.getLooper());
         statusTask = new Runnable() {
             @Override
             public void run() {
@@ -138,8 +142,14 @@ public class OrderStatusService extends Service {
     private void statusOrderAll() throws ParseException {
         Logger.d(context, "Pusher", "statusOrderAll: ");
 
-        String api = logCursor(CITY_INFO, context).get(2);
-        String email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+        List<String> cityInfo = logCursor(CITY_INFO, context);
+        List<String> userInfo = logCursor(MainActivity.TABLE_USER_INFO, context);
+        if (cityInfo.size() < 3 || userInfo.size() < 4) {
+            Logger.w(context, TAG, "statusOrderAll: city/user info not ready — skip");
+            return;
+        }
+        String api = cityInfo.get(2);
+        String email = userInfo.get(3);
 
         String baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
         String url = baseUrl + api + "/android/searchAutoOrderServiceAll/" + email + "/" + context.getString(R.string.application) + "/yes_mes";
@@ -184,6 +194,10 @@ public class OrderStatusService extends Service {
     public void onDestroy() {
         super.onDestroy();
         if (handler != null) handler.removeCallbacks(statusTask);
+        if (handlerThread != null) {
+            handlerThread.quitSafely();
+            handlerThread = null;
+        }
         Logger.d(context, TAG, "Сервис остановлен");
         stopForeground(true);
     }

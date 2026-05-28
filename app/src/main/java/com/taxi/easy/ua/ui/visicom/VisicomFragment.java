@@ -4830,15 +4830,25 @@ public class VisicomFragment extends Fragment {
     }
 
     private void statusOrder() throws ParseException {
-        String uid =  (String) sharedPreferencesHelperMain.getValue("uid_fcm", "");
+        String uid = (String) sharedPreferencesHelperMain.getValue("uid_fcm", "");
+        uid = uid != null ? uid.trim() : "";
         Logger.d(context, TAG, "statusOrder: " + uid);
+
         new Thread(this::fetchRoutesCancel).start();
-        if(uid.isEmpty()) {
-            uid = " ";
+
+        // Если uid нет, то и "основного заказа" нет — не шлем запрос с пробелом в URL.
+        if (uid.isEmpty()) {
+            Logger.d(context, TAG, "statusOrder: uid_fcm empty — skip request");
+            return;
         }
+
         Logger.d(context, "Pusher", "statusCacheOrder: " + uid);
 
         List<String> listCity = logCursor(CITY_INFO, context);
+        if (listCity.size() < 3) {
+            Logger.w(context, TAG, "statusOrder: CITY_INFO is empty — skip request");
+            return;
+        }
         String api = listCity.get(2);
 
         String baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
