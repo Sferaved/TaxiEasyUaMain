@@ -2701,9 +2701,7 @@ public class VisicomFragment extends Fragment {
 
         textViewTo = binding.textTo;
         textViewTo.setOnClickListener(v -> {
-            textViewTo.setText("");
-            updateRouteSettings();
-
+            // Не сбрасываем ROUT_MARKER: на экране поиска подставится сохранённый адрес «куда».
             Bundle bundle = new Bundle();
             bundle.putString("start", "no");
             bundle.putString("end", "ok");

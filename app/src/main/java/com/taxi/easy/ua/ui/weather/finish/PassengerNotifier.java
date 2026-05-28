@@ -17,16 +17,20 @@ import com.taxi.easy.ua.ui.weather.WeatherResponse;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 
+import androidx.annotation.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 public class PassengerNotifier {
     private static final String TAG = "PassengerNotifier";
+    private static final String PREF_LAST_WEATHER_NOTICE_ORDER_UID = "weather_notice_last_order_uid";
     private CityInfoHelper apiHelper;
     private long searchStartTime;
     private Context appContext;
     private String pendingCity;
+    private String pendingOrderUid;
 
     public PassengerNotifier(Context context) {
         this.appContext = context.getApplicationContext();
@@ -37,6 +41,19 @@ public class PassengerNotifier {
     public void onSearchStarted() {
         searchStartTime = System.currentTimeMillis();
         Logger.d(appContext, TAG, "onSearchStarted: поиск начат, время старта=" + searchStartTime);
+    }
+
+    /**
+     * Один заказ -> один показ погоды. Идентификатор заказа должен быть стабильным (uid заказа).
+     * Если uid пустой, уведомление не показываем, чтобы не светить прогноз несколько раз при пересозданиях.
+     */
+    public void checkAndNotify(Context context, String city, String orderUid) {
+        this.pendingOrderUid = normalizeOrderUid(orderUid);
+        if (isWeatherNoticeAlreadyShown(pendingOrderUid)) {
+            Logger.d(context, TAG, "checkAndNotify: погода уже показана для заказа " + pendingOrderUid);
+            return;
+        }
+        checkAndNotify(context, city);
     }
 
     public void checkAndNotify(Context context, String city) {
@@ -174,6 +191,10 @@ public class PassengerNotifier {
     }
 
     private void showFinalNotification(Context context, CityInfo alertInfo, String weather, int temperature) {
+        if (!shouldShowWeatherNoticeForOrder()) {
+            Logger.d(context, TAG, "showFinalNotification: пропускаем (уже показано для этого заказа)");
+            return;
+        }
         // Сохраняем текущую локаль ДО создания fullInfo
         String currentLocale = getLanguage(context);
         Logger.d(context, TAG, "showFinalNotification: текущая локаль=" + currentLocale);
@@ -193,9 +214,42 @@ public class PassengerNotifier {
         // Передаём сохранённую локаль в buildNotificationMessage
         String message = buildNotificationMessage(fullInfo, currentLocale);
         if (message != null) {
+            markWeatherNoticeShownForOrder();
             Logger.d(context, TAG, "Показываем уведомление: " + message);
             showNotification(context, message);
         }
+    }
+
+    @Nullable
+    private static String normalizeOrderUid(@Nullable String orderUid) {
+        if (orderUid == null) {
+            return null;
+        }
+        String trimmed = orderUid.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static boolean isWeatherNoticeAlreadyShown(@Nullable String orderUid) {
+        String normalized = normalizeOrderUid(orderUid);
+        if (normalized == null) {
+            return true;
+        }
+        Object last = MyApplication.sharedPreferencesHelperMain.getValue(PREF_LAST_WEATHER_NOTICE_ORDER_UID, "");
+        String lastUid = last != null ? String.valueOf(last).trim() : "";
+        return normalized.equals(lastUid);
+    }
+
+    private boolean shouldShowWeatherNoticeForOrder() {
+        return !isWeatherNoticeAlreadyShown(pendingOrderUid);
+    }
+
+    private void markWeatherNoticeShownForOrder() {
+        String normalized = normalizeOrderUid(pendingOrderUid);
+        if (normalized == null) {
+            return;
+        }
+        MyApplication.sharedPreferencesHelperMain.saveStringCommit(
+                PREF_LAST_WEATHER_NOTICE_ORDER_UID, normalized);
     }
 
 

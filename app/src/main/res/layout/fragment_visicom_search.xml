@@ -111,10 +111,27 @@
         android:textColorHint="#ABD9D9D9"
         android:textSize="@dimen/textView_textSize"
         android:imeOptions="actionDone"
+        android:paddingEnd="40dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/num2"
         app:layout_constraintTop_toBottomOf="@+id/textwhere"
         app:layout_constraintWidth_percent="@dimen/button_width" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/clearButtonTo"
+        style="?attr/borderlessButtonStyle"
+        android:layout_width="25dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="4dp"
+        android:visibility="gone"
+        android:backgroundTint="@android:color/transparent"
+        android:contentDescription="clear_button_description"
+        app:icon="@drawable/baseline_cleaning_services_24"
+        app:iconGravity="top"
+        app:iconTint="#FFFFFF"
+        app:layout_constraintBottom_toBottomOf="@+id/text_to"
+        app:layout_constraintEnd_toEndOf="@+id/text_to"
+        app:layout_constraintTop_toTopOf="@+id/text_to" />
 
     <TextView
         android:id="@+id/text_toError"

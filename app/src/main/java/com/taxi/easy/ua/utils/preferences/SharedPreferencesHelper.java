@@ -19,6 +19,11 @@ public class SharedPreferencesHelper {
         editor.putString(key, value);
         editor.apply(); // Асинхронное сохранение
     }
+
+    /** Синхронная запись — для флагов, которые должны пережить немедленное закрытие приложения. */
+    public void saveStringCommit(String key, String value) {
+        sharedPreferences.edit().putString(key, value).commit();
+    }
     // Метод для сохранения значения
     public void saveValue(String key, Object value) {
         SharedPreferences.Editor editor = sharedPreferences.edit();

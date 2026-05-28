@@ -31,7 +31,14 @@ Write-Host ""
 
 # ===== 2. Increment version =====
 $newVersionCode = $currentVersionCode + 1
-$newVersionName = "1." + $newVersionCode.ToString().Substring($newVersionCode.ToString().Length - 3)
+# ВАЖНО: первая цифра версии фиксированная "1.", а хвост идёт 999 -> 1000 -> 1001 ...
+# Для PAS_1 версия отображается как 1.(versionCode - 1000), чтобы после 1.999 шло 1.1000.
+$visibleSuffix = $newVersionCode - 1000
+if ($visibleSuffix -lt 0) {
+    Write-Host "ERROR: versionCode too small for PAS_1 scheme (expected >= 1000)" -ForegroundColor Red
+    exit 1
+}
+$newVersionName = "1.$visibleSuffix"
 
 Write-Host "New versionCode: $newVersionCode"
 Write-Host "New versionName: $newVersionName"

@@ -580,7 +580,7 @@ public class FinishSeparateFragment extends Fragment {
         Logger.d(context, "PassengerNotifier", "city " + city);
         // Проверка через 1 секунду
         checkHandler.postDelayed(() -> {
-            notifier.checkAndNotify(context, city);
+            notifier.checkAndNotify(context, city, resolveActiveOrderUid());
         }, 1000);
 
 

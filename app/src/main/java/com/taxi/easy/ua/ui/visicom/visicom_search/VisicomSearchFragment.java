@@ -54,6 +54,7 @@ import androidx.navigation.Navigation;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
+import com.google.android.material.button.MaterialButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
@@ -107,6 +108,7 @@ public class VisicomSearchFragment extends Fragment {
 
     ProgressBar progressBar;
     EditText fromEditAddress, toEditAddress;
+    private MaterialButton clearButtonTo;
     private ImageButton  btn_ok, btn_no;
     private static List<double[]> coordinatesList;
     private static List<String[]> addresses;
@@ -529,6 +531,9 @@ public class VisicomSearchFragment extends Fragment {
         inputType = toEditAddress.getInputType() | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS;
         toEditAddress.setInputType(inputType);
 
+        clearButtonTo = root.findViewById(R.id.clearButtonTo);
+        clearButtonTo.setOnClickListener(v -> clearFinishAddressOnSearch());
+
         addressesList = new ArrayList<>();
         addressAdapter = new ArrayAdapter<>(context, R.layout.custom_list_item, addressesList);
         addressListView.setAdapter(addressAdapter);
@@ -574,7 +579,9 @@ public class VisicomSearchFragment extends Fragment {
             root.findViewById(R.id.textfrom).setVisibility(View.GONE);
             root.findViewById(R.id.num1).setVisibility(View.GONE);
             fromEditAddress.setVisibility(View.GONE);
-            
+            if (clearButtonTo != null) {
+                clearButtonTo.setVisibility(View.VISIBLE);
+            }
 
             textGeoError.setVisibility(View.GONE);
             gpsbut.setText(getString(R.string.on_city_tv));
@@ -609,9 +616,26 @@ public class VisicomSearchFragment extends Fragment {
         }
         btnOnMap = root.findViewById(R.id.btn_on_map);
         btnOnMap.setOnClickListener(v -> {
+            double[] pendingFinishCoords = syncRouteMarkerBeforeOpenMap();
             Bundle bundle = new Bundle();
             bundle.putString("startMarker", start);
             bundle.putString("finishMarker", end);
+            // Явно указываем, какую точку редактируем на карте.
+            // Это важно, когда маршрут уже выбран (оба адреса существуют) и флаги могут быть "ok/ok".
+            // В этом фрагменте нет переменной point (она параметр в методах).
+            // Используем флаги start/end из аргументов: если end="ok" (или оба ok) — редактируем финиш.
+            bundle.putString("markerType", "ok".equals(end) ? "finishMarker" : "startMarker");
+            if (pendingFinishCoords != null) {
+                bundle.putDouble("pendingFinishLat", pendingFinishCoords[0]);
+                bundle.putDouble("pendingFinishLng", pendingFinishCoords[1]);
+            }
+            String pendingFinishAddress = toEditAddress.getText().toString().trim();
+            if (pendingFinishAddress.isEmpty() && VisicomFragment.textViewTo != null) {
+                pendingFinishAddress = VisicomFragment.textViewTo.getText().toString().trim();
+            }
+            if (!pendingFinishAddress.isEmpty()) {
+                bundle.putString("pendingFinishAddress", pendingFinishAddress);
+            }
             Log.e("setStatusX 3", "start:" + start);
             Activity activity = getActivity();
             if (activity == null) {
@@ -701,6 +725,7 @@ public class VisicomSearchFragment extends Fragment {
             }
         }
         if(end.equals("ok")) {
+            restoreFinishFieldFromDatabase();
             toEditAddress.requestFocus();
             toEditAddress.setSelection(toEditAddress.getText().toString().length());
             KeyboardUtils.showKeyboard(context, toEditAddress);
@@ -1721,6 +1746,196 @@ public class VisicomSearchFragment extends Fragment {
         }
         return numbersAfterComma;
     }
+    private void clearFinishAddressOnSearch() {
+        toEditAddress.setText("");
+        finishPoint = null;
+        positionChecked = 0;
+        finishMarker = "no";
+        text_toError.setVisibility(View.GONE);
+        hideAddressScrollControls();
+        addressesList.clear();
+        if (addressAdapter != null) {
+            addressAdapter.clear();
+            addressAdapter.notifyDataSetChanged();
+        }
+        if (VisicomFragment.textViewTo != null) {
+            VisicomFragment.textViewTo.setText("");
+        }
+
+        SQLiteDatabase database = null;
+        Cursor cursor = null;
+        try {
+            database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            cursor = database.rawQuery(
+                    "SELECT startLat, startLan, start FROM " + MainActivity.ROUT_MARKER + " LIMIT 1",
+                    null);
+            if (cursor.moveToFirst()) {
+                double originLat = cursor.getDouble(0);
+                double originLon = cursor.getDouble(1);
+                String startAddress = cursor.getString(2) != null ? cursor.getString(2) : "";
+                List<String> settings = new ArrayList<>();
+                settings.add(String.valueOf(originLat));
+                settings.add(String.valueOf(originLon));
+                settings.add(String.valueOf(originLat));
+                settings.add(String.valueOf(originLon));
+                settings.add(startAddress);
+                settings.add("");
+                updateRoutMarker(settings);
+            }
+        } catch (Exception e) {
+            Logger.e(context, TAG, "clearFinishAddressOnSearch: " + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            if (database != null && database.isOpen()) {
+                database.close();
+            }
+        }
+
+        toEditAddress.requestFocus();
+        KeyboardUtils.showKeyboard(context, toEditAddress);
+    }
+
+    private void restoreFinishFieldFromDatabase() {
+        if (toEditAddress == null || context == null) {
+            return;
+        }
+        if (!toEditAddress.getText().toString().trim().isEmpty()) {
+            return;
+        }
+        SQLiteDatabase database = null;
+        Cursor cursor = null;
+        try {
+            database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            cursor = database.rawQuery("SELECT finish FROM " + MainActivity.ROUT_MARKER + " LIMIT 1", null);
+            if (!cursor.moveToFirst()) {
+                return;
+            }
+            String finish = cursor.getString(0);
+            if (finish == null) {
+                return;
+            }
+            finish = finish.trim();
+            if (finish.isEmpty() || finish.equals(getString(R.string.on_city_tv))) {
+                return;
+            }
+            toEditAddress.setText(finish);
+            finishPoint = finish;
+            if (VisicomFragment.textViewTo != null) {
+                VisicomFragment.textViewTo.setText(finish);
+            }
+        } catch (Exception e) {
+            Logger.e(context, TAG, "restoreFinishFieldFromDatabase: " + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            if (database != null && database.isOpen()) {
+                database.close();
+            }
+        }
+    }
+
+    /**
+     * Перед открытием карты для 2-й точки сохраняет адрес из поля и координаты в ROUT_MARKER,
+     * чтобы карта не подставляла координаты старта вместо выбранного «куда».
+     *
+     * @return [lat, lng] финиша или null, если синхронизация не выполнялась
+     */
+    @Nullable
+    private double[] syncRouteMarkerBeforeOpenMap() {
+        if (!"ok".equals(end)) {
+            return null;
+        }
+
+        String finishText = toEditAddress.getText().toString().trim();
+        if (finishText.isEmpty() && VisicomFragment.textViewTo != null) {
+            finishText = VisicomFragment.textViewTo.getText().toString().trim();
+        }
+        if (finishText.isEmpty() || finishText.equals(getString(R.string.on_city_tv))) {
+            return null;
+        }
+
+        SQLiteDatabase database = null;
+        Cursor cursor = null;
+        try {
+            database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            cursor = database.rawQuery(
+                    "SELECT startLat, startLan, to_lat, to_lng, start, finish FROM "
+                            + MainActivity.ROUT_MARKER + " LIMIT 1",
+                    null);
+            if (!cursor.moveToFirst()) {
+                return null;
+            }
+
+            double originLat = cursor.getDouble(0);
+            double originLon = cursor.getDouble(1);
+            double dbFinishLat = cursor.getDouble(2);
+            double dbFinishLon = cursor.getDouble(3);
+            String startAddress = cursor.getString(4) != null ? cursor.getString(4) : "";
+            String dbFinish = cursor.getString(5) != null ? cursor.getString(5) : "";
+
+            double finishLat = dbFinishLat;
+            double finishLon = dbFinishLon;
+
+            if (positionChecked > 0 && coordinatesList != null && positionChecked < coordinatesList.size()) {
+                double[] coords = coordinatesList.get(positionChecked);
+                finishLon = coords[0];
+                finishLat = coords[1];
+            } else if (isValidMapCoordinate(dbFinishLat, dbFinishLon)
+                    && isFinishCoordinateDistinct(originLat, originLon, dbFinishLat, dbFinishLon)
+                    && (finishText.equals(dbFinish.trim()) || dbFinish.trim().isEmpty())) {
+                finishLat = dbFinishLat;
+                finishLon = dbFinishLon;
+            }
+
+            if (!isValidMapCoordinate(finishLat, finishLon)
+                    || !isFinishCoordinateDistinct(originLat, originLon, finishLat, finishLon)) {
+                Logger.w(context, TAG, "syncRouteMarkerBeforeOpenMap: no distinct finish coords for " + finishText);
+                return null;
+            }
+
+            List<String> settings = new ArrayList<>();
+            settings.add(String.valueOf(originLat));
+            settings.add(String.valueOf(originLon));
+            settings.add(String.valueOf(finishLat));
+            settings.add(String.valueOf(finishLon));
+            settings.add(startAddress);
+            settings.add(finishText);
+            updateRoutMarker(settings);
+
+            if (VisicomFragment.textViewTo != null) {
+                VisicomFragment.textViewTo.setText(finishText);
+            }
+
+            return new double[]{finishLat, finishLon};
+        } catch (Exception e) {
+            Logger.e(context, TAG, "syncRouteMarkerBeforeOpenMap: " + e.getMessage());
+            return null;
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            if (database != null && database.isOpen()) {
+                database.close();
+            }
+        }
+    }
+
+    private boolean isValidMapCoordinate(double lat, double lon) {
+        return Math.abs(lat) > 1e-6 || Math.abs(lon) > 1e-6;
+    }
+
+    private boolean isFinishCoordinateDistinct(double startLat, double startLon, double finishLat, double finishLon) {
+        if (!isValidMapCoordinate(finishLat, finishLon)) {
+            return false;
+        }
+        double dLat = startLat - finishLat;
+        double dLon = startLon - finishLon;
+        return (dLat * dLat + dLon * dLon) > 4e-8;
+    }
+
     private void updateRoutMarker(List<String> settings) {
         Logger.d(context, TAG, "updateRoutMarker: " + settings.toString());
         ContentValues cv = new ContentValues();

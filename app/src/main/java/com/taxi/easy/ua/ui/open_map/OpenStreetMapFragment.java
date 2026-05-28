@@ -48,6 +48,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -144,6 +145,7 @@ public class OpenStreetMapFragment extends Fragment {
     private Drawable scaledDrawable; // Иконка маркера
     private Marker previousMarker; // Предыдущий маркер для замены
     private Polyline roadOverlay; // Оверлей маршрута
+    private int routeBuildGeneration;
     private String markerType; // Тип маркера: "startMarker" или "finishMarker"
     private double startLat, startLan, finishLat, finishLan; // Координаты
     private String city; // Город
@@ -172,7 +174,9 @@ public class OpenStreetMapFragment extends Fragment {
     private float downX, downY;
     private static final float MIN_DRAG_DISTANCE = 20;
     private String unuString;
-    private Overlay currentTextOverlay;
+    /** Отдельные текстовые подписи для 1-й и 2-й точек маршрута. */
+    private Overlay startTextOverlay;
+    private Overlay finishTextOverlay;
     private ExecutionStatusViewModel viewModel;
 
     @SuppressLint({"MissingInflatedId", "InflateParams", "UseCompatLoadingForDrawables"})
@@ -229,8 +233,6 @@ public class OpenStreetMapFragment extends Fragment {
         configureMap();
         initializeMapPosition();
         initializeMarkerIcon();
-        fromAddressString = getString(R.string.startPoint);
-        toAddressString = getString(R.string.end_point_marker);
         initializeUI();
         fragmentManager = getChildFragmentManager();
 
@@ -294,7 +296,9 @@ public class OpenStreetMapFragment extends Fragment {
             map.invalidate();
 
             progressBar.setVisibility(View.GONE);
-//            center_marker.setVisibility(View.VISIBLE);
+            if (center_marker != null) {
+                center_marker.setVisibility(isFinishMarkerEditMode() ? View.VISIBLE : View.GONE);
+            }
 
             Logger.d(ctx, TAG, "Карта отрисована");
         } catch (Exception e) {
@@ -388,8 +392,22 @@ public class OpenStreetMapFragment extends Fragment {
     private void initializeArguments() {
         Bundle arguments = getArguments();
         if (arguments != null) {
-            markerType = arguments.getString("startMarker", "").equals("ok") ? "startMarker" :
-                    arguments.getString("finishMarker", "").equals("ok") ? "finishMarker" : null;
+            String explicitMarkerType = arguments.getString("markerType", null);
+            if ("startMarker".equals(explicitMarkerType) || "finishMarker".equals(explicitMarkerType)) {
+                markerType = explicitMarkerType;
+                return;
+            }
+            // Фолбэк: если оба "ok", то лучше считать что редактируем финиш (2-я точка),
+            // иначе снова будет эффект "тап по 2-й точке открывает 1-ю".
+            boolean startOk = "ok".equals(arguments.getString("startMarker", ""));
+            boolean finishOk = "ok".equals(arguments.getString("finishMarker", ""));
+            if (finishOk) {
+                markerType = "finishMarker";
+            } else if (startOk) {
+                markerType = "startMarker";
+            } else {
+                markerType = null;
+            }
         }
     }
 
@@ -513,14 +531,17 @@ public class OpenStreetMapFragment extends Fragment {
                 updateZoomLevel();
 
             } else if (action == MotionEvent.ACTION_UP) {
-
                 GeoPoint centerPoint = (GeoPoint) map.getMapCenter();
-
-                if (isMapDragging) {
+                if ("finishMarker".equals(markerType)) {
                     userMovedMap = true;
+                    applyFinishFromMapCenter(centerPoint);
+                } else if ("startMarker".equals(markerType)) {
+                    userMovedMap = true;
+                    applyStartFromMapCenter(centerPoint);
+                } else if (isMapDragging) {
+                    userMovedMap = true;
+                    handleTouchUp(centerPoint);
                 }
-
-                handleTouchUp(centerPoint);
 
                 v.performClick();
                 return true;
@@ -537,14 +558,144 @@ public class OpenStreetMapFragment extends Fragment {
                 sharedPreferencesHelperMain.saveValue("on_gps", false);
                 startPoint = centerPoint;
                 dialogMarkerStartPoint(ctx);
-            } else if ("finishMarker".equals(markerType)) {
-                endPoint = centerPoint;
-                dialogMarkersEndPoint(ctx);
             }
-        } catch (MalformedURLException | JSONException | InterruptedException e) {
+        } catch (MalformedURLException e) {
             Logger.e(ctx, TAG, "Error handling marker point on ACTION_UP" + e);
             FirebaseCrashlytics.getInstance().recordException(e);
         }
+    }
+
+    private boolean isFinishMarkerEditMode() {
+        return "finishMarker".equals(markerType);
+    }
+
+    private void applyFinishFromMapCenter(GeoPoint centerPoint) {
+        if (centerPoint == null || map == null) {
+            return;
+        }
+        endPoint = centerPoint;
+        finishLat = centerPoint.getLatitude();
+        finishLan = centerPoint.getLongitude();
+        if (startPoint == null && isValidRouteCoordinate(startLat, startLan)) {
+            startPoint = new GeoPoint(startLat, startLan);
+        }
+        redrawRouteToFinish(endPoint);
+        try {
+            dialogMarkersEndPoint(ctx);
+        } catch (MalformedURLException | JSONException | InterruptedException e) {
+            Logger.e(ctx, TAG, "applyFinishFromMapCenter: " + e);
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
+    }
+
+    private void applyStartFromMapCenter(GeoPoint centerPoint) {
+        if (centerPoint == null || map == null) {
+            return;
+        }
+        startPoint = centerPoint;
+        startLat = centerPoint.getLatitude();
+        startLan = centerPoint.getLongitude();
+        redrawRouteFromStart();
+        try {
+            dialogMarkerStartPoint(ctx);
+        } catch (MalformedURLException e) {
+            Logger.e(ctx, TAG, "applyStartFromMapCenter: " + e);
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
+    }
+
+    private void redrawRouteFromStart() {
+        GeoPoint finish = resolveFinishPointForRoute();
+        if (finish != null && startPoint != null) {
+            redrawRouteToFinish(finish);
+        }
+    }
+
+    @Nullable
+    private GeoPoint resolveFinishPointForRoute() {
+        if (endPoint != null) {
+            return endPoint;
+        }
+        RouteMarkerData route = loadRouteMarkerData();
+        if (route == null) {
+            return null;
+        }
+        if (!isValidRouteCoordinate(route.finishLat, route.finishLon)
+                || isCityOnlyAddress(route.finishAddress)) {
+            return null;
+        }
+        endPoint = new GeoPoint(route.finishLat, route.finishLon);
+        finishLat = route.finishLat;
+        finishLan = route.finishLon;
+        return endPoint;
+    }
+
+    private void removeFinishPinFromMap() {
+        if (map == null) {
+            return;
+        }
+        if (finishMarkerObj != null) {
+            map.getOverlays().remove(finishMarkerObj);
+            finishMarkerObj = null;
+        }
+    }
+
+    private void removeFinishMarkerFromMap() {
+        removeFinishPinFromMap();
+        removeTextOverlay("finishMarker");
+    }
+
+    /** Подпись «куда» на карте (без пина — точка задаётся крестиком в центре). */
+    private void showFinishAddressLabel(GeoPoint point, String address) {
+        if (map == null || point == null || address == null || address.trim().isEmpty()) {
+            return;
+        }
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            new Handler(Looper.getMainLooper()).post(() -> showFinishAddressLabel(point, address));
+            return;
+        }
+        removeTextOverlay("finishMarker");
+        String prefix = unuString != null ? unuString : "";
+        Overlay textOverlay = createTextOverlay(point, "2." + prefix + address.trim());
+        finishTextOverlay = textOverlay;
+        map.getOverlays().add(textOverlay);
+        map.invalidate();
+    }
+
+    private void removeRoadOverlayFromMap() {
+        if (map == null) {
+            roadOverlay = null;
+            return;
+        }
+        List<Overlay> overlays = map.getOverlays();
+        for (int i = overlays.size() - 1; i >= 0; i--) {
+            if (overlays.get(i) instanceof Polyline) {
+                overlays.remove(i);
+            }
+        }
+        roadOverlay = null;
+        map.invalidate();
+    }
+
+    /** Перерисовка линии маршрута без сброса всех оверлеев (центр = 2-я точка). */
+    private void redrawRouteToFinish(GeoPoint finish) {
+        if (map == null || finish == null) {
+            return;
+        }
+        if (startPoint == null && isValidRouteCoordinate(startLat, startLan)) {
+            startPoint = new GeoPoint(startLat, startLan);
+        }
+        if (startPoint == null) {
+            Logger.w(ctx, TAG, "redrawRouteToFinish: startPoint is null");
+            return;
+        }
+        if (!isFinishDistinctFromStart(startPoint.getLatitude(), startPoint.getLongitude(),
+                finish.getLatitude(), finish.getLongitude())) {
+            removeRoadOverlayFromMap();
+            map.invalidate();
+            return;
+        }
+        showRout(startPoint, finish);
     }
 
 
@@ -565,82 +716,150 @@ public class OpenStreetMapFragment extends Fragment {
         newShowRout();
     }
 
+    private static final class RouteMarkerData {
+        double startLat;
+        double startLon;
+        double finishLat;
+        double finishLon;
+        String startAddress = "";
+        String finishAddress = "";
+    }
+
+    @Nullable
+    private RouteMarkerData loadRouteMarkerData() {
+        RouteMarkerData data = new RouteMarkerData();
+        SQLiteDatabase database = null;
+        Cursor cursor = null;
+        try {
+            database = ctx.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            cursor = database.rawQuery(
+                    "SELECT startLat, startLan, to_lat, to_lng, start, finish FROM "
+                            + MainActivity.ROUT_MARKER + " LIMIT 1",
+                    null);
+            if (!cursor.moveToFirst()) {
+                return null;
+            }
+            data.startLat = cursor.getDouble(0);
+            data.startLon = cursor.getDouble(1);
+            data.finishLat = cursor.getDouble(2);
+            data.finishLon = cursor.getDouble(3);
+            data.startAddress = cursor.getString(4) != null ? cursor.getString(4) : "";
+            data.finishAddress = cursor.getString(5) != null ? cursor.getString(5) : "";
+            return data;
+        } catch (Exception e) {
+            Logger.e(ctx, TAG, "loadRouteMarkerData: " + e.getMessage());
+            return null;
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            if (database != null && database.isOpen()) {
+                database.close();
+            }
+        }
+    }
+
+    private void applyPendingFinishFromBundle(RouteMarkerData data) {
+        Bundle arguments = getArguments();
+        if (arguments == null || data == null || !"finishMarker".equals(markerType)) {
+            return;
+        }
+        String pendingAddress = arguments.getString("pendingFinishAddress");
+        if (pendingAddress != null && !pendingAddress.trim().isEmpty()) {
+            data.finishAddress = pendingAddress.trim();
+        }
+        if (arguments.containsKey("pendingFinishLat") && arguments.containsKey("pendingFinishLng")) {
+            double pendingLat = arguments.getDouble("pendingFinishLat");
+            double pendingLon = arguments.getDouble("pendingFinishLng");
+            if (isValidRouteCoordinate(pendingLat, pendingLon)) {
+                data.finishLat = pendingLat;
+                data.finishLon = pendingLon;
+            }
+        }
+    }
+
     private void newShowRout() {
         if (map == null || ctx == null) {
             initializeRegion();
             return;
         }
 
-        // Удалить все маркеры и наложения с карты
         map.getOverlays().clear();
-        currentTextOverlay = null; // Сбрасываем ссылку на оверлей
+        startTextOverlay = null;
+        finishTextOverlay = null;
         map.invalidate();
 
-        double savedStartLat = getFromTablePositionInfo(ctx, "startLat");
-        if (savedStartLat != 0) {
-            List<String> startList = logCursor(MainActivity.ROUT_MARKER, ctx);
-
-            fromAddressString = startList.get(5);
-            Logger.d(ctx, TAG, "address11 fromAddressString" + fromAddressString);
-
-            boolean isShowRout = true;
-            if(!startList.get(6).trim().isEmpty()) {
-                toAddressString = startList.get(6);
-
-                // ПРОВЕРКА: если адрес конечной точки содержит "по городу" - не показываем маршрут
-                if (isCityOnlyAddress(toAddressString)) {
-                    Logger.d(ctx, TAG, "Saved destination contains 'по городу', skipping route and marker");
-                    isShowRout = false;
-                    // Очищаем конечную точку
-                    finishMarkerObj = null;
-                    endPoint = null;
-                    toAddressString = "";
-                }
-            } else {
-                toAddressString = fromAddressString;
-                isShowRout = false;
-            }
-
-            Logger.d(ctx, TAG, "address11 startList.get(6)" + startList.get(6));
-            Logger.d(ctx, TAG, "address11 toAddressString" + toAddressString);
-
-            startLat = Double.parseDouble(startList.get(1));
-            startLan = Double.parseDouble(startList.get(2));
-
-            finishLat = Double.parseDouble(startList.get(3));
-            finishLan = Double.parseDouble(startList.get(4));
-
-            startPoint = new GeoPoint(startLat, startLan);
-
-            startMarkerObj = new Marker(map);
-            startMarkerObj.setPosition(startPoint);
-
-            setMarker(startLat, startLan, fromAddressString, ctx, "1.");
-
-            GeoPoint finishPoint = new GeoPoint(finishLat, finishLan);
-            finishMarkerObj = new Marker(map);
-            finishMarkerObj.setPosition(finishPoint);
-
-            if (!userMovedMap) {
-                if (markerType.equals("startMarker")) {
-                    mapController.setCenter(startPoint);
-                } else {
-                    mapController.setCenter(finishPoint);
-                }
-            }
-
-            // Показываем маршрут ТОЛЬКО если isShowRout = true И адрес не "по городу"
-            if(isShowRout && !isCityOnlyAddress(toAddressString)) {
-                setMarker(finishLat, finishLan, toAddressString, ctx, "2.");
-                showRout(startPoint, finishPoint);
-            } else {
-                Logger.d(ctx, TAG, "Skipping route display because destination is city-only address");
-            }
-
-            map.invalidate();
-        } else {
+        RouteMarkerData route = loadRouteMarkerData();
+        if (route == null) {
             initializeRegion();
+            return;
         }
+
+        applyPendingFinishFromBundle(route);
+
+        startLat = route.startLat;
+        startLan = route.startLon;
+        finishLat = route.finishLat;
+        finishLan = route.finishLon;
+
+        if (!isValidRouteCoordinate(startLat, startLan)) {
+            initializeRegion();
+            return;
+        }
+
+        fromAddressString = route.startAddress;
+        String finishAddress = route.finishAddress.trim();
+        boolean finishCityOnly = isCityOnlyAddress(finishAddress);
+        boolean hasFinishCoords = isValidRouteCoordinate(finishLat, finishLan);
+        boolean finishDistinct = isFinishDistinctFromStart(startLat, startLan, finishLat, finishLan);
+        boolean showFinishAndRoute = hasFinishCoords && finishDistinct && !finishCityOnly;
+
+        toAddressString = resolveFinishAddressLabel(finishAddress);
+        if (finishCityOnly) {
+            toAddressString = "";
+        }
+
+        Logger.d(ctx, TAG, "newShowRout finish=" + finishAddress
+                + " hasFinishCoords=" + hasFinishCoords
+                + " showFinishAndRoute=" + showFinishAndRoute);
+
+        startPoint = new GeoPoint(startLat, startLan);
+        setMarker(startLat, startLan, fromAddressString, ctx, "1.");
+
+        GeoPoint finishPoint = new GeoPoint(finishLat, finishLan);
+
+        if (!userMovedMap && mapController != null) {
+            if ("finishMarker".equals(markerType) && hasFinishCoords && !finishCityOnly) {
+                mapController.setCenter(finishPoint);
+            } else {
+                mapController.setCenter(startPoint);
+            }
+        }
+
+        if (showFinishAndRoute) {
+            endPoint = finishPoint;
+            if (!isFinishMarkerEditMode()) {
+                finishMarkerObj = new Marker(map);
+                finishMarkerObj.setPosition(finishPoint);
+                setMarker(finishLat, finishLan, toAddressString, ctx, "2.");
+            } else {
+                removeFinishPinFromMap();
+                showFinishAddressLabel(finishPoint, toAddressString);
+            }
+            showRout(startPoint, finishPoint);
+        } else {
+            endPoint = null;
+            finishMarkerObj = null;
+            removeRoadOverlayFromMap();
+            Logger.d(ctx, TAG, "Skipping finish marker/route: cityOnly=" + finishCityOnly
+                    + " distinct=" + finishDistinct);
+        }
+
+        if (center_marker != null) {
+            center_marker.setVisibility(isFinishMarkerEditMode() ? View.VISIBLE : View.GONE);
+        }
+
+        map.invalidate();
     }
 
     // Инициализация региона, если нет сохраненной позиции
@@ -883,12 +1102,8 @@ public class OpenStreetMapFragment extends Fragment {
             startMarkerObj = new Marker(map);
             Logger.d(ctx, TAG, "Created new start marker: " + startMarkerObj);
         } else if ("finishMarker".equals(markerType)) {
-            if (finishMarkerObj != null) {
-                map.getOverlays().remove(finishMarkerObj);
-                Logger.d(ctx, TAG, "Removed finishMarkerObj from overlays");
-            }
-            finishMarkerObj = new Marker(map);
-            Logger.d(ctx, TAG, "Created new finish marker: " + finishMarkerObj);
+            removeFinishPinFromMap();
+            Logger.d(ctx, TAG, "Finish edit mode: skip pin before geocode");
         } else {
             Logger.e(ctx, TAG, "Invalid markerType: " + markerType);
             FirebaseCrashlytics.getInstance().recordException(new Exception("Invalid markerType: " + markerType));
@@ -984,43 +1199,26 @@ public class OpenStreetMapFragment extends Fragment {
             }
 
             // Удаляем текстовый оверлей
-            removeTextOverlay();
+            removeTextOverlay("finishMarker");
 
             // Очищаем конечную точку
             endPoint = null;
 
-            // Удаляем маршрут, если он есть
-            if (roadOverlay != null) {
-                map.getOverlays().remove(roadOverlay);
-                roadOverlay = null;
-            }
-
-            map.invalidate();
+            removeRoadOverlayFromMap();
             return;
         }
 
-        // Инициализация finishMarkerObj, если он null
-        if (finishMarkerObj == null) {
-            Logger.w(ctx, TAG, "finishMarkerObj is null, creating new Marker");
-            try {
-                finishMarkerObj = new Marker(map);
-            } catch (Exception e) {
-                Logger.e(ctx, TAG, "Failed to create finishMarkerObj: " + e.getMessage());
-                FirebaseCrashlytics.getInstance().recordException(new Exception("Failed to create finishMarkerObj in handleFinishMarkerResponse", e));
-                return;
-            }
-        }
+        finishLat = endPoint.getLatitude();
+        finishLan = endPoint.getLongitude();
+        removeFinishPinFromMap();
+        showFinishAddressLabel(endPoint, toAddressString);
 
-        // Конфигурация маркера и добавление на карту
         try {
-            // Удаляем маркер из overlays, если он уже добавлен, чтобы избежать дублирования
-            map.getOverlays().remove(finishMarkerObj);
-            map.getOverlays().removeAll(Collections.singleton(roadOverlay));
-
-            map.invalidate();
-            Logger.d(ctx, TAG, "Map invalidated after finishMarker setup");
-
+            if (VisicomFragment.textViewTo != null) {
+                VisicomFragment.textViewTo.setText(toAddressString);
+            }
             updateRouteSettings("finish");
+            Logger.d(ctx, TAG, "Finish updated from map center");
         } catch (Exception e) {
             Logger.e(ctx, TAG, "Error configuring finish marker: " + e.getMessage());
             FirebaseCrashlytics.getInstance().recordException(new Exception("Error configuring finish marker in handleFinishMarkerResponse", e));
@@ -1158,11 +1356,19 @@ public class OpenStreetMapFragment extends Fragment {
             }
         }
 
-        // Обновление маршрута и позиции
         updateRoutMarker(settings, map.getContext());
-        updateMyPosition(startLat, startLan, fromAddressString, map.getContext());
-        new Handler(Looper.getMainLooper()).post(this::newShowRout);
-        Logger.d(ctx, TAG, "Updated route settings and position");
+        if (point.equals("start")) {
+            updateMyPosition(startLat, startLan, fromAddressString, map.getContext());
+            new Handler(Looper.getMainLooper()).post(this::newShowRout);
+        } else if (point.equals("finish")) {
+            endPoint = new GeoPoint(finishLat, finishLan);
+            String finishLabel = toAddressString;
+            new Handler(Looper.getMainLooper()).post(() -> {
+                redrawRouteToFinish(endPoint);
+                showFinishAddressLabel(endPoint, finishLabel);
+            });
+        }
+        Logger.d(ctx, TAG, "Updated route settings, point=" + point);
     }
 
 
@@ -1207,24 +1413,45 @@ public class OpenStreetMapFragment extends Fragment {
                 return;
             }
 
-            // Удаляем старый маркер и текстовый оверлей для стартовой или конечной точки
-            if ("startMarker".equals(markerType)) {
+            // В режиме отображения маршрута setMarker вызывается дважды (1. и 2.).
+            // markerType отражает "что редактируем сейчас", но для отрисовки нужно различать роль по prefix.
+            final String role;
+            if ("1.".equals(prefix)) {
+                role = "startMarker";
+            } else if ("2.".equals(prefix)) {
+                role = "finishMarker";
+            } else {
+                role = markerType;
+            }
+
+            // Удаляем старый маркер и подпись для соответствующей роли
+            if ("startMarker".equals(role)) {
                 if (startMarkerObj != null) {
                     map.getOverlays().remove(startMarkerObj);
                 }
-                // Удаляем старый текстовый оверлей
-                removeTextOverlay();
-            } else if ("finishMarker".equals(markerType)) {
+                removeTextOverlay("startMarker");
+            } else if ("finishMarker".equals(role)) {
                 if (finishMarkerObj != null) {
                     map.getOverlays().remove(finishMarkerObj);
                 }
-                // Удаляем старый текстовый оверлей
-                removeTextOverlay();
+                removeTextOverlay("finishMarker");
             }
 
             // Create new marker
             Marker marker = new Marker(map);
-            marker.setVisible(false);
+            // Маркер должен быть кликабельным, иначе при тапе по 2-й точке будет срабатывать "текущая" (markerType).
+            marker.setVisible(true);
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            marker.setRelatedObject(role);
+            marker.setOnMarkerClickListener((clickedMarker, mapView) -> {
+                Object related = clickedMarker.getRelatedObject();
+                if ("finishMarker".equals(related)) {
+                    markerType = "finishMarker";
+                } else if ("startMarker".equals(related)) {
+                    markerType = "startMarker";
+                }
+                return false; // стандартное поведение (InfoWindow), если оно включено
+            });
 
             // Set marker position
             marker.setPosition(new GeoPoint(lat, lon));
@@ -1232,22 +1459,28 @@ public class OpenStreetMapFragment extends Fragment {
             // Add marker to map
             map.getOverlays().add(marker);
 
-            // Удаляем старый оверлей перед добавлением нового
-            if (currentTextOverlay != null) {
-                map.getOverlays().remove(currentTextOverlay);
+            // Add custom text overlay for persistent label (отдельно для старта и финиша)
+            Overlay textOverlay = createTextOverlay(new GeoPoint(lat, lon), prefix + unuString + title);
+            if ("startMarker".equals(role)) {
+                if (startTextOverlay != null) {
+                    map.getOverlays().remove(startTextOverlay);
+                }
+                startTextOverlay = textOverlay;
+            } else if ("finishMarker".equals(role)) {
+                if (finishTextOverlay != null) {
+                    map.getOverlays().remove(finishTextOverlay);
+                }
+                finishTextOverlay = textOverlay;
             }
-
-            // Add custom text overlay for persistent label
-            currentTextOverlay = createTextOverlay(new GeoPoint(lat, lon), prefix + unuString + title);
-            map.getOverlays().add(currentTextOverlay);
+            map.getOverlays().add(textOverlay);
 
             // Update map
             map.invalidate();
 
             // Update marker references
-            if ("startMarker".equals(markerType)) {
+            if ("startMarker".equals(role)) {
                 startMarkerObj = marker;
-            } else if ("finishMarker".equals(markerType)) {
+            } else if ("finishMarker".equals(role)) {
                 finishMarkerObj = marker;
             }
 
@@ -1259,12 +1492,24 @@ public class OpenStreetMapFragment extends Fragment {
         }
     }
 
-    // Новый метод для удаления текстового оверлея
-    private void removeTextOverlay() {
-        if (map != null && currentTextOverlay != null) {
-            map.getOverlays().remove(currentTextOverlay);
-            currentTextOverlay = null;
-            Logger.d(ctx, TAG, "Text overlay removed");
+    private void removeTextOverlay(String role) {
+        if (map == null) {
+            return;
+        }
+        if ("startMarker".equals(role)) {
+            if (startTextOverlay != null) {
+                map.getOverlays().remove(startTextOverlay);
+                startTextOverlay = null;
+                Logger.d(ctx, TAG, "Start text overlay removed");
+            }
+            return;
+        }
+        if ("finishMarker".equals(role)) {
+            if (finishTextOverlay != null) {
+                map.getOverlays().remove(finishTextOverlay);
+                finishTextOverlay = null;
+                Logger.d(ctx, TAG, "Finish text overlay removed");
+            }
         }
     }
 
@@ -1348,16 +1593,25 @@ public class OpenStreetMapFragment extends Fragment {
             Logger.e(ctx, TAG, "Cannot show route: startP or endP is null");
             return;
         }
-        map.getOverlays().removeAll(Collections.singleton(roadOverlay));
+        if (map == null) {
+            return;
+        }
+        final int generation = ++routeBuildGeneration;
+        removeRoadOverlayFromMap();
         executor.execute(() -> {
             RoadManager roadManager = new OSRMRoadManager(map.getContext(), System.getProperty("http.agent"));
             ArrayList<GeoPoint> waypoints = new ArrayList<>();
             waypoints.add(startP);
             waypoints.add(endP);
             Road road = roadManager.getRoad(waypoints);
-            roadOverlay = RoadManager.buildRoadOverlay(road);
-            roadOverlay.getOutlinePaint().setStrokeWidth(10f);
+            Polyline newOverlay = RoadManager.buildRoadOverlay(road);
+            newOverlay.getOutlinePaint().setStrokeWidth(10f);
             map.post(() -> {
+                if (!isAdded() || map == null || generation != routeBuildGeneration) {
+                    return;
+                }
+                removeRoadOverlayFromMap();
+                roadOverlay = newOverlay;
                 map.getOverlays().add(roadOverlay);
                 map.invalidate();
             });
@@ -1563,6 +1817,29 @@ public class OpenStreetMapFragment extends Fragment {
         return address.contains(onCityPhrase);
     }
 
+    private boolean isValidRouteCoordinate(double lat, double lon) {
+        return Math.abs(lat) > 1e-6 || Math.abs(lon) > 1e-6;
+    }
+
+    private boolean isFinishDistinctFromStart(double startLat, double startLon, double finishLat, double finishLon) {
+        if (!isValidRouteCoordinate(finishLat, finishLon)) {
+            return false;
+        }
+        if (!isValidRouteCoordinate(startLat, startLon)) {
+            return true;
+        }
+        double dLat = startLat - finishLat;
+        double dLon = startLon - finishLon;
+        return (dLat * dLat + dLon * dLon) > 4e-8;
+    }
+
+    private String resolveFinishAddressLabel(String finishAddress) {
+        if (finishAddress != null && !finishAddress.trim().isEmpty()) {
+            return finishAddress.trim();
+        }
+        return getString(R.string.end_point_marker);
+    }
+
     private void checkCityAndUpdateStartPoint(double latitude, double longitude, String address) {
         Logger.d(ctx, TAG, "checkCityAndUpdateStartPoint: lat=" + latitude + ", lon=" + longitude + ", address=" + address);
 
@@ -1623,7 +1900,7 @@ public class OpenStreetMapFragment extends Fragment {
                         if (startMarkerObj != null) {
                             map.getOverlays().remove(startMarkerObj);
                         }
-                        removeTextOverlay(); // Удаляем старый текстовый оверлей
+                        removeTextOverlay("startMarker"); // Удаляем старый текстовый оверлей
 
                         // Устанавливаем новый маркер
                         setMarker(latitude, longitude, address, ctx, "1.");
@@ -1631,11 +1908,9 @@ public class OpenStreetMapFragment extends Fragment {
                         mapController.setCenter(startPoint);
 
                         Logger.d(ctx, TAG, "Marker and map updated successfully");
+                        updateRouteAfterStartPointChange();
                     }
                 });
-
-                // ❌ НЕ рисуем маршрут при выборе стартовой точки
-                // Маршрут будет нарисован только когда будет выбрана конечная точка
 
             } else {
                 Logger.d(ctx, TAG, "❌ Пользователь отказался от смены города");
