@@ -36,6 +36,7 @@
         android:id="@+id/center_marker"
         android:layout_width="48dp"
         android:layout_height="48dp"
+        android:visibility="gone"
         android:contentDescription="center marker"
         android:src="@drawable/marker_green"
         app:layout_constraintStart_toEndOf="@id/guideline_horizontal_center"

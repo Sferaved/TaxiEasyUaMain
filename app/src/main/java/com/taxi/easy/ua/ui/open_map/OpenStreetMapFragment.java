@@ -296,9 +296,7 @@ public class OpenStreetMapFragment extends Fragment {
             map.invalidate();
 
             progressBar.setVisibility(View.GONE);
-            if (center_marker != null) {
-                center_marker.setVisibility(isFinishMarkerEditMode() ? View.VISIBLE : View.GONE);
-            }
+            hideCenterMarker();
 
             Logger.d(ctx, TAG, "Карта отрисована");
         } catch (Exception e) {
@@ -320,7 +318,7 @@ public class OpenStreetMapFragment extends Fragment {
         map.invalidate();
 
         progressBar.setVisibility(View.GONE);
-        center_marker.setVisibility(View.VISIBLE);
+        hideCenterMarker();
 
 //        Toast.makeText(ctx, "Карта загружена с fallback: " + reason, Toast.LENGTH_SHORT).show();
     }
@@ -415,6 +413,7 @@ public class OpenStreetMapFragment extends Fragment {
     private void initializeUI() {
         progressBar = binding.progressBar;
         center_marker = binding.centerMarker;
+        hideCenterMarker();
 
         progressBar.setVisibility(View.VISIBLE);
 
@@ -579,6 +578,7 @@ public class OpenStreetMapFragment extends Fragment {
         if (startPoint == null && isValidRouteCoordinate(startLat, startLan)) {
             startPoint = new GeoPoint(startLat, startLan);
         }
+        updateFinishMarkerOnMap();
         redrawRouteToFinish(endPoint);
         try {
             dialogMarkersEndPoint(ctx);
@@ -838,14 +838,7 @@ public class OpenStreetMapFragment extends Fragment {
 
         if (showFinishAndRoute) {
             endPoint = finishPoint;
-            if (!isFinishMarkerEditMode()) {
-                finishMarkerObj = new Marker(map);
-                finishMarkerObj.setPosition(finishPoint);
-                setMarker(finishLat, finishLan, toAddressString, ctx, "2.");
-            } else {
-                removeFinishPinFromMap();
-                showFinishAddressLabel(finishPoint, toAddressString);
-            }
+            setMarker(finishLat, finishLan, toAddressString, ctx, "2.");
             showRout(startPoint, finishPoint);
         } else {
             endPoint = null;
@@ -855,11 +848,26 @@ public class OpenStreetMapFragment extends Fragment {
                     + " distinct=" + finishDistinct);
         }
 
-        if (center_marker != null) {
-            center_marker.setVisibility(isFinishMarkerEditMode() ? View.VISIBLE : View.GONE);
-        }
+        hideCenterMarker();
 
         map.invalidate();
+    }
+
+    private void hideCenterMarker() {
+        if (center_marker != null) {
+            center_marker.setVisibility(View.GONE);
+        }
+    }
+
+    private void updateFinishMarkerOnMap() {
+        if (endPoint == null || map == null) {
+            return;
+        }
+        String title = toAddressString;
+        if (title == null || title.trim().isEmpty()) {
+            title = getString(R.string.end_point_marker);
+        }
+        setMarker(finishLat, finishLan, title, ctx, "2.");
     }
 
     // Инициализация региона, если нет сохраненной позиции
@@ -1102,8 +1110,7 @@ public class OpenStreetMapFragment extends Fragment {
             startMarkerObj = new Marker(map);
             Logger.d(ctx, TAG, "Created new start marker: " + startMarkerObj);
         } else if ("finishMarker".equals(markerType)) {
-            removeFinishPinFromMap();
-            Logger.d(ctx, TAG, "Finish edit mode: skip pin before geocode");
+            Logger.d(ctx, TAG, "Finish edit mode: keep finish pin during geocode");
         } else {
             Logger.e(ctx, TAG, "Invalid markerType: " + markerType);
             FirebaseCrashlytics.getInstance().recordException(new Exception("Invalid markerType: " + markerType));
@@ -1210,8 +1217,7 @@ public class OpenStreetMapFragment extends Fragment {
 
         finishLat = endPoint.getLatitude();
         finishLan = endPoint.getLongitude();
-        removeFinishPinFromMap();
-        showFinishAddressLabel(endPoint, toAddressString);
+        setMarker(finishLat, finishLan, toAddressString, ctx, "2.");
 
         try {
             if (VisicomFragment.textViewTo != null) {
@@ -1365,7 +1371,7 @@ public class OpenStreetMapFragment extends Fragment {
             String finishLabel = toAddressString;
             new Handler(Looper.getMainLooper()).post(() -> {
                 redrawRouteToFinish(endPoint);
-                showFinishAddressLabel(endPoint, finishLabel);
+                setMarker(finishLat, finishLan, finishLabel, ctx, "2.");
             });
         }
         Logger.d(ctx, TAG, "Updated route settings, point=" + point);
