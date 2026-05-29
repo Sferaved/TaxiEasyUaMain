@@ -61,6 +61,7 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentVisicomSearchBinding;
+import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
 import com.taxi.easy.ua.ui.cities.Kyiv.KyivRegion;
 import com.taxi.easy.ua.ui.cities.Kyiv.KyivRegionRu;
 import com.taxi.easy.ua.ui.keyboard.KeyboardUtils;
@@ -1941,6 +1942,9 @@ public class VisicomSearchFragment extends Fragment {
 
     private void updateRoutMarker(List<String> settings) {
         Logger.d(context, TAG, "updateRoutMarker: " + settings.toString());
+        Logger.d(context, "AddrGuard", "searchManual: clearStartAddressSource — пользователь выбрал адрес вручную, start='"
+                + (settings.size() > 4 ? settings.get(4) : "?") + "'");
+        AutoLocationAfterCityHelper.clearStartAddressSource();
         ContentValues cv = new ContentValues();
 
         cv.put("startLat", Double.parseDouble(settings.get(0)));

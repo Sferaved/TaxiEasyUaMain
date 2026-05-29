@@ -9,12 +9,15 @@ import android.os.Build;
 
 import androidx.core.content.ContextCompat;
 
-import com.taxi.easy.ua.MainActivity;
+import com.taxi.easy.ua.androidx.startup.MyApplication;
+import com.taxi.easy.ua.utils.log.Logger;
 
 /**
  * Флаги для авто-геолокации после выбора / загрузки города.
  */
 public final class AutoLocationAfterCityHelper {
+
+    private static final String ADDR_GUARD = "AddrGuard";
 
     public static final String KEY_PENDING_AUTO_LOCATION = "pending_auto_location_after_city";
     public static final String KEY_LOCATION_PROMPT_AFTER_CITY_DONE = "location_permission_prompt_after_city_done";
@@ -28,14 +31,27 @@ public final class AutoLocationAfterCityHelper {
     public static final String KEY_GPS_PENDING_USER_APPLY = "auto_location_gps_pending_user_apply";
     /** При определении по геопозиции пользователь согласился сменить город — снять крестик после перехода. */
     public static final String KEY_CITY_CHANGED_VIA_GEO = "city_changed_via_geo_pending";
+    /** Источник стартового адреса: gps — кэш не может перезаписать. */
+    public static final String KEY_START_ADDRESS_SOURCE = "start_address_source";
+    public static final String SOURCE_GPS = "gps";
 
     private AutoLocationAfterCityHelper() {
     }
 
+    private static void logGuard(String message) {
+        MyApplication app = MyApplication.getInstance();
+        if (app != null) {
+            Logger.d(app.getApplicationContext(), ADDR_GUARD, message);
+        }
+    }
+
     /** Вызывать после выбора или смены города. */
     public static void markCityLoaded() {
+        logGuard("markCityLoaded: сброс source=gps и detected coords, pending auto-location=true");
         sharedPreferencesHelperMain.saveValue(KEY_PENDING_AUTO_LOCATION, true);
         sharedPreferencesHelperMain.saveValue("setStatusX", false);
+        clearStartAddressSource();
+        clearDetectedCoordinates();
     }
 
     public static boolean isPending() {
@@ -94,6 +110,9 @@ public final class AutoLocationAfterCityHelper {
     }
 
     public static void saveDetectedCoordinates(double lat, double lon, String address) {
+        logGuard(String.format(java.util.Locale.US,
+                "saveDetectedCoordinates: lat=%.6f lon=%.6f address='%s'",
+                lat, lon, address != null ? address : ""));
         // SharedPreferencesHelper поддерживает String, не Double
         sharedPreferencesHelperMain.saveValue(KEY_DETECTED_LAT, String.valueOf(lat));
         sharedPreferencesHelperMain.saveValue(KEY_DETECTED_LON, String.valueOf(lon));
@@ -154,6 +173,30 @@ public final class AutoLocationAfterCityHelper {
 
     public static void clearCityChangedViaGeo() {
         sharedPreferencesHelperMain.saveValue(KEY_CITY_CHANGED_VIA_GEO, false);
+    }
+
+    public static void markGpsStartApplied() {
+        logGuard("markGpsStartApplied: source=gps — кэш больше не может перезаписать старт");
+        sharedPreferencesHelperMain.saveValue(KEY_START_ADDRESS_SOURCE, SOURCE_GPS);
+        clearDetectedCoordinates();
+    }
+
+    public static boolean isGpsStartApplied() {
+        return SOURCE_GPS.equals(sharedPreferencesHelperMain.getValue(KEY_START_ADDRESS_SOURCE, ""));
+    }
+
+    public static void clearStartAddressSource() {
+        Object prev = sharedPreferencesHelperMain.getValue(KEY_START_ADDRESS_SOURCE, "");
+        logGuard("clearStartAddressSource: было source='" + prev + "' → сброс (ручной выбор / новый город)");
+        sharedPreferencesHelperMain.saveValue(KEY_START_ADDRESS_SOURCE, "");
+    }
+
+    public static void clearDetectedCoordinates() {
+        logGuard("clearDetectedCoordinates: prefs detected lat/lon/address очищены");
+        sharedPreferencesHelperMain.saveValue(KEY_DETECTED_LAT, "0.0");
+        sharedPreferencesHelperMain.saveValue(KEY_DETECTED_LON, "0.0");
+        sharedPreferencesHelperMain.saveValue(KEY_DETECTED_ADDRESS, "");
+        clearGpsPendingUserApply();
     }
 
 }

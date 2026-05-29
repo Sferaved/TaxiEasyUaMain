@@ -158,6 +158,7 @@ public class VisicomFragment extends Fragment {
 
     private FragmentVisicomBinding binding;
     private static final String TAG = "VisicomFragment";
+    private static final String ADDR_GUARD = "AddrGuard";
 
 
     @SuppressLint("StaticFieldLeak")
@@ -1131,7 +1132,8 @@ public class VisicomFragment extends Fragment {
         return "networkRestored".equals(source)
                 || "swipeRefresh".equals(source)
                 || "manualRetry".equals(source)
-                || "manualGps".equals(source);
+                || "manualGps".equals(source)
+                || "autoGps".equals(source);
     }
 
     public void reloadOrderAfterNetworkRestored() {
@@ -2510,21 +2512,30 @@ public class VisicomFragment extends Fragment {
 
         isFragmentVisible = true;
 
+        logAddrGuardState("onResume:before");
         // ✅ Если есть активный запрос, не восстанавливаем из БД
-        if (!firstStart && !isUpdatingFromGPS && pendingAddressRequest == null) {
+        if (!firstStart && !isUpdatingFromGPS && pendingAddressRequest == null
+                && !AutoLocationAfterCityHelper.isGpsStartApplied()) {
             // Восстанавливаем адрес из БД только если нет активных обновлений
             List<String> startList = logCursor(MainActivity.ROUT_MARKER, context);
             if (startList.size() > 5) {
                 String fromAddressString = startList.get(5);
-                if (!binding.textGeo.getText().toString().equals(fromAddressString) &&
+                String uiBefore = binding.textGeo.getText().toString();
+                if (!uiBefore.equals(fromAddressString) &&
                         !fromAddressString.isEmpty()) {
+                    logAddrGuardOverwrite("onResume:restoreFromDb", uiBefore, fromAddressString, "ROUT_MARKER sync");
                     binding.textGeo.setText(fromAddressString);
                 }
             }
             if (startList.size() > 6) {
                 restoreDestinationFieldFromDatabase();
             }
+        } else {
+            Logger.d(context, ADDR_GUARD, String.format(Locale.US,
+                    "[onResume:restore] SKIP | firstStart=%s isUpdatingFromGPS=%s pendingAddressRequest=%s gpsApplied=%s",
+                    firstStart, isUpdatingFromGPS, pendingAddressRequest, AutoLocationAfterCityHelper.isGpsStartApplied()));
         }
+        logAddrGuardState("onResume:after");
 
 
         if (!NetworkUtils.isNetworkAvailable(requireActivity())) {
@@ -3156,17 +3167,18 @@ public class VisicomFragment extends Fragment {
                         }
                         AutoLocationAfterCityHelper.saveDetectedCoordinates(latitude, longitude, address);
                         logAutoDetectedRouteAndPath(latitude, longitude, address);
-                        if (gpsClickAwaitingAutoDetected
-                                && address != null
-                                && !address.trim().isEmpty()
-                                && isAdded()
-                                && binding != null) {
+                        if (address != null && !address.trim().isEmpty() && isAdded() && binding != null) {
                             gpsClickAwaitingAutoDetected = false;
-                            Logger.d(context, TAG, "Авто-GPS: пользователь уже нажал GPS — применяем найденный адрес к заказу");
-                            applyGpsLocationToOrder(latitude, longitude, address);
+                            logAddrGuardState("autoGps:beforeApply");
+                            Logger.d(context, ADDR_GUARD, "autoGps: применяем GPS-адрес к заказу (не ждём кнопку GPS)");
+                            applyGpsLocationToOrder(latitude, longitude, address, true);
+                            logAddrGuardState("autoGps:afterApply");
                             return;
                         }
+                        Logger.w(context, ADDR_GUARD, "autoGps: геокод пуст — fallback на кэш lastOrder");
+                        logAddrGuardState("autoGps:beforeFallbackCache");
                         finishAutoLocationAfterCityWithLastOrderAddress();
+                        logAddrGuardState("autoGps:afterFallbackCache");
                     });
                 })
                 .addOnFailureListener(e -> {
@@ -3176,23 +3188,65 @@ public class VisicomFragment extends Fragment {
     }
 
     /** Нажатие GPS: перезаписать «Откуда» и ROUT_MARKER по геолокации. */
+    private void logAddrGuardState(String where) {
+        if (context == null) {
+            return;
+        }
+        String uiStart = "n/a";
+        if (binding != null && geoText != null && geoText.getText() != null) {
+            uiStart = geoText.getText().toString();
+        }
+        List<String> route = logCursor(MainActivity.ROUT_MARKER, context);
+        String dbStart = route.size() > 5 ? String.valueOf(route.get(5)) : "n/a";
+        String dbLat = route.size() > 1 ? route.get(1) : "n/a";
+        String dbLon = route.size() > 2 ? route.get(2) : "n/a";
+        Object source = sharedPreferencesHelperMain.getValue(AutoLocationAfterCityHelper.KEY_START_ADDRESS_SOURCE, "");
+        Logger.d(context, ADDR_GUARD, String.format(Locale.US,
+                "[%s] uiStart='%s' | dbStart='%s' | dbLat=%s dbLon=%s | gpsApplied=%s | isUpdatingFromGPS=%s | pendingAddressRequest=%s | autoCityLoad=%s | source=%s",
+                where, uiStart, dbStart, dbLat, dbLon,
+                AutoLocationAfterCityHelper.isGpsStartApplied(),
+                isUpdatingFromGPS,
+                pendingAddressRequest,
+                autoLocationFromCityLoad,
+                source));
+    }
+
+    private void logAddrGuardOverwrite(String where, String from, String to, String reason) {
+        if (context == null) {
+            return;
+        }
+        Logger.w(context, ADDR_GUARD, String.format(Locale.US,
+                "[%s] OVERWRITE '%s' -> '%s' | reason=%s", where, from, to, reason));
+    }
+
     private void applyGpsLocationToOrder(double latitude, double longitude, String address) {
+        applyGpsLocationToOrder(latitude, longitude, address, false);
+    }
+
+    private void applyGpsLocationToOrder(double latitude, double longitude, String address, boolean fromAutoGps) {
         if (!isAdded() || binding == null) {
             isUpdatingFromGPS = false;
             return;
         }
+        String uiBefore = geoText.getText() != null ? geoText.getText().toString() : "";
+        logAddrGuardState("applyGps:before fromAuto=" + fromAutoGps);
         Logger.d(context, TAG, String.format(Locale.US,
                 "GPS: применяем к заказу lat=%.6f, lon=%.6f, address='%s'", latitude, longitude, address));
         updateCoordinatesInDatabase(latitude, longitude, address);
+        AutoLocationAfterCityHelper.markGpsStartApplied();
+        if (!uiBefore.equals(address)) {
+            logAddrGuardOverwrite("applyGps", uiBefore, address, fromAutoGps ? "autoGps geocode" : "manualGps");
+        }
         geoText.setText(address);
         progressBar.setVisibility(View.GONE);
         isUpdatingFromGPS = false;
         finishAutoLocationGpsButtonState();
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         if (!"email".equals(userEmail) && NetworkUtils.isNetworkAvailable(context)) {
-            requestVisicomCost("manualGps");
+            requestVisicomCost(fromAutoGps ? "autoGps" : "manualGps");
             readTariffInfo();
         }
+        logAddrGuardState("applyGps:after fromAuto=" + fromAutoGps);
     }
 
     private void finishAutoLocationAfterCityWithLastOrderAddress() {
@@ -3201,35 +3255,29 @@ public class VisicomFragment extends Fragment {
             autoLocationFromCityLoad = false;
             return;
         }
+        logAddrGuardState("finishAutoLocation:entry");
         progressBar.setVisibility(View.GONE);
         isUpdatingFromGPS = false;
         autoLocationFromCityLoad = false;
 
         if (AutoLocationAfterCityHelper.isCityChangedViaGeo()) {
+            Logger.d(context, ADDR_GUARD, "finishAutoLocation: cityChangedViaGeo → lastOrder cache");
             AutoLocationAfterCityHelper.clearCityChangedViaGeo();
             finishAutoLocationGpsButtonState();
             applyLastOrderAddressFromRouteMarker(false);
+            logAddrGuardState("finishAutoLocation:afterCityChangedViaGeo");
             return;
         }
 
-        boolean gpsDetectedNotApplied = AutoLocationAfterCityHelper.hasDetectedCoordinates();
-        if (gpsDetectedNotApplied) {
-            sharedPreferencesHelperMain.saveValue("setStatusX", true);
-            viewModel.setStatusX(true);
-            updateGpsButtonCross(true);
-            Logger.d(context, TAG, "Авто-GPS: крестик на кнопке GPS — координаты не применены, нужно нажать GPS");
-            // Важно: не трогаем текущий адрес в UI/заказе, чтобы он не «дергался».
-            // Авто-GPS после города должен лишь подготовить координаты и ждать нажатия кнопки GPS.
-            return;
-        }
-
+        Logger.d(context, ADDR_GUARD, "finishAutoLocation: GPS не применён → lastOrder cache");
         finishAutoLocationGpsButtonState();
         applyLastOrderAddressFromRouteMarker(false);
+        logAddrGuardState("finishAutoLocation:afterLastOrder");
     }
 
     private void logAutoDetectedRouteAndPath(double detectedLat, double detectedLon, String detectedAddress) {
         Logger.d(context, TAG, "═══════════════════════════════════════════");
-        Logger.d(context, TAG, "Авто-GPS после города: к заказу не применяется (только prefs + лог)");
+        Logger.d(context, TAG, "Авто-GPS после города: применение к заказу при успешном геокоде");
         Logger.d(context, TAG, String.format(Locale.US,
                 "GPS координаты: lat=%.6f, lon=%.6f", detectedLat, detectedLon));
         if (detectedAddress != null && !detectedAddress.trim().isEmpty()) {
@@ -3267,6 +3315,13 @@ public class VisicomFragment extends Fragment {
         if (!isAdded() || binding == null) {
             return;
         }
+        logAddrGuardState("lastOrderCache:entry keepGpsCross=" + keepGpsCross);
+        if (AutoLocationAfterCityHelper.isGpsStartApplied() || isUpdatingFromGPS) {
+            Logger.d(context, ADDR_GUARD, String.format(Locale.US,
+                    "lastOrderCache: SKIP | gpsApplied=%s isUpdatingFromGPS=%s",
+                    AutoLocationAfterCityHelper.isGpsStartApplied(), isUpdatingFromGPS));
+            return;
+        }
         Logger.d(context, TAG, "Подстановка адреса из последнего заказа (без GPS)");
 
         List<String> route = logCursor(MainActivity.ROUT_MARKER, context);
@@ -3287,9 +3342,14 @@ public class VisicomFragment extends Fragment {
         }
 
         if (startAddress == null || startAddress.trim().isEmpty()) {
+            Logger.d(context, ADDR_GUARD, "lastOrderCache: SKIP — пустой start в ROUT_MARKER");
             return;
         }
 
+        String uiBefore = geoText.getText() != null ? geoText.getText().toString() : "";
+        if (!uiBefore.equals(startAddress)) {
+            logAddrGuardOverwrite("lastOrderCache", uiBefore, startAddress, "ROUT_MARKER last order");
+        }
         geoText.setText(startAddress);
         if (!keepGpsCross) {
             sharedPreferencesHelperMain.saveValue("setStatusX", false);
@@ -3302,6 +3362,7 @@ public class VisicomFragment extends Fragment {
             requestVisicomCost("lastOrderAddress");
             readTariffInfo();
         }
+        logAddrGuardState("lastOrderCache:after");
     }
 
     private void requestVisicomCost(String source) {
@@ -3632,6 +3693,7 @@ public class VisicomFragment extends Fragment {
 
                                         long dbStartTime = System.currentTimeMillis();
                                         updateCoordinatesInDatabase(finalLatitude, finalLongitude, finalAddress);
+                                        AutoLocationAfterCityHelper.markGpsStartApplied();
                                         long dbEndTime = System.currentTimeMillis();
                                         Logger.d(context, TAG, "      └─ ✅ БД обновлена за " + (dbEndTime - dbStartTime) + " мс");
 
@@ -4080,6 +4142,35 @@ public class VisicomFragment extends Fragment {
         Logger.d(context, TAG, "=== visicomCost() завершён ===");
     }
 
+    private void syncAddressFieldsFromRouteMarker() {
+        if (!isAdded() || binding == null || context == null) {
+            return;
+        }
+        String uiBefore = geoText.getText() != null ? geoText.getText().toString() : "";
+        List<String> route = logCursor(MainActivity.ROUT_MARKER, context);
+        if (route.size() <= 5) {
+            Logger.d(context, ADDR_GUARD, "syncFromDb: SKIP — ROUT_MARKER неполный, size=" + route.size());
+            return;
+        }
+        String start = route.get(5);
+        if (start != null && !start.isEmpty()) {
+            if (!uiBefore.equals(start)) {
+                logAddrGuardOverwrite("syncFromDb:costCallback", uiBefore, start, "актуальный ROUT_MARKER после расчёта");
+            }
+            geoText.setText(start);
+        }
+        if (route.size() > 6) {
+            String finish = route.get(6);
+            if (finish != null) {
+                String startTrim = start != null ? start.trim() : "";
+                binding.textTo.setText(finish.trim().equals(startTrim) ? "" : finish);
+            }
+        }
+        Logger.d(context, ADDR_GUARD, String.format(Locale.US,
+                "syncFromDb: uiStart='%s' dbStart='%s' gpsApplied=%s",
+                geoText.getText(), start, AutoLocationAfterCityHelper.isGpsStartApplied()));
+    }
+
     private void requestCostFromServer(String start, String finish) throws MalformedURLException {
         String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTimeMyApi", context);
         reserveCost(start, finish, urlCost);
@@ -4118,8 +4209,8 @@ public class VisicomFragment extends Fragment {
             }
 
             if (binding != null) {
-                geoText.setText(start);
-                binding.textTo.setText(finish.trim().equals(start.trim()) ? "" : finish);
+                Logger.d(context, ADDR_GUARD, "costObserver: sync UI from ROUT_MARKER after cost=" + cost);
+                syncAddressFieldsFromRouteMarker();
                 applyDiscountAndUpdateUI(cost, context);
             }
         });
@@ -4134,6 +4225,9 @@ public class VisicomFragment extends Fragment {
 
         // здесь твоя логика запроса
         Logger.d(context, TAG, "reserveCost вызван -> start: " + start + ", finish: " + finish);
+        Logger.d(context, ADDR_GUARD, String.format(Locale.US,
+                "reserveCost: capturedStart='%s' capturedFinish='%s' gpsApplied=%s",
+                start, finish, AutoLocationAfterCityHelper.isGpsStartApplied()));
 
         Logger.d(context, TAG, "Попытка #" + ( 1) + ", URL: " + urlCost);
 
@@ -4147,8 +4241,7 @@ public class VisicomFragment extends Fragment {
                         return;
                     }
 
-                    geoText.setText(start);
-                    binding.textTo.setText(finish.trim().equals(start.trim()) ? "" : finish);
+                    syncAddressFieldsFromRouteMarker();
 
                     Map<String, String> map = response.body();
                     String cost;
