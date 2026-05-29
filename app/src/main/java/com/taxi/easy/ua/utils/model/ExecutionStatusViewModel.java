@@ -219,6 +219,20 @@ public class ExecutionStatusViewModel extends ViewModel {
         }
     }
 
+    /** Переключение на другой активный заказ из списка «В работе». */
+    public static void switchActiveOrderSession(@Nullable String activeOrderUid, @Nullable String doubleOrderUid) {
+        setCancelInFlightPref(false);
+        setUserCanceledPref(false);
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_CANCELED_UID, "");
+        if (activeOrderUid != null && !activeOrderUid.isEmpty()) {
+            MainActivity.uid = activeOrderUid;
+            sharedPreferencesHelperMain.saveValue(PREF_FINISH_ACTIVE_UID, activeOrderUid);
+        }
+        MainActivity.uid_Double = doubleOrderUid != null ? doubleOrderUid : "";
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_DOUBLE_UID, MainActivity.uid_Double);
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_DISPLAY_COST, "");
+    }
+
     public static void markUserCanceledOrder(@Nullable String orderUid) {
         setUserCanceledPref(true);
         if (orderUid != null && !orderUid.isEmpty()) {

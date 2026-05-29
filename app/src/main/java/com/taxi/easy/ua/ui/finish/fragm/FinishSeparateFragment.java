@@ -202,6 +202,9 @@ public class FinishSeparateFragment extends Fragment {
     private  boolean isTaskCancelled = false;
     private boolean statusPollPaused = false;
     private Runnable cancelWatchPoll;
+    /** UID заказа, выбранного при открытии экрана (список «В работе» или новый заказ). */
+    @Nullable
+    private String navigationOrderUid;
 
     TimeUtils timeUtils;
     private Observer<Boolean> observer;
@@ -220,6 +223,7 @@ public class FinishSeparateFragment extends Fragment {
     private static final String TAG_ADD_COST_SHEET = "add_cost_sheet";
     private AlertDialog addCostDialog;
     private boolean addCostSheetShowing = false;
+    private boolean activeOrderCloseMode = false;
     private PassengerNotifier notifier;
     private Handler checkHandler = new Handler();
     private Runnable checkRunnable;
@@ -417,7 +421,7 @@ public class FinishSeparateFragment extends Fragment {
         textCarMessage.setVisibility(GONE);
 
         uid = arguments.getString("UID_key");
-
+        navigationOrderUid = uid;
 
         Logger.d(context, TAG, "MainActivity.uid: " + uid);
 
@@ -526,17 +530,7 @@ public class FinishSeparateFragment extends Fragment {
         };
 
         btn_again = root.findViewById(R.id.btn_again);
-        btn_again.setOnClickListener(v -> {
-            MainActivity.order_id = null;
-            sharedPreferencesHelperMain.saveValue("carFound", false);
-            updateAddCost(String.valueOf(0));
-            if (handlerStatus != null) {
-                handlerStatus.removeCallbacks(myTaskStatus);
-            }
-            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_visicom, true)
-                    .build());
-        });
+        btn_again.setOnClickListener(v -> navigateToNewOrder());
 
 
         Logger.d(context, TAG, "no_pay: 2 " + no_pay);
@@ -828,7 +822,9 @@ public class FinishSeparateFragment extends Fragment {
             btn_open.setTextColor(colorPressed);
             btn_add_cost.animate().alpha(0f).setDuration(300).withEndAction(() -> btn_add_cost.setVisibility(GONE));
 
-            btn_again.animate().alpha(0f).setDuration(300).withEndAction(() -> btn_again.setVisibility(GONE));
+            if (!activeOrderCloseMode) {
+                btn_again.animate().alpha(0f).setDuration(300).withEndAction(() -> btn_again.setVisibility(GONE));
+            }
         } else {
             // Анимация появления кнопок
 
@@ -838,12 +834,54 @@ public class FinishSeparateFragment extends Fragment {
             btn_add_cost.setEnabled(true);
             btn_add_cost.animate().alpha(1f).setDuration(300);
 
-            if (btn_again.getVisibility() != View.VISIBLE || btn_again.getVisibility() != GONE) {
-                btn_again.setVisibility(View.VISIBLE);
+            if (!activeOrderCloseMode) {
+                if (btn_again.getVisibility() != View.VISIBLE || btn_again.getVisibility() != GONE) {
+                    btn_again.setVisibility(View.VISIBLE);
+                }
+                btn_again.setAlpha(0f);
+                btn_again.animate().alpha(1f).setDuration(300);
             }
-            btn_again.setAlpha(0f);
-            btn_again.animate().alpha(1f).setDuration(300);
         }
+    }
+
+    private void navigateToNewOrder() {
+        MainActivity.order_id = null;
+        sharedPreferencesHelperMain.saveValue("carFound", false);
+        updateAddCost(String.valueOf(0));
+        if (handlerStatus != null) {
+            handlerStatus.removeCallbacks(myTaskStatus);
+        }
+        MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                .setPopUpTo(R.id.nav_visicom, true)
+                .build());
+    }
+
+    /** Во время опроса статуса: «Заказать еще» → «Закрыть», возврат на главный экран. */
+    private void applyActiveOrderCloseMode() {
+        if (btn_again == null || !isAdded()) {
+            return;
+        }
+        activeOrderCloseMode = true;
+        btn_again.setText(R.string.close);
+        btn_again.setVisibility(View.VISIBLE);
+        btn_again.setOnClickListener(v -> closeActiveOrderScreen());
+    }
+
+    /** После отмены/выполнения — вернуть «Заказать еще». */
+    private void restoreOrderAgainButton() {
+        if (btn_again == null) {
+            return;
+        }
+        activeOrderCloseMode = false;
+        btn_again.setText(R.string.btn_again_text);
+        btn_again.setOnClickListener(v -> navigateToNewOrder());
+    }
+
+    private void closeActiveOrderScreen() {
+        if (context == null) {
+            return;
+        }
+        startActivity(new Intent(context, MainActivity.class));
     }
 
     private void stopCancelWatchPoll() {
@@ -1131,6 +1169,7 @@ public class FinishSeparateFragment extends Fragment {
         isTaskRunning = false;
         scheduleCancelWatchPoll();
         if (text_status != null) {
+            text_status.clearAnimation();
             text_status.setText(R.string.sent_cancel_message);
         }
         Logger.d(context, TAG, "submitOrderCancelRequest: " + url + " uid=" + uidToCancel);
@@ -1423,6 +1462,7 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     private void orderComplete() {
+        restoreOrderAgainButton();
         sharedPreferencesHelperMain.saveValue("carFound", true);
 //        new Handler(Looper.getMainLooper()).post(() -> {
             // Выполнено
@@ -1530,8 +1570,7 @@ public class FinishSeparateFragment extends Fragment {
                 textStatusCar, textCarMessage, textCost, countdownTextView,
                 textCostMessage, carProgressBar, progressSteps);
 
-        btn_again.setVisibility(GONE);
-//        btn_cancel_order.setVisibility(GONE);
+        applyActiveOrderCloseMode();
         viewModel.hideCancelButton();
 
         if (handler != null) {
@@ -1600,6 +1639,7 @@ public class FinishSeparateFragment extends Fragment {
             setShowDialogAddCost();
 
             setVisibility(View.VISIBLE, textCost, textCostMessage, carProgressBar, progressSteps, btn_options, btn_open);
+            applyActiveOrderCloseMode();
         }
 
             Logger.d(context, TAG, "Updating status and UI for car search");
@@ -1685,7 +1725,7 @@ public class FinishSeparateFragment extends Fragment {
 
         setVisibility(View.VISIBLE, textCost, textCostMessage);
 
-        btn_again.setVisibility(GONE);
+        applyActiveOrderCloseMode();
 
 
             List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
@@ -1857,6 +1897,7 @@ public class FinishSeparateFragment extends Fragment {
          });
      }
     private void orderCanceled(String message) {
+            restoreOrderAgainButton();
             PaymentErrorSheetHelper.dismiss(getParentFragmentManager());
             sharedPreferencesHelperMain.saveValue("carFound", false);
             text_status.setText(R.string.recounting_order);
@@ -1930,13 +1971,14 @@ public class FinishSeparateFragment extends Fragment {
         return closeReason == -1 && isCanceledExecutionStatus(executionStatus);
     }
 
+    /** Экран уже в финальном состоянии «заказ отменён» (не путать с кнопкой «Закрыть» при активном заказе). */
     private boolean isCancelUiShown() {
-        return btn_again != null && btn_again.getVisibility() == View.VISIBLE;
+        return canceled;
     }
 
     /** Не перезаписывать UI отмены ответом опроса «ищем авто». */
     private boolean shouldIgnoreStatusPollingUi() {
-        return canceled || cancelRequestInFlight || isCancelUiShown();
+        return canceled || cancelRequestInFlight;
     }
 
     private void finishCancelInFlightState() {
@@ -2567,18 +2609,74 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     /**
-     * После доплаты / возврата из фона: uid и сумма из prefs/ViewModel, не устаревший bundle.
+     * После доплаты / возврата из фона: uid и сумма из prefs/ViewModel.
+     * При открытии из списка «В работе» приоритет у выбранного заказа, а не у сохранённого uid.
      */
     private void reconcileOrderIdentityFromPersistedState() {
-        if (ExecutionStatusViewModel.isCancelInFlightPref()) {
+        String persistedActive = ExecutionStatusViewModel.getPersistedActiveUid();
+        boolean explicitSelection = navigationOrderUid != null && !navigationOrderUid.isEmpty();
+        boolean orderSwitch = explicitSelection && persistedActive != null
+                && !navigationOrderUid.equals(persistedActive);
+
+        if (ExecutionStatusViewModel.isCancelInFlightPref() && !orderSwitch) {
             cancelRequestInFlight = true;
             setCancelButtonBusy(true);
             if (text_status != null) {
+                text_status.clearAnimation();
                 text_status.setText(R.string.sent_cancel_message);
             }
         }
-        String persistedActive = ExecutionStatusViewModel.getPersistedActiveUid();
-        if (persistedActive != null) {
+
+        if (orderSwitch) {
+            stopCycle();
+            isTaskCancelled = false;
+            statusPollPaused = false;
+            canceled = false;
+            cancel_btn_click = false;
+            cancelRequestInFlight = false;
+            setCancelButtonBusy(false);
+            uid = navigationOrderUid;
+            String bundleDouble = receivedMap != null
+                    ? receivedMap.get("dispatching_order_uid_Double") : null;
+            if (bundleDouble != null && !bundleDouble.trim().isEmpty()) {
+                uid_Double = bundleDouble;
+            } else {
+                uid_Double = "";
+            }
+            ExecutionStatusViewModel.switchActiveOrderSession(navigationOrderUid, uid_Double);
+            if (viewModel != null) {
+                viewModel.restoreUidFromPersisted(navigationOrderUid, uid_Double);
+            }
+            if (receivedMap != null) {
+                receivedMap.put("dispatching_order_uid", navigationOrderUid);
+                receivedMap.put("dispatching_order_uid_Double", uid_Double);
+            }
+            Logger.d(context, TAG, "reconcile: switched to selected order " + navigationOrderUid);
+        } else if (explicitSelection) {
+            uid = navigationOrderUid;
+            MainActivity.uid = navigationOrderUid;
+            if (uid_Double == null && receivedMap != null) {
+                uid_Double = receivedMap.get("dispatching_order_uid_Double");
+            }
+            if (navigationOrderUid.equals(persistedActive)) {
+                String persistedDouble = ExecutionStatusViewModel.getPersistedDoubleUid();
+                if (persistedDouble != null && !persistedDouble.trim().isEmpty()) {
+                    uid_Double = persistedDouble;
+                }
+            }
+            if (uid_Double != null) {
+                MainActivity.uid_Double = uid_Double;
+            }
+            if (viewModel != null) {
+                viewModel.restoreUidFromPersisted(navigationOrderUid, uid_Double);
+            }
+            if (receivedMap != null) {
+                receivedMap.put("dispatching_order_uid", navigationOrderUid);
+                if (uid_Double != null) {
+                    receivedMap.put("dispatching_order_uid_Double", uid_Double);
+                }
+            }
+        } else if (persistedActive != null) {
             uid = persistedActive;
             MainActivity.uid = persistedActive;
             String persistedDouble = ExecutionStatusViewModel.getPersistedDoubleUid();
@@ -2596,8 +2694,11 @@ public class FinishSeparateFragment extends Fragment {
                 }
             }
         }
+
         String persistedCost = ExecutionStatusViewModel.getPersistedDisplayCost();
-        if (persistedCost != null && "nal_payment".equals(pay_method) && textCostMessage != null) {
+        if (persistedCost != null && "nal_payment".equals(pay_method) && textCostMessage != null
+                && !orderSwitch && uid != null
+                && (persistedActive == null || uid.equals(persistedActive))) {
             applyNalCostToFinishUi(persistedCost);
         }
         PassengerNotifier.syncWeatherNoticeWithFinishUids(uid, uid_Double);
@@ -2605,9 +2706,11 @@ public class FinishSeparateFragment extends Fragment {
 
     @Nullable
     private String resolveActiveOrderUid() {
-        String persisted = ExecutionStatusViewModel.getPersistedActiveUid();
-        if (persisted != null) {
-            return persisted;
+        if (uid != null && !uid.isEmpty()) {
+            return uid;
+        }
+        if (navigationOrderUid != null && !navigationOrderUid.isEmpty()) {
+            return navigationOrderUid;
         }
         if (viewModel != null) {
             String vmUid = viewModel.getUid().getValue();
@@ -2618,8 +2721,9 @@ public class FinishSeparateFragment extends Fragment {
         if (MainActivity.uid != null && !MainActivity.uid.isEmpty()) {
             return MainActivity.uid;
         }
-        if (uid != null && !uid.isEmpty()) {
-            return uid;
+        String persisted = ExecutionStatusViewModel.getPersistedActiveUid();
+        if (persisted != null) {
+            return persisted;
         }
         return null;
     }
@@ -2875,6 +2979,7 @@ public class FinishSeparateFragment extends Fragment {
         reconcileOrderIdentityFromPersistedState();
         if (shouldIgnoreStatusPollingUi()) {
             Logger.d(context, TAG, "onResume: skip polling — cancel UI active");
+            restoreOrderAgainButton();
             btn_open.setOnClickListener(v -> btnOpen());
             return;
         }
@@ -2889,6 +2994,7 @@ public class FinishSeparateFragment extends Fragment {
         startCycle();
 
         btn_open.setOnClickListener(v -> btnOpen());
+        applyActiveOrderCloseMode();
         startAddCostDialog (timeCheckOutAddCost);
 
         applyPendingAddCostIfNeeded();
@@ -3388,26 +3494,26 @@ public class FinishSeparateFragment extends Fragment {
     private void addCheck(Context context) {
 
         int newCheck = 0;
-        List<String> services = logCursor(MainActivity.TABLE_SERVICE_INFO, context);
-        Log.d("addCheck", "services " + services);
-        for (int i = 0; i < DataArr.arrayServiceCode().length; i++) {
-            if (services.get(i + 1).equals("1")) {
-                newCheck++;
+        // Опции берём из данных заказа (extra_charge_codes), а не из текущего выбора в таблице
+        if (extra_charge_codes != null && !extra_charge_codes.trim().isEmpty()) {
+            for (String code : extra_charge_codes.split(",")) {
+                String c = code.trim();
+                if (!c.isEmpty()
+                        && !c.equals("no_extra_charge_codes")
+                        && !c.equals("*")) {
+                    newCheck++;
+                }
             }
         }
         Log.d("addCheck", "newCheck 1: " + newCheck);
-//        List<String> stringListInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
-//        String tarif = stringListInfo.get(2);
-        String tarif = sharedPreferencesHelperMain.getValue("tarif", " ").toString();
 
+        // Тариф заказа (без перезаписи текущим выбором из настроек)
+        String tarif = (flexible_tariff_name != null) ? flexible_tariff_name : " ";
         Log.d("addCheck", "tarif " + tarif);
-        if (!tarif.equals(" ")) {
-            flexible_tariff_name = tarif;
+        if (!tarif.equals(" ")
+                && !tarif.trim().isEmpty()
+                && !tarif.equals(context.getResources().getString(R.string.start_t))) {
             newCheck++;
-        }
-        if (tarif.equals(context.getResources().getString(R.string.start_t))) {
-            flexible_tariff_name = tarif;
-            newCheck--;
         }
         Log.d("addCheck", "newCheck 2: " + newCheck);
         Log.d("addCheck", "comment_info " + "/" + comment_info + "/");

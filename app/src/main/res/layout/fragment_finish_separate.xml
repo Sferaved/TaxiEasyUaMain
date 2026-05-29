@@ -271,6 +271,23 @@
             app:layout_constraintTop_toBottomOf="@+id/text_status_car" />
 
         <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_again"
+            android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
+            android:layout_height="48dp"
+            android:visibility="gone"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/buttons"
+
+            android:fontFamily="@font/regular"
+            android:text="@string/btn_again_text"
+            android:textAlignment="center"
+            android:textColor="#D9D9D9"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btn_options" />
+
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_add_cost"
            android:layout_width="0dp"
             app:layout_constraintWidth_percent="@dimen/button_width"
@@ -285,41 +302,7 @@
             android:textColor="#D9D9D9"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_open" />
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_cancel_order"
-            android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
-            android:layout_height="48dp"
-            android:visibility="gone"
-            android:layout_marginTop="8sp"
-            android:background="@drawable/buttons"
-            android:fontFamily="@font/regular"
-            android:text="@string/cancel_order"
-            android:textAlignment="center"
-            android:textColor="#D9D9D9"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.502"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_add_cost" />
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_again"
-            android:layout_width="0dp"
-            app:layout_constraintWidth_percent="@dimen/button_width"
-            android:layout_height="@dimen/button_height"
-            android:visibility="gone"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/buttons"
-
-            android:fontFamily="@font/regular"
-            android:text="@string/btn_again_text"
-            android:textAlignment="center"
-            android:textColor="#D9D9D9"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_cancel_order" />
+            app:layout_constraintTop_toBottomOf="@+id/btn_again" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnCallAdmin"
@@ -335,7 +318,26 @@
             android:visibility="visible"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_again" />
+            app:layout_constraintTop_toBottomOf="@+id/btn_add_cost" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_cancel_order"
+            android:layout_width="0dp"
+            app:layout_constraintWidth_percent="@dimen/button_width"
+            android:layout_height="48dp"
+            android:visibility="gone"
+            android:layout_marginTop="8sp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/buttons"
+            android:fontFamily="@font/regular"
+            android:text="@string/cancel_order"
+            android:textAlignment="center"
+            android:textColor="#D9D9D9"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.502"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btnCallAdmin" />
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
