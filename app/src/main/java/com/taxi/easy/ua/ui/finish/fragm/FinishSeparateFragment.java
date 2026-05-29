@@ -217,6 +217,9 @@ public class FinishSeparateFragment extends Fragment {
 //    long delayMillis = 30 * 1000;
     private String pendingAddCost = "0";
     private boolean isTaskScheduled = false; // Флаг для отслеживания
+    private static final String TAG_ADD_COST_SHEET = "add_cost_sheet";
+    private AlertDialog addCostDialog;
+    private boolean addCostSheetShowing = false;
     private PassengerNotifier notifier;
     private Handler checkHandler = new Handler();
     private Runnable checkRunnable;
@@ -1832,8 +1835,9 @@ public class FinishSeparateFragment extends Fragment {
                              viewModel
                      );
     // Устанавливаем слушатель для обработки закрытия
-                     bottomSheetDialogFragment.setOnDismissListener(this::resumeStatusPolling);
-                     bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                     bottomSheetDialogFragment.setOnDismissListener(this::onAddCostSheetDismissed);
+                     addCostSheetShowing = true;
+                     bottomSheetDialogFragment.show(fragmentManager, TAG_ADD_COST_SHEET);
                  } else {
                      Logger.d(context, TAG, "No numeric value found in the text.");
                  }
@@ -1920,7 +1924,7 @@ public class FinishSeparateFragment extends Fragment {
         if (orderResponse.isOrderIsArchive() && isCanceledExecutionStatus(executionStatus)) {
             return true;
         }
-        if (closeReason >= 1 && closeReason <= 9 && executionStatus != null) {
+        if (closeReason >= 1 && closeReason <= 9 && closeReason != 8 && executionStatus != null) {
             return true;
         }
         return closeReason == -1 && isCanceledExecutionStatus(executionStatus);
@@ -1994,7 +1998,7 @@ public class FinishSeparateFragment extends Fragment {
         if (shouldIgnoreStatusPollingUi()) {
             return;
         }
-        if (closeReason >= 1 && closeReason <= 9) {
+        if (closeReason >= 1 && closeReason <= 9 && closeReason != 8) {
             if (executionStatus != null) {
                 showOrderCanceledFromServer();
             } else {
@@ -3071,6 +3075,17 @@ public class FinishSeparateFragment extends Fragment {
         }
     }
 
+    // Проверяет, открыта ли сейчас шторка добавления стоимости
+    private boolean isAddCostSheetShown() {
+        return addCostSheetShowing;
+    }
+
+    // Закрытие шторки добавления стоимости
+    private void onAddCostSheetDismissed() {
+        addCostSheetShowing = false;
+        resumeStatusPolling();
+    }
+
     private void verifyOldHold() {
 
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
@@ -3129,8 +3144,9 @@ public class FinishSeparateFragment extends Fragment {
                                             viewModel
                                     );
                                     bottomSheetDialogFragment.setOnDismissListener(
-                                            FinishSeparateFragment.this::resumeStatusPolling);
-                                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                                            FinishSeparateFragment.this::onAddCostSheetDismissed);
+                                    addCostSheetShowing = true;
+                                    bottomSheetDialogFragment.show(fragmentManager, TAG_ADD_COST_SHEET);
                                 } else {
                                     Logger.d(context, TAG, "No numeric value found in the text.");
                                 }
@@ -3166,6 +3182,16 @@ public class FinishSeparateFragment extends Fragment {
         Log.d("add_show_flag", String.valueOf(add_show_flag));
 
         if (!add_show_flag) {
+            return;
+        }
+        // Не показываем диалог повторно, если он уже открыт
+        if (addCostDialog != null && addCostDialog.isShowing()) {
+            Log.d(TAG, "showAddCostDialog skipped: dialog already showing");
+            return;
+        }
+        // Не показываем диалог, если пользователь уже поднял шторку добавления стоимости
+        if (isAddCostSheetShown()) {
+            Log.d(TAG, "showAddCostDialog skipped: add cost bottom sheet already shown");
             return;
         }
         cancelShowDialogAddCost();
@@ -3211,8 +3237,9 @@ public class FinishSeparateFragment extends Fragment {
                                     pay_method,
                                     viewModel
                             );
-                            bottomSheetDialogFragment.setOnDismissListener(this::resumeStatusPolling);
-                            bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                            bottomSheetDialogFragment.setOnDismissListener(this::onAddCostSheetDismissed);
+                            addCostSheetShowing = true;
+                            bottomSheetDialogFragment.show(fragmentManager, TAG_ADD_COST_SHEET);
                         } else {
                             Logger.d(context, TAG, "No numeric value found in the text.");
                         }
@@ -3231,6 +3258,7 @@ public class FinishSeparateFragment extends Fragment {
                 });
 
         AlertDialog dialog = builder.create();
+        addCostDialog = dialog;
 
         dialog.show();
 

@@ -8,10 +8,12 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_minus"
-        android:layout_width="60sp"
-        android:layout_height="60sp"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/circle_button_minus"
         android:gravity="center"
         android:text="-"
+        android:textColor="@color/black"
         android:textSize="30sp"
 
         app:layout_constraintEnd_toStartOf="@+id/text_view_cost"
@@ -40,11 +42,12 @@
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_plus"
-        android:layout_width="60sp"
-        android:layout_height="60sp"
-        android:backgroundTint="@color/colorAccent"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/circle_button_plus"
         android:gravity="center"
         android:text="+"
+        android:textColor="@color/black"
         android:textSize="30sp"
 
         app:layout_constraintEnd_toEndOf="parent"
