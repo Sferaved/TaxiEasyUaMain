@@ -1945,6 +1945,7 @@ public class VisicomSearchFragment extends Fragment {
         Logger.d(context, "AddrGuard", "searchManual: clearStartAddressSource — пользователь выбрал адрес вручную, start='"
                 + (settings.size() > 4 ? settings.get(4) : "?") + "'");
         AutoLocationAfterCityHelper.clearStartAddressSource();
+        AutoLocationAfterCityHelper.clearPending();
         ContentValues cv = new ContentValues();
 
         cv.put("startLat", Double.parseDouble(settings.get(0)));

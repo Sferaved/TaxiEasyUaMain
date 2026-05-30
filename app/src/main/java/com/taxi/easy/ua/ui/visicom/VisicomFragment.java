@@ -302,7 +302,7 @@ public class VisicomFragment extends Fragment {
                     if (locationGranted) {
                         location_update = true;
                         AutoLocationAfterCityHelper.markEverGranted();
-                        if (AutoLocationAfterCityHelper.isPending() || AutoLocationAfterCityHelper.wasEverGranted()) {
+                        if (AutoLocationAfterCityHelper.isPending()) {
                             AutoLocationAfterCityHelper.clearPending();
                             startAutoLocationAfterCityIfPossible();
                         }
@@ -3044,8 +3044,8 @@ public class VisicomFragment extends Fragment {
     }
 
     /**
-     * После загрузки города: один раз запросить геолокацию, при согласии — GPS без кнопки,
-     * при отказе или без разрешения — адрес из последнего заказа в ROUT_MARKER.
+     * После загрузки города (флаг pending): один раз запросить геолокацию.
+     * При отказе или без разрешения — адрес из последнего заказа в ROUT_MARKER.
      */
     private void maybeAutoApplyLocationAfterCity() {
         if (!isAdded() || binding == null || context == null) {
@@ -3059,9 +3059,8 @@ public class VisicomFragment extends Fragment {
 
         boolean pending = AutoLocationAfterCityHelper.isPending();
         boolean hasPermission = AutoLocationAfterCityHelper.hasLocationPermission(context);
-        boolean everGranted = AutoLocationAfterCityHelper.wasEverGranted();
 
-        if (!pending && !(everGranted && hasPermission)) {
+        if (!pending) {
             return;
         }
 
@@ -3101,7 +3100,8 @@ public class VisicomFragment extends Fragment {
     }
 
     /**
-     * После города: определить GPS и записать в prefs + лог; заказ не меняется до нажатия кнопки GPS.
+     * После города: определить GPS. Если «Откуда» пустое — подставить GPS;
+     * иначе только prefs + крестик на кнопке GPS.
      */
     private void detectAndStoreAutoLocationAfterCity() {
         if (!isAdded() || context == null || !autoLocationFromCityLoad) {
@@ -3168,9 +3168,16 @@ public class VisicomFragment extends Fragment {
                         AutoLocationAfterCityHelper.saveDetectedCoordinates(latitude, longitude, address);
                         logAutoDetectedRouteAndPath(latitude, longitude, address);
                         if (address != null && !address.trim().isEmpty() && isAdded() && binding != null) {
+                            if (hasEstablishedStartAddressInRouteMarker()) {
+                                Logger.d(context, ADDR_GUARD,
+                                        "autoGps: старт уже задан (ручной/кэш) — GPS только в prefs, крестик на кнопке");
+                                finishAutoLocationDetectedWithoutOverwritingOrder();
+                                logAddrGuardState("autoGps:skippedApplyExistingStart");
+                                return;
+                            }
                             gpsClickAwaitingAutoDetected = false;
                             logAddrGuardState("autoGps:beforeApply");
-                            Logger.d(context, ADDR_GUARD, "autoGps: применяем GPS-адрес к заказу (не ждём кнопку GPS)");
+                            Logger.d(context, ADDR_GUARD, "autoGps: применяем GPS-адрес к заказу (старт пустой)");
                             applyGpsLocationToOrder(latitude, longitude, address, true);
                             logAddrGuardState("autoGps:afterApply");
                             return;
@@ -3305,6 +3312,41 @@ public class VisicomFragment extends Fragment {
         sharedPreferencesHelperMain.saveValue("setStatusX", false);
         viewModel.setStatusX(false);
         updateGpsButtonCross(false);
+    }
+
+    /** Стартовая точка уже выбрана вручную или из кэша последнего заказа. */
+    private boolean hasEstablishedStartAddressInRouteMarker() {
+        if (context == null) {
+            return false;
+        }
+        List<String> route = logCursor(MainActivity.ROUT_MARKER, context);
+        if (route.size() <= 5) {
+            return false;
+        }
+        String start = route.get(5);
+        if (start == null || start.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            return Double.parseDouble(route.get(1)) != 0.0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    /** GPS определён, но «Откуда» не трогаем — пользователь может нажать кнопку GPS. */
+    private void finishAutoLocationDetectedWithoutOverwritingOrder() {
+        if (!isAdded()) {
+            isUpdatingFromGPS = false;
+            autoLocationFromCityLoad = false;
+            return;
+        }
+        progressBar.setVisibility(View.GONE);
+        isUpdatingFromGPS = false;
+        autoLocationFromCityLoad = false;
+        if (!AutoLocationAfterCityHelper.isCityChangedViaGeo()) {
+            updateGpsButtonCross(true);
+        }
     }
 
     private void applyLastOrderAddressFromRouteMarker() {
