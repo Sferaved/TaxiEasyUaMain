@@ -38,7 +38,7 @@
         android:layout_height="48dp"
         android:visibility="gone"
         android:contentDescription="center marker"
-        android:src="@drawable/marker_green"
+        android:src="@drawable/ic_map_pin_start"
         app:layout_constraintStart_toEndOf="@id/guideline_horizontal_center"
         app:layout_constraintEnd_toStartOf="@id/guideline_horizontal_center"
         app:layout_constraintBottom_toTopOf="@id/guideline_vertical_center"

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <path
+        android:fillColor="#33000000"
+        android:pathData="M24,44c-5.5,0 -9.5,-1.6 -9.5,-3.5s4,-3.5 9.5,-3.5 9.5,1.6 9.5,3.5 -4,3.5 -9.5,3.5z" />
+
+    <path
+        android:fillColor="@color/map_pin_finish"
+        android:pathData="M24,4C16.82,4 11,9.82 11,17c0,9.8 13,24.5 13,24.5S37,26.8 37,17C37,9.82 31.18,4 24,4z" />
+
+    <path
+        android:fillColor="@color/map_pin_finish_dark"
+        android:pathData="M24,42 L24,41.5 C24,41.5 15,28.5 15,17C15,11.61 19.03,7.5 24,7.5C28.97,7.5 33,11.61 33,17C33,28.5 24,41.5 24,42Z" />
+
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M24,13m-5.5,0a5.5,5.5 0,1 1,11 0a5.5,5.5 0,1 1,-11 0" />
+
+    <path
+        android:fillColor="@color/map_pin_finish"
+        android:pathData="M24,15.5m-2.5,0a2.5,2.5 0,1 1,5 0a2.5,2.5 0,1 1,-5 0" />
+</vector>

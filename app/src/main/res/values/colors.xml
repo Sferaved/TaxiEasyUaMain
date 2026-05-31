@@ -12,6 +12,10 @@
     <color name="background">#FF3700B3</color>
     <color name="text">#FFFFFFFF</color>
     <color name="colorAccent">#FF03DAC5</color>
+    <color name="map_pin_start">#10B981</color>
+    <color name="map_pin_start_dark">#059669</color>
+    <color name="map_pin_finish">#F97316</color>
+    <color name="map_pin_finish_dark">#EA580C</color>
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorYellow">#FFEB3B</color>
