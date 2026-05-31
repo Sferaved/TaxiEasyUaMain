@@ -551,6 +551,13 @@
     <string name="status_on_route">По дорозі</string>
     <string name="status_completed">Завершено</string>
     <string name="status_cancelled">Скасовано</string>
+    <string name="notification_channel_general">Загальні сповіщення</string>
+    <string name="notification_channel_cancel">Скасування замовлення</string>
+    <string name="notification_channel_payment">Помилка оплати</string>
+    <string name="notification_channel_car_found">Авто знайдено</string>
+    <string name="notification_cancel_title">%1$s — скасування</string>
+    <string name="notification_payment_error_title">%1$s — оплата</string>
+    <string name="notification_car_found_title">%1$s — авто</string>
     <string name="status_no_driver">Немає даних про авто</string>
     <string name="status_client_cancelled">Скасована клієнтом</string>
     <string name="status_unknown">Невідомо</string>

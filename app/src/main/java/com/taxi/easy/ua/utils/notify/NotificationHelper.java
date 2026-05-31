@@ -24,26 +24,37 @@ import com.taxi.easy.ua.utils.log.Logger;
 
 
 public class NotificationHelper {
-    private static final String CHANNEL_ID = "my_channel_id";
-    private static final String CHANNEL_NAME = "My Channel";
-    private static final String CHANNEL_DESCRIPTION = "This is my notification channel";
+    private static final String CHANNEL_ID = "general";
+    private static final String CHANNEL_ID_CANCEL = "order_cancel";
+    private static final String CHANNEL_ID_CAR_FOUND = "car_found";
     private static final int REQUEST_CODE_OPEN_URL = 1;
     private static final String TAG = "NotificationHelper";
     /** UID заказа, для которого уже показали push «авто найдено» (отдельно от uid_fcm). */
     private static final String PREF_LAST_CAR_FOUND_NOTIFY_UID = "last_car_found_notify_uid";
 
     private static void ensureNotificationChannel(Context context) {
+        ensureChannel(context, CHANNEL_ID, R.string.notification_channel_general, NotificationManager.IMPORTANCE_DEFAULT);
+    }
+
+    private static void ensureCancelChannel(Context context) {
+        ensureChannel(context, CHANNEL_ID_CANCEL, R.string.notification_channel_cancel, NotificationManager.IMPORTANCE_HIGH);
+    }
+
+    private static void ensureCarFoundChannel(Context context) {
+        ensureChannel(context, CHANNEL_ID_CAR_FOUND, R.string.notification_channel_car_found, NotificationManager.IMPORTANCE_HIGH);
+    }
+
+    private static void ensureChannel(Context context, String channelId, int nameResId, int importance) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
-            if (notificationManager.getNotificationChannel(CHANNEL_ID) == null) {
+            if (notificationManager.getNotificationChannel(channelId) == null) {
                 NotificationChannel channel = new NotificationChannel(
-                        CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH);
-                channel.setDescription(CHANNEL_DESCRIPTION);
+                        channelId, context.getString(nameResId), importance);
                 channel.enableLights(true);
                 channel.setLightColor(Color.RED);
                 channel.enableVibration(true);
                 notificationManager.createNotificationChannel(channel);
-                Logger.d(context, TAG, "Создан канал уведомлений: " + CHANNEL_ID);
+                Logger.d(context, TAG, "Создан канал уведомлений: " + channelId);
             }
         }
     }
@@ -100,7 +111,7 @@ public class NotificationHelper {
     }
 
     public static void showNotificationFindAutoMessage(Context context, String message, String uid) {
-        ensureNotificationChannel(context);
+        ensureCarFoundChannel(context);
         Logger.d(context, TAG, "Вызван showNotificationFindAutoMessage()");
         Logger.d(context, TAG, "Текст уведомления: " + message);
         Logger.d(context, TAG, "uid: " + uid);
@@ -136,8 +147,9 @@ public class NotificationHelper {
         Logger.d(context, TAG, "largeIcon загружен: " + (largeIcon != null));
 
         // Строим уведомление
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID_CAR_FOUND)
                 .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(context.getString(R.string.notification_car_found_title, context.getString(R.string.app_name)))
                 .setContentText(message)
                 .setLargeIcon(largeIcon)
                 .setStyle(new NotificationCompat.BigPictureStyle()
@@ -147,7 +159,7 @@ public class NotificationHelper {
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true);
 
-        Logger.d(context, TAG, "NotificationCompat.Builder создан с CHANNEL_ID = " + CHANNEL_ID);
+        Logger.d(context, TAG, "NotificationCompat.Builder создан с CHANNEL_ID = " + CHANNEL_ID_CAR_FOUND);
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
 
@@ -168,7 +180,7 @@ public class NotificationHelper {
      */
     public static void showNotificationCancelMessage(Context context, String message, String uid) {
         Logger.d(context, TAG, "showNotificationCancelMessage: " + message + ", uid=" + uid);
-        ensureNotificationChannel(context);
+        ensureCancelChannel(context);
 
         int notificationId = generateUniqueNotificationId();
 
@@ -187,9 +199,9 @@ public class NotificationHelper {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        String title = context.getString(R.string.status_cancelled);
+        String title = context.getString(R.string.notification_cancel_title, context.getString(R.string.app_name));
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID_CANCEL)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(title)
                 .setContentText(message)
@@ -225,16 +237,7 @@ public class NotificationHelper {
 
 
     public static void showNotificationMessageOpen(Context context, String title, String message, PendingIntent pendingIntent) {
-        // Создание канала уведомлений для Android 8.0 (API level 26) и выше
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
-            channel.setDescription(CHANNEL_DESCRIPTION);
-            channel.enableLights(true);
-            channel.setLightColor(Color.RED);
-            channel.enableVibration(true);
-            NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
+        ensureNotificationChannel(context);
 
         // Построение уведомления с кнопкой действия
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
@@ -262,7 +265,7 @@ public class NotificationHelper {
     }
 
 
-    private static final String PAYMENT_ERROR_CHANNEL_ID = "payment_error";
+    private static final String PAYMENT_ERROR_CHANNEL_ID = "payment_error_channel";
     /** Один слот в шторке уведомлений — повторный push обновляет, а не дублирует. */
     private static final int PAYMENT_ERROR_NOTIFICATION_ID = 91042;
 
@@ -282,7 +285,7 @@ public class NotificationHelper {
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, PAYMENT_ERROR_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_error)
-                .setContentTitle(title)
+                .setContentTitle(context.getString(R.string.notification_payment_error_title, context.getString(R.string.app_name)))
                 .setContentText(message)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -306,7 +309,7 @@ public class NotificationHelper {
             if (notificationManager.getNotificationChannel(PAYMENT_ERROR_CHANNEL_ID) == null) {
                 NotificationChannel channel = new NotificationChannel(
                         PAYMENT_ERROR_CHANNEL_ID,
-                        context.getString(R.string.paymentErrMes),
+                        context.getString(R.string.notification_channel_payment),
                         NotificationManager.IMPORTANCE_HIGH);
                 channel.setDescription(context.getString(R.string.pay_failure_mes));
                 notificationManager.createNotificationChannel(channel);

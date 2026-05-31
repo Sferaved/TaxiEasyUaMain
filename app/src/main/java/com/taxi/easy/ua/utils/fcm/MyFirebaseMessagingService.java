@@ -15,6 +15,7 @@ import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.payment.PaymentDeclinedNotifier;
 import com.taxi.easy.ua.utils.worker.utils.TokenUtils;
@@ -92,12 +93,20 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         // Автоотмена заказа (sendNotificationCancel с бэкенда)
         if (isCancelMessage(data)) {
+            if (!isPushForThisApp(data)) {
+                Logger.d(this, TAG, "Отмена: push для другого приложения, target_app=" + data.get("target_app"));
+                return;
+            }
             handleCancelMessage(data);
             return;
         }
 
         // Ошибка оплаты (sendNotificationPaymentError с бэкенда)
         if (isPaymentErrorMessage(data)) {
+            if (!isPushForThisApp(data)) {
+                Logger.d(this, TAG, "Оплата: push для другого приложения, target_app=" + data.get("target_app"));
+                return;
+            }
             handlePaymentErrorMessage(data);
             return;
         }
@@ -154,7 +163,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String uid = data.get("uid");
         Logger.d(this, TAG, "Отмена заказа FCM: " + message + ", uid=" + uid);
 
-        notifyCancel(message, uid);
+        if (shouldShowOrderPushForUid(uid)) {
+            notifyCancel(message, uid);
+        } else {
+            Logger.d(this, TAG, "Отмена FCM: push не показан — uid не относится к активному заказу PAS1");
+        }
         applyCanceledStatusToActiveOrder(uid);
     }
 
@@ -199,10 +212,44 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         Logger.d(this, TAG, "Ошибка оплаты FCM: " + message + ", uid=" + uid);
 
-        if (!MyApplication.isInForeground()) {
+        if (!MyApplication.isInForeground() && shouldShowOrderPushForUid(uid)) {
             PaymentDeclinedNotifier.maybeSendPaymentErrorPush(localizedContext, uid);
+        } else if (!shouldShowOrderPushForUid(uid)) {
+            Logger.d(this, TAG, "Оплата FCM: push не показан — uid не относится к активному заказу PAS1");
         }
         applyDeclinedToActiveOrder(uid);
+    }
+
+    /** Push только для PAS1 (поле target_app с бэкенда). */
+    private boolean isPushForThisApp(Map<String, String> data) {
+        String targetApp = data.get("target_app");
+        if (targetApp == null || targetApp.isEmpty()) {
+            return true;
+        }
+        return getString(R.string.application).equalsIgnoreCase(targetApp);
+    }
+
+    /** Не показывать отмену/оплату для заказов, созданных в другом приложении на том же email. */
+    private boolean shouldShowOrderPushForUid(String uid) {
+        if (uid == null || uid.isEmpty()) {
+            return false;
+        }
+        if (uid.equals(MainActivity.uid)) {
+            return true;
+        }
+        if (MainActivity.uid_Double != null && uid.equals(MainActivity.uid_Double)) {
+            return true;
+        }
+        String persisted = ExecutionStatusViewModel.getPersistedActiveUid();
+        if (uid.equals(persisted)) {
+            return true;
+        }
+        String doubleUid = ExecutionStatusViewModel.getPersistedDoubleUid();
+        if (uid.equals(doubleUid)) {
+            return true;
+        }
+        Object uidFcm = MyApplication.sharedPreferencesHelperMain.getValue("uid_fcm", "");
+        return uid.equals(String.valueOf(uidFcm));
     }
 
     private void applyDeclinedToActiveOrder(String uid) {

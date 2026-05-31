@@ -28,6 +28,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavController;
 import androidx.navigation.NavDestination;
 import androidx.navigation.NavOptions;
@@ -62,6 +64,9 @@ import retrofit2.Response;
 
 public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
     private static final String TAG = "MyBottomSheetErrorFragment";
+    public static final String TAG_SCHEDULED_TRIPS = "order_to_cancel_true_sheet";
+    private static long lastScheduledTripsShownAtMs = 0L;
+    private static final long SCHEDULED_TRIPS_DEBOUNCE_MS = 8000L;
     TextView textViewInfo;
     AppCompatButton btn_help, btn_ok;
     String errorMessage;
@@ -764,6 +769,31 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
      */
     public void setOnDismissListener(Runnable listener) {
         this.onDismissListener = listener;
+    }
+
+    /** Показывает «У вас есть запланированные поездки» не чаще одного раза за сессию/интервал. */
+    public static void showScheduledTripsNotice(@Nullable FragmentManager fragmentManager, @NonNull Context context) {
+        if (fragmentManager == null) {
+            return;
+        }
+        Fragment existing = fragmentManager.findFragmentByTag(TAG_SCHEDULED_TRIPS);
+        if (existing instanceof MyBottomSheetErrorFragment && existing.isAdded()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastScheduledTripsShownAtMs < SCHEDULED_TRIPS_DEBOUNCE_MS) {
+            return;
+        }
+        lastScheduledTripsShownAtMs = now;
+        MyBottomSheetErrorFragment sheet = new MyBottomSheetErrorFragment(
+                context.getString(R.string.order_to_cancel_true));
+        if (fragmentManager.isStateSaved()) {
+            fragmentManager.beginTransaction()
+                    .add(sheet, TAG_SCHEDULED_TRIPS)
+                    .commitAllowingStateLoss();
+        } else {
+            sheet.show(fragmentManager, TAG_SCHEDULED_TRIPS);
+        }
     }
 
 }

@@ -201,6 +201,8 @@ public class FinishSeparateFragment extends Fragment {
     private boolean isTaskRunning = false;
     private  boolean isTaskCancelled = false;
     private boolean statusPollPaused = false;
+    /** Опрос статуса после сбоя cancel HTTP — не возвращать UI «ищем авто» сразу. */
+    private int cancelFailureWatchRemaining = 0;
     private Runnable cancelWatchPoll;
     /** UID заказа, выбранного при открытии экрана (список «В работе» или новый заказ). */
     @Nullable
@@ -522,7 +524,10 @@ public class FinishSeparateFragment extends Fragment {
         };
 
         cancelWatchPoll = () -> {
-            if (!isAdded() || canceled || !statusPollPaused) {
+            if (!isAdded() || canceled) {
+                return;
+            }
+            if (!statusPollPaused) {
                 return;
             }
             try {
@@ -530,9 +535,19 @@ public class FinishSeparateFragment extends Fragment {
             } catch (ParseException e) {
                 Logger.e(context, TAG, "cancelWatchPoll: " + e.getMessage());
             }
-            if (statusPollPaused && !canceled && isAdded() && handlerStatus != null) {
-                HandlerCompat.postDelayed(handlerStatus, cancelWatchPoll, null, 4000);
+            if (canceled || !isAdded() || handlerStatus == null) {
+                return;
             }
+            if (cancelRequestInFlight) {
+                scheduleCancelWatchPoll();
+                return;
+            }
+            if (cancelFailureWatchRemaining > 0) {
+                cancelFailureWatchRemaining--;
+                scheduleCancelWatchPoll();
+                return;
+            }
+            resumeStatusPollingAfterCancelFailure();
         };
 
         btn_again = root.findViewById(R.id.btn_again);
@@ -1126,9 +1141,6 @@ public class FinishSeparateFragment extends Fragment {
         ExecutionStatusViewModel.setCancelInFlightPref(false);
         activeCancelCall = null;
         cancel_btn_click = false;
-        canceled = false;
-        statusPollPaused = false;
-        stopCancelWatchPoll();
         if (context == null || !isAdded()) {
             return;
         }
@@ -1140,6 +1152,21 @@ public class FinishSeparateFragment extends Fragment {
         if (viewModel != null) {
             viewModel.setStatusNalUpdate(false);
         }
+        cancelFailureWatchRemaining = 8;
+        statusPollPaused = true;
+        scheduleCancelWatchPoll();
+        Logger.d(context, TAG, "handleCancelRequestFailed: watching status before resume, polls=" + cancelFailureWatchRemaining);
+    }
+
+    private void resumeStatusPollingAfterCancelFailure() {
+        cancelFailureWatchRemaining = 0;
+        stopCancelWatchPoll();
+        statusPollPaused = false;
+        canceled = false;
+        if (context == null || !isAdded()) {
+            return;
+        }
+        Logger.d(context, TAG, "resumeStatusPollingAfterCancelFailure: order still active on server");
         try {
             statusOrder();
         } catch (ParseException e) {
@@ -1165,6 +1192,7 @@ public class FinishSeparateFragment extends Fragment {
             return;
         }
         final String uidToCancel = resolveActiveOrderUid();
+        cancelFailureWatchRemaining = 0;
         cancelRequestInFlight = true;
         ExecutionStatusViewModel.setCancelInFlightPref(true);
         cancelShowDialogAddCost();
@@ -1183,8 +1211,8 @@ public class FinishSeparateFragment extends Fragment {
         final boolean useDoubleEndpoint = url.contains("webordersCancelDouble")
                 || url.contains("webordersCancelVod");
         activeCancelCall = useDoubleEndpoint
-                ? ApiClient.getApiService().cancelOrderDouble(url)
-                : ApiClient.getApiService().cancelOrder(url);
+                ? ApiClient.getCancelApiService().cancelOrderDouble(url)
+                : ApiClient.getCancelApiService().cancelOrder(url);
         activeCancelCall.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
@@ -1985,12 +2013,13 @@ public class FinishSeparateFragment extends Fragment {
 
     /** Не перезаписывать UI отмены ответом опроса «ищем авто». */
     private boolean shouldIgnoreStatusPollingUi() {
-        return canceled || cancelRequestInFlight;
+        return canceled || cancelRequestInFlight || cancelFailureWatchRemaining > 0;
     }
 
     private void finishCancelInFlightState() {
         cancelRequestInFlight = false;
         ExecutionStatusViewModel.setCancelInFlightPref(false);
+        cancelFailureWatchRemaining = 0;
         stopCancelWatchPoll();
         statusPollPaused = false;
         if (activeCancelCall != null && !activeCancelCall.isCanceled()) {

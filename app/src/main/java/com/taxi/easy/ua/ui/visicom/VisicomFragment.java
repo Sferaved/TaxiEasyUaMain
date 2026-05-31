@@ -4656,15 +4656,11 @@ public class VisicomFragment extends Fragment {
         String[] array = databaseHelper.readRouteCancel();
         Logger.d(context, TAG, "processRouteList: array " + Arrays.toString(array));
         if (array != null) {
-            String message = context.getString(R.string.order_to_cancel_true);
             NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
             int currentDestination = navController.getCurrentDestination().getId();
 
             if (currentDestination == R.id.nav_visicom) {
-                MyBottomSheetErrorFragment myBottomSheetMessageFragment = new MyBottomSheetErrorFragment(message);
-                fragmentManager.beginTransaction()
-                        .add(myBottomSheetMessageFragment, myBottomSheetMessageFragment.getTag())
-                        .commitAllowingStateLoss();
+                MyBottomSheetErrorFragment.showScheduledTripsNotice(fragmentManager, context);
             }
 
         } else {

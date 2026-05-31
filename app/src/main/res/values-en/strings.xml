@@ -545,6 +545,13 @@
     <string name="status_on_route">En route</string>
     <string name="status_completed">Completed</string>
     <string name="status_cancelled">Cancelled</string>
+    <string name="notification_channel_general">General notifications</string>
+    <string name="notification_channel_cancel">Order cancellation</string>
+    <string name="notification_channel_payment">Payment error</string>
+    <string name="notification_channel_car_found">Car found</string>
+    <string name="notification_cancel_title">%1$s — cancelled</string>
+    <string name="notification_payment_error_title">%1$s — payment</string>
+    <string name="notification_car_found_title">%1$s — car</string>
     <string name="status_no_driver">No data about the car</string>
     <string name="status_client_cancelled">Cancelled by client</string>
     <string name="status_unknown">Unknown</string>

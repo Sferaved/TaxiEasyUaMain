@@ -583,9 +583,7 @@ public class AccountFragment extends Fragment {
         if (array != null) {
             out_but.setVisibility(GONE);
             del_but.setVisibility(GONE);
-            String message = getString(R.string.order_to_cancel_true);
-            MyBottomSheetErrorFragment myBottomSheetMessageFragment = new MyBottomSheetErrorFragment(message);
-            myBottomSheetMessageFragment.show(getChildFragmentManager(), myBottomSheetMessageFragment.getTag());
+            MyBottomSheetErrorFragment.showScheduledTripsNotice(getChildFragmentManager(), requireContext());
         } else {
             dbH.clearTableCancel();
             dbHUid.clearTableCancel();

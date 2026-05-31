@@ -549,6 +549,13 @@
     <string name="status_on_route">В пути</string>
     <string name="status_completed">Завершена</string>
     <string name="status_cancelled">Отменена</string>
+    <string name="notification_channel_general">Общие уведомления</string>
+    <string name="notification_channel_cancel">Отмена заказа</string>
+    <string name="notification_channel_payment">Ошибка оплаты</string>
+    <string name="notification_channel_car_found">Авто найдено</string>
+    <string name="notification_cancel_title">%1$s — отмена</string>
+    <string name="notification_payment_error_title">%1$s — оплата</string>
+    <string name="notification_car_found_title">%1$s — авто</string>
     <string name="status_no_driver">Нет данных об авто</string>
     <string name="status_client_cancelled">Отменена клиентом</string>
     <string name="status_unknown">Неизвестно</string>

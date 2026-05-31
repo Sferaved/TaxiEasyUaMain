@@ -23,6 +23,7 @@ import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.location.Location;
 import android.location.LocationManager;
@@ -298,7 +299,7 @@ public class OpenStreetMapFragment extends Fragment {
             map.invalidate();
 
             progressBar.setVisibility(View.GONE);
-            hideCenterMarker();
+            updateCenterMarkerVisibility();
 
             Logger.d(ctx, TAG, "Карта отрисована");
         } catch (Exception e) {
@@ -320,7 +321,7 @@ public class OpenStreetMapFragment extends Fragment {
         map.invalidate();
 
         progressBar.setVisibility(View.GONE);
-        hideCenterMarker();
+        updateCenterMarkerVisibility();
 
 //        Toast.makeText(ctx, "Карта загружена с fallback: " + reason, Toast.LENGTH_SHORT).show();
     }
@@ -439,8 +440,7 @@ public class OpenStreetMapFragment extends Fragment {
     private void initializeUI() {
         progressBar = binding.progressBar;
         center_marker = binding.centerMarker;
-        updateCenterMarkerIcon();
-        hideCenterMarker();
+        updateCenterMarkerVisibility();
 
         progressBar.setVisibility(View.VISIBLE);
 
@@ -544,6 +544,9 @@ public class OpenStreetMapFragment extends Fragment {
                 downX = event.getX();
                 downY = event.getY();
                 isMapDragging = false;
+                if (isMarkerEditMode()) {
+                    updateCenterMarkerVisibility();
+                }
 
             } else if (action == MotionEvent.ACTION_MOVE) {
                 // Проверяем, было ли перемещение
@@ -553,6 +556,9 @@ public class OpenStreetMapFragment extends Fragment {
 
                 if (distance > MIN_DRAG_DISTANCE) {
                     isMapDragging = true;
+                }
+                if (isMarkerEditMode()) {
+                    updateCenterMarkerVisibility();
                 }
                 updateZoomLevel();
 
@@ -605,7 +611,7 @@ public class OpenStreetMapFragment extends Fragment {
         if (startPoint == null && isValidRouteCoordinate(startLat, startLan)) {
             startPoint = new GeoPoint(startLat, startLan);
         }
-        updateFinishMarkerOnMap();
+        updateCenterMarkerVisibility();
         redrawRouteToFinish(endPoint);
         try {
             dialogMarkersEndPoint(ctx);
@@ -622,7 +628,7 @@ public class OpenStreetMapFragment extends Fragment {
         startPoint = centerPoint;
         startLat = centerPoint.getLatitude();
         startLan = centerPoint.getLongitude();
-        updateStartMarkerOnMap();
+        updateCenterMarkerVisibility();
         redrawRouteFromStart();
         try {
             dialogMarkerStartPoint(ctx);
@@ -684,7 +690,7 @@ public class OpenStreetMapFragment extends Fragment {
         }
         removeTextOverlay("finishMarker");
         String prefix = unuString != null ? unuString : "";
-        Overlay textOverlay = createTextOverlay(point, "2." + prefix + address.trim());
+        Overlay textOverlay = createTextOverlay(point, "2." + prefix + address.trim(), "finishMarker");
         finishTextOverlay = textOverlay;
         map.getOverlays().add(textOverlay);
         map.invalidate();
@@ -876,9 +882,48 @@ public class OpenStreetMapFragment extends Fragment {
                     + " distinct=" + finishDistinct);
         }
 
-        hideCenterMarker();
+        updateCenterMarkerVisibility();
 
         map.invalidate();
+    }
+
+    private boolean isMarkerEditMode() {
+        return "startMarker".equals(markerType) || "finishMarker".equals(markerType);
+    }
+
+    private void updateCenterMarkerVisibility() {
+        if (center_marker == null) {
+            return;
+        }
+        if (isMarkerEditMode()) {
+            syncEditModeOverlays();
+            updateCenterMarkerIcon();
+            center_marker.setVisibility(View.VISIBLE);
+            center_marker.setTranslationZ(8f);
+            center_marker.bringToFront();
+        } else {
+            hideCenterMarker();
+        }
+    }
+
+    /** В режиме выбора точки — только центральный пин; маркер на карте убираем, чтобы не путать при перетаскивании. */
+    private void syncEditModeOverlays() {
+        if (!isMarkerEditMode() || map == null) {
+            return;
+        }
+        if ("startMarker".equals(markerType)) {
+            if (startMarkerObj != null) {
+                map.getOverlays().remove(startMarkerObj);
+                startMarkerObj = null;
+                removeTextOverlay("startMarker");
+            }
+        } else if ("finishMarker".equals(markerType)) {
+            if (finishMarkerObj != null) {
+                map.getOverlays().remove(finishMarkerObj);
+                finishMarkerObj = null;
+                removeTextOverlay("finishMarker");
+            }
+        }
     }
 
     private void hideCenterMarker() {
@@ -1140,20 +1185,15 @@ public class OpenStreetMapFragment extends Fragment {
         });
     }
 
-    // Подготовка маркера перед API вызовом — сразу показываем пин, адрес обновится после ответа
+    // Подготовка маркера перед API вызовом — показываем центральный пин (не дублируем маркером на подложке)
     private void prepareMarker() {
         if (map == null) {
             Logger.e(ctx, TAG, "MapView is null, cannot prepare marker");
             return;
         }
-        if ("startMarker".equals(markerType)) {
-            updateStartMarkerOnMap();
-            Logger.d(ctx, TAG, "Start marker shown immediately before geocode");
-        } else if ("finishMarker".equals(markerType)) {
-            if (endPoint != null || isValidRouteCoordinate(finishLat, finishLan)) {
-                updateFinishMarkerOnMap();
-            }
-            Logger.d(ctx, TAG, "Finish marker shown immediately before geocode");
+        if ("startMarker".equals(markerType) || "finishMarker".equals(markerType)) {
+            updateCenterMarkerVisibility();
+            Logger.d(ctx, TAG, "Center pin shown before geocode, markerType=" + markerType);
         } else {
             Logger.e(ctx, TAG, "Invalid markerType: " + markerType);
             FirebaseCrashlytics.getInstance().recordException(new Exception("Invalid markerType: " + markerType));
@@ -1473,6 +1513,13 @@ public class OpenStreetMapFragment extends Fragment {
                 role = markerType;
             }
 
+            if (isMarkerEditMode() && role.equals(markerType)) {
+                updateCenterMarkerVisibility();
+                showEditModeAddressLabel(role, lat, lon, title, prefix);
+                Logger.d(context, TAG, "Edit mode: center pin + address label at " + lat + ", " + lon);
+                return;
+            }
+
             // Удаляем старый маркер и подпись для соответствующей роли
             if ("startMarker".equals(role)) {
                 if (startMarkerObj != null) {
@@ -1503,6 +1550,7 @@ public class OpenStreetMapFragment extends Fragment {
                 } else if ("startMarker".equals(related)) {
                     markerType = "startMarker";
                 }
+                updateCenterMarkerVisibility();
                 return false; // стандартное поведение (InfoWindow), если оно включено
             });
 
@@ -1513,7 +1561,7 @@ public class OpenStreetMapFragment extends Fragment {
             map.getOverlays().add(marker);
 
             // Add custom text overlay for persistent label (отдельно для старта и финиша)
-            Overlay textOverlay = createTextOverlay(new GeoPoint(lat, lon), prefix + unuString + title);
+            Overlay textOverlay = createTextOverlay(new GeoPoint(lat, lon), prefix + unuString + title, role);
             if ("startMarker".equals(role)) {
                 if (startTextOverlay != null) {
                     map.getOverlays().remove(startTextOverlay);
@@ -1567,75 +1615,159 @@ public class OpenStreetMapFragment extends Fragment {
     }
 
 
-    private Overlay createTextOverlay(GeoPoint point, String text) {
+    private void showEditModeAddressLabel(String role, double lat, double lon, String title, String prefix) {
+        if (map == null) {
+            return;
+        }
+        removeTextOverlay(role);
+        String label = prefix + (unuString != null ? unuString : "") + title;
+        Overlay overlay = createTextOverlay(new GeoPoint(lat, lon), label, role);
+        if ("startMarker".equals(role)) {
+            startTextOverlay = overlay;
+        } else if ("finishMarker".equals(role)) {
+            finishTextOverlay = overlay;
+        }
+        map.getOverlays().add(overlay);
+        map.invalidate();
+    }
+
+    private int resolveRoleAccentColor(Context context, @Nullable String role) {
+        if ("finishMarker".equals(role)) {
+            return ContextCompat.getColor(context, R.color.map_pin_finish);
+        }
+        if ("startMarker".equals(role)) {
+            return ContextCompat.getColor(context, R.color.map_pin_start);
+        }
+        return ContextCompat.getColor(context, R.color.zamov);
+    }
+
+    @Nullable
+    private String resolveRoleHeader(Context context, @Nullable String role) {
+        if ("startMarker".equals(role)) {
+            return context.getString(R.string.startPoint);
+        }
+        if ("finishMarker".equals(role)) {
+            return context.getString(R.string.end_point_marker);
+        }
+        return null;
+    }
+
+    private String stripLabelPrefix(String text) {
+        if (text == null) {
+            return "";
+        }
+        String cleaned = text.trim();
+        if (cleaned.startsWith("1.") || cleaned.startsWith("2.")) {
+            cleaned = cleaned.substring(2).trim();
+        }
+        if (unuString != null && cleaned.startsWith(unuString)) {
+            cleaned = cleaned.substring(unuString.length()).trim();
+        }
+        return cleaned;
+    }
+
+    private Overlay createTextOverlay(GeoPoint point, String text, @Nullable String role) {
         return new Overlay() {
             @Override
             public void draw(Canvas canvas, MapView mapView, boolean shadow) {
-                if (shadow) return; // Skip shadow pass
+                if (shadow) {
+                    return;
+                }
+
+                Context context = mapView.getContext();
+                float density = context.getResources().getDisplayMetrics().density;
+                int accentColor = resolveRoleAccentColor(context, role);
+                String header = resolveRoleHeader(context, role);
+                String body = stripLabelPrefix(text);
+                if (body.isEmpty()) {
+                    return;
+                }
 
                 Projection projection = mapView.getProjection();
                 Point screenPoint = new Point();
                 projection.toPixels(point, screenPoint);
 
-                // Настройка TextPaint для текста
-                TextPaint textPaint = new TextPaint();
-                textPaint.setColor(Color.BLACK); // Черный текст
-                textPaint.setTextSize(48); // ~14sp
-                textPaint.setAntiAlias(true);
+                int maxWidth = (int) (mapView.getWidth() * 0.29f);
+                if (maxWidth < (int) (75 * density)) {
+                    maxWidth = (int) (90 * density);
+                }
+                int paddingH = (int) (8 * density);
+                int paddingV = (int) (5 * density);
+                int accentBarHeight = header != null ? (int) (22 * density) : 0;
+                int cornerRadius = (int) (8 * density);
+                int arrowHeight = (int) (6 * density);
+                int pinOffset = (int) (58 * density);
 
-                // Настройка Paint для фона
-                Paint backgroundPaint = new Paint();
-                backgroundPaint.setColor(Color.WHITE); // Белый фон
-                backgroundPaint.setAlpha(230); // Полупрозрачность
-                backgroundPaint.setAntiAlias(true);
+                TextPaint headerPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+                headerPaint.setColor(Color.WHITE);
+                headerPaint.setTextSize(10.5f * density);
+                headerPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
 
-                // Настройка Paint для обводки
-                Paint borderPaint = new Paint();
-                borderPaint.setColor(Color.GRAY); // Серая обводка
-                borderPaint.setStyle(Paint.Style.STROKE);
-                borderPaint.setStrokeWidth(2);
-                borderPaint.setAntiAlias(true);
+                TextPaint bodyPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+                bodyPaint.setColor(Color.parseColor("#1F2937"));
+                bodyPaint.setTextSize(12.5f * density);
+                bodyPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
 
-                // Параметры для фона
-                int padding = 10; // Отступ внутри фона
-                int fixedWidth = 700; // Фиксированная ширина
-                int arrowHeight = 30; // Высота стрелки
+                int bodyWidth = maxWidth - paddingH * 2;
+                StaticLayout bodyLayout = StaticLayout.Builder
+                        .obtain(body, 0, body.length(), bodyPaint, bodyWidth)
+                        .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                        .setLineSpacing(0f, 1.05f)
+                        .build();
 
-                // Создаем StaticLayout для переноса текста
-                StaticLayout textLayout = new StaticLayout(
-                        text, textPaint, fixedWidth - padding * 2, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false
+                int bodyHeight = bodyLayout.getHeight();
+                int totalHeight = accentBarHeight + bodyHeight + paddingV * 2;
+
+                float left = screenPoint.x - maxWidth / 2f;
+                float top = screenPoint.y - totalHeight - arrowHeight - pinOffset;
+                float right = left + maxWidth;
+                float bottom = top + totalHeight;
+
+                Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                shadowPaint.setColor(Color.argb(36, 0, 0, 0));
+                RectF shadowRect = new RectF(
+                        left + density,
+                        top + 2 * density,
+                        right + density,
+                        bottom + 2 * density
                 );
-                int textHeight = textLayout.getHeight();
-                int height = textHeight + padding * 2;
+                canvas.drawRoundRect(shadowRect, cornerRadius, cornerRadius, shadowPaint);
 
-                // Координаты для фона (центрируем над маркером)
-                float left = screenPoint.x - (float) fixedWidth / 2;
-                float top = screenPoint.y - height - arrowHeight - 120; // Подняли еще выше (было -90, теперь -140)
-                float right = left + fixedWidth;
-                float bottom = top + height;
+                Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                bgPaint.setColor(Color.WHITE);
+                RectF bgRect = new RectF(left, top, right, bottom);
+                canvas.drawRoundRect(bgRect, cornerRadius, cornerRadius, bgPaint);
 
-                // Включаем тень для фона
-                backgroundPaint.setShadowLayer(4, 2, 2, Color.argb(100, 0, 0, 0));
+                if (header != null && accentBarHeight > 0) {
+                    Paint accentPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    accentPaint.setColor(accentColor);
+                    RectF accentRect = new RectF(left, top, right, top + accentBarHeight);
+                    canvas.drawRoundRect(accentRect, cornerRadius, cornerRadius, accentPaint);
+                    canvas.drawRect(left, top + accentBarHeight - cornerRadius, right, top + accentBarHeight, accentPaint);
 
-                // Рисуем фон (прямоугольник с закругленным углом)
-                RectF backgroundRect = new RectF(left, top, right, bottom);
-                canvas.drawRoundRect(backgroundRect, 10, 10, backgroundPaint);
-                canvas.drawRoundRect(backgroundRect, 10, 10, borderPaint);
+                    float headerX = left + paddingH;
+                    float headerY = top + accentBarHeight - (paddingV * 0.6f);
+                    canvas.drawText(header, headerX, headerY, headerPaint);
+                }
 
-                // Рисуем "стрелку" (треугольник) внизу фона
+                Paint borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                borderPaint.setColor(accentColor);
+                borderPaint.setStyle(Paint.Style.STROKE);
+                borderPaint.setStrokeWidth(Math.max(1f, density));
+                canvas.drawRoundRect(bgRect, cornerRadius, cornerRadius, borderPaint);
+
                 Path arrowPath = new Path();
-                float arrowWidth = 20;
-                arrowPath.moveTo(screenPoint.x - arrowWidth / 2, bottom);
-                arrowPath.lineTo(screenPoint.x + arrowWidth / 2, bottom);
+                float arrowWidth = 10 * density;
+                arrowPath.moveTo(screenPoint.x - arrowWidth / 2f, bottom);
+                arrowPath.lineTo(screenPoint.x + arrowWidth / 2f, bottom);
                 arrowPath.lineTo(screenPoint.x, bottom + arrowHeight);
                 arrowPath.close();
-                canvas.drawPath(arrowPath, backgroundPaint); // Фон стрелки
-                canvas.drawPath(arrowPath, borderPaint); // Обводка стрелки
+                canvas.drawPath(arrowPath, bgPaint);
+                canvas.drawPath(arrowPath, borderPaint);
 
-                // Рисуем текст с переносом
                 canvas.save();
-                canvas.translate(left + padding, top + padding);
-                textLayout.draw(canvas);
+                canvas.translate(left + paddingH, top + accentBarHeight + paddingV);
+                bodyLayout.draw(canvas);
                 canvas.restore();
             }
         };

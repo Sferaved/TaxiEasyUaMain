@@ -18,6 +18,7 @@ public class ApiClient {
     static String BASE_URL = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
 
     private static Retrofit retrofit = null;
+    private static Retrofit cancelRetrofit = null;
 
     public static ApiService getApiService() {
         //Логирование****
@@ -44,5 +45,31 @@ public class ApiClient {
                     .build();
         }
         return retrofit.create(ApiService.class);
+    }
+
+    /** Отмена заказа — одна попытка без RetryInterceptor, чтобы не дублировать cancel на сервере. */
+    public static ApiService getCancelApiService() {
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(loggingInterceptor)
+                .connectTimeout(20, TimeUnit.SECONDS)
+                .writeTimeout(20, TimeUnit.SECONDS)
+                .readTimeout(20, TimeUnit.SECONDS)
+                .build();
+
+        if (cancelRetrofit == null) {
+            Gson gson = new GsonBuilder()
+                    .setLenient()
+                    .create();
+
+            cancelRetrofit = new Retrofit.Builder()
+                    .baseUrl(BASE_URL)
+                    .client(client)
+                    .addConverterFactory(GsonConverterFactory.create(gson))
+                    .build();
+        }
+        return cancelRetrofit.create(ApiService.class);
     }
 }
