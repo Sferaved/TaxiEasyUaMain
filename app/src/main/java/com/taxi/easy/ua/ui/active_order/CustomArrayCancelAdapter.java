@@ -276,7 +276,6 @@ public class CustomArrayCancelAdapter extends ArrayAdapter<String> {
         bundle.putString("messageFondy_key", messageFondy);
         bundle.putString("messageCost_key", Objects.requireNonNull(sendUrlMap.get("orderWeb")));
         bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
-        bundle.putString("card_payment_key", "no");
         bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
         bundle.putString("dispatching_order_uid_Double", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid_Double")));
 

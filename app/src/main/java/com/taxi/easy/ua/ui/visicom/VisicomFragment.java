@@ -102,6 +102,7 @@ import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
 import com.taxi.easy.ua.utils.auth.FirebaseConsentManager;
 import com.taxi.easy.ua.utils.blacklist.BlacklistManager;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
+import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
@@ -1650,8 +1651,17 @@ public class VisicomFragment extends Fragment {
                 String rectoken = getCheckRectoken(context);
                 Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
                 if (!rectoken.isEmpty()) {
-                    MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                    wfpInvoice = MainActivity.order_id;
+                    String activeUid = MainActivity.uid;
+                    String savedRef = activeUid != null && !activeUid.isEmpty()
+                            ? PaymentSessionHelper.getWfpOrderRef(activeUid)
+                            : null;
+                    if (savedRef != null) {
+                        MainActivity.order_id = savedRef;
+                        wfpInvoice = savedRef;
+                    } else {
+                        MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+                        wfpInvoice = MainActivity.order_id;
+                    }
                 }
             }
 
@@ -2228,6 +2238,9 @@ public class VisicomFragment extends Fragment {
             if (MainActivity.uid != null && !MainActivity.uid.isEmpty()) {
                 sharedPreferencesHelperMain.saveValue("uid_fcm", MainActivity.uid);
                 sharedPreferencesHelperMain.saveValue("last_car_found_notify_uid", "");
+                if (MainActivity.order_id != null && !MainActivity.order_id.isEmpty()) {
+                    PaymentSessionHelper.saveWfpOrderRef(MainActivity.uid, MainActivity.order_id);
+                }
             }
             ExecutionStatusViewModel.resetNewOrderSession(MainActivity.uid);
             Logger.d(context, "MainActivity.uid", "MainActivity.uid 1 " + MainActivity.uid);
@@ -3409,6 +3422,10 @@ public class VisicomFragment extends Fragment {
 
     private void requestVisicomCost(String source) {
         if (!isAdded() || context == null) {
+            return;
+        }
+        if (MainActivity.uid != null && !MainActivity.uid.isEmpty()) {
+            Logger.d(context, TAG, "visicomCost пропущен (активный заказ), источник: " + source);
             return;
         }
         List<String> userInfo = logCursor(MainActivity.TABLE_USER_INFO, context);

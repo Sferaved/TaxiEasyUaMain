@@ -213,6 +213,7 @@ public class FinishSeparateFragment extends Fragment {
     private Call<StatusResponse> wfpStatusCheckCall;
     private Call<HoldResponse> holdVerifyCall;
     private int holdCheckGeneration;
+    private boolean holdVerifiedOnEnter;
 
     private ExecutionStatusViewModel viewModel;
     private String action;
@@ -426,7 +427,12 @@ public class FinishSeparateFragment extends Fragment {
         Logger.d(context, TAG, "MainActivity.uid: " + uid);
 
         if (uid != null && MainActivity.order_id != null && !MainActivity.order_id.isEmpty()) {
-            PaymentSessionHelper.saveWfpOrderRef(uid, MainActivity.order_id);
+            String savedRef = PaymentSessionHelper.getWfpOrderRef(uid);
+            if (savedRef == null) {
+                PaymentSessionHelper.saveWfpOrderRef(uid, MainActivity.order_id);
+            } else {
+                MainActivity.order_id = savedRef;
+            }
         }
 
         uid_Double = receivedMap.get("dispatching_order_uid_Double");
@@ -709,9 +715,6 @@ public class FinishSeparateFragment extends Fragment {
         if (PaymentSessionHelper.hasPaymentFailedForOrder(orderUid)) {
             return true;
         }
-        if (no_pay && isCardPayMethod()) {
-            return true;
-        }
         if (viewModel != null && "Declined".equals(viewModel.getTransactionStatus().getValue())) {
             return true;
         }
@@ -743,6 +746,10 @@ public class FinishSeparateFragment extends Fragment {
             return;
         }
         if ("Declined".equals(transactionStatus) || pendingDeclined || knownFailureAtCheck) {
+            if (holdVerifiedOnEnter) {
+                Logger.d(context, TAG, "applyPaymentStatusFromServer: hold verified — skip declined UI");
+                return;
+            }
             presentDeclinedUiOnFinish();
         }
     }
@@ -2739,17 +2746,17 @@ public class FinishSeparateFragment extends Fragment {
 
     @Nullable
     private String resolveWfpOrderReference() {
-        if (MainActivity.order_id != null && !MainActivity.order_id.isEmpty()) {
-            return MainActivity.order_id;
-        }
-        if (MainActivity.invoiceId != null && !MainActivity.invoiceId.isEmpty()) {
-            return MainActivity.invoiceId;
-        }
         String activeUid = resolveActiveOrderUid();
         String saved = PaymentSessionHelper.getWfpOrderRef(activeUid);
         if (saved != null) {
             MainActivity.order_id = saved;
             return saved;
+        }
+        if (MainActivity.order_id != null && !MainActivity.order_id.isEmpty()) {
+            return MainActivity.order_id;
+        }
+        if (MainActivity.invoiceId != null && !MainActivity.invoiceId.isEmpty()) {
+            return MainActivity.invoiceId;
         }
         Logger.w(context, TAG, "resolveWfpOrderReference: empty for uid=" + activeUid);
         return null;
@@ -2794,7 +2801,10 @@ public class FinishSeparateFragment extends Fragment {
                         ? response.body().getResult()
                         : null;
                 Logger.d(context, TAG, "verifyHold on enter: " + result);
-                if (result == null || !"hold".equals(result)) {
+                if ("hold".equals(result)) {
+                    holdVerifiedOnEnter = true;
+                    clearDeclinedPaymentUi();
+                } else {
                     applyPaymentStatusFromServer("Declined", false, true);
                 }
             }
@@ -2819,6 +2829,7 @@ public class FinishSeparateFragment extends Fragment {
 
         paymentCheckGeneration++;
         holdCheckGeneration++;
+        holdVerifiedOnEnter = false;
         final int checkGen = paymentCheckGeneration;
         final int holdGen = holdCheckGeneration;
         final boolean pendingDeclined = PendingTransactionHelper.hasPendingDeclinedForActiveOrder();
@@ -2836,13 +2847,7 @@ public class FinishSeparateFragment extends Fragment {
         verifyPaymentHoldOnEnter(holdGen);
 
         if (isCardPayMethod()) {
-            if (knownFailure) {
-                Logger.d(context, TAG, "refreshPaymentStatusOnEnter: known payment failure — show sheet now");
-                presentDeclinedUiOnFinish();
-                paymentCheckInProgress = false;
-            } else {
-                paymentCheckInProgress = true;
-            }
+            paymentCheckInProgress = true;
             requestWfpPaymentStatusCheck(true, checkGen, pendingDeclined, knownFailure);
         } else if (pendingDeclined) {
             applyPaymentStatusFromServer("Declined", true, true);
@@ -2949,6 +2954,10 @@ public class FinishSeparateFragment extends Fragment {
                 if (!call.isCanceled()) {
                     FirebaseCrashlytics.getInstance().recordException(t);
                     Logger.w(context, TAG, "WFP checkStatus failed, pendingDeclined=" + pendingDeclined);
+                }
+                if (holdVerifiedOnEnter) {
+                    Logger.d(context, TAG, "checkStatus failed but hold verified — ignore");
+                    return;
                 }
                 if (pendingDeclined || knownFailure || hasKnownPaymentFailure()) {
                     applyPaymentStatusFromServer("Declined", true, true);

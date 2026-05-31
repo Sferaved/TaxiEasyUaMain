@@ -24,6 +24,7 @@ import com.taxi.easy.ua.utils.cost.CostParseHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.payment.PendingTransactionHelper;
+import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
 
 import org.greenrobot.eventbus.EventBus;
 import org.json.JSONException;
@@ -407,6 +408,9 @@ public class CentrifugoManager {
 
             Log.d(TAG, "✅ Parsed - UID: " + orderUid + ", paySystemStatus: " + paySystemStatus);
             Log.d(TAG, "Current MainActivity.uid: " + MainActivity.uid);
+            if (MainActivity.order_id != null && !MainActivity.order_id.isEmpty()) {
+                PaymentSessionHelper.saveWfpOrderRef(orderUid, MainActivity.order_id);
+            }
             Log.d(TAG, "Context valid: " + isContextValid());
 
             // Пробуем обновить напрямую
@@ -470,6 +474,11 @@ public class CentrifugoManager {
             Log.d(TAG, "📦 Transaction event data: " + json.toString());
             Log.d(TAG, "Event UID: " + uid);
             Log.d(TAG, "Event Status: " + transactionStatus);
+
+            if ("WaitingAuthComplete".equals(transactionStatus)
+                    && MainActivity.order_id != null && !MainActivity.order_id.isEmpty()) {
+                PaymentSessionHelper.saveWfpOrderRef(uid, MainActivity.order_id);
+            }
 
             // Получаем UID из ViewModel
             String viewModelUid = viewModel.getUid().getValue();
@@ -708,7 +717,6 @@ public class CentrifugoManager {
             bundle.putString("messageFondy_key", messageFondy);
             bundle.putString("messageCost_key", Objects.requireNonNull(sendUrlMap.get("orderWeb")));
             bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
-            bundle.putString("card_payment_key", "no");
             bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
             bundle.putString("dispatching_order_uid_Double",
                     Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid_Double")));
