@@ -1687,25 +1687,25 @@ public class OpenStreetMapFragment extends Fragment {
                 Point screenPoint = new Point();
                 projection.toPixels(point, screenPoint);
 
-                int maxWidth = (int) (mapView.getWidth() * 0.29f);
-                if (maxWidth < (int) (75 * density)) {
-                    maxWidth = (int) (90 * density);
+                int maxWidth = (int) (mapView.getWidth() * 0.38f);
+                if (maxWidth < (int) (95 * density)) {
+                    maxWidth = (int) (110 * density);
                 }
-                int paddingH = (int) (8 * density);
-                int paddingV = (int) (5 * density);
-                int accentBarHeight = header != null ? (int) (22 * density) : 0;
+                int paddingH = (int) (10 * density);
+                int paddingV = (int) (6 * density);
+                int accentBarHeight = header != null ? (int) (26 * density) : 0;
                 int cornerRadius = (int) (8 * density);
                 int arrowHeight = (int) (6 * density);
                 int pinOffset = (int) (58 * density);
 
                 TextPaint headerPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
                 headerPaint.setColor(Color.WHITE);
-                headerPaint.setTextSize(10.5f * density);
+                headerPaint.setTextSize(13f * density);
                 headerPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
 
                 TextPaint bodyPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
                 bodyPaint.setColor(Color.parseColor("#1F2937"));
-                bodyPaint.setTextSize(12.5f * density);
+                bodyPaint.setTextSize(16f * density);
                 bodyPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
 
                 int bodyWidth = maxWidth - paddingH * 2;
