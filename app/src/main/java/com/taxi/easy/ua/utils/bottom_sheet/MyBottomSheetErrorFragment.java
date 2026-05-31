@@ -46,6 +46,7 @@ import com.taxi.easy.ua.ui.cities.api.CityService;
 import com.taxi.easy.ua.ui.home.ButtonVisibilityCallback;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.helpers.TelegramUtils;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
@@ -774,6 +775,9 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
     /** Показывает «У вас есть запланированные поездки» не чаще одного раза за сессию/интервал. */
     public static void showScheduledTripsNotice(@Nullable FragmentManager fragmentManager, @NonNull Context context) {
         if (fragmentManager == null) {
+            return;
+        }
+        if (!new DatabaseHelperUid(context).hasUpcomingScheduledOrders()) {
             return;
         }
         Fragment existing = fragmentManager.findFragmentByTag(TAG_SCHEDULED_TRIPS);

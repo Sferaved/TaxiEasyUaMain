@@ -216,6 +216,10 @@ public class FinishSeparateFragment extends Fragment {
     private Call<HoldResponse> holdVerifyCall;
     private int holdCheckGeneration;
     private boolean holdVerifiedOnEnter;
+    @Nullable
+    private String lastKnownPaymentStatus;
+    @Nullable
+    private String lastExecutionStatus;
 
     private ExecutionStatusViewModel viewModel;
     private String action;
@@ -445,8 +449,12 @@ public class FinishSeparateFragment extends Fragment {
         }
 
         text_status = root.findViewById(R.id.text_status);
-        text_status.setText( context.getString(R.string.ex_st_0));
-        text_status.startAnimation(blinkAnimation);
+        if (isViewingCompletedOrder()) {
+            text_status.setText(context.getString(R.string.ex_st_finished));
+        } else {
+            text_status.setText(context.getString(R.string.ex_st_0));
+            text_status.startAnimation(blinkAnimation);
+        }
 
 
         btn_add_cost = root.findViewById(R.id.btn_add_cost);
@@ -632,7 +640,10 @@ public class FinishSeparateFragment extends Fragment {
         String time_to_start_point = orderResponse.getTimeToStartPoint();
 
        action = orderResponse.getAction();
-
+        lastExecutionStatus = orderResponse.getExecutionStatus();
+        if (isOrderDispatched()) {
+            clearDeclinedPaymentUi();
+        }
 
         int closeReason = orderResponse.getCloseReason();
 
@@ -665,7 +676,7 @@ public class FinishSeparateFragment extends Fragment {
     public void handleTransactionStatusDeclined(String status, Context context) {
         Logger.d(context, TAG, "Transaction Status: " + status);
         if ("Declined".equals(status)) {
-            presentDeclinedUiOnFinish();
+            confirmDeclinedWithServerCheck();
         }
     }
 
@@ -680,9 +691,72 @@ public class FinishSeparateFragment extends Fragment {
         return "Approved".equals(status) || "WaitingAuthComplete".equals(status);
     }
 
+    /** Hold на сервере или Approved/WaitingAuthComplete от WFP. */
+    private boolean isPaymentVerified() {
+        if (holdVerifiedOnEnter) {
+            return true;
+        }
+        if (isApprovedPaymentStatus(lastKnownPaymentStatus)) {
+            return true;
+        }
+        if (viewModel != null && isApprovedPaymentStatus(viewModel.getTransactionStatus().getValue())) {
+            return true;
+        }
+        return false;
+    }
+
+    /** Заказ уже в работе — оплата не может считаться «зависшей». */
+    private boolean isOrderDispatched() {
+        if ((boolean) sharedPreferencesHelperMain.getValue("carFound", false)) {
+            return true;
+        }
+        if (lastExecutionStatus != null) {
+            switch (lastExecutionStatus) {
+                case "CarFound":
+                case "Running":
+                case "Executed":
+                    return true;
+            }
+        }
+        if (action != null) {
+            switch (action) {
+                case "Авто найдено":
+                case "На месте":
+                case "В пути":
+                case "Заказ выполнен":
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    /** Declined из push/Centrifugo — показываем шторку только после checkStatus WFP. */
+    private void confirmDeclinedWithServerCheck() {
+        if (!isAdded() || canceled || isViewingCompletedOrder()) {
+            return;
+        }
+        if (isPaymentVerified() || isOrderDispatched()) {
+            PendingTransactionHelper.clear();
+            clearDeclinedPaymentUi();
+            return;
+        }
+        if (isCardPayMethod()) {
+            requestWfpPaymentStatusCheck();
+        }
+    }
+
     /** Шторка смены способа оплаты после подтверждённого Declined. */
     public void presentDeclinedUiOnFinish() {
-        if (!isAdded() || canceled) {
+        if (!isAdded() || canceled || isViewingCompletedOrder()) {
+            return;
+        }
+        if (isPaymentVerified()) {
+            Logger.d(context, TAG, "presentDeclinedUiOnFinish: payment verified — skip");
+            return;
+        }
+        if (isOrderDispatched()) {
+            Logger.d(context, TAG, "presentDeclinedUiOnFinish: order dispatched — skip");
+            clearDeclinedPaymentUi();
             return;
         }
         FragmentManager fm = getParentFragmentManager();
@@ -716,6 +790,7 @@ public class FinishSeparateFragment extends Fragment {
     private void clearDeclinedPaymentUi() {
         PaymentErrorSheetHelper.dismiss(getParentFragmentManager());
         PaymentSessionHelper.clearPaymentFailedForOrder(resolveActiveOrderUid());
+        PendingTransactionHelper.clear();
         sharedPreferencesHelperMain.saveValue("add_show_flag", true);
         if (viewModel != null) {
             String current = viewModel.getTransactionStatus().getValue();
@@ -745,26 +820,31 @@ public class FinishSeparateFragment extends Fragment {
             boolean pendingDeclined,
             boolean knownFailureAtCheck
     ) {
-        if (!isAdded() || canceled) {
+        if (!isAdded() || canceled || isViewingCompletedOrder()) {
             return;
+        }
+        if (transactionStatus != null) {
+            lastKnownPaymentStatus = transactionStatus;
         }
         Logger.d(context, TAG, "applyPaymentStatusFromServer: status=" + transactionStatus
                 + " pendingDeclined=" + pendingDeclined
-                + " knownFailureAtCheck=" + knownFailureAtCheck);
+                + " knownFailureAtCheck=" + knownFailureAtCheck
+                + " holdVerified=" + holdVerifiedOnEnter);
 
-        if (isApprovedPaymentStatus(transactionStatus)) {
-            if (!knownFailureAtCheck && !hasKnownPaymentFailure()) {
-                clearDeclinedPaymentUi();
-            } else {
-                Logger.d(context, TAG, "ignore Approved from checkStatus — payment error state active");
-            }
+        if (isPaymentVerified() || isApprovedPaymentStatus(transactionStatus)) {
+            PendingTransactionHelper.clear();
+            clearDeclinedPaymentUi();
             return;
         }
-        if ("Declined".equals(transactionStatus) || pendingDeclined || knownFailureAtCheck) {
-            if (holdVerifiedOnEnter) {
-                Logger.d(context, TAG, "applyPaymentStatusFromServer: hold verified — skip declined UI");
-                return;
-            }
+
+        if (isOrderDispatched()) {
+            Logger.d(context, TAG, "applyPaymentStatusFromServer: order dispatched — ignore");
+            PendingTransactionHelper.clear();
+            clearDeclinedPaymentUi();
+            return;
+        }
+
+        if ("Declined".equals(transactionStatus)) {
             presentDeclinedUiOnFinish();
         }
     }
@@ -782,6 +862,11 @@ public class FinishSeparateFragment extends Fragment {
             pendingPaymentErrorSheetShow = null;
             if (!isAdded() || canceled || getActivity() == null) {
                 PaymentErrorSheetHelper.releaseShowLock();
+                return;
+            }
+            if (isPaymentVerified() || isOrderDispatched()) {
+                PaymentErrorSheetHelper.releaseShowLock();
+                clearDeclinedPaymentUi();
                 return;
             }
             FragmentManager fm = getParentFragmentManager();
@@ -1273,7 +1358,7 @@ public class FinishSeparateFragment extends Fragment {
         if (activity != null) {
             FinishSeparateFragment finish = findFinishFragment(activity.getSupportFragmentManager());
             if (finish != null && finish.isAdded()) {
-                finish.presentDeclinedUiOnFinish();
+                finish.confirmDeclinedWithServerCheck();
                 return;
             }
         }
@@ -1383,6 +1468,11 @@ public class FinishSeparateFragment extends Fragment {
                         if (shouldIgnoreStatusPollingUi()) {
                             Logger.d(context, TAG, "statusOrder onResponse ignored: cancel in progress");
                             return;
+                        }
+
+                        lastExecutionStatus = executionStatus;
+                        if (isOrderDispatched()) {
+                            clearDeclinedPaymentUi();
                         }
 
                         if (time_to_start_point != null && !time_to_start_point.isEmpty()) {
@@ -1730,6 +1820,7 @@ public class FinishSeparateFragment extends Fragment {
         boolean wasCarFound = (boolean) sharedPreferencesHelperMain.getValue("carFound", false);
 
         sharedPreferencesHelperMain.saveValue("carFound", true);
+        clearDeclinedPaymentUi();
 
         if (!wasCarFound && !com.taxi.easy.ua.androidx.startup.MyApplication.isInForeground()
                 && uid != null && !uid.isEmpty()) {
@@ -2011,9 +2102,39 @@ public class FinishSeparateFragment extends Fragment {
         return canceled;
     }
 
+    /** Заказ из архива (выполнен): required_time = epoch, без живого опроса и оплаты. */
+    private boolean isViewingCompletedOrder() {
+        String rt = required_time;
+        if ((rt == null || rt.isEmpty()) && receivedMap != null) {
+            rt = receivedMap.get("required_time");
+        }
+        return rt != null
+                && (rt.contains("1970") || rt.contains("01.01.1970"));
+    }
+
     /** Не перезаписывать UI отмены ответом опроса «ищем авто». */
     private boolean shouldIgnoreStatusPollingUi() {
-        return canceled || cancelRequestInFlight || cancelFailureWatchRemaining > 0;
+        return canceled
+                || cancelRequestInFlight
+                || cancelFailureWatchRemaining > 0
+                || isViewingCompletedOrder();
+    }
+
+    /** Просмотр выполненного заказа из списка — только данные из архива. */
+    private void applyArchivedCompletedOrderUi() {
+        if (!isAdded() || context == null) {
+            return;
+        }
+        stopCycle();
+        cancelShowDialogAddCost();
+        updateProgress(4);
+        text_status.setText(context.getString(R.string.ex_st_finished));
+        text_status.clearAnimation();
+        viewModel.hideCancelButton();
+        restoreOrderAgainButton();
+        setVisibility(GONE, btn_add_cost, btn_open, btn_options, btn_cancel_order,
+                textStatusCar, textCarMessage, countdownTextView, carProgressBar, progressSteps);
+        setVisibility(VISIBLE, text_full_message, textCost, textCostMessage);
     }
 
     private void finishCancelInFlightState() {
@@ -2413,8 +2534,11 @@ public class FinishSeparateFragment extends Fragment {
             if (PaymentErrorSheetHelper.isShowing(getParentFragmentManager())) {
                 return;
             }
-            if ("Declined".equals(status)) {
-                presentDeclinedUiOnFinish();
+            if (isViewingCompletedOrder()) {
+                return;
+            }
+            if ("Declined".equals(status) && !isPaymentVerified()) {
+                confirmDeclinedWithServerCheck();
             } else if (isApprovedPaymentStatus(status)) {
                 clearDeclinedPaymentUi();
             }
@@ -2834,7 +2958,8 @@ public class FinishSeparateFragment extends Fragment {
                     holdVerifiedOnEnter = true;
                     clearDeclinedPaymentUi();
                 } else {
-                    applyPaymentStatusFromServer("Declined", false, true);
+                    Logger.d(context, TAG,
+                            "verifyHold on enter: no active hold — wait for checkStatus (capture is OK)");
                 }
             }
 
@@ -2852,7 +2977,20 @@ public class FinishSeparateFragment extends Fragment {
      * При заходе на финиш: verifyHold + checkStatus для карты, затем шторка или снятие Declined.
      */
     private void refreshPaymentStatusOnEnter() {
-        if (!isAdded() || canceled) {
+        if (!isAdded() || canceled || isViewingCompletedOrder()) {
+            return;
+        }
+
+        if (isOrderDispatched()) {
+            PendingTransactionHelper.clear();
+            clearDeclinedPaymentUi();
+            if (uid != null && !uid.isEmpty()) {
+                try {
+                    statusOrder();
+                } catch (ParseException e) {
+                    FirebaseCrashlytics.getInstance().recordException(e);
+                }
+            }
             return;
         }
 
@@ -2878,8 +3016,6 @@ public class FinishSeparateFragment extends Fragment {
         if (isCardPayMethod()) {
             paymentCheckInProgress = true;
             requestWfpPaymentStatusCheck(true, checkGen, pendingDeclined, knownFailure);
-        } else if (pendingDeclined) {
-            applyPaymentStatusFromServer("Declined", true, true);
         }
 
         if (uid != null && !uid.isEmpty()) {
@@ -2908,18 +3044,12 @@ public class FinishSeparateFragment extends Fragment {
         if (!isAdded() || orderRef == null) {
             paymentCheckInProgress = false;
             Logger.w(context, TAG, "checkStatus skipped: no orderReference");
-            if (pendingDeclined || knownFailure) {
-                applyPaymentStatusFromServer("Declined", true, true);
-            }
             return;
         }
         Logger.d(context, TAG, "checkStatus orderRef=" + orderRef);
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
         if (listCity.size() < 2) {
             paymentCheckInProgress = false;
-            if (knownFailure || pendingDeclined) {
-                applyPaymentStatusFromServer("Declined", true, true);
-            }
             return;
         }
         String city = listCity.get(1);
@@ -2984,13 +3114,11 @@ public class FinishSeparateFragment extends Fragment {
                     FirebaseCrashlytics.getInstance().recordException(t);
                     Logger.w(context, TAG, "WFP checkStatus failed, pendingDeclined=" + pendingDeclined);
                 }
-                if (holdVerifiedOnEnter) {
-                    Logger.d(context, TAG, "checkStatus failed but hold verified — ignore");
+                if (holdVerifiedOnEnter || isPaymentVerified()) {
+                    Logger.d(context, TAG, "checkStatus failed but payment verified — ignore");
                     return;
                 }
-                if (pendingDeclined || knownFailure || hasKnownPaymentFailure()) {
-                    applyPaymentStatusFromServer("Declined", true, true);
-                }
+                Logger.w(context, TAG, "checkStatus failed — skip declined UI without confirmed status");
             }
         });
     }
@@ -3016,8 +3144,13 @@ public class FinishSeparateFragment extends Fragment {
         addCheck(context);
         reconcileOrderIdentityFromPersistedState();
         if (shouldIgnoreStatusPollingUi()) {
-            Logger.d(context, TAG, "onResume: skip polling — cancel UI active");
-            restoreOrderAgainButton();
+            if (isViewingCompletedOrder()) {
+                Logger.d(context, TAG, "onResume: archived completed order — read-only");
+                applyArchivedCompletedOrderUi();
+            } else {
+                Logger.d(context, TAG, "onResume: skip polling — cancel UI active");
+                restoreOrderAgainButton();
+            }
             btn_open.setOnClickListener(v -> btnOpen());
             return;
         }
@@ -3111,6 +3244,9 @@ public class FinishSeparateFragment extends Fragment {
         }
     }
     private void startAddCostDialog (int timeCheckout) {
+        if (isViewingCompletedOrder()) {
+            return;
+        }
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
         Logger.d(context, TAG, "payMetod startAddCostDialog " + pay_method);
 

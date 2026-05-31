@@ -209,4 +209,22 @@ public class DatabaseHelperUid extends SQLiteOpenHelper {
         db.close();
         return routeInfo;
     }
+
+    /** Есть ли в архиве заказы с реальным временем (не epoch 1970). */
+    public boolean hasUpcomingScheduledOrders() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(
+                "SELECT 1 FROM " + TABLE_CANCEL_INFO_UID
+                        + " WHERE required_time IS NOT NULL"
+                        + " AND TRIM(required_time) != ''"
+                        + " AND required_time NOT LIKE '%1970%'"
+                        + " LIMIT 1",
+                null);
+        boolean hasScheduled = cursor != null && cursor.moveToFirst();
+        if (cursor != null) {
+            cursor.close();
+        }
+        db.close();
+        return hasScheduled;
+    }
 }
