@@ -2102,14 +2102,9 @@ public class FinishSeparateFragment extends Fragment {
         return canceled;
     }
 
-    /** Заказ из архива (выполнен): required_time = epoch, без живого опроса и оплаты. */
+    /** Архивный просмотр выполненного заказа — только явный флаг, не epoch в required_time. */
     private boolean isViewingCompletedOrder() {
-        String rt = required_time;
-        if ((rt == null || rt.isEmpty()) && receivedMap != null) {
-            rt = receivedMap.get("required_time");
-        }
-        return rt != null
-                && (rt.contains("1970") || rt.contains("01.01.1970"));
+        return false;
     }
 
     /** Не перезаписывать UI отмены ответом опроса «ищем авто». */

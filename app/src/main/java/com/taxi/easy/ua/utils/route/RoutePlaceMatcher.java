@@ -1,6 +1,8 @@
 package com.taxi.easy.ua.utils.route;
 
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Сравнение адресов «откуда» и «куда», в т.ч. когда Visicom вернул uk/ru варианты одного населённого пункта.
@@ -26,6 +28,35 @@ public final class RoutePlaceMatcher {
         String shorter = from.length() <= to.length() ? from : to;
         String longer = from.length() <= to.length() ? to : from;
         return shorter.length() >= 12 && longer.contains(shorter);
+    }
+
+    /** «По городу»: одинаковые адреса/координаты или явный текст, без ложного isSameRoute. */
+    public static boolean isCityRideOrder(Map<String, String> map) {
+        if (map == null) {
+            return false;
+        }
+        String routeto = map.get("routeto");
+        if (routeto != null && (routeto.contains("по місту")
+                || routeto.contains("по городу")
+                || routeto.contains("around the city"))) {
+            return true;
+        }
+        if (Objects.equals(map.get("routefrom"), map.get("routeto"))) {
+            return true;
+        }
+        String lat = map.get("lat");
+        String lng = map.get("lng");
+        String fromLat = map.get("from_lat");
+        String fromLng = map.get("from_lng");
+        return lat != null && lng != null && fromLat != null && fromLng != null
+                && !"0".equals(lat) && lat.equals(fromLat) && lng.equals(fromLng);
+    }
+
+    public static boolean isEpochRequiredTime(String requiredTime) {
+        if (requiredTime == null || requiredTime.isEmpty()) {
+            return false;
+        }
+        return requiredTime.contains("1970") || requiredTime.contains("01.01.1970");
     }
 
     private static String safe(String value) {

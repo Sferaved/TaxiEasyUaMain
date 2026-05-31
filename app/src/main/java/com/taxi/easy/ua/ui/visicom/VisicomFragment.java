@@ -2071,12 +2071,7 @@ public class VisicomFragment extends Fragment {
         if (!"0".equals(orderWeb)) {
             String to_name;
 //            orderWeb = text_view_cost.getText().toString();
-            if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))
-                    || RoutePlaceMatcher.isSameRoute(
-                    sendUrlMap.get("routefrom"),
-                    sendUrlMap.get("routefromnumber"),
-                    sendUrlMap.get("routeto"),
-                    sendUrlMap.get("to_number"))) {
+            if (RoutePlaceMatcher.isCityRideOrder(sendUrlMap)) {
                 to_name = context.getString(R.string.on_city_tv);
                 Logger.d(context, TAG, "orderFinished: to_name 1 " + to_name);
                 if (!Objects.equals(sendUrlMap.get("lat"), "0")) {
