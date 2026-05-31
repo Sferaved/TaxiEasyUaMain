@@ -4,11 +4,11 @@ Write-Host ""
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $projectRoot
 
-$gradleFile = "app/build.gradle"
+$gradleFile = Join-Path $projectRoot "app/build.gradle"
 
 if (!(Test-Path $gradleFile)) {
     Write-Host "ERROR: $gradleFile not found" -ForegroundColor Red
-    exit
+    exit 1
 }
 
 # ===== 1. Read build.gradle =====
@@ -48,10 +48,14 @@ Write-Host ""
 $content = $content -replace "versionCode\s*=\s*\d+", "versionCode = $newVersionCode"
 $content = $content -replace "versionName\s*=\s*'[^']+'", "versionName = '$newVersionName'"
 
-# Сохраняем build.gradle с UTF-8 без BOM
 $utf8NoBom = New-Object System.Text.UTF8Encoding $false
-[System.IO.File]::WriteAllText($gradleFile, $content, $utf8NoBom)
-Write-Host "OK: build.gradle updated" -ForegroundColor Green
+try {
+    [System.IO.File]::WriteAllText($gradleFile, $content, $utf8NoBom)
+    Write-Host "OK: build.gradle updated" -ForegroundColor Green
+} catch {
+    Write-Host "ERROR: Failed to write build.gradle: $_" -ForegroundColor Red
+    exit 1
+}
 Write-Host ""
 
 # ===== 4. Update XML files (с сохранением форматирования) =====
@@ -63,15 +67,15 @@ $xmlFiles = @(
 )
 
 foreach ($file in $xmlFiles) {
-    if (!(Test-Path $file)) {
-        Write-Host "WARNING: File not found: $file"
+    $fullPath = Join-Path $projectRoot $file
+    if (!(Test-Path $fullPath)) {
+        Write-Host "WARNING: File not found: $fullPath"
         continue
     }
 
-    Write-Host "Updating: $file"
+    Write-Host "Updating: $fullPath"
 
-    # Читаем файл как текст с UTF-8
-    $content = Get-Content $file -Raw -Encoding UTF8
+    $content = Get-Content $fullPath -Raw -Encoding UTF8
 
     # Обновляем version_code (любое число после тега)
     $content = $content -replace '(?<=<string name="version_code">).*?(?=</string>)', $newVersionName
@@ -90,8 +94,7 @@ foreach ($file in $xmlFiles) {
         $content = $content -replace '(?<=<string name="version">).*?(?=</string>)', "# $newVersionName"
     }
 
-    # Сохраняем с UTF-8 без BOM
-    [System.IO.File]::WriteAllText($file, $content, $utf8NoBom)
+    [System.IO.File]::WriteAllText($fullPath, $content, $utf8NoBom)
     Write-Host "   OK: updated" -ForegroundColor Green
 }
 
@@ -151,11 +154,15 @@ if ($LASTEXITCODE -ne 0) {
 # Create tag
 $tagName = "v$newVersionName"
 Write-Host "Creating tag: $tagName" -ForegroundColor Yellow
-git tag $tagName
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: tag creation failed" -ForegroundColor Red
-    exit
+$tagExists = git tag -l $tagName
+if ($tagExists) {
+    Write-Host "Tag $tagName already exists, skipping tag creation" -ForegroundColor Yellow
+} else {
+    git tag $tagName
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: tag creation failed" -ForegroundColor Red
+        exit 1
+    }
 }
 
 # Спрашиваем про push
@@ -171,15 +178,16 @@ if ($pushConfirm -eq 'y' -or $pushConfirm -eq 'Y') {
         exit
     }
 
-    Write-Host "Pushing tag..." -ForegroundColor Yellow
-    git push origin $tagName
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "ERROR: tag push failed" -ForegroundColor Red
-        exit
+    if (-not $tagExists) {
+        Write-Host "Pushing tag..." -ForegroundColor Yellow
+        git push origin $tagName
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "ERROR: tag push failed" -ForegroundColor Red
+            exit 1
+        }
     }
 
-    Write-Host "OK: Git push completed, tag $tagName created and pushed" -ForegroundColor Green
+    Write-Host "OK: Git push completed, tag $tagName ready" -ForegroundColor Green
 } else {
     Write-Host "OK: Commit and tag created locally. Push skipped." -ForegroundColor Green
     Write-Host "To push later use: git push && git push origin $tagName/actions" -ForegroundColor Yellow
