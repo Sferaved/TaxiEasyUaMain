@@ -4187,6 +4187,9 @@ public class VisicomFragment extends Fragment {
 //                applyDiscountAndUpdateUI(cost, context);
 //                sharedPreferencesHelperMain.saveValue("old_cost","0");
 //            }
+        } else if ("run".equals(cityCheckActivity) && originLatitude != 0.0) {
+            Logger.d(context, ADDR_GUARD, "visicomCost: city=run, pickup/cost not ready — CityCheckActivity не сбрасываем");
+            return;
         } else {
             sharedPreferencesHelperMain.saveValue("CityCheckActivity", "**");
 
