@@ -894,13 +894,18 @@ public class VisicomFragment extends Fragment {
     }
 
     public void btnVisible(int visible) {
+        if (!isAdded() || binding == null) {
+            Logger.d(context, "BTN_VISIBLE", "Skipped: fragment detached or binding null");
+            return;
+        }
         Logger.d(context,"BTN_VISIBLE", "Метод вызван с параметром: " + getVisibilityString(visible));
 
-        // Всегда видимая кнопка администратора
-        binding.btnCallAdmin.setVisibility(View.VISIBLE);
-
-        // GPS кнопка всегда видна
-        binding.gpsbut.setVisibility(View.VISIBLE);
+        if (btnCallAdmin != null) {
+            btnCallAdmin.setVisibility(View.VISIBLE);
+        }
+        if (gpsBtn != null) {
+            gpsBtn.setVisibility(View.VISIBLE);
+        }
 
         if (visible == GONE || visible == INVISIBLE) {
             if (!CostCalculationProgressBar.isCalculationInProgress()) {
@@ -936,7 +941,9 @@ public class VisicomFragment extends Fragment {
     }
 
     private void showRetryMode() {
-
+        if (binding == null) {
+            return;
+        }
         binding.btnReset.setVisibility(VISIBLE);
         binding.btnReport.setVisibility(VISIBLE);
         binding.btnReport.setOnClickListener(v -> {
@@ -969,7 +976,9 @@ public class VisicomFragment extends Fragment {
     }
 
     private void showNormalMode() {
-        // Убираем gpsbut из этого списка
+        if (binding == null) {
+            return;
+        }
         binding.btnReset.setVisibility(GONE);
         binding.btnReport.setVisibility(GONE);
         setViewsVisibility(VISIBLE,
@@ -1943,7 +1952,6 @@ public class VisicomFragment extends Fragment {
     public void orderFinished() throws MalformedURLException {
         if (!isAdded() || getActivity() == null || getContext() == null) {
             Logger.d(null, TAG, "Fragment not attached, cannot order");
-            btnVisible(VISIBLE);
             return;
         }
 
