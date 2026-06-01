@@ -633,6 +633,10 @@ public class FinishSeparateFragment extends Fragment {
             OrderResponse orderResponse
     ) {
         assert orderResponse != null;
+        if (shouldIgnoreStatusPollingUi()) {
+            Logger.d(context, TAG, "updateUICardPayStatus ignored: terminal/cancel UI");
+            return;
+        }
 
         String orderCarInfo = orderResponse.getOrderCarInfo();
         String driverPhone = orderResponse.getDriverPhone();
@@ -647,7 +651,10 @@ public class FinishSeparateFragment extends Fragment {
 
         int closeReason = orderResponse.getCloseReason();
 
-        Logger.d(context, TAG, "OrderResponse: action " +action);
+        Logger.d(context, TAG, "OrderResponse: action " +action + ", closeReason " + closeReason);
+        if (action == null && isExternalApiCompletedCloseReason(closeReason)) {
+            action = "Заказ выполнен";
+        }
         if(action != null) {
             if (time_to_start_point != null && !time_to_start_point.isEmpty()) {
                 SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
@@ -728,6 +735,28 @@ public class FinishSeparateFragment extends Fragment {
             }
         }
         return false;
+    }
+
+    private static boolean isTerminalOrderAction(@Nullable String orderAction) {
+        if (orderAction == null) {
+            return false;
+        }
+        switch (orderAction) {
+            case "Авто найдено":
+            case "На месте":
+            case "В пути":
+            case "Заказ выполнен":
+            case "Заказ снят":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /** Не откатывать UI с «авто найдено» / «в пути» обратно на «поиск авто». */
+    private boolean shouldIgnoreStatusDowngrade(@Nullable String incomingAction) {
+        return isTerminalOrderAction(action)
+                && "Поиск авто".equals(incomingAction);
     }
 
     /** Declined из push/Centrifugo — показываем шторку только после checkStatus WFP. */
@@ -1721,6 +1750,10 @@ public class FinishSeparateFragment extends Fragment {
             Logger.d(context, TAG, "carSearch ignored: cancel UI active");
             return;
         }
+        if (isOrderDispatched() || isTerminalOrderAction(action)) {
+            Logger.d(context, TAG, "carSearch ignored: order already dispatched, action=" + action);
+            return;
+        }
         sharedPreferencesHelperMain.saveValue("carFound", false);
         viewModel.showCancelButton();
         sharedPreferencesHelperMain.saveValue("bonusExecuted", false);
@@ -2074,6 +2107,11 @@ public class FinishSeparateFragment extends Fragment {
 
 
 
+    /** close_reason 0/8/9 в weborders — завершение внешним API (см. UIDController, close_resone_8). */
+    private static boolean isExternalApiCompletedCloseReason(int closeReason) {
+        return closeReason == 0 || closeReason == 8 || closeReason == 9;
+    }
+
     private static boolean isCanceledExecutionStatus(@Nullable String executionStatus) {
         if (executionStatus == null) {
             return false;
@@ -2205,6 +2243,11 @@ public class FinishSeparateFragment extends Fragment {
             showOrderCanceledFromServer();
             return;
         }
+        if (closeReason == 8) {
+            action = "Заказ выполнен";
+            orderComplete();
+            return;
+        }
 
         switch (closeReason) {
             case -1:
@@ -2272,14 +2315,11 @@ public class FinishSeparateFragment extends Fragment {
                 }
                 break;
             case 0:
-            case 8:
-                if(executionStatus != null) {
-                    // все статусы Выполнено
-                   action = "Заказ выполнен";
+                if (executionStatus != null) {
+                    action = "Заказ выполнен";
                     orderComplete();
                 } else {
-                    // Поиск авто
-                   action = "Поиск авто";
+                    action = "Поиск авто";
                     carSearch();
                 }
                 break;
@@ -2295,6 +2335,28 @@ public class FinishSeparateFragment extends Fragment {
     ) {
         Logger.d(context, TAG, "closeReasonReactCard: " + action);
         Logger.d(context, TAG, "closeReasonReactCard: " + closeReason);
+        if (closeReason == 8) {
+            orderComplete();
+            return;
+        }
+        if (closeReason == 0 || closeReason == 9) {
+            if ("Executed".equals(lastExecutionStatus) || lastExecutionStatus == null) {
+                orderComplete();
+                return;
+            }
+            if (isCanceledExecutionStatus(lastExecutionStatus)) {
+                showOrderCanceledFromServer();
+                return;
+            }
+        }
+        if (shouldIgnoreStatusDowngrade(action)) {
+            Logger.d(context, TAG, "closeReasonReactCard: ignore downgrade to search");
+            return;
+        }
+        if ("Заказ выполнен".equals(action)) {
+            orderComplete();
+            return;
+        }
         String message;
 
         if(closeReason == 100 ||closeReason ==101 || closeReason ==102 || closeReason ==103 || closeReason ==104) {
@@ -3150,14 +3212,19 @@ public class FinishSeparateFragment extends Fragment {
             return;
         }
         isTaskRunning = false;
-        isTaskCancelled = false;
         statusPollPaused = false;
         delayMillisStatus = 5 * 1000;
         if (handlerStatus != null) {
             handlerStatus.removeCallbacks(myTaskStatus);
         }
         refreshPaymentStatusOnEnter();
-        startCycle();
+        if (!canceled && !isOrderDispatched()) {
+            isTaskCancelled = false;
+            startCycle();
+        } else {
+            Logger.d(context, TAG, "onResume: skip status poll restart, canceled="
+                    + canceled + " dispatched=" + isOrderDispatched());
+        }
 
         btn_open.setOnClickListener(v -> btnOpen());
         applyActiveOrderCloseMode();
@@ -3198,13 +3265,18 @@ public class FinishSeparateFragment extends Fragment {
         if (!hidden && isResumed() && isAdded() && !shouldIgnoreStatusPollingUi()) {
             pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
             isTaskRunning = false;
-            isTaskCancelled = false;
             delayMillisStatus = 5 * 1000;
             if (handlerStatus != null) {
                 handlerStatus.removeCallbacks(myTaskStatus);
             }
             refreshPaymentStatusOnEnter();
-            startCycle();
+            if (!canceled && !isOrderDispatched()) {
+                isTaskCancelled = false;
+                startCycle();
+            } else {
+                Logger.d(context, TAG, "onHiddenChanged: skip status poll restart, canceled="
+                        + canceled + " dispatched=" + isOrderDispatched());
+            }
         }
     }
 
@@ -3222,7 +3294,7 @@ public class FinishSeparateFragment extends Fragment {
         }
 
         // Повторный запуск Runnable при возвращении активности
-        if(action != null && !shouldIgnoreStatusPollingUi()) {
+        if (action != null && !shouldIgnoreStatusPollingUi() && !isOrderDispatched()) {
             if(action.equals("Поиск авто")) {
                 if (handler != null && myRunnable != null) {
                     handler.postDelayed(myRunnable, 10000);
