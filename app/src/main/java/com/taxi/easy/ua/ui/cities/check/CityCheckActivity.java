@@ -941,13 +941,48 @@ public class CityCheckActivity extends AppCompatActivity {
 
         cv.put("startLat", Double.parseDouble(settings.get(0)));
         cv.put("startLan", Double.parseDouble(settings.get(1)));
-        cv.put("to_lat", Double.parseDouble(settings.get(2)));
-        cv.put("to_lng", Double.parseDouble(settings.get(3)));
         cv.put("start", settings.get(4));
-        cv.put("finish", settings.get(5));
+        // Не ставим "второй маркер" по умолчанию при смене города.
+        // Конечную точку (to_lat/to_lng/finish) перезаписываем только если она уже была задана пользователем.
+        double existingToLat = 0.0;
+        double existingToLng = 0.0;
+        String existingFinish = "";
 
         // обновляем по id
         SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursor = null;
+        try {
+            cursor = database.rawQuery(
+                    "SELECT to_lat, to_lng, finish FROM " + MainActivity.ROUT_MARKER + " WHERE id = 1 LIMIT 1",
+                    null
+            );
+            if (cursor.moveToFirst()) {
+                existingToLat = cursor.getDouble(0);
+                existingToLng = cursor.getDouble(1);
+                existingFinish = cursor.getString(2);
+                if (existingFinish == null) {
+                    existingFinish = "";
+                }
+            }
+        } catch (Exception ignored) {
+            // Если таблица/строка ещё не готова — просто оставим финиш пустым (второй маркер не нужен).
+        } finally {
+            if (cursor != null) cursor.close();
+        }
+
+        boolean hasUserFinish = existingFinish.trim().length() > 0 && existingToLat != 0.0 && existingToLng != 0.0;
+        if (hasUserFinish) {
+            cv.put("to_lat", existingToLat);
+            cv.put("to_lng", existingToLng);
+            cv.put("finish", existingFinish);
+        } else {
+            // Для заказа "по городу" координаты должны совпадать в запросе,
+            // но второй маркер в UI появится только после выбора пользователем "куда".
+            cv.put("to_lat", Double.parseDouble(settings.get(2)));
+            cv.put("to_lng", Double.parseDouble(settings.get(3)));
+            cv.put("finish", "");
+        }
+
         database.update(MainActivity.ROUT_MARKER, cv, "id = ?",
                 new String[]{"1"});
         database.close();
