@@ -580,7 +580,7 @@ public class AccountFragment extends Fragment {
         array = dbH.readRouteCancel();
         Logger.d(context, TAG, "processRouteList: array " + Arrays.toString(array));
 
-        if (array != null) {
+        if (array != null && array.length > 0) {
             out_but.setVisibility(GONE);
             del_but.setVisibility(GONE);
             MyBottomSheetErrorFragment.showScheduledTripsNotice(getChildFragmentManager(), requireContext());

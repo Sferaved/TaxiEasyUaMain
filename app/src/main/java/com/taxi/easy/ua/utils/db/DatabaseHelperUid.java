@@ -227,4 +227,18 @@ public class DatabaseHelperUid extends SQLiteOpenHelper {
         db.close();
         return hasScheduled;
     }
+
+    /** Есть ли любые заказы в таблице активных/отменённых (в т.ч. «в работе»). */
+    public boolean hasAnyCancelOrders() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(
+                "SELECT 1 FROM " + TABLE_CANCEL_INFO_UID + " LIMIT 1",
+                null);
+        boolean hasOrders = cursor != null && cursor.moveToFirst();
+        if (cursor != null) {
+            cursor.close();
+        }
+        db.close();
+        return hasOrders;
+    }
 }

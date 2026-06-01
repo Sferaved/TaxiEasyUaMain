@@ -2527,7 +2527,7 @@ private void cost() {
 
         String[] array = databaseHelper.readRouteCancel();
         Logger.d(context, TAG, "processRouteList: array " + Arrays.toString(array));
-        if (array != null) {
+        if (array != null && array.length > 0) {
             MyBottomSheetErrorFragment.showScheduledTripsNotice(fragmentManager, context);
         } else {
             databaseHelper.clearTableCancel();

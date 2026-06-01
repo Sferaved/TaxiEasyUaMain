@@ -131,6 +131,8 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                 errorMessage = getString(R.string.app_name) + ": " + getString(R.string.sentNotifyMessage);
             } else if (errorMessage.equals(getString(R.string.order_to_cancel_true))) {
                 errorMessageKey = "order_to_cancel_true";
+            } else if (errorMessage.equals(getString(R.string.order_to_cancel))) {
+                errorMessageKey = "order_to_cancel";
             } else if (errorMessage.equals(getString(R.string.black_list_message))) {
                 errorMessageKey = "black_list_message";
             } else if (errorMessage.equals(getString(R.string.ex_st_2))) {
@@ -208,6 +210,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                     btn_help.setOnClickListener(v -> dismiss());
                     break;
 
+                case "order_to_cancel":
                 case "order_to_cancel_true":
                     textViewInfo.setOnClickListener(v -> dismiss());
                     btn_ok.setText(getString(R.string.order_to_cancel_review));
@@ -772,12 +775,13 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         this.onDismissListener = listener;
     }
 
-    /** Показывает «У вас есть запланированные поездки» не чаще одного раза за сессию/интервал. */
+    /** Показывает шторку о заказах в работе / запланированных поездках. */
     public static void showScheduledTripsNotice(@Nullable FragmentManager fragmentManager, @NonNull Context context) {
         if (fragmentManager == null) {
             return;
         }
-        if (!new DatabaseHelperUid(context).hasUpcomingScheduledOrders()) {
+        DatabaseHelperUid db = new DatabaseHelperUid(context);
+        if (!db.hasAnyCancelOrders()) {
             return;
         }
         Fragment existing = fragmentManager.findFragmentByTag(TAG_SCHEDULED_TRIPS);
@@ -789,8 +793,10 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
             return;
         }
         lastScheduledTripsShownAtMs = now;
-        MyBottomSheetErrorFragment sheet = new MyBottomSheetErrorFragment(
-                context.getString(R.string.order_to_cancel_true));
+        String message = db.hasUpcomingScheduledOrders()
+                ? context.getString(R.string.order_to_cancel_true)
+                : context.getString(R.string.order_to_cancel);
+        MyBottomSheetErrorFragment sheet = new MyBottomSheetErrorFragment(message);
         if (fragmentManager.isStateSaved()) {
             fragmentManager.beginTransaction()
                     .add(sheet, TAG_SCHEDULED_TRIPS)

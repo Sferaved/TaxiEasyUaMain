@@ -2053,7 +2053,8 @@ public class VisicomFragment extends Fragment {
             }
         }
 
-        if (Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))
+        if (!RoutePlaceMatcher.isCityRideOrder(sendUrlMap)
+                && Objects.equals(sendUrlMap.get("routefrom"), sendUrlMap.get("routeto"))
                 && Objects.equals(sendUrlMap.get("lat"), sendUrlMap.get("from_lat"))
                 && Objects.equals(sendUrlMap.get("lng"), sendUrlMap.get("from_lng"))
                 && (message == null || message.isEmpty())) {
@@ -4653,7 +4654,7 @@ public class VisicomFragment extends Fragment {
 
         String[] array = databaseHelper.readRouteCancel();
         Logger.d(context, TAG, "processRouteList: array " + Arrays.toString(array));
-        if (array != null) {
+        if (array != null && array.length > 0) {
             NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
             int currentDestination = navController.getCurrentDestination().getId();
 
