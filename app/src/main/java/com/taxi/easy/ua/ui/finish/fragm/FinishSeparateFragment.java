@@ -653,7 +653,11 @@ public class FinishSeparateFragment extends Fragment {
 
         Logger.d(context, TAG, "OrderResponse: action " +action + ", closeReason " + closeReason);
         if (action == null && isExternalApiCompletedCloseReason(closeReason)) {
-            action = "Заказ выполнен";
+            if (isExecutedExecutionStatus(orderResponse.getExecutionStatus())) {
+                action = "Заказ выполнен";
+            } else {
+                action = "Поиск авто";
+            }
         }
         if(action != null) {
             if (time_to_start_point != null && !time_to_start_point.isEmpty()) {
@@ -2120,6 +2124,10 @@ public class FinishSeparateFragment extends Fragment {
                 || "Cancelled".equalsIgnoreCase(executionStatus);
     }
 
+    private static boolean isExecutedExecutionStatus(@Nullable String executionStatus) {
+        return "Executed".equals(executionStatus);
+    }
+
     private static boolean isOrderCanceledOnServer(@Nullable OrderResponse orderResponse) {
         if (orderResponse == null) {
             return false;
@@ -2315,9 +2323,11 @@ public class FinishSeparateFragment extends Fragment {
                 }
                 break;
             case 0:
-                if (executionStatus != null) {
+                if (isExecutedExecutionStatus(executionStatus)) {
                     action = "Заказ выполнен";
                     orderComplete();
+                } else if (isCanceledExecutionStatus(executionStatus)) {
+                    showOrderCanceledFromServer();
                 } else {
                     action = "Поиск авто";
                     carSearch();
@@ -2340,7 +2350,7 @@ public class FinishSeparateFragment extends Fragment {
             return;
         }
         if (closeReason == 0 || closeReason == 9) {
-            if ("Executed".equals(lastExecutionStatus) || lastExecutionStatus == null) {
+            if (isExecutedExecutionStatus(lastExecutionStatus)) {
                 orderComplete();
                 return;
             }
