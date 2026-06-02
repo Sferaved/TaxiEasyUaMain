@@ -26,7 +26,6 @@ import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.payment.PendingTransactionHelper;
 import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
 
-import org.greenrobot.eventbus.EventBus;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -681,15 +680,19 @@ public class CentrifugoManager {
         if (activity == null) return;
 
         if (MainActivity.currentNavDestination == R.id.nav_finish_separate) {
-            String paySystemStatus = "nal_payment";
+            String paySystemStatus = sendUrlMap.get("pay_method");
+            if (paySystemStatus == null || paySystemStatus.isEmpty()) {
+                paySystemStatus = "nal_payment";
+            }
             String orderUid = sendUrlMap.get("dispatching_order_uid");
+            final String resolvedPaySystem = paySystemStatus;
 
             mainHandler.postSafe(() -> {
                 if (orderUid != null) {
                     viewModel.updateUid(orderUid);
-                    viewModel.updatePaySystemStatus(paySystemStatus);
+                    viewModel.updatePaySystemStatus(resolvedPaySystem);
                 }
-                viewModel.setStatusNalUpdate(false);
+                viewModel.setStatusNalUpdate(true);
             });
         } else {
             String to_name = buildDestinationName(sendUrlMap, activity);

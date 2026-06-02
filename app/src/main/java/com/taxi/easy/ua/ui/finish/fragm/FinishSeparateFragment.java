@@ -643,7 +643,7 @@ public class FinishSeparateFragment extends Fragment {
 
         String time_to_start_point = orderResponse.getTimeToStartPoint();
 
-       action = orderResponse.getAction();
+       action = resolveActionFromOrderResponse(orderResponse);
         lastExecutionStatus = orderResponse.getExecutionStatus();
         if (isOrderDispatched()) {
             clearDeclinedPaymentUi();
@@ -682,6 +682,36 @@ public class FinishSeparateFragment extends Fragment {
             );
         }
 
+    }
+
+    @Nullable
+    private String resolveActionFromOrderResponse(@NonNull OrderResponse orderResponse) {
+        String resolvedAction = orderResponse.getAction();
+        if (resolvedAction != null && !resolvedAction.isEmpty()) {
+            return resolvedAction;
+        }
+        String executionStatus = orderResponse.getExecutionStatus();
+        if (executionStatus == null) {
+            return "Поиск авто";
+        }
+        switch (executionStatus) {
+            case "CarFound":
+                return "Авто найдено";
+            case "WaitingAtAddress":
+            case "AtAddress":
+                return "На месте";
+            case "Running":
+            case "InRoute":
+                return "В пути";
+            case "Executed":
+                return "Заказ выполнен";
+            case "Canceled":
+                return "Заказ снят";
+            case "SearchesForCar":
+            case "WaitingCarSearch":
+            default:
+                return "Поиск авто";
+        }
     }
 
     public void handleTransactionStatusDeclined(String status, Context context) {
@@ -1921,8 +1951,10 @@ public class FinishSeparateFragment extends Fragment {
                     btn_add_cost.setEnabled(true);
                     btn_add_cost.setAlpha(1f);
                 } else {
-                    btn_add_cost.setEnabled(false);
-                    btn_add_cost.setAlpha(0.5f);
+                    btn_add_cost.setVisibility(View.VISIBLE);
+                    btn_add_cost.setEnabled(true);
+                    btn_add_cost.setAlpha(1f);
+                    btnAddCost(timeCheckOutAddCost);
                 }
 
                 if (!TextUtils.isEmpty(time_to_start_point)) {
@@ -2002,8 +2034,10 @@ public class FinishSeparateFragment extends Fragment {
             btn_add_cost.setEnabled(true);
             btn_add_cost.setAlpha(1f);
         } else {
-            btn_add_cost.setEnabled(false);
-            btn_add_cost.setAlpha(0.5f);
+            btn_add_cost.setVisibility(View.VISIBLE);
+            btn_add_cost.setEnabled(true);
+            btn_add_cost.setAlpha(1f);
+            btnAddCost(timeCheckOutAddCost);
         }
 
 
@@ -2017,6 +2051,15 @@ public class FinishSeparateFragment extends Fragment {
      private void btnAddCost (int timeCheckout) {
          btn_add_cost.setText(context.getString(R.string.add_cost_btn));
          btn_add_cost.setOnClickListener( view -> {
+             Logger.d(context, TAG,
+                     "[addCost] btn_add_cost click"
+                             + " uid=" + uid
+                             + " pay_method=" + pay_method
+                             + " canceled=" + canceled
+                             + " statusPollPaused=" + statusPollPaused
+                             + " addCostSheetShowing=" + addCostSheetShowing
+                             + " add_show_flag=" + sharedPreferencesHelperMain.getValue("add_show_flag", true)
+             );
 
              if ("nal_payment".equals(pay_method)) {
 
@@ -2046,6 +2089,7 @@ public class FinishSeparateFragment extends Fragment {
                  }
              }  else if ("wfp_payment".equals(pay_method)) {
 
+                 Logger.d(context, TAG, "[addCost] wfp_payment: verifyOldHold()");
                  verifyOldHold();
 
 
@@ -2679,7 +2723,7 @@ public class FinishSeparateFragment extends Fragment {
                     return;
                 }
             }
-            if (uidChanged && isAdded() && "nal_payment".equals(pay_method)) {
+            if (uidChanged && isAdded()) {
                 try {
                     statusOrder();
                 } catch (ParseException e) {
@@ -3444,6 +3488,13 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     private void verifyOldHold() {
+        Logger.d(context, TAG,
+                "[addCost] verifyOldHold start"
+                        + " uid=" + uid
+                        + " pay_method=" + pay_method
+                        + " canceled=" + canceled
+                        + " statusPollPaused=" + statusPollPaused
+                        + " addCostSheetShowing=" + addCostSheetShowing);
 
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
         loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
@@ -3510,19 +3561,50 @@ public class FinishSeparateFragment extends Fragment {
                             });
 
                         } else {
-                            new Handler(Looper.getMainLooper()).post(() -> text_status.setText(R.string.recounting_order));
+                            Logger.w(context, TAG,
+                                    "[addCost] verifyOldHold: not hold (" + result + ") -> show add-cost sheet anyway");
+                            new Handler(Looper.getMainLooper()).post(() -> {
+                                String text = textCostMessage.getText().toString();
+                                Logger.d(getActivity(), TAG, "textCostMessage.getText().toString() " + text);
+                                Pattern pattern = Pattern.compile("(\\d+)");
+                                Matcher matcher = pattern.matcher(text);
+                                if (matcher.find()) {
+                                    Logger.d(context, TAG, "amount_to_add: " + matcher.group(1));
+                                    pauseStatusPolling();
+                                    MyBottomSheetAddCostFragment bottomSheetDialogFragment = new MyBottomSheetAddCostFragment(
+                                            matcher.group(1),
+                                            uid,
+                                            uid_Double,
+                                            pay_method,
+                                            viewModel
+                                    );
+                                    bottomSheetDialogFragment.setOnDismissListener(
+                                            FinishSeparateFragment.this::onAddCostSheetDismissed);
+                                    addCostSheetShowing = true;
+                                    bottomSheetDialogFragment.show(fragmentManager, TAG_ADD_COST_SHEET);
+                                } else {
+                                    Logger.d(context, TAG, "No numeric value found in the text.");
+                                    resumeStatusPolling();
+                                }
+                            });
 
                         }
 
                     } else {
                         // Обработка неуспешного ответа
                         new Handler(Looper.getMainLooper()).post(() -> text_status.setText(R.string.recounting_order));
+                        resumeStatusPolling();
+                        setShowDialogAddCost();
+                        Logger.e(context, TAG, "[addCost] verifyOldHold: unsuccessful response code=" + response.code());
                     }
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<HoldResponse> call, @NonNull Throwable t) {
                     FirebaseCrashlytics.getInstance().recordException(t);
+                    resumeStatusPolling();
+                    setShowDialogAddCost();
+                    Logger.e(context, TAG, "[addCost] verifyOldHold failed: " + t.getMessage());
                 }
             });
 
@@ -3539,16 +3621,19 @@ public class FinishSeparateFragment extends Fragment {
         Log.d("add_show_flag", String.valueOf(add_show_flag));
 
         if (!add_show_flag) {
+            Logger.w(context, TAG, "[addCost] showAddCostDialog skipped: add_show_flag=false");
             return;
         }
         // Не показываем диалог повторно, если он уже открыт
         if (addCostDialog != null && addCostDialog.isShowing()) {
             Log.d(TAG, "showAddCostDialog skipped: dialog already showing");
+            Logger.w(context, TAG, "[addCost] showAddCostDialog skipped: dialog already showing");
             return;
         }
         // Не показываем диалог, если пользователь уже поднял шторку добавления стоимости
         if (isAddCostSheetShown()) {
             Log.d(TAG, "showAddCostDialog skipped: add cost bottom sheet already shown");
+            Logger.w(context, TAG, "[addCost] showAddCostDialog skipped: addCostSheetShowing=true");
             return;
         }
         cancelShowDialogAddCost();
@@ -3556,6 +3641,7 @@ public class FinishSeparateFragment extends Fragment {
         // Убедитесь, что фрагмент добавлен
 
         if (!isAdded() || getActivity() == null) {
+            Logger.w(context, TAG, "[addCost] showAddCostDialog aborted: fragment not added/activity null");
             return;
         }
 
@@ -3569,6 +3655,8 @@ public class FinishSeparateFragment extends Fragment {
                     // Действие для кнопки "OK"
                     if ("wfp_payment".equals(pay_method)) {
                         verifyOldHold();
+                        dialog.dismiss();
+                        return;
                     }
                     if ("nal_payment".equals(pay_method)) {
                         viewModel.setCancelStatus(false);

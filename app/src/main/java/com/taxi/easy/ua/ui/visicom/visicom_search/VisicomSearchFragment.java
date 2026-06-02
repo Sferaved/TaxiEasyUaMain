@@ -1474,52 +1474,15 @@ public class VisicomSearchFragment extends Fragment {
 
                 if(addressesList.size() == 1) {
                     hideAddressScrollControls();
+                    String foundAddress = addressesList.get(0);
                     if (start.equals("ok")) {
                         String textEdit = fromEditAddress.getText().toString();
-                        Logger.d(context, TAG, "textEdit" + textEdit);
-                        if(textEdit.length() >= max_length_string_size) {
-                            if (textEdit.contains("\f")) {
-                                textGeoError.setVisibility(View.VISIBLE);
-                                textGeoError.setText(R.string.no_house_vis_mes);
-                                layoutParams.height = desiredHeight/3;
-                                addressListView.setLayoutParams(layoutParams);
-                                hideAddressScrollControls();
-
-                                btnCallAdmin.setVisibility(View.VISIBLE);
-                            } else {
-                                textGeoError.setVisibility(View.VISIBLE);
-                                textGeoError.setText(R.string.no_adrees_mes);
-                                hideAddressScrollControls();
-                                layoutParams.height = desiredHeight/3;
-                                addressListView.setLayoutParams(layoutParams);
-                                btnCallAdmin.setVisibility(View.VISIBLE);
-                            }
-
-
-                        }
+                        Logger.d(context, TAG, "textEdit" + textEdit + " foundAddress=" + foundAddress);
+                        applySingleResultSearchWarning(textEdit, foundAddress, textGeoError);
                     } else {
                         String textEdit = toEditAddress.getText().toString();
-                        if (textEdit.length() >= max_length_string_size) {
-                            if (textEdit.contains("\f")) {
-                                text_toError.setVisibility(View.VISIBLE);
-                                text_toError.setText(R.string.no_house_vis_mes);
-                                layoutParams.height = desiredHeight/3;
-                                addressListView.setLayoutParams(layoutParams);
-                                hideAddressScrollControls();
-
-                                btnCallAdmin.setVisibility(View.VISIBLE);
-                            } else {
-
-                                hideAddressScrollControls();
-                                text_toError.setVisibility(View.VISIBLE);
-                                text_toError.setText(R.string.no_adrees_mes);
-                                layoutParams.height = desiredHeight/3;
-                                addressListView.setLayoutParams(layoutParams);
-                                btnCallAdmin.setVisibility(View.VISIBLE);
-                            }
-                        }
+                        applySingleResultSearchWarning(textEdit, foundAddress, text_toError);
                     }
-
                 }
                 addressListView.setVisibility(View.VISIBLE);
 
@@ -1689,6 +1652,40 @@ public class VisicomSearchFragment extends Fragment {
             });
         }
 
+    }
+
+    /**
+     * Visicom marks street-only suggestions with \f and complete addresses with \t.
+     * The EditText also uses \f between street and house while typing — that must not trigger an error.
+     */
+    private void applySingleResultSearchWarning(
+            String userText,
+            String foundAddress,
+            TextView errorView
+    ) {
+        if (userText.length() < max_length_string_size) {
+            return;
+        }
+        if (foundAddress.contains("\t")) {
+            errorView.setVisibility(View.GONE);
+            btnCallAdmin.setVisibility(View.GONE);
+            layoutParams.height = desiredHeight;
+            addressListView.setLayoutParams(layoutParams);
+            return;
+        }
+
+        hideAddressScrollControls();
+        layoutParams.height = desiredHeight / 3;
+        addressListView.setLayoutParams(layoutParams);
+        btnCallAdmin.setVisibility(View.VISIBLE);
+
+        if (foundAddress.contains("\f")) {
+            errorView.setVisibility(View.VISIBLE);
+            errorView.setText(R.string.no_house_vis_mes);
+        } else {
+            errorView.setVisibility(View.VISIBLE);
+            errorView.setText(R.string.no_adrees_mes);
+        }
     }
 
     private boolean checkWordInArray(String wordToCheck, String[] searchArr) {
