@@ -2256,7 +2256,7 @@ public class FinishSeparateFragment extends Fragment {
             uidToCancel = uid;
         }
         if (uidToCancel != null && !uidToCancel.isEmpty()) {
-            ExecutionStatusViewModel.markUserCanceledOrder(uidToCancel);
+            ExecutionStatusViewModel.markUserCanceledOrderPair(uidToCancel, uid_Double);
         }
         cancel_btn_click = true;
         cancelShowDialogAddCost();
@@ -2716,6 +2716,7 @@ public class FinishSeparateFragment extends Fragment {
             }
             uid = newUid;
             MainActivity.uid = newUid;
+            sharedPreferencesHelperMain.saveValue(ExecutionStatusViewModel.PREF_UID_FCM, newUid);
             Logger.d(context, TAG, "order uid updated: active=" + newUid + " double=" + uid_Double);
             if (uidChanged) {
                 String canceledUid = ExecutionStatusViewModel.getCanceledOrderUid();
@@ -2814,7 +2815,7 @@ public class FinishSeparateFragment extends Fragment {
 
             int originalNumber = Integer.parseInt(Objects.requireNonNull(matcher.group(1)));
             int updatedNumber = originalNumber + Integer.parseInt(addCost);
-            applyNalCostToFinishUi(String.valueOf(updatedNumber));
+            applyDisplayCostToFinishUi(String.valueOf(updatedNumber));
 
             textCost.setVisibility(View.VISIBLE);
             textCostMessage.setVisibility(View.VISIBLE);
@@ -2833,7 +2834,7 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     private void refreshFinishCostFromOrder(@Nullable OrderResponse orderResponse) {
-        if (orderResponse == null || textCostMessage == null || !"nal_payment".equals(pay_method)) {
+        if (orderResponse == null || textCostMessage == null) {
             return;
         }
         String activeUid = resolveActiveOrderUid();
@@ -2850,7 +2851,7 @@ public class FinishSeparateFragment extends Fragment {
             int total = (int) Math.round(Double.parseDouble(baseCost.replace(',', '.').trim()));
             int displayed = parseDisplayedCostGrivna();
             if (total != displayed) {
-                applyNalCostToFinishUi(String.valueOf(total));
+                applyDisplayCostToFinishUi(String.valueOf(total));
                 Logger.d(context, TAG, "refreshFinishCostFromOrder order_cost=" + total
                         + " add_cost(meta)=" + orderResponse.getAddCost());
             }
@@ -2870,18 +2871,28 @@ public class FinishSeparateFragment extends Fragment {
         return 0;
     }
 
-    private void applyNalCostToFinishUi(String costGrivna) {
+    private String getPayMethodMessageSuffix() {
+        if ("bonus_payment".equals(pay_method)) {
+            return context.getString(R.string.pay_method_message_bonus);
+        }
+        if (isCardPayMethod()) {
+            return context.getString(R.string.pay_method_message_card);
+        }
+        return context.getString(R.string.pay_method_message_nal);
+    }
+
+    private void applyDisplayCostToFinishUi(String costGrivna) {
         if (textCostMessage == null) {
             return;
         }
         String message = costGrivna + " " + context.getString(R.string.UAH) + "  "
-                + context.getString(R.string.pay_method_message_nal);
+                + getPayMethodMessageSuffix();
         textCostMessage.setText(message);
         amount = costGrivna;
         if (viewModel != null) {
             viewModel.persistDisplayCostGrivna(costGrivna);
         }
-        Logger.d(context, TAG, "applyNalCostToFinishUi: " + message);
+        Logger.d(context, TAG, "applyDisplayCostToFinishUi: " + message);
     }
 
     /**
@@ -2978,10 +2989,10 @@ public class FinishSeparateFragment extends Fragment {
         }
 
         String persistedCost = ExecutionStatusViewModel.getPersistedDisplayCost();
-        if (persistedCost != null && "nal_payment".equals(pay_method) && textCostMessage != null
+        if (persistedCost != null && textCostMessage != null
                 && !orderSwitch && uid != null
                 && (persistedActive == null || uid.equals(persistedActive))) {
-            applyNalCostToFinishUi(persistedCost);
+            applyDisplayCostToFinishUi(persistedCost);
         }
         String syncedDouble = ExecutionStatusViewModel.getPersistedDoubleUid();
         if (syncedDouble != null && !syncedDouble.trim().isEmpty()) {

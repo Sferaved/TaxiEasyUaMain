@@ -27,6 +27,9 @@ public class ExecutionStatusViewModel extends ViewModel {
     public static final String PREF_FINISH_CANCEL_IN_FLIGHT = "finish_cancel_in_flight";
     public static final String PREF_FINISH_USER_CANCELED = "finish_user_canceled";
     public static final String PREF_FINISH_CANCELED_UID = "finish_canceled_uid";
+    public static final String PREF_SUPPRESS_ACTIVE_ORDER_NOTICE_UNTIL = "finish_suppress_active_order_notice_until";
+    public static final String PREF_UID_FCM = "uid_fcm";
+    private static final long ACTIVE_ORDER_NOTICE_SUPPRESS_MS = 90_000L;
 
     private final MutableLiveData<String> canceledStatus = new MutableLiveData<>();
     private final MutableLiveData<OrderResponse> orderResponse = new MutableLiveData<>();
@@ -166,6 +169,7 @@ public class ExecutionStatusViewModel extends ViewModel {
         MainActivity.uid = newUid;
         uidLiveData.setValue(newUid);
         persistFinishOrderSnapshot();
+        sharedPreferencesHelperMain.saveValue(PREF_UID_FCM, newUid);
         PassengerNotifier.linkFinishOrderUidsAfterUidChange(current, newUid);
     }
 
@@ -242,10 +246,22 @@ public class ExecutionStatusViewModel extends ViewModel {
     }
 
     public static void markUserCanceledOrder(@Nullable String orderUid) {
+        markUserCanceledOrderPair(orderUid, null);
+    }
+
+    public static void markUserCanceledOrderPair(@Nullable String orderUid, @Nullable String doubleOrderUid) {
         setUserCanceledPref(true);
         if (orderUid != null && !orderUid.isEmpty()) {
             sharedPreferencesHelperMain.saveValue(PREF_FINISH_CANCELED_UID, orderUid);
         }
+        sharedPreferencesHelperMain.saveValue(
+                PREF_SUPPRESS_ACTIVE_ORDER_NOTICE_UNTIL,
+                System.currentTimeMillis() + ACTIVE_ORDER_NOTICE_SUPPRESS_MS);
+    }
+
+    public static boolean shouldSuppressActiveOrderNotice() {
+        Object v = sharedPreferencesHelperMain.getValue(PREF_SUPPRESS_ACTIVE_ORDER_NOTICE_UNTIL, 0L);
+        return v instanceof Long && System.currentTimeMillis() < (Long) v;
     }
 
     public static boolean shouldBlockAddCost(@Nullable String orderUid) {
@@ -297,6 +313,7 @@ public class ExecutionStatusViewModel extends ViewModel {
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_ACTIVE_UID, "");
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_DOUBLE_UID, "");
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_DISPLAY_COST, "");
+        sharedPreferencesHelperMain.saveValue(PREF_UID_FCM, "");
         setCancelInFlightPref(false);
         PassengerNotifier.clearWeatherNoticePrefs();
     }

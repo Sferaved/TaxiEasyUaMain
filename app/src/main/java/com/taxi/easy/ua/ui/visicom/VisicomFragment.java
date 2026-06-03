@@ -4844,7 +4844,8 @@ public class VisicomFragment extends Fragment {
             NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
             int currentDestination = navController.getCurrentDestination().getId();
 
-            if (currentDestination == R.id.nav_visicom) {
+            if (currentDestination == R.id.nav_visicom
+                    && !ExecutionStatusViewModel.shouldSuppressActiveOrderNotice()) {
                 MyBottomSheetErrorFragment.showScheduledTripsNotice(fragmentManager, context);
             }
 
