@@ -449,12 +449,8 @@ public class CentrifugoManager {
         logToContext("Centrifugo Double", "Order UID Double: " + orderDouble);
 
         mainHandler.postSafe(() -> {
-            MainActivity.uid_Double = orderDouble;
-            MainActivity.paySystemStatus = paySystemStatus;
-            if (orderDouble != null && !orderDouble.trim().isEmpty()) {
-                sharedPreferencesHelperMain.saveValue(
-                        ExecutionStatusViewModel.PREF_FINISH_DOUBLE_UID, orderDouble.trim());
-            }
+            viewModel.updateDoubleUid(orderDouble);
+            viewModel.updatePaySystemStatus(paySystemStatus);
             PassengerNotifier.syncWeatherNoticeWithFinishUids(MainActivity.uid, orderDouble);
         });
     }

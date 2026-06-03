@@ -149,7 +149,8 @@ public class ExecutionStatusViewModel extends ViewModel {
     }
 
     /**
-     * Новый uid заказа (после доплаты / пересоздания): предыдущий сохраняем в uid_Double для отмены пары.
+     * Новый uid карточного заказа после доплаты / пересоздания.
+     * uid наличного заказа приходит отдельным событием orderDouble — не подставляем сюда старый active.
      */
     public void updateUid(String newUid) {
         if (newUid == null || newUid.isEmpty()) {
@@ -160,13 +161,20 @@ public class ExecutionStatusViewModel extends ViewModel {
             current = MainActivity.uid;
         }
         if (current != null && !current.isEmpty() && !current.equals(newUid)) {
-            MainActivity.uid_Double = current;
-            Log.d("VIEWMODEL", "updateUid: previous uid -> uid_Double=" + current + ", new=" + newUid);
+            Log.d("VIEWMODEL", "updateUid: active " + current + " -> " + newUid + ", await orderDouble event");
         }
         MainActivity.uid = newUid;
         uidLiveData.setValue(newUid);
         persistFinishOrderSnapshot();
         PassengerNotifier.linkFinishOrderUidsAfterUidChange(current, newUid);
+    }
+
+    /** Новый uid наличного заказа в паре (orderDouble-status-updated / Centrifugo). */
+    public void updateDoubleUid(@Nullable String doubleUid) {
+        String normalized = doubleUid != null ? doubleUid.trim() : "";
+        MainActivity.uid_Double = normalized;
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_DOUBLE_UID, normalized);
+        Log.d("VIEWMODEL", "updateDoubleUid: " + normalized);
     }
 
     public void restoreUidFromPersisted(@Nullable String activeUid, @Nullable String doubleUid) {

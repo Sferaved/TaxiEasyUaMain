@@ -2705,9 +2705,13 @@ public class FinishSeparateFragment extends Fragment {
             String previous = uid;
             boolean uidChanged = previous != null && !previous.isEmpty() && !previous.equals(newUid);
             if (uidChanged) {
-                uid_Double = previous;
-                MainActivity.uid_Double = previous;
+                navigationOrderUid = newUid;
                 PassengerNotifier.linkFinishOrderUidsAfterUidChange(previous, newUid);
+                String persistedDouble = ExecutionStatusViewModel.getPersistedDoubleUid();
+                if (persistedDouble != null && !persistedDouble.trim().isEmpty()) {
+                    uid_Double = persistedDouble;
+                    MainActivity.uid_Double = persistedDouble;
+                }
             }
             uid = newUid;
             MainActivity.uid = newUid;
@@ -2885,6 +2889,12 @@ public class FinishSeparateFragment extends Fragment {
      */
     private void reconcileOrderIdentityFromPersistedState() {
         String persistedActive = ExecutionStatusViewModel.getPersistedActiveUid();
+        String liveUid = viewModel != null ? viewModel.getUid().getValue() : null;
+        if (navigationOrderUid != null && persistedActive != null
+                && !navigationOrderUid.equals(persistedActive)
+                && liveUid != null && liveUid.equals(persistedActive)) {
+            navigationOrderUid = persistedActive;
+        }
         boolean explicitSelection = navigationOrderUid != null && !navigationOrderUid.isEmpty();
         boolean orderSwitch = explicitSelection && persistedActive != null
                 && !navigationOrderUid.equals(persistedActive);
@@ -2971,6 +2981,14 @@ public class FinishSeparateFragment extends Fragment {
                 && !orderSwitch && uid != null
                 && (persistedActive == null || uid.equals(persistedActive))) {
             applyNalCostToFinishUi(persistedCost);
+        }
+        String syncedDouble = ExecutionStatusViewModel.getPersistedDoubleUid();
+        if (syncedDouble != null && !syncedDouble.trim().isEmpty()) {
+            uid_Double = syncedDouble;
+            MainActivity.uid_Double = syncedDouble;
+            if (receivedMap != null) {
+                receivedMap.put("dispatching_order_uid_Double", syncedDouble);
+            }
         }
         PassengerNotifier.syncWeatherNoticeWithFinishUids(uid, uid_Double);
     }
