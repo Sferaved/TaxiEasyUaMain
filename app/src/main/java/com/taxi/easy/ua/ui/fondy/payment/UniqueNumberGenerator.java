@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class UniqueNumberGenerator {
     public static String generateUniqueNumber(Context context) {
@@ -47,8 +48,8 @@ public class UniqueNumberGenerator {
                 do {
                     str = "";
                     for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+                        str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                        list.add(CursorReadHelper.getString(c, cn));
 
                     }
 

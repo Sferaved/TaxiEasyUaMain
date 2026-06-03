@@ -20,6 +20,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class LogEmailSender {
 
@@ -143,7 +144,7 @@ public class LogEmailSender {
             if (c.moveToFirst()) {
                 do {
                     for (String cn : c.getColumnNames()) {
-                        String value = c.getString(c.getColumnIndex(cn));
+                        String value = CursorReadHelper.getString(c, cn);
                         if (value != null) {
                             list.add(value);
                         }
@@ -168,7 +169,7 @@ public class LogEmailSender {
             if (c.moveToFirst()) {
                 do {
                     for (String cn : c.getColumnNames()) {
-                        String value = c.getString(c.getColumnIndex(cn));
+                        String value = CursorReadHelper.getString(c, cn);
                         if (value != null) {
                             list.add(value);
                         } else {

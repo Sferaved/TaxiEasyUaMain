@@ -100,6 +100,7 @@ import okhttp3.Request;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 
 public class VisicomSearchFragment extends Fragment {
@@ -162,7 +163,6 @@ public class VisicomSearchFragment extends Fragment {
         if(button1 != null) {
             button1.setVisibility(View.VISIBLE);
         }
-        sharedPreferencesHelperMain.saveValue("old_cost", "0");
         permissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestMultiplePermissions(),
                 result -> {
@@ -598,9 +598,9 @@ public class VisicomSearchFragment extends Fragment {
                 // Получите значения полей из первой записи
 
 
-                @SuppressLint("Range") double startLat = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                @SuppressLint("Range") double startLan = cursor.getDouble(cursor.getColumnIndex("startLan"));
-                @SuppressLint("Range") String start = cursor.getString(cursor.getColumnIndex("start"));
+                @SuppressLint("Range") double startLat = CursorReadHelper.getDouble(cursor, "startLat");
+                @SuppressLint("Range") double startLan = CursorReadHelper.getDouble(cursor, "startLan");
+                @SuppressLint("Range") String start = CursorReadHelper.getString(cursor, "start");
                 cursor.close();
                 database.close();
                 List<String> settings = new ArrayList<>();
@@ -1545,9 +1545,9 @@ public class VisicomSearchFragment extends Fragment {
 
                             // Получите значения полей из первой записи
 
-                            @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                            @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                            String finish = cursor.getString(cursor.getColumnIndex("finish"));
+                            @SuppressLint("Range") double toLatitude = CursorReadHelper.getDouble(cursor, "to_lat");
+                            @SuppressLint("Range") double toLongitude = CursorReadHelper.getDouble(cursor, "to_lng");
+                            String finish = CursorReadHelper.getString(cursor, "finish");
 
                             cursor.close();
                             database.close();
@@ -1606,8 +1606,8 @@ public class VisicomSearchFragment extends Fragment {
 
                             // Получите значения полей из первой записи
 
-                            double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                            double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
+                            double originLatitude = CursorReadHelper.getDouble(cursor, "startLat");
+                            double originLongitude = CursorReadHelper.getDouble(cursor, "startLan");
 
                             cursor.close();
                             database.close();
@@ -1969,8 +1969,8 @@ public class VisicomSearchFragment extends Fragment {
             do {
                 str = "";
                 for (String cn : c.getColumnNames()) {
-                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                    list.add(c.getString(c.getColumnIndex(cn)));
+                    str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                    list.add(CursorReadHelper.getString(c, cn));
 
                 }
 
@@ -2093,9 +2093,9 @@ public class VisicomSearchFragment extends Fragment {
 
                         // Получите значения полей из первой записи
 
-                        @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                        @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                        @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
+                        @SuppressLint("Range") double toLatitude = CursorReadHelper.getDouble(cursor, "to_lat");
+                        @SuppressLint("Range") double toLongitude = CursorReadHelper.getDouble(cursor, "to_lng");
+                        @SuppressLint("Range") String finish = CursorReadHelper.getString(cursor, "finish");
 
                         cursor.close();
                         database.close();
@@ -2147,8 +2147,8 @@ public class VisicomSearchFragment extends Fragment {
 
                             // Получите значения полей из первой записи
 
-                            @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                            @SuppressLint("Range") double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
+                            @SuppressLint("Range") double originLatitude = CursorReadHelper.getDouble(cursor, "startLat");
+                            @SuppressLint("Range") double originLongitude = CursorReadHelper.getDouble(cursor, "startLan");
 
                             cursor.close();
                             database.close();
@@ -2355,9 +2355,9 @@ public class VisicomSearchFragment extends Fragment {
 
                             // Получите значения полей из первой записи
 
-                            @SuppressLint("Range") double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-                            @SuppressLint("Range") double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-                            @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
+                            @SuppressLint("Range") double toLatitude = CursorReadHelper.getDouble(cursor, "to_lat");
+                            @SuppressLint("Range") double toLongitude = CursorReadHelper.getDouble(cursor, "to_lng");
+                            @SuppressLint("Range") String finish = CursorReadHelper.getString(cursor, "finish");
 
                             cursor.close();
                             database.close();
@@ -2407,9 +2407,9 @@ public class VisicomSearchFragment extends Fragment {
 
                         // Получите значения полей из первой записи
 
-                        @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                        @SuppressLint("Range") double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
-                        @SuppressLint("Range") String finish = cursor.getString(cursor.getColumnIndex("finish"));
+                        @SuppressLint("Range") double originLatitude = CursorReadHelper.getDouble(cursor, "startLat");
+                        @SuppressLint("Range") double originLongitude = CursorReadHelper.getDouble(cursor, "startLan");
+                        @SuppressLint("Range") String finish = CursorReadHelper.getString(cursor, "finish");
 
                         cursor.close();
                         database.close();

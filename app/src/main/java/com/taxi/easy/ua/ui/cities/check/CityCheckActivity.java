@@ -49,6 +49,7 @@ import java.util.List;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 
 public class CityCheckActivity extends AppCompatActivity {
@@ -1067,8 +1068,8 @@ public class CityCheckActivity extends AppCompatActivity {
             do {
                 str = "";
                 for (String cn : c.getColumnNames()) {
-                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                    list.add(c.getString(c.getColumnIndex(cn)));
+                    str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                    list.add(CursorReadHelper.getString(c, cn));
 
                 }
 

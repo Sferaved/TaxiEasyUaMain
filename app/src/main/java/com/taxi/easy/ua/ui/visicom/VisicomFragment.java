@@ -116,6 +116,7 @@ import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.kafka.KafkaRequest;
+import com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
 import com.taxi.easy.ua.utils.location.TaxiLocationValidator;
@@ -150,6 +151,7 @@ import java.util.regex.Pattern;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class VisicomFragment extends Fragment {
 
@@ -172,6 +174,9 @@ public class VisicomFragment extends Fragment {
 
     @SuppressLint("StaticFieldLeak")
     public static TextView text_view_cost;
+    private static final String PREF_COST_RECALC_FROM_HISTORY = "cost_recalc_from_history";
+    private static final String PREF_COST_PREVIEW_DISPLAY = "cost_preview_display";
+    private TextView textCostRecalcStatus;
     @SuppressLint("StaticFieldLeak")
     public static TextView textViewTo;
     @SuppressLint("StaticFieldLeak")
@@ -248,7 +253,7 @@ public class VisicomFragment extends Fragment {
     static SwipeRefreshLayout swipeRefreshLayout;
     private LifecycleObserver lifecycleObserver;
     private boolean appProcessWasInBackground = false;
-    private static final long VISICOM_COST_DEBOUNCE_MS = 2500;
+    private static final long VISICOM_COST_DEBOUNCE_MS = 1200;
     private static final long VISICOM_COST_LAST_ADDRESS_COOLDOWN_MS = 30_000;
     private static final long NETWORK_RESTORE_RELOAD_COOLDOWN_MS = 12_000;
     private long lastVisicomCostRequestMs = 0;
@@ -337,6 +342,7 @@ public class VisicomFragment extends Fragment {
         swipeRefreshLayout = root.findViewById(R.id.swipeRefreshLayout);
         svButton = root.findViewById(R.id.sv_button);
         text_view_cost = binding.textViewCost;
+        textCostRecalcStatus = binding.textCostRecalcStatus;
 // Устанавливаем слушатель для распознавания жеста свайпа вниз
         swipeRefreshLayout.setOnRefreshListener(() -> {
             clearTABLE_SERVICE_INFO();
@@ -999,29 +1005,124 @@ public class VisicomFragment extends Fragment {
 
 
 
-    private void showCostCalculationProgress() {
+    private static final class CostPreviewHint {
+        final String value;
+        final boolean finalDisplay;
+
+        CostPreviewHint(String value, boolean finalDisplay) {
+            this.value = value;
+            this.finalDisplay = finalDisplay;
+        }
+    }
+
+    private CostPreviewHint resolveCostPreviewForRecalc() {
+        if (!isAdded() || context == null) {
+            return null;
+        }
+        if (Boolean.TRUE.equals(sharedPreferencesHelperMain.getValue(PREF_COST_RECALC_FROM_HISTORY, false))) {
+            String cached = String.valueOf(sharedPreferencesHelperMain.getValue("old_cost", ""));
+            if (hasDisplayableCost(cached)) {
+                return new CostPreviewHint(cached, false);
+            }
+        }
+        String savedPreview = String.valueOf(sharedPreferencesHelperMain.getValue(PREF_COST_PREVIEW_DISPLAY, ""));
+        if (hasDisplayableCost(savedPreview)) {
+            return new CostPreviewHint(savedPreview.trim(), true);
+        }
+        if (text_view_cost != null) {
+            CharSequence shown = text_view_cost.getText();
+            if (shown != null && hasDisplayableCost(shown.toString())) {
+                return new CostPreviewHint(shown.toString().trim(), true);
+            }
+        }
+        String cached = String.valueOf(sharedPreferencesHelperMain.getValue("old_cost", ""));
+        if (hasDisplayableCost(cached) && !"0".equals(cached.trim())) {
+            return new CostPreviewHint(cached, false);
+        }
+        return null;
+    }
+
+    private void clearCostRecalcFromHistoryFlag() {
+        sharedPreferencesHelperMain.saveValue(PREF_COST_RECALC_FROM_HISTORY, false);
+    }
+
+    private void showCostRecalcStatusMessage() {
+        if (textCostRecalcStatus != null) {
+            textCostRecalcStatus.setText(R.string.check_cost_message);
+            textCostRecalcStatus.setVisibility(VISIBLE);
+        }
+    }
+
+    private void hideCostRecalculatingStatus() {
+        clearCostRecalcFromHistoryFlag();
+        sharedPreferencesHelperMain.saveValue(PREF_COST_PREVIEW_DISPLAY, "");
+        if (text_view_cost != null) {
+            text_view_cost.setAlpha(1f);
+        }
+        if (textCostRecalcStatus != null) {
+            textCostRecalcStatus.setVisibility(GONE);
+        }
+    }
+
+    private long computeDisplayCostFromRaw(String orderCost) throws NumberFormatException {
+        double costValue = Double.parseDouble(orderCost);
+        long base = Math.round(costValue);
+        String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
+        if (discountText == null || !(discountText.matches("[+-]?\\d+") || discountText.equals("0"))) {
+            return base;
+        }
+        if (base != 0 && (boolean) sharedPreferencesHelperMain.getValue("verifyUserOrder", false)) {
+            base = base + 45;
+        }
+        long discountInt = Long.parseLong(discountText);
+        long discount = base * discountInt / 100;
+        return base + discount;
+    }
+
+    private void updateCostPreviewOnUi(CostPreviewHint preview) {
+        if (preview == null || text_view_cost == null) {
+            return;
+        }
+        if (preview.finalDisplay) {
+            text_view_cost.setText(preview.value);
+        } else {
+            text_view_cost.setText(String.valueOf(computeDisplayCostFromRaw(preview.value)));
+        }
+        text_view_cost.setAlpha(0.45f);
+        text_view_cost.setVisibility(VISIBLE);
+    }
+
+    private void showCostRecalculatingWithPreview(CostPreviewHint preview) {
         if (!isAdded() || binding == null) {
             return;
         }
         CostCalculationProgressBar.setCalculationInProgress(true);
+        hideOrderControlsDuringCostCalculation();
         binding.btnReset.setVisibility(GONE);
         binding.btnReport.setVisibility(GONE);
         binding.textViewCost.setVisibility(VISIBLE);
-        text_view_cost.setText("");
+        if (preview != null) {
+            updateCostPreviewOnUi(preview);
+        } else {
+            text_view_cost.setText("");
+            text_view_cost.setAlpha(1f);
+        }
         progressBar.forceShow();
         progressBar.bringToFront();
-        btn_minus.setVisibility(GONE);
-        btn_plus.setVisibility(GONE);
-        btnOrder.setVisibility(GONE);
+        showCostRecalcStatusMessage();
         binding.btnAdd.setVisibility(INVISIBLE);
         binding.btnBonus.setVisibility(INVISIBLE);
-        binding.linearLayoutButtons.setVisibility(GONE);
         binding.schedule.setVisibility(INVISIBLE);
         binding.shedDown.setVisibility(INVISIBLE);
         binding.getRoot().post(this::restoreCostCalculationProgressIfNeeded);
     }
 
+    private void showCostCalculationProgress() {
+        showCostRecalculatingWithPreview(null);
+    }
+
     private void hideCostCalculationProgress() {
+        hideCostRecalculatingStatus();
         CostCalculationProgressBar.setCalculationInProgress(false);
         if (progressBar != null) {
             progressBar.forceHide();
@@ -1065,6 +1166,7 @@ public class VisicomFragment extends Fragment {
             return;
         }
         hideCostCalculationProgress();
+        sharedPreferencesHelperMain.saveValue("old_cost", priceText.toString().trim());
         btnVisible(VISIBLE);
         btnAdd.setVisibility(View.VISIBLE);
         buttonBonus.setVisibility(View.VISIBLE);
@@ -1143,7 +1245,46 @@ public class VisicomFragment extends Fragment {
                 || "swipeRefresh".equals(source)
                 || "manualRetry".equals(source)
                 || "manualGps".equals(source)
-                || "autoGps".equals(source);
+                || "autoGps".equals(source)
+                || "addressChanged".equals(source)
+                || "fromHistory".equals(source);
+    }
+
+    private void snapshotCostPreviewBeforeRouteChange() {
+        if (text_view_cost != null) {
+            CharSequence shown = text_view_cost.getText();
+            if (shown != null && hasDisplayableCost(shown.toString())) {
+                sharedPreferencesHelperMain.saveValue(PREF_COST_PREVIEW_DISPLAY, shown.toString().trim());
+                return;
+            }
+        }
+        String oldCost = String.valueOf(sharedPreferencesHelperMain.getValue("old_cost", ""));
+        if (hasDisplayableCost(oldCost) && !"0".equals(oldCost.trim())) {
+            sharedPreferencesHelperMain.saveValue(PREF_COST_PREVIEW_DISPLAY, oldCost.trim());
+        }
+    }
+
+    private void openAddressSearch(Bundle bundle) {
+        snapshotCostPreviewBeforeRouteChange();
+        navController.navigate(R.id.nav_search, bundle, new NavOptions.Builder()
+                .setPopUpTo(R.id.nav_search, true)
+                .build());
+    }
+
+    private void requestVisicomCostAfterRouteChange() {
+        snapshotCostPreviewBeforeRouteChange();
+        requestVisicomCost("addressChanged");
+    }
+
+    private String resolveVisicomCostSourceOnResume() {
+        if (Boolean.TRUE.equals(sharedPreferencesHelperMain.getValue(PREF_COST_RECALC_FROM_HISTORY, false))) {
+            return "fromHistory";
+        }
+        String preview = String.valueOf(sharedPreferencesHelperMain.getValue(PREF_COST_PREVIEW_DISPLAY, ""));
+        if (hasDisplayableCost(preview)) {
+            return "addressChanged";
+        }
+        return "onResume";
     }
 
     public void reloadOrderAfterNetworkRestored() {
@@ -1429,9 +1570,9 @@ public class VisicomFragment extends Fragment {
             do {
                 str = "";
                 for (String cn : c.getColumnNames()) {
-                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                    list.add(c.getString(c.getColumnIndex(cn)));
-
+                    String value = CursorReadHelper.getString(c, cn);
+                    str = str.concat(cn + " = " + value + "; ");
+                    list.add(value);
                 }
 
             } while (c.moveToNext());
@@ -1517,12 +1658,12 @@ public class VisicomFragment extends Fragment {
         Cursor cursor = database.rawQuery(query, null);
         cursor.moveToFirst();
 
-        double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-        double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
-        double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-        double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-        String start = cursor.getString(cursor.getColumnIndex("start"));
-        String finish = cursor.getString(cursor.getColumnIndex("finish"));
+        double originLatitude = CursorReadHelper.getDouble(cursor, "startLat");
+        double originLongitude = CursorReadHelper.getDouble(cursor, "startLan");
+        double toLatitude = CursorReadHelper.getDouble(cursor, "to_lat");
+        double toLongitude = CursorReadHelper.getDouble(cursor, "to_lng");
+        String start = CursorReadHelper.getString(cursor, "start");
+        String finish = CursorReadHelper.getString(cursor, "finish");
         if (start == null) {
             start = "";
         }
@@ -1798,7 +1939,7 @@ public class VisicomFragment extends Fragment {
 
         if (cursor.moveToFirst()) {
             do {
-                result = cursor.getString(cursor.getColumnIndex("rectoken"));
+                result = CursorReadHelper.getString(cursor, "rectoken");
                 Logger.d(context, TAG, "Found rectoken with rectoken_check = 1" + ": " + result);
                 return result;
             } while (cursor.moveToNext());
@@ -2000,6 +2141,10 @@ public class VisicomFragment extends Fragment {
             carProgressBar.resumeAnimation();
             constraintLayoutVisicomFinish.setVisibility(VISIBLE);
 
+            String displayCost = text_view_cost != null && text_view_cost.getText() != null
+                    ? text_view_cost.getText().toString().trim() : "";
+            EarlyOrderNavigationHelper.markSubmitStarted(ctx, pay_method, displayCost);
+
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
             baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
             Logger.d(ctx, TAG, "orderFinished: " + baseUrl + urlOrder); // ← ctx
@@ -2008,17 +2153,17 @@ public class VisicomFragment extends Fragment {
 
                 @Override
                 public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
-                    // Проверяем, что фрагмент всё ещё активен
-                    if (!isAdded() || getActivity() == null) {
-                        Logger.d(null, TAG, "Fragment detached during onResponse");
-                        return;
-                    }
-
                     if (response.isSuccessful() && response.body() != null) {
                         Map<String, String> sendUrlMap = response.body();
-                        // Используем ctx из внешнего метода (должен быть effectively final)
-                        handleOrderFinished(sendUrlMap, pay_method, ctx); // ← передаём ctx
+                        if (!isAdded() || getActivity() == null) {
+                            Logger.d(ctx, TAG, "Fragment detached — enrich after early nav");
+                            EarlyOrderNavigationHelper.applyHttpEnrichment(ctx, sendUrlMap, pay_method);
+                            EarlyOrderNavigationHelper.clearSubmitState();
+                            return;
+                        }
+                        handleOrderFinished(sendUrlMap, pay_method, ctx);
                     } else {
+                        EarlyOrderNavigationHelper.clearSubmitState();
                         btnVisible(VISIBLE);
                         String messageErr = getString(R.string.cost_error);
                         MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(messageErr);
@@ -2030,7 +2175,7 @@ public class VisicomFragment extends Fragment {
 
                 @Override
                 public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
-                    // Проверяем, что фрагмент всё ещё активен
+                    EarlyOrderNavigationHelper.clearSubmitState();
                     if (!isAdded() || getActivity() == null) {
                         Logger.d(null, TAG, "Fragment detached during onFailure");
                         return;
@@ -2050,6 +2195,13 @@ public class VisicomFragment extends Fragment {
         String message = sendUrlMap.get("message");
         Logger.d(context, TAG, "orderFinished: message " + message);
         assert orderWeb != null;
+
+        if (EarlyOrderNavigationHelper.isEarlyNavigationDone()) {
+            EarlyOrderNavigationHelper.applyHttpEnrichment(context, sendUrlMap, pay_method);
+            EarlyOrderNavigationHelper.clearSubmitState();
+            Logger.d(context, TAG, "handleOrderFinished: early nav already done, skip navigate");
+            return;
+        }
 
         String dispatchUid = sendUrlMap.get("dispatching_order_uid");
         if (MainActivity.uid != null && !MainActivity.uid.isEmpty()
@@ -2238,16 +2390,30 @@ public class VisicomFragment extends Fragment {
             Logger.d(context, TAG, "sendUrlMap: comment_info " + sendUrlMap.get("comment_info"));
             Logger.d(context, TAG, "sendUrlMap: extra_charge_codes " + sendUrlMap.get("extra_charge_codes"));
 
-            MainActivity.uid = sendUrlMap.get("dispatching_order_uid");
-            if (MainActivity.uid != null && !MainActivity.uid.isEmpty()) {
-                sharedPreferencesHelperMain.saveValue("uid_fcm", MainActivity.uid);
-                sharedPreferencesHelperMain.saveValue("last_car_found_notify_uid", "");
-                if (MainActivity.order_id != null && !MainActivity.order_id.isEmpty()) {
-                    PaymentSessionHelper.saveWfpOrderRef(MainActivity.uid, MainActivity.order_id);
+            String orderUid = EarlyOrderNavigationHelper.resolveOrderUid(sendUrlMap);
+            if (orderUid == null || orderUid.isEmpty()) {
+                Logger.w(context, TAG, "handleOrderFinished: UID нет в HTTP — ждём Centrifugo");
+                EarlyOrderNavigationHelper.applyHttpEnrichment(context, sendUrlMap, pay_method);
+                if (EarlyOrderNavigationHelper.isSubmitInProgress()) {
+                    return;
                 }
+                EarlyOrderNavigationHelper.clearSubmitState();
+                if (isAdded()) {
+                    btnVisible(VISIBLE);
+                    constraintLayoutVisicomFinish.setVisibility(GONE);
+                    constraintLayoutVisicomMain.setVisibility(VISIBLE);
+                }
+                return;
             }
-            ExecutionStatusViewModel.resetNewOrderSession(MainActivity.uid);
-            Logger.d(context, "MainActivity.uid", "MainActivity.uid 1 " + MainActivity.uid);
+
+            MainActivity.uid = orderUid;
+            sharedPreferencesHelperMain.saveValue("uid_fcm", orderUid);
+            sharedPreferencesHelperMain.saveValue("last_car_found_notify_uid", "");
+            if (MainActivity.order_id != null && !MainActivity.order_id.isEmpty()) {
+                PaymentSessionHelper.saveWfpOrderRef(orderUid, MainActivity.order_id);
+            }
+            ExecutionStatusViewModel.resetNewOrderSession(orderUid);
+            Logger.d(context, "MainActivity.uid", "MainActivity.uid 1 " + orderUid);
 
             Bundle bundle = new Bundle();
             bundle.putString("messageResult_key", messageResult);
@@ -2255,20 +2421,20 @@ public class VisicomFragment extends Fragment {
             bundle.putString("messageFondy_key", messageFondy);
             bundle.putString("messageCost_key", orderWeb);
             bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
-            bundle.putString("UID_key", Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid")));
+            bundle.putString("UID_key", orderUid);
             viewModel.setStatusNalUpdate(true); //наюлюдение за опросом статусом нала
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                navController.navigate(
-                        R.id.nav_finish_separate,
-                        bundle,
-                        new NavOptions.Builder()
-                                .setPopUpTo(R.id.nav_visicom, true)
-                                .build()
-                );
-            }, 1000); // 5000 миллисекунд = 5 секунд
+            navController.navigate(
+                    R.id.nav_finish_separate,
+                    bundle,
+                    new NavOptions.Builder()
+                            .setPopUpTo(R.id.nav_visicom, true)
+                            .build()
+            );
+            EarlyOrderNavigationHelper.clearSubmitState();
 
 
         } else if (!VisicomBackPressed) {
+            EarlyOrderNavigationHelper.clearSubmitState();
             sharedPreferencesHelperMain.saveValue("VisicomBackPressed", false);
             btnVisible(VISIBLE);
             assert message != null;
@@ -2718,9 +2884,7 @@ public class VisicomFragment extends Fragment {
             Bundle bundle = new Bundle();
             bundle.putString("start", "ok");
             bundle.putString("end", "no");
-            navController.navigate(R.id.nav_search, bundle, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_search, true)
-                    .build());
+            openAddressSearch(bundle);
 
         });
 
@@ -2731,9 +2895,7 @@ public class VisicomFragment extends Fragment {
             Bundle bundle = new Bundle();
             bundle.putString("start", "ok");
             bundle.putString("end", "no");
-            navController.navigate(R.id.nav_search, bundle, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_search, true)
-                    .build());
+            openAddressSearch(bundle);
 
         });
 
@@ -2763,20 +2925,14 @@ public class VisicomFragment extends Fragment {
             Bundle bundle = new Bundle();
             bundle.putString("start", "no");
             bundle.putString("end", "ok");
-            navController.navigate(R.id.nav_search, bundle, new NavOptions.Builder()
-                    .setPopUpTo(R.id.nav_search, true)
-                    .build());
+            openAddressSearch(bundle);
 
         });
 
         binding.clearButtonTo.setOnClickListener(v -> {
             textViewTo.setText("");
             updateRouteSettings();
-            try {
-                visicomCost();
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
-            }
+            requestVisicomCostAfterRouteChange();
         });
 
         btn_minus = binding.btnMinus;
@@ -3005,7 +3161,7 @@ public class VisicomFragment extends Fragment {
             }
             String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
             if (!userEmail.equals("email")) {
-                requestVisicomCost("onResume");
+                requestVisicomCost(resolveVisicomCostSourceOnResume());
                 readTariffInfo();
             }
 
@@ -3467,7 +3623,12 @@ public class VisicomFragment extends Fragment {
         lastVisicomCostRequestMs = now;
         lastCost = null;
         resetRealtimeOrderCostDedup();
-        showCostCalculationProgress();
+        CostPreviewHint preview = resolveCostPreviewForRecalc();
+        if (preview != null) {
+            showCostRecalculatingWithPreview(preview);
+        } else {
+            showCostCalculationProgress();
+        }
         try {
             Logger.d(context, TAG, "visicomCost, источник: " + source);
             visicomCost();
@@ -3765,16 +3926,9 @@ public class VisicomFragment extends Fragment {
                                         Logger.d(context, TAG, "      ├─ Вызов visicomCost()");
                                         finishAutoLocationGpsButtonState();
                                         long costStartTime = System.currentTimeMillis();
-                                        try {
-                                            visicomCost();
-                                            long costEndTime = System.currentTimeMillis();
-                                            Logger.d(context, TAG, "      └─ ✅ Стоимость пересчитана за " + (costEndTime - costStartTime) + " мс");
-                                        } catch (MalformedURLException e) {
-                                            long costEndTime = System.currentTimeMillis();
-                                            Logger.e(context, TAG, "      └─ ❌ ОШИБКА при пересчёте стоимости: " + e.getMessage());
-                                            Logger.e(context, TAG, "         └─ Время до ошибки: " + (costEndTime - costStartTime) + " мс");
-                                            FirebaseCrashlytics.getInstance().recordException(e);
-                                        }
+                                        requestVisicomCostAfterRouteChange();
+                                        long costEndTime = System.currentTimeMillis();
+                                        Logger.d(context, TAG, "      └─ ✅ Запрос пересчёта стоимости за " + (costEndTime - costStartTime) + " мс");
 
                                         Logger.d(context, TAG, "🔄 ЗАВЕРШЕНО обновление данных");
 
@@ -4175,22 +4329,41 @@ public class VisicomFragment extends Fragment {
         cursor.close();
         database.close();
 
+        if (start == null) {
+            start = "";
+        }
+        if (finish == null) {
+            finish = "";
+        }
+
         String cityCheckActivity = String.valueOf(sharedPreferencesHelperMain.getValue("CityCheckActivity", "**"));
         Logger.d(context, TAG, "cityCheckActivity = " + cityCheckActivity);
-        Logger.d(context, TAG, "originLatitude = " + originLatitude + ", toLat = " + toLat);
+        Logger.d(context, TAG, "originLatitude = " + originLatitude + ", toLat = " + toLat + ", start = '" + start + "'");
 
-        if ("run".equals(cityCheckActivity) && originLatitude != 0.0 && toLat != 0.0) {
-            showCostCalculationProgress();
-            orderRout();
-            requestCostFromServer(start, finish);
+        boolean routeReady = originLatitude != 0.0 && !start.trim().isEmpty()
+                && (toLat != 0.0 || !finish.trim().isEmpty());
+
+        if ("run".equals(cityCheckActivity) && routeReady) {
             hideOrderControlsDuringCostCalculation();
 
-//            String cost = (String) sharedPreferencesHelperMain.getValue("old_cost","100");
-//            Logger.d(context,TAG, "onContextItemSelected parts[1] cost: " + cost);
-//            if(!cost.equals("0")) {
-//                applyDiscountAndUpdateUI(cost, context);
-//                sharedPreferencesHelperMain.saveValue("old_cost","0");
-//            }
+            if (!CostCalculationProgressBar.isCalculationInProgress()) {
+                CostPreviewHint preview = resolveCostPreviewForRecalc();
+                if (preview != null) {
+                    Logger.d(context, TAG, "visicomCost: превью цены перед перерасчётом");
+                    showCostRecalculatingWithPreview(preview);
+                } else {
+                    showCostCalculationProgress();
+                }
+            }
+
+            String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTimeMyApi", context);
+            if ("error".equals(urlCost)) {
+                Logger.w(context, TAG, "visicomCost: невалидный URL расчёта стоимости");
+                hideCostCalculationProgress();
+                btnVisible(VISIBLE);
+                return;
+            }
+            requestCostFromServer(start, finish);
         } else if ("run".equals(cityCheckActivity) && originLatitude != 0.0) {
             Logger.d(context, ADDR_GUARD, "visicomCost: city=run, pickup/cost not ready — CityCheckActivity не сбрасываем");
             return;
@@ -4352,6 +4525,10 @@ public class VisicomFragment extends Fragment {
 //    private String lastAppliedCost = null;
 
     private void applyDiscountAndUpdateUI(String orderCost, Context context) {
+        applyDiscountAndUpdateUI(orderCost, context, true);
+    }
+
+    private void applyDiscountAndUpdateUI(String orderCost, Context context, boolean finalizeUi) {
         Logger.d(context, TAG, "applyDiscountAndUpdateUI() start — orderCost = " + orderCost);
         double costValue = Double.parseDouble(orderCost);
         orderCost = String.valueOf(Math.round(costValue));
@@ -4375,12 +4552,8 @@ public class VisicomFragment extends Fragment {
                 return;
             }
 
-            //double originLatitude = cursor.getDouble(cursor.getColumnIndexOrThrow("startLat"));
-            //double toLat = cursor.getDouble(cursor.getColumnIndexOrThrow("to_lat"));
-            String start = cursor.getString(cursor.getColumnIndexOrThrow("start"));
             String finish = cursor.getString(cursor.getColumnIndexOrThrow("finish"));
-            Logger.d(context, TAG, "Retrieved  = " + start);
-            Logger.d(context, TAG, "Retrieved  = " + finish);
+            Logger.d(context, TAG, "Retrieved finish = " + finish);
 
             cursor.close();
             database.close();
@@ -4400,19 +4573,22 @@ public class VisicomFragment extends Fragment {
 
             updateAddCost(String.valueOf(discount), context);
             text_view_cost.setText(String.valueOf(firstCost));
+            text_view_cost.setAlpha(1f);
 
-            startCost = firstCost;
-            finalCost = firstCost;
-            MIN_COST_VALUE = (long) (firstCost * 0.6);
-            firstCostForMin = firstCost;
+            if (finalizeUi) {
+                startCost = firstCost;
+                finalCost = firstCost;
+                MIN_COST_VALUE = (long) (firstCost * 0.6);
+                firstCostForMin = firstCost;
 
-            Logger.d(context, TAG, "Setting UI visibility and values");
+                Logger.d(context, TAG, "Setting UI visibility and values");
 
-            if (!isCityOnlyFinishInDatabase(finish)) {
-                textViewTo.setText(finish);
+                if (!isCityOnlyFinishInDatabase(finish)) {
+                    textViewTo.setText(finish);
+                }
+
+                finishCostCalculationWithPrice();
             }
-
-            finishCostCalculationWithPrice();
 
         } catch (NumberFormatException e) {
             FirebaseCrashlytics.getInstance().recordException(e);
@@ -4420,7 +4596,9 @@ public class VisicomFragment extends Fragment {
             showCostCalculationProgress();
         }
 
-        btnVisible(View.VISIBLE);
+        if (finalizeUi) {
+            btnVisible(View.VISIBLE);
+        }
     }
 
 

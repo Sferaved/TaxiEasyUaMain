@@ -61,6 +61,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class CardFragment extends Fragment {
 
@@ -376,11 +377,11 @@ public class CardFragment extends Fragment {
         if (cursor.moveToFirst()) {
             do {
                 Map<String, String> cardMap = new HashMap<>();
-                cardMap.put("card_type", cursor.getString(cursor.getColumnIndex("card_type")));
-                cardMap.put("bank_name", cursor.getString(cursor.getColumnIndex("bank_name")));
-                cardMap.put("masked_card", cursor.getString(cursor.getColumnIndex("masked_card")));
-                cardMap.put("rectoken", cursor.getString(cursor.getColumnIndex("rectoken")));
-                cardMap.put("rectoken_check", cursor.getString(cursor.getColumnIndex("rectoken_check")));
+                cardMap.put("card_type", CursorReadHelper.getString(cursor, "card_type"));
+                cardMap.put("bank_name", CursorReadHelper.getString(cursor, "bank_name"));
+                cardMap.put("masked_card", CursorReadHelper.getString(cursor, "masked_card"));
+                cardMap.put("rectoken", CursorReadHelper.getString(cursor, "rectoken"));
+                cardMap.put("rectoken_check", CursorReadHelper.getString(cursor, "rectoken_check"));
 
                 cardMaps.add(cardMap);
             } while (cursor.moveToNext());
@@ -409,8 +410,8 @@ public class CardFragment extends Fragment {
             do {
                 str = "";
                 for (String cn : c.getColumnNames()) {
-                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                    list.add(c.getString(c.getColumnIndex(cn)));
+                    str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                    list.add(CursorReadHelper.getString(c, cn));
 
                 }
 

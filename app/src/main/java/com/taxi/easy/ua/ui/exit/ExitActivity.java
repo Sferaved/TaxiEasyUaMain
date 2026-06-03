@@ -31,6 +31,7 @@ import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 
 public class ExitActivity extends AppCompatActivity {
@@ -193,8 +194,8 @@ public class ExitActivity extends AppCompatActivity {
                 do {
                     str = "";
                     for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+                        str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                        list.add(CursorReadHelper.getString(c, cn));
 
                     }
 

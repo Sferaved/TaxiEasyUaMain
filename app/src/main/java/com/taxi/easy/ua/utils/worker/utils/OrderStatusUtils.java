@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class OrderStatusUtils {
     private static final String TAG = "OrderStatusUtils";
@@ -145,7 +146,7 @@ public class OrderStatusUtils {
         if (c.moveToFirst()) {
             do {
                 for (String cn : c.getColumnNames()) {
-                    @SuppressLint("Range") String value = c.getString(c.getColumnIndex(cn));
+                    @SuppressLint("Range") String value = CursorReadHelper.getString(c, cn);
                     list.add(value);
                     Logger.d(context, TAG, "Column: " + cn + " = " + value);
                 }

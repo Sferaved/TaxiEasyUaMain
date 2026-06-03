@@ -48,6 +48,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 
 public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
@@ -275,7 +276,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
         if (cursor.moveToFirst()) {
             do {
-                result = cursor.getString(cursor.getColumnIndex("rectoken"));
+                result = CursorReadHelper.getString(cursor, "rectoken");
                 Logger.d(context, TAG, "Found rectoken with rectoken_check = 1" + ": " + result);
                 return result;
             } while (cursor.moveToNext());
@@ -299,9 +300,9 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
         if (cursor.moveToFirst()) {
             do {
-                @SuppressLint("Range") String rectokenCheck = cursor.getString(cursor.getColumnIndex("rectoken_check"));
-                @SuppressLint("Range") String merchant = cursor.getString(cursor.getColumnIndex("merchant"));
-                @SuppressLint("Range") String rectoken = cursor.getString(cursor.getColumnIndex("rectoken"));
+                @SuppressLint("Range") String rectokenCheck = CursorReadHelper.getString(cursor, "rectoken_check");
+                @SuppressLint("Range") String merchant = CursorReadHelper.getString(cursor, "merchant");
+                @SuppressLint("Range") String rectoken = CursorReadHelper.getString(cursor, "rectoken");
 
                 Logger.d(context, TAG, "rectoken_check: " + rectokenCheck + ", merchant: " + merchant + ", rectoken: " + rectoken);
             } while (cursor.moveToNext());
@@ -477,8 +478,8 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             do {
                 str = "";
                 for (String cn : c.getColumnNames()) {
-                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                    list.add(c.getString(c.getColumnIndex(cn)));
+                    str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                    list.add(CursorReadHelper.getString(c, cn));
 
                 }
 

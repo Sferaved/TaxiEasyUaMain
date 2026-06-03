@@ -38,6 +38,7 @@ import java.util.Map;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class CityFinder {
     private static final String TAG = "CityFinder";
@@ -673,9 +674,9 @@ public class CityFinder {
                 try {
                     cr = database.rawQuery(query, null);
                     if (cr.moveToFirst()) {
-                        toLatitude = cr.getDouble(cr.getColumnIndex("to_lat"));
-                        toLongitude = cr.getDouble(cr.getColumnIndex("to_lng"));
-                        finish = cr.getString(cr.getColumnIndex("finish"));
+                        toLatitude = CursorReadHelper.getDouble(cr, "to_lat");
+                        toLongitude = CursorReadHelper.getDouble(cr, "to_lng");
+                        finish = CursorReadHelper.getString(cr, "finish");
                         Logger.d(context, TAG, "toLongitude1:" + toLongitude);
                         Logger.d(context, TAG, "position1:" + position);
                         Logger.d(context, TAG, "finish1:" + finish);
@@ -811,7 +812,7 @@ public class CityFinder {
             if (c.moveToFirst()) {
                 do {
                     for (String cn : c.getColumnNames()) {
-                        list.add(c.getString(c.getColumnIndex(cn)));
+                        list.add(CursorReadHelper.getString(c, cn));
                     }
                 } while (c.moveToNext());
             }

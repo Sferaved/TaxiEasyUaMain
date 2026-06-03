@@ -60,6 +60,7 @@ import java.util.TimeZone;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 
 public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
@@ -234,15 +235,15 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         discount = view.findViewById(R.id.discinp);
 
 
-        discount.setText(logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3));
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
         try {
-            discountFist = Long.parseLong(discountText);
+            discountFist = Long.parseLong(discountText.replace("+", "").trim());
         } catch (NumberFormatException e) {
-            // Handle the case where the expression cannot be evaluated
             FirebaseCrashlytics.getInstance().recordException(e);
+            discountFist = 0;
         }
         Logger.d(context, TAG, "discountFist" + discountFist);
+        updateDiscountDisplay();
 
         btn_min = view.findViewById(R.id.btn_minus);
         btn_min.setOnClickListener(new View.OnClickListener() {
@@ -252,11 +253,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 if (discountFist <= MIN_VALUE) {
                     discountFist = MIN_VALUE;
                 }
-                if(discountFist > 0) {
-                    discount.setText("+" + discountFist);
-                } else {
-                    discount.setText( String.valueOf(discountFist));
-                }
+                updateDiscountDisplay();
             }
         });
         btn_plus = view.findViewById(R.id.btn_plus);
@@ -265,11 +262,7 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
             if (discountFist >= MAX_VALUE) {
                 discountFist = MAX_VALUE;
             }
-            if(discountFist > 0) {
-                discount.setText("+" + discountFist);
-            } else {
-                discount.setText( String.valueOf(discountFist));
-            }
+            updateDiscountDisplay();
         });
 
         tvSelectedDate = view.findViewById(R.id.tv_selected_date);
@@ -445,19 +438,13 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
             database.close();
         }
 
-        String discountText = discount.getText().toString();
-        if (!discountText.isEmpty()) {
+        ContentValues cv = new ContentValues();
+        cv.put("discount", String.valueOf(discountFist));
 
-            ContentValues cv = new ContentValues();
-
-            cv.put("discount", discountText);
-
-            // обновляем по id
-            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                    new String[]{"1"});
-            database.close();
-        }
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                new String[]{"1"});
+        database.close();
         //Проверка даты времени
         timeVerify();
 
@@ -885,8 +872,8 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
                 do {
                     str = "";
                     for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+                        str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                        list.add(CursorReadHelper.getString(c, cn));
 
                     }
 
@@ -895,6 +882,19 @@ public class MyBottomSheetDialogFragment extends BottomSheetDialogFragment {
         }
         database.close();
         return list;
+    }
+
+    private void updateDiscountDisplay() {
+        if (discount != null) {
+            discount.setText(formatDiscountPercent(discountFist));
+        }
+    }
+
+    private static String formatDiscountPercent(long value) {
+        if (value > 0) {
+            return "+" + value;
+        }
+        return String.valueOf(value);
     }
 }
 

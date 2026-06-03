@@ -18,6 +18,7 @@ import java.util.Arrays;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class UserPermissions {
     private static final String TAG = "TAG_PERM";
@@ -66,8 +67,8 @@ public class UserPermissions {
         String[] values = new String[2];
         if (cursor.moveToFirst()) {
             // Получение значений из курсора
-            @SuppressLint("Range") String cardPayValue = cursor.getString(cursor.getColumnIndex("card_pay"));
-            @SuppressLint("Range") String bonusPayValue = cursor.getString(cursor.getColumnIndex("bonus_pay"));
+            @SuppressLint("Range") String cardPayValue = CursorReadHelper.getString(cursor, "card_pay");
+            @SuppressLint("Range") String bonusPayValue = CursorReadHelper.getString(cursor, "bonus_pay");
 
             // Используйте значения, как вам необходимо
             values[0] = bonusPayValue;

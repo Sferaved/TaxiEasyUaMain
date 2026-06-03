@@ -15,6 +15,7 @@ import com.taxi.easy.ua.utils.log.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class VerifyUserTask {
     private static final String TAG = "VerifyUserTask";
@@ -106,7 +107,7 @@ public class VerifyUserTask {
 
             if (cursor.moveToFirst()) {
                 for (String column : cursor.getColumnNames()) {
-                    result.put(column, cursor.getString(cursor.getColumnIndex(column)));
+                    result.put(column, CursorReadHelper.getString(cursor, column));
                 }
             } else {
                 Logger.w(context, TAG, "Cursor is empty for table: " + MainActivity.TABLE_USER_INFO);

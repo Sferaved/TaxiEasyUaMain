@@ -47,6 +47,7 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.http.GET;
 import retrofit2.http.Path;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class TilePreloadWorker extends Worker {
     private static final String TAG = "TilePreloadWorker";
@@ -105,8 +106,8 @@ public class TilePreloadWorker extends Worker {
             database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, Context.MODE_PRIVATE, null);
             cursor = database.rawQuery("SELECT startLat, startLan FROM " + MainActivity.ROUT_MARKER + " LIMIT 1", null);
             if (cursor.moveToFirst()) {
-                @SuppressLint("Range") double startLat = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                @SuppressLint("Range") double startLan = cursor.getDouble(cursor.getColumnIndex("startLan"));
+                @SuppressLint("Range") double startLat = CursorReadHelper.getDouble(cursor, "startLat");
+                @SuppressLint("Range") double startLan = CursorReadHelper.getDouble(cursor, "startLan");
                 startPoint = new GeoPoint(startLat, startLan);
                 Logger.d(getApplicationContext(), TAG, "Загружена точка старта из ROUT_MARKER: " + startPoint);
             } else {

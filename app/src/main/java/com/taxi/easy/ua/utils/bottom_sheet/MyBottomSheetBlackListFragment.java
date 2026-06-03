@@ -25,6 +25,7 @@ import com.uxcam.UXCam;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 
 public class MyBottomSheetBlackListFragment extends BottomSheetDialogFragment {
@@ -81,8 +82,8 @@ public class MyBottomSheetBlackListFragment extends BottomSheetDialogFragment {
                 do {
                     str = "";
                     for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+                        str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                        list.add(CursorReadHelper.getString(c, cn));
 
                     }
 

@@ -87,6 +87,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class CacheOrderFragment extends Fragment {
 
@@ -273,8 +274,8 @@ public class CacheOrderFragment extends Fragment {
             do {
                 str = "";
                 for (String cn : c.getColumnNames()) {
-                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                    list.add(c.getString(c.getColumnIndex(cn)));
+                    str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                    list.add(CursorReadHelper.getString(c, cn));
 
                 }
 
@@ -318,12 +319,12 @@ public class CacheOrderFragment extends Fragment {
 
         // Получите значения полей из первой записи
 
-        double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-        double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
-        double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-        double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-        String start = cursor.getString(cursor.getColumnIndex("start"));
-        String finishRaw = cursor.getString(cursor.getColumnIndex("finish"));
+        double originLatitude = CursorReadHelper.getDouble(cursor, "startLat");
+        double originLongitude = CursorReadHelper.getDouble(cursor, "startLan");
+        double toLatitude = CursorReadHelper.getDouble(cursor, "to_lat");
+        double toLongitude = CursorReadHelper.getDouble(cursor, "to_lng");
+        String start = CursorReadHelper.getString(cursor, "start");
+        String finishRaw = CursorReadHelper.getString(cursor, "finish");
         String finish = finishRaw;
         String onCityLabel = context.getString(R.string.on_city_tv);
         boolean onCityTrip = finish != null
@@ -558,7 +559,7 @@ public class CacheOrderFragment extends Fragment {
 
         if (cursor.moveToFirst()) {
             do {
-                result = cursor.getString(cursor.getColumnIndex("rectoken"));
+                result = CursorReadHelper.getString(cursor, "rectoken");
                 Logger.d(context, TAG, "Found rectoken with rectoken_check = 1" + ": " + result);
                 return result;
             } while (cursor.moveToNext());

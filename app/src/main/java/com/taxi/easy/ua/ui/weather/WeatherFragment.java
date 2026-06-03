@@ -52,6 +52,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.http.GET;
 import retrofit2.http.Query;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class WeatherFragment extends Fragment {
 
@@ -729,7 +730,7 @@ public class WeatherFragment extends Fragment {
             if (c.moveToFirst()) {
                 do {
                     for (String cn : c.getColumnNames()) {
-                        list.add(c.getString(c.getColumnIndex(cn)));
+                        list.add(CursorReadHelper.getString(c, cn));
                     }
                 } while (c.moveToNext());
             }

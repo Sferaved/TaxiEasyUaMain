@@ -60,6 +60,7 @@ import java.util.TimeZone;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 
 public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
@@ -244,15 +245,14 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             komenterinp.setText(comment);
         }
 
-        discount.setText(logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3));
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
         try {
-            discountFist = Long.parseLong(discountText);
+            discountFist = Long.parseLong(discountText.replace("+", "").trim());
         } catch (NumberFormatException e) {
-            // Handle the case where the expression cannot be evaluated
             FirebaseCrashlytics.getInstance().recordException(e);
+            discountFist = 0;
         }
-
+        updateDiscountDisplay();
 
         btn_min = view.findViewById(R.id.btn_minus);
         btn_min.setOnClickListener(v -> {
@@ -260,11 +260,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             if (discountFist <= MIN_VALUE) {
                 discountFist = MIN_VALUE;
             }
-            if(discountFist > 0) {
-                discount.setText("+" + discountFist);
-            } else {
-                discount.setText( String.valueOf(discountFist));
-            }
+            updateDiscountDisplay();
         });
         btn_plus = view.findViewById(R.id.btn_plus);
         btn_plus.setOnClickListener(v -> {
@@ -272,11 +268,7 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
             if (discountFist >= MAX_VALUE) {
                 discountFist = MAX_VALUE;
             }
-            if(discountFist > 0) {
-                discount.setText("+" + discountFist);
-            } else {
-                discount.setText( String.valueOf(discountFist));
-            }
+            updateDiscountDisplay();
         });
 
         tvSelectedDate = view.findViewById(R.id.tv_selected_date);
@@ -424,19 +416,13 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         String comment = sharedPreferencesHelperMain.getValue("comment", "no_comment").toString();
         Logger.d(context, TAG, "comment " + comment);
 
-        String discountText = discount.getText().toString();
-        if (!discountText.isEmpty()) {
+        ContentValues cv = new ContentValues();
+        cv.put("discount", String.valueOf(discountFist));
 
-            ContentValues cv = new ContentValues();
-
-            cv.put("discount", discountText);
-
-            // обновляем по id
-            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                    new String[]{"1"});
-            database.close();
-        }
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                new String[]{"1"});
+        database.close();
         //Проверка даты времени
         timeVerify();
         changeCost();
@@ -695,10 +681,10 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
 
         // Получите значения полей из первой записи
 
-        double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-        double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
-        double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-        double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+        double originLatitude = CursorReadHelper.getDouble(cursor, "startLat");
+        double originLongitude = CursorReadHelper.getDouble(cursor, "startLan");
+        double toLatitude = CursorReadHelper.getDouble(cursor, "to_lat");
+        double toLongitude = CursorReadHelper.getDouble(cursor, "to_lng");
 
 
         cursor.close();
@@ -804,12 +790,12 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
 
         // Получите значения полей из первой записи
 
-        double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-        double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
-        double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-        double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-        String start = cursor.getString(cursor.getColumnIndex("start"));
-        String finish = cursor.getString(cursor.getColumnIndex("finish"));
+        double originLatitude = CursorReadHelper.getDouble(cursor, "startLat");
+        double originLongitude = CursorReadHelper.getDouble(cursor, "startLan");
+        double toLatitude = CursorReadHelper.getDouble(cursor, "to_lat");
+        double toLongitude = CursorReadHelper.getDouble(cursor, "to_lng");
+        String start = CursorReadHelper.getString(cursor, "start");
+        String finish = CursorReadHelper.getString(cursor, "finish");
 
         // Заменяем символ '/' в строках
         start = start.replace("/", "|");
@@ -1094,8 +1080,8 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
                 do {
                     str = "";
                     for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+                        str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                        list.add(CursorReadHelper.getString(c, cn));
 
                     }
 
@@ -1104,6 +1090,19 @@ public class MyBottomSheetGeoFragment extends BottomSheetDialogFragment {
         }
         database.close();
         return list;
+    }
+
+    private void updateDiscountDisplay() {
+        if (discount != null) {
+            discount.setText(formatDiscountPercent(discountFist));
+        }
+    }
+
+    private static String formatDiscountPercent(long value) {
+        if (value > 0) {
+            return "+" + value;
+        }
+        return String.valueOf(value);
     }
 }
 

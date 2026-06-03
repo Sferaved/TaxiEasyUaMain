@@ -65,6 +65,7 @@ import java.util.Map;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 
 public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
@@ -525,7 +526,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
         if (cursor.moveToFirst()) {
             do {
-                result = cursor.getString(cursor.getColumnIndex("rectoken"));
+                result = CursorReadHelper.getString(cursor, "rectoken");
                 Logger.d(context, TAG, "Found rectoken with rectoken_check = 1" + ": " + result);
                 return result;
             } while (cursor.moveToNext());
@@ -909,10 +910,10 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
         );
 
         if (cursor.moveToFirst()) {
-            originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-            originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
-            toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-            toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
+            originLatitude = CursorReadHelper.getDouble(cursor, "startLat");
+            originLongitude = CursorReadHelper.getDouble(cursor, "startLan");
+            toLatitude = CursorReadHelper.getDouble(cursor, "to_lat");
+            toLongitude = CursorReadHelper.getDouble(cursor, "to_lng");
 
             // Теперь у вас есть значения из базы данных
             Log.d(TAG, "StartLat: " + originLatitude + ", StartLan: " + originLongitude + ", ToLat: " + toLatitude + ", ToLng: " + toLongitude);
@@ -1052,8 +1053,8 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
             do {
                 str = "";
                 for (String cn : c.getColumnNames()) {
-                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                    list.add(c.getString(c.getColumnIndex(cn)));
+                    str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                    list.add(CursorReadHelper.getString(c, cn));
 
                 }
 

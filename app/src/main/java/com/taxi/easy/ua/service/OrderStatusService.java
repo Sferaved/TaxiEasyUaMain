@@ -35,6 +35,7 @@ import java.util.List;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class OrderStatusService extends Service {
     private static final String TAG = "OrderStatusService";
@@ -130,7 +131,7 @@ public class OrderStatusService extends Service {
         if (c.moveToFirst()) {
             do {
                 for (String cn : c.getColumnNames()) {
-                    list.add(c.getString(c.getColumnIndex(cn)));
+                    list.add(CursorReadHelper.getString(c, cn));
                 }
             } while (c.moveToNext());
         }

@@ -60,6 +60,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class OptionsFragment extends Fragment {
     ListView listView;
@@ -248,14 +249,14 @@ public class OptionsFragment extends Fragment {
             komenterinp.setText(comment);
         }
 
-        discount.setText(logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3));
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
-
         try {
-            discountFist = Long.parseLong(discountText);
+            discountFist = parseDiscountPercent(discountText);
         } catch (NumberFormatException e) {
             FirebaseCrashlytics.getInstance().recordException(e);
+            discountFist = 0;
         }
+        updateDiscountDisplay();
 
         btn_min = view.findViewById(R.id.btn_minus);
         btn_min.setOnClickListener(v -> {
@@ -263,11 +264,7 @@ public class OptionsFragment extends Fragment {
             if (discountFist <= MIN_VALUE) {
                 discountFist = MIN_VALUE;
             }
-            if(discountFist > 0) {
-                discount.setText("+" + discountFist);
-            } else {
-                discount.setText(String.valueOf(discountFist));
-            }
+            updateDiscountDisplay();
         });
         btn_plus = view.findViewById(R.id.btn_plus);
         btn_plus.setOnClickListener(v -> {
@@ -275,11 +272,7 @@ public class OptionsFragment extends Fragment {
             if (discountFist >= MAX_VALUE) {
                 discountFist = MAX_VALUE;
             }
-            if(discountFist > 0) {
-                discount.setText("+" + discountFist);
-            } else {
-                discount.setText(String.valueOf(discountFist));
-            }
+            updateDiscountDisplay();
         });
 
         // Initialize Clear Button
@@ -338,7 +331,6 @@ public class OptionsFragment extends Fragment {
             }
         });
 
-        // Санитизация скидки (только цифры)
         discount.addTextChangedListener(new TextWatcher() {
             private boolean isSanitizing = false;
 
@@ -353,21 +345,63 @@ public class OptionsFragment extends Fragment {
                 if (isSanitizing) return;
 
                 String original = s.toString();
-                String sanitized = InputSanitizerHelper.sanitize(original, InputSanitizerHelper.InputType.NUMERIC);
-
-                // Также разрешаем знак + и -
-                sanitized = sanitized.replaceAll("[^\\d-]", "");
-                if (sanitized.startsWith("-") && sanitized.length() > 1) {
-                    sanitized = "-" + sanitized.replaceAll("-", "");
-                }
+                String sanitized = sanitizeDiscountInput(original);
 
                 if (!sanitized.equals(original)) {
                     isSanitizing = true;
                     s.replace(0, s.length(), sanitized);
                     isSanitizing = false;
                 }
+                syncDiscountFistFromInput(sanitized);
             }
         });
+    }
+
+    private void updateDiscountDisplay() {
+        if (discount != null) {
+            discount.setText(formatDiscountPercent(discountFist));
+        }
+    }
+
+    private static String formatDiscountPercent(long value) {
+        if (value > 0) {
+            return "+" + value;
+        }
+        return String.valueOf(value);
+    }
+
+    private static long parseDiscountPercent(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return 0;
+        }
+        return Long.parseLong(text.replace("+", "").trim());
+    }
+
+    private static String sanitizeDiscountInput(String original) {
+        if (original == null) {
+            return "";
+        }
+        String trimmed = original.trim();
+        boolean negative = trimmed.startsWith("-");
+        boolean positive = !negative && trimmed.startsWith("+");
+        String digits = trimmed.replaceAll("[^\\d]", "");
+        if (negative) {
+            return digits.isEmpty() ? "-" : "-" + digits;
+        }
+        if (positive) {
+            return digits.isEmpty() ? "+" : "+" + digits;
+        }
+        return digits;
+    }
+
+    private void syncDiscountFistFromInput(String text) {
+        if (text == null || text.isEmpty() || text.equals("+") || text.equals("-")) {
+            return;
+        }
+        try {
+            discountFist = parseDiscountPercent(text);
+        } catch (NumberFormatException ignored) {
+        }
     }
 
     private void clearAllData() {
@@ -390,8 +424,8 @@ public class OptionsFragment extends Fragment {
         sharedPreferencesHelperMain.saveValue("comment", "no_comment");
 
         // Clear discount (с санитизацией)
-        discount.setText("0");
         discountFist = 0;
+        updateDiscountDisplay();
         ContentValues cv = new ContentValues();
         cv.put("discount", "0");
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?", new String[]{"1"});
@@ -449,24 +483,15 @@ public class OptionsFragment extends Fragment {
             sharedPreferencesHelperMain.saveValue("comment", "no_comment");
         }
 
-        // САНИТИЗАЦИЯ скидки перед сохранением
-        String discountText = discount.getText().toString();
-        String safeDiscount = InputSanitizerHelper.sanitize(discountText, InputSanitizerHelper.InputType.NUMERIC);
+        // Сохраняем числовое значение скидки (со знаком), не текст поля: NUMERIC-санитайзер отрезает «-»
+        String safeDiscount = String.valueOf(discountFist);
+        sharedPreferencesHelperMain.saveValue("discount", safeDiscount);
 
-        // Разрешаем отрицательные значения
-        if (discountText.startsWith("-") && safeDiscount.isEmpty()) {
-            safeDiscount = "-" + discountText.replaceAll("[^\\d]", "");
-        }
-
-        if (!safeDiscount.isEmpty()) {
-            sharedPreferencesHelperMain.saveValue("discount", safeDiscount);
-
-            ContentValues cv = new ContentValues();
-            cv.put("discount", safeDiscount);
-            database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?", new String[]{"1"});
-            database.close();
-        }
+        ContentValues cv = new ContentValues();
+        cv.put("discount", safeDiscount);
+        database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?", new String[]{"1"});
+        database.close();
 
         timeVerify();
         changeCost();
@@ -672,8 +697,8 @@ public class OptionsFragment extends Fragment {
             do {
                 str = "";
                 for (String cn : c.getColumnNames()) {
-                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                    list.add(c.getString(c.getColumnIndex(cn)));
+                    str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                    list.add(CursorReadHelper.getString(c, cn));
                 }
             } while (c.moveToNext());
         }

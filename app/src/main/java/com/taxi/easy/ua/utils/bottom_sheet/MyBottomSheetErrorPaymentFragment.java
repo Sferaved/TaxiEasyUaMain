@@ -88,6 +88,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment {
 
@@ -584,12 +585,12 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
         cursor.moveToFirst();
 
-        double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-        double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
-        double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-        double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-        String start = cursor.getString(cursor.getColumnIndex("start"));
-        String finish = cursor.getString(cursor.getColumnIndex("finish"));
+        double originLatitude = CursorReadHelper.getDouble(cursor, "startLat");
+        double originLongitude = CursorReadHelper.getDouble(cursor, "startLan");
+        double toLatitude = CursorReadHelper.getDouble(cursor, "to_lat");
+        double toLongitude = CursorReadHelper.getDouble(cursor, "to_lng");
+        String start = CursorReadHelper.getString(cursor, "start");
+        String finish = CursorReadHelper.getString(cursor, "finish");
         Logger.d(context, TAG, "getTaxiUrlSearchMarkers: start " + start);
 
         if (start != null) {
@@ -1048,7 +1049,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
         if (cursor.moveToFirst()) {
             do {
-                result = cursor.getString(cursor.getColumnIndex("rectoken"));
+                result = CursorReadHelper.getString(cursor, "rectoken");
                 Logger.d(context, TAG, "Found rectoken with rectoken_check = 1 " + ": " + result);
                 return result;
             } while (cursor.moveToNext());
@@ -1085,11 +1086,11 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         if (cursor.moveToFirst()) {
             do {
                 Map<String, String> cardMap = new HashMap<>();
-                cardMap.put("card_type", cursor.getString(cursor.getColumnIndex("card_type")));
-                cardMap.put("bank_name", cursor.getString(cursor.getColumnIndex("bank_name")));
-                cardMap.put("masked_card", cursor.getString(cursor.getColumnIndex("masked_card")));
-                cardMap.put("rectoken", cursor.getString(cursor.getColumnIndex("rectoken")));
-                cardMap.put("rectoken_check", cursor.getString(cursor.getColumnIndex("rectoken_check")));
+                cardMap.put("card_type", CursorReadHelper.getString(cursor, "card_type"));
+                cardMap.put("bank_name", CursorReadHelper.getString(cursor, "bank_name"));
+                cardMap.put("masked_card", CursorReadHelper.getString(cursor, "masked_card"));
+                cardMap.put("rectoken", CursorReadHelper.getString(cursor, "rectoken"));
+                cardMap.put("rectoken_check", CursorReadHelper.getString(cursor, "rectoken_check"));
 
                 cardMaps.add(cardMap);
             } while (cursor.moveToNext());
@@ -1111,8 +1112,8 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
                 do {
                     str = "";
                     for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+                        str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                        list.add(CursorReadHelper.getString(c, cn));
                     }
                 } while (c.moveToNext());
             }

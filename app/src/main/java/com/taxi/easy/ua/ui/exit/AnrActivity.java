@@ -21,6 +21,7 @@ import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class AnrActivity extends AppCompatActivity {
 
@@ -84,7 +85,7 @@ public class AnrActivity extends AppCompatActivity {
         if (c.moveToFirst()) {
             do {
                 for (String cn : c.getColumnNames()) {
-                    list.add(c.getString(c.getColumnIndex(cn)));
+                    list.add(CursorReadHelper.getString(c, cn));
                 }
             } while (c.moveToNext());
         }

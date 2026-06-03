@@ -58,6 +58,7 @@ import java.util.TimeZone;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 
 public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
@@ -231,9 +232,14 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
             komenterinp.setText(comment);
         }
 
-        discount.setText(logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3));
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
-        discountFist =  Integer.parseInt(discountText);
+        try {
+            discountFist = Integer.parseInt(discountText.replace("+", "").trim());
+        } catch (NumberFormatException e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+            discountFist = 0;
+        }
+        updateDiscountDisplay();
 
 
         btn_min = view.findViewById(R.id.btn_minus);
@@ -244,11 +250,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
                 if (discountFist <= MIN_VALUE) {
                     discountFist = MIN_VALUE;
                 }
-                if(discountFist > 0) {
-                    discount.setText("+" + discountFist);
-                } else {
-                    discount.setText( String.valueOf(discountFist));
-                }
+                updateDiscountDisplay();
             }
         });
         btn_plus = view.findViewById(R.id.btn_plus);
@@ -259,11 +261,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
                 if (discountFist >= MAX_VALUE) {
                     discountFist = MAX_VALUE;
                 }
-                if(discountFist > 0) {
-                    discount.setText("+" + discountFist);
-                } else {
-                    discount.setText( String.valueOf(discountFist));
-                }
+                updateDiscountDisplay();
             }
         });
 
@@ -436,19 +434,13 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
             database.close();
         }
 
-        String discountText = discount.getText().toString();
-        if (!discountText.isEmpty()) {
+        ContentValues cv = new ContentValues();
+        cv.put("discount", String.valueOf(discountFist));
 
-            ContentValues cv = new ContentValues();
-
-            cv.put("discount", discountText);
-
-            // обновляем по id
-            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
-                    new String[]{"1"});
-            database.close();
-        }
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?",
+                new String[]{"1"});
+        database.close();
         //Проверка даты времени
         timeVerify();
         try {
@@ -870,8 +862,8 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
                 do {
                     str = "";
                     for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+                        str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                        list.add(CursorReadHelper.getString(c, cn));
 
                     }
 
@@ -880,6 +872,19 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
         }
         database.close();
         return list;
+    }
+
+    private void updateDiscountDisplay() {
+        if (discount != null) {
+            discount.setText(formatDiscountPercent(discountFist));
+        }
+    }
+
+    private static String formatDiscountPercent(long value) {
+        if (value > 0) {
+            return "+" + value;
+        }
+        return String.valueOf(value);
     }
 }
 

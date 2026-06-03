@@ -118,6 +118,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class FinishSeparateFragment extends Fragment {
 
@@ -1227,8 +1228,8 @@ public class FinishSeparateFragment extends Fragment {
             do {
                 str = "";
                 for (String cn : c.getColumnNames()) {
-                    str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                    list.add(c.getString(c.getColumnIndex(cn)));
+                    str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                    list.add(CursorReadHelper.getString(c, cn));
 
                 }
             } while (c.moveToNext());
@@ -3908,9 +3909,9 @@ public class FinishSeparateFragment extends Fragment {
 
         // Получите значения полей из первой записи
 
-        @SuppressLint("Range") double startLat = cursor.getDouble(cursor.getColumnIndex("startLat"));
-        @SuppressLint("Range") double startLan = cursor.getDouble(cursor.getColumnIndex("startLan"));
-        @SuppressLint("Range") String start = cursor.getString(cursor.getColumnIndex("start"));
+        @SuppressLint("Range") double startLat = CursorReadHelper.getDouble(cursor, "startLat");
+        @SuppressLint("Range") double startLan = CursorReadHelper.getDouble(cursor, "startLan");
+        @SuppressLint("Range") String start = CursorReadHelper.getString(cursor, "start");
 
         cursor.close();
         database.close();

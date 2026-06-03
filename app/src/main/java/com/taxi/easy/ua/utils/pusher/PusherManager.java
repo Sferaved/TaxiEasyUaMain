@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 /**
  * Управляет подключением к Pusher и обработкой событий в реальном времени
@@ -509,6 +510,13 @@ public class PusherManager {
             mainHandler.postSafe(() -> {
                 viewModel.updateUid(orderUid);
                 viewModel.updatePaySystemStatus(paySystemStatus);
+                if (isContextValid()) {
+                    Activity activity = activityRef.get();
+                    if (activity != null) {
+                        com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper.tryEarlyNavigateToFinish(
+                                activity, orderUid, paySystemStatus);
+                    }
+                }
             });
         });
     }
@@ -900,7 +908,7 @@ public class PusherManager {
             if (c.moveToFirst()) {
                 do {
                     for (String cn : c.getColumnNames()) {
-                        list.add(c.getString(c.getColumnIndex(cn)));
+                        list.add(CursorReadHelper.getString(c, cn));
                     }
                 } while (c.moveToNext());
             }

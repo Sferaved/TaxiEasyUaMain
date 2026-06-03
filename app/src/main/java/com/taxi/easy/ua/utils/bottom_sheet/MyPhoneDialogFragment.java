@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
 
@@ -214,7 +215,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
             if (cursor != null && cursor.moveToFirst()) {
                 do {
                     for (String columnName : cursor.getColumnNames()) {
-                        list.add(cursor.getString(cursor.getColumnIndex(columnName)));
+                        list.add(CursorReadHelper.getString(cursor, columnName));
                     }
                 } while (cursor.moveToNext());
             }

@@ -63,6 +63,7 @@ import java.util.Objects;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class GalleryFragment extends Fragment {
 
@@ -719,12 +720,12 @@ public class GalleryFragment extends Fragment {
 
         // Получите значения полей из первой записи
 
-        double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-        double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
-        double toLatitude = cursor.getDouble(cursor.getColumnIndex("to_lat"));
-        double toLongitude = cursor.getDouble(cursor.getColumnIndex("to_lng"));
-        String start = cursor.getString(cursor.getColumnIndex("start"));
-        String finish = cursor.getString(cursor.getColumnIndex("finish"));
+        double originLatitude = CursorReadHelper.getDouble(cursor, "startLat");
+        double originLongitude = CursorReadHelper.getDouble(cursor, "startLan");
+        double toLatitude = CursorReadHelper.getDouble(cursor, "to_lat");
+        double toLongitude = CursorReadHelper.getDouble(cursor, "to_lng");
+        String start = CursorReadHelper.getString(cursor, "start");
+        String finish = CursorReadHelper.getString(cursor, "finish");
 
         // Заменяем символ '/' в строках
         start = start.replace("/", "|");
@@ -910,8 +911,8 @@ public class GalleryFragment extends Fragment {
                 do {
                     str = "";
                     for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+                        str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                        list.add(CursorReadHelper.getString(c, cn));
 
                     }
 

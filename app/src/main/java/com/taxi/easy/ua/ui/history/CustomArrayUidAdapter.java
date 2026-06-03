@@ -126,6 +126,8 @@ public class CustomArrayUidAdapter extends ArrayAdapter<String> {
 
             sharedPreferencesHelperMain.saveValue("gps_upd", false);
             sharedPreferencesHelperMain.saveValue("old_cost", parts[1]);
+            sharedPreferencesHelperMain.saveValue("cost_preview_display", parts[1]);
+            sharedPreferencesHelperMain.saveValue("cost_recalc_from_history", true);
             MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)
                     .build());
@@ -151,6 +153,8 @@ public class CustomArrayUidAdapter extends ArrayAdapter<String> {
             updateRoutMarker(settings);
             sharedPreferencesHelperMain.saveValue("gps_upd", false);
             sharedPreferencesHelperMain.saveValue("old_cost", parts[1]);
+            sharedPreferencesHelperMain.saveValue("cost_preview_display", parts[1]);
+            sharedPreferencesHelperMain.saveValue("cost_recalc_from_history", true);
             MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)
                     .build());

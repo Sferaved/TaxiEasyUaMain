@@ -123,6 +123,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 // Фрагмент для отображения карты и управления маркерами
 public class OpenStreetMapFragment extends Fragment {
@@ -982,8 +983,8 @@ public class OpenStreetMapFragment extends Fragment {
                 String query = "SELECT startLat, startLan FROM " + MainActivity.ROUT_MARKER + " LIMIT 1";
                 cursor = database.rawQuery(query, null);
                 if (cursor.moveToFirst()) {
-                    @SuppressLint("Range") double originLatitude = cursor.getDouble(cursor.getColumnIndex("startLat"));
-                    @SuppressLint("Range") double originLongitude = cursor.getDouble(cursor.getColumnIndex("startLan"));
+                    @SuppressLint("Range") double originLatitude = CursorReadHelper.getDouble(cursor, "startLat");
+                    @SuppressLint("Range") double originLongitude = CursorReadHelper.getDouble(cursor, "startLan");
                     startPoint = new GeoPoint(originLatitude, originLongitude);
                     Logger.d(ctx, TAG, "Loaded start point from ROUT_MARKER: " + startPoint);
                 } else {
@@ -1848,7 +1849,7 @@ public class OpenStreetMapFragment extends Fragment {
         Cursor cursor = database.rawQuery("SELECT " + columnName + " FROM " + MainActivity.TABLE_POSITION_INFO + " WHERE id = ?", new String[]{"1"});
         double result = 0.0;
         if (cursor.moveToFirst()) {
-            result = cursor.getDouble(cursor.getColumnIndex(columnName));
+            result = CursorReadHelper.getDouble(cursor, columnName);
         }
         cursor.close();
         database.close();
@@ -1864,7 +1865,7 @@ public class OpenStreetMapFragment extends Fragment {
         if (c.moveToFirst()) {
             do {
                 for (String cn : c.getColumnNames()) {
-                    list.add(c.getString(c.getColumnIndex(cn)));
+                    list.add(CursorReadHelper.getString(c, cn));
                 }
             } while (c.moveToNext());
             c.close();

@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class WeatherWidget extends AppWidgetProvider {
 
@@ -548,7 +549,7 @@ public class WeatherWidget extends AppWidgetProvider {
                 if (c != null && c.moveToFirst()) {
                     do {
                         for (String cn : c.getColumnNames()) {
-                            String value = c.getString(c.getColumnIndex(cn));
+                            String value = CursorReadHelper.getString(c, cn);
                             if (value != null) {
                                 list.add(value);
                             }

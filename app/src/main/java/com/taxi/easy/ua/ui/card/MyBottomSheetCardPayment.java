@@ -68,6 +68,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 
 public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
@@ -753,7 +754,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 //                            Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_WFP_CARDS + " ORDER BY id DESC LIMIT 1", null);
 //                            if (cursor.moveToFirst()) {
 //                                // Получаем значение ID последней записи
-//                                @SuppressLint("Range") int lastId = cursor.getInt(cursor.getColumnIndex("id"));
+//                                @SuppressLint("Range") int lastId = CursorReadHelper.getInt(cursor, "id");
 //                                cursor.close();
 //
 //                                // Обновляем строку с найденным ID
@@ -801,8 +802,8 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                 do {
                     str = "";
                     for (String cn : c.getColumnNames()) {
-                        str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
-                        list.add(c.getString(c.getColumnIndex(cn)));
+                        str = str.concat(cn + " = " + CursorReadHelper.getString(c, cn) + "; ");
+                        list.add(CursorReadHelper.getString(c, cn));
 
                     }
 

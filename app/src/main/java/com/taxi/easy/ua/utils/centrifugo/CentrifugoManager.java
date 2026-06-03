@@ -24,6 +24,7 @@ import com.taxi.easy.ua.utils.cost.CostParseHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.payment.PendingTransactionHelper;
+import com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper;
 import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
 
 import org.json.JSONException;
@@ -55,6 +56,7 @@ import io.github.centrifugal.centrifuge.SubscribingEvent;
 import io.github.centrifugal.centrifuge.Subscription;
 import io.github.centrifugal.centrifuge.SubscriptionEventListener;
 import io.github.centrifugal.centrifuge.UnsubscribedEvent;
+import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 /**
  * Управляет подключением к Centrifugo и обработкой событий в реальном времени
@@ -412,7 +414,6 @@ public class CentrifugoManager {
             }
             Log.d(TAG, "Context valid: " + isContextValid());
 
-            // Пробуем обновить напрямую
             if (isContextValid()) {
                 Activity activity = activityRef.get();
                 if (activity != null) {
@@ -421,6 +422,8 @@ public class CentrifugoManager {
                             Log.d(TAG, "🟢 Updating ViewModel on UI thread");
                             viewModel.updateUid(orderUid);
                             viewModel.updatePaySystemStatus(paySystemStatus);
+                            EarlyOrderNavigationHelper.tryEarlyNavigateToFinish(
+                                    activity, orderUid, paySystemStatus);
                             Log.d(TAG, "✅ ViewModel updated, new value should be: " + orderUid);
                         } catch (Exception e) {
                             Log.e(TAG, "❌ UI thread update failed", e);
@@ -873,7 +876,7 @@ public class CentrifugoManager {
             if (c.moveToFirst()) {
                 do {
                     for (String cn : c.getColumnNames()) {
-                        list.add(c.getString(c.getColumnIndex(cn)));
+                        list.add(CursorReadHelper.getString(c, cn));
                     }
                 } while (c.moveToNext());
             }
