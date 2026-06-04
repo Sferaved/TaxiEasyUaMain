@@ -794,12 +794,24 @@ public class FinishSeparateFragment extends Fragment {
                 && "Поиск авто".equals(incomingAction);
     }
 
+    /** Тост «Оплата не пройшла» только для неудачной доплаты при уже подтверждённой основной оплате. */
+    private void notifyAddCostPaymentFailed() {
+        if (!ExecutionStatusViewModel.isAddCostInFlightPref()) {
+            return;
+        }
+        ExecutionStatusViewModel.setAddCostInFlightPref(false);
+        if (isAdded() && context != null) {
+            Toast.makeText(context, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
+        }
+    }
+
     /** Declined из push/Centrifugo — показываем шторку только после checkStatus WFP. */
     private void confirmDeclinedWithServerCheck() {
         if (!isAdded() || canceled || isViewingCompletedOrder()) {
             return;
         }
         if (isPaymentVerified() || isOrderDispatched()) {
+            notifyAddCostPaymentFailed();
             PendingTransactionHelper.clear();
             clearDeclinedPaymentUi();
             return;
@@ -909,6 +921,11 @@ public class FinishSeparateFragment extends Fragment {
         }
 
         if ("Declined".equals(transactionStatus)) {
+            if (isPaymentVerified() || isOrderDispatched()) {
+                notifyAddCostPaymentFailed();
+                clearDeclinedPaymentUi();
+                return;
+            }
             presentDeclinedUiOnFinish();
         }
     }
@@ -1051,6 +1068,13 @@ public class FinishSeparateFragment extends Fragment {
     private void closeActiveOrderScreen() {
         if (context == null) {
             return;
+        }
+        stopCycle();
+        if (canceled || ExecutionStatusViewModel.isUserCanceledPref()) {
+            ExecutionStatusViewModel.clearActiveOrderNoticeSuppress();
+            clearActiveOrderUidsAfterCancel();
+        } else if (activeOrderCloseMode) {
+            sharedPreferencesHelperMain.saveValue("carFound", false);
         }
         startActivity(new Intent(context, MainActivity.class));
     }
@@ -2116,7 +2140,9 @@ public class FinishSeparateFragment extends Fragment {
             if (activeUid == null || activeUid.isEmpty()) {
                 activeUid = uid;
             }
-            ExecutionStatusViewModel.markUserCanceledOrder(activeUid);
+            if (!ExecutionStatusViewModel.isUserCanceledPref()) {
+                ExecutionStatusViewModel.markUserCanceledOrder(activeUid);
+            }
            action = null;
 
             // Скрываем ненужные элементы
@@ -2649,9 +2675,15 @@ public class FinishSeparateFragment extends Fragment {
             if (isViewingCompletedOrder()) {
                 return;
             }
-            if ("Declined".equals(status) && !isPaymentVerified()) {
-                confirmDeclinedWithServerCheck();
+            if ("Declined".equals(status)) {
+                if (isPaymentVerified() || isOrderDispatched()) {
+                    notifyAddCostPaymentFailed();
+                    clearDeclinedPaymentUi();
+                } else {
+                    confirmDeclinedWithServerCheck();
+                }
             } else if (isApprovedPaymentStatus(status)) {
+                ExecutionStatusViewModel.setAddCostInFlightPref(false);
                 clearDeclinedPaymentUi();
             }
         });

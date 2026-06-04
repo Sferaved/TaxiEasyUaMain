@@ -80,6 +80,8 @@ public class OptionsFragment extends Fragment {
     SQLiteDatabase database;
     Activity context;
     private CheckBox cbInclusive;
+    /** true только после явного выбора даты/времени в пикере (не дефолт +10 мин). */
+    private boolean userPickedScheduledDateTime = false;
 
     @SuppressLint("MissingInflatedId")
     @Nullable
@@ -96,9 +98,6 @@ public class OptionsFragment extends Fragment {
 
         context = requireActivity();
         database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-
-        sharedPreferencesHelperMain.saveValue("time", "no_time");
-        sharedPreferencesHelperMain.saveValue("date", "no_date");
 
         arrayService = new String[]{
                 getString(R.string.BAGGAGE),
@@ -234,11 +233,9 @@ public class OptionsFragment extends Fragment {
             }
         });
         tvSelectedTime = view.findViewById(R.id.tv_selected_time);
-
-        calendar = Calendar.getInstance();
-        calendar.add(Calendar.MINUTE, 10);
+        tvSelectedDate = view.findViewById(R.id.tv_selected_date);
         timeZone = TimeZone.getDefault();
-        updateSelectedTime();
+        restoreDateTimeFieldsFromPrefs();
         tvSelectedTime.setOnClickListener(v -> showTimePickerDialog());
 
         discount = view.findViewById(R.id.discinp);
@@ -289,11 +286,6 @@ public class OptionsFragment extends Fragment {
                 onDismissBtn();
             }
         });
-
-        tvSelectedDate = view.findViewById(R.id.tv_selected_date);
-        LocalDate currentDate = LocalDate.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-        tvSelectedDate.setText(currentDate.format(formatter));
 
         tvSelectedDate.setOnClickListener(v -> showDataPickerDialog());
         setupSanitizers();
@@ -431,12 +423,7 @@ public class OptionsFragment extends Fragment {
         database.update(MainActivity.TABLE_SETTINGS_INFO, cv, "id = ?", new String[]{"1"});
 
         // Clear date and time
-        calendar = Calendar.getInstance();
-        calendar.add(Calendar.MINUTE, 10);
-        updateSelectedTime();
-        LocalDate currentDate = LocalDate.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-        tvSelectedDate.setText(currentDate.format(formatter));
+        initDefaultDateTimeUi();
         sharedPreferencesHelperMain.saveValue("time", "no_time");
         sharedPreferencesHelperMain.saveValue("date", "no_date");
 
@@ -446,12 +433,47 @@ public class OptionsFragment extends Fragment {
         InclusiveTransportPreferenceWorker.saveUserPreference(false);
     }
 
-    // Метод для обновления отображаемой даты
-    private void updateSelectedDate(Calendar calendar) {
+    private void restoreDateTimeFieldsFromPrefs() {
+        String savedTime = (String) sharedPreferencesHelperMain.getValue("time", "no_time");
+        String savedDate = (String) sharedPreferencesHelperMain.getValue("date", "no_date");
+        if ("no_time".equals(savedTime) || "no_date".equals(savedDate)) {
+            initDefaultDateTimeUi();
+            return;
+        }
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+            LocalDateTime scheduled = LocalDateTime.parse(savedDate + " " + savedTime, formatter);
+            calendar = Calendar.getInstance();
+            calendar.set(Calendar.YEAR, scheduled.getYear());
+            calendar.set(Calendar.MONTH, scheduled.getMonthValue() - 1);
+            calendar.set(Calendar.DAY_OF_MONTH, scheduled.getDayOfMonth());
+            calendar.set(Calendar.HOUR_OF_DAY, scheduled.getHour());
+            calendar.set(Calendar.MINUTE, scheduled.getMinute());
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+            tvSelectedDate.setText(savedDate);
+            tvSelectedTime.setText(savedTime);
+            userPickedScheduledDateTime = true;
+        } catch (DateTimeParseException e) {
+            Logger.e(context, TAG, "restoreDateTimeFieldsFromPrefs: " + e.getMessage());
+            initDefaultDateTimeUi();
+        }
+    }
+
+    private void initDefaultDateTimeUi() {
+        userPickedScheduledDateTime = false;
+        calendar = Calendar.getInstance();
+        calendar.add(Calendar.MINUTE, 10);
+        updateSelectedTime();
+        LocalDate currentDate = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+        tvSelectedDate.setText(currentDate.format(formatter));
+    }
+
+    private void updateSelectedDate(Calendar targetCalendar) {
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-        String formattedDate = sdf.format(calendar.getTime());
+        String formattedDate = sdf.format(targetCalendar.getTime());
         tvSelectedDate.setText(formattedDate);
-        sharedPreferencesHelperMain.saveValue("date", formattedDate);
     }
 
     public void onDismissBtn() {
@@ -521,13 +543,12 @@ public class OptionsFragment extends Fragment {
                 Toast.makeText(context, context.getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
                 sharedPreferencesHelperMain.saveValue("time", "no_time");
                 sharedPreferencesHelperMain.saveValue("date", "no_date");
-            } else if (minutesDifference <= 10) {
-                Logger.d(context, TAG, "Разница <= 10 минут, сброс значений");
+                userPickedScheduledDateTime = false;
+            } else if (!userPickedScheduledDateTime || minutesDifference < 10) {
+                Logger.d(context, TAG, "Заказ без отложки (сейчас), без тоста");
                 sharedPreferencesHelperMain.saveValue("time", "no_time");
                 sharedPreferencesHelperMain.saveValue("date", "no_date");
-                Toast.makeText(context, context.getString(R.string.resettimetoorder), Toast.LENGTH_SHORT).show();
             } else {
-                // Сохраняем выбранные значения
                 sharedPreferencesHelperMain.saveValue("time", time);
                 sharedPreferencesHelperMain.saveValue("date", date);
                 Logger.d(context, TAG, "Сохранены значения -> время: " + time + ", дата: " + date);
@@ -610,7 +631,7 @@ public class OptionsFragment extends Fragment {
         okButton.setOnClickListener(v -> {
             calendar.set(npYear.getValue(), npMonth.getValue() - 1, npDay.getValue());
             updateSelectedDate(calendar);
-            timeVerify(); // Добавьте эту строку
+            userPickedScheduledDateTime = true;
             dataPickerDialog.dismiss();
         });
 
@@ -656,10 +677,7 @@ public class OptionsFragment extends Fragment {
             String formattedTime = sdf.format(this.calendar.getTime());
             Logger.d(context, TAG, "formattedTime: " + formattedTime);
             tvSelectedTime.setText(formattedTime);
-
-            // Сохраняем время сразу при выборе
-            sharedPreferencesHelperMain.saveValue("time", formattedTime);
-
+            userPickedScheduledDateTime = true;
             timePickerDialog.dismiss();
         });
 
@@ -683,7 +701,6 @@ public class OptionsFragment extends Fragment {
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
         String formattedTime = sdf.format(calendar.getTime());
         Logger.d(context, TAG, "updateSelectedTime:formattedTime " + formattedTime);
-        sharedPreferencesHelperMain.saveValue("time", formattedTime);
         tvSelectedTime.setText(formattedTime);
     }
 

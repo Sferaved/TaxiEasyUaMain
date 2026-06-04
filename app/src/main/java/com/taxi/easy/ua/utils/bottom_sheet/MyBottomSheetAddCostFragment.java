@@ -369,6 +369,8 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         String email = stringList.get(3);
         String phoneNumber = stringList.get(2);
 
+        ExecutionStatusViewModel.setAddCostInFlightPref(true);
+
         Call<PurchaseResponse> call = service.chargeActiveTokenAddCost(
                 context.getString(R.string.application),
                 city,
@@ -391,6 +393,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                     switch (orderStatus) {
                         case "Approved":
                         case "WaitingAuthComplete":
+                            ExecutionStatusViewModel.setAddCostInFlightPref(false);
                             viewModel.setAddCostViewUpdate(amount);
                             viewModel.setCancelStatus(true);
 //                            Logger.d(context, TAG, "onResponse: Positive status received: " + orderStatus);
@@ -400,6 +403,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 //                            });
                             break;
                        default:
+                           ExecutionStatusViewModel.setAddCostInFlightPref(false);
                            deleteInvoice(order_id);
                            Toast.makeText(context, context.getString(R.string.pay_failure_mes), Toast.LENGTH_SHORT).show();
                            Logger.d(context, TAG, "onResponse: Unexpected status: " + orderStatus);
@@ -407,6 +411,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
 
                 } else {
+                    ExecutionStatusViewModel.setAddCostInFlightPref(false);
                     Logger.e(context, TAG, "onResponse: Unsuccessful response, code=" + response.code());
                 }
                 if (FinishSeparateFragment.btn_cancel_order != null) {
@@ -419,7 +424,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<PurchaseResponse> call, @NonNull Throwable t) {
-                // Ошибка при выполнении запроса
+                ExecutionStatusViewModel.setAddCostInFlightPref(false);
                 FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "Ошибка при выполнении запроса");
                 viewModel.setCancelStatus(true);

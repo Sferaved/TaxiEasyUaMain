@@ -824,9 +824,14 @@ public class HomeFragment extends Fragment  implements ButtonVisibilityCallback 
                             message = getString(R.string.server_error_connected);
                             MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
                             bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                        } else if (message.contains("Дублирование")) {
+                        } else if (message.contains("Дублирование") || "DuplicateActiveOrder".equals(message)) {
+                            if ((MainActivity.uid != null && !MainActivity.uid.isEmpty())
+                                    || ExecutionStatusViewModel.getPersistedActiveUid() != null) {
+                                Logger.d(context, TAG, "orderFinished: duplicate ignored — active order");
+                            } else {
                             sharedPreferencesHelperMain.saveValue("doubleOrderPrefHome", true);
                             showAddCostDoubleDialog(addType);
+                            }
                         } else if (message.equals("cash") || message.equals("cards only")) {
                             if (message.equals("cards only")) {
 
@@ -1749,9 +1754,14 @@ private void cost() {
                         constraintLayoutHomeFinish.setVisibility(GONE);
                         constraintLayoutHomeMain.setVisibility(VISIBLE);
                         assert message != null;
-                        if (message.contains("Дублирование")) {
+                        if (message.contains("Дублирование") || "DuplicateActiveOrder".equals(message)) {
+                            if ((MainActivity.uid != null && !MainActivity.uid.isEmpty())
+                                    || ExecutionStatusViewModel.getPersistedActiveUid() != null) {
+                                Logger.d(context, TAG, "orderFinished: duplicate ignored — active order");
+                            } else {
                             sharedPreferencesHelperMain.saveValue("doubleOrderPref", true);
                             showAddCostDoubleDialog(addType);
+                            }
                         } else if (message.equals("cash") || message.equals("cards only")) {
                             if (message.equals("cards only")) {
                                 addType = "45";

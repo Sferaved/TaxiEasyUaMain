@@ -1613,6 +1613,39 @@ public class VisicomFragment extends Fragment {
                 || trimmed.equals(getString(R.string.on_city));
     }
 
+    /** Поездка «по городу»: пустое/«по місту» назначение или те же адреса откуда и куда. */
+    private boolean isAroundCityRoute(String start, String finish) {
+        if (isCityOnlyFinishInDatabase(finish)) {
+            return true;
+        }
+        if (start == null || finish == null) {
+            return false;
+        }
+        String from = start.trim();
+        String to = finish.trim();
+        return !from.isEmpty() && from.equals(to);
+    }
+
+    private boolean isRouteReadyForCost(double originLatitude, double toLat, String start, String finish) {
+        if (start == null) {
+            start = "";
+        }
+        if (finish == null) {
+            finish = "";
+        }
+        return originLatitude != 0.0 && !start.trim().isEmpty()
+                && (toLat != 0.0 || !finish.trim().isEmpty() || isAroundCityRoute(start, finish));
+    }
+
+    private void syncAroundCityRouteToUi(String finish) {
+        if (!isAdded() || textViewTo == null || !isCityOnlyFinishInDatabase(finish)) {
+            return;
+        }
+        if (textViewTo.getText().toString().trim().isEmpty()) {
+            textViewTo.setText(getString(R.string.on_city_tv));
+        }
+    }
+
     /** Восстанавливает «Куда» из БД после возврата с экрана поиска (view мог пересоздаться). */
     private void restoreDestinationFieldFromDatabase() {
         if (!isAdded() || textViewTo == null || context == null) {
@@ -1680,7 +1713,7 @@ public class VisicomFragment extends Fragment {
             geoText.setBackgroundColor(R.color.selected_text_color);
             return "error";
         }
-        if (isCityOnlyFinishInDatabase(finish)) {
+        if (isAroundCityRoute(start, finish)) {
             finish = context.getString(R.string.on_city_tv);
             toLatitude = originLatitude;
             toLongitude = originLongitude;
@@ -2196,6 +2229,19 @@ public class VisicomFragment extends Fragment {
         Logger.d(context, TAG, "orderFinished: message " + message);
         assert orderWeb != null;
 
+        if (isDuplicateOrderMessage(message)) {
+            if (EarlyOrderNavigationHelper.isEarlyNavigationDone() || hasActiveOrderSession()) {
+                EarlyOrderNavigationHelper.applyHttpEnrichment(context, sendUrlMap, pay_method);
+                EarlyOrderNavigationHelper.clearSubmitState();
+                Logger.d(context, TAG, "handleOrderFinished: duplicate with active session — ignore");
+                return;
+            }
+        }
+        if ("DuplicateActiveOrder".equals(message)) {
+            message = "";
+            sendUrlMap.put("message", "");
+        }
+
         if (EarlyOrderNavigationHelper.isEarlyNavigationDone()) {
             EarlyOrderNavigationHelper.applyHttpEnrichment(context, sendUrlMap, pay_method);
             EarlyOrderNavigationHelper.clearSubmitState();
@@ -2442,7 +2488,11 @@ public class VisicomFragment extends Fragment {
             constraintLayoutVisicomMain.setVisibility(VISIBLE);
             Logger.d(context, TAG, "2 orderFinished: message " + message);
             String addType = "60";
-            if (message.contains("Дублирование")) {
+            if (message.contains("Дублирование") || "DuplicateActiveOrder".equals(message)) {
+                if (hasActiveOrderSession()) {
+                    Logger.d(context, TAG, "handleOrderFinished: duplicate dialog skipped — active order");
+                    return;
+                }
                 sharedPreferencesHelperMain.saveValue("doubleOrderPref", true);
                 showAddCostDoubleDialog(addType);
             } else if (message.equals("cash") || message.equals("cards only")) {
@@ -3620,6 +3670,11 @@ public class VisicomFragment extends Fragment {
             Logger.d(context, TAG, "visicomCost пропущен (debounce), источник: " + source);
             return;
         }
+        if (!isRouteReadyForCostFromDatabase()) {
+            Logger.d(context, TAG, "visicomCost отложен (маршрут не готов), источник: " + source);
+            hideCostCalculationProgress();
+            return;
+        }
         lastVisicomCostRequestMs = now;
         lastCost = null;
         resetRealtimeOrderCostDedup();
@@ -4303,6 +4358,33 @@ public class VisicomFragment extends Fragment {
 
     }
 
+    /** Есть старт и пункт назначения (координаты или текст), достаточные для расчёта. */
+    private boolean isRouteReadyForCostFromDatabase() {
+        if (context == null) {
+            return false;
+        }
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.ROUT_MARKER + " LIMIT 1", null);
+        if (!cursor.moveToFirst()) {
+            cursor.close();
+            database.close();
+            return false;
+        }
+        double originLatitude = cursor.getDouble(cursor.getColumnIndexOrThrow("startLat"));
+        double toLat = cursor.getDouble(cursor.getColumnIndexOrThrow("to_lat"));
+        String start = cursor.getString(cursor.getColumnIndexOrThrow("start"));
+        String finish = cursor.getString(cursor.getColumnIndexOrThrow("finish"));
+        cursor.close();
+        database.close();
+        if (start == null) {
+            start = "";
+        }
+        if (finish == null) {
+            finish = "";
+        }
+        return isRouteReadyForCost(originLatitude, toLat, start, finish);
+    }
+
     private void visicomCost() throws MalformedURLException {
         Logger.d(context, TAG, "=== visicomCost() started ===");
         restoreDestinationFieldFromDatabase();
@@ -4340,8 +4422,10 @@ public class VisicomFragment extends Fragment {
         Logger.d(context, TAG, "cityCheckActivity = " + cityCheckActivity);
         Logger.d(context, TAG, "originLatitude = " + originLatitude + ", toLat = " + toLat + ", start = '" + start + "'");
 
-        boolean routeReady = originLatitude != 0.0 && !start.trim().isEmpty()
-                && (toLat != 0.0 || !finish.trim().isEmpty());
+        boolean routeReady = isRouteReadyForCost(originLatitude, toLat, start, finish);
+        if (routeReady && isAroundCityRoute(start, finish)) {
+            syncAroundCityRouteToUi(finish);
+        }
 
         if ("run".equals(cityCheckActivity) && routeReady) {
             hideOrderControlsDuringCostCalculation();
@@ -4365,7 +4449,12 @@ public class VisicomFragment extends Fragment {
             }
             requestCostFromServer(start, finish);
         } else if ("run".equals(cityCheckActivity) && originLatitude != 0.0) {
-            Logger.d(context, ADDR_GUARD, "visicomCost: city=run, pickup/cost not ready — CityCheckActivity не сбрасываем");
+            Logger.d(context, ADDR_GUARD, "visicomCost: city=run, маршрут не готов — finish='"
+                    + finish + "' toLat=" + toLat);
+            hideCostCalculationProgress();
+            if (isAdded()) {
+                btnVisible(VISIBLE);
+            }
             return;
         } else {
             sharedPreferencesHelperMain.saveValue("CityCheckActivity", "**");
@@ -4853,6 +4942,25 @@ public class VisicomFragment extends Fragment {
             databaseHelper.clearTableCancel();
             databaseHelperUid.clearTableCancel();
         }
+    }
+
+    private static boolean isDuplicateOrderMessage(@Nullable String message) {
+        if (message == null || message.isEmpty()) {
+            return false;
+        }
+        return message.contains("Дублирование") || "DuplicateActiveOrder".equals(message);
+    }
+
+    private boolean hasActiveOrderSession() {
+        if (MainActivity.uid != null && !MainActivity.uid.isEmpty()) {
+            return true;
+        }
+        Object earlyUid = sharedPreferencesHelperMain.getValue("order_early_nav_uid", "");
+        if (earlyUid instanceof String && !((String) earlyUid).isEmpty()) {
+            return true;
+        }
+        String persisted = ExecutionStatusViewModel.getPersistedActiveUid();
+        return persisted != null && !persisted.isEmpty();
     }
 
     private void showAddCostDoubleDialog(String addType) {
