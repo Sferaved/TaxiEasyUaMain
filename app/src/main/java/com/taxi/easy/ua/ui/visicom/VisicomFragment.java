@@ -1206,6 +1206,26 @@ public class VisicomFragment extends Fragment {
         }
     }
 
+    /** Кэшированная цена «по городу», если сервер ещё не вернул маршрут/стоимость. */
+    private boolean tryApplyCachedAroundCityCost() {
+        if (!isAdded() || context == null) {
+            return false;
+        }
+        CostPreviewHint preview = resolveCostPreviewForRecalc();
+        if (preview == null) {
+            return false;
+        }
+        Logger.d(context, TAG, "tryApplyCachedAroundCityCost: " + preview.value);
+        if (preview.finalDisplay) {
+            text_view_cost.setText(preview.value);
+            text_view_cost.setAlpha(1f);
+            finishCostCalculationWithPrice();
+        } else {
+            applyDiscountAndUpdateUI(preview.value, context);
+        }
+        return true;
+    }
+
     private void showCostCalculationError(String serverMessage) {
         cancelPendingReserveCost();
         hideCostCalculationProgress();
@@ -1610,7 +1630,92 @@ public class VisicomFragment extends Fragment {
         String trimmed = finish.trim();
         return trimmed.isEmpty()
                 || trimmed.equals(getString(R.string.on_city_tv))
-                || trimmed.equals(getString(R.string.on_city));
+                || trimmed.equals(getString(R.string.on_city))
+                || trimmed.contains("по місту")
+                || trimmed.contains("по городу")
+                || trimmed.contains("around the city");
+    }
+
+    /**
+     * Без активного заказа не подставляем старую точку назначения из прошлой поездки —
+     * оставляем «по місту» для фиксированного тарифа.
+     */
+    private boolean normalizeRouteMarkerToAroundCityWhenNoActiveOrder() {
+        if (!isAdded() || context == null || hasActiveOrderSession()) {
+            return false;
+        }
+        if (textViewTo != null) {
+            String uiFinish = textViewTo.getText().toString().trim();
+            if (!uiFinish.isEmpty() && !isCityOnlyFinishInDatabase(uiFinish)) {
+                return false;
+            }
+        }
+        SQLiteDatabase database = null;
+        Cursor cursor = null;
+        try {
+            database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            cursor = database.rawQuery(
+                    "SELECT startLat, startLan, start, finish FROM " + MainActivity.ROUT_MARKER + " LIMIT 1",
+                    null);
+            if (!cursor.moveToFirst()) {
+                return false;
+            }
+            double startLat = cursor.getDouble(0);
+            double startLon = cursor.getDouble(1);
+            String start = cursor.getString(2);
+            String finish = cursor.getString(3);
+            if (start == null) {
+                start = "";
+            }
+            if (finish == null) {
+                finish = "";
+            }
+            if (startLat == 0.0) {
+                return false;
+            }
+            if (isCityOnlyFinishInDatabase(finish) && isAroundCityRoute(start, finish)) {
+                applyAroundCityDestinationToUiIfNeeded();
+                return false;
+            }
+            ContentValues values = new ContentValues();
+            values.put("to_lat", startLat);
+            values.put("to_lng", startLon);
+            values.put("finish", "");
+            int updated = database.update(MainActivity.ROUT_MARKER, values, "id = ?", new String[]{"1"});
+            if (updated == 0) {
+                values.put("startLat", startLat);
+                values.put("startLan", startLon);
+                values.put("start", start);
+                database.insert(MainActivity.ROUT_MARKER, null, values);
+            }
+            applyAroundCityDestinationToUiIfNeeded();
+            Logger.d(context, TAG, "normalizeRouteMarkerToAroundCity: сброшен устаревший маршрут");
+            return true;
+        } catch (Exception e) {
+            Logger.e(context, TAG, "normalizeRouteMarkerToAroundCity: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
+            return false;
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            if (database != null && database.isOpen()) {
+                database.close();
+            }
+        }
+    }
+
+    private void applyAroundCityDestinationToUiIfNeeded() {
+        if (!isAdded()) {
+            return;
+        }
+        String onCity = getString(R.string.on_city_tv);
+        if (textViewTo != null) {
+            textViewTo.setText(onCity);
+        }
+        if (binding != null && binding.textTo != null) {
+            binding.textTo.setText(onCity);
+        }
     }
 
     /** Поездка «по городу»: пустое/«по місту» назначение или те же адреса откуда и куда. */
@@ -1654,6 +1759,10 @@ public class VisicomFragment extends Fragment {
         if (!textViewTo.getText().toString().trim().isEmpty()) {
             return;
         }
+        if (!hasActiveOrderSession()) {
+            normalizeRouteMarkerToAroundCityWhenNoActiveOrder();
+            return;
+        }
         SQLiteDatabase database = null;
         Cursor cursor = null;
         try {
@@ -1663,7 +1772,9 @@ public class VisicomFragment extends Fragment {
                 return;
             }
             String finish = cursor.getString(0);
-            if (!isCityOnlyFinishInDatabase(finish)) {
+            if (isCityOnlyFinishInDatabase(finish)) {
+                applyAroundCityDestinationToUiIfNeeded();
+            } else {
                 textViewTo.setText(finish);
             }
         } catch (Exception e) {
@@ -2749,6 +2860,9 @@ public class VisicomFragment extends Fragment {
         // ✅ Если есть активный запрос, не восстанавливаем из БД
         if (!firstStart && !isUpdatingFromGPS && pendingAddressRequest == null
                 && !AutoLocationAfterCityHelper.isGpsStartApplied()) {
+            if (!hasActiveOrderSession()) {
+                normalizeRouteMarkerToAroundCityWhenNoActiveOrder();
+            }
             // Восстанавливаем адрес из БД только если нет активных обновлений
             List<String> startList = logCursor(MainActivity.ROUT_MARKER, context);
             if (startList.size() > 5) {
@@ -3622,6 +3736,10 @@ public class VisicomFragment extends Fragment {
             updateGpsButtonCross(false);
         }
 
+        if (!hasActiveOrderSession()) {
+            normalizeRouteMarkerToAroundCityWhenNoActiveOrder();
+        }
+
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         if (!"email".equals(userEmail) && NetworkUtils.isNetworkAvailable(context)) {
             requestVisicomCost("lastOrderAddress");
@@ -3671,9 +3789,18 @@ public class VisicomFragment extends Fragment {
             return;
         }
         if (!isRouteReadyForCostFromDatabase()) {
-            Logger.d(context, TAG, "visicomCost отложен (маршрут не готов), источник: " + source);
-            hideCostCalculationProgress();
-            return;
+            if (!hasActiveOrderSession()) {
+                normalizeRouteMarkerToAroundCityWhenNoActiveOrder();
+            }
+            if (!isRouteReadyForCostFromDatabase()) {
+                if (tryApplyCachedAroundCityCost()) {
+                    Logger.d(context, TAG, "visicomCost: кэш по городу, источник: " + source);
+                    return;
+                }
+                Logger.d(context, TAG, "visicomCost отложен (маршрут не готов), источник: " + source);
+                hideCostCalculationProgress();
+                return;
+            }
         }
         lastVisicomCostRequestMs = now;
         lastCost = null;
@@ -4449,6 +4576,24 @@ public class VisicomFragment extends Fragment {
             }
             requestCostFromServer(start, finish);
         } else if ("run".equals(cityCheckActivity) && originLatitude != 0.0) {
+            if (!hasActiveOrderSession()) {
+                normalizeRouteMarkerToAroundCityWhenNoActiveOrder();
+            }
+            if (isRouteReadyForCostFromDatabase()) {
+                try {
+                    visicomCost();
+                } catch (MalformedURLException e) {
+                    Logger.e(context, TAG, "visicomCost retry: " + e.getMessage());
+                    hideCostCalculationProgress();
+                    if (isAdded()) {
+                        btnVisible(VISIBLE);
+                    }
+                }
+                return;
+            }
+            if (tryApplyCachedAroundCityCost()) {
+                return;
+            }
             Logger.d(context, ADDR_GUARD, "visicomCost: city=run, маршрут не готов — finish='"
                     + finish + "' toLat=" + toLat);
             hideCostCalculationProgress();
@@ -4578,7 +4723,11 @@ public class VisicomFragment extends Fragment {
                         applyDiscountAndUpdateUI(cost, context);
                     } else if (map != null && isTerminalCostMessage(map.get("Message"))) {
                         Logger.d(context, TAG, "reserveCost: ошибка расчёта, Message=" + map.get("Message"));
-                        showCostCalculationError(map.get("Message"));
+                        if (!(isAroundCityRoute(start, finish) && tryApplyCachedAroundCityCost())) {
+                            showCostCalculationError(map.get("Message"));
+                        }
+                    } else if (isAroundCityRoute(start, finish) && tryApplyCachedAroundCityCost()) {
+                        Logger.d(context, TAG, "reserveCost: сервер без цены — кэш по городу");
                     } else {
                         showCostCalculationProgress();
                         if (map != null) {
@@ -4595,7 +4744,16 @@ public class VisicomFragment extends Fragment {
             public void onFailure(@NonNull Call<Map<String, String>> call, @NonNull Throwable t) {
                 FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.e(context, TAG, "Ошибка подключения к серверу: " + t.getMessage());
-                showCostCalculationError("Ошибка подключения: " + t.getLocalizedMessage());
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    if (!isAdded() || binding == null) {
+                        return;
+                    }
+                    if (isAroundCityRoute(start, finish) && tryApplyCachedAroundCityCost()) {
+                        Logger.d(context, TAG, "reserveCost: сеть — кэш по городу");
+                        return;
+                    }
+                    showCostCalculationError("Ошибка подключения: " + t.getLocalizedMessage());
+                });
             }
         });
     }
@@ -5333,6 +5491,9 @@ public class VisicomFragment extends Fragment {
         // Если uid нет, то и "основного заказа" нет — не шлем запрос с пробелом в URL.
         if (uid.isEmpty()) {
             Logger.d(context, TAG, "statusOrder: uid_fcm empty — skip request");
+            if (isAdded()) {
+                normalizeRouteMarkerToAroundCityWhenNoActiveOrder();
+            }
             return;
         }
 
@@ -5370,6 +5531,10 @@ public class VisicomFragment extends Fragment {
                                 || message.equals("Заказ не найден")
                                 || message.equals("Автоматический заказ не найден")) {
                             sharedPreferencesHelperMain.saveValue("uid_fcm", "");
+                            if (isAdded()) {
+                                requireActivity().runOnUiThread(() ->
+                                        normalizeRouteMarkerToAroundCityWhenNoActiveOrder());
+                            }
                         }
                     }
                 } else {
