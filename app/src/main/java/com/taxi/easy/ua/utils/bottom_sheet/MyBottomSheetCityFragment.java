@@ -39,6 +39,7 @@ import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.city.CityLastAddressHelper;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
@@ -474,6 +475,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
             pay_system(cityCodeNew);
 
+            VisicomFragment.clearFromAddressUiForCityChange();
             lastAddressUser(cityCode[positionFirst]);
 
         });
@@ -808,10 +810,11 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         settings.add(Double.toString(startLan));
         settings.add(Double.toString(startLat));
         settings.add(Double.toString(startLan));
-        settings.add(position);
-        settings.add(position);
+        settings.add(position == null || position.trim().isEmpty() ? "" : position);
+        settings.add(context.getString(R.string.on_city_tv));
 
         updateRoutMarker(settings);
+        VisicomFragment.clearFromAddressUiForCityChange();
 
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         Logger.d(context, TAG, "newUser: " + userEmail);
@@ -998,9 +1001,12 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         settings.add(Double.toString(startLat));
         settings.add(Double.toString(startLan));
         settings.add(routefrom);
-        settings.add(routefrom);
+        settings.add(context.getString(R.string.on_city_tv));
 
         updateRoutMarker(settings);
+        if (VisicomFragment.geoText != null) {
+            VisicomFragment.geoText.post(() -> VisicomFragment.geoText.setText(routefrom));
+        }
 
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         Logger.d(context, TAG, "newUser: " + userEmail);
@@ -1607,16 +1613,16 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                     Logger.d(context, TAG, "lastAddressUser: routefrom" + routefrom);
                     Logger.d(context, TAG, "lastAddressUser: startLat" + startLat);
                     Logger.d(context, TAG, "lastAddressUser: startLan" + startLan);
-                    if (startLat.equals("0.0") || startLat.equals("0")) {
-                        updateMyPosition(cityString);
-                    } else {
+                    if (CityLastAddressHelper.shouldApplyLastAddress(cityString, startLat, startLan, routefrom)) {
                         updateMyLatsPosition(routefrom, startLat, startLan, cityString);
+                    } else {
+                        Logger.d(context, TAG, "lastAddressUser: адрес не для города " + cityString + ", сброс");
+                        updateMyPosition(cityString);
                     }
 
                 } else {
                     Logger.d(context, TAG, "Failed. Error code: " + response.code());
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.error_message));
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                    updateMyPosition(cityString);
                 }
             }
 
@@ -1625,8 +1631,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
                 Logger.d(getContext(), TAG, "Failed. Error message: " + t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.error_message));
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                updateMyPosition(cityString);
             }
         });
         VisicomFragment.progressBar.setVisibility(View.INVISIBLE);

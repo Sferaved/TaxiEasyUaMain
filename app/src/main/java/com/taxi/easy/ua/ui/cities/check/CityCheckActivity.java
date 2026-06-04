@@ -1151,6 +1151,8 @@ public class CityCheckActivity extends AppCompatActivity {
         String email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
 
         Logger.d(this, TAG, "lastAddressUser: cityString" + cityString);
+        VisicomFragment.clearFromAddressUiForCityChange();
+        resetRoutMarker();
 
         String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
 
@@ -1173,15 +1175,16 @@ public class CityCheckActivity extends AppCompatActivity {
                     Logger.d(getApplicationContext(), TAG, "lastAddressUser: routefrom" + routefrom);
                     Logger.d(getApplicationContext(), TAG, "lastAddressUser: startLat" + startLat);
                     Logger.d(getApplicationContext(), TAG, "lastAddressUser: startLan" + startLan);
-                    if (startLat.equals("0.0") || startLat.equals("0")) {
-                        updateMyPosition();
-
-                    } else {
+                    if (com.taxi.easy.ua.utils.city.CityLastAddressHelper.shouldApplyLastAddress(
+                            cityString, startLat, startLan, routefrom)) {
                         updateMyLatsPosition(routefrom, startLat, startLan, cityString);
+                    } else {
+                        updateMyPosition();
                     }
 
                 } else {
                     Logger.d(getApplicationContext(), TAG, "Failed. Error code: " + response.code());
+                    updateMyPosition();
                 }
             }
 
@@ -1190,10 +1193,22 @@ public class CityCheckActivity extends AppCompatActivity {
                 Logger.d(getApplicationContext(), TAG, "Failed. Error message: " + t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                updateMyPosition();
             }
         });
+    }
+
+    private void resetRoutMarker() {
+        ContentValues cv = new ContentValues();
+        cv.put("startLat", 0.0);
+        cv.put("startLan", 0.0);
+        cv.put("to_lat", 0.0);
+        cv.put("to_lng", 0.0);
+        cv.put("start", "");
+        cv.put("finish", "");
+        SQLiteDatabase database = openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.update(MainActivity.ROUT_MARKER, cv, "id = ?", new String[]{"1"});
+        database.close();
     }
 
 

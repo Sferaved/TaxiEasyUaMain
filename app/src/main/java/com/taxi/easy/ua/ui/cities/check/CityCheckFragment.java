@@ -36,6 +36,7 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
+import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.worker.TilePreloadWorker;
@@ -922,6 +923,7 @@ public class CityCheckFragment extends Fragment {
                 new String[]{"1"});
         database.close();
         sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
+        AutoLocationAfterCityHelper.markCityLoaded();
         startActivity(new Intent(requireActivity(), MainActivity.class));
     }
 
@@ -1035,6 +1037,8 @@ public class CityCheckFragment extends Fragment {
         String email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
 
         Logger.d(requireActivity(), TAG, "lastAddressUser: cityString" + cityString);
+        VisicomFragment.clearFromAddressUiForCityChange();
+        resetRoutMarker();
 
         String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
 
@@ -1057,15 +1061,16 @@ public class CityCheckFragment extends Fragment {
                     Logger.d(requireActivity(), TAG, "lastAddressUser: routefrom" + routefrom);
                     Logger.d(requireActivity(), TAG, "lastAddressUser: startLat" + startLat);
                     Logger.d(requireActivity(), TAG, "lastAddressUser: startLan" + startLan);
-                    if (startLat.equals("0.0") || startLat.equals("0")) {
-                        updateMyPosition();
-
-                    } else {
+                    if (com.taxi.easy.ua.utils.city.CityLastAddressHelper.shouldApplyLastAddress(
+                            cityString, startLat, startLan, routefrom)) {
                         updateMyLatsPosition(routefrom, startLat, startLan, cityString);
+                    } else {
+                        updateMyPosition();
                     }
 
                 } else {
                     Logger.d(requireActivity(), TAG, "Failed. Error code: " + response.code());
+                    updateMyPosition();
                 }
             }
 
@@ -1074,10 +1079,22 @@ public class CityCheckFragment extends Fragment {
                 Logger.d(requireActivity(), TAG, "Failed. Error message: " + t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(getString(R.string.error_message));
-                bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
+                updateMyPosition();
             }
         });
+    }
+
+    private void resetRoutMarker() {
+        ContentValues cv = new ContentValues();
+        cv.put("startLat", 0.0);
+        cv.put("startLan", 0.0);
+        cv.put("to_lat", 0.0);
+        cv.put("to_lng", 0.0);
+        cv.put("start", "");
+        cv.put("finish", "");
+        SQLiteDatabase database = requireActivity().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        database.update(MainActivity.ROUT_MARKER, cv, "id = ?", new String[]{"1"});
+        database.close();
     }
 
 

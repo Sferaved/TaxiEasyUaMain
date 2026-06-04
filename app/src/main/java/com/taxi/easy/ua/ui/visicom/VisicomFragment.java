@@ -1636,6 +1636,53 @@ public class VisicomFragment extends Fragment {
                 || trimmed.contains("around the city");
     }
 
+    private boolean isValidStartAddressForFromField(String start) {
+        return start != null
+                && !start.trim().isEmpty()
+                && !isCityOnlyFinishInDatabase(start);
+    }
+
+    public static void clearFromAddressUiForCityChange() {
+        if (geoText != null) {
+            geoText.post(() -> geoText.setText(""));
+        }
+    }
+
+    private void clearStaleFromAddressUiIfDatabaseHasNoStart() {
+        if (!isAdded() || binding == null || context == null) {
+            return;
+        }
+        List<String> route = logCursor(MainActivity.ROUT_MARKER, context);
+        if (route.size() <= 5) {
+            return;
+        }
+        if (isValidStartAddressForFromField(route.get(5))) {
+            return;
+        }
+        String uiBefore = binding.textGeo.getText() != null
+                ? binding.textGeo.getText().toString()
+                : "";
+        if (!uiBefore.trim().isEmpty()) {
+            logAddrGuardOverwrite("clearStaleFromUi", uiBefore, "", "no start in ROUT_MARKER");
+            binding.textGeo.setText("");
+        }
+    }
+
+    private void clearInvalidStartInRouteMarker() {
+        if (context == null) {
+            return;
+        }
+        try {
+            ContentValues cv = new ContentValues();
+            cv.put("start", "");
+            SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            database.update(MainActivity.ROUT_MARKER, cv, "id = ?", new String[]{"1"});
+            database.close();
+        } catch (Exception e) {
+            Logger.e(context, TAG, "clearInvalidStartInRouteMarker: " + e.getMessage());
+        }
+    }
+
     /**
      * Без активного заказа не подставляем старую точку назначения из прошлой поездки —
      * оставляем «по місту» для фиксированного тарифа.
@@ -1738,8 +1785,13 @@ public class VisicomFragment extends Fragment {
         if (finish == null) {
             finish = "";
         }
-        return originLatitude != 0.0 && !start.trim().isEmpty()
-                && (toLat != 0.0 || !finish.trim().isEmpty() || isAroundCityRoute(start, finish));
+        if (originLatitude == 0.0) {
+            return false;
+        }
+        if (isAroundCityRoute(start, finish)) {
+            return true;
+        }
+        return !start.trim().isEmpty() && (toLat != 0.0 || !finish.trim().isEmpty());
     }
 
     private void syncAroundCityRouteToUi(String finish) {
@@ -2857,6 +2909,7 @@ public class VisicomFragment extends Fragment {
         isFragmentVisible = true;
 
         logAddrGuardState("onResume:before");
+        clearStaleFromAddressUiIfDatabaseHasNoStart();
         // ✅ Если есть активный запрос, не восстанавливаем из БД
         if (!firstStart && !isUpdatingFromGPS && pendingAddressRequest == null
                 && !AutoLocationAfterCityHelper.isGpsStartApplied()) {
@@ -2868,10 +2921,22 @@ public class VisicomFragment extends Fragment {
             if (startList.size() > 5) {
                 String fromAddressString = startList.get(5);
                 String uiBefore = binding.textGeo.getText().toString();
-                if (!uiBefore.equals(fromAddressString) &&
-                        !fromAddressString.isEmpty()) {
-                    logAddrGuardOverwrite("onResume:restoreFromDb", uiBefore, fromAddressString, "ROUT_MARKER sync");
-                    binding.textGeo.setText(fromAddressString);
+                List<String> cityInfo = logCursor(MainActivity.CITY_INFO, context);
+                String currentCity = cityInfo.size() > 1 ? cityInfo.get(1) : "";
+                boolean canRestore = isValidStartAddressForFromField(fromAddressString)
+                        && com.taxi.easy.ua.utils.city.CityLastAddressHelper.shouldApplyLastAddress(
+                        currentCity, startList.get(1), startList.get(2), fromAddressString);
+                if (canRestore) {
+                    if (!uiBefore.equals(fromAddressString)) {
+                        logAddrGuardOverwrite("onResume:restoreFromDb", uiBefore, fromAddressString, "ROUT_MARKER sync");
+                        binding.textGeo.setText(fromAddressString);
+                    }
+                } else {
+                    clearInvalidStartInRouteMarker();
+                    if (!uiBefore.trim().isEmpty()) {
+                        logAddrGuardOverwrite("onResume:clearStaleUi", uiBefore, "", "ROUT_MARKER start invalid");
+                        binding.textGeo.setText("");
+                    }
                 }
             }
             if (startList.size() > 6) {
@@ -3392,6 +3457,8 @@ public class VisicomFragment extends Fragment {
             return;
         }
 
+        clearStaleFromAddressUiIfDatabaseHasNoStart();
+
         AutoLocationAfterCityHelper.syncFromSystemPermission(context);
 
         boolean pending = AutoLocationAfterCityHelper.isPending();
@@ -3720,8 +3787,14 @@ public class VisicomFragment extends Fragment {
             return;
         }
 
-        if (startAddress == null || startAddress.trim().isEmpty()) {
-            Logger.d(context, ADDR_GUARD, "lastOrderCache: SKIP — пустой start в ROUT_MARKER");
+        List<String> cityInfo = logCursor(MainActivity.CITY_INFO, context);
+        String currentCity = cityInfo.size() > 1 ? cityInfo.get(1) : "";
+        if (!com.taxi.easy.ua.utils.city.CityLastAddressHelper.shouldApplyLastAddress(
+                currentCity, route.get(1), route.get(2), startAddress)
+                || !isValidStartAddressForFromField(startAddress)) {
+            Logger.d(context, ADDR_GUARD, "lastOrderCache: SKIP — адрес не для текущего города");
+            clearInvalidStartInRouteMarker();
+            clearStaleFromAddressUiIfDatabaseHasNoStart();
             return;
         }
 
@@ -4626,11 +4699,22 @@ public class VisicomFragment extends Fragment {
             return;
         }
         String start = route.get(5);
-        if (start != null && !start.isEmpty()) {
+        List<String> cityInfo = logCursor(MainActivity.CITY_INFO, context);
+        String currentCity = cityInfo.size() > 1 ? cityInfo.get(1) : "";
+        boolean canSyncStart = isValidStartAddressForFromField(start)
+                && com.taxi.easy.ua.utils.city.CityLastAddressHelper.shouldApplyLastAddress(
+                currentCity, route.get(1), route.get(2), start);
+        if (canSyncStart) {
             if (!uiBefore.equals(start)) {
                 logAddrGuardOverwrite("syncFromDb:costCallback", uiBefore, start, "актуальный ROUT_MARKER после расчёта");
             }
             geoText.setText(start);
+        } else {
+            clearInvalidStartInRouteMarker();
+            if (!uiBefore.trim().isEmpty()) {
+                logAddrGuardOverwrite("syncFromDb:clearStaleUi", uiBefore, "", "ROUT_MARKER start invalid");
+                geoText.setText("");
+            }
         }
         if (route.size() > 6) {
             String finish = route.get(6);
