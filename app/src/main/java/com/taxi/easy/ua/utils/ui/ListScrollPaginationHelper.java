@@ -1,19 +1,24 @@
 package com.taxi.easy.ua.utils.ui;
 
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AbsListView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
+
 /**
- * Счётчик страниц и видимость кнопок прокрутки для ListView.
+ * Счётчик страниц, кнопки и вертикальная прокрутка для ListView с подсказками адресов.
  */
 public final class ListScrollPaginationHelper {
 
     private final ListView listView;
+    @Nullable
     private final TextView tvScrollPosition;
     private final View scrollButtonUp;
     private final View scrollButtonDown;
+    @Nullable
     private final View scrollControlsRoot;
 
     public ListScrollPaginationHelper(ListView listView,
@@ -24,10 +29,10 @@ public final class ListScrollPaginationHelper {
     }
 
     public ListScrollPaginationHelper(ListView listView,
-                                      TextView tvScrollPosition,
+                                      @Nullable TextView tvScrollPosition,
                                       View scrollButtonUp,
                                       View scrollButtonDown,
-                                      View scrollControlsRoot) {
+                                      @Nullable View scrollControlsRoot) {
         this.listView = listView;
         this.tvScrollPosition = tvScrollPosition;
         this.scrollButtonUp = scrollButtonUp;
@@ -36,6 +41,19 @@ public final class ListScrollPaginationHelper {
     }
 
     public void bind() {
+        listView.setVerticalScrollBarEnabled(true);
+        listView.setScrollbarFadingEnabled(false);
+        listView.setNestedScrollingEnabled(true);
+        listView.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN
+                    || event.getAction() == MotionEvent.ACTION_MOVE) {
+                v.getParent().requestDisallowInterceptTouchEvent(true);
+            } else if (event.getAction() == MotionEvent.ACTION_UP
+                    || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                v.getParent().requestDisallowInterceptTouchEvent(false);
+            }
+            return false;
+        });
         listView.setOnScrollListener(new AbsListView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(AbsListView view, int scrollState) {
@@ -50,9 +68,6 @@ public final class ListScrollPaginationHelper {
         listView.post(this::update);
     }
 
-    /**
-     * Подключает стрелки вверх/вниз к {@link #scrollUp()} и {@link #scrollDown()}.
-     */
     public void wireScrollButtons() {
         scrollButtonDown.setOnClickListener(v -> {
             scrollDown();
@@ -65,7 +80,7 @@ public final class ListScrollPaginationHelper {
     }
 
     public void update() {
-        int totalItems = listView.getAdapter() != null ? listView.getAdapter().getCount() : 0;
+        int totalItems = getItemCount();
         if (totalItems <= 0) {
             hideControls();
             return;
@@ -73,55 +88,58 @@ public final class ListScrollPaginationHelper {
 
         int firstVisible = Math.max(0, listView.getFirstVisiblePosition());
         int lastVisible = Math.max(firstVisible, listView.getLastVisiblePosition());
-        int visibleOnScreen = lastVisible - firstVisible + 1;
-        if (visibleOnScreen <= 0) {
-            visibleOnScreen = 1;
-        }
+        int visibleOnScreen = Math.max(1, lastVisible - firstVisible + 1);
 
         int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / visibleOnScreen));
         int currentPage = Math.min(totalPages, (firstVisible / visibleOnScreen) + 1);
 
-        tvScrollPosition.setText(currentPage + " / " + totalPages);
+        if (tvScrollPosition != null) {
+            tvScrollPosition.setText(currentPage + " / " + totalPages);
+        }
 
         boolean scrollNeeded = totalItems > visibleOnScreen || isContentTallerThanList();
         if (scrollNeeded) {
             setControlsRootVisible(true);
-            tvScrollPosition.setVisibility(View.VISIBLE);
+            if (tvScrollPosition != null) {
+                tvScrollPosition.setVisibility(View.VISIBLE);
+            }
             scrollButtonUp.setVisibility(View.VISIBLE);
             scrollButtonDown.setVisibility(View.VISIBLE);
             setButtonEnabled(scrollButtonUp, canScrollUp());
             setButtonEnabled(scrollButtonDown, canScrollDown());
         } else {
             setControlsRootVisible(totalItems > 0);
-            tvScrollPosition.setVisibility(View.VISIBLE);
-            tvScrollPosition.setText("1 / 1");
+            if (tvScrollPosition != null) {
+                tvScrollPosition.setVisibility(View.VISIBLE);
+                tvScrollPosition.setText("1 / 1");
+            }
             scrollButtonUp.setVisibility(View.GONE);
             scrollButtonDown.setVisibility(View.GONE);
         }
     }
 
-    /** Прокрутка на одну «страницу» вверх (к началу списка). */
     public void scrollUp() {
-        int prev = listView.getFirstVisiblePosition() - 1;
-        if (prev >= 0) {
-            listView.smoothScrollToPosition(prev);
-        } else {
-            listView.smoothScrollToPosition(0);
-        }
+        int pageSize = getVisiblePageSize();
+        int target = Math.max(0, listView.getFirstVisiblePosition() - pageSize);
+        listView.smoothScrollToPosition(target);
         listView.post(this::alignFirstVisibleItemToTop);
     }
 
-    /** Прокрутка на одну «страницу» вниз (к концу списка). */
     public void scrollDown() {
         int count = getItemCount();
         if (count == 0) {
             return;
         }
-        int next = listView.getLastVisiblePosition() + 1;
-        if (next < count) {
-            listView.smoothScrollToPosition(next);
-        }
+        int pageSize = getVisiblePageSize();
+        int target = Math.min(count - 1, listView.getLastVisiblePosition() + pageSize);
+        listView.smoothScrollToPosition(target);
         listView.post(() -> alignLastVisibleItemToBottom(false));
+    }
+
+    private int getVisiblePageSize() {
+        int first = listView.getFirstVisiblePosition();
+        int last = listView.getLastVisiblePosition();
+        return Math.max(1, last - first + 1);
     }
 
     private int getItemCount() {
@@ -226,7 +244,9 @@ public final class ListScrollPaginationHelper {
 
     private void hideControls() {
         setControlsRootVisible(false);
-        tvScrollPosition.setVisibility(View.GONE);
+        if (tvScrollPosition != null) {
+            tvScrollPosition.setVisibility(View.GONE);
+        }
         scrollButtonUp.setVisibility(View.GONE);
         scrollButtonDown.setVisibility(View.GONE);
     }
