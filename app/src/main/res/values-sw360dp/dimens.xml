@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="address_scroll_bar_height">32dp</dimen>
+    <dimen name="address_scroll_button_height">28dp</dimen>
+    <dimen name="address_scroll_icon_width">18dp</dimen>
+    <dimen name="address_scroll_icon_height">12dp</dimen>
+</resources>

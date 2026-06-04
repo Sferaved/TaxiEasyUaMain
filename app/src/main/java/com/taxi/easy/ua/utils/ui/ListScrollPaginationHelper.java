@@ -13,6 +13,9 @@ import androidx.annotation.Nullable;
  */
 public final class ListScrollPaginationHelper {
 
+    /** С этого числа подсказок всегда показываем панель (важно на маленьких экранах). */
+    private static final int MIN_ITEMS_FOR_PAGINATION = 4;
+
     private final ListView listView;
     @Nullable
     private final TextView tvScrollPosition;
@@ -65,7 +68,13 @@ public final class ListScrollPaginationHelper {
                 update();
             }
         });
+        scheduleUpdates();
+    }
+
+    private void scheduleUpdates() {
         listView.post(this::update);
+        listView.postDelayed(this::update, 120);
+        listView.postDelayed(this::update, 350);
     }
 
     public void wireScrollButtons() {
@@ -86,19 +95,20 @@ public final class ListScrollPaginationHelper {
             return;
         }
 
-        int firstVisible = Math.max(0, listView.getFirstVisiblePosition());
-        int lastVisible = Math.max(firstVisible, listView.getLastVisiblePosition());
-        int visibleOnScreen = Math.max(1, lastVisible - firstVisible + 1);
-
+        int visibleOnScreen = estimateVisibleOnScreen();
         int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / visibleOnScreen));
+        int firstVisible = Math.max(0, listView.getFirstVisiblePosition());
         int currentPage = Math.min(totalPages, (firstVisible / visibleOnScreen) + 1);
 
         if (tvScrollPosition != null) {
             tvScrollPosition.setText(currentPage + " / " + totalPages);
         }
 
-        boolean scrollNeeded = totalItems > visibleOnScreen || isContentTallerThanList();
-        if (scrollNeeded) {
+        boolean showPagination = totalItems >= MIN_ITEMS_FOR_PAGINATION
+                || totalItems > visibleOnScreen
+                || isContentTallerThanList();
+
+        if (showPagination) {
             setControlsRootVisible(true);
             if (tvScrollPosition != null) {
                 tvScrollPosition.setVisibility(View.VISIBLE);
@@ -119,7 +129,7 @@ public final class ListScrollPaginationHelper {
     }
 
     public void scrollUp() {
-        int pageSize = getVisiblePageSize();
+        int pageSize = getScrollStep();
         int target = Math.max(0, listView.getFirstVisiblePosition() - pageSize);
         listView.smoothScrollToPosition(target);
         listView.post(this::alignFirstVisibleItemToTop);
@@ -130,15 +140,35 @@ public final class ListScrollPaginationHelper {
         if (count == 0) {
             return;
         }
-        int pageSize = getVisiblePageSize();
-        int target = Math.min(count - 1, listView.getLastVisiblePosition() + pageSize);
+        int pageSize = getScrollStep();
+        int target = Math.min(count - 1, listView.getFirstVisiblePosition() + pageSize);
         listView.smoothScrollToPosition(target);
-        listView.post(() -> alignLastVisibleItemToBottom(false));
+        listView.post(this::alignFirstVisibleItemToTop);
     }
 
-    private int getVisiblePageSize() {
-        int first = listView.getFirstVisiblePosition();
-        int last = listView.getLastVisiblePosition();
+    private int estimateVisibleOnScreen() {
+        int first = Math.max(0, listView.getFirstVisiblePosition());
+        int last = Math.max(first, listView.getLastVisiblePosition());
+        int fromPositions = Math.max(1, last - first + 1);
+
+        int listHeight = listView.getHeight()
+                - listView.getPaddingTop()
+                - listView.getPaddingBottom();
+        if (listHeight <= 0 || listView.getChildCount() == 0) {
+            return fromPositions;
+        }
+        View sample = listView.getChildAt(0);
+        int itemHeight = sample != null ? sample.getHeight() : 0;
+        if (itemHeight <= 0) {
+            return fromPositions;
+        }
+        return Math.max(fromPositions, listHeight / itemHeight);
+    }
+
+    /** Сколько строк реально видно сейчас — шаг листания по страницам. */
+    private int getScrollStep() {
+        int first = Math.max(0, listView.getFirstVisiblePosition());
+        int last = Math.max(first, listView.getLastVisiblePosition());
         return Math.max(1, last - first + 1);
     }
 
@@ -204,36 +234,10 @@ public final class ListScrollPaginationHelper {
         listView.post(this::update);
     }
 
-    private void alignLastVisibleItemToBottom(boolean retried) {
-        int count = getItemCount();
-        if (count == 0) {
-            update();
-            return;
-        }
-        int lastPosition = count - 1;
-        int childIndex = lastPosition - listView.getFirstVisiblePosition();
-        if (childIndex < 0 || childIndex >= listView.getChildCount()) {
-            if (!retried) {
-                listView.smoothScrollToPosition(lastPosition);
-                listView.post(() -> alignLastVisibleItemToBottom(true));
-            } else {
-                listView.post(this::update);
-            }
-            return;
-        }
-        View lastChild = listView.getChildAt(childIndex);
-        int listBottom = listView.getHeight() - listView.getPaddingBottom();
-        int delta = lastChild.getBottom() - listBottom;
-        if (delta > 0) {
-            listView.smoothScrollBy(delta, 250);
-        }
-        listView.post(this::update);
-    }
-
     private boolean isContentTallerThanList() {
         int listHeight = listView.getHeight();
         if (listHeight <= 0) {
-            return false;
+            return getItemCount() > 2;
         }
         int childrenHeight = 0;
         for (int i = 0; i < listView.getChildCount(); i++) {

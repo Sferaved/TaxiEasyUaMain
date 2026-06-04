@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center_vertical"
+    android:minHeight="@dimen/address_scroll_bar_height"
     android:orientation="horizontal"
     android:paddingTop="2dp"
     android:paddingBottom="2dp">
@@ -19,13 +20,16 @@
         android:contentDescription="@string/scroll_list_up"
         android:focusable="true"
         android:gravity="center"
-        android:minHeight="48dp"
+        android:minHeight="@dimen/address_scroll_button_height"
         android:orientation="vertical"
-        android:padding="8dp">
+        android:paddingStart="6dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="6dp"
+        android:paddingBottom="4dp">
 
         <ImageView
-            android:layout_width="36dp"
-            android:layout_height="28dp"
+            android:layout_width="@dimen/address_scroll_icon_width"
+            android:layout_height="@dimen/address_scroll_icon_height"
             android:importantForAccessibility="no"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_scroll_chevron_up" />
@@ -39,12 +43,12 @@
         android:layout_marginEnd="4dp"
         android:fontFamily="@font/regular"
         android:gravity="center"
-        android:minWidth="48dp"
+        android:minWidth="40dp"
         android:text="1 / 1"
-        android:textColor="@color/white"
-        android:textSize="14sp"
+        android:textColor="@color/text_btn"
+        android:textSize="12sp"
         android:visibility="visible"
-        tools:text="1 / 1" />
+        tools:text="1 / 6" />
 
     <LinearLayout
         android:id="@+id/scrollButtonDown"
@@ -57,13 +61,16 @@
         android:contentDescription="@string/scroll_list_down"
         android:focusable="true"
         android:gravity="center"
-        android:minHeight="48dp"
+        android:minHeight="@dimen/address_scroll_button_height"
         android:orientation="vertical"
-        android:padding="8dp">
+        android:paddingStart="6dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="6dp"
+        android:paddingBottom="4dp">
 
         <ImageView
-            android:layout_width="36dp"
-            android:layout_height="28dp"
+            android:layout_width="@dimen/address_scroll_icon_width"
+            android:layout_height="@dimen/address_scroll_icon_height"
             android:importantForAccessibility="no"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_scroll_chevron_down" />

@@ -12,4 +12,8 @@
     <dimen name="textView_minHeight">48dp</dimen>
     <dimen name="textView_textSize">18sp</dimen>
     <item name="button_width" type="dimen" format="float">0.8</item>
+        <dimen name="address_scroll_bar_height">36dp</dimen>
+    <dimen name="address_scroll_button_height">32dp</dimen>
+    <dimen name="address_scroll_icon_width">20dp</dimen>
+    <dimen name="address_scroll_icon_height">14dp</dimen>
 </resources>
