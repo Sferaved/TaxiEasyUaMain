@@ -1683,6 +1683,38 @@ public class VisicomFragment extends Fragment {
         }
     }
 
+    private static final double MIN_DESTINATION_COORD_DELTA = 2e-4;
+
+    /** Точка «Куда» выбрана на карте или введена вручную — не сбрасывать при onResume. */
+    private boolean isValidSavedDestination(double startLat, double startLon,
+                                            double toLat, double toLng, String finish) {
+        if (finish != null && !finish.trim().isEmpty() && !isCityOnlyFinishInDatabase(finish)) {
+            return true;
+        }
+        if (toLat == 0.0 && toLng == 0.0) {
+            return false;
+        }
+        if (startLat == 0.0) {
+            return true;
+        }
+        return Math.abs(startLat - toLat) > MIN_DESTINATION_COORD_DELTA
+                || Math.abs(startLon - toLng) > MIN_DESTINATION_COORD_DELTA;
+    }
+
+    private void restoreDestinationUiFromDatabaseIfNeeded(String finish) {
+        if (!isAdded() || textViewTo == null || finish == null) {
+            return;
+        }
+        if (!textViewTo.getText().toString().trim().isEmpty()) {
+            return;
+        }
+        if (isCityOnlyFinishInDatabase(finish)) {
+            applyAroundCityDestinationToUiIfNeeded();
+        } else {
+            textViewTo.setText(finish);
+        }
+    }
+
     /**
      * Без активного заказа не подставляем старую точку назначения из прошлой поездки —
      * оставляем «по місту» для фиксированного тарифа.
@@ -1702,15 +1734,18 @@ public class VisicomFragment extends Fragment {
         try {
             database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             cursor = database.rawQuery(
-                    "SELECT startLat, startLan, start, finish FROM " + MainActivity.ROUT_MARKER + " LIMIT 1",
+                    "SELECT startLat, startLan, to_lat, to_lng, start, finish FROM "
+                            + MainActivity.ROUT_MARKER + " LIMIT 1",
                     null);
             if (!cursor.moveToFirst()) {
                 return false;
             }
             double startLat = cursor.getDouble(0);
             double startLon = cursor.getDouble(1);
-            String start = cursor.getString(2);
-            String finish = cursor.getString(3);
+            double toLat = cursor.getDouble(2);
+            double toLng = cursor.getDouble(3);
+            String start = cursor.getString(4);
+            String finish = cursor.getString(5);
             if (start == null) {
                 start = "";
             }
@@ -1718,6 +1753,10 @@ public class VisicomFragment extends Fragment {
                 finish = "";
             }
             if (startLat == 0.0) {
+                return false;
+            }
+            if (isValidSavedDestination(startLat, startLon, toLat, toLng, finish)) {
+                restoreDestinationUiFromDatabaseIfNeeded(finish);
                 return false;
             }
             if (isCityOnlyFinishInDatabase(finish) && isAroundCityRoute(start, finish)) {
@@ -1811,23 +1850,33 @@ public class VisicomFragment extends Fragment {
         if (!textViewTo.getText().toString().trim().isEmpty()) {
             return;
         }
-        if (!hasActiveOrderSession()) {
-            normalizeRouteMarkerToAroundCityWhenNoActiveOrder();
-            return;
-        }
         SQLiteDatabase database = null;
         Cursor cursor = null;
         try {
             database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-            cursor = database.rawQuery("SELECT finish FROM " + MainActivity.ROUT_MARKER + " LIMIT 1", null);
+            cursor = database.rawQuery(
+                    "SELECT startLat, startLan, to_lat, to_lng, finish FROM "
+                            + MainActivity.ROUT_MARKER + " LIMIT 1",
+                    null);
             if (!cursor.moveToFirst()) {
                 return;
             }
-            String finish = cursor.getString(0);
-            if (isCityOnlyFinishInDatabase(finish)) {
-                applyAroundCityDestinationToUiIfNeeded();
+            double startLat = cursor.getDouble(0);
+            double startLon = cursor.getDouble(1);
+            double toLat = cursor.getDouble(2);
+            double toLng = cursor.getDouble(3);
+            String finish = cursor.getString(4);
+            if (finish == null) {
+                finish = "";
+            }
+            if (isValidSavedDestination(startLat, startLon, toLat, toLng, finish)) {
+                restoreDestinationUiFromDatabaseIfNeeded(finish);
+                return;
+            }
+            if (!hasActiveOrderSession()) {
+                normalizeRouteMarkerToAroundCityWhenNoActiveOrder();
             } else {
-                textViewTo.setText(finish);
+                restoreDestinationUiFromDatabaseIfNeeded(finish);
             }
         } catch (Exception e) {
             Logger.e(context, TAG, "restoreDestinationFieldFromDatabase: " + e.getMessage());
@@ -4718,9 +4767,12 @@ public class VisicomFragment extends Fragment {
         }
         if (route.size() > 6) {
             String finish = route.get(6);
-            if (finish != null) {
-                String startTrim = start != null ? start.trim() : "";
-                binding.textTo.setText(finish.trim().equals(startTrim) ? "" : finish);
+            if (finish != null && binding.textTo != null) {
+                if (isCityOnlyFinishInDatabase(finish)) {
+                    applyAroundCityDestinationToUiIfNeeded();
+                } else {
+                    binding.textTo.setText(finish);
+                }
             }
         }
         Logger.d(context, ADDR_GUARD, String.format(Locale.US,
