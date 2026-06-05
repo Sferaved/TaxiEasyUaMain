@@ -235,6 +235,13 @@ public class FinishSeparateFragment extends Fragment {
     private PassengerNotifier notifier;
     private Handler checkHandler = new Handler();
     private Runnable checkRunnable;
+    private static final long ADD_COST_SLOW_NOTICE_MS = 20_000L;
+    private static final long ADD_COST_TIMEOUT_MS = 120_000L;
+    private final Handler addCostNoticeHandler = new Handler(Looper.getMainLooper());
+    private final Runnable addCostSlowNoticeRunnable = this::showAddCostSlowNotice;
+    private final Runnable addCostTimeoutRunnable = this::handleAddCostTimeout;
+    @Nullable
+    private Call<StatusResponse> addCostStatusCheckCall;
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -794,15 +801,166 @@ public class FinishSeparateFragment extends Fragment {
                 && "Поиск авто".equals(incomingAction);
     }
 
-    /** Тост «Оплата не пройшла» только для неудачной доплаты при уже подтверждённой основной оплате. */
+    /** Тост «Доплата не прошла» при неудачной доплате картой. */
     private void notifyAddCostPaymentFailed() {
+        if (!ExecutionStatusViewModel.isAddCostInFlightPref()
+                && ExecutionStatusViewModel.getPendingAddCostAmountPref() == null) {
+            return;
+        }
+        showAddCostPaymentFailedUi();
+    }
+
+    private void scheduleAddCostProcessingNotices() {
+        cancelAddCostProcessingNotices();
         if (!ExecutionStatusViewModel.isAddCostInFlightPref()) {
             return;
         }
-        ExecutionStatusViewModel.setAddCostInFlightPref(false);
-        if (isAdded() && context != null) {
-            Toast.makeText(context, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
+        addCostNoticeHandler.postDelayed(addCostSlowNoticeRunnable, ADD_COST_SLOW_NOTICE_MS);
+        addCostNoticeHandler.postDelayed(addCostTimeoutRunnable, ADD_COST_TIMEOUT_MS);
+    }
+
+    private void cancelAddCostProcessingNotices() {
+        addCostNoticeHandler.removeCallbacks(addCostSlowNoticeRunnable);
+        addCostNoticeHandler.removeCallbacks(addCostTimeoutRunnable);
+        if (addCostStatusCheckCall != null && !addCostStatusCheckCall.isCanceled()) {
+            addCostStatusCheckCall.cancel();
         }
+    }
+
+    private void showAddCostProcessingNotice() {
+        if (!isAdded() || context == null || !ExecutionStatusViewModel.isAddCostInFlightPref()) {
+            return;
+        }
+        String message = context.getString(R.string.add_cost_processing);
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+        if (text_status != null) {
+            text_status.setText(message + ". " + context.getString(R.string.cancel_btn_enable));
+        }
+    }
+
+    private void showAddCostSlowNotice() {
+        if (!isAdded() || context == null || !ExecutionStatusViewModel.isAddCostInFlightPref()) {
+            return;
+        }
+        String message = context.getString(R.string.add_cost_processing_slow);
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+        if (text_status != null) {
+            text_status.setText(message);
+        }
+    }
+
+    private void handleAddCostTimeout() {
+        if (!isAdded() || !ExecutionStatusViewModel.isAddCostInFlightPref()) {
+            return;
+        }
+        Logger.w(context, TAG, "Add-cost watchdog timeout — checking payment status");
+        checkPendingAddCostPaymentStatus();
+    }
+
+    private void checkPendingAddCostPaymentStatus() {
+        if (!isAdded() || context == null) {
+            return;
+        }
+        String orderRef = MainActivity.order_id;
+        if (orderRef == null || orderRef.isEmpty()) {
+            orderRef = resolveWfpOrderReference();
+        }
+        if (orderRef == null || orderRef.isEmpty()) {
+            showAddCostPaymentFailedUi();
+            return;
+        }
+        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
+        if (listCity.size() < 2) {
+            showAddCostPaymentFailedUi();
+            return;
+        }
+        String city = listCity.get(1);
+        String baseUrlValue = (String) sharedPreferencesHelperMain.getValue(
+                "baseUrl", "https://m.easy-order-taxi.site");
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(20, TimeUnit.SECONDS)
+                .writeTimeout(20, TimeUnit.SECONDS)
+                .build();
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrlValue + "/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+        StatusService service = retrofit.create(StatusService.class);
+        if (addCostStatusCheckCall != null && !addCostStatusCheckCall.isCanceled()) {
+            addCostStatusCheckCall.cancel();
+        }
+        addCostStatusCheckCall = service.checkStatus(
+                context.getString(R.string.application),
+                city,
+                orderRef
+        );
+        addCostStatusCheckCall.enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<StatusResponse> call,
+                                   @NonNull Response<StatusResponse> response) {
+                if (!isAdded() || !ExecutionStatusViewModel.isAddCostInFlightPref()) {
+                    return;
+                }
+                String orderStatus = response.body() != null
+                        ? response.body().getTransactionStatus()
+                        : null;
+                Logger.d(context, TAG, "Add-cost checkStatus: " + orderStatus);
+                if (isApprovedPaymentStatus(orderStatus)) {
+                    cancelAddCostProcessingNotices();
+                    String pendingAmount = ExecutionStatusViewModel.getPendingAddCostAmountPref();
+                    ExecutionStatusViewModel.setAddCostInFlightPref(false);
+                    ExecutionStatusViewModel.clearPendingAddCostAmountPref();
+                    if (pendingAmount != null && !pendingAmount.equals("0")) {
+                        viewModel.setAddCostViewUpdate(pendingAmount);
+                    }
+                    viewModel.setCancelStatus(true);
+                    return;
+                }
+                if ("InProcessing".equals(orderStatus) || "Pending".equals(orderStatus)) {
+                    showAddCostSlowNotice();
+                    addCostNoticeHandler.postDelayed(addCostTimeoutRunnable, 60_000L);
+                    return;
+                }
+                showAddCostPaymentFailedUi();
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
+                if (!isAdded() || call.isCanceled()) {
+                    return;
+                }
+                FirebaseCrashlytics.getInstance().recordException(t);
+                Logger.w(context, TAG, "Add-cost checkStatus failed: " + t.getMessage());
+                showAddCostPaymentFailedUi();
+            }
+        });
+    }
+
+    private void showAddCostPaymentFailedUi() {
+        cancelAddCostProcessingNotices();
+        ExecutionStatusViewModel.setAddCostInFlightPref(false);
+        ExecutionStatusViewModel.clearPendingAddCostAmountPref();
+        if (viewModel != null) {
+            viewModel.setCancelStatus(true);
+        }
+        if (!isAdded() || context == null) {
+            return;
+        }
+        String message = context.getString(R.string.add_cost_payment_failed);
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+        if (text_status != null) {
+            text_status.setText(message);
+        }
+        if (btn_cancel_order != null) {
+            btn_cancel_order.setEnabled(true);
+            btn_cancel_order.setClickable(true);
+        }
+    }
+
+    private void onAddCostProcessingFinished() {
+        cancelAddCostProcessingNotices();
     }
 
     /** Declined из push/Centrifugo — показываем шторку только после checkStatus WFP. */
@@ -1166,6 +1324,7 @@ public class FinishSeparateFragment extends Fragment {
         if (checkHandler != null) {
             checkHandler.removeCallbacksAndMessages(null);
         }
+        cancelAddCostProcessingNotices();
         if (notifier != null) {
             notifier.cancelPendingWeatherRequests();
         }
@@ -2642,7 +2801,22 @@ public class FinishSeparateFragment extends Fragment {
                 pendingAddCost = addCost;
                 sharedPreferencesHelperMain.saveValue("pendingAddCost", addCost);
                 addCostView(addCost);
+                onAddCostProcessingFinished();
             }
+        });
+
+        viewModel.getFinishAbsoluteCostGrivna().observe(getViewLifecycleOwner(), absoluteCost -> {
+            if (absoluteCost == null || absoluteCost.isEmpty() || !isAdded()) {
+                return;
+            }
+            Logger.d(context, TAG, "finishAbsoluteCost observe: " + absoluteCost);
+            applyDisplayCostToFinishUi(absoluteCost);
+            ExecutionStatusViewModel.setAddCostInFlightPref(false);
+            ExecutionStatusViewModel.clearPendingAddCostAmountPref();
+            pendingAddCost = "0";
+            sharedPreferencesHelperMain.saveValue("pendingAddCost", "0");
+            viewModel.setCancelStatus(true);
+            onAddCostProcessingFinished();
         });
 
         viewModel.getCancelStatus().observe(getViewLifecycleOwner(), status -> {
@@ -2652,10 +2826,16 @@ public class FinishSeparateFragment extends Fragment {
             }
             btn_cancel_order.setEnabled(status);
             if (!status) {
-                String message = context.getString(R.string.recounting_order) + ". "
-                        + context.getString(R.string.cancel_btn_enable);
-                text_status.setText(message);
+                if (ExecutionStatusViewModel.isAddCostInFlightPref()) {
+                    showAddCostProcessingNotice();
+                    scheduleAddCostProcessingNotices();
+                } else {
+                    String message = context.getString(R.string.recounting_order) + ". "
+                            + context.getString(R.string.cancel_btn_enable);
+                    text_status.setText(message);
+                }
             } else {
+                onAddCostProcessingFinished();
                 resumeStatusPolling();
             }
         });
@@ -2683,8 +2863,18 @@ public class FinishSeparateFragment extends Fragment {
                     confirmDeclinedWithServerCheck();
                 }
             } else if (isApprovedPaymentStatus(status)) {
+                String pendingAmount = ExecutionStatusViewModel.getPendingAddCostAmountPref();
+                boolean addCostPending = ExecutionStatusViewModel.isAddCostInFlightPref()
+                        || (pendingAmount != null && !pendingAmount.equals("0"));
                 ExecutionStatusViewModel.setAddCostInFlightPref(false);
                 clearDeclinedPaymentUi();
+                if (pendingAmount != null && !pendingAmount.equals("0")) {
+                    viewModel.setAddCostViewUpdate(pendingAmount);
+                    ExecutionStatusViewModel.clearPendingAddCostAmountPref();
+                }
+                if (addCostPending) {
+                    onAddCostProcessingFinished();
+                }
             }
         });
 

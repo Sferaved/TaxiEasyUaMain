@@ -30,6 +30,8 @@ public class ExecutionStatusViewModel extends ViewModel {
     public static final String PREF_SUPPRESS_ACTIVE_ORDER_NOTICE_UNTIL = "finish_suppress_active_order_notice_until";
     /** Доплата картой в процессе (WFP chargeActiveTokenAddCost). */
     public static final String PREF_FINISH_ADD_COST_IN_FLIGHT = "finish_add_cost_in_flight";
+    /** Сумма доплаты, ожидающая подтверждения WFP (грн). */
+    public static final String PREF_FINISH_PENDING_ADD_COST_AMOUNT = "finish_pending_add_cost_amount";
     public static final String PREF_UID_FCM = "uid_fcm";
     private static final long ACTIVE_ORDER_NOTICE_SUPPRESS_MS = 90_000L;
 
@@ -70,6 +72,20 @@ public class ExecutionStatusViewModel extends ViewModel {
 
     private final MutableLiveData<String> addCostViewUpdate = new MutableLiveData<>();
     public LiveData<String> getAddCostViewUpdate() {return addCostViewUpdate;}
+
+    private final MutableLiveData<String> finishAbsoluteCostGrivna = new MutableLiveData<>();
+
+    public LiveData<String> getFinishAbsoluteCostGrivna() {
+        return finishAbsoluteCostGrivna;
+    }
+
+    public void setFinishAbsoluteCostGrivna(@Nullable String costGrivna) {
+        if (costGrivna == null || costGrivna.isEmpty()) {
+            return;
+        }
+        Log.d("VIEWMODEL", "setFinishAbsoluteCostGrivna: " + costGrivna);
+        finishAbsoluteCostGrivna.postValue(costGrivna);
+    }
 
     // ✅ ИЗМЕНЕННЫЙ МЕТОД
     public void setAddCostViewUpdate(String addCost) {
@@ -277,6 +293,21 @@ public class ExecutionStatusViewModel extends ViewModel {
     public static boolean isAddCostInFlightPref() {
         Object v = sharedPreferencesHelperMain.getValue(PREF_FINISH_ADD_COST_IN_FLIGHT, false);
         return v instanceof Boolean && (Boolean) v;
+    }
+
+    public static void setPendingAddCostAmountPref(@Nullable String amount) {
+        sharedPreferencesHelperMain.saveValue(
+                PREF_FINISH_PENDING_ADD_COST_AMOUNT, amount != null ? amount : "");
+    }
+
+    @Nullable
+    public static String getPendingAddCostAmountPref() {
+        Object v = sharedPreferencesHelperMain.getValue(PREF_FINISH_PENDING_ADD_COST_AMOUNT, "");
+        return v instanceof String && !((String) v).isEmpty() ? (String) v : null;
+    }
+
+    public static void clearPendingAddCostAmountPref() {
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_PENDING_ADD_COST_AMOUNT, "");
     }
 
     public static boolean shouldBlockAddCost(@Nullable String orderUid) {

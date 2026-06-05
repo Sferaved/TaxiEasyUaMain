@@ -479,6 +479,9 @@
     <string name="add_cost_btn">Хочу быстрее</string>
     <string name="addCostBonusMessage">Для более быстрого поиска авто закажите за наличные или с оплатой поездки картой</string>
     <string name="recounting_order">Происходит перерасчет заказа</string>
+    <string name="add_cost_processing">Доплата обрабатывается. Пожалуйста, подождите</string>
+    <string name="add_cost_processing_slow">Доплата занимает больше времени, чем обычно. Не закрывайте приложение — мы сообщим о результате</string>
+    <string name="add_cost_payment_failed">Доплата не прошла. Попробуйте ещё раз</string>
     <string name="ex_st_finished">Ваша поездка завершена. Спасибо что воспользовались нашими услугами. Ждем Вас в следующий раз.</string>
     <string name="ex_st_in_rout">Выполнение заказа водителем.</string>
     <string name="ex_st_in_start_point">Машина прибыла. Пожалуйста проследуйте на посадку. Приятной поездки</string>

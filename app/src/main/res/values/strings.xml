@@ -480,6 +480,9 @@
     <string name="add_cost_btn">Бажаю швидше</string>
     <string name="addCostBonusMessage">Для швидшого пошуку авто замовте за готівку або з оплатою поїздки карткою</string>
     <string name="recounting_order">Відбувається перерахунок замовлення</string>
+    <string name="add_cost_processing">Доплату обробляється. Зачекайте, будь ласка</string>
+    <string name="add_cost_processing_slow">Доплата займає більше часу, ніж зазвичай. Не закривайте застосунок — повідомимо про результат</string>
+    <string name="add_cost_payment_failed">Доплата не пройшла. Спробуйте ще раз</string>
     <string name="ex_st_finished">Ваша подорож завершена. Дякуємо, що скористалися нашими послугами. Чекаємо на Вас наступного разу.</string>
     <string name="ex_st_in_rout">Виконання замовлення водієм.</string>
     <string name="ex_st_in_start_point">Машина прибула. Будь ласка пройдіть на посадку. Приємної подорожі</string>

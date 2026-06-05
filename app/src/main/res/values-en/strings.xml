@@ -475,6 +475,9 @@
     <string name="add_cost_btn">I want it faster</string>
     <string name="addCostBonusMessage">For a faster car search, order in cash or pay for the trip by card</string>
     <string name="recounting_order">Order recalculation in progress</string>
+    <string name="add_cost_processing">Additional payment is being processed. Please wait</string>
+    <string name="add_cost_processing_slow">Payment is taking longer than usual. Please keep the app open — we will notify you of the result</string>
+    <string name="add_cost_payment_failed">Additional payment failed. Please try again</string>
     <string name="ex_st_finished">Your trip is over. Thank you for using our services. We look forward to seeing you next time.</string>
     <string name="ex_st_in_rout">Fulfillment of the order by the driver.</string>
     <string name="ex_st_in_start_point">The car has arrived. Please proceed to board. Enjoy your trip</string>

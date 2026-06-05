@@ -54,6 +54,7 @@ import com.taxi.easy.ua.utils.db.CursorReadHelper;
 public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
     private static final String TAG = "MyBottomSheetAddCostFragment";
+    private static final int ADD_COST_WFP_TIMEOUT_SEC = 90;
     TextView textViewCost;
     AppCompatButton btn_ok, btn_minus, btn_plus;
     String cost, uid, uid_Double, pay_method;
@@ -133,6 +134,12 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             if (ExecutionStatusViewModel.shouldBlockAddCost(uid)) {
                 Logger.d(getActivity(), TAG, "btn_ok blocked for uid=" + uid);
                 Toast.makeText(context, R.string.error_cancelling_order, Toast.LENGTH_SHORT).show();
+                dismiss();
+                return;
+            }
+            if ("wfp_payment".equals(pay_method) && ExecutionStatusViewModel.isAddCostInFlightPref()) {
+                Logger.d(getActivity(), TAG, "btn_ok blocked: add-cost in flight");
+                Toast.makeText(context, R.string.recounting_order, Toast.LENGTH_LONG).show();
                 dismiss();
                 return;
             }
@@ -249,6 +256,11 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
     }
 
     private void startAddCostCardUpdate(String addCost) {
+        if (ExecutionStatusViewModel.isAddCostInFlightPref()) {
+            Logger.d(context, TAG, "startAddCostCardUpdate skipped: add-cost in flight");
+            Toast.makeText(context, R.string.recounting_order, Toast.LENGTH_LONG).show();
+            return;
+        }
         Logger.d(context, TAG, "startAddCostCardUpdate: ");
         String rectoken = getCheckRectoken(MainActivity.TABLE_WFP_CARDS);
         Logger.d(context, TAG, "payWfp: rectoken " + rectoken);
@@ -348,11 +360,11 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor())
+                // Доплата — одна попытка без RetryInterceptor, чтобы не дублировать CHARGE на сервере.
                 .addInterceptor(interceptor)
-                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
-                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
-                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
+                .connectTimeout(ADD_COST_WFP_TIMEOUT_SEC, TimeUnit.SECONDS)
+                .readTimeout(ADD_COST_WFP_TIMEOUT_SEC, TimeUnit.SECONDS)
+                .writeTimeout(ADD_COST_WFP_TIMEOUT_SEC, TimeUnit.SECONDS)
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()
@@ -369,6 +381,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         String email = stringList.get(3);
         String phoneNumber = stringList.get(2);
 
+        ExecutionStatusViewModel.setPendingAddCostAmountPref(amount);
         ExecutionStatusViewModel.setAddCostInFlightPref(true);
 
         Call<PurchaseResponse> call = service.chargeActiveTokenAddCost(
@@ -394,43 +407,56 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                         case "Approved":
                         case "WaitingAuthComplete":
                             ExecutionStatusViewModel.setAddCostInFlightPref(false);
+                            ExecutionStatusViewModel.clearPendingAddCostAmountPref();
                             viewModel.setAddCostViewUpdate(amount);
                             viewModel.setCancelStatus(true);
-//                            Logger.d(context, TAG, "onResponse: Positive status received: " + orderStatus);
-//                            sharedPreferencesHelperMain.saveValue("pay_error", "**");
-//                            new Handler(Looper.getMainLooper()).post(() -> {
-//                                newOrderCardPayAdd20(amount);
-//                            });
                             break;
-                       default:
-                           ExecutionStatusViewModel.setAddCostInFlightPref(false);
-                           deleteInvoice(order_id);
-                           Toast.makeText(context, context.getString(R.string.pay_failure_mes), Toast.LENGTH_SHORT).show();
-                           Logger.d(context, TAG, "onResponse: Unexpected status: " + orderStatus);
+                        case "InProcessing":
+                        case "Pending":
+                            Logger.d(context, TAG, "Add-cost in progress: " + orderStatus);
+                            viewModel.setCancelStatus(false);
+                            Toast.makeText(context, R.string.add_cost_processing, Toast.LENGTH_LONG).show();
+                            break;
+                        default:
+                            ExecutionStatusViewModel.setAddCostInFlightPref(false);
+                            ExecutionStatusViewModel.clearPendingAddCostAmountPref();
+                            deleteInvoice(order_id);
+                            Toast.makeText(context, context.getString(R.string.pay_failure_mes), Toast.LENGTH_SHORT).show();
+                            Logger.d(context, TAG, "onResponse: Unexpected status: " + orderStatus);
+                            viewModel.setCancelStatus(true);
                     }
 
 
                 } else {
-                    ExecutionStatusViewModel.setAddCostInFlightPref(false);
-                    Logger.e(context, TAG, "onResponse: Unsuccessful response, code=" + response.code());
+                    Logger.w(context, TAG, "onResponse unsuccessful code="
+                            + response.code() + ", awaiting push/status");
+                    viewModel.setCancelStatus(false);
+                    Toast.makeText(context, R.string.add_cost_processing, Toast.LENGTH_LONG).show();
                 }
-                if (FinishSeparateFragment.btn_cancel_order != null) {
-                    FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
-                    FinishSeparateFragment.btn_cancel_order.setEnabled(true);
-                    FinishSeparateFragment.btn_cancel_order.setClickable(true);
-                    Logger.d(context,"Pusher eventTransactionStatus", "Cancel button enabled successfully");
-                }
+                enableCancelButtonIfAddCostNotInFlight();
             }
 
             @Override
             public void onFailure(@NonNull Call<PurchaseResponse> call, @NonNull Throwable t) {
-                ExecutionStatusViewModel.setAddCostInFlightPref(false);
                 FirebaseCrashlytics.getInstance().recordException(t);
-                Logger.d(context, TAG, "Ошибка при выполнении запроса");
-                viewModel.setCancelStatus(true);
+                Logger.w(context, TAG, "Add-cost HTTP failed, awaiting push/status: " + t.getMessage());
+                viewModel.setCancelStatus(false);
+                Toast.makeText(context, R.string.add_cost_processing_slow, Toast.LENGTH_LONG).show();
             }
         });
 
+    }
+
+    private void enableCancelButtonIfAddCostNotInFlight() {
+        if (ExecutionStatusViewModel.isAddCostInFlightPref()) {
+            return;
+        }
+        if (FinishSeparateFragment.btn_cancel_order != null) {
+            FinishSeparateFragment.btn_cancel_order.setVisibility(VISIBLE);
+            FinishSeparateFragment.btn_cancel_order.setEnabled(true);
+            FinishSeparateFragment.btn_cancel_order.setClickable(true);
+            Logger.d(context, "Pusher eventTransactionStatus", "Cancel button enabled successfully");
+        }
     }
     private void deleteInvoice(String orderReference) {
 
