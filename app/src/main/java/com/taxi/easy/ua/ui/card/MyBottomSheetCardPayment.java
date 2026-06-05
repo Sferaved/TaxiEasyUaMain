@@ -49,6 +49,7 @@ import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
+import com.taxi.easy.ua.utils.helpers.WfpWebViewHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.uxcam.UXCam;
@@ -230,45 +231,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         switch (pay_method) {
             case "wfp_payment":
-                webView.setWebViewClient(new WebViewClient() {
-                    @Override
-                    public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                        String url = request.getUrl().toString();
-
-                        Logger.d(context, TAG, "Загружен URL: " + url);
-                        if (url.contains("https://secure.wayforpay.com/invoice")) {
-                            return false;
-                        }
-                        if (url.contains("https://secure.wayforpay.com/closing")) {
-                            getStatusWfp(orderReference);
-                            return false;
-                        }
-                        return false; // разрешаем WebView загружать страницу
-                    }
-
-                    // Для поддержки старых версий API (до 24), можно оставить deprecated метод:
-                    @Override
-                    @Deprecated
-                    public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                        Logger.d(context, TAG, "Загружен URL (deprecated): " + url);
-                        if (url.contains("https://secure.wayforpay.com/invoice")) {
-                            return false;
-                        }
-                        if (url.contains("https://secure.wayforpay.com/closing")) {
-                            getStatusWfp(orderReference);
-                            return false;
-                        }
-                        return false;
-                    }
-                });
-
-                // Ensure checkoutUrl is not null and valid before loading it
-                if (checkoutUrl != null && URLUtil.isValidUrl(checkoutUrl)) {
-                    webView.loadUrl(checkoutUrl);
-                } else {
-                    Log.e("MyBottomSheetCardVerification", "Checkout URL is null or invalid");
-                    // Handle the error appropriately, e.g., show an error message to the user
-                }
+                WfpWebViewHelper.loadPaymentUrl(webView, checkoutUrl, () -> getStatusWfp(orderReference));
                 break;
             case "fondy_payment":
 

@@ -5,24 +5,16 @@ import static com.taxi.easy.ua.MainActivity.button1;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.URLUtil;
-import android.webkit.WebChromeClient;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -44,15 +36,14 @@ import com.taxi.easy.ua.ui.wfp.revers.ReversService;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
+import com.taxi.easy.ua.utils.helpers.WfpWebViewHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.uxcam.UXCam;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -98,49 +89,6 @@ public class CardVerificationFragment extends Fragment {
         order_id = UniqueNumberGenerator.generateUniqueNumber(context);
         
         fragmentManager = getParentFragmentManager();
-
-         // Настройка WebView
-
-
-        WebSettings webSettings = webView.getSettings();
-        webSettings.setJavaScriptEnabled(true);
-        webSettings.setDomStorageEnabled(true); // Включает DOM-хранилище
-        webSettings.setJavaScriptCanOpenWindowsAutomatically(true); // Разрешает открытие новых окон
-        webSettings.setSupportMultipleWindows(true);
-
-//        webView.getSettings().setJavaScriptEnabled(true);
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                Logger.d(view.getContext(), "WebChromeClient", "onCreateWindow triggered");
-                try {
-                    WebView newWebView = new WebView(view.getContext());
-                    WebSettings webSettings = newWebView.getSettings();
-                    webSettings.setJavaScriptEnabled(true);
-                    webSettings.setDomStorageEnabled(true);
-                    webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
-                    webSettings.setSupportMultipleWindows(true);
-
-                    newWebView.setWebViewClient(new WebViewClient());
-                    newWebView.setWebChromeClient(this);
-
-                    AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
-                    builder.setView(newWebView);
-                    builder.setPositiveButton(R.string.close, (dialog, which) -> newWebView.destroy());
-                    builder.show();
-
-                    WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-                    transport.setWebView(newWebView);
-                    resultMsg.sendToTarget();
-                    return true;
-                } catch (Exception e) {
-                    Logger.e(view.getContext(), "WebChromeClient", "Ошибка в onCreateWindow: " + e.getMessage());
-                    return false;
-                }
-            }
-
-        });
-
 
         getUrlToPaymentWfp();
 
@@ -213,46 +161,8 @@ public class CardVerificationFragment extends Fragment {
 
     }
     
-    private void payWfp (String checkoutUrl)
-    {
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
-                Logger.d(context, TAG, "Загружен URL: " + url);
-
-                if (url.contains("https://secure.wayforpay.com/invoice")) {
-                    return false; // Разрешаем загрузку
-                }
-                if (url.contains("https://secure.wayforpay.com/closing")) {
-                    getStatusWfp();
-                    return false; // Разрешаем загрузку
-                }
-                return false; // По умолчанию разрешаем загрузку
-            }
-
-            // Для совместимости, если старый метод всё ещё вызовется, можно его перенаправить на новый
-            @Override
-            @Deprecated
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                return shouldOverrideUrlLoading(view, new WebResourceRequest() {
-                    @Override public Uri getUrl() { return Uri.parse(url); }
-                    @Override public boolean isForMainFrame() { return true; }
-                    @Override public boolean isRedirect() { return false; }
-                    @Override public boolean hasGesture() { return false; }
-                    @Override public String getMethod() { return "GET"; }
-                    @Override public Map<String, String> getRequestHeaders() { return Collections.emptyMap(); }
-                });
-            }
-        });
-
-        // Ensure checkoutUrl is not null and valid before loading it
-        if (checkoutUrl != null && URLUtil.isValidUrl(checkoutUrl)) {
-            webView.loadUrl(checkoutUrl);
-        } else {
-            Logger.e(context,"MyBottomSheetCardVerification", "Checkout URL is null or invalid");
-            // Handle the error appropriately, e.g., show an error message to the user
-        }
+    private void payWfp(String checkoutUrl) {
+        WfpWebViewHelper.loadPaymentUrl(webView, checkoutUrl, this::getStatusWfp);
     }
 
     private void getStatusWfp() {
