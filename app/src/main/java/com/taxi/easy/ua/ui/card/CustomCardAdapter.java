@@ -132,30 +132,12 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             holder.deleteButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    // Получите позицию, которую нужно удалить
-                    int position = cardMaps.indexOf(cardMap);
-
-                    String rectoken = cardMap.get("rectoken");
-                    // Удалите элемент из базы данных
-                    SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                    switch (pay_method) {
-                        case "wfp_payment":
-
-                            deleteCardToken(rectoken);
-                            break;
-//                        case "fondy_payment":
-//                            deleteCardToken(rectoken);
-//                            break;
-
+                    String rectokenToDelete = cardMap.get("rectoken");
+                    if (rectokenToDelete == null) {
+                        return;
                     }
-                    database.close();
-
-
-
-                    // Удалите элемент из cardMaps
-                    if (position >= 0) {
-                        cardMaps.remove(position);
-                        notifyDataSetChanged(); // Обновите адаптер после удаления
+                    if ("wfp_payment".equals(pay_method)) {
+                        deleteCardToken(rectokenToDelete);
                     }
                 }
             });
@@ -186,28 +168,21 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
     }
 
     private int getCheckRectoken(String table) {
-        Pair<Integer, Integer> minMaxId = getMinMaxId(table);
-        int minId = minMaxId.first;
-        int maxId = minMaxId.second;
-
-        // Проверяем случаи, когда таблица пуста или не содержит строк с rectoken_check = 1
-        if (minId == -1 || maxId == -1) {
-            return -1; // Возвращаем -1, чтобы указать на отсутствие строки
-        }
-
         SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        String[] columns = {"id"};
-        String selection = "rectoken_check = ? AND id >= ? AND id <= ?";
-        String[] selectionArgs = {"1", String.valueOf(minId), String.valueOf(maxId)};
+        String[] columns = {"rectoken"};
+        String selection = "rectoken_check = ?";
+        String[] selectionArgs = {"1"};
         Cursor cursor = database.query(table, columns, selection, selectionArgs, null, null, null);
 
-        int position = -1; // Инициализируем позицию -1, чтобы обозначить, что строка не найдена
-
+        int position = -1;
         if (cursor.moveToFirst()) {
-            int idColumnIndex = cursor.getColumnIndex("id");
-            int id = cursor.getInt(idColumnIndex);
-            // Вычисляем позицию строки в списке
-            position = id - minId;
+            String activeRectoken = CursorReadHelper.getString(cursor, "rectoken");
+            for (int i = 0; i < cardMaps.size(); i++) {
+                if (activeRectoken != null && activeRectoken.equals(cardMaps.get(i).get("rectoken"))) {
+                    position = i;
+                    break;
+                }
+            }
         }
         cursor.close();
         Logger.d(getContext(), TAG, "getCheckRectokenPosition: position" + position);
@@ -404,33 +379,87 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
         db.close();
         return list;
     }
-    public void deleteCardToken(String id) {
+    public void deleteCardToken(final String deletedRectoken) {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
         UnlinkApi apiService = retrofit.create(UnlinkApi.class);
-        Call<CallbackResponseSetActivCardWfp> call = apiService.deleteCardToken(id);
+        Call<CallbackResponseSetActivCardWfp> call = apiService.deleteCardToken(deletedRectoken);
 
         call.enqueue(new Callback<CallbackResponseSetActivCardWfp>() {
             @Override
             public void onResponse(@NonNull Call<CallbackResponseSetActivCardWfp> call, @NonNull Response<CallbackResponseSetActivCardWfp> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    // Обработка успешного ответа
-
                     Toast.makeText(getContext(), getContext().getString(R.string.un_link_token), Toast.LENGTH_LONG).show();
-                    SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                    database.delete(MainActivity.TABLE_WFP_CARDS, "rectoken = ?", new String[]{rectoken});
-                    database.close();
-                    MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder().build());
-
+                    syncCardsFromServer(() -> MainActivity.navController.navigate(
+                            R.id.nav_card, null, new NavOptions.Builder().build()));
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<CallbackResponseSetActivCardWfp> call, @NonNull Throwable t) {
                 FirebaseCrashlytics.getInstance().recordException(t);
+            }
+        });
+    }
+
+    private void syncCardsFromServer(@NonNull Runnable onComplete) {
+        String city = logCursor(MainActivity.CITY_INFO).get(1);
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
+                .addInterceptor(interceptor)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .build();
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+
+        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
+        Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
+                getContext().getString(R.string.application),
+                city,
+                userEmail,
+                "wfp"
+        );
+        call.enqueue(new Callback<CallbackResponseWfp>() {
+            @Override
+            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<CardInfo> cards = response.body().getCards();
+                    SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+                    database.execSQL("DELETE FROM " + MainActivity.TABLE_WFP_CARDS + ";");
+                    if (cards != null) {
+                        for (CardInfo cardInfo : cards) {
+                            ContentValues cv = new ContentValues();
+                            cv.put("masked_card", cardInfo.getMasked_card());
+                            cv.put("card_type", cardInfo.getCard_type());
+                            cv.put("bank_name", cardInfo.getBank_name());
+                            cv.put("rectoken", cardInfo.getRectoken());
+                            cv.put("merchant", cardInfo.getMerchant());
+                            cv.put("rectoken_check", cardInfo.getActive());
+                            database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
+                        }
+                    }
+                    database.close();
+                }
+                onComplete.run();
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
+                Logger.d(getContext(), TAG, "syncCardsFromServer failure " + t);
+                FirebaseCrashlytics.getInstance().recordException(t);
+                onComplete.run();
             }
         });
     }
