@@ -684,6 +684,13 @@ Tap "Settings" to check.</string>
     <string name="weather">🌤️ Weather</string>
     <string name="speed"> m/s</string>
     <string name="pressure_high"> mm</string>
+    <string name="weather_feels_like">Feels like %d°</string>
+    <string name="weather_today_range">Today %1$d° … %2$d°</string>
+    <string name="weather_today_stable">Today ~%1$d°</string>
+    <string name="weather_temp_range">%1$d° … %2$d°</string>
+    <string name="weather_sunrise">Sunrise %s</string>
+    <string name="weather_sunset">Sunset %s</string>
+    <string name="weather_pop">Rain %d%%</string>
     <!-- Shortcut labels -->
     <string name="shortcut_order_short">🚕 Order</string>
     <string name="shortcut_order_long">Order a taxi</string>

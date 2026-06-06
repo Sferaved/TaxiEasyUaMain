@@ -697,6 +697,13 @@
     <string name="weather">🌤️ Погода</string>
     <string name="speed"> м/с</string>
     <string name="pressure_high"> мм</string>
+    <string name="weather_feels_like">Відчувається як %d°</string>
+    <string name="weather_today_range">Сьогодні %1$d° … %2$d°</string>
+    <string name="weather_today_stable">Сьогодні ~%1$d°</string>
+    <string name="weather_temp_range">%1$d° … %2$d°</string>
+    <string name="weather_sunrise">Схід %s</string>
+    <string name="weather_sunset">Захід %s</string>
+    <string name="weather_pop">Дощ %d%%</string>
     <!-- Shortcut labels -->
     <string name="shortcut_order_short">🚕 Замовити</string>
     <string name="shortcut_order_long">Замовити таксі</string>

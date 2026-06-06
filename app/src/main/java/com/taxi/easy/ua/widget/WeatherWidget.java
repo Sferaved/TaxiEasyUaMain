@@ -151,7 +151,14 @@ public class WeatherWidget extends AppWidgetProvider {
         });
     }
 
+    public static void updateAllWidgets(Context context, WeatherResponse weather) {
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(context, WeatherWidget.class));
 
+        for (int appWidgetId : appWidgetIds) {
+            updateWidgetWithData(context, appWidgetManager, appWidgetId, weather);
+        }
+    }
 
     public static void updateWidgetWithData(Context context, AppWidgetManager appWidgetManager,
                                             int appWidgetId, WeatherResponse weather) {

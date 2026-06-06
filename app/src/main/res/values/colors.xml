@@ -73,4 +73,25 @@
     <color name="dialog_text_secondary">#666666</color>
     <color name="dialog_input_stroke">#9E9E9E</color>
     <color name="dialog_button_outline_text">#757575</color>
+
+    <!-- Uklon-like palette (weather screen) -->
+    <color name="uklon_yellow">#FFD200</color>
+    <color name="uklon_black">#000000</color>
+    <color name="uklon_bg">#FFFDF5</color>
+    <color name="uklon_surface">#FFFFFF</color>
+    <color name="uklon_on_bg">#111111</color>
+    <color name="uklon_on_surface">#111111</color>
+    <color name="uklon_on_surface_secondary">#7A000000</color>
+    <color name="uklon_primary">#FFD200</color>
+    <color name="uklon_on_primary">#000000</color>
+    <color name="uklon_secondary">#111111</color>
+    <color name="uklon_on_secondary">#FFFFFF</color>
+    <color name="uklon_outline">#1F000000</color>
+    <color name="uklon_ripple">#1F000000</color>
+    <color name="uklon_nav_checked_bg">#1AFFD200</color>
+    <color name="drawer_bg">@color/uklon_bg</color>
+    <color name="drawer_city_card_bg">@color/uklon_surface</color>
+    <color name="uklon_search_card_bg">#F2F3F5</color>
+    <color name="uklon_search_control_bg">#F2F3F5</color>
+    <color name="weather_hero_secondary">#F0FFFFFF</color>
 </resources>

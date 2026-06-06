@@ -1,7 +1,6 @@
 package com.taxi.easy.ua.ui.weather;
 
 import com.google.gson.annotations.SerializedName;
-
 import java.util.List;
 
 public class WeatherResponse {
@@ -128,6 +127,8 @@ public class WeatherResponse {
         private Clouds clouds;
         @SerializedName("dt_txt")
         private String dtTxt;
+        /** Probability of precipitation, 0..1 */
+        private double pop;
 
         public long getDt() { return dt; }
         public Main getMain() { return main; }
@@ -135,6 +136,7 @@ public class WeatherResponse {
         public Wind getWind() { return wind; }
         public Clouds getClouds() { return clouds; }
         public String getDtTxt() { return dtTxt; }
+        public double getPop() { return pop; }
 
         // Сеттеры для ForecastItem
         public void setDt(long dt) { this.dt = dt; }
@@ -143,6 +145,7 @@ public class WeatherResponse {
         public void setWind(Wind wind) { this.wind = wind; }
         public void setClouds(Clouds clouds) { this.clouds = clouds; }
         public void setDtTxt(String dtTxt) { this.dtTxt = dtTxt; }
+        public void setPop(double pop) { this.pop = pop; }
     }
 
     // Геттеры

@@ -1,124 +1,169 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="4dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
-    app:cardBackgroundColor="@color/background_color_card">
+    android:layout_marginHorizontal="4dp"
+    android:layout_marginVertical="5dp"
+    app:cardBackgroundColor="@color/uklon_surface"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/uklon_outline"
+    app:strokeWidth="1dp">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp"
-        android:weightSum="6">
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="12dp">
 
-        <!-- День и дата -->
-        <LinearLayout
+        <TextView
+            android:id="@+id/tv_day"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1.5"
-            android:orientation="vertical">
+            android:fontFamily="@font/medium"
+            android:textColor="@color/uklon_on_surface"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@id/iv_order_action"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Понеділок" />
 
-            <TextView
-                android:id="@+id/tv_day"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Понедельник"
-                android:textColor="@color/colorPrimaryDark"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:fontFamily="@font/medium"/>
+        <TextView
+            android:id="@+id/tv_date"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:fontFamily="@font/regular"
+            android:textColor="@color/uklon_on_surface_secondary"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toStartOf="@id/iv_order_action"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_day"
+            tools:text="15 січ" />
 
-            <TextView
-                android:id="@+id/tv_date"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="15 янв"
-                android:textColor="@color/black"
-                android:textSize="11sp"
-                android:fontFamily="@font/regular"/>
+        <ImageView
+            android:id="@+id/iv_order_action"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_author_stat_chip"
+            android:clickable="true"
+            android:contentDescription="@string/shortcut_order_long"
+            android:focusable="true"
+            android:padding="9dp"
+            android:src="@drawable/ic_order_arrow"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/uklon_yellow" />
 
-        </LinearLayout>
-
-        <!-- Иконка погоды -->
         <ImageView
             android:id="@+id/iv_weather_icon"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginTop="12dp"
+            android:contentDescription="@string/weather_title"
             android:src="@drawable/ic_weather_default"
-            android:contentDescription="weather_icon" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_date" />
 
-        <!-- Температура -->
-        <TextView
-            android:id="@+id/tv_temp"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="+5°C"
-            android:textColor="@color/colorPrimaryDark"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:fontFamily="@font/medium"/>
-
-        <!-- Описание -->
         <TextView
             android:id="@+id/tv_description"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="Облачно"
-            android:textColor="@color/text_primary"
-            android:textSize="12sp"
-            android:fontFamily="@font/regular"/>
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/regular"
+            android:maxLines="2"
+            android:textColor="@color/uklon_on_surface_secondary"
+            android:textSize="13sp"
+            app:layout_constraintBottom_toBottomOf="@id/iv_weather_icon"
+            app:layout_constraintEnd_toStartOf="@id/temp_block"
+            app:layout_constraintStart_toEndOf="@id/iv_weather_icon"
+            app:layout_constraintTop_toTopOf="@id/iv_weather_icon"
+            tools:text="Хмарно з проясненнями" />
 
-        <!-- Влажность -->
+        <LinearLayout
+            android:id="@+id/temp_block"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="@id/iv_weather_icon"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/iv_weather_icon">
+
+            <TextView
+                android:id="@+id/tv_temp_max"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/medium"
+                android:textColor="@color/uklon_on_surface"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                tools:text="+8°" />
+
+            <TextView
+                android:id="@+id/tv_temp_min"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/regular"
+                android:textColor="@color/uklon_on_surface_secondary"
+                android:textSize="14sp"
+                tools:text="−2°" />
+
+        </LinearLayout>
+
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="0.5"
-            android:gravity="center"
-            android:orientation="vertical">
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/iv_weather_icon">
+
+            <TextView
+                android:id="@+id/tv_pop"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_weather_pop_chip"
+                android:fontFamily="@font/medium"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:textColor="@color/uklon_on_surface"
+                android:textSize="11sp"
+                android:visibility="gone"
+                tools:text="Дощ 60%"
+                tools:visibility="visible" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
 
             <ImageView
-                android:layout_width="16dp"
-                android:layout_height="16dp"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:contentDescription="@string/humidity"
                 android:src="@drawable/ic_humidity_small"
-                app:tint="@color/text_secondary"
-                android:contentDescription="@string/humidity" />
+                app:tint="@color/uklon_on_surface_secondary" />
 
             <TextView
                 android:id="@+id/tv_humidity"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="65%"
-                android:textColor="@color/black"
-                android:textSize="11sp"
-                android:fontFamily="@font/medium"/>
+                android:layout_marginStart="4dp"
+                android:fontFamily="@font/medium"
+                android:textColor="@color/uklon_on_surface_secondary"
+                android:textSize="12sp"
+                tools:text="65%" />
 
         </LinearLayout>
 
-        <!-- Кнопка перехода к заказу (заглушка) -->
-        <ImageView
-            android:id="@+id/iv_order_action"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:src="@drawable/ic_order_arrow"
-            android:padding="8dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="order_button"
-            app:tint="@color/colorPrimary" />
-
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </com.google.android.material.card.MaterialCardView>

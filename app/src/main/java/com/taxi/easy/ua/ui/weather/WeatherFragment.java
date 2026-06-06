@@ -14,22 +14,25 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
+import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
@@ -37,9 +40,15 @@ import com.taxi.easy.ua.databinding.FragmentWeatherBinding;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.widget.WeatherWidget;
 import com.uxcam.UXCam;
 
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -57,23 +66,22 @@ import com.taxi.easy.ua.utils.db.CursorReadHelper;
 public class WeatherFragment extends Fragment {
 
     private static final String TAG = "WeatherFragment";
-    private String API_KEY; // Замените на ваш API ключ
-    //    https://api.openweathermap.org/data/2.5/weather?q=Kyiv&appid=f5790978f87a638e2eee88a858c03ec4&units=metric
+    private String API_KEY;
+//    https://api.openweathermap.org/data/2.5/weather?q=Kyiv&appid=f5790978f87a638e2eee88a858c03ec4&units=metric
     private static final String BASE_URL = "https://api.openweathermap.org/data/2.5/";
 
     private FragmentWeatherBinding binding;
-    private ProgressBar progressBar;
+    private LinearProgressIndicator progressBar;
     private RecyclerView recyclerForecast;
     private WeatherAdapter weatherAdapter;
     private TextView tvCityName, tvDate, tvTemperature, tvWeatherDescription;
+    private TextView tvFeelsLike, tvTempRange, tvSunrise, tvSunset;
     private TextView tvHumidity, tvWind, tvPressure;
     private ImageView ivWeatherIcon;
-    private Button btnWeatherDetails;
-    private Button btnShowMap;
-    private FloatingActionButton fabUpdate;
+    private MaterialButton btnWeatherDetails, btnShowMap;
     private View emptyState;
 
-    private List<WeatherResponse.ForecastItem> forecastList = new ArrayList<>();
+    private List<WeatherDailyForecast> dailyForecastList = new ArrayList<>();
     private Context context;
 
     private WeatherApiService weatherApiService;
@@ -115,34 +123,212 @@ public class WeatherFragment extends Fragment {
 
         context = requireActivity();
         requireActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-
-        // ИНИЦИАЛИЗАЦИЯ FirestoreHelper и SharedPreferences
         firestoreHelper = new FirestoreHelper(context);
         prefs = requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
         API_KEY = getApiKey();
         initViews();
         setupRetrofit();
         setupClickListeners();
+        applyNavigationBarInsets();
+        setupBackNavigation();
 
         checkNetworkAndLoadWeather();
 
         return root;
     }
-    private Locale getLocaleForDate() {
-        String savedLocale = sharedPreferencesHelperMain.getValue("locale", "uk").toString();
 
-        // OpenWeather использует "uk", а для даты нужно "uk" или "ua"
-        switch (savedLocale) {
-            case "uk":
-            case "ua":
-                return new Locale("uk", "UA");
-            case "ru":
-                return new Locale("ru", "RU");
-            case "en":
-                return Locale.ENGLISH;
-            default:
-                return new Locale("uk", "UA");
+    private void applyNavigationBarInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (view, windowInsets) -> {
+            Insets navBars = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars());
+            int extra = (int) (12 * view.getResources().getDisplayMetrics().density);
+            view.setPadding(
+                    view.getPaddingLeft(),
+                    view.getPaddingTop(),
+                    view.getPaddingRight(),
+                    navBars.bottom + extra);
+            return windowInsets;
+        });
+        ViewCompat.requestApplyInsets(binding.getRoot());
+    }
+
+    private void setupBackNavigation() {
+        binding.btnBack.setOnClickListener(v -> navigateBack());
+
+        requireActivity().getOnBackPressedDispatcher().addCallback(
+                getViewLifecycleOwner(),
+                new OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        navigateBack();
+                    }
+                });
+    }
+
+    private void navigateBack() {
+        try {
+            NavController navController = NavHostFragment.findNavController(this);
+            if (navController.popBackStack()) {
+                return;
+            }
+            if (navController.popBackStack(R.id.nav_visicom, false)) {
+                return;
+            }
+            navController.navigate(R.id.nav_visicom);
+        } catch (IllegalStateException e) {
+            Logger.w(requireActivity(), TAG, "NavController not found: " + e.getMessage());
         }
+    }
+
+    private void initViews() {
+        progressBar = binding.progressBar;
+        recyclerForecast = binding.recyclerForecast;
+        ViewCompat.setNestedScrollingEnabled(recyclerForecast, false);
+        tvCityName = binding.tvCityName;
+        tvDate = binding.tvDate;
+        tvTemperature = binding.tvTemperature;
+        tvWeatherDescription = binding.tvWeatherDescription;
+        tvFeelsLike = binding.tvFeelsLike;
+        tvTempRange = binding.tvTempRange;
+        tvSunrise = binding.tvSunrise;
+        tvSunset = binding.tvSunset;
+        tvHumidity = binding.tvHumidity;
+        tvWind = binding.tvWind;
+        tvPressure = binding.tvPressure;
+        ivWeatherIcon = binding.ivWeatherIcon;
+        btnWeatherDetails = binding.btnWeatherDetails;
+        btnShowMap = binding.btnShowMap;
+        emptyState = binding.emptyState;
+
+        setupRecyclerView();
+    }
+
+    private void setupRecyclerView() {
+        recyclerForecast.setLayoutManager(new LinearLayoutManager(context));
+        weatherAdapter = new WeatherAdapter(context, dailyForecastList);
+        recyclerForecast.setAdapter(weatherAdapter);
+    }
+
+    private void setupRetrofit() {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        weatherApiService = retrofit.create(WeatherApiService.class);
+    }
+
+    private void setupClickListeners() {
+        btnWeatherDetails.setOnClickListener(v -> showWeatherDetails());
+        btnShowMap.setOnClickListener(v -> showWeatherMap());
+        binding.currentWeatherCard.setOnClickListener(v -> showOrderScreen());
+        binding.btnRefresh.setOnClickListener(v -> refreshWeather());
+    }
+    private void showOrderScreen() {
+        sharedPreferencesHelperMain.saveValue("time", "no_time");
+        sharedPreferencesHelperMain.saveValue("date", "no_date");
+        NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
+        navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                .setPopUpTo(R.id.nav_visicom, true)
+                .build());
+    }
+    private void checkNetworkAndLoadWeather() {
+        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+            if (isAdded()) {
+                navigateToRestart();
+            }
+        } else {
+            loadWeatherData();
+        }
+    }
+
+    private void loadWeatherData() {
+        progressBar.setVisibility(View.VISIBLE);
+        showEmptyState(false);
+
+        String city = getCityFromDatabase();
+        if (city.isEmpty()) {
+            city = "Kyiv";
+        }
+
+        fetchCurrentWeather(city);
+        fetchForecast(city);
+    }
+
+    private void fetchCurrentWeather(String city) {
+        if (API_KEY == null || API_KEY.isEmpty()) {
+            Logger.e(context, TAG, "API_KEY пуст, ждем загрузки из Firestore");
+            showErrorState();
+            checkAndHideProgress();
+            return;
+        }
+        String localCode = sharedPreferencesHelperMain.getValue("locale", "uk").toString();
+        Call<WeatherResponse> call = weatherApiService.getCurrentWeather(
+                city, API_KEY, "metric", localCode
+        );
+
+        call.enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<WeatherResponse> call, @NonNull Response<WeatherResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    updateCurrentWeatherUI(response.body());
+                } else {
+                    Logger.e(context, TAG, "Failed to fetch weather: " + response.code());
+                    showErrorState();
+                }
+                checkAndHideProgress();
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<WeatherResponse> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
+                Logger.e(context, TAG, "Network error: " + t.getMessage());
+                showErrorState();
+                checkAndHideProgress();
+            }
+        });
+    }
+
+    private void fetchForecast(String city) {
+        if (API_KEY == null || API_KEY.isEmpty()) {
+            Logger.e(context, TAG, "API_KEY пуст, ждем загрузки из Firestore");
+            showErrorState();
+            checkAndHideProgress();
+            return;
+        }
+        String localCode = sharedPreferencesHelperMain.getValue("locale", "uk").toString();
+
+        Call<WeatherResponse> call = weatherApiService.getForecast(
+                city, API_KEY, "metric", localCode
+        );
+
+        call.enqueue(new Callback<>() {
+            @SuppressLint("NotifyDataSetChanged")
+            @Override
+            public void onResponse(@NonNull Call<WeatherResponse> call, @NonNull Response<WeatherResponse> response) {
+                progressBar.setVisibility(View.GONE);
+
+                if (response.isSuccessful() && response.body() != null && response.body().getForecastList() != null) {
+                    dailyForecastList.clear();
+                    dailyForecastList.addAll(
+                            WeatherForecastAggregator.aggregate(response.body().getForecastList()));
+
+                    weatherAdapter.notifyDataSetChanged();
+                    refreshTodayTempRangeFromForecast();
+                    updateUI();
+                } else {
+                    showErrorState();
+                }
+                checkAndHideProgress();
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<WeatherResponse> call, @NonNull Throwable t) {
+                progressBar.setVisibility(View.GONE);
+                FirebaseCrashlytics.getInstance().recordException(t);
+                Logger.e(context, TAG, "Forecast network error: " + t.getMessage());
+                showErrorState();
+                checkAndHideProgress();
+            }
+        });
     }
 
     private String getApiKey() {
@@ -196,198 +382,37 @@ public class WeatherFragment extends Fragment {
             }
         });
     }
-    private void initViews() {
-        progressBar = binding.progressBar;
-        recyclerForecast = binding.recyclerForecast;
-        ViewCompat.setNestedScrollingEnabled(recyclerForecast, false);
-        tvCityName = binding.tvCityName;
-        tvDate = binding.tvDate;
-        tvTemperature = binding.tvTemperature;
-        tvWeatherDescription = binding.tvWeatherDescription;
-        tvHumidity = binding.tvHumidity;
-        tvWind = binding.tvWind;
-        tvPressure = binding.tvPressure;
-        ivWeatherIcon = binding.ivWeatherIcon;
-        btnWeatherDetails = binding.btnWeatherDetails;
-        btnShowMap = binding.btnShowMap;
-
-        emptyState = binding.emptyState;
-
-        setupRecyclerView();
-    }
-
-    private void setupRecyclerView() {
-        recyclerForecast.setLayoutManager(new LinearLayoutManager(context));
-        weatherAdapter = new WeatherAdapter(context, forecastList);
-        recyclerForecast.setAdapter(weatherAdapter);
-    }
-
-    private void setupRetrofit() {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        weatherApiService = retrofit.create(WeatherApiService.class);
-    }
-
-    private void setupClickListeners() {
-        btnWeatherDetails.setOnClickListener(v -> showWeatherDetails());
-        btnShowMap.setOnClickListener(v -> showWeatherMap());
-        binding.currentWeatherCard.setOnClickListener(v -> showOrderScreen());
-        binding.btnRefresh.setOnClickListener(v -> refreshWeather());
-    }
-
-    private void showOrderScreen() {
-        sharedPreferencesHelperMain.saveValue("time", "no_time");
-        sharedPreferencesHelperMain.saveValue("date", "no_date");
-        NavController navController = Navigation.findNavController(getCurrentActivity(), R.id.nav_host_fragment_content_main);
-        navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                .setPopUpTo(R.id.nav_visicom, true)
-                .build());
-    }
-
-    private void checkNetworkAndLoadWeather() {
-        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
-            if (isAdded()) {
-                navigateToRestart();
-            }
-        } else {
-            loadWeatherData();
-        }
-    }
-
-    private void loadWeatherData() {
-        progressBar.setVisibility(View.VISIBLE);
-        showEmptyState(false);
-
-        String city = getCityFromDatabase();
-        if (city.isEmpty()) {
-            city = "Kyiv";
-        }
-
-        fetchCurrentWeather(city);
-        fetchForecast(city);
-    }
-
-    private void fetchCurrentWeather(String city) {
-        if (API_KEY == null || API_KEY.isEmpty()) {
-            Logger.e(context, TAG, "API_KEY пуст, ждем загрузки из Firestore");
-            showErrorState();
-            checkAndHideProgress();
-            return;
-        }
-
-        Logger.e(context, TAG, "fetchCurrentWeather API_KEY: " + API_KEY);
-        String localCode = getApiLanguageCode();
-        Call<WeatherResponse> call = weatherApiService.getCurrentWeather(
-                city, API_KEY, "metric", localCode
-        );
-
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<WeatherResponse> call, @NonNull Response<WeatherResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    updateCurrentWeatherUI(response.body());
-                } else {
-                    Logger.e(context, TAG, "Failed to fetch weather: " + response.code());
-                    showErrorState();
-                }
-                checkAndHideProgress();
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<WeatherResponse> call, @NonNull Throwable t) {
-                FirebaseCrashlytics.getInstance().recordException(t);
-                Logger.e(context, TAG, "Network error: " + t.getMessage());
-                showErrorState();
-                checkAndHideProgress();
-            }
-        });
-    }
-    private String getApiLanguageCode() {
-        // Получаем сохранённую локаль из SharedPreferences
-        String savedLocale = sharedPreferencesHelperMain.getValue("locale", "uk").toString();
-
-        // Приводим к формату OpenWeather API
-        switch (savedLocale) {
-            case "uk":
-            case "ua":  // если вдруг сохранено "ua"
-                return "uk";
-            case "ru":
-                return "ru";
-            case "en":
-                return "en";
-            default:
-                return "uk";
-        }
-    }
-    private void fetchForecast(String city) {
-        if (API_KEY == null || API_KEY.isEmpty()) {
-            Logger.e(context, TAG, "API_KEY пуст, ждем загрузки из Firestore");
-            showErrorState();
-            checkAndHideProgress();
-            return;
-        }
-
-        Logger.d(context, TAG, "fetchForecast API_KEY: " + API_KEY);
-        String languageCode = getApiLanguageCode();  // для API
-        Logger.d(context, TAG, "fetchForecast: используем язык API=" + languageCode);
-
-        Call<WeatherResponse> call = weatherApiService.getForecast(
-                city, API_KEY, "metric", languageCode
-        );
-
-        call.enqueue(new Callback<>() {
-            @SuppressLint("NotifyDataSetChanged")
-            @Override
-            public void onResponse(@NonNull Call<WeatherResponse> call, @NonNull Response<WeatherResponse> response) {
-                progressBar.setVisibility(View.GONE);
-
-                if (response.isSuccessful() && response.body() != null && response.body().getForecastList() != null) {
-                    List<WeatherResponse.ForecastItem> allForecasts = response.body().getForecastList();
-                    forecastList.clear();
-
-                    // Берем прогноз на каждый день в 12:00
-                    for (int i = 0; i < allForecasts.size(); i++) {
-                        WeatherResponse.ForecastItem item = allForecasts.get(i);
-                        if (item.getDtTxt().contains("12:00:00") && forecastList.size() < 5) {
-                            forecastList.add(item);
-                        }
-                    }
-
-                    weatherAdapter.notifyDataSetChanged();
-                    updateUI();
-                } else {
-                    showErrorState();
-                }
-                checkAndHideProgress();
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<WeatherResponse> call, @NonNull Throwable t) {
-                progressBar.setVisibility(View.GONE);
-                FirebaseCrashlytics.getInstance().recordException(t);
-                Logger.e(context, TAG, "Forecast network error: " + t.getMessage());
-                showErrorState();
-                checkAndHideProgress();
-            }
-        });
-    }
-
     private void updateCurrentWeatherUI(WeatherResponse weather) {
-        String cityName = getCityFromDatabase();
-        tvCityName.setText(cityName);
 
-        // Используем правильную локаль для даты
-        Locale dateLocale = getLocaleForDate();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("d MMMM, EEEE", dateLocale);
+        String cityName = getCityFromDatabase();
+
+        tvCityName.setText(cityName);
+//        tvCityName.setText(weather.getName());
+        String localCode = sharedPreferencesHelperMain.getValue("locale", "uk").toString();
+        // Дата
+        SimpleDateFormat dateFormat = new SimpleDateFormat("d MMMM, EEEE", new Locale(localCode));
         tvDate.setText(dateFormat.format(new Date()));
 
         // Температура
         int temp = (int) Math.round(weather.getMain().getTemp());
         tvTemperature.setText(temp + "°C");
 
-        // Описание погоды (уже приходит на правильном языке от API)
+        if (weather.getMain() != null) {
+            int feelsLike = (int) Math.round(weather.getMain().getFeelsLike());
+            int tempMin = (int) Math.round(weather.getMain().getTempMin());
+            int tempMax = (int) Math.round(weather.getMain().getTempMax());
+            tvFeelsLike.setText(getString(R.string.weather_feels_like, feelsLike));
+            updateTempRangeChip(tempMin, tempMax);
+        }
+
+        if (weather.getSys() != null) {
+            String sunrise = formatSunTime(weather.getSys().getSunrise(), weather.getTimezone());
+            String sunset = formatSunTime(weather.getSys().getSunset(), weather.getTimezone());
+            tvSunrise.setText(getString(R.string.weather_sunrise, sunrise));
+            tvSunset.setText(getString(R.string.weather_sunset, sunset));
+        }
+
+        // Описание
         if (weather.getWeather() != null && !weather.getWeather().isEmpty()) {
             String description = weather.getWeather().get(0).getDescription();
             tvWeatherDescription.setText(capitalizeFirstLetter(description));
@@ -409,10 +434,21 @@ public class WeatherFragment extends Fragment {
         int pressureMmHg = (int) (weather.getMain().getPressure() * 0.750064);
         String pressure_high = pressureMmHg + " " + context.getString(R.string.pressure_high);
         tvPressure.setText(pressure_high);
+
+        WeatherGradientHelper.applyWeatherGradient(
+                requireContext(),
+                binding.currentWeatherContent,
+                weather);
+
+        try {
+            WeatherWidget.updateAllWidgets(requireContext(), weather);
+        } catch (Exception e) {
+            Logger.e(context, TAG, "Widget update failed: " + e.getMessage());
+        }
     }
 
     private void updateUI() {
-        if (forecastList.isEmpty()) {
+        if (dailyForecastList.isEmpty()) {
             showEmptyState(true);
         } else {
             showEmptyState(false);
@@ -519,7 +555,7 @@ public class WeatherFragment extends Fragment {
         if (getActivity() != null) {
             Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
             Logger.w(context, TAG, "NO INTERNET - Showing toast message");
-         }
+        }
     }
 
     private String getCityFromDatabase() {
@@ -714,6 +750,38 @@ public class WeatherFragment extends Fragment {
             case "50d": case "50n": return R.drawable.ic_mist;
             default: return R.drawable.ic_weather_default;
         }
+    }
+
+    private void refreshTodayTempRangeFromForecast() {
+        if (dailyForecastList.isEmpty()) {
+            return;
+        }
+
+        WeatherDailyForecast todayForecast = dailyForecastList.get(0);
+        String todayKey = LocalDate.now(ZoneId.of("Europe/Kiev")).toString();
+        if (todayKey.equals(todayForecast.getDayKey())) {
+            updateTempRangeChip(todayForecast.getTempMin(), todayForecast.getTempMax());
+        }
+    }
+
+    private void updateTempRangeChip(int tempMin, int tempMax) {
+        if (tempMin > tempMax) {
+            int swap = tempMin;
+            tempMin = tempMax;
+            tempMax = swap;
+        }
+
+        if (tempMin == tempMax) {
+            tvTempRange.setText(getString(R.string.weather_today_stable, tempMin));
+        } else {
+            tvTempRange.setText(getString(R.string.weather_today_range, tempMin, tempMax));
+        }
+    }
+
+    private String formatSunTime(long unixSeconds, int timezoneOffsetSeconds) {
+        ZoneOffset offset = ZoneOffset.ofTotalSeconds(timezoneOffsetSeconds);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault());
+        return Instant.ofEpochSecond(unixSeconds).atOffset(offset).format(formatter);
     }
 
     private String capitalizeFirstLetter(String text) {
