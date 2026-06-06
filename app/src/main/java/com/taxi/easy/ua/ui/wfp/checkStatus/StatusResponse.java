@@ -10,7 +10,7 @@ public class StatusResponse {
     private String reason;
 
     @SerializedName("reasonCode")
-    private int reasonCode;
+    private Integer reasonCode;
 
     @SerializedName("orderReference")
     private String orderReference;
@@ -71,7 +71,7 @@ public class StatusResponse {
     }
 
     public int getReasonCode() {
-        return reasonCode;
+        return reasonCode != null ? reasonCode : 0;
     }
 
     public String getOrderReference() {

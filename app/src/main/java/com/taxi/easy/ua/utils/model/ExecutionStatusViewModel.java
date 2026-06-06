@@ -32,6 +32,8 @@ public class ExecutionStatusViewModel extends ViewModel {
     public static final String PREF_FINISH_ADD_COST_IN_FLIGHT = "finish_add_cost_in_flight";
     /** Сумма доплаты, ожидающая подтверждения WFP (грн). */
     public static final String PREF_FINISH_PENDING_ADD_COST_AMOUNT = "finish_pending_add_cost_amount";
+    /** orderReference доплаты WFP (для checkStatus после таймаута). */
+    public static final String PREF_FINISH_PENDING_ADD_COST_ORDER_REF = "finish_pending_add_cost_order_ref";
     public static final String PREF_UID_FCM = "uid_fcm";
     private static final long ACTIVE_ORDER_NOTICE_SUPPRESS_MS = 90_000L;
 
@@ -308,6 +310,18 @@ public class ExecutionStatusViewModel extends ViewModel {
 
     public static void clearPendingAddCostAmountPref() {
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_PENDING_ADD_COST_AMOUNT, "");
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_PENDING_ADD_COST_ORDER_REF, "");
+    }
+
+    public static void setPendingAddCostOrderRefPref(@Nullable String orderRef) {
+        sharedPreferencesHelperMain.saveValue(
+                PREF_FINISH_PENDING_ADD_COST_ORDER_REF, orderRef != null ? orderRef : "");
+    }
+
+    @Nullable
+    public static String getPendingAddCostOrderRefPref() {
+        Object v = sharedPreferencesHelperMain.getValue(PREF_FINISH_PENDING_ADD_COST_ORDER_REF, "");
+        return v instanceof String && !((String) v).isEmpty() ? (String) v : null;
     }
 
     public static boolean shouldBlockAddCost(@Nullable String orderUid) {

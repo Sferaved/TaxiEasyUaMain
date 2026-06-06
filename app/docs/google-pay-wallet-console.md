@@ -15,10 +15,10 @@
 
 | Додаток | Package name | SHA-256 (release) |
 |---------|--------------|-------------------|
-| PAS_1 | `com.taxi.easy.ua` | `5D:DC:CC:ED:78:F5:1E:BB:C9:23:0F:5B:F4:CC:B5:8C:1D:51:0C:AC:9E:F3:52:93:5C:5B:FA:64:B2:B1:C6:B9` |
-| PAS_2 | `com.taxieasyua.back4app` | `DE:0D:C2:3A:45:7B:1C:17:47:9E:9F:C5:D0:15:13:64:6D:AC:34:59:B0:B6:9B:D5:75:3A:96:89:ED:FE:C6:28` |
-| PAS_3 | `com.taxi_pas3` | `46:7B:8B:88:4D:51:3D:05:CE:0C:FE:37:8C:DD:C9:40:F0:AA:BD:11:99:64:54:8D:79:09:B8:63:2A:D3:43:79` |
-| PAS_4 | `com.taxi_pas_4` | `6C:C3:56:E7:21:88:7C:1D:8D:FE:43:CD:32:F8:A7:64:3A:74:D2:F1:92:2F:F3:97:66:81:C2:B7:38:60:5A:19` |
+| PAS_1 | `com.taxi.easy.ua` | `42:E6:CF:13:98:13:92:B1:88:BD:2A:F7:1F:25:0E:FF:DA:D1:C8:D8:7D:C8:43:C3:8B:41:F4:B5:58:5B:B4:31` (App signing, Play) |
+| PAS_2 | `com.taxieasyua.back4app` | `DA:8C:BC:E9:5F:79:10:3C:6D:ED:D4:61:40:59:6F:C3:03:10:CB:1C:E2:48:E3:C5:80:CF:D6:8F:BE:41:E8:F6` (App signing, Play) |
+| PAS_3 | `com.taxi_pas3` | `38:86:B1:5A:A6:59:AC:73:14:08:D4:8D:F6:10:83:C0:6C:78:DE:04:06:72:4A:36:F8:D8:3F:AA:71:76:25:1D` (App signing, Play) |
+| PAS_4 | `com.taxi_pas_4` | `0B:FC:7D:49:C5:40:D9:72:55:76:17:FD:2A:F3:30:53:F0:3E:DA:E3:2B:0B:53:E7:0A:C7:97:8B:70:B7:80:29` (App signing, Play) |
 
 ### Отримати SHA-256 вручну
 

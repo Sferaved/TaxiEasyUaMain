@@ -382,6 +382,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         String phoneNumber = stringList.get(2);
 
         ExecutionStatusViewModel.setPendingAddCostAmountPref(amount);
+        ExecutionStatusViewModel.setPendingAddCostOrderRefPref(order_id);
         ExecutionStatusViewModel.setAddCostInFlightPref(true);
 
         Call<PurchaseResponse> call = service.chargeActiveTokenAddCost(
@@ -406,10 +407,10 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                     switch (orderStatus) {
                         case "Approved":
                         case "WaitingAuthComplete":
-                            ExecutionStatusViewModel.setAddCostInFlightPref(false);
-                            ExecutionStatusViewModel.clearPendingAddCostAmountPref();
-                            // WFP recreate: full cost comes via order_uid_new / finishAbsoluteCost
+                            // WFP: держим in-flight до finishAbsoluteCost / order_uid_new
                             if (!"wfp_payment".equals(pay_method)) {
+                                ExecutionStatusViewModel.setAddCostInFlightPref(false);
+                                ExecutionStatusViewModel.clearPendingAddCostAmountPref();
                                 viewModel.setAddCostViewUpdate(amount);
                             }
                             viewModel.setCancelStatus(true);
