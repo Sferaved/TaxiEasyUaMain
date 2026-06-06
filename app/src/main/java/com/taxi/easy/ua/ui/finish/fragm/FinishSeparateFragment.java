@@ -3813,7 +3813,7 @@ public class FinishSeparateFragment extends Fragment {
                         Logger.d(context, TAG, "verifyOldHold  result: " + result);
                         if ("pending_add_cost".equals(result)) {
                             ExecutionStatusViewModel.setAddCostInFlightPref(true);
-                            new Handler(Looper.getMainLooper()).post(this::resumePendingAddCostIfInFlight);
+                            new Handler(Looper.getMainLooper()).post(FinishSeparateFragment.this::resumePendingAddCostIfInFlight);
                             return;
                         }
                         if (result.equals("hold")) {
@@ -3854,7 +3854,7 @@ public class FinishSeparateFragment extends Fragment {
                             Logger.w(context, TAG,
                                     "[addCost] verifyOldHold: not hold (" + result + ")");
                             if (ExecutionStatusViewModel.isAddCostInFlightPref()) {
-                                new Handler(Looper.getMainLooper()).post(this::resumePendingAddCostIfInFlight);
+                                new Handler(Looper.getMainLooper()).post(FinishSeparateFragment.this::resumePendingAddCostIfInFlight);
                                 return;
                             }
                             new Handler(Looper.getMainLooper()).post(() -> {
