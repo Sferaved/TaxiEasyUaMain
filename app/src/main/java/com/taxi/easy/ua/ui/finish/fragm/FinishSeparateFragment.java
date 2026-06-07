@@ -3812,9 +3812,15 @@ public class FinishSeparateFragment extends Fragment {
                         String result = holdResponse.getResult();
                         Logger.d(context, TAG, "verifyOldHold  result: " + result);
                         if ("pending_add_cost".equals(result)) {
-                            ExecutionStatusViewModel.setAddCostInFlightPref(true);
-                            new Handler(Looper.getMainLooper()).post(FinishSeparateFragment.this::resumePendingAddCostIfInFlight);
-                            return;
+                            if (ExecutionStatusViewModel.isAddCostInFlightPref()) {
+                                new Handler(Looper.getMainLooper()).post(
+                                        FinishSeparateFragment.this::resumePendingAddCostIfInFlight);
+                                return;
+                            }
+                            Logger.w(context, TAG,
+                                    "[addCost] verifyOldHold: pending_add_cost but not in flight"
+                                            + " — show add-cost sheet (previous add-cost already applied)");
+                            result = "hold";
                         }
                         if (result.equals("hold")) {
                             // Обработка неуспешного ответа
