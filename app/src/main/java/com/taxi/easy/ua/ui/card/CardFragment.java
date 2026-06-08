@@ -44,6 +44,7 @@ import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
+import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 import com.uxcam.UXCam;
 
 import java.io.UnsupportedEncodingException;
@@ -161,7 +162,6 @@ public class CardFragment extends Fragment {
             textCard.setVisibility(View.VISIBLE);
             listView.setVisibility(View.GONE);
             textCard.setText(R.string.no_cards);
-            paymentNal(context);
             progressBar.setVisibility(View.GONE);
         }
     }
@@ -178,6 +178,10 @@ public class CardFragment extends Fragment {
     }
     private  void getCardTokenWfp() {
         String city = logCursor(MainActivity.CITY_INFO, context).get(1);
+        if (!WfpUtils.isCityValidForCardFetch(city)) {
+            progressBar.setVisibility(View.GONE);
+            return;
+        }
         progressBar.setVisibility(View.VISIBLE);
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
@@ -212,54 +216,31 @@ public class CardFragment extends Fragment {
             public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
                 Logger.d(context, TAG, "onResponse: " + response.body());
                 if (response.isSuccessful() && response.body() != null) {
-                    CallbackResponseWfp callbackResponse = response.body();
-                    List<CardInfo> cards = callbackResponse.getCards();
+                    List<CardInfo> cards = response.body().getCards();
                     Logger.d(context, TAG, "onResponse: cards" + cards);
-                    String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
-
-
-                    SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-
-
-                    database.execSQL("DELETE FROM " + tableName + ";");
-
-                    if (cards != null && !cards.isEmpty()) {
-                        for (CardInfo cardInfo : cards) {
-                            String masked_card = cardInfo.getMasked_card(); // Маска карты
-                            String card_type = cardInfo.getCard_type(); // Тип карты
-                            String bank_name = cardInfo.getBank_name(); // Название банка
-                            String rectoken = cardInfo.getRectoken(); // Токен карты
-                            String merchant = cardInfo.getMerchant(); //
-                            String active = cardInfo.getActive();
-
-                            Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
-                            ContentValues cv = new ContentValues();
-                            cv.put("masked_card", masked_card);
-                            cv.put("card_type", card_type);
-                            cv.put("bank_name", bank_name);
-                            cv.put("rectoken", rectoken);
-                            cv.put("merchant", merchant);
-                            cv.put("rectoken_check", active);
-                            database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
-                        }
-                    }
-                    database.close();
+                    WfpUtils.saveWfpCardsToDatabase(context, cards);
                     try {
                         cardViews();
                     } catch (MalformedURLException | UnsupportedEncodingException e) {
                         throw new RuntimeException(e);
                     }
+                } else {
+                    progressBar.setVisibility(View.GONE);
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
-                // Обработка ошибки запроса
                 Logger.d(context, TAG, "onResponse: failure " + t);
                 FirebaseCrashlytics.getInstance().recordException(t);
+                progressBar.setVisibility(View.GONE);
+                try {
+                    cardViews();
+                } catch (MalformedURLException | UnsupportedEncodingException e) {
+                    throw new RuntimeException(e);
+                }
             }
         });
-        progressBar.setVisibility(View.INVISIBLE);
     }
 
     @SuppressLint("SourceLockedOrientationActivity")
@@ -358,11 +339,19 @@ public class CardFragment extends Fragment {
             }
         });
         try {
-            cardViews();
+            if (getCardMapsFromDatabase().isEmpty()) {
+                String city = logCursor(MainActivity.CITY_INFO, context).get(1);
+                if (WfpUtils.isCityValidForCardFetch(city) && NetworkUtils.isNetworkAvailable(requireContext())) {
+                    getCardTokenWfp();
+                } else {
+                    cardViews();
+                }
+            } else {
+                cardViews();
+            }
         } catch (MalformedURLException | UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
-//        getCardTokenWfp();
 
     }
 

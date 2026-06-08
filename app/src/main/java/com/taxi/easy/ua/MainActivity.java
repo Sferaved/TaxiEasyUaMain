@@ -121,6 +121,7 @@ import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 import com.taxi.easy.ua.utils.worker.AddUserNoNameWorker;
 import com.taxi.easy.ua.utils.worker.CheckPushPermissionWorker;
 import com.taxi.easy.ua.utils.worker.GetCardTokenWfpWorker;
+import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
 import com.taxi.easy.ua.utils.worker.InsertPushDateWorker;
 import com.taxi.easy.ua.utils.worker.UpdatePushDateWorker;
@@ -2548,74 +2549,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void getCardTokenWfp(String city) {
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor()) // 3 попытки
-                .addInterceptor(interceptor)
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
-
-        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
-        Logger.d(getApplicationContext(), TAG, "getCardTokenWfp: ");
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
-
-        Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
-                getApplicationContext().getString(R.string.application),
-                city,
-                userEmail,
-                "wfp"
-        );
-
-        try {
-            Response<CallbackResponseWfp> response = call.execute();
-            Logger.d(getApplicationContext(), TAG, "onResponse: " + response.body());
-            if (response.isSuccessful() && response.body() != null) {
-                CallbackResponseWfp callbackResponse = response.body();
-                List<CardInfo> cards = callbackResponse.getCards();
-                Logger.d(getApplicationContext(), TAG, "onResponse: cards" + cards);
-
-                SQLiteDatabase database = getApplicationContext().openOrCreateDatabase(MainActivity.DB_NAME, Context.MODE_PRIVATE, null);
-                database.execSQL("DELETE FROM " + MainActivity.TABLE_WFP_CARDS + ";");
-
-                if (cards != null && !cards.isEmpty()) {
-                    for (CardInfo cardInfo : cards) {
-                        String masked_card = cardInfo.getMasked_card();
-                        String card_type = cardInfo.getCard_type();
-                        String bank_name = cardInfo.getBank_name();
-                        String rectoken = cardInfo.getRectoken();
-                        String merchant = cardInfo.getMerchant();
-                        String active = cardInfo.getActive();
-
-                        Logger.d(getApplicationContext(), TAG, "onResponse: card_token: " + rectoken);
-                        ContentValues cv = new ContentValues();
-                        cv.put("masked_card", masked_card);
-                        cv.put("card_type", card_type);
-                        cv.put("bank_name", bank_name);
-                        cv.put("rectoken", rectoken);
-                        cv.put("merchant", merchant);
-                        cv.put("rectoken_check", active);
-                        database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
-                    }
-                }
-                database.close();
-            } else {
-                // Обработка случаев, когда ответ не 200 OK
-                Logger.d(getApplicationContext(), TAG, "onResponse: not successful, code: " + response.code());
-            }
-        } catch (Exception e) {
-            Logger.d(getApplicationContext(), TAG, "onResponse: failure " + e.getMessage());
-            FirebaseCrashlytics.getInstance().recordException(e);
-        }
+        WfpUtils.getCardTokenWfp(city, getApplicationContext());
     }
 
     private void startFireBase() {

@@ -17,6 +17,11 @@ import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
+import com.taxi.easy.ua.utils.worker.GetCardTokenWfpWorker;
+
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,10 +39,59 @@ public class WfpUtils {
 
     private static final String TAG = "WfpUtils";
 
-    public static void getCardTokenWfp(String city, Context context) {
-        Logger.d(context, TAG, "getCardTokenWfp: ");
-        String  baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+    public static boolean isCityValidForCardFetch(String city) {
+        return city != null && !city.isEmpty() && !"all".equalsIgnoreCase(city);
+    }
 
+    public static void saveWfpCardsToDatabase(Context context, List<CardInfo> cards) {
+        if (cards == null || cards.isEmpty()) {
+            Logger.d(context, TAG, "saveWfpCardsToDatabase: empty response, keep local cache");
+            return;
+        }
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        try {
+            database.execSQL("DELETE FROM " + MainActivity.TABLE_WFP_CARDS + ";");
+            for (CardInfo cardInfo : cards) {
+                String masked_card = cardInfo.getMasked_card();
+                String card_type = cardInfo.getCard_type();
+                String bank_name = cardInfo.getBank_name();
+                String rectoken = cardInfo.getRectoken();
+                String merchant = cardInfo.getMerchant();
+                String active = cardInfo.getActive();
+
+                Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
+                ContentValues cv = new ContentValues();
+                cv.put("masked_card", masked_card);
+                cv.put("card_type", card_type);
+                cv.put("bank_name", bank_name);
+                cv.put("rectoken", rectoken);
+                cv.put("merchant", merchant);
+                cv.put("rectoken_check", active);
+                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
+            }
+        } finally {
+            database.close();
+        }
+    }
+
+    public static void enqueueCardTokenFetch(Context context, String city) {
+        if (!isCityValidForCardFetch(city)) {
+            Logger.d(context, TAG, "enqueueCardTokenFetch: skip invalid city: " + city);
+            return;
+        }
+        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(GetCardTokenWfpWorker.class)
+                .setInputData(new Data.Builder().putString("city", city).build())
+                .build();
+        WorkManager.getInstance(context).enqueue(request);
+    }
+
+    public static void getCardTokenWfp(String city, Context context) {
+        Logger.d(context, TAG, "getCardTokenWfp: city=" + city);
+        if (!isCityValidForCardFetch(city)) {
+            Logger.d(context, TAG, "getCardTokenWfp: skip invalid city");
+            return;
+        }
+        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
@@ -71,36 +125,10 @@ public class WfpUtils {
             Response<CallbackResponseWfp> response = call.execute();
             Logger.d(context, TAG, "onResponse: " + response.body());
             if (response.isSuccessful() && response.body() != null) {
-                CallbackResponseWfp callbackResponse = response.body();
-                List<CardInfo> cards = callbackResponse.getCards();
+                List<CardInfo> cards = response.body().getCards();
                 Logger.d(context, TAG, "onResponse: cards" + cards);
-
-                SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                database.execSQL("DELETE FROM " + MainActivity.TABLE_WFP_CARDS + ";");
-
-                if (cards != null && !cards.isEmpty()) {
-                    for (CardInfo cardInfo : cards) {
-                        String masked_card = cardInfo.getMasked_card();
-                        String card_type = cardInfo.getCard_type();
-                        String bank_name = cardInfo.getBank_name();
-                        String rectoken = cardInfo.getRectoken();
-                        String merchant = cardInfo.getMerchant();
-                        String active = cardInfo.getActive();
-
-                        Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
-                        ContentValues cv = new ContentValues();
-                        cv.put("masked_card", masked_card);
-                        cv.put("card_type", card_type);
-                        cv.put("bank_name", bank_name);
-                        cv.put("rectoken", rectoken);
-                        cv.put("merchant", merchant);
-                        cv.put("rectoken_check", active);
-                        database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
-                    }
-                }
-                database.close();
+                saveWfpCardsToDatabase(context, cards);
             } else {
-                // Обработка случаев, когда ответ не 200 OK
                 Logger.d(context, TAG, "onResponse: not successful, code: " + response.code());
             }
         } catch (Exception e) {
