@@ -32,6 +32,7 @@ import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
 public class OrderStatusUtils {
     private static final String TAG = "OrderStatusUtils";
+    private static final int REQUEST_WAIT_SECONDS = 15;
 
     public static boolean checkOrders(Context context, OrderStatusWorker worker) throws Exception {
         Logger.d(context, TAG, "===> checkOrders() вызван");
@@ -64,7 +65,7 @@ public class OrderStatusUtils {
             final boolean[] success = {false};
             final Exception[] requestException = {null};
 
-            Call<AutoOrderResponse> call = ApiClient.getApiService().searchAutoOrderServiceAll(url);
+            Call<AutoOrderResponse> call = ApiClient.getPollingApiService().searchAutoOrderServiceAll(url);
             Logger.d(context, TAG, "Выполняется запрос searchAutoOrderServiceAll...");
 
             call.enqueue(new Callback<>() {
@@ -115,11 +116,12 @@ public class OrderStatusUtils {
                 }
             });
 
-            Logger.d(context, TAG, "Ожидание завершения запроса (до 15 сек)...");
-            boolean completed = latch.await(15, TimeUnit.SECONDS);
+            Logger.d(context, TAG, "Ожидание завершения запроса (до " + REQUEST_WAIT_SECONDS + " сек)...");
+            boolean completed = latch.await(REQUEST_WAIT_SECONDS, TimeUnit.SECONDS);
 
             if (!completed) {
-                Logger.e(context, TAG, "Таймаут: запрос не завершен за 15 секунд");
+                call.cancel();
+                Logger.w(context, TAG, "Таймаут: запрос не завершен за " + REQUEST_WAIT_SECONDS + " секунд");
                 throw new Exception("Request timed out");
             }
 

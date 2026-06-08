@@ -19,6 +19,7 @@ public class ApiClient {
 
     private static Retrofit retrofit = null;
     private static Retrofit cancelRetrofit = null;
+    private static Retrofit pollingRetrofit = null;
 
     public static ApiService getApiService() {
         //Логирование****
@@ -71,5 +72,27 @@ public class ApiClient {
                     .build();
         }
         return cancelRetrofit.create(ApiService.class);
+    }
+
+    /** Фоновый опрос статуса заказа — без retry, таймауты согласованы с OrderStatusUtils (15 с). */
+    public static ApiService getPollingApiService() {
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(12, TimeUnit.SECONDS)
+                .writeTimeout(12, TimeUnit.SECONDS)
+                .readTimeout(12, TimeUnit.SECONDS)
+                .build();
+
+        if (pollingRetrofit == null) {
+            Gson gson = new GsonBuilder()
+                    .setLenient()
+                    .create();
+
+            pollingRetrofit = new Retrofit.Builder()
+                    .baseUrl(BASE_URL)
+                    .client(client)
+                    .addConverterFactory(GsonConverterFactory.create(gson))
+                    .build();
+        }
+        return pollingRetrofit.create(ApiService.class);
     }
 }
