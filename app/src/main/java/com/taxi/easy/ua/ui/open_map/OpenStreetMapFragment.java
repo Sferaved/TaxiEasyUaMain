@@ -170,6 +170,9 @@ public class OpenStreetMapFragment extends Fragment {
     // Поток для маршрутов
     private static final Executor executor = Executors.newSingleThreadExecutor();
     private boolean userMovedMap = false;
+    /** Второй пин «по городу»/пустой — показываем только после сдвига или тапа по карте. */
+    private boolean deferFinishPinUntilInteraction;
+    private boolean finishPinRevealedByUser;
     private GestureDetectorCompat gestureDetector;
     private long lastZoomTime = 0;
     private static final long ZOOM_COOLDOWN_MS = 500;
@@ -557,6 +560,9 @@ public class OpenStreetMapFragment extends Fragment {
 
                 if (distance > MIN_DRAG_DISTANCE) {
                     isMapDragging = true;
+                    if ("finishMarker".equals(markerType)) {
+                        revealFinishPinFromUserInteraction();
+                    }
                 }
                 if (isMarkerEditMode()) {
                     updateCenterMarkerVisibility();
@@ -566,6 +572,7 @@ public class OpenStreetMapFragment extends Fragment {
             } else if (action == MotionEvent.ACTION_UP) {
                 GeoPoint centerPoint = (GeoPoint) map.getMapCenter();
                 if ("finishMarker".equals(markerType)) {
+                    revealFinishPinFromUserInteraction();
                     userMovedMap = true;
                     applyFinishFromMapCenter(centerPoint);
                 } else if ("startMarker".equals(markerType)) {
@@ -816,6 +823,7 @@ public class OpenStreetMapFragment extends Fragment {
     private void newShowRout() {
         if (map == null || ctx == null) {
             initializeRegion();
+            updateCenterMarkerVisibility();
             return;
         }
 
@@ -827,6 +835,7 @@ public class OpenStreetMapFragment extends Fragment {
         RouteMarkerData route = loadRouteMarkerData();
         if (route == null) {
             initializeRegion();
+            updateCenterMarkerVisibility();
             return;
         }
 
@@ -839,12 +848,13 @@ public class OpenStreetMapFragment extends Fragment {
 
         if (!isValidRouteCoordinate(startLat, startLan)) {
             initializeRegion();
+            updateCenterMarkerVisibility();
             return;
         }
 
         fromAddressString = route.startAddress;
         String finishAddress = route.finishAddress.trim();
-        boolean finishCityOnly = isCityOnlyAddress(finishAddress);
+        boolean finishCityOnly = isFinishCityOnlyRoute(finishAddress);
         boolean hasFinishCoords = isValidRouteCoordinate(finishLat, finishLan);
         boolean finishDistinct = isFinishDistinctFromStart(startLat, startLan, finishLat, finishLan);
         boolean showFinishAndRoute = hasFinishCoords && finishDistinct && !finishCityOnly;
@@ -883,6 +893,7 @@ public class OpenStreetMapFragment extends Fragment {
                     + " distinct=" + finishDistinct);
         }
 
+        updateFinishPinDeferState(finishCityOnly);
         updateCenterMarkerVisibility();
 
         map.invalidate();
@@ -892,6 +903,28 @@ public class OpenStreetMapFragment extends Fragment {
         return "startMarker".equals(markerType) || "finishMarker".equals(markerType);
     }
 
+    private void updateFinishPinDeferState(boolean finishCityOnly) {
+        deferFinishPinUntilInteraction = "finishMarker".equals(markerType) && finishCityOnly;
+        if (deferFinishPinUntilInteraction) {
+            finishPinRevealedByUser = false;
+        }
+    }
+
+    private boolean shouldHideDeferredFinishPin() {
+        return deferFinishPinUntilInteraction && !finishPinRevealedByUser;
+    }
+
+    private void revealFinishPinFromUserInteraction() {
+        if (!deferFinishPinUntilInteraction || finishPinRevealedByUser || map == null) {
+            return;
+        }
+        finishPinRevealedByUser = true;
+        userMovedMap = true;
+        endPoint = (GeoPoint) map.getMapCenter();
+        updateCenterMarkerVisibility();
+        Logger.d(ctx, TAG, "Finish pin revealed after map interaction (city-only / empty)");
+    }
+
     private void updateCenterMarkerVisibility() {
         if (center_marker == null) {
             return;
@@ -899,6 +932,10 @@ public class OpenStreetMapFragment extends Fragment {
         if (isMarkerEditMode()) {
             syncEditModeOverlays();
             updateCenterMarkerIcon();
+            if (shouldHideDeferredFinishPin()) {
+                hideCenterMarker();
+                return;
+            }
             center_marker.setVisibility(View.VISIBLE);
             center_marker.setTranslationZ(8f);
             center_marker.bringToFront();
@@ -1880,6 +1917,11 @@ public class OpenStreetMapFragment extends Fragment {
             public boolean onSingleTapConfirmed(@NonNull MotionEvent e) {
                 if (map == null) return false;
 
+                if ("finishMarker".equals(markerType) && shouldHideDeferredFinishPin()) {
+                    revealFinishPinFromUserInteraction();
+                    return true;
+                }
+
                 long currentTime = System.currentTimeMillis();
                 if (currentTime - lastZoomTime < ZOOM_COOLDOWN_MS) {
                     return false;
@@ -1990,17 +2032,28 @@ public class OpenStreetMapFragment extends Fragment {
         }
     }
 
-    // Добавьте этот метод в класс OpenStreetMapFragment
-    private boolean isCityOnlyAddress(String address) {
-        if (address == null || address.isEmpty()) {
-            return false;
+    private boolean isFinishCityOnlyRoute(String finishAddress) {
+        if (isCityOnlyAddress(finishAddress)) {
+            return true;
         }
+        Bundle arguments = getArguments();
+        return arguments != null && arguments.getBoolean("finishCityOnly", false);
+    }
 
-        // Получаем фразу "по городу" из ресурсов
-        String onCityPhrase = getString(R.string.on_city);
-
-        // Проверяем, содержит ли адрес эту фразу
-        return address.contains(onCityPhrase);
+    /** Согласовано с VisicomFragment.isCityOnlyFinishInDatabase — пустой finish = «по городу». */
+    private boolean isCityOnlyAddress(@Nullable String address) {
+        if (address == null) {
+            return true;
+        }
+        String trimmed = address.trim();
+        if (trimmed.isEmpty()) {
+            return true;
+        }
+        return trimmed.equals(getString(R.string.on_city_tv))
+                || trimmed.equals(getString(R.string.on_city))
+                || trimmed.contains("по місту")
+                || trimmed.contains("по городу")
+                || trimmed.contains("around the city");
     }
 
     private boolean isValidRouteCoordinate(double lat, double lon) {

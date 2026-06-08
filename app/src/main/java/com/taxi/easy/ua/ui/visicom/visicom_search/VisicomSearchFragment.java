@@ -644,6 +644,9 @@ public class VisicomSearchFragment extends Fragment {
         }
         btnOnMap = root.findViewById(R.id.btn_on_map);
         btnOnMap.setOnClickListener(v -> {
+            if ("ok".equals(start)) {
+                syncAroundCityFinishBeforeOpenMap();
+            }
             double[] pendingFinishCoords = syncRouteMarkerBeforeOpenMap();
             Bundle bundle = new Bundle();
             bundle.putString("startMarker", start);
@@ -653,6 +656,9 @@ public class VisicomSearchFragment extends Fragment {
             // В этом фрагменте нет переменной point (она параметр в методах).
             // Используем флаги start/end из аргументов: если end="ok" (или оба ok) — редактируем финиш.
             bundle.putString("markerType", "ok".equals(end) ? "finishMarker" : "startMarker");
+            if (isCityOnlyFinishText(resolveFinishTextForMap())) {
+                bundle.putBoolean("finishCityOnly", true);
+            }
             if (pendingFinishCoords != null) {
                 bundle.putDouble("pendingFinishLat", pendingFinishCoords[0]);
                 bundle.putDouble("pendingFinishLng", pendingFinishCoords[1]);
@@ -1955,6 +1961,64 @@ public class VisicomSearchFragment extends Fragment {
         double dLat = startLat - finishLat;
         double dLon = startLon - finishLon;
         return (dLat * dLat + dLon * dLon) > 4e-8;
+    }
+
+    private String resolveFinishTextForMap() {
+        String finishText = toEditAddress != null ? toEditAddress.getText().toString().trim() : "";
+        if (finishText.isEmpty() && VisicomFragment.textViewTo != null) {
+            finishText = VisicomFragment.textViewTo.getText().toString().trim();
+        }
+        return finishText;
+    }
+
+    private boolean isCityOnlyFinishText(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return true;
+        }
+        String trimmed = text.trim();
+        return trimmed.equals(getString(R.string.on_city_tv))
+                || trimmed.equals(getString(R.string.on_city))
+                || trimmed.contains("по місту")
+                || trimmed.contains("по городу")
+                || trimmed.contains("around the city");
+    }
+
+    /** При вводе «Откуда» и «по городу» в «Куда» — сбросить устаревшие координаты финиша в ROUT_MARKER. */
+    private void syncAroundCityFinishBeforeOpenMap() {
+        if (!isCityOnlyFinishText(resolveFinishTextForMap())) {
+            return;
+        }
+        SQLiteDatabase database = null;
+        Cursor cursor = null;
+        try {
+            database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+            cursor = database.rawQuery(
+                    "SELECT startLat, startLan, start FROM " + MainActivity.ROUT_MARKER + " LIMIT 1",
+                    null);
+            if (!cursor.moveToFirst()) {
+                return;
+            }
+            double startLat = cursor.getDouble(0);
+            double startLon = cursor.getDouble(1);
+            String startAddress = cursor.getString(2) != null ? cursor.getString(2) : "";
+            List<String> settings = new ArrayList<>();
+            settings.add(String.valueOf(startLat));
+            settings.add(String.valueOf(startLon));
+            settings.add(String.valueOf(startLat));
+            settings.add(String.valueOf(startLon));
+            settings.add(startAddress);
+            settings.add(getString(R.string.on_city_tv));
+            updateRoutMarker(settings);
+        } catch (Exception e) {
+            Logger.e(context, TAG, "syncAroundCityFinishBeforeOpenMap: " + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            if (database != null && database.isOpen()) {
+                database.close();
+            }
+        }
     }
 
     private void updateRoutMarker(List<String> settings) {
