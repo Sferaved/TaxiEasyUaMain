@@ -33,8 +33,9 @@ Multi-root файл: `AndroidStudioProjects/My_work_space.code-workspace`
 3. **Состояние** — зафиксируй незакоммиченные изменения и текущую ветку; не перезаписывай чужую работу.
 4. **Неоднозначность** — при сомнении между корнями уточни у пользователя.
 
-## Связанные правила PAS
+## Связанные правила
 
-В PAS-репозиториях также действуют: `pas-version-commit`, `pas-build-before-commit`, `pas-report-format`.
+- `cursor-rules-sync.mdc` — правила Cursor одинаковы во всех репозиториях workspace.
+- В PAS-репозиториях также: `pas-version-commit`, `pas-build-before-commit`, `pas-report-format`.
 
 Only after this check — reads, edits, and commands in the correct repo.

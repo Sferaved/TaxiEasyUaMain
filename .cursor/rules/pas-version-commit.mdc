@@ -5,7 +5,7 @@ alwaysApply: true
 
 # PAS version commit workflow
 
-For PAS_1 (and any PAS Android app in this family), **never** commit version bumps by calling `git_commit.ps1` or raw `git commit` directly.
+For any PAS Android app (PAS_1, PAS_2, PAS_3, PAS_4) in this family, **never** commit version bumps by calling `git_commit.ps1` or raw `git commit` directly.
 
 Always use the project script from the **PAS project root**:
 
