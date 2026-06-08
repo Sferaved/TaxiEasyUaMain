@@ -21,6 +21,7 @@ import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -35,6 +36,8 @@ import androidx.navigation.NavDestination;
 import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
@@ -70,6 +73,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
     public static final String TAG_SCHEDULED_TRIPS = "order_to_cancel_true_sheet";
     private static long lastScheduledTripsShownAtMs = 0L;
     private static final long SCHEDULED_TRIPS_DEBOUNCE_MS = 8000L;
+    private static final String ARG_ERROR_MESSAGE = "error_message";
     TextView textViewInfo;
     AppCompatButton btn_help, btn_ok;
     String errorMessage;
@@ -87,9 +91,25 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
     public MyBottomSheetErrorFragment(String errorMessage) {
         this.errorMessage = errorMessage;
     }
-    // Публичный безаргументный конструктор
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (savedInstanceState != null) {
+            errorMessage = savedInstanceState.getString(ARG_ERROR_MESSAGE);
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (errorMessage != null) {
+            outState.putString(ARG_ERROR_MESSAGE, errorMessage);
+        }
+    }
+
     private ButtonVisibilityCallback callback;
-     
+
     @SuppressLint("UseCompatLoadingForDrawables")
     @Nullable
     @Override
@@ -312,10 +332,35 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                     break;
             }
 
+        } else {
+            Logger.w(getActivity(), TAG, "errorMessage missing — dismiss fallback");
+            textViewInfo.setText("");
+            View.OnClickListener dismissListener = v -> dismiss();
+            textViewInfo.setOnClickListener(dismissListener);
+            btn_ok.setOnClickListener(dismissListener);
         }
 
         return view;
     }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (!(getDialog() instanceof BottomSheetDialog)) {
+            return;
+        }
+        BottomSheetDialog dialog = (BottomSheetDialog) getDialog();
+        FrameLayout bottomSheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        if (bottomSheet == null) {
+            return;
+        }
+        BottomSheetBehavior<View> behavior = BottomSheetBehavior.from(bottomSheet);
+        ViewGroup.LayoutParams layoutParams = bottomSheet.getLayoutParams();
+        layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+        bottomSheet.setLayoutParams(layoutParams);
+        behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+    }
+
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
