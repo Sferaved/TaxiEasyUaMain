@@ -548,6 +548,18 @@ public class CityFinder {
         citySynonyms.put("ЛЬВІВ", "Lviv");
         citySynonyms.put("CITY_LVIV", "Lviv");
 
+        // Івано-Франківськ
+        citySynonyms.put("IVANO_FRANKIVSK", "Ivano_frankivsk");
+        citySynonyms.put("ИВАНО-ФРАНКОВСК", "Ivano_frankivsk");
+        citySynonyms.put("ІВАНО-ФРАНКІВСЬК", "Ivano_frankivsk");
+        citySynonyms.put("CITY_IVANO_FRANKIVSK", "Ivano_frankivsk");
+
+        // Чернігів
+        citySynonyms.put("CHERNIHIV", "Chernihiv");
+        citySynonyms.put("ЧЕРНИГОВ", "Chernihiv");
+        citySynonyms.put("ЧЕРНІГІВ", "Chernihiv");
+        citySynonyms.put("CITY_CHERNIHIV", "Chernihiv");
+
         // Запорожье
         citySynonyms.put("ZAPORIZHZHIA", "Zaporizhzhia");
         citySynonyms.put("ЗАПОРОЖЬЕ", "Zaporizhzhia");
@@ -560,6 +572,68 @@ public class CityFinder {
         citySynonyms.put("ЧЕРКАССЫ", "Cherkasy Oblast");
         citySynonyms.put("ЧЕРКАСИ", "Cherkasy Oblast");
         citySynonyms.put("CITY_CHERKASY", "Cherkasy Oblast");
+
+        citySynonyms.put("VINNYTSIA", "Vinnytsia");
+        citySynonyms.put("ВИННИЦА", "Vinnytsia");
+        citySynonyms.put("ВІННИЦЯ", "Vinnytsia");
+        citySynonyms.put("CITY_VINNYTSIA", "Vinnytsia");
+
+        citySynonyms.put("POLTAVA", "Poltava");
+        citySynonyms.put("ПОЛТАВА", "Poltava");
+        citySynonyms.put("CITY_POLTAVA", "Poltava");
+
+        citySynonyms.put("SUMY", "Sumy");
+        citySynonyms.put("СУМЫ", "Sumy");
+        citySynonyms.put("СУМИ", "Sumy");
+        citySynonyms.put("CITY_SUMY", "Sumy");
+
+        citySynonyms.put("KHARKIV", "Kharkiv");
+        citySynonyms.put("ХАРЬКОВ", "Kharkiv");
+        citySynonyms.put("ХАРКІВ", "Kharkiv");
+        citySynonyms.put("CITY_KHARKIV", "Kharkiv");
+
+        citySynonyms.put("RIVNE", "Rivne");
+        citySynonyms.put("РОВНО", "Rivne");
+        citySynonyms.put("РІВНЕ", "Rivne");
+        citySynonyms.put("CITY_RIVNE", "Rivne");
+
+        citySynonyms.put("TERNOPIL", "Ternopil");
+        citySynonyms.put("ТЕРНОПОЛЬ", "Ternopil");
+        citySynonyms.put("ТЕРНОПІЛЬ", "Ternopil");
+        citySynonyms.put("CITY_TERNOPIL", "Ternopil");
+
+        citySynonyms.put("KHMELNYTSKYI", "Khmelnytskyi");
+        citySynonyms.put("ХМЕЛЬНИЦКИЙ", "Khmelnytskyi");
+        citySynonyms.put("ХМЕЛЬНИЦЬКИЙ", "Khmelnytskyi");
+        citySynonyms.put("CITY_KHMELNYTSKYI", "Khmelnytskyi");
+
+        citySynonyms.put("ZAKARPATTYA", "Zakarpattya");
+        citySynonyms.put("УЖГОРОД", "Zakarpattya");
+        citySynonyms.put("CITY_ZAKARPATTYA", "Zakarpattya");
+
+        citySynonyms.put("ZHYTOMYR", "Zhytomyr");
+        citySynonyms.put("ЖИТОМИР", "Zhytomyr");
+        citySynonyms.put("CITY_ZHYTOMYR", "Zhytomyr");
+
+        citySynonyms.put("KROPYVNYTSKYI", "Kropyvnytskyi");
+        citySynonyms.put("КРОПИВНИЦКИЙ", "Kropyvnytskyi");
+        citySynonyms.put("КРОПИВНИЦЬКИЙ", "Kropyvnytskyi");
+        citySynonyms.put("CITY_KROPYVNYTSKYI", "Kropyvnytskyi");
+
+        citySynonyms.put("MYKOLAIV", "Mykolaiv");
+        citySynonyms.put("НИКОЛАЕВ", "Mykolaiv");
+        citySynonyms.put("МИКОЛАЇВ", "Mykolaiv");
+        citySynonyms.put("CITY_MYKOLAIV", "Mykolaiv");
+
+        citySynonyms.put("CHERNIVTSI", "Chernivtsi");
+        citySynonyms.put("ЧЕРНОВЦЫ", "Chernivtsi");
+        citySynonyms.put("ЧЕРНІВЦІ", "Chernivtsi");
+        citySynonyms.put("CITY_CHERNIVTSI", "Chernivtsi");
+
+        citySynonyms.put("LUTSK", "Lutsk");
+        citySynonyms.put("ЛУЦК", "Lutsk");
+        citySynonyms.put("ЛУЦЬК", "Lutsk");
+        citySynonyms.put("CITY_LUTSK", "Lutsk");
 
         String upperCity = cityName.trim().toUpperCase(Locale.US);
 
