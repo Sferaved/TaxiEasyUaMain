@@ -79,6 +79,9 @@ jobs:
           echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "📌 Version: $CLEAN_VERSION → versionCode: $VERSION_CODE"
 
+          echo "Running unit tests..."
+          ./gradlew testDebugUnitTest --no-daemon --stacktrace
+
           # Сборка
           ./gradlew bundleRelease \
             -Pandroid.injected.version.code="$VERSION_CODE" \

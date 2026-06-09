@@ -11,6 +11,57 @@ if (!(Test-Path $gradleFile)) {
     exit 1
 }
 
+# ===== 0. Pre-release checks (unit tests + release build) =====
+Write-Host "===== Pre-release checks =====" -ForegroundColor Cyan
+
+if (-not $env:JAVA_HOME -or -not (Test-Path "$env:JAVA_HOME\bin\java.exe")) {
+    $javaCandidates = @(
+        "$env:LOCALAPPDATA\Programs\Android\Android Studio\jbr",
+        "C:\Program Files\Android\Android Studio\jbr",
+        "C:\Program Files\Java\jdk-21"
+    )
+    $foundJava = $false
+    foreach ($candidate in $javaCandidates) {
+        if (Test-Path "$candidate\bin\java.exe") {
+            $env:JAVA_HOME = $candidate
+            Write-Host "JAVA_HOME: $candidate" -ForegroundColor Gray
+            $foundJava = $true
+            break
+        }
+    }
+    if (-not $foundJava) {
+        Write-Host "ERROR: JAVA_HOME not set and Java not found" -ForegroundColor Red
+        exit 1
+    }
+}
+
+$gradlew = Join-Path $projectRoot "gradlew.bat"
+if (-not (Test-Path $gradlew)) {
+    Write-Host "ERROR: gradlew.bat not found" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "Running unit tests (testDebugUnitTest)..." -ForegroundColor Yellow
+& $gradlew testDebugUnitTest --no-daemon
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: unit tests failed - version bump cancelled" -ForegroundColor Red
+    exit 1
+}
+Write-Host "OK: unit tests passed" -ForegroundColor Green
+
+Write-Host "Running release build (assembleRelease)..." -ForegroundColor Yellow
+& $gradlew assembleRelease --no-daemon
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "assembleRelease failed, trying compileReleaseJavaWithJavac..." -ForegroundColor Yellow
+    & $gradlew compileReleaseJavaWithJavac --no-daemon
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: release build check failed - version bump cancelled" -ForegroundColor Red
+        exit 1
+    }
+}
+Write-Host "OK: release build check passed" -ForegroundColor Green
+Write-Host ""
+
 # ===== 1. Read build.gradle =====
 $content = Get-Content $gradleFile -Raw -Encoding UTF8
 
