@@ -50,6 +50,7 @@ import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
+import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 import com.uxcam.UXCam;
 
 import java.util.ArrayList;
@@ -487,97 +488,11 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     }
 
     private void getCardTokenWfp(String city) {
-
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-        database.delete(MainActivity.TABLE_WFP_CARDS, "1", null);
-        database.close();
-
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor())
-                .addInterceptor(interceptor)
-                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
-                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
-                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
-                .build();
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
-
-        // Создайте сервис
-        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
-        Logger.d(context, TAG, "getCardTokenWfp: ");
-        String email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-        // Выполните запрос
-        Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
-                context.getString(R.string.application),
-                city,
-                email,
-                "wfp"
-        );
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
-                Logger.d(context, TAG, "onResponse: " + response.body());
-                if (response.isSuccessful() && response.body() != null) {
-                    CallbackResponseWfp callbackResponse = response.body();
-                    if (callbackResponse != null) {
-                        List<CardInfo> cards = callbackResponse.getCards();
-                        Logger.d(context, TAG, "onResponse: cards" + cards);
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                        if (cards != null && !cards.isEmpty()) {
-                            for (CardInfo cardInfo : cards) {
-                                String masked_card = cardInfo.getMasked_card(); // Маска карты
-                                String card_type = cardInfo.getCard_type(); // Тип карты
-                                String bank_name = cardInfo.getBank_name(); // Название банка
-                                String rectoken = cardInfo.getRectoken(); // Токен карты
-                                String merchant = cardInfo.getMerchant(); // Токен карты
-
-                                Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
-                                ContentValues cv = new ContentValues();
-                                cv.put("masked_card", masked_card);
-                                cv.put("card_type", card_type);
-                                cv.put("bank_name", bank_name);
-                                cv.put("rectoken", rectoken);
-                                cv.put("merchant", merchant);
-                                cv.put("rectoken_check", "0");
-                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
-                            }
-                            Cursor cursor = database.rawQuery("SELECT * FROM " + MainActivity.TABLE_WFP_CARDS + " ORDER BY id DESC LIMIT 1", null);
-                            if (cursor.moveToFirst()) {
-                                // Получаем значение ID последней записи
-                                @SuppressLint("Range") int lastId = CursorReadHelper.getInt(cursor, "id");
-                                cursor.close();
-
-                                // Обновляем строку с найденным ID
-                                ContentValues cv = new ContentValues();
-                                cv.put("rectoken_check", "1");
-                                database.update(MainActivity.TABLE_WFP_CARDS, cv, "id = ?", new String[]{String.valueOf(lastId)});
-                            }
-
-                            database.close();
-                        }
-                    }
-                } else {
-                    MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.error_message));
-                    bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
-                // Обработка ошибки запроса
-                FirebaseCrashlytics.getInstance().recordException(t);
-                Logger.d(context, TAG, "Failed. Error message: " + t.getMessage());
-                MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(context.getString(R.string.error_message));
+        WfpUtils.fetchCardTokenWfpAsync(city, context, success -> {
+            if (!success && fragmentManager != null) {
+                MyBottomSheetErrorFragment bottomSheetDialogFragment =
+                        new MyBottomSheetErrorFragment(context.getString(R.string.error_message));
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
-
             }
         });
     }

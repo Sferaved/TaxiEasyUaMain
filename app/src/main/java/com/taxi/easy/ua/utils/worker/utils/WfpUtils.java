@@ -19,6 +19,8 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.worker.GetCardTokenWfpWorker;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.work.Data;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
@@ -30,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
+import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -39,34 +42,41 @@ public class WfpUtils {
 
     private static final String TAG = "WfpUtils";
 
+    public interface CardFetchCallback {
+        void onComplete(boolean success);
+    }
+
     public static boolean isCityValidForCardFetch(String city) {
         return city != null && !city.isEmpty() && !"all".equalsIgnoreCase(city);
     }
 
-    public static void saveWfpCardsToDatabase(Context context, List<CardInfo> cards) {
-        if (cards == null || cards.isEmpty()) {
-            Logger.d(context, TAG, "saveWfpCardsToDatabase: empty response, keep local cache");
-            return;
+    public static String normalizeActiveFlag(String active) {
+        if (active == null) {
+            return "0";
         }
+        if ("1".equals(active) || "true".equalsIgnoreCase(active)) {
+            return "1";
+        }
+        return "0";
+    }
+
+    public static void saveWfpCardsToDatabase(Context context, List<CardInfo> cards) {
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
         try {
             database.execSQL("DELETE FROM " + MainActivity.TABLE_WFP_CARDS + ";");
+            if (cards == null || cards.isEmpty()) {
+                Logger.d(context, TAG, "saveWfpCardsToDatabase: no cards for current merchant");
+                return;
+            }
             for (CardInfo cardInfo : cards) {
-                String masked_card = cardInfo.getMasked_card();
-                String card_type = cardInfo.getCard_type();
-                String bank_name = cardInfo.getBank_name();
-                String rectoken = cardInfo.getRectoken();
-                String merchant = cardInfo.getMerchant();
-                String active = cardInfo.getActive();
-
-                Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
+                Logger.d(context, TAG, "onResponse: card_token: " + cardInfo.getRectoken());
                 ContentValues cv = new ContentValues();
-                cv.put("masked_card", masked_card);
-                cv.put("card_type", card_type);
-                cv.put("bank_name", bank_name);
-                cv.put("rectoken", rectoken);
-                cv.put("merchant", merchant);
-                cv.put("rectoken_check", active);
+                cv.put("masked_card", cardInfo.getMasked_card());
+                cv.put("card_type", cardInfo.getCard_type());
+                cv.put("bank_name", cardInfo.getBank_name());
+                cv.put("rectoken", cardInfo.getRectoken());
+                cv.put("merchant", cardInfo.getMerchant());
+                cv.put("rectoken_check", normalizeActiveFlag(cardInfo.getActive()));
                 database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
             }
         } finally {
@@ -85,35 +95,58 @@ public class WfpUtils {
         WorkManager.getInstance(context).enqueue(request);
     }
 
+    public static void fetchCardTokenWfpAsync(String city, Context context, @Nullable CardFetchCallback callback) {
+        Logger.d(context, TAG, "fetchCardTokenWfpAsync: city=" + city);
+        if (!isCityValidForCardFetch(city)) {
+            Logger.d(context, TAG, "fetchCardTokenWfpAsync: skip invalid city");
+            if (callback != null) {
+                callback.onComplete(false);
+            }
+            return;
+        }
+
+        CallbackServiceWfp service = createCallbackService(context);
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+        Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
+                context.getString(R.string.application),
+                city,
+                userEmail,
+                "wfp"
+        );
+        call.enqueue(new Callback<CallbackResponseWfp>() {
+            @Override
+            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
+                boolean success = response.isSuccessful() && response.body() != null;
+                if (success) {
+                    saveWfpCardsToDatabase(context, response.body().getCards());
+                } else {
+                    Logger.d(context, TAG, "fetchCardTokenWfpAsync: not successful, code: " + response.code());
+                }
+                if (callback != null) {
+                    callback.onComplete(success);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
+                Logger.d(context, TAG, "fetchCardTokenWfpAsync: failure " + t.getMessage());
+                FirebaseCrashlytics.getInstance().recordException(t);
+                if (callback != null) {
+                    callback.onComplete(false);
+                }
+            }
+        });
+    }
+
     public static void getCardTokenWfp(String city, Context context) {
         Logger.d(context, TAG, "getCardTokenWfp: city=" + city);
         if (!isCityValidForCardFetch(city)) {
             Logger.d(context, TAG, "getCardTokenWfp: skip invalid city");
             return;
         }
-        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
 
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor())
-                .addInterceptor(interceptor)
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
-
-        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
-
+        CallbackServiceWfp service = createCallbackService(context);
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-
         Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
                 context.getString(R.string.application),
                 city,
@@ -135,6 +168,29 @@ public class WfpUtils {
             Logger.d(context, TAG, "onResponse: failure " + e.getMessage());
             FirebaseCrashlytics.getInstance().recordException(e);
         }
+    }
+
+    private static CallbackServiceWfp createCallbackService(Context context) {
+        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
+                .addInterceptor(interceptor)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .build();
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+
+        return retrofit.create(CallbackServiceWfp.class);
     }
 
 

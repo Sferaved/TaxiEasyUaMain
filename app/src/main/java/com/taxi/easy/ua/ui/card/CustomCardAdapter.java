@@ -30,6 +30,7 @@ import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
+import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -407,61 +408,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
 
     private void syncCardsFromServer(@NonNull Runnable onComplete) {
         String city = logCursor(MainActivity.CITY_INFO).get(1);
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor())
-                .addInterceptor(interceptor)
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
-
-        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO).get(3);
-        Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
-                getContext().getString(R.string.application),
-                city,
-                userEmail,
-                "wfp"
-        );
-        call.enqueue(new Callback<CallbackResponseWfp>() {
-            @Override
-            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    List<CardInfo> cards = response.body().getCards();
-                    SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-                    database.execSQL("DELETE FROM " + MainActivity.TABLE_WFP_CARDS + ";");
-                    if (cards != null) {
-                        for (CardInfo cardInfo : cards) {
-                            ContentValues cv = new ContentValues();
-                            cv.put("masked_card", cardInfo.getMasked_card());
-                            cv.put("card_type", cardInfo.getCard_type());
-                            cv.put("bank_name", cardInfo.getBank_name());
-                            cv.put("rectoken", cardInfo.getRectoken());
-                            cv.put("merchant", cardInfo.getMerchant());
-                            cv.put("rectoken_check", cardInfo.getActive());
-                            database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
-                        }
-                    }
-                    database.close();
-                }
-                onComplete.run();
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
-                Logger.d(getContext(), TAG, "syncCardsFromServer failure " + t);
-                FirebaseCrashlytics.getInstance().recordException(t);
-                onComplete.run();
-            }
-        });
+        WfpUtils.fetchCardTokenWfpAsync(city, getContext(), success -> onComplete.run());
     }
     private void reIndexCards() {
         SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
