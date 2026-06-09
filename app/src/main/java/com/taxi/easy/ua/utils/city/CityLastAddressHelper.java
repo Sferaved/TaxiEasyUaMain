@@ -55,6 +55,21 @@ public final class CityLastAddressHelper {
         return haversineKm(lat, lon, center[0], center[1]) <= MAX_DISTANCE_KM;
     }
 
+    /**
+     * Точка GPS на карте — только после явного нажатия GPS и с адресом в выбранном городе.
+     */
+    public static boolean shouldUseGpsStartOnMap(
+            boolean gpsStartApplied,
+            @Nullable String startAddress,
+            double lat,
+            double lon,
+            @Nullable String cityCode) {
+        return gpsStartApplied
+                && startAddress != null
+                && !startAddress.trim().isEmpty()
+                && isNearSelectedCity(cityCode, lat, lon);
+    }
+
     private static double haversineKm(double lat1, double lon1, double lat2, double lon2) {
         double r = 6371.0;
         double dLat = Math.toRadians(lat2 - lat1);
@@ -64,6 +79,12 @@ public final class CityLastAddressHelper {
                 * Math.sin(dLon / 2) * Math.sin(dLon / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return r * c;
+    }
+
+    /** Центр выбранного города для карты по умолчанию (lat, lon) или null. */
+    @Nullable
+    public static double[] getCityCenter(@Nullable String cityCode) {
+        return centerFor(cityCode);
     }
 
     @Nullable

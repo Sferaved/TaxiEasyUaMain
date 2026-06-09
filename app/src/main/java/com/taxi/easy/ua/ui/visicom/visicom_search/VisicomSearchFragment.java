@@ -2023,9 +2023,16 @@ public class VisicomSearchFragment extends Fragment {
 
     private void updateRoutMarker(List<String> settings) {
         Logger.d(context, TAG, "updateRoutMarker: " + settings.toString());
+        String manualStart = settings.size() > 4 ? settings.get(4) : "";
         Logger.d(context, "AddrGuard", "searchManual: clearStartAddressSource — пользователь выбрал адрес вручную, start='"
-                + (settings.size() > 4 ? settings.get(4) : "?") + "'");
-        AutoLocationAfterCityHelper.clearStartAddressSource();
+                + manualStart + "'");
+        if (manualStart != null && !manualStart.trim().isEmpty()) {
+            AutoLocationAfterCityHelper.markManualStartSelected();
+            viewModel.setStatusX(true);
+            VisicomFragment.updateGpsButtonCross(true);
+        } else {
+            AutoLocationAfterCityHelper.clearStartAddressSource();
+        }
         AutoLocationAfterCityHelper.clearPending();
         ContentValues cv = new ContentValues();
 

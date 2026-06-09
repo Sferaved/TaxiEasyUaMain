@@ -84,6 +84,8 @@ import com.taxi.easy.ua.ui.open_map.api.ApiService;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.city.CityFinder;
+import com.taxi.easy.ua.utils.city.CityLastAddressHelper;
+import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
@@ -458,7 +460,7 @@ public class OpenStreetMapFragment extends Fragment {
             Logger.e(ctx, "setStatusX 10", "markerType " + markerType);
 
             if ("startMarker".equals(markerType)) {
-                sharedPreferencesHelperMain.saveValue("setStatusX", true);
+                markManualStartFromMap();
             } else {
                 Logger.e(ctx, "setStatusX 11", "markerType " + (boolean)sharedPreferencesHelperMain.getValue("setStatusX", false));
                 if(!(boolean)sharedPreferencesHelperMain.getValue("setStatusX", false)) {
@@ -633,6 +635,7 @@ public class OpenStreetMapFragment extends Fragment {
         if (centerPoint == null || map == null) {
             return;
         }
+        markManualStartFromMap();
         startPoint = centerPoint;
         startLat = centerPoint.getLatitude();
         startLan = centerPoint.getLongitude();
@@ -841,18 +844,31 @@ public class OpenStreetMapFragment extends Fragment {
 
         applyPendingFinishFromBundle(route);
 
-        startLat = route.startLat;
-        startLan = route.startLon;
+        List<String> cityInfo = logCursor(MainActivity.CITY_INFO, ctx);
+        String currentCity = cityInfo.size() > 1 ? cityInfo.get(1) : "";
+
+        boolean usedCityCenter = false;
+        if ("startMarker".equals(markerType)
+                && !shouldUseGpsCoordsForMap(route.startAddress, route.startLat, route.startLon, currentCity)) {
+            usedCityCenter = applyCityCenterAsMapStart(currentCity);
+        } else {
+            startLat = route.startLat;
+            startLan = route.startLon;
+        }
         finishLat = route.finishLat;
         finishLan = route.finishLon;
 
         if (!isValidRouteCoordinate(startLat, startLan)) {
-            initializeRegion();
-            updateCenterMarkerVisibility();
-            return;
+            if ("startMarker".equals(markerType) && applyCityCenterAsMapStart(currentCity)) {
+                usedCityCenter = true;
+            } else {
+                initializeRegion();
+                updateCenterMarkerVisibility();
+                return;
+            }
         }
 
-        fromAddressString = route.startAddress;
+        fromAddressString = usedCityCenter ? "" : route.startAddress;
         String finishAddress = route.finishAddress.trim();
         boolean finishCityOnly = isFinishCityOnlyRoute(finishAddress);
         boolean hasFinishCoords = isValidRouteCoordinate(finishLat, finishLan);
@@ -1044,9 +1060,22 @@ public class OpenStreetMapFragment extends Fragment {
                 map.invalidate();
                 Logger.d(ctx, TAG, "Map centered at: " + startPoint + ", zoom: " + zoomLevel);
             } else if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                // Инициализация геолокации, если есть разрешение
-                initializeLocationUpdates();
-                Logger.d(ctx, TAG, "Initializing location updates");
+                if (isEditingStartWithoutUserGps()) {
+                    if (applyCityCenterAsMapStart(city) && startPoint != null) {
+                        mapController.setCenter(startPoint);
+                        double zoomLevel = getFromTablePositionInfo(ctx, "newZoomLevel");
+                        if (zoomLevel == 0) {
+                            zoomLevel = 16.0;
+                        }
+                        mapController.setZoom(zoomLevel);
+                        setMarker(startLat, startLan, fromAddressString, ctx, "1.");
+                        map.invalidate();
+                        Logger.d(ctx, TAG, "Map centered at city center: " + startPoint);
+                    }
+                } else {
+                    initializeLocationUpdates();
+                    Logger.d(ctx, TAG, "Initializing location updates");
+                }
             } else {
                 // Запрос разрешений
                 requestLocationPermissions();
@@ -2060,6 +2089,45 @@ public class OpenStreetMapFragment extends Fragment {
         return Math.abs(lat) > 1e-6 || Math.abs(lon) > 1e-6;
     }
 
+    private boolean shouldUseGpsCoordsForMap(String startAddress, double lat, double lon, String city) {
+        return CityLastAddressHelper.shouldUseGpsStartOnMap(
+                AutoLocationAfterCityHelper.isGpsStartApplied(), startAddress, lat, lon, city);
+    }
+
+    private boolean isEditingStartWithoutUserGps() {
+        if (!"startMarker".equals(markerType)) {
+            return false;
+        }
+        RouteMarkerData route = loadRouteMarkerData();
+        if (route == null) {
+            return true;
+        }
+        List<String> cityInfo = logCursor(MainActivity.CITY_INFO, ctx);
+        String currentCity = cityInfo.size() > 1 ? cityInfo.get(1) : "";
+        return !shouldUseGpsCoordsForMap(route.startAddress, route.startLat, route.startLon, currentCity);
+    }
+
+    /** @return true если центр города применён */
+    private boolean applyCityCenterAsMapStart(String city) {
+        double[] center = CityLastAddressHelper.getCityCenter(city);
+        if (center == null) {
+            return false;
+        }
+        startLat = center[0];
+        startLan = center[1];
+        fromAddressString = "";
+        startPoint = new GeoPoint(startLat, startLan);
+        return true;
+    }
+
+    private void markManualStartFromMap() {
+        AutoLocationAfterCityHelper.markManualStartSelected();
+        if (viewModel != null) {
+            viewModel.setStatusX(true);
+        }
+        VisicomFragment.updateGpsButtonCross(true);
+    }
+
     private boolean isFinishDistinctFromStart(double startLat, double startLon, double finishLat, double finishLon) {
         if (!isValidRouteCoordinate(finishLat, finishLon)) {
             return false;
@@ -2088,11 +2156,7 @@ public class OpenStreetMapFragment extends Fragment {
             return;
         }
 
-        // ✅ Устанавливаем StatusX в false, чтобы показать крестик на GPS кнопке
-        sharedPreferencesHelperMain.saveValue("setStatusX", true);
-        if (viewModel != null) {
-            viewModel.setStatusX(true);
-        }
+        markManualStartFromMap();
         Logger.d(ctx, TAG, "setStatusX установлен в true - показываем крестик (выбор точки на карте)");
 
         // Проверяем, не занят ли CityFinder
@@ -2153,11 +2217,7 @@ public class OpenStreetMapFragment extends Fragment {
 
             } else {
                 Logger.d(ctx, TAG, "❌ Пользователь отказался от смены города");
-                // Если пользователь отказался, возвращаем StatusX обратно в true
-                sharedPreferencesHelperMain.saveValue("setStatusX", true);
-                if (viewModel != null) {
-                    viewModel.setStatusX(true);
-                }
+                markManualStartFromMap();
             }
 
             Logger.d(ctx, TAG, "═══════════════════════════════════════════");

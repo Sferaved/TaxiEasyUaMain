@@ -1673,8 +1673,16 @@ public class VisicomFragment extends Fragment {
             return;
         }
         try {
+            List<String> cityInfo = logCursor(MainActivity.CITY_INFO, context);
+            String currentCity = cityInfo.size() > 1 ? cityInfo.get(1) : "";
+            double[] center = com.taxi.easy.ua.utils.city.CityLastAddressHelper.getCityCenter(currentCity);
             ContentValues cv = new ContentValues();
             cv.put("start", "");
+            if (center != null) {
+                cv.put("startLat", center[0]);
+                cv.put("startLan", center[1]);
+            }
+            AutoLocationAfterCityHelper.clearStartAddressSource();
             SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
             database.update(MainActivity.ROUT_MARKER, cv, "id = ?", new String[]{"1"});
             database.close();
@@ -3460,7 +3468,29 @@ public class VisicomFragment extends Fragment {
         maybeAutoApplyLocationAfterCity();
         restoreGpsCrossIfPendingUserApply();
         dismissGpsCrossAfterGeoCityChangeIfReady();
+        syncGpsCrossAfterResume();
 
+    }
+
+    /** Финальное состояние крестика GPS после всех авто-обработчиков onResume. */
+    private void syncGpsCrossAfterResume() {
+        if (!isAdded() || binding == null || locationManager == null) {
+            return;
+        }
+        if (AutoLocationAfterCityHelper.isGpsStartApplied()) {
+            boolean xStatus = (boolean) sharedPreferencesHelperMain.getValue("setStatusX", false);
+            viewModel.setStatusX(xStatus);
+            updateGpsButtonCross(xStatus);
+            return;
+        }
+        boolean xStatus = (boolean) sharedPreferencesHelperMain.getValue("setStatusX", false);
+        String uiStart = geoText.getText() != null ? geoText.getText().toString() : "";
+        if (AutoLocationAfterCityHelper.isGpsPendingUserApply() || xStatus
+                || isValidStartAddressForFromField(uiStart)) {
+            sharedPreferencesHelperMain.saveValue("setStatusX", true);
+            viewModel.setStatusX(true);
+            updateGpsButtonCross(true);
+        }
     }
 
     /** После смены города по геопозиции — снять крестик, если авто-GPS уже не идёт. */
@@ -3469,6 +3499,10 @@ public class VisicomFragment extends Fragment {
             return;
         }
         if (!AutoLocationAfterCityHelper.isCityChangedViaGeo()) {
+            return;
+        }
+        String uiStart = geoText.getText() != null ? geoText.getText().toString() : "";
+        if (isValidStartAddressForFromField(uiStart) && !AutoLocationAfterCityHelper.isGpsStartApplied()) {
             return;
         }
         if (AutoLocationAfterCityHelper.isCityReady()
@@ -3621,18 +3655,11 @@ public class VisicomFragment extends Fragment {
                         AutoLocationAfterCityHelper.saveDetectedCoordinates(latitude, longitude, address);
                         logAutoDetectedRouteAndPath(latitude, longitude, address);
                         if (address != null && !address.trim().isEmpty() && isAdded() && binding != null) {
-                            if (hasEstablishedStartAddressInRouteMarker()) {
-                                Logger.d(context, ADDR_GUARD,
-                                        "autoGps: старт уже задан (ручной/кэш) — GPS только в prefs, крестик на кнопке");
-                                finishAutoLocationDetectedWithoutOverwritingOrder();
-                                logAddrGuardState("autoGps:skippedApplyExistingStart");
-                                return;
-                            }
                             gpsClickAwaitingAutoDetected = false;
-                            logAddrGuardState("autoGps:beforeApply");
-                            Logger.d(context, ADDR_GUARD, "autoGps: применяем GPS-адрес к заказу (старт пустой)");
-                            applyGpsLocationToOrder(latitude, longitude, address, true);
-                            logAddrGuardState("autoGps:afterApply");
+                            Logger.d(context, ADDR_GUARD,
+                                    "autoGps: координаты сохранены в prefs — к заказу только по нажатию GPS");
+                            finishAutoLocationDetectedWithoutOverwritingOrder();
+                            logAddrGuardState("autoGps:storedOnly");
                             return;
                         }
                         Logger.w(context, ADDR_GUARD, "autoGps: геокод пуст — fallback на кэш lastOrder");
@@ -4045,11 +4072,17 @@ public class VisicomFragment extends Fragment {
                 && AutoLocationAfterCityHelper.hasDetectedCoordinates()) {
             String pendingAddress = AutoLocationAfterCityHelper.getDetectedAddress();
             if (pendingAddress != null && !pendingAddress.trim().isEmpty()) {
-                applyGpsLocationToOrder(
-                        AutoLocationAfterCityHelper.getDetectedLat(),
-                        AutoLocationAfterCityHelper.getDetectedLon(),
-                        pendingAddress);
-                return;
+                double pendingLat = AutoLocationAfterCityHelper.getDetectedLat();
+                double pendingLon = AutoLocationAfterCityHelper.getDetectedLon();
+                List<String> cityInfo = logCursor(MainActivity.CITY_INFO, context);
+                String currentCity = cityInfo.size() > 1 ? cityInfo.get(1) : "";
+                if (com.taxi.easy.ua.utils.city.CityLastAddressHelper.isNearSelectedCity(
+                        currentCity, pendingLat, pendingLon)) {
+                    applyGpsLocationToOrder(pendingLat, pendingLon, pendingAddress);
+                    return;
+                }
+                Logger.d(context, ADDR_GUARD,
+                        "GPS: кэш вне выбранного города — первое нажатие через CityFinder");
             }
         }
 
@@ -4089,7 +4122,7 @@ public class VisicomFragment extends Fragment {
                         boolean coordinatesChanged = haveCoordinatesChanged(latitude, longitude);
                         Logger.d(context, TAG, "getCurrentLocation: координаты изменились = " + coordinatesChanged);
 
-                        if (!coordinatesChanged) {
+                        if (!coordinatesChanged && AutoLocationAfterCityHelper.isGpsStartApplied()) {
                             progressBar.setVisibility(View.GONE);
                             finishAutoLocationGpsButtonState();
                             isUpdatingFromGPS = false;

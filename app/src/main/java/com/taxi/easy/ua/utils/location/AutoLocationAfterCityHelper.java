@@ -191,6 +191,14 @@ public final class AutoLocationAfterCityHelper {
         sharedPreferencesHelperMain.saveValue(KEY_START_ADDRESS_SOURCE, "");
     }
 
+    /** «Откуда» выбрано вручную (карта / поиск), не через кнопку GPS. */
+    public static void markManualStartSelected() {
+        logGuard("markManualStartSelected: ручной старт — крестик на GPS");
+        clearStartAddressSource();
+        clearGpsPendingUserApply();
+        sharedPreferencesHelperMain.saveValue("setStatusX", true);
+    }
+
     public static void clearDetectedCoordinates() {
         logGuard("clearDetectedCoordinates: prefs detected lat/lon/address очищены");
         sharedPreferencesHelperMain.saveValue(KEY_DETECTED_LAT, "0.0");
