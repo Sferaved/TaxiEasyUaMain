@@ -312,6 +312,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.resolve_release.outputs.tag }}
           files: ${{ env.AAB_PATH }}
           name: Release ${{ steps.build.outputs.version_name }}
           body_path: app/play/en-US/whatsnew.txt
