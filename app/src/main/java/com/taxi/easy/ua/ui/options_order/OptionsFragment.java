@@ -45,6 +45,7 @@ import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.sanitizer.InputSanitizerHelper;
+import com.taxi.easy.ua.utils.ui.ScreenInsetsHelper;
 import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
 import com.uxcam.UXCam;
 
@@ -289,6 +290,8 @@ public class OptionsFragment extends Fragment {
 
         tvSelectedDate.setOnClickListener(v -> showDataPickerDialog());
         setupSanitizers();
+        ScreenInsetsHelper.applyScrollableScreenPadding(view);
+        listView.setClipToPadding(false);
         return view;
     }
     private void setupSanitizers() {

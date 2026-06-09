@@ -55,6 +55,7 @@ import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.sanitizer.InputSanitizerHelper;
+import com.taxi.easy.ua.utils.ui.ScreenInsetsHelper;
 import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 import com.uxcam.UXCam;
@@ -108,6 +109,7 @@ public class AccountFragment extends Fragment {
             button1.setVisibility(View.VISIBLE);
         }
         binding = FragmentAccountBinding.inflate(inflater, container, false);
+        ScreenInsetsHelper.applyScrollableScreenPadding(binding.accountScroll);
 
         root = binding.getRoot();
         context = requireActivity();
