@@ -9,6 +9,7 @@ on:
 jobs:
   unit_tests:
     name: Unit tests
+    if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, 'Bump version')
     runs-on: ubuntu-latest
 
     steps:
