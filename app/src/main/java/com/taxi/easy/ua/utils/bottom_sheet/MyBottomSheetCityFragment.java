@@ -113,7 +113,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             "Zhytomyr",
             "Kropyvnytskyi",
             "Mykolaiv",
-            "Сhernivtsi",
+            "Chernivtsi",
             "Lutsk",
             "OdessaTest",
             "foreign countries"

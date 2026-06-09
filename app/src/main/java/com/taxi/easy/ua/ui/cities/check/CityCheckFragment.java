@@ -614,7 +614,7 @@ public class CityCheckFragment extends Fragment {
                                 .setDuration(100)
                                 .start();
                         sharedPreferencesHelperMain.saveValue("countryState", "UA");
-                        city = "Сhernivtsi";
+                        city = "Chernivtsi";
                         phoneNumber = Kyiv_City_phone;
                         cityMenu = getString(R.string.city_chernivtsi);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;

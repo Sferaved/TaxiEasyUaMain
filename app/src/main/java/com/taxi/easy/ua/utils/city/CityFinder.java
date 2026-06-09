@@ -627,6 +627,7 @@ public class CityFinder {
         citySynonyms.put("CITY_MYKOLAIV", "Mykolaiv");
 
         citySynonyms.put("CHERNIVTSI", "Chernivtsi");
+        citySynonyms.put("СHERNIVTSI", "Chernivtsi");
         citySynonyms.put("ЧЕРНОВЦЫ", "Chernivtsi");
         citySynonyms.put("ЧЕРНІВЦІ", "Chernivtsi");
         citySynonyms.put("CITY_CHERNIVTSI", "Chernivtsi");
