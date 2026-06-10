@@ -31,14 +31,13 @@
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etDescription"
+                    style="@style/SpellCheckMultilineEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:minHeight="70dp"
                     android:hint="@string/short_err"
                     android:maxLines="3"
-                    android:inputType="textMultiLine"
                     android:gravity="top"
-                    android:textSize="13sp"
                     android:textColor="@color/dialog_text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -65,14 +64,13 @@
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etSteps"
+                    style="@style/SpellCheckMultilineEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:minHeight="70dp"
                     android:hint="@string/step_err"
                     android:maxLines="4"
-                    android:inputType="textMultiLine"
                     android:gravity="top"
-                    android:textSize="13sp"
                     android:textColor="@color/dialog_text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -88,14 +86,13 @@
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etExpected"
+                    style="@style/SpellCheckMultilineEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:minHeight="55dp"
                     android:hint="@string/resalt_err"
                     android:maxLines="3"
-                    android:inputType="textMultiLine"
                     android:gravity="top"
-                    android:textSize="13sp"
                     android:textColor="@color/dialog_text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -111,14 +108,13 @@
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etActual"
+                    style="@style/SpellCheckMultilineEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:minHeight="55dp"
                     android:hint="@string/fact_err"
                     android:maxLines="3"
-                    android:inputType="textMultiLine"
                     android:gravity="top"
-                    android:textSize="13sp"
                     android:textColor="@color/dialog_text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 

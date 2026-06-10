@@ -53,13 +53,13 @@
             android:fontFamily="@font/regular"
             android:gravity="top"
             android:hint="@string/message_hint"
-            android:inputType="textMultiLine"
+            android:inputType="textCapSentences|textMultiLine|textAutoCorrect"
             android:maxLines="5"
             android:minHeight="100dp"
             android:padding="16dp"
             android:textColor="@color/white"
             android:textColorHint="@color/white"
-            android:textSize="18sp"
+            android:textSize="@dimen/input_edit_text_size"
             android:background="@drawable/input"
             />
         <!-- 33FFFFFF = 20% белый, 80% прозрачный -->

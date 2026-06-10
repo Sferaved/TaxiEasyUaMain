@@ -64,6 +64,11 @@
         <item name="android:textColorHint">@color/dialog_text_secondary</item>
     </style>
 
+    <style name="SpellCheckMultilineEditText" parent="Widget.MaterialComponents.TextInputEditText.OutlinedBox">
+        <item name="android:inputType">textCapSentences|textMultiLine|textAutoCorrect</item>
+        <item name="android:textSize">@dimen/input_edit_text_size</item>
+    </style>
+
     <style name="AlertDialogTheme" parent="BugReportDialogTheme">
         <item name="buttonBarPositiveButtonStyle">@style/Alert.Button.Positive</item>
         <item name="buttonBarNeutralButtonStyle">@style/Alert.Button.Neutral</item>
