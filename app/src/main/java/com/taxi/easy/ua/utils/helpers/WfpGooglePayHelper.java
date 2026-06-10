@@ -17,6 +17,9 @@ import com.google.android.gms.wallet.PaymentDataRequest;
 import com.google.android.gms.wallet.PaymentsClient;
 import com.google.android.gms.wallet.Wallet;
 import com.google.android.gms.wallet.WalletConstants;
+import com.google.android.gms.wallet.button.ButtonConstants;
+import com.google.android.gms.wallet.button.ButtonOptions;
+import com.google.android.gms.wallet.button.PayButton;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import org.json.JSONArray;
@@ -50,6 +53,22 @@ public final class WfpGooglePayHelper {
                         .setEnvironment(WalletConstants.ENVIRONMENT_PRODUCTION)
                         .build()
         );
+    }
+
+    public static void initializePayButton(@NonNull PayButton payButton) {
+        try {
+            JSONArray paymentMethods = new JSONArray().put(baseCardPaymentMethod());
+            payButton.initialize(
+                    ButtonOptions.newBuilder()
+                            .setButtonTheme(ButtonConstants.ButtonTheme.DARK)
+                            .setButtonType(ButtonConstants.ButtonType.PLAIN)
+                            .setCornerRadius(12)
+                            .setAllowedPaymentMethods(paymentMethods.toString())
+                            .build()
+            );
+        } catch (JSONException e) {
+            Logger.e(payButton.getContext(), TAG, "PayButton init failed: " + e.getMessage());
+        }
     }
 
     public static void checkReady(

@@ -78,6 +78,7 @@ public class CardVerificationFragment extends Fragment {
     private TextView googlePayDivider;
     private PaymentsClient paymentsClient;
     private String merchantAccount;
+    private String googlePayApiBaseUrl;
     private String order_id;
     private String amount;
     String email;
@@ -141,6 +142,7 @@ public class CardVerificationFragment extends Fragment {
 
         fragmentManager = getParentFragmentManager();
         paymentsClient = WfpGooglePayHelper.createPaymentsClient(this);
+        WfpGooglePayHelper.initializePayButton(googlePayButton);
 
         setupGooglePay();
         getUrlToPaymentWfp();
@@ -149,9 +151,13 @@ public class CardVerificationFragment extends Fragment {
     }
 
     private void setupGooglePay() {
+        fetchGooglePayConfig(baseUrl, true);
+    }
+
+    private void fetchGooglePayConfig(String configBaseUrl, boolean allowTestFallback) {
         OkHttpClient client = buildHttpClient();
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl + "/")
+                .baseUrl(configBaseUrl + "/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
@@ -164,32 +170,48 @@ public class CardVerificationFragment extends Fragment {
                                            @NonNull Response<GooglePayConfigResponse> response) {
                         if (!response.isSuccessful() || response.body() == null
                                 || response.body().getMerchantAccount() == null) {
-                            Logger.w(context, TAG, "Google Pay config unavailable");
+                            Logger.w(context, TAG, "Google Pay config unavailable on " + configBaseUrl
+                                    + " code=" + response.code());
+                            if (allowTestFallback && shouldTryTestGooglePayConfig(configBaseUrl)) {
+                                fetchGooglePayConfig("https://t.easy-order-taxi.site", false);
+                            }
                             return;
                         }
-                        merchantAccount = response.body().getMerchantAccount();
-                        WfpGooglePayHelper.checkReady(paymentsClient, ready -> {
-                            if (!isAdded()) {
-                                return;
-                            }
-                            requireActivity().runOnUiThread(() -> {
-                                if (ready) {
-                                    googlePayButton.setVisibility(View.VISIBLE);
-                                    googlePayDivider.setVisibility(View.VISIBLE);
-                                    googlePayButton.setOnClickListener(v -> startGooglePay());
-                                } else {
-                                    Logger.d(context, TAG, getString(R.string.google_pay_unavailable));
-                                }
-                            });
-                        });
+                        onGooglePayConfigLoaded(configBaseUrl, response.body().getMerchantAccount());
                     }
 
                     @Override
                     public void onFailure(@NonNull Call<GooglePayConfigResponse> call, @NonNull Throwable t) {
                         FirebaseCrashlytics.getInstance().recordException(t);
-                        Logger.w(context, TAG, "Google Pay config failed: " + t.getMessage());
+                        Logger.w(context, TAG, "Google Pay config failed on " + configBaseUrl + ": " + t.getMessage());
+                        if (allowTestFallback && shouldTryTestGooglePayConfig(configBaseUrl)) {
+                            fetchGooglePayConfig("https://t.easy-order-taxi.site", false);
+                        }
                     }
                 });
+    }
+
+    private boolean shouldTryTestGooglePayConfig(String configBaseUrl) {
+        return configBaseUrl != null && configBaseUrl.contains("m.easy-order-taxi.site");
+    }
+
+    private void onGooglePayConfigLoaded(String configBaseUrl, String account) {
+        merchantAccount = account;
+        googlePayApiBaseUrl = configBaseUrl;
+        WfpGooglePayHelper.checkReady(paymentsClient, ready -> {
+            if (!isAdded()) {
+                return;
+            }
+            requireActivity().runOnUiThread(() -> {
+                if (ready) {
+                    googlePayButton.setVisibility(View.VISIBLE);
+                    googlePayDivider.setVisibility(View.VISIBLE);
+                    googlePayButton.setOnClickListener(v -> startGooglePay());
+                } else {
+                    Logger.d(context, TAG, getString(R.string.google_pay_unavailable));
+                }
+            });
+        });
     }
 
     private void startGooglePay() {
@@ -230,9 +252,10 @@ public class CardVerificationFragment extends Fragment {
     }
 
     private void submitGooglePayCharge(String paymentDataJson) {
+        String chargeBaseUrl = googlePayApiBaseUrl != null ? googlePayApiBaseUrl : baseUrl;
         OkHttpClient client = buildHttpClient();
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl + "/")
+                .baseUrl(chargeBaseUrl + "/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
