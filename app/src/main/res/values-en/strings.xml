@@ -243,6 +243,9 @@
     <string name="my_site">Visit our site</string>
     <!-- <string name="fondy_message">Payment for taxi service.</string>-->
     <string name="fondy_message"> Other auxiliary activities in the field of transport</string>
+    <string name="google_pay_or_card">or pay by card below</string>
+    <string name="google_pay_processing">Processing Google Pay…</string>
+    <string name="google_pay_unavailable">Google Pay is not available on this device</string>
     <string name="fondy_revers_message">"Refund: "</string>
     <string name="fondy_pay">Pay by card</string>
     <string name="cost_of_road_fondy">Cost of the trip: </string>

@@ -247,6 +247,9 @@
     <string name="my_site">Відвідайте наш сайт</string>
     <!--    <string name="fondy_message">Сплата за послугі таксі.</string>-->
     <string name="fondy_message"> Інша допоміжна діяльність у сфері транспорту</string>
+    <string name="google_pay_or_card">або оплата карткою нижче</string>
+    <string name="google_pay_processing">Обробка Google Pay…</string>
+    <string name="google_pay_unavailable">Google Pay недоступний на цьому пристрої</string>
     <string name="fondy_revers_message">"Повернення платежу: "</string>
     <string name="fondy_pay">Сплатити картою</string>
     <string name="cost_of_road_fondy">Вартість поїздки: </string>

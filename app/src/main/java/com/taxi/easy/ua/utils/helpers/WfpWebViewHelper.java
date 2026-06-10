@@ -83,7 +83,7 @@ public final class WfpWebViewHelper {
         webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
         webSettings.setSupportMultipleWindows(true);
         if (WebViewFeature.isFeatureSupported(WebViewFeature.PAYMENT_REQUEST)) {
-            WebSettingsCompat.setPaymentRequestEnabled(webSettings, true);
+            WebSettingsCompat.setPaymentRequestEnabled(webSettings, false);
         }
     }
 
