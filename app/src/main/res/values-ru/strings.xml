@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
 
     <string name="menu_maps">Карта</string>
@@ -236,6 +236,7 @@
     <string name="lbl_email">Электронный адрес:</string>
     <string name="lbl_description">Описание:</string>
     <string name="btn_pay_google">Google Pay</string>
+    <string name="payment_google_pay_subtitle">Оплата кошельком Google Pay</string>
     <string name="btn_pay_card">Картой</string>
     <string name="e_invalid_amount">Недействительная сумма</string>
     <string name="e_invalid_email">Недействительный электронный адрес</string>
@@ -595,7 +596,11 @@
 
     <string name="my_cards">Мои карты</string>
     <string name="cards_management_info">Управление привязанными картами</string>
-    <string name="payment_page">Оплата картой</string>
+        <string name="payment_methods_title">Способы оплаты</string>
+    <string name="payment_default_section">Оплата заказов по умолчанию</string>
+    <string name="payment_add_card">Добавить карту</string>
+    <string name="payment_cash_subtitle">Наличные водителю</string>
+<string name="payment_page">Оплата картой</string>
     <string name="refresh_cards">Обновить карты</string>
     <string name="webview_error_loading">Ошибка загрузки страницы</string>
     <string name="payment_success">Платеж успешно завершен</string>

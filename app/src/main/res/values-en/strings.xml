@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
     <string name="menu_maps">Map</string>
     <string name="menu_home">By address database</string>
     <string name="menu_gallery">My routes</string>
@@ -231,6 +231,7 @@
     <string name="lbl_email">Email address:</string>
     <string name="lbl_description">Description:</string>
     <string name="btn_pay_google">Google Pay</string>
+    <string name="payment_google_pay_subtitle">Pay with Google Pay wallet</string>
     <string name="btn_pay_card">Card</string>
     <string name="e_invalid_amount">Invalid amount</string>
     <string name="e_invalid_email">Invalid email address</string>
@@ -589,7 +590,11 @@
     <string name="category_about">About the application</string>
     <string name="my_cards">My cards</string>
     <string name="cards_management_info">Management of linked cards</string>
-    <string name="payment_page">Payment by card</string>
+        <string name="payment_methods_title">Payment methods</string>
+    <string name="payment_default_section">Default payment for orders</string>
+    <string name="payment_add_card">Add card</string>
+    <string name="payment_cash_subtitle">Cash to driver</string>
+<string name="payment_page">Payment by card</string>
     <string name="refresh_cards">Refresh cards</string>
     <string name="webview_error_loading">Page loading error</string>
     <string name="payment_success">Payment completed successfully</string>

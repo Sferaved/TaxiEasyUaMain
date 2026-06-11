@@ -101,6 +101,7 @@ import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.utils.animation.car.CarProgressBar;
 import com.taxi.easy.ua.utils.auth.FirebaseConsentManager;
 import com.taxi.easy.ua.utils.blacklist.BlacklistManager;
+import com.taxi.easy.ua.ui.home.ButtonVisibilityCallback;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
@@ -153,7 +154,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
-public class VisicomFragment extends Fragment {
+public class VisicomFragment extends Fragment implements ButtonVisibilityCallback {
 
 
     @SuppressLint("StaticFieldLeak")
@@ -4059,10 +4060,18 @@ public class VisicomFragment extends Fragment {
             case "wfp_payment":
                 btnBonusName = context.getString(R.string.btn_card);
                 break;
+            case "google_pay_payment":
+                btnBonusName = context.getString(R.string.btn_pay_google);
+                break;
             default:
                 btnBonusName = context.getString(R.string.btn_cache);
         }
         buttonBonus.setText(btnBonusName);
+    }
+
+    @Override
+    public void onShowButtons(int visibility) {
+        btnVisible(visibility);
     }
 
     private void firstLocation() {

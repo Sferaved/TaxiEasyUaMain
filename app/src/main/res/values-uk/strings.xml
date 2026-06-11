@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
 
     <string name="menu_maps">Мапа</string>
     <string name="menu_home">За базою адрес</string>
@@ -235,6 +235,7 @@
     <string name="lbl_email">Електронна адреса:</string>
     <string name="lbl_description">Опис:</string>
     <string name="btn_pay_google">Google Pay</string>
+    <string name="payment_google_pay_subtitle">Оплата гаманцем Google Pay</string>
     <string name="btn_pay_card">Карткою</string>
     <string name="e_invalid_amount">Недійсна сума</string>
     <string name="e_invalid_email">Недійсна електронна адреса</string>
@@ -599,7 +600,11 @@
     <string name="category_about">Про програму</string>
     <string name="my_cards">Мої картки</string>
     <string name="cards_management_info">Керування пов’язаними картками</string>
-    <string name="payment_page">Оплата карткою</string>
+        <string name="payment_methods_title">Способи оплати</string>
+    <string name="payment_default_section">Оплата замовлень за замовчуванням</string>
+    <string name="payment_add_card">Додати картку</string>
+    <string name="payment_cash_subtitle">Готівка водію</string>
+<string name="payment_page">Оплата карткою</string>
     <string name="refresh_cards">Оновити картки</string>
     <string name="webview_error_loading">Помилка завантаження сторінки</string>
     <string name="payment_success">Платіж виконано успішно</string>

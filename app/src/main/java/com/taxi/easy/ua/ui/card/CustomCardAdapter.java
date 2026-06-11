@@ -280,6 +280,10 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
 
     }
 
+    public void selectCard(@NonNull String rectoken) {
+        updateRectokenCheck(table, rectoken);
+    }
+
     private void updateRectokenCheck(String table, String rectoken) {
         SQLiteDatabase database = getContext().openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
