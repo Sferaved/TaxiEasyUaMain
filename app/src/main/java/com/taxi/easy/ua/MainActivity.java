@@ -80,6 +80,7 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.ActivityMainBinding;
+import com.taxi.easy.ua.utils.dialog.UklonAlertDialog;
 import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.cities.api.CityApiClient;
 import com.taxi.easy.ua.ui.cities.api.CityResponse;
@@ -1576,15 +1577,12 @@ public class MainActivity extends AppCompatActivity {
 
 
         if (item.getItemId() == R.id.clearApp) {
-            new AlertDialog.Builder(this)
-                    .setTitle(R.string.clearAppMess) // Например: "Подтверждение"
-                    .setMessage(R.string.clearAppMess) // Текст сообщения, например: "Вы уверены, что хотите очистить приложение?"
-                    .setPositiveButton(R.string.ok_button, (dialog, which) -> {
-                        clearApplication(this);
-                    })
-                    .setNegativeButton(R.string.cancel_button, (dialog, which) -> {
-                        dialog.dismiss();
-                    })
+            new UklonAlertDialog(this)
+                    .setIcon(R.drawable.baseline_cleaning_services_24)
+                    .setTitle(R.string.clearAppMess)
+                    .setMessage(R.string.clearAppMess)
+                    .setPositiveButton(R.string.ok_button, dialog -> clearApplication(this))
+                    .setNegativeButton(R.string.cancel_button, dialog -> dialog.dismiss())
                     .show();
             return true;
         }

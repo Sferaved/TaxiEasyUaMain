@@ -372,6 +372,7 @@
     <string name="pay_method_message_bonus">бонусами</string>
     <string name="pay_method_message_card">банківською карткою</string>
     <string name="pay_method_message_nal">готівкою водію</string>
+    <string name="pay_method_message_google">Google Pay</string>
     <string name="location_on">Увімкніть ТОЧНЕ визначення місцезнаходження в Дозволах</string>
     <string name="start_t">Старт</string>
     <string name="base_onl_t">Базовий онлайн</string>

@@ -94,4 +94,8 @@
     <color name="uklon_search_card_bg">#F2F3F5</color>
     <color name="uklon_search_control_bg">#F2F3F5</color>
     <color name="weather_hero_secondary">#F0FFFFFF</color>
+
+    <!-- Dialog surface: less bright than pure white, tuned to the app's slate tone -->
+    <color name="uklon_dialog_surface">#EAEDF2</color>
+    <color name="uklon_dialog_btn_neutral">#DCE0E6</color>
 </resources>

@@ -367,6 +367,7 @@
     <string name="pay_method_message_bonus">bonuses</string>
     <string name="pay_method_message_card">bank card</string>
     <string name="pay_method_message_nal">cash to the driver</string>
+    <string name="pay_method_message_google">Google Pay</string>
     <string name="location_on">Enable PRECISION location in Permissions</string>
     <string name="start_t">Start</string>
     <string name="base_onl_t">Basic online</string>

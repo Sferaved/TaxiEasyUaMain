@@ -43,6 +43,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.dialog.UklonAlertDialog;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentCacheOrderBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
@@ -1230,19 +1231,20 @@ public class CacheOrderFragment extends Fragment {
         String text = serverMessage != null && !serverMessage.isEmpty()
                 ? serverMessage
                 : getString(R.string.error_message);
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext());
-        builder.setMessage(text)
+        new UklonAlertDialog(requireContext())
+                .setIcon(R.drawable.ic_error)
+                .setIconTint(R.color.error_red)
+                .setMessage(text)
                 .setCancelable(false)
-                .setPositiveButton(R.string.ok_error, (dialog, which) -> {
+                .setPositiveButton(R.string.ok_error, dialog -> {
                     PaymentErrorSheetHelper.dismiss(getParentFragmentManager());
                     if (MainActivity.navController != null) {
                         MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                                 .setPopUpTo(R.id.nav_visicom, true)
                                 .build());
                     }
-                });
-        AlertDialog dialog = builder.create();
-        dialog.show();
+                })
+                .show();
     }
 
 

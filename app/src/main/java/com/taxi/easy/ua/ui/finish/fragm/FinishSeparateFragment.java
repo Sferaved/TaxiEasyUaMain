@@ -73,6 +73,7 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetFinishOptionFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
+import com.taxi.easy.ua.utils.dialog.UklonAlertDialog;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.hold.APIHoldService;
 import com.taxi.easy.ua.utils.hold.HoldResponse;
@@ -3099,7 +3100,22 @@ public class FinishSeparateFragment extends Fragment {
         }
         try {
             int total = (int) Math.round(Double.parseDouble(baseCost.replace(',', '.').trim()));
+            String addCostMeta = orderResponse.getAddCost();
+            if (addCostMeta != null && !addCostMeta.isEmpty() && !"0".equals(addCostMeta.trim())) {
+                int addCostDelta = Integer.parseInt(addCostMeta.trim());
+                if (addCostDelta > 0) {
+                    total += addCostDelta;
+                }
+            } else {
+                int displayed = parseDisplayedCostGrivna();
+                if (displayed > total && displayed - total <= 5) {
+                    total = displayed;
+                }
+            }
             int displayed = parseDisplayedCostGrivna();
+            if (total <= 0 && displayed > 0) {
+                return;
+            }
             if (total != displayed) {
                 applyDisplayCostToFinishUi(String.valueOf(total));
                 Logger.d(context, TAG, "refreshFinishCostFromOrder order_cost=" + total
@@ -3127,6 +3143,9 @@ public class FinishSeparateFragment extends Fragment {
         }
         if (isCardPayMethod()) {
             return context.getString(R.string.pay_method_message_card);
+        }
+        if ("google_pay_payment".equals(pay_method)) {
+            return context.getString(R.string.pay_method_message_google);
         }
         return context.getString(R.string.pay_method_message_nal);
     }
@@ -3945,27 +3964,18 @@ public class FinishSeparateFragment extends Fragment {
             return;
         }
 
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context);
-        LayoutInflater inflater = requireActivity().getLayoutInflater();
-        View dialogView = inflater.inflate(R.layout.dialog_add_cost, null);
-
-        builder.setView(dialogView)
+        AlertDialog dialog = new UklonAlertDialog(context)
+                .setIcon(R.drawable.ic_info)
+                .setTitle(R.string.add_cost_fin)
                 .setCancelable(false)
-                .setPositiveButton(R.string.ok_button, (dialog, which) -> {
-                    // Действие для кнопки "OK"
+                .setPositiveButton(R.string.ok_button, d -> {
                     if ("wfp_payment".equals(pay_method)) {
                         verifyOldHold();
-                        dialog.dismiss();
                         return;
                     }
                     if ("nal_payment".equals(pay_method)) {
                         viewModel.setCancelStatus(false);
-                        // Перезапускаем задачу
-//                        if (handlerAddcost != null) {
-//                            handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
-//                        }
                         setShowDialogAddCost();
-                        dialog.dismiss();
                         String text = textCostMessage.getText().toString();
                         Logger.d(getActivity(), TAG, "textCostMessage.getText().toString() " + text);
 
@@ -3989,42 +3999,14 @@ public class FinishSeparateFragment extends Fragment {
                             Logger.d(context, TAG, "No numeric value found in the text.");
                         }
                     }
-//                    startAddCostUpdate();
-
                 })
-                .setNegativeButton(R.string.cancel_button, (dialog, which) -> {
-                    // Действие для кнопки "Отмена"
-//                    if (handlerAddcost != null) {
-//                        handlerAddcost.postDelayed(showDialogAddcost, timeCheckout);
-//                    }
+                .setNegativeButton(R.string.cancel_button, d -> {
                     setShowDialogAddCost();
                     resumeStatusPolling();
-                     dialog.dismiss();
-                });
-
-        AlertDialog dialog = builder.create();
+                })
+                .create();
         addCostDialog = dialog;
-
         dialog.show();
-
-        // Настройка цветов кнопок
-        Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-        Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
-
-        if (positiveButton != null) {
-            positiveButton.setBackgroundColor(ContextCompat.getColor(context, R.color.colorAccent));
-            positiveButton.setTextColor(ContextCompat.getColor(context, android.R.color.white));
-            ViewParent buttonPanel = positiveButton.getParent();
-            if (buttonPanel instanceof ViewGroup) {
-                ((ViewGroup) buttonPanel).setBackgroundColor(ContextCompat.getColor(context, R.color.background_color_new));
-            }
-
-        }
-        if (negativeButton != null) {
-            negativeButton.setBackgroundColor(ContextCompat.getColor(context, R.color.selected_text_color_2));
-            negativeButton.setTextColor(ContextCompat.getColor(context, android.R.color.white));
-
-        }
     }
 
     private void showCancelDialog() {
@@ -4038,44 +4020,16 @@ public class FinishSeparateFragment extends Fragment {
 //            }
             cancelShowDialogAddCost();
 
-            MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context);
-            LayoutInflater inflater = requireActivity().getLayoutInflater();
-            View dialogView = inflater.inflate(R.layout.dialog_add_cost, null);
-            TextView dialogTitle = dialogView.findViewById(R.id.dialogTitle);
-            dialogTitle.setText(context.getString(R.string.add_cost_cancel));
-            builder.setView(dialogView)
+            new UklonAlertDialog(context)
+                    .setIcon(R.drawable.ic_baseline_delete_24)
+                    .setIconTint(R.color.error_red)
+                    .setTitle(R.string.add_cost_cancel)
                     .setCancelable(false)
-                    .setPositiveButton(R.string.ok_button, (dialog, which) -> {
-                        dialog.dismiss();
-                        submitOrderCancelRequest(context.getString(R.string.ex_st_canceled));
-                    })
-                    .setNegativeButton(R.string.cancel_button, (dialog, which) -> {
-                        // Действие для кнопки "Отмена"
-                        dialog.dismiss();
-                    });
-
-            AlertDialog dialog = builder.create();
-
-            dialog.show();
-
-            // Настройка цветов кнопок
-            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
-
-            if (positiveButton != null) {
-                positiveButton.setBackgroundColor(ContextCompat.getColor(context, R.color.selected_text_color));
-                positiveButton.setTextColor(ContextCompat.getColor(context, android.R.color.white));
-                ViewParent buttonPanel = positiveButton.getParent();
-                if (buttonPanel instanceof ViewGroup) {
-                    ((ViewGroup) buttonPanel).setBackgroundColor(ContextCompat.getColor(context, R.color.background_color_new));
-                }
-
-            }
-            if (negativeButton != null) {
-                negativeButton.setBackgroundColor(ContextCompat.getColor(context, R.color.colorAccent));
-                negativeButton.setTextColor(ContextCompat.getColor(context, android.R.color.white));
-
-            }
+                    .setPositiveDestructive(true)
+                    .setPositiveButton(R.string.ok_button, d ->
+                            submitOrderCancelRequest(context.getString(R.string.ex_st_canceled)))
+                    .setNegativeButton(R.string.cancel_button, null)
+                    .show();
         }
     }
 

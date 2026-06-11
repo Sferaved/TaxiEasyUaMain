@@ -14,6 +14,7 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.ui.weather.WeatherApiHelper;
 import com.taxi.easy.ua.ui.weather.WeatherResponse;
+import com.taxi.easy.ua.utils.dialog.UklonAlertDialog;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
@@ -568,27 +569,14 @@ public class PassengerNotifier {
         }
         Logger.d(context, TAG, "showNotification: показываем кастомный AlertDialog");
 
-        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_weather_notice, null);
-
-        TextView tvTitle = dialogView.findViewById(R.id.tvTitle);
-        TextView tvMessage = dialogView.findViewById(R.id.tvMessage);
-        AppCompatButton btnOk = dialogView.findViewById(R.id.btnOk);
-
-        tvTitle.setText(R.string.attantion_mes);
-        tvMessage.setText(message);
-        btnOk.setText(R.string.ok_error);
-
-        AlertDialog dialog = new AlertDialog.Builder(context)
-                .setView(dialogView)
+        new UklonAlertDialog(context)
+                .setIcon(R.drawable.ic_info)
+                .setTitle(R.string.attantion_mes)
+                .setMessage(message)
                 .setCancelable(false)
-                .create();
-
-        btnOk.setOnClickListener(v -> {
-            Logger.d(context, TAG, "showNotification: нажата кнопка 'Зрозуміло'");
-            dialog.dismiss();
-        });
-
-        dialog.show();
+                .setPositiveButton(R.string.ok_error, d ->
+                        Logger.d(context, TAG, "showNotification: нажата кнопка 'Зрозуміло'"))
+                .show();
     }
 
     private static String capitalizeFirst(String text) {

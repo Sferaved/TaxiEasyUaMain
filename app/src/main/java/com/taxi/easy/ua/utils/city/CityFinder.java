@@ -40,6 +40,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import com.taxi.easy.ua.utils.db.CursorReadHelper;
+import com.taxi.easy.ua.utils.dialog.UklonAlertDialog;
 
 public class CityFinder {
     private static final String TAG = "CityFinder";
@@ -472,10 +473,11 @@ public class CityFinder {
             // ✅ Получаем название города для отображения в диалоге
             String cityDisplayName = getCityDisplayName(finalCity);
 
-            new androidx.appcompat.app.AlertDialog.Builder(activity)
+            new UklonAlertDialog(activity)
+                    .setIcon(R.drawable.ic_info)
                     .setTitle(R.string.city_change_dialog)
                     .setMessage(activity.getString(R.string.find_new_city_mes) + cityDisplayName + activity.getString(R.string.turn_mes))
-                    .setPositiveButton(R.string.ok, (dialog, which) -> {
+                    .setPositiveButton(R.string.ok, dialog -> {
                         VisicomFragment.updateGpsButtonCross(false);
                         isCityChangeDialogShowing = false;
                         AutoLocationAfterCityHelper.markCityChangedViaGeo();
@@ -484,7 +486,7 @@ public class CityFinder {
                             isProcessing = false;
                         }
                     })
-                    .setNegativeButton(R.string.cancel, (dialog, which) -> {
+                    .setNegativeButton(R.string.cancel, dialog -> {
                         isCityChangeDialogShowing = false;
                         synchronized (lock) {
                             isProcessing = false;
@@ -1007,10 +1009,11 @@ public class CityFinder {
 
             Activity activity = activityRef.get();
             if (activity != null && !activity.isFinishing() && !activity.isDestroyed()) {
-                new androidx.appcompat.app.AlertDialog.Builder(activity)
+                new UklonAlertDialog(activity)
+                        .setIcon(R.drawable.ic_info)
                         .setTitle(R.string.city_change_dialog)
                         .setMessage(activity.getString(R.string.find_new_city_mes) + cityDisplayName + activity.getString(R.string.turn_mes))
-                        .setPositiveButton(R.string.ok, (dialog, which) -> {
+                        .setPositiveButton(R.string.ok, dialog -> {
                             isCityChangeDialogShowing = false;
                             userConfirmed[0] = true;  // ✅ Устанавливаем значение в массиве
                             AutoLocationAfterCityHelper.markCityChangedViaGeo();
@@ -1022,7 +1025,7 @@ public class CityFinder {
                                 callback.onCityCheckCompleted(true, userConfirmed[0]);
                             }
                         })
-                        .setNegativeButton(R.string.cancel, (dialog, which) -> {
+                        .setNegativeButton(R.string.cancel, dialog -> {
                             isCityChangeDialogShowing = false;
                             userConfirmed[0] = false;  // ✅ Устанавливаем значение в массиве
                             synchronized (lock) {

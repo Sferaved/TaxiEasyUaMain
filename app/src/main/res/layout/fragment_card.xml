@@ -5,7 +5,7 @@
     android:id="@+id/fragment_card"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/uklon_bg"
+    android:background="@color/background_color_new"
     tools:context=".ui.card.CardFragment">
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -37,18 +37,19 @@
                     android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:layout_marginTop="8dp"
-                    android:background="@drawable/bg_profile_close_btn"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/close"
                     android:padding="10dp"
                     android:scaleType="centerInside"
-                    android:src="@drawable/ic_close_24" />
+                    android:src="@drawable/ic_close_24"
+                    app:tint="@color/white" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/payment_methods_title"
-                    android:textColor="@color/uklon_on_surface"
+                    android:textColor="@color/white"
                     android:textSize="32sp"
                     android:textStyle="bold" />
 
@@ -56,13 +57,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20dp"
-                    android:background="@color/uklon_search_card_bg"
-                    android:paddingStart="16dp"
                     android:paddingTop="10dp"
-                    android:paddingEnd="16dp"
                     android:paddingBottom="10dp"
                     android:text="@string/payment_default_section"
-                    android:textColor="@color/uklon_on_surface_secondary"
+                    android:textColor="@color/white_70"
                     android:textSize="14sp" />
 
                 <com.google.android.material.card.MaterialCardView
@@ -127,7 +125,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:gravity="center"
-                    android:textColor="@color/uklon_on_surface_secondary"
+                    android:textColor="@color/white_70"
                     android:textSize="14sp"
                     android:visibility="gone"
                     tools:text="@string/no_cards"
@@ -148,7 +146,7 @@
                         android:layout_height="96dp"
                         android:importantForAccessibility="no"
                         android:src="@drawable/ic_no_orders"
-                        app:tint="@color/uklon_on_surface_secondary" />
+                        app:tint="@color/white_70" />
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton

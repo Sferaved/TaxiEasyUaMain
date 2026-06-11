@@ -34,6 +34,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.widget.NestedScrollView;
@@ -50,7 +51,9 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.databinding.FragmentCardBinding;
+import com.taxi.easy.ua.ui.card.unlink.UnlinkApi;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
+import com.taxi.easy.ua.ui.wfp.token.CallbackResponseSetActivCardWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
@@ -140,7 +143,9 @@ public class CardFragment extends Fragment {
         fragmentManager = getParentFragmentManager();
         binding.btnClose.setOnClickListener(v -> {
             if (MainActivity.navController != null) {
-                MainActivity.navController.navigateUp();
+                MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_visicom, true)
+                        .build());
             }
         });
         checkCardPaymentForCity();
@@ -197,17 +202,25 @@ public class CardFragment extends Fragment {
             cardsRecycler.setLayoutManager(new LinearLayoutManager(context));
             cardsAdapter = new PaymentCardsAdapter();
             cardsRecycler.setAdapter(cardsAdapter);
-            cardsAdapter.setListener((card, position) -> {
-                String rectoken = card.get("rectoken");
-                if (rectoken != null) {
-                    CustomCardAdapter.rectoken = rectoken;
-                    CustomCardAdapter adapter = new CustomCardAdapter(
-                            context, getCardMapsFromDatabase(), table, pay_method);
-                    adapter.selectCard(rectoken);
+            cardsAdapter.setListener(new PaymentCardsAdapter.Listener() {
+                @Override
+                public void onCardSelected(@NonNull Map<String, String> card, int position) {
+                    String rectoken = card.get("rectoken");
+                    if (rectoken != null) {
+                        CustomCardAdapter.rectoken = rectoken;
+                        CustomCardAdapter adapter = new CustomCardAdapter(
+                                context, getCardMapsFromDatabase(), table, pay_method);
+                        adapter.selectCard(rectoken);
+                    }
+                    PaymentTypeHelper.setCard(context);
+                    pay_method = PaymentTypeHelper.CARD;
+                    refreshPaymentSelectionState();
                 }
-                PaymentTypeHelper.setCard(context);
-                pay_method = PaymentTypeHelper.CARD;
-                refreshPaymentSelectionState();
+
+                @Override
+                public void onCardDelete(@NonNull Map<String, String> card, int position) {
+                    confirmDeleteCard(card);
+                }
             });
         }
 
@@ -295,7 +308,74 @@ public class CardFragment extends Fragment {
         pay_method = paymentType;
     }
 
+    private void confirmDeleteCard(@NonNull Map<String, String> card) {
+        if (binding == null || !isAdded()) {
+            return;
+        }
+        String rectoken = card.get("rectoken");
+        if (rectoken == null || rectoken.isEmpty()) {
+            return;
+        }
+        if (!NetworkUtils.isNetworkAvailable(requireContext())) {
+            Toast.makeText(context, R.string.network_no_internet, Toast.LENGTH_LONG).show();
+            return;
+        }
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_delete_card, null);
+        TextView maskedView = dialogView.findViewById(R.id.dialogCardMasked);
+        String masked = card.get("masked_card");
+        maskedView.setText(masked != null ? masked : "");
+
+        AlertDialog dialog = new AlertDialog.Builder(context)
+                .setView(dialogView)
+                .create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+        dialogView.findViewById(R.id.dialogBtnCancel).setOnClickListener(v -> dialog.dismiss());
+        dialogView.findViewById(R.id.dialogBtnDelete).setOnClickListener(v -> {
+            dialog.dismiss();
+            deleteCardToken(rectoken);
+        });
+        dialog.show();
+    }
+
+    private void deleteCardToken(@NonNull String rectoken) {
+        progressBar.setVisibility(VISIBLE);
+        String url = baseUrl != null ? baseUrl
+                : (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(url)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        UnlinkApi apiService = retrofit.create(UnlinkApi.class);
+        apiService.deleteCardToken(rectoken).enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<CallbackResponseSetActivCardWfp> call,
+                                   @NonNull Response<CallbackResponseSetActivCardWfp> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    if (isAdded()) {
+                        Toast.makeText(context, R.string.un_link_token, Toast.LENGTH_LONG).show();
+                    }
+                    getCardTokenWfp();
+                } else if (binding != null) {
+                    progressBar.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<CallbackResponseSetActivCardWfp> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
+                if (binding != null) {
+                    progressBar.setVisibility(View.GONE);
+                }
+            }
+        });
+    }
+
     private void cardViews() throws MalformedURLException, UnsupportedEncodingException {
+        if (binding == null || !isAdded()) {
+            return;
+        }
         if (isWebViewVisible) {
             mainContent.setVisibility(View.GONE);
             return;

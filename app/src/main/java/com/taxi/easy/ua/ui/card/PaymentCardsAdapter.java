@@ -19,6 +19,8 @@ public class PaymentCardsAdapter extends RecyclerView.Adapter<PaymentCardsAdapte
 
     public interface Listener {
         void onCardSelected(@NonNull Map<String, String> card, int position);
+
+        void onCardDelete(@NonNull Map<String, String> card, int position);
     }
 
     private final List<Map<String, String>> cards = new ArrayList<>();
@@ -63,6 +65,17 @@ public class PaymentCardsAdapter extends RecyclerView.Adapter<PaymentCardsAdapte
         boolean selected = position == selectedPosition;
         holder.check.setVisibility(selected ? View.VISIBLE : View.GONE);
 
+        holder.delete.setVisibility(View.VISIBLE);
+        holder.delete.setOnClickListener(v -> {
+            int adapterPos = holder.getBindingAdapterPosition();
+            if (adapterPos == RecyclerView.NO_POSITION) {
+                return;
+            }
+            if (listener != null) {
+                listener.onCardDelete(cards.get(adapterPos), adapterPos);
+            }
+        });
+
         holder.itemView.setOnClickListener(v -> {
             int adapterPos = holder.getBindingAdapterPosition();
             if (adapterPos == RecyclerView.NO_POSITION) {
@@ -86,6 +99,7 @@ public class PaymentCardsAdapter extends RecyclerView.Adapter<PaymentCardsAdapte
         final TextView title;
         final TextView subtitle;
         final ImageView check;
+        final ImageView delete;
 
         CardHolder(@NonNull View itemView) {
             super(itemView);
@@ -93,6 +107,7 @@ public class PaymentCardsAdapter extends RecyclerView.Adapter<PaymentCardsAdapte
             title = itemView.findViewById(R.id.paymentRowTitle);
             subtitle = itemView.findViewById(R.id.paymentRowSubtitle);
             check = itemView.findViewById(R.id.paymentRowCheck);
+            delete = itemView.findViewById(R.id.paymentRowDelete);
         }
     }
 }

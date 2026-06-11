@@ -52,6 +52,7 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
+import com.taxi.easy.ua.utils.dialog.UklonAlertDialog;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.sanitizer.InputSanitizerHelper;
@@ -344,17 +345,18 @@ public class AccountFragment extends Fragment {
     }
 
     private void showManualRestartDialog() {
-        new androidx.appcompat.app.AlertDialog.Builder(context)
+        new UklonAlertDialog(context)
+                .setIcon(R.drawable.ic_error)
+                .setIconTint(R.color.error_red)
                 .setTitle(getString(R.string.restart_title))
                 .setMessage(getString(R.string.restart_error) + "\n\n" + getString(R.string.restart_manual))
-                .setPositiveButton(getString(R.string.close_app), (dialog, which) -> {
+                .setPositiveButton(getString(R.string.close_app), dialog -> {
                     if (context instanceof Activity) {
                         ((Activity) context).finishAffinity();
                     }
                     System.exit(0);
                 })
                 .setNegativeButton(getString(R.string.cancel), null)
-                .setIcon(android.R.drawable.ic_dialog_alert)
                 .show();
     }
 

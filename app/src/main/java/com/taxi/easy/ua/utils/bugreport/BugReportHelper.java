@@ -7,6 +7,7 @@ import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -238,6 +239,10 @@ public class BugReportHelper {
                 .setView(view)
                 .setCancelable(false)
                 .create();
+        dialog.setOnDismissListener(d -> {
+            hideSoftKeyboard(view);
+            currentDialog = null;
+        });
         dialog.show();
         currentDialog = dialog;
 
@@ -274,12 +279,17 @@ public class BugReportHelper {
             });
         });
 
-        btnCancel.setOnClickListener(v -> {
-            if (currentDialog != null) {
-                currentDialog.dismiss();
-                currentDialog = null;
-            }
-        });
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+    }
+
+    private void hideSoftKeyboard(View view) {
+        if (view == null) {
+            return;
+        }
+        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
     }
 
     /**
