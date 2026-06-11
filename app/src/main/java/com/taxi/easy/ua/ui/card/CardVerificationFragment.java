@@ -15,20 +15,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.activity.result.IntentSenderRequest;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavOptions;
-
-import com.google.android.gms.wallet.PaymentsClient;
-import com.google.android.gms.wallet.button.PayButton;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
@@ -36,11 +29,6 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
-import com.taxi.easy.ua.ui.wfp.googlepay.GooglePayChargeRequest;
-import com.taxi.easy.ua.ui.wfp.googlepay.GooglePayChargeResponse;
-import com.taxi.easy.ua.ui.wfp.googlepay.GooglePayChargeService;
-import com.taxi.easy.ua.ui.wfp.googlepay.GooglePayConfigResponse;
-import com.taxi.easy.ua.ui.wfp.googlepay.GooglePayConfigService;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceResponse;
 import com.taxi.easy.ua.ui.wfp.invoice.InvoiceService;
 import com.taxi.easy.ua.ui.wfp.revers.ReversResponse;
@@ -48,7 +36,6 @@ import com.taxi.easy.ua.ui.wfp.revers.ReversService;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
-import com.taxi.easy.ua.utils.helpers.WfpGooglePayHelper;
 import com.taxi.easy.ua.utils.helpers.WfpWebViewHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
@@ -73,12 +60,6 @@ public class CardVerificationFragment extends Fragment {
 
     private final String TAG = "CardVerificationFragment";
 
-    private WebView webView;
-    private PayButton googlePayButton;
-    private TextView googlePayDivider;
-    private PaymentsClient paymentsClient;
-    private String merchantAccount;
-    private String googlePayApiBaseUrl;
     private String order_id;
     private String amount;
     String email;
@@ -86,36 +67,10 @@ public class CardVerificationFragment extends Fragment {
 
     private FragmentManager fragmentManager;
     private Context context;
+    private WebView webView;
     private String messageFondy;
-    private String cityName;
-    private String userEmail;
-    private String phoneNumber;
-
-    private final ActivityResultLauncher<IntentSenderRequest> googlePayLauncher =
-            registerForActivityResult(
-                    new ActivityResultContracts.StartIntentSenderForResult(),
-                    result -> WfpGooglePayHelper.handlePaymentResult(
-                            result.getResultCode(),
-                            result.getData(),
-                            requireContext(),
-                            new WfpGooglePayHelper.PaymentResultCallback() {
-                                @Override
-                                public void onSuccess(@NonNull String paymentDataJson) {
-                                    submitGooglePayCharge(paymentDataJson);
-                                }
-
-                                @Override
-                                public void onCancelled() {
-                                    Logger.d(context, TAG, "Google Pay cancelled");
-                                }
-
-                                @Override
-                                public void onError(@NonNull String message) {
-                                    Toast.makeText(requireActivity(), message, Toast.LENGTH_LONG).show();
-                                }
-                            }
-                    )
-            );
+    private boolean statusCheckInProgress;
+    private boolean paymentFlowFinished;
 
     @SuppressLint({"MissingInflatedId", "SetJavaScriptEnabled"})
     @Nullable
@@ -129,212 +84,53 @@ public class CardVerificationFragment extends Fragment {
         View view = inflater.inflate(R.layout.activity_fondy_payment, container, false);
         context = requireActivity();
         webView = view.findViewById(R.id.webView);
-        googlePayButton = view.findViewById(R.id.googlePayButton);
-        googlePayDivider = view.findViewById(R.id.googlePayDivider);
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         amount = "1";
         messageFondy =  context.getString(R.string.fondy_message);
         order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-        cityName = logCursor(MainActivity.CITY_INFO, context).get(1);
-        userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-        phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
 
         fragmentManager = getParentFragmentManager();
-        paymentsClient = WfpGooglePayHelper.createPaymentsClient(this);
-        WfpGooglePayHelper.initializePayButton(googlePayButton);
 
-        setupGooglePay();
         getUrlToPaymentWfp();
 
         return view;
     }
 
-    private void setupGooglePay() {
-        fetchGooglePayConfig(baseUrl, true);
-    }
-
-    private void fetchGooglePayConfig(String configBaseUrl, boolean allowTestFallback) {
-        OkHttpClient client = buildHttpClient();
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(configBaseUrl + "/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
-
-        GooglePayConfigService configService = retrofit.create(GooglePayConfigService.class);
-        configService.getConfig(context.getString(R.string.application), cityName)
-                .enqueue(new Callback<>() {
-                    @Override
-                    public void onResponse(@NonNull Call<GooglePayConfigResponse> call,
-                                           @NonNull Response<GooglePayConfigResponse> response) {
-                        if (!response.isSuccessful() || response.body() == null
-                                || response.body().getMerchantAccount() == null) {
-                            Logger.w(context, TAG, "Google Pay config unavailable on " + configBaseUrl
-                                    + " code=" + response.code());
-                            if (allowTestFallback && shouldTryTestGooglePayConfig(configBaseUrl)) {
-                                fetchGooglePayConfig("https://t.easy-order-taxi.site", false);
-                            }
-                            return;
-                        }
-                        onGooglePayConfigLoaded(configBaseUrl, response.body().getMerchantAccount());
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull Call<GooglePayConfigResponse> call, @NonNull Throwable t) {
-                        FirebaseCrashlytics.getInstance().recordException(t);
-                        Logger.w(context, TAG, "Google Pay config failed on " + configBaseUrl + ": " + t.getMessage());
-                        if (allowTestFallback && shouldTryTestGooglePayConfig(configBaseUrl)) {
-                            fetchGooglePayConfig("https://t.easy-order-taxi.site", false);
-                        }
-                    }
-                });
-    }
-
-    private boolean shouldTryTestGooglePayConfig(String configBaseUrl) {
-        return configBaseUrl != null && configBaseUrl.contains("m.easy-order-taxi.site");
-    }
-
-    private void onGooglePayConfigLoaded(String configBaseUrl, String account) {
-        merchantAccount = account;
-        googlePayApiBaseUrl = configBaseUrl;
-        WfpGooglePayHelper.checkReady(paymentsClient, ready -> {
-            if (!isAdded()) {
-                return;
-            }
-            requireActivity().runOnUiThread(() -> {
-                if (ready) {
-                    googlePayButton.setVisibility(View.VISIBLE);
-                    googlePayDivider.setVisibility(View.VISIBLE);
-                    googlePayButton.setOnClickListener(v -> startGooglePay());
-                } else {
-                    Logger.d(context, TAG, getString(R.string.google_pay_unavailable));
-                }
-            });
-        });
-    }
-
-    private void startGooglePay() {
-        if (merchantAccount == null) {
-            Toast.makeText(requireActivity(), R.string.google_pay_unavailable, Toast.LENGTH_LONG).show();
-            return;
-        }
-        googlePayButton.setEnabled(false);
-        Toast.makeText(requireActivity(), R.string.google_pay_processing, Toast.LENGTH_SHORT).show();
-        WfpGooglePayHelper.requestPayment(
-                this,
-                paymentsClient,
-                merchantAccount,
-                amount,
-                googlePayLauncher,
-                new WfpGooglePayHelper.PaymentResultCallback() {
-                    @Override
-                    public void onSuccess(@NonNull String paymentDataJson) {
-                        submitGooglePayCharge(paymentDataJson);
-                    }
-
-                    @Override
-                    public void onCancelled() {
-                        if (isAdded()) {
-                            googlePayButton.setEnabled(true);
-                        }
-                    }
-
-                    @Override
-                    public void onError(@NonNull String message) {
-                        if (isAdded()) {
-                            googlePayButton.setEnabled(true);
-                            Toast.makeText(requireActivity(), message, Toast.LENGTH_LONG).show();
-                        }
-                    }
-                }
-        );
-    }
-
-    private void submitGooglePayCharge(String paymentDataJson) {
-        String chargeBaseUrl = googlePayApiBaseUrl != null ? googlePayApiBaseUrl : baseUrl;
-        OkHttpClient client = buildHttpClient();
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(chargeBaseUrl + "/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
-
-        GooglePayChargeService chargeService = retrofit.create(GooglePayChargeService.class);
-        GooglePayChargeRequest request = new GooglePayChargeRequest(
-                context.getString(R.string.application),
-                cityName,
-                order_id,
-                Integer.parseInt(amount),
-                messageFondy,
-                userEmail,
-                phoneNumber,
-                paymentDataJson
-        );
-
-        chargeService.charge(request).enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<GooglePayChargeResponse> call,
-                                   @NonNull Response<GooglePayChargeResponse> response) {
-                if (!isAdded()) {
-                    return;
-                }
-                googlePayButton.setEnabled(true);
-                if (response.isSuccessful() && response.body() != null) {
-                    String status = response.body().getTransactionStatus();
-                    Logger.d(context, TAG, "Google Pay charge status: " + status);
-                    if ("Approved".equals(status) || "WaitingAuthComplete".equals(status)) {
-                        getStatusWfp();
-                        return;
-                    }
-                }
-                Toast.makeText(requireActivity(), R.string.pay_error_title, Toast.LENGTH_LONG).show();
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<GooglePayChargeResponse> call, @NonNull Throwable t) {
-                if (!isAdded()) {
-                    return;
-                }
-                googlePayButton.setEnabled(true);
-                FirebaseCrashlytics.getInstance().recordException(t);
-                Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
-            }
-        });
-    }
-
-    private OkHttpClient buildHttpClient() {
+    private void getUrlToPaymentWfp() {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        return new OkHttpClient.Builder()
+        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(new RetryInterceptor())
                 .addInterceptor(interceptor)
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .build();
-    }
-
-
-    private void getUrlToPaymentWfp() {
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl + "/")
                 .addConverterFactory(GsonConverterFactory.create())
-                .client(buildHttpClient())
+                .client(client)
                 .build();
 
         InvoiceService service = retrofit.create(InvoiceService.class);
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
+        String city = stringList.get(1);
+
+        stringList = logCursor(MainActivity.TABLE_USER_INFO, context);
+        String userEmail = stringList.get(3);
+        String phone_number = stringList.get(2);
 
         Call<InvoiceResponse> call = service.createInvoice(
                 context.getString(R.string.application),
-                cityName,
+                city,
                 order_id,
                 Integer.parseInt(amount),
                 LocaleHelper.getLocale(),
                 messageFondy,
                 userEmail,
-                phoneNumber
+                phone_number
         );
 
         call.enqueue(new Callback<InvoiceResponse>() {
@@ -365,12 +161,17 @@ public class CardVerificationFragment extends Fragment {
         });
 
     }
-    
+
     private void payWfp(String checkoutUrl) {
         WfpWebViewHelper.loadPaymentUrl(webView, checkoutUrl, this::getStatusWfp);
+        Logger.d(context, TAG, "Payment page loaded in WebView: " + checkoutUrl);
     }
 
     private void getStatusWfp() {
+        if (statusCheckInProgress || paymentFlowFinished) {
+            return;
+        }
+        statusCheckInProgress = true;
         Logger.d(context, TAG, "getStatusWfp: ");
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
@@ -380,11 +181,11 @@ public class CardVerificationFragment extends Fragment {
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor()) // 3 попытки
+                .addInterceptor(new RetryInterceptor())
                 .addInterceptor(interceptor)
-                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
-                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
-                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
                 .build();
 
 
@@ -405,30 +206,23 @@ public class CardVerificationFragment extends Fragment {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<StatusResponse> call, @NonNull Response<StatusResponse> response) {
-
+                statusCheckInProgress = false;
                 if (response.isSuccessful() && response.body() != null) {
                     StatusResponse statusResponse = response.body();
-                    if (statusResponse != null) {
-                        String orderStatus = statusResponse.getTransactionStatus();
-                        Logger.d(context, TAG, "Transaction Status: " + orderStatus);
+                    String orderStatus = statusResponse.getTransactionStatus();
+                    Logger.d(context, TAG, "Transaction Status: " + orderStatus);
 
-                        switch (orderStatus) {
-                            case "Approved":
-                            case "WaitingAuthComplete":
-                                sharedPreferencesHelperMain.saveValue("pay_error", "**");
-                                getReversWfp(city);
-//                                dismiss();
-                                getCardTokenWfp();
-//                                MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder()
-//                                        .setPopUpTo(R.id.nav_card, true)
-//                                        .build());
-                                break;
-                            default:
-                                sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
-                        }
-                        // Другие данные можно также получить из statusResponse
-                    } else {
-                        Logger.d(context, TAG, "Response body is null");
+                    switch (orderStatus) {
+                        case "Approved":
+                        case "WaitingAuthComplete":
+                            paymentFlowFinished = true;
+                            sharedPreferencesHelperMain.saveValue("pay_error", "**");
+                            getReversWfp(city);
+                            getCardTokenWfp();
+                            break;
+                        default:
+                            sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
+                            break;
                     }
                 } else {
                     Logger.d(context, TAG, "Request failed:5");
@@ -437,6 +231,7 @@ public class CardVerificationFragment extends Fragment {
 
             @Override
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
+                statusCheckInProgress = false;
                 Logger.d(context, TAG, "Request failed:6" + t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
                 Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
@@ -451,24 +246,22 @@ public class CardVerificationFragment extends Fragment {
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor()) // 3 попытки
+                .addInterceptor(new RetryInterceptor())
                 .addInterceptor(interceptor)
-                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
-                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
-                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
                 .build();
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl) // Замените на фактический URL вашего сервера
+                .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();
 
-        // Создайте сервис
         CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
         Logger.d(context, TAG, "getCardTokenWfp: ");
         String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
 
-        // Выполните запрос
         Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
                 context.getString(R.string.application),
                 city,
@@ -484,21 +277,19 @@ public class CardVerificationFragment extends Fragment {
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
                         Logger.d(context, TAG, "onResponse: cards" + cards);
-                        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
-
+                        String tableName = MainActivity.TABLE_WFP_CARDS;
 
                         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-
 
                         database.execSQL("DELETE FROM " + tableName + ";");
 
                         if (cards != null && !cards.isEmpty()) {
                             for (CardInfo cardInfo : cards) {
-                                String masked_card = cardInfo.getMasked_card(); // Маска карты
-                                String card_type = cardInfo.getCard_type(); // Тип карты
-                                String bank_name = cardInfo.getBank_name(); // Название банка
-                                String rectoken = cardInfo.getRectoken(); // Токен карты
-                                String merchant = cardInfo.getMerchant(); //
+                                String masked_card = cardInfo.getMasked_card();
+                                String card_type = cardInfo.getCard_type();
+                                String bank_name = cardInfo.getBank_name();
+                                String rectoken = cardInfo.getRectoken();
+                                String merchant = cardInfo.getMerchant();
                                 String active = cardInfo.getActive();
 
                                 Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
@@ -522,42 +313,31 @@ public class CardVerificationFragment extends Fragment {
 
             @Override
             public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
-                // Обработка ошибки запроса
                 FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "onResponse: failure " + t);
             }
         });
 
-        // Выполняем необходимое действие (например, запуск новой активности)
-//        MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder()
-//                .setPopUpTo(R.id.nav_card, true)
-//                .build());
-
     }
     private void getReversWfp(String city) {
-        // Log method entry with input parameter
         Logger.i(context,"ReversWfp", "Starting getReversWfp with city: " + city);
 
-        // Set up HTTP logging interceptor
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         Log.d("ReversWfp", "HttpLoggingInterceptor configured with level: BODY");
 
-        // Retrieve base URL from SharedPreferences
         baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         Log.d("ReversWfp", "Base URL retrieved: " + baseUrl);
 
-        // Build OkHttpClient with interceptors and timeouts
         OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor()) // 3 retries
+                .addInterceptor(new RetryInterceptor())
                 .addInterceptor(interceptor)
-                .connectTimeout(30, TimeUnit.SECONDS) // Connection timeout
-                .readTimeout(30, TimeUnit.SECONDS)    // Read timeout
-                .writeTimeout(30, TimeUnit.SECONDS)   // Write timeout
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
                 .build();
         Logger.d(context,"ReversWfp", "OkHttpClient built with retry interceptor and 30s timeouts");
 
-        // Build Retrofit instance
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl + "/")
                 .addConverterFactory(GsonConverterFactory.create())
@@ -565,16 +345,13 @@ public class CardVerificationFragment extends Fragment {
                 .build();
         Logger.d(context,"ReversWfp", "Retrofit instance created with base URL: " + baseUrl + "/");
 
-        // Create ReversService
         ReversService service = retrofit.create(ReversService.class);
         Logger.d(context,"ReversWfp", "ReversService created");
 
-        // Prepare API call parameters
         String application = context.getString(R.string.application);
         Logger.i(context,"ReversWfp", "Preparing refundVerifyCards API call with parameters: " +
                 "application=" + application + ", city=" + city + ", order_id=" + order_id + ", amount=" + amount);
 
-        // Make asynchronous API call
         Call<ReversResponse> call = service.refundVerifyCards(application, city, order_id, amount);
         Logger.d(context,"ReversWfp", "API call initiated for refundVerifyCards");
 
@@ -608,7 +385,6 @@ public class CardVerificationFragment extends Fragment {
             }
         });
 
-        // Log dismissal
         Logger.d(context,"ReversWfp", "Dismissing (likely UI dialog)");
         dismiss();
     }
@@ -641,4 +417,3 @@ public class CardVerificationFragment extends Fragment {
         return list;
     }
 }
-
