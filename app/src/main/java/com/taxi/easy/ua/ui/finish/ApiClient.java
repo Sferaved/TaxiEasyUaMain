@@ -2,8 +2,7 @@ package com.taxi.easy.ua.ui.finish;
 
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.taxi.easy.ua.utils.network.ApiGsonHelper;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import java.util.concurrent.TimeUnit;
@@ -35,14 +34,10 @@ public class ApiClient {
                 .build();
 
         if (retrofit == null) {
-            Gson gson = new GsonBuilder()
-                    .setLenient()
-                    .create();
-
             retrofit = new Retrofit.Builder()
                     .baseUrl(BASE_URL)
                     .client(client)
-                    .addConverterFactory(GsonConverterFactory.create(gson))
+                    .addConverterFactory(GsonConverterFactory.create(ApiGsonHelper.create()))
                     .build();
         }
         return retrofit.create(ApiService.class);
@@ -61,14 +56,10 @@ public class ApiClient {
                 .build();
 
         if (cancelRetrofit == null) {
-            Gson gson = new GsonBuilder()
-                    .setLenient()
-                    .create();
-
             cancelRetrofit = new Retrofit.Builder()
                     .baseUrl(BASE_URL)
                     .client(client)
-                    .addConverterFactory(GsonConverterFactory.create(gson))
+                    .addConverterFactory(GsonConverterFactory.create(ApiGsonHelper.create()))
                     .build();
         }
         return cancelRetrofit.create(ApiService.class);
@@ -83,14 +74,10 @@ public class ApiClient {
                 .build();
 
         if (pollingRetrofit == null) {
-            Gson gson = new GsonBuilder()
-                    .setLenient()
-                    .create();
-
             pollingRetrofit = new Retrofit.Builder()
                     .baseUrl(BASE_URL)
                     .client(client)
-                    .addConverterFactory(GsonConverterFactory.create(gson))
+                    .addConverterFactory(GsonConverterFactory.create(ApiGsonHelper.create()))
                     .build();
         }
         return pollingRetrofit.create(ApiService.class);

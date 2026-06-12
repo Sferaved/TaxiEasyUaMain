@@ -40,22 +40,18 @@ import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.orders.OrderHistoryStatusHelper;
+import com.taxi.easy.ua.utils.orders.RequiredTimeParseHelper;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.taxi.easy.ua.utils.ui.ListScrollPaginationHelper;
 import com.uxcam.UXCam;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -352,7 +348,7 @@ public class ActiveOrderFragment extends Fragment {
             settings.add(routeToNumber);
             settings.add(dispatchingOrderUidDouble);
             settings.add(pay_method);
-            settings.add(takeData(required_time));
+            settings.add(RequiredTimeParseHelper.formatForStorage(required_time));
             settings.add(flexible_tariff_name);
             settings.add(comment_info);
             settings.add(extra_charge_codes);
@@ -386,26 +382,6 @@ public class ActiveOrderFragment extends Fragment {
             listView.setVisibility(View.GONE);
             scrollPagination.update();
         }
-    }
-
-
-    private String takeData(String text) {
-
-        LocalDateTime dateTime = null;
-        // Регулярное выражение для поиска даты и времени
-        String regex = "(\\d{2}\\.\\d{2}\\.\\d{4}) (\\d{2}:\\d{2})";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(text);
-
-        if (matcher.find()) {
-            String dateTimeString = matcher.group(1) + " " + matcher.group(2); // "10.02.2025 14:10"
-
-            // Парсим строку в LocalDateTime
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
-            dateTime = LocalDateTime.parse(dateTimeString, formatter);
-        }
-        assert dateTime != null;
-        return dateTime.toString();
     }
 
 
