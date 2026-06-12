@@ -249,6 +249,8 @@
     <string name="google_pay_or_card">or pay by card below</string>
     <string name="google_pay_processing">Processing Google Pay…</string>
     <string name="google_pay_unavailable">Google Pay is not available on this device</string>
+    <string name="google_pay_test_mode_hint">TEST: Google test cards (emulator / debug)</string>
+    <string name="google_pay_test_success">Google Pay TEST: token received. No live charge.</string>
     <string name="fondy_revers_message">"Refund: "</string>
     <string name="fondy_pay">Pay by card</string>
     <string name="cost_of_road_fondy">Cost of the trip: </string>

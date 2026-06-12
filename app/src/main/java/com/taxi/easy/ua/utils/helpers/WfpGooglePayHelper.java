@@ -1,7 +1,9 @@
 package com.taxi.easy.ua.utils.helpers;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.IntentSenderRequest;
@@ -20,6 +22,7 @@ import com.google.android.gms.wallet.WalletConstants;
 import com.google.android.gms.wallet.button.ButtonConstants;
 import com.google.android.gms.wallet.button.ButtonOptions;
 import com.google.android.gms.wallet.button.PayButton;
+import com.taxi.easy.ua.BuildConfig;
 import com.taxi.easy.ua.utils.log.Logger;
 
 import org.json.JSONArray;
@@ -46,13 +49,38 @@ public final class WfpGooglePayHelper {
     private WfpGooglePayHelper() {
     }
 
+    /** TEST on debug builds and emulators — Google test card suite, no live charge. */
+    public static boolean usesTestEnvironment() {
+        return BuildConfig.DEBUG || isEmulator();
+    }
+
     public static PaymentsClient createPaymentsClient(@NonNull Fragment fragment) {
+        return createPaymentsClient(fragment.requireContext());
+    }
+
+    public static PaymentsClient createPaymentsClient(@NonNull Context context) {
+        int environment = usesTestEnvironment()
+                ? WalletConstants.ENVIRONMENT_TEST
+                : WalletConstants.ENVIRONMENT_PRODUCTION;
+        Logger.d(context, TAG, "Google Pay environment: "
+                + (environment == WalletConstants.ENVIRONMENT_TEST ? "TEST" : "PRODUCTION"));
         return Wallet.getPaymentsClient(
-                fragment.requireActivity(),
+                context,
                 new Wallet.WalletOptions.Builder()
-                        .setEnvironment(WalletConstants.ENVIRONMENT_PRODUCTION)
+                        .setEnvironment(environment)
                         .build()
         );
+    }
+
+    private static boolean isEmulator() {
+        return Build.FINGERPRINT.startsWith("generic")
+                || Build.FINGERPRINT.startsWith("unknown")
+                || Build.MODEL.contains("google_sdk")
+                || Build.MODEL.contains("Emulator")
+                || Build.MODEL.contains("Android SDK built for x86")
+                || Build.MANUFACTURER.contains("Genymotion")
+                || (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic"))
+                || "google_sdk".equals(Build.PRODUCT);
     }
 
     public static void initializePayButton(@NonNull PayButton payButton) {

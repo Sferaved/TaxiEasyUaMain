@@ -254,6 +254,8 @@
     <string name="google_pay_or_card">или оплата картой ниже</string>
     <string name="google_pay_processing">Обработка Google Pay…</string>
     <string name="google_pay_unavailable">Google Pay недоступен на этом устройстве</string>
+    <string name="google_pay_test_mode_hint">TEST: тестовые карты Google (эмулятор / debug)</string>
+    <string name="google_pay_test_success">Google Pay TEST: токен получен. Реальный charge не выполняется.</string>
     <string name="fondy_revers_message">"Возврат платежа: "</string>
     <string name="fondy_pay">Оплатить картой</string>
     <string name="cost_of_road_fondy">Стоимость поездки: </string>
