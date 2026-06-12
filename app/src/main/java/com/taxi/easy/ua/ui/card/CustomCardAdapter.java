@@ -385,6 +385,12 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
         return list;
     }
     public void deleteCardToken(final String deletedRectoken) {
+        Context ctx = getContext();
+        if (ctx == null) {
+            return;
+        }
+        WfpUtils.prepareForCardDeletion(ctx, deletedRectoken);
+
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
@@ -397,15 +403,21 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
             @Override
             public void onResponse(@NonNull Call<CallbackResponseSetActivCardWfp> call, @NonNull Response<CallbackResponseSetActivCardWfp> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    Toast.makeText(getContext(), getContext().getString(R.string.un_link_token), Toast.LENGTH_LONG).show();
-                    syncCardsFromServer(() -> MainActivity.navController.navigate(
-                            R.id.nav_card, null, new NavOptions.Builder().build()));
+                    Logger.d(ctx, TAG, "deleteCardToken: ok rectoken=" + deletedRectoken);
+                    Toast.makeText(ctx, ctx.getString(R.string.un_link_token), Toast.LENGTH_LONG).show();
+                } else {
+                    Logger.d(ctx, TAG, "deleteCardToken: failed code=" + response.code());
                 }
+                syncCardsFromServer(() -> MainActivity.navController.navigate(
+                        R.id.nav_card, null, new NavOptions.Builder().build()));
             }
 
             @Override
             public void onFailure(@NonNull Call<CallbackResponseSetActivCardWfp> call, @NonNull Throwable t) {
+                Logger.d(ctx, TAG, "deleteCardToken: failure " + t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
+                syncCardsFromServer(() -> MainActivity.navController.navigate(
+                        R.id.nav_card, null, new NavOptions.Builder().build()));
             }
         });
     }

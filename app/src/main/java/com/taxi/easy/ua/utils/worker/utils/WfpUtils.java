@@ -22,6 +22,7 @@ import com.taxi.easy.ua.utils.worker.GetCardTokenWfpWorker;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.work.Data;
+import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
 
@@ -41,6 +42,8 @@ import com.taxi.easy.ua.utils.db.CursorReadHelper;
 public class WfpUtils {
 
     private static final String TAG = "WfpUtils";
+
+    public static final String CARD_TOKEN_FETCH_WORK = "wfp_card_token_fetch";
 
     public interface CardFetchCallback {
         void onComplete(boolean success);
@@ -84,6 +87,39 @@ public class WfpUtils {
         }
     }
 
+    public static void cancelCardTokenFetches(Context context) {
+        WorkManager.getInstance(context).cancelUniqueWork(CARD_TOKEN_FETCH_WORK);
+        Logger.d(context, TAG, "cancelCardTokenFetches");
+    }
+
+    public static void prepareForCardDeletion(Context context, String rectoken) {
+        WfpCardSyncGuard.invalidatePendingFetches();
+        cancelCardTokenFetches(context);
+        removeCardFromDatabase(context, rectoken);
+        Logger.d(context, TAG, "prepareForCardDeletion: rectoken=" + rectoken);
+    }
+
+    public static void removeCardFromDatabase(Context context, String rectoken) {
+        if (rectoken == null || rectoken.isEmpty()) {
+            return;
+        }
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        try {
+            database.delete(MainActivity.TABLE_WFP_CARDS, "rectoken=?", new String[]{rectoken});
+        } finally {
+            database.close();
+        }
+    }
+
+    private static boolean applyFetchResultIfCurrent(Context context, List<CardInfo> cards, long fetchGeneration) {
+        if (!WfpCardSyncGuard.shouldApplyFetchResult(fetchGeneration)) {
+            Logger.d(context, TAG, "applyFetchResultIfCurrent: skip stale fetch gen=" + fetchGeneration);
+            return false;
+        }
+        saveWfpCardsToDatabase(context, cards);
+        return true;
+    }
+
     public static void enqueueCardTokenFetch(Context context, String city) {
         if (!isCityValidForCardFetch(city)) {
             Logger.d(context, TAG, "enqueueCardTokenFetch: skip invalid city: " + city);
@@ -92,7 +128,11 @@ public class WfpUtils {
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(GetCardTokenWfpWorker.class)
                 .setInputData(new Data.Builder().putString("city", city).build())
                 .build();
-        WorkManager.getInstance(context).enqueue(request);
+        WorkManager.getInstance(context).enqueueUniqueWork(
+                CARD_TOKEN_FETCH_WORK,
+                ExistingWorkPolicy.REPLACE,
+                request
+        );
     }
 
     public static void fetchCardTokenWfpAsync(String city, Context context, @Nullable CardFetchCallback callback) {
@@ -113,12 +153,13 @@ public class WfpUtils {
                 userEmail,
                 "wfp"
         );
+        final long fetchGeneration = WfpCardSyncGuard.captureFetchGeneration();
         call.enqueue(new Callback<CallbackResponseWfp>() {
             @Override
             public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
                 boolean success = response.isSuccessful() && response.body() != null;
                 if (success) {
-                    saveWfpCardsToDatabase(context, response.body().getCards());
+                    success = applyFetchResultIfCurrent(context, response.body().getCards(), fetchGeneration);
                 } else {
                     Logger.d(context, TAG, "fetchCardTokenWfpAsync: not successful, code: " + response.code());
                 }
@@ -154,13 +195,14 @@ public class WfpUtils {
                 "wfp"
         );
 
+        final long fetchGeneration = WfpCardSyncGuard.captureFetchGeneration();
         try {
             Response<CallbackResponseWfp> response = call.execute();
             Logger.d(context, TAG, "onResponse: " + response.body());
             if (response.isSuccessful() && response.body() != null) {
                 List<CardInfo> cards = response.body().getCards();
                 Logger.d(context, TAG, "onResponse: cards" + cards);
-                saveWfpCardsToDatabase(context, cards);
+                applyFetchResultIfCurrent(context, cards, fetchGeneration);
             } else {
                 Logger.d(context, TAG, "onResponse: not successful, code: " + response.code());
             }

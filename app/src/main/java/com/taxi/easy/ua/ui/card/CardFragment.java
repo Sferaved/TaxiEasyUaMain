@@ -341,6 +341,9 @@ public class CardFragment extends Fragment {
 
     private void deleteCardToken(@NonNull String rectoken) {
         progressBar.setVisibility(VISIBLE);
+        WfpUtils.prepareForCardDeletion(context, rectoken);
+        refreshCardUiAfterSync();
+
         String url = baseUrl != null ? baseUrl
                 : (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         Retrofit retrofit = new Retrofit.Builder()
@@ -353,23 +356,40 @@ public class CardFragment extends Fragment {
             public void onResponse(@NonNull Call<CallbackResponseSetActivCardWfp> call,
                                    @NonNull Response<CallbackResponseSetActivCardWfp> response) {
                 if (response.isSuccessful() && response.body() != null) {
+                    Logger.d(context, TAG, "deleteCardToken: ok rectoken=" + rectoken);
                     if (isAdded()) {
                         Toast.makeText(context, R.string.un_link_token, Toast.LENGTH_LONG).show();
                     }
-                    getCardTokenWfp();
-                } else if (binding != null) {
-                    progressBar.setVisibility(View.GONE);
+                } else {
+                    Logger.d(context, TAG, "deleteCardToken: failed code=" + response.code());
                 }
+                syncCardsAfterDelete();
             }
 
             @Override
             public void onFailure(@NonNull Call<CallbackResponseSetActivCardWfp> call, @NonNull Throwable t) {
+                Logger.d(context, TAG, "deleteCardToken: failure " + t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
-                if (binding != null) {
-                    progressBar.setVisibility(View.GONE);
-                }
+                syncCardsAfterDelete();
             }
         });
+    }
+
+    private void syncCardsAfterDelete() {
+        String city = logCursor(MainActivity.CITY_INFO, context).get(1);
+        WfpUtils.fetchCardTokenWfpAsync(city, context, success -> refreshCardUiAfterSync());
+    }
+
+    private void refreshCardUiAfterSync() {
+        if (!isAdded() || binding == null) {
+            return;
+        }
+        progressBar.setVisibility(View.GONE);
+        try {
+            cardViews();
+        } catch (MalformedURLException | UnsupportedEncodingException e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+        }
     }
 
     private void cardViews() throws MalformedURLException, UnsupportedEncodingException {
@@ -645,62 +665,7 @@ public class CardFragment extends Fragment {
             return;
         }
         progressBar.setVisibility(VISIBLE);
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor())
-                .addInterceptor(interceptor)
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build();
-
-        CallbackServiceWfp service = retrofit.create(CallbackServiceWfp.class);
-        Logger.d(context, TAG, "getCardTokenWfp: ");
-        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-
-        Call<CallbackResponseWfp> call = service.handleCallbackWfpCardsId(
-                context.getString(R.string.application),
-                city,
-                userEmail,
-                "wfp"
-        );
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
-                Logger.d(context, TAG, "onResponse: " + response.body());
-                if (response.isSuccessful() && response.body() != null) {
-                    List<CardInfo> cards = response.body().getCards();
-                    Logger.d(context, TAG, "onResponse: cards" + cards);
-                    WfpUtils.saveWfpCardsToDatabase(context, cards);
-                    try {
-                        cardViews();
-                    } catch (MalformedURLException | UnsupportedEncodingException e) {
-                        throw new RuntimeException(e);
-                    }
-                } else {
-                    progressBar.setVisibility(View.GONE);
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<CallbackResponseWfp> call, @NonNull Throwable t) {
-                Logger.d(context, TAG, "onResponse: failure " + t);
-                FirebaseCrashlytics.getInstance().recordException(t);
-                progressBar.setVisibility(View.GONE);
-                try {
-                    cardViews();
-                } catch (MalformedURLException | UnsupportedEncodingException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
+        WfpUtils.fetchCardTokenWfpAsync(city, context, success -> refreshCardUiAfterSync());
     }
 
     @SuppressLint("SourceLockedOrientationActivity")
