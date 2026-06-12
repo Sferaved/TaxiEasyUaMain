@@ -56,6 +56,8 @@ public class RouteResponseCancel {
     @SerializedName("extra_charge_codes")
     private String extra_charge_codes;
 
+    @SerializedName("execution_status")
+    private String execution_status;
 
     public String getStartLat() {
         return startLat;
@@ -138,6 +140,10 @@ public class RouteResponseCancel {
     }
     public String getExtra_charge_codes() {
         return extra_charge_codes;
+    }
+
+    public String getExecution_status() {
+        return execution_status;
     }
 
     @Override

@@ -171,6 +171,8 @@
     <string name="uid_menu">История заказов</string>
     <string name="close_resone_def">Уточнить у диспетчера</string>
     <string name="close_resone_in_work">В обработке</string>
+    <string name="close_resone_waiting_dispatch">Ожидание подачи</string>
+    <string name="close_resone_canceled">Отменено</string>
     <string name="close_resone_in_start_point">Авто подано</string>
     <string name="close_resone_in_rout">Выполняется</string>
     <string name="close_resone_0">Выполнен</string>

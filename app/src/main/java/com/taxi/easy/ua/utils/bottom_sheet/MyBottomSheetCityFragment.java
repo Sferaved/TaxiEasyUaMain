@@ -49,6 +49,7 @@ import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.orders.OrderHistoryStatusHelper;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 import com.uxcam.UXCam;
@@ -999,9 +1000,6 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
 
         array = new String[routeList.size()];
 
-
-        String closeReasonText = context.getString(R.string.close_resone_def);
-
         for (int i = 0; i < routeList.size(); i++) {
             RouteResponse route = routeList.get(i);
 
@@ -1020,42 +1018,12 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             String closeReason = route.getCloseReason();
             String auto = route.getAuto();
 
-            switch (closeReason){
-                case "-1":
-                    closeReasonText =context.getString(R.string.close_resone_in_work);
-                    break;
-                case "0":
-                    closeReasonText =context.getString(R.string.close_resone_0);
-                    break;
-                case "1":
-                    closeReasonText =context.getString(R.string.close_resone_1);
-                    break;
-                case "2":
-                    closeReasonText =context.getString(R.string.close_resone_2);
-                    break;
-                case "3":
-                    closeReasonText =context.getString(R.string.close_resone_3);
-                    break;
-                case "4":
-                    closeReasonText =context.getString(R.string.close_resone_4);
-                    break;
-                case "5":
-                    closeReasonText =context.getString(R.string.close_resone_5);
-                    break;
-                case "6":
-                    closeReasonText =context.getString(R.string.close_resone_6);
-                    break;
-                case "7":
-                    closeReasonText =context.getString(R.string.close_resone_7);
-                    break;
-                case "8":
-                    closeReasonText =context.getString(R.string.close_resone_8);
-                    break;
-                case "9":
-                    closeReasonText =context.getString(R.string.close_resone_9);
-                    break;
-
-            }
+            String closeReasonText = OrderHistoryStatusHelper.resolveStatusText(
+                    context,
+                    closeReason,
+                    null,
+                    null
+            );
 
             if(routeFrom.equals("Місце відправлення")) {
                 routeFrom =context.getString(R.string.start_point_text);

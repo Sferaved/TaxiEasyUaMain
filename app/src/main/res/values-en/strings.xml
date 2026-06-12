@@ -167,6 +167,8 @@
     <string name="uid_menu">Order history</string>
     <string name="close_resone_def">Check with the dispatcher</string>
     <string name="close_resone_in_work">In processing</string>
+    <string name="close_resone_waiting_dispatch">Waiting for dispatch</string>
+    <string name="close_resone_canceled">Canceled</string>
     <string name="close_resone_in_start_point">Car served</string>
     <string name="close_resone_in_rout">Running</string>
     <string name="close_resone_0">Done</string>
