@@ -2929,8 +2929,12 @@ public class FinishSeparateFragment extends Fragment {
 //                    }
                     stopCycle();
                 } else {
-//                    handlerStatus.post(myTaskStatus);
                     startCycle();
+                    try {
+                        statusOrder();
+                    } catch (ParseException e) {
+                        Logger.e(context, TAG, "statusOrder after orderAuto: " + e.getMessage());
+                    }
                 }
             });
 
@@ -3099,27 +3103,24 @@ public class FinishSeparateFragment extends Fragment {
             return;
         }
         try {
-            int total = (int) Math.round(Double.parseDouble(baseCost.replace(',', '.').trim()));
-            String addCostMeta = orderResponse.getAddCost();
-            if (addCostMeta != null && !addCostMeta.isEmpty() && !"0".equals(addCostMeta.trim())) {
-                int addCostDelta = Integer.parseInt(addCostMeta.trim());
-                if (addCostDelta > 0) {
-                    total += addCostDelta;
-                }
-            } else {
-                int displayed = parseDisplayedCostGrivna();
-                if (displayed > total && displayed - total <= 5) {
-                    total = displayed;
-                }
-            }
+            int serverTotal = (int) Math.round(Double.parseDouble(baseCost.replace(',', '.').trim()));
             int displayed = parseDisplayedCostGrivna();
-            if (total <= 0 && displayed > 0) {
+            if (serverTotal <= 0) {
                 return;
             }
-            if (total != displayed) {
-                applyDisplayCostToFinishUi(String.valueOf(total));
-                Logger.d(context, TAG, "refreshFinishCostFromOrder order_cost=" + total
+            // order_cost from status API is the billable total; add_cost is metadata only.
+            // Summing them duplicated +5 UAH after add-cost (60+5 showed as 70).
+            if (displayed > 0 && serverTotal < displayed) {
+                Logger.d(context, TAG, "refreshFinishCostFromOrder keep client cost="
+                        + displayed + " server=" + serverTotal
                         + " add_cost(meta)=" + orderResponse.getAddCost());
+                return;
+            }
+            if (serverTotal != displayed) {
+                applyDisplayCostToFinishUi(String.valueOf(serverTotal));
+                Logger.d(context, TAG, "refreshFinishCostFromOrder server=" + serverTotal
+                        + " add_cost(meta)=" + orderResponse.getAddCost()
+                        + " displayed=" + displayed);
             }
         } catch (NumberFormatException e) {
             Logger.w(context, TAG, "refreshFinishCostFromOrder parse failed: " + baseCost);
@@ -3162,6 +3163,35 @@ public class FinishSeparateFragment extends Fragment {
             viewModel.persistDisplayCostGrivna(costGrivna);
         }
         Logger.d(context, TAG, "applyDisplayCostToFinishUi: " + message);
+    }
+
+    @Nullable
+    private String resolveReconcileDisplayCost(boolean explicitSelection,
+            @Nullable String persistedCost,
+            @Nullable Map<String, String> bundle) {
+        String bundleCost = null;
+        if (bundle != null) {
+            bundleCost = bundle.get("order_cost");
+            if (bundleCost == null || bundleCost.trim().isEmpty()) {
+                bundleCost = bundle.get("orderWeb");
+            }
+        }
+        if (bundleCost != null) {
+            bundleCost = bundleCost.trim();
+        }
+        if (bundleCost == null || bundleCost.isEmpty()) {
+            return persistedCost;
+        }
+        if (persistedCost == null || persistedCost.isEmpty() || explicitSelection) {
+            return bundleCost;
+        }
+        try {
+            int fromBundle = (int) Math.round(Double.parseDouble(bundleCost.replace(',', '.')));
+            int fromPersist = (int) Math.round(Double.parseDouble(persistedCost.replace(',', '.')));
+            return fromBundle >= fromPersist ? bundleCost : persistedCost;
+        } catch (NumberFormatException e) {
+            return bundleCost;
+        }
     }
 
     /**
@@ -3257,11 +3287,14 @@ public class FinishSeparateFragment extends Fragment {
             }
         }
 
-        String persistedCost = ExecutionStatusViewModel.getPersistedDisplayCost();
-        if (persistedCost != null && textCostMessage != null
+        String displayCost = resolveReconcileDisplayCost(
+                explicitSelection,
+                ExecutionStatusViewModel.getPersistedDisplayCost(),
+                receivedMap);
+        if (displayCost != null && textCostMessage != null
                 && !orderSwitch && uid != null
                 && (persistedActive == null || uid.equals(persistedActive))) {
-            applyDisplayCostToFinishUi(persistedCost);
+            applyDisplayCostToFinishUi(displayCost);
         }
         String syncedDouble = ExecutionStatusViewModel.getPersistedDoubleUid();
         if (syncedDouble != null && !syncedDouble.trim().isEmpty()) {

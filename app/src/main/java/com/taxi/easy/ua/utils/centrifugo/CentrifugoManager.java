@@ -406,8 +406,13 @@ public class CentrifugoManager {
 
             String orderUid = json.getString("order_uid_new");
             String paySystemStatus = json.optString("paySystemStatus", "nal_payment");
+            String rawOrderCost = json.optString("order_cost", "");
+            String orderCost = rawOrderCost.isEmpty()
+                    ? ""
+                    : CostParseHelper.normalizeCostString(rawOrderCost);
 
-            Log.d(TAG, "✅ Parsed - UID: " + orderUid + ", paySystemStatus: " + paySystemStatus);
+            Log.d(TAG, "✅ Parsed - UID: " + orderUid + ", paySystemStatus: " + paySystemStatus
+                    + ", order_cost: " + orderCost);
             Log.d(TAG, "Current MainActivity.uid: " + MainActivity.uid);
             if (MainActivity.order_id != null && !MainActivity.order_id.isEmpty()) {
                 PaymentSessionHelper.saveWfpOrderRef(orderUid, MainActivity.order_id);
@@ -422,6 +427,10 @@ public class CentrifugoManager {
                             Log.d(TAG, "🟢 Updating ViewModel on UI thread");
                             viewModel.updateUid(orderUid);
                             viewModel.updatePaySystemStatus(paySystemStatus);
+                            if (orderCost != null && !orderCost.isEmpty() && !"0".equals(orderCost)) {
+                                viewModel.setFinishAbsoluteCostGrivna(orderCost);
+                                sharedPreferencesHelperMain.saveValue("order_cost", orderCost);
+                            }
                             EarlyOrderNavigationHelper.tryEarlyNavigateToFinish(
                                     activity, orderUid, paySystemStatus);
                             Log.d(TAG, "✅ ViewModel updated, new value should be: " + orderUid);
