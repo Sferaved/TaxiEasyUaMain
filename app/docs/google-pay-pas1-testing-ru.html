@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Pay (этап 2) — тестирование PAS_1</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --paper: #ffffff;
+      --text: #1a1d21;
+      --muted: #5c6570;
+      --accent: #1a73e8;
+      --border: #dde2e8;
+      --code-bg: #f0f3f7;
+      --ok: #137333;
+      --warn: #b06000;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text);
+      background: var(--bg);
+    }
+    .wrap {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 24px 20px 48px;
+    }
+    article {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px 36px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    }
+    h1 {
+      font-size: 1.65rem;
+      line-height: 1.25;
+      margin: 0 0 8px;
+      color: var(--text);
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .meta p { margin: 4px 0; }
+    h2 {
+      font-size: 1.25rem;
+      margin: 32px 0 14px;
+      padding-top: 8px;
+      color: var(--accent);
+    }
+    h3 {
+      font-size: 1.05rem;
+      margin: 22px 0 10px;
+    }
+    p { margin: 10px 0; }
+    ul, ol { margin: 8px 0 12px; padding-left: 1.35rem; }
+    li { margin: 6px 0; }
+    li ul { margin-top: 4px; }
+    strong { font-weight: 600; }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.88em;
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    pre {
+      background: #1e2430;
+      color: #e8eaed;
+      padding: 14px 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.45;
+      margin: 12px 0;
+    }
+    pre code {
+      background: none;
+      padding: 0;
+      color: inherit;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 18px;
+      font-size: 0.92rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #eef3fa;
+      font-weight: 600;
+    }
+    tr:nth-child(even) td { background: #fafbfc; }
+    .note {
+      background: #fff8e6;
+      border-left: 4px solid var(--warn);
+      padding: 12px 16px;
+      margin: 14px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .note.ok {
+      background: #e8f5e9;
+      border-left-color: var(--ok);
+    }
+    .checklist { list-style: none; padding-left: 0; }
+    .checklist li {
+      padding: 8px 0 8px 28px;
+      position: relative;
+      border-bottom: 1px dashed var(--border);
+    }
+    .checklist li::before {
+      content: "☐";
+      position: absolute;
+      left: 4px;
+      font-size: 1.1rem;
+    }
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 16px 0;
+      font-size: 0.9rem;
+    }
+    .flow span {
+      background: var(--code-bg);
+      padding: 6px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .flow .arrow { background: none; padding: 0; color: var(--muted); }
+    footer {
+      margin-top: 28px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    a { color: var(--accent); }
+    @media print {
+      body { background: #fff; }
+      .wrap { padding: 0; max-width: none; }
+      article {
+        box-shadow: none;
+        border: none;
+        padding: 0;
+      }
+      h2 { page-break-after: avoid; }
+      table, pre { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+<article>
+
+<h1>Google Pay (этап 2) — инструкция по тестированию PAS_1</h1>
+
+<div class="meta">
+  <p><strong>Приложение:</strong> Easy Taxi (PAS_1), package <code>com.taxi.easy.ua</code></p>
+  <p><strong>Версия с GPay при заказе:</strong> 1.1030 и новее</p>
+  <p><strong>Дата:</strong> 13.06.2026</p>
+  <p><strong>Область:</strong> только экран <strong>Visicom</strong> (заказ с карты). HomeFragment и другие PAS не затронуты.</p>
+</div>
+
+<h2>1. Что сделано (этап 2)</h2>
+<table>
+  <thead>
+    <tr><th>Компонент</th><th>Изменение</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Android PAS_1</strong></td>
+      <td>При «Google Pay» и «Заказать» на Visicom: сначала холд через GPay, затем заказ с <code>wfpInvoice</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>Сервер (taxi_repo)</strong></td>
+      <td><code>google_pay_payment</code> как безнал: <code>WfpInvoice</code>, <strong>без</strong> повторного <code>chargeActiveToken</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>Этап 3 (позже)</strong></td>
+      <td>Доплата «Хочу быстрее» вторым GPay — ещё не реализована.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>2. Старый способ vs Google Pay</h2>
+
+<h3>2.1. Для пользователя</h3>
+<table>
+  <thead>
+    <tr>
+      <th style="width:22%">Критерий</th>
+      <th>Карта WFP (<code>wfp_payment</code>)</th>
+      <th>Google Pay (<code>google_pay_payment</code>)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Подготовка</td>
+      <td>Привязка карты в WebView WayForPay (<code>rectoken</code>)</td>
+      <td>Не нужна — карта из <strong>Google Wallet</strong></td>
+    </tr>
+    <tr>
+      <td>Момент оплаты</td>
+      <td>Заказ сразу; холд <strong>после</strong> создания заказа на сервере</td>
+      <td>Сначала шторка GPay и холд; заказ <strong>только после успеха</strong></td>
+    </tr>
+    <tr>
+      <td>Подтверждение</td>
+      <td>При заказе часто без отдельного шага (карта уже привязана)</td>
+      <td>Каждый заказ: отпечаток / PIN / «Оплатить»</td>
+    </tr>
+    <tr>
+      <td>Сумма холда</td>
+      <td>Полная стоимость заказа</td>
+      <td>Полная стоимость заказа</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>2.2. Технически (для тестировщика)</h3>
+<table>
+  <thead>
+    <tr><th>Шаг</th><th>Карта по токену</th><th>Google Pay</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td><code>orderReference</code> → <code>wfpInvoice</code></td><td>То же</td></tr>
+    <tr><td>2</td><td><code>orderClientCostMyApi</code> → заказ в БД</td><td><strong>Пока не вызывается</strong></td></tr>
+    <tr>
+      <td>3</td>
+      <td><code>orderIdMemoryToken</code> + <code>chargeActiveToken(rectoken)</code></td>
+      <td><code>googlePayConfig</code> → шторка → <code>googlePayCharge(gpToken)</code></td>
+    </tr>
+    <tr><td>4</td><td>WFP: холд по rectoken</td><td>WFP: холд по токену GPay</td></tr>
+    <tr><td>5</td><td>Poll / push статуса</td><td>После успеха → тот же <code>orderClientCostMyApi</code></td></tr>
+    <tr><td>6</td><td>—</td><td><code>orderIdMemoryToken</code>, poll — <strong>без</strong> <code>chargeActiveToken</code></td></tr>
+  </tbody>
+</table>
+
+<div class="note ok">
+  <strong>Важно:</strong> при GPay второй холд по активной WFP-карте (rectoken) <strong>не выполняется</strong> — иначе было бы двойное списание.
+</div>
+
+<h3>2.3. Поток Google Pay (кратко)</h3>
+<div class="flow">
+  <span>«Заказать»</span>
+  <span class="arrow">→</span>
+  <span>googlePayConfig</span>
+  <span class="arrow">→</span>
+  <span>Шторка GPay</span>
+  <span class="arrow">→</span>
+  <span>googlePayCharge</span>
+  <span class="arrow">→</span>
+  <span>Успех WFP</span>
+  <span class="arrow">→</span>
+  <span>orderClientCostMyApi</span>
+</div>
+
+<h3>2.4. Вилка «безнал + нал» в диспетчере</h3>
+<p>Поведение <strong>как у карты по токену</strong>:</p>
+<ul>
+  <li><code>authorizationChoiceApp('google_pay_payment')</code> → <code>payment_type = 1</code> (безнал).</li>
+  <li>При настроенной вилке: безнальная нога + наличная нога (алгоритм поиска).</li>
+  <li>Это <strong>не</strong> два списания: один холд GPay + две заявки в диспетчере.</li>
+</ul>
+<p><strong>Исключение:</strong> только <code>my_server_api</code> (оператор недоступен) — один заказ без вилки, как у карты.</p>
+
+<h3>2.5. TEST vs PRODUCTION</h3>
+<table>
+  <thead>
+    <tr><th>Условие</th><th>Режим GPay</th><th>Что видит пользователь</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Эмулятор</td>
+      <td><strong>TEST</strong></td>
+      <td>Test Card •••• 1111, текст про тестовое средовище</td>
+    </tr>
+    <tr>
+      <td>Телефон + debug APK</td>
+      <td><strong>TEST</strong></td>
+      <td>То же</td>
+    </tr>
+    <tr>
+      <td>Телефон + release APK</td>
+      <td><strong>PRODUCTION</strong></td>
+      <td>Реальная карта Wallet, без предупреждения о тесте</td>
+    </tr>
+  </tbody>
+</table>
+<p>В logcat: <code>WfpGooglePayHelper: Google Pay environment: TEST</code> или <code>PRODUCTION</code>.</p>
+<div class="note">
+  <strong>Приёмка на реальном устройстве</strong> — только <strong>release 1.1030+</strong>, не debug из Android Studio.
+</div>
+
+<h2>3. Требования перед тестом</h2>
+<h3>3.1. Устройство</h3>
+<ul>
+  <li>Google Play Services и Google Wallet.</li>
+  <li>Банковская карта Visa/Mastercard в Wallet.</li>
+  <li>Стабильный интернет.</li>
+</ul>
+<h3>3.2. Приложение</h3>
+<ul>
+  <li>PAS_1 <strong>1.1030+</strong>, сборка <strong>release</strong>.</li>
+</ul>
+<h3>3.3. Сервер</h3>
+<ul>
+  <li>Деплой taxi_repo с <code>google_pay_payment</code> (коммит <code>5606fb3d</code>).</li>
+  <li>WayForPay: Google Pay включён для merchant города.</li>
+</ul>
+<h3>3.4. В приложении</h3>
+<ul>
+  <li>Город с безналом (как для WFP-карты).</li>
+  <li>Способ оплаты: <strong>Google Pay</strong>.</li>
+</ul>
+
+<h2>4. Проверка на реальном устройстве</h2>
+
+<h3>Сценарий A — успешный заказ</h3>
+<ol>
+  <li>Visicom → маршрут → стоимость.</li>
+  <li>Способ оплаты: Google Pay.</li>
+  <li>«Заказать» → шторка GPay: ваша карта, сумма верна, <strong>нет</strong> Test Card / тестового предупреждения.</li>
+  <li>Подтвердить оплату.</li>
+  <li>Ожидание: поиск машины, заказ безнал в диспетчере; при вилке — обе ноги.</li>
+</ol>
+
+<h3>Сценарий B — отмена GPay</h3>
+<ol>
+  <li>Шаги 1–4 сценария A, затем закрыть шторку.</li>
+  <li>Заказ <strong>не</strong> создан, остаётесь на экране заказа.</li>
+</ol>
+
+<h3>Сценарий C — нет двойного холда</h3>
+<ol>
+  <li>WFP-карта привязана, оплата — Google Pay.</li>
+  <li>Один холд GPay, <strong>нет</strong> charge по rectoken.</li>
+</ol>
+
+<h3>Сценарий D — не тестируем в 1.1030</h3>
+<table>
+  <thead><tr><th>Не проверять</th><th>Почему</th></tr></thead>
+  <tbody>
+    <tr><td>HomeFragment</td><td>GPay при заказе не включён</td></tr>
+    <tr><td>Доплата через GPay</td><td>Этап 3</td></tr>
+    <tr><td>Смена на GPay в шторке без заказа</td><td>Только запись в БД</td></tr>
+  </tbody>
+</table>
+
+<h2>5. Логи</h2>
+<h3>Android (logcat)</h3>
+<p>Фильтр: <code>WfpGooglePayHelper</code>, <code>GooglePayOrderHelper</code>, <code>VisicomFragment</code></p>
+<p><strong>Успех:</strong></p>
+<pre><code>Google Pay environment: PRODUCTION
+GooglePayOrderHelper: googlePayCharge status=WaitingAuthComplete ref=V_...
+VisicomFragment: orderFinished: ... orderClientCostMyApi ...</code></pre>
+<p><strong>Ошибка / отмена:</strong></p>
+<pre><code>Google Pay hold failed: ...
+e_google_pay_canceled</code></pre>
+<h3>Сервер (Laravel)</h3>
+<pre><code>GOOGLE_PAY_CHARGE { "orderReference": "...", "response": "..." }</code></pre>
+<p>Успех WFP: <code>WaitingAuthComplete</code> или <code>Approved</code>. Ошибка merchant: <code>reasonCode: 1129</code> (часто на эмуляторе с TEST).</p>
+
+<h2>6. Эмулятор</h2>
+<ul>
+  <li>GPay всегда TEST — это нормально.</li>
+  <li>Холд WFP с TEST-токеном часто падает (1129) — <strong>не</strong> провал release-приёмки.</li>
+  <li>На эмуляторе: шторка, отмена, отсутствие заказа при ошибке.</li>
+</ul>
+
+<h2>7. Чеклист приёмки</h2>
+<ul class="checklist">
+  <li>PAS_1 1.1030+ release установлен</li>
+  <li>Google Wallet с реальной картой</li>
+  <li>Visicom, способ оплаты Google Pay</li>
+  <li>Шторка PRODUCTION (не Test Card)</li>
+  <li>После подтверждения — заказ безнал в диспетчере</li>
+  <li>При отмене — заказ не создан</li>
+  <li>Нет второго холда по WFP rectoken</li>
+  <li>Сервер с google_pay_payment задеплоен</li>
+</ul>
+
+<h2>8. Ссылки</h2>
+<ul>
+  <li>Google Pay Console: <code>google-pay-wallet-console.md</code> в этой папке.</li>
+  <li>Сервер: коммит <code>5606fb3d</code> (main, taxi_repo).</li>
+  <li>Приложение: тег <code>v1.1030</code>.</li>
+</ul>
+
+<footer>
+  Внутренний документ для тестирования PAS_1. Для PDF: откройте этот HTML в браузере → Печать → «Сохранить как PDF».
+</footer>
+
+</article>
+</div>
+</body>
+</html>

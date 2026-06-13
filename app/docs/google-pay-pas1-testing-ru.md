@@ -1,5 +1,8 @@
 # Google Pay (этап 2) — инструкция по тестированию PAS_1
 
+> **Удобнее читать:** откройте [`google-pay-pas1-testing-ru.html`](google-pay-pas1-testing-ru.html) в браузере.  
+> PDF: в браузере «Печать» → «Сохранить как PDF».
+
 **Приложение:** Easy Taxi (PAS_1), package `com.taxi.easy.ua`  
 **Версия с GPay-оплатой при заказе:** **1.1030** и новее  
 **Дата документа:** 13.06.2026  
