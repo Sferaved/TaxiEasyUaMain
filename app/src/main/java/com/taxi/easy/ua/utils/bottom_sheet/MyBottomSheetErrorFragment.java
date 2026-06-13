@@ -175,6 +175,8 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                 errorMessageKey = "black_list_message_err";
             } else if (errorMessage.equals(getString(R.string.server_error_card_payment))) {
                 errorMessageKey = "server_error_card_payment";
+            } else if (errorMessage.equals(getString(R.string.google_pay_hold_failed_message))) {
+                errorMessageKey = "google_pay_hold_failed";
             }
         }
 
@@ -291,6 +293,23 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                     btn_ok.setText(getString(R.string.link_card));
                     btn_ok.setOnClickListener(v -> {
                         navController.navigate(R.id.nav_card, null, new NavOptions.Builder().build());
+                        dismiss();
+                    });
+                    break;
+
+                case "google_pay_hold_failed":
+                    textViewInfo.setOnClickListener(v -> dismiss());
+                    btn_ok.setText(getString(R.string.payment_methods_title));
+                    btn_ok.setOnClickListener(v -> {
+                        navController.navigate(R.id.nav_card, null, new NavOptions.Builder().build());
+                        dismiss();
+                    });
+                    btn_help.setText(getString(R.string.ok_error));
+                    btn_help.setOnClickListener(v -> {
+                        NavDestination currentDestination = navController.getCurrentDestination();
+                        if (currentDestination != null && currentDestination.getId() == R.id.nav_visicom) {
+                            VisicomFragment.btnStaticVisible(View.VISIBLE);
+                        }
                         dismiss();
                     });
                     break;

@@ -115,6 +115,7 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
 import com.taxi.easy.ua.utils.bugreport.BugReportHelper;
 import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
+import com.taxi.easy.ua.utils.cost.CostParseHelper;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
@@ -257,6 +258,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     private String pendingGooglePayMerchant;
     private String pendingGooglePayAmount;
     private String pendingGooglePayOrderReference;
+    /** Стоимость на момент orderRout(); не сбрасывается при visicomCost после GPay. */
+    private String pendingOrderDisplayCost;
     private boolean location_update;
     LocationManager locationManager;
 
@@ -2379,7 +2382,31 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             Toast.makeText(context, R.string.no_start_point_message, Toast.LENGTH_SHORT).show();
             return false;
         }
+        pendingOrderDisplayCost = resolveOrderDisplayCostForSubmit();
+        Logger.d(context, TAG, "order: pendingOrderDisplayCost " + pendingOrderDisplayCost);
         return true;
+    }
+
+    /** Сумма для finish/early-nav: не text_view_cost после пересчёта тарифа. */
+    @Nullable
+    private String resolveOrderDisplayCostForSubmit() {
+        if (CostParseHelper.hasDisplayableCost(pendingOrderDisplayCost)) {
+            return CostParseHelper.normalizeCostString(pendingOrderDisplayCost);
+        }
+        if (finalCost > 0) {
+            return String.valueOf(finalCost);
+        }
+        String fromUrl = CostParseHelper.extractClientCostFromOrderUrl(urlOrder);
+        if (fromUrl != null) {
+            return fromUrl;
+        }
+        if (CostParseHelper.hasDisplayableCost(pendingGooglePayAmount)) {
+            return CostParseHelper.normalizeCostString(pendingGooglePayAmount);
+        }
+        if (text_view_cost != null && text_view_cost.getText() != null) {
+            return CostParseHelper.normalizeCostString(text_view_cost.getText().toString().trim());
+        }
+        return null;
     }
 
 
@@ -2437,8 +2464,11 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             carProgressBar.resumeAnimation();
             constraintLayoutVisicomFinish.setVisibility(VISIBLE);
 
-            String displayCost = text_view_cost != null && text_view_cost.getText() != null
-                    ? text_view_cost.getText().toString().trim() : "";
+            String displayCost = resolveOrderDisplayCostForSubmit();
+            if (displayCost == null) {
+                displayCost = text_view_cost != null && text_view_cost.getText() != null
+                        ? text_view_cost.getText().toString().trim() : "";
+            }
             EarlyOrderNavigationHelper.markSubmitStarted(ctx, pay_method, displayCost);
 
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
@@ -3954,6 +3984,10 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         }
         if (MainActivity.uid != null && !MainActivity.uid.isEmpty()) {
             Logger.d(context, TAG, "visicomCost пропущен (активный заказ), источник: " + source);
+            return;
+        }
+        if (googlePayOrderHoldInProgress || EarlyOrderNavigationHelper.isSubmitInProgress()) {
+            Logger.d(context, TAG, "visicomCost пропущен (оплата/отправка заказа), источник: " + source);
             return;
         }
         List<String> userInfo = logCursor(MainActivity.TABLE_USER_INFO, context);
@@ -5496,9 +5530,11 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 return;
             }
         }
-        String costText = text_view_cost != null && text_view_cost.getText() != null
-                ? text_view_cost.getText().toString().trim() : "";
-        int amountUah = GooglePayOrderHelper.parseAmountUah(costText);
+        String costText = resolveOrderDisplayCostForSubmit();
+        if (costText == null && text_view_cost != null && text_view_cost.getText() != null) {
+            costText = text_view_cost.getText().toString().trim();
+        }
+        int amountUah = GooglePayOrderHelper.parseAmountUah(costText != null ? costText : "");
         if (amountUah <= 0) {
             Toast.makeText(context, R.string.cost_error, Toast.LENGTH_SHORT).show();
             btnVisible(VISIBLE);
@@ -5618,6 +5654,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
     private void onGooglePayOrderHoldCancelled() {
         googlePayOrderHoldInProgress = false;
+        pendingOrderDisplayCost = null;
         progressBar.setVisibility(GONE);
         btnVisible(VISIBLE);
         Toast.makeText(context, R.string.e_google_pay_canceled, Toast.LENGTH_SHORT).show();
@@ -5625,11 +5662,18 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
     private void onGooglePayOrderHoldFailed(@Nullable String message) {
         googlePayOrderHoldInProgress = false;
+        pendingOrderDisplayCost = null;
         progressBar.setVisibility(GONE);
         btnVisible(VISIBLE);
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+        EarlyOrderNavigationHelper.clearSubmitState();
         Logger.w(context, TAG, "Google Pay hold failed: " + message);
-        Toast.makeText(context, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
+        if (!isAdded() || fragmentManager == null) {
+            return;
+        }
+        MyBottomSheetErrorFragment bottomSheet = new MyBottomSheetErrorFragment(
+                getString(R.string.google_pay_hold_failed_message));
+        bottomSheet.show(fragmentManager, "GooglePayHoldFailed");
     }
 
     private void googleVerifyAccount() {

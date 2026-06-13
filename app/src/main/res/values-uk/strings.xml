@@ -255,6 +255,7 @@
     <string name="google_pay_unavailable">Google Pay недоступний на цьому пристрої</string>
     <string name="google_pay_test_mode_hint">TEST: тестові картки Google (емулятор / debug)</string>
     <string name="google_pay_test_success">Google Pay TEST: токен отримано. Реальний charge не виконується.</string>
+    <string name="google_pay_hold_failed_message">Оплату Google Pay не підтверджено (наприклад, недостатньо коштів на картці). Замовте з оплатою готівкою або змініть спосіб оплати.</string>
     <string name="fondy_revers_message">"Повернення платежу: "</string>
     <string name="fondy_pay">Сплатити картою</string>
     <string name="cost_of_road_fondy">Вартість поїздки: </string>

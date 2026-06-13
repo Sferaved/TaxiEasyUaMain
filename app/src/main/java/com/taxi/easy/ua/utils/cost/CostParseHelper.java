@@ -40,4 +40,26 @@ public final class CostParseHelper {
         long parsed = parsePositiveCost(cost);
         return parsed > 0L ? String.valueOf(parsed) : null;
     }
+
+    /**
+     * Стоимость из URL {@code orderClientCostMyApi/.../phone/clientCost/...}.
+     * Сегмент clientCost — 7-й после префикса API (индекс 6).
+     */
+    @Nullable
+    public static String extractClientCostFromOrderUrl(@Nullable String orderUrl) {
+        if (orderUrl == null) {
+            return null;
+        }
+        String marker = "orderClientCostMyApi/";
+        int start = orderUrl.indexOf(marker);
+        if (start < 0) {
+            return null;
+        }
+        String path = orderUrl.substring(start + marker.length());
+        String[] segments = path.split("/", -1);
+        if (segments.length <= 6) {
+            return null;
+        }
+        return normalizeCostString(segments[6]);
+    }
 }

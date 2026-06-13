@@ -251,6 +251,7 @@
     <string name="google_pay_unavailable">Google Pay is not available on this device</string>
     <string name="google_pay_test_mode_hint">TEST: Google test cards (emulator / debug)</string>
     <string name="google_pay_test_success">Google Pay TEST: token received. No live charge.</string>
+    <string name="google_pay_hold_failed_message">Google Pay payment was not confirmed (for example, insufficient funds). Order with cash or change your payment method.</string>
     <string name="fondy_revers_message">"Refund: "</string>
     <string name="fondy_pay">Pay by card</string>
     <string name="cost_of_road_fondy">Cost of the trip: </string>

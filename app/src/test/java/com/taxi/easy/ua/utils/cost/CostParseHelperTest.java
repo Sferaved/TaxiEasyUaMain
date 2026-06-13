@@ -48,4 +48,20 @@ public class CostParseHelperTest {
         assertNull(CostParseHelper.normalizeCostString("0"));
         assertEquals("164", CostParseHelper.normalizeCostString("164.34"));
     }
+
+    @Test
+    public void extractClientCostFromOrderUrl_readsCostSegment() {
+        String url = "https://m.easy-order-taxi.site/orderClientCostMyApi/"
+                + "50.787184/30.304899/50.787184/30.304899/ /+38 093 346 47 47/66/"
+                + "noname (1.1030) *taxialfa@gmail.com*google_pay_payment/-35/no_comment/no_date/no_time/no_start/no_finish/V_123";
+        assertEquals("66", CostParseHelper.extractClientCostFromOrderUrl(url));
+    }
+
+    @Test
+    public void extractClientCostFromOrderUrl_invalidOrMissing_returnsNull() {
+        assertNull(CostParseHelper.extractClientCostFromOrderUrl(null));
+        assertNull(CostParseHelper.extractClientCostFromOrderUrl("https://example.com/other"));
+        assertNull(CostParseHelper.extractClientCostFromOrderUrl(
+                "https://example.com/orderClientCostMyApi/1/2/3/4/5/6"));
+    }
 }

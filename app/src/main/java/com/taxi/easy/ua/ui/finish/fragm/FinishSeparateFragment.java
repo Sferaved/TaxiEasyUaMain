@@ -3111,9 +3111,15 @@ public class FinishSeparateFragment extends Fragment {
             // order_cost from status API is the billable total; add_cost is metadata only.
             // Summing them duplicated +5 UAH after add-cost (60+5 showed as 70).
             if (displayed > 0 && serverTotal < displayed) {
-                Logger.d(context, TAG, "refreshFinishCostFromOrder keep client cost="
-                        + displayed + " server=" + serverTotal
-                        + " add_cost(meta)=" + orderResponse.getAddCost());
+                if (ExecutionStatusViewModel.isAddCostInFlightPref() || addCostSheetShowing) {
+                    Logger.d(context, TAG, "refreshFinishCostFromOrder keep client cost="
+                            + displayed + " server=" + serverTotal
+                            + " add_cost(meta)=" + orderResponse.getAddCost());
+                    return;
+                }
+                applyDisplayCostToFinishUi(String.valueOf(serverTotal));
+                Logger.d(context, TAG, "refreshFinishCostFromOrder corrected stale client="
+                        + displayed + " server=" + serverTotal);
                 return;
             }
             if (serverTotal != displayed) {
