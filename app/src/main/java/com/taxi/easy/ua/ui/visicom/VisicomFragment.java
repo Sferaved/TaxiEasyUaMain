@@ -52,7 +52,9 @@ import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
+import com.google.android.gms.wallet.PaymentsClient;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -104,7 +106,9 @@ import com.taxi.easy.ua.utils.auth.FirebaseConsentManager;
 import com.taxi.easy.ua.utils.blacklist.BlacklistManager;
 import com.taxi.easy.ua.ui.home.ButtonVisibilityCallback;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
+import com.taxi.easy.ua.utils.payment.GooglePayOrderHelper;
 import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
+import com.taxi.easy.ua.utils.helpers.WfpGooglePayHelper;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
@@ -247,6 +251,12 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     public static  long finalCost;
     private ExecutionStatusViewModel viewModel;
     private ActivityResultLauncher<String[]> permissionLauncher;
+    private ActivityResultLauncher<IntentSenderRequest> googlePayLauncher;
+    private PaymentsClient googlePayPaymentsClient;
+    private boolean googlePayOrderHoldInProgress;
+    private String pendingGooglePayMerchant;
+    private String pendingGooglePayAmount;
+    private String pendingGooglePayOrderReference;
     private boolean location_update;
     LocationManager locationManager;
 
@@ -320,6 +330,31 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                         applyLastOrderAddressFromRouteMarker();
                     }
                 }
+        );
+        googlePayPaymentsClient = WfpGooglePayHelper.createPaymentsClient(this);
+        googlePayLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartIntentSenderForResult(),
+                result -> WfpGooglePayHelper.handlePaymentResult(
+                        result.getResultCode(),
+                        result.getData(),
+                        requireContext(),
+                        new WfpGooglePayHelper.PaymentResultCallback() {
+                            @Override
+                            public void onSuccess(@NonNull String paymentDataJson) {
+                                submitGooglePayHoldCharge(paymentDataJson);
+                            }
+
+                            @Override
+                            public void onCancelled() {
+                                onGooglePayOrderHoldCancelled();
+                            }
+
+                            @Override
+                            public void onError(@NonNull String message) {
+                                onGooglePayOrderHoldFailed(message);
+                            }
+                        }
+                )
         );
         // Включаем блокировку кнопки "Назад" Применяем блокировку кнопки "Назад"
         BackPressBlocker backPressBlocker = new BackPressBlocker();
@@ -2068,6 +2103,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                         wfpInvoice = MainActivity.order_id;
                     }
                 }
+            } else if (payment_type.equals("google_pay_payment")) {
+                MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+                wfpInvoice = MainActivity.order_id;
             }
 
             phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
@@ -2389,6 +2427,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 case "wfp_payment":
                     pay_method_message += " " + ctx.getString(R.string.pay_method_message_card); // ← ctx
                     break;
+                case "google_pay_payment":
+                    pay_method_message += " " + ctx.getString(R.string.pay_method_message_google); // ← ctx
+                    break;
                 default:
                     pay_method_message += " " + ctx.getString(R.string.pay_method_message_nal); // ← ctx
             }
@@ -2587,6 +2628,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 case "mono_payment":
                 case "wfp_payment":
                     pay_method_message += " " + context.getString(R.string.pay_method_message_card);
+                    break;
+                case "google_pay_payment":
+                    pay_method_message += " " + context.getString(R.string.pay_method_message_google);
                     break;
                 default:
                     pay_method_message += " " + context.getString(R.string.pay_method_message_nal);
@@ -2882,6 +2926,11 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 case "fondy_payment":
                 case "mono_payment":
                 case "wfp_payment":
+                    if (Long.parseLong(card_max_pay) <= Long.parseLong(textCost)) {
+                        paymentType(context);
+                    }
+                    break;
+                case "google_pay_payment":
                     if (Long.parseLong(card_max_pay) <= Long.parseLong(textCost)) {
                         paymentType(context);
                     }
@@ -5436,6 +5485,153 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
     }
 
+    private void startGooglePayHoldBeforeOrder() {
+        if (!isAdded() || googlePayOrderHoldInProgress) {
+            return;
+        }
+        if (MainActivity.order_id == null || MainActivity.order_id.isEmpty()) {
+            MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+            if (!orderRout()) {
+                btnVisible(VISIBLE);
+                return;
+            }
+        }
+        String costText = text_view_cost != null && text_view_cost.getText() != null
+                ? text_view_cost.getText().toString().trim() : "";
+        int amountUah = GooglePayOrderHelper.parseAmountUah(costText);
+        if (amountUah <= 0) {
+            Toast.makeText(context, R.string.cost_error, Toast.LENGTH_SHORT).show();
+            btnVisible(VISIBLE);
+            return;
+        }
+        pendingGooglePayAmount = String.valueOf(amountUah);
+        pendingGooglePayOrderReference = MainActivity.order_id;
+        progressBar.setVisibility(VISIBLE);
+        googlePayOrderHoldInProgress = true;
+
+        WfpGooglePayHelper.checkReady(googlePayPaymentsClient, ready -> {
+            if (!isAdded()) {
+                return;
+            }
+            if (!ready) {
+                onGooglePayOrderHoldFailed(context.getString(R.string.google_pay_unavailable));
+                return;
+            }
+            List<String> cityInfo = logCursor(MainActivity.CITY_INFO, context);
+            String city = cityInfo.size() > 1 ? cityInfo.get(1) : "";
+            String appBaseUrl = (String) sharedPreferencesHelperMain.getValue(
+                    "baseUrl", "https://m.easy-order-taxi.site");
+            GooglePayOrderHelper.fetchMerchantConfig(
+                    appBaseUrl,
+                    context.getString(R.string.application),
+                    city,
+                    new GooglePayOrderHelper.ConfigCallback() {
+                        @Override
+                        public void onSuccess(@NonNull String merchantAccount) {
+                            if (!isAdded()) {
+                                return;
+                            }
+                            pendingGooglePayMerchant = merchantAccount;
+                            WfpGooglePayHelper.requestPayment(
+                                    VisicomFragment.this,
+                                    googlePayPaymentsClient,
+                                    merchantAccount,
+                                    pendingGooglePayAmount,
+                                    googlePayLauncher,
+                                    new WfpGooglePayHelper.PaymentResultCallback() {
+                                        @Override
+                                        public void onSuccess(@NonNull String paymentDataJson) {
+                                            submitGooglePayHoldCharge(paymentDataJson);
+                                        }
+
+                                        @Override
+                                        public void onCancelled() {
+                                            onGooglePayOrderHoldCancelled();
+                                        }
+
+                                        @Override
+                                        public void onError(@NonNull String message) {
+                                            onGooglePayOrderHoldFailed(message);
+                                        }
+                                    }
+                            );
+                        }
+
+                        @Override
+                        public void onError(@NonNull String message) {
+                            onGooglePayOrderHoldFailed(message);
+                        }
+                    }
+            );
+        });
+    }
+
+    private void submitGooglePayHoldCharge(@NonNull String paymentDataJson) {
+        if (!isAdded() || pendingGooglePayOrderReference == null) {
+            return;
+        }
+        List<String> cityInfo = logCursor(MainActivity.CITY_INFO, context);
+        String city = cityInfo.size() > 1 ? cityInfo.get(1) : "";
+        List<String> userInfo = logCursor(MainActivity.TABLE_USER_INFO, context);
+        String email = userInfo.size() > 3 ? userInfo.get(3) : "";
+        String phone = userInfo.size() > 2 ? userInfo.get(2) : "";
+        int amountUah = GooglePayOrderHelper.parseAmountUah(
+                pendingGooglePayAmount != null ? pendingGooglePayAmount : "0");
+        String appBaseUrl = (String) sharedPreferencesHelperMain.getValue(
+                "baseUrl", "https://m.easy-order-taxi.site");
+
+        GooglePayOrderHelper.submitHoldCharge(
+                context,
+                appBaseUrl,
+                context.getString(R.string.application),
+                city,
+                pendingGooglePayOrderReference,
+                amountUah,
+                email,
+                phone,
+                paymentDataJson,
+                new GooglePayOrderHelper.ChargeCallback() {
+                    @Override
+                    public void onHoldSuccess(@NonNull String orderReference) {
+                        if (!isAdded()) {
+                            return;
+                        }
+                        googlePayOrderHoldInProgress = false;
+                        progressBar.setVisibility(GONE);
+                        MainActivity.order_id = orderReference;
+                        try {
+                            orderFinished();
+                        } catch (MalformedURLException e) {
+                            FirebaseCrashlytics.getInstance().recordException(e);
+                            onGooglePayOrderHoldFailed(e.getMessage() != null
+                                    ? e.getMessage() : "order_error");
+                        }
+                    }
+
+                    @Override
+                    public void onHoldFailed(@NonNull String message) {
+                        onGooglePayOrderHoldFailed(message);
+                    }
+                }
+        );
+    }
+
+    private void onGooglePayOrderHoldCancelled() {
+        googlePayOrderHoldInProgress = false;
+        progressBar.setVisibility(GONE);
+        btnVisible(VISIBLE);
+        Toast.makeText(context, R.string.e_google_pay_canceled, Toast.LENGTH_SHORT).show();
+    }
+
+    private void onGooglePayOrderHoldFailed(@Nullable String message) {
+        googlePayOrderHoldInProgress = false;
+        progressBar.setVisibility(GONE);
+        btnVisible(VISIBLE);
+        MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+        Logger.w(context, TAG, "Google Pay hold failed: " + message);
+        Toast.makeText(context, R.string.pay_failure_mes, Toast.LENGTH_SHORT).show();
+    }
+
     private void googleVerifyAccount() {
 
         FirebaseConsentManager consentManager = new FirebaseConsentManager(context);
@@ -5447,7 +5643,11 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 new Handler(Looper.getMainLooper()).post(() -> {
                     try {
                         if(!verifyOrder()) {
-                            orderFinished();
+                            if ("google_pay_payment".equals(pay_method)) {
+                                startGooglePayHoldBeforeOrder();
+                            } else {
+                                orderFinished();
+                            }
                         } else {
                             if (pay_method.equals("wfp_payment")) {
                                 String rectoken = getCheckRectoken(context);
