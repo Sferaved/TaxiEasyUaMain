@@ -80,6 +80,7 @@ import com.taxi.easy.ua.utils.hold.HoldResponse;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
+import com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.pusher.events.AddCostUpdateEvent;
@@ -1198,6 +1199,8 @@ public class FinishSeparateFragment extends Fragment {
     private void navigateToNewOrder() {
         MainActivity.order_id = null;
         sharedPreferencesHelperMain.saveValue("carFound", false);
+        EarlyOrderNavigationHelper.clearSubmitState();
+        sharedPreferencesHelperMain.saveValue("cost_recalc_from_finish", true);
         updateAddCost(String.valueOf(0));
         if (handlerStatus != null) {
             handlerStatus.removeCallbacks(myTaskStatus);
@@ -1239,6 +1242,8 @@ public class FinishSeparateFragment extends Fragment {
         } else if (activeOrderCloseMode) {
             sharedPreferencesHelperMain.saveValue("carFound", false);
         }
+        EarlyOrderNavigationHelper.clearSubmitState();
+        sharedPreferencesHelperMain.saveValue("cost_recalc_from_finish", true);
         startActivity(new Intent(context, MainActivity.class));
     }
 

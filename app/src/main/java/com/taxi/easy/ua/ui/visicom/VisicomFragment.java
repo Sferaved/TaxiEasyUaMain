@@ -128,7 +128,9 @@ import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
 import com.taxi.easy.ua.utils.location.TaxiLocationValidator;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.orders.OrderCreatedAtDisplayHelper;
 import com.taxi.easy.ua.utils.orders.OrderHistoryStatusHelper;
+import com.taxi.easy.ua.utils.orders.RequiredTimeParseHelper;
 import com.taxi.easy.ua.utils.route.RoutePlaceMatcher;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
@@ -183,6 +185,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     @SuppressLint("StaticFieldLeak")
     public static TextView text_view_cost;
     private static final String PREF_COST_RECALC_FROM_HISTORY = "cost_recalc_from_history";
+    private static final String PREF_COST_RECALC_FROM_FINISH = "cost_recalc_from_finish";
     private static final String PREF_COST_PREVIEW_DISPLAY = "cost_preview_display";
     private TextView textCostRecalcStatus;
     @SuppressLint("StaticFieldLeak")
@@ -1059,7 +1062,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         if (!isAdded() || context == null) {
             return null;
         }
-        if (Boolean.TRUE.equals(sharedPreferencesHelperMain.getValue(PREF_COST_RECALC_FROM_HISTORY, false))) {
+        if (Boolean.TRUE.equals(sharedPreferencesHelperMain.getValue(PREF_COST_RECALC_FROM_FINISH, false))
+                || Boolean.TRUE.equals(sharedPreferencesHelperMain.getValue(PREF_COST_RECALC_FROM_HISTORY, false))) {
             String cached = String.valueOf(sharedPreferencesHelperMain.getValue("old_cost", ""));
             if (hasDisplayableCost(cached)) {
                 return new CostPreviewHint(cached, false);
@@ -1084,6 +1088,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
     private void clearCostRecalcFromHistoryFlag() {
         sharedPreferencesHelperMain.saveValue(PREF_COST_RECALC_FROM_HISTORY, false);
+        sharedPreferencesHelperMain.saveValue(PREF_COST_RECALC_FROM_FINISH, false);
     }
 
     private void showCostRecalcStatusMessage() {
@@ -1307,7 +1312,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 || "manualGps".equals(source)
                 || "autoGps".equals(source)
                 || "addressChanged".equals(source)
-                || "fromHistory".equals(source);
+                || "fromHistory".equals(source)
+                || "fromFinish".equals(source);
     }
 
     private void snapshotCostPreviewBeforeRouteChange() {
@@ -1337,6 +1343,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     }
 
     private String resolveVisicomCostSourceOnResume() {
+        if (Boolean.TRUE.equals(sharedPreferencesHelperMain.getValue(PREF_COST_RECALC_FROM_FINISH, false))) {
+            return "fromFinish";
+        }
         if (Boolean.TRUE.equals(sharedPreferencesHelperMain.getValue(PREF_COST_RECALC_FROM_HISTORY, false))) {
             return "fromHistory";
         }
@@ -3099,6 +3108,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
         VisicomFragment.sendUrlMap = null;
         MainActivity.uid = null;
+        EarlyOrderNavigationHelper.clearSubmitState();
         Logger.d(context, "MainActivity.uid", "MainActivity.uid 2 " + MainActivity.uid);
 
         MainActivity.orderResponse = null;
@@ -5224,7 +5234,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             String routeTo = route.getRouteTo();
             String routeTonumber = route.getRouteToNumber();
             String webCost = route.getWebCost();
-            String createdAt = route.getCreatedAt();
+            String createdAt = OrderCreatedAtDisplayHelper.formatForDisplay(route.getCreatedAt());
             String closeReason = route.getCloseReason();
             String auto = route.getAuto();
             String dispatchingOrderUidDouble = route.getDispatchingOrderUidDouble();
@@ -5260,30 +5270,24 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             if (auto == null) {
                 auto = "??";
             }
-            if (required_time != null && !required_time.contains("1970-01-01")) {
-                required_time = " " + context.getString(R.string.time_order) + required_time;
-            } else {
-                required_time = "";
-            }
+            String routeHead;
             if (routeFrom.equals(routeTo)) {
-                routeInfo = routeFrom + " " + routefromnumber
+                routeHead = routeFrom + " " + routefromnumber
                         + context.getString(R.string.close_resone_to)
-                        + context.getString(R.string.on_city)
-                        + required_time + "#"
-                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH) + "#"
-                        + context.getString(R.string.auto_info) + " " + auto + "#"
-                        + context.getString(R.string.close_resone_time)
-                        + createdAt + "#"
-                        + context.getString(R.string.close_resone_text) + closeReasonText;
+                        + context.getString(R.string.on_city);
             } else {
-                routeInfo = routeFrom + " " + routefromnumber
-                        + context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber + "."
-                        + required_time + "#"
-                        + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH) + "#"
-                        + context.getString(R.string.auto_info) + " " + auto + "#"
-                        + context.getString(R.string.close_resone_time) + createdAt + "#"
-                        + context.getString(R.string.close_resone_text) + closeReasonText;
+                routeHead = routeFrom + " " + routefromnumber
+                        + context.getString(R.string.close_resone_to) + routeTo + " " + routeTonumber + ".";
             }
+            routeInfo = RequiredTimeParseHelper.buildCancelListRouteInfo(
+                    context,
+                    routeHead,
+                    webCost,
+                    auto,
+                    createdAt,
+                    route.getRequired_time(),
+                    closeReasonText
+            );
 
             databaseHelper.addRouteCancel(uid, routeInfo);
             List<String> settings = new ArrayList<>();
@@ -5296,7 +5300,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             settings.add(routeTonumber);
             settings.add(dispatchingOrderUidDouble);
             settings.add(pay_method);
-            settings.add(required_time);
+            settings.add(RequiredTimeParseHelper.formatForStorage(required_time));
             settings.add(flexible_tariff_name);
             settings.add(comment_info);
             settings.add(extra_charge_codes);

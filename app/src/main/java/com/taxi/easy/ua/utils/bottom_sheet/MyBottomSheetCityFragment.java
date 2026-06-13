@@ -49,6 +49,7 @@ import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.orders.OrderCreatedAtDisplayHelper;
 import com.taxi.easy.ua.utils.orders.OrderHistoryStatusHelper;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
@@ -1014,7 +1015,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             String to_lng = route.getTo_lng();
 
             String webCost = route.getWebCost();
-            String createdAt = route.getCreatedAt();
+            String createdAt = OrderCreatedAtDisplayHelper.formatForDisplay(route.getCreatedAt());
             String closeReason = route.getCloseReason();
             String auto = route.getAuto();
 

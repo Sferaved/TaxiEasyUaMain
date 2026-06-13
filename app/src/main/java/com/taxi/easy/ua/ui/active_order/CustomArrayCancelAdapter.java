@@ -88,23 +88,42 @@ public class CustomArrayCancelAdapter extends ArrayAdapter<String> {
         TextView textView3 = view.findViewById(R.id.text3);
         TextView textView4 = view.findViewById(R.id.text4);
         TextView textView5 = view.findViewById(R.id.text5);
-        // Добавьте дополнительные TextViews, если нужно
+        TextView textView6 = view.findViewById(R.id.text6);
 
-        // Устанавливаем текст для TextView
-        if (parts.length > 0) {
-            textView1.setText(parts[0]); // Первая часть
-        }
-        if (parts.length > 1) {
-            textView2.setText(parts[1]); // Вторая часть
-        }
-        if (parts.length > 2) {
-            textView3.setText(parts[2]); // Вторая часть
-        }
-        if (parts.length > 3) {
-            textView4.setText(parts[3]); // Вторая часть
-        }
-        if (parts.length > 4) {
-            textView5.setText(parts[4]); // Вторая часть
+        if (parts.length >= 6) {
+            textView1.setText(parts[0]);
+            textView2.setText(parts[1]);
+            textView3.setText(parts[2]);
+            textView4.setText(parts[3]);
+            if (parts[4] != null && !parts[4].trim().isEmpty()) {
+                textView5.setText(parts[4]);
+                textView5.setVisibility(View.VISIBLE);
+            } else {
+                textView5.setText("");
+                textView5.setVisibility(View.GONE);
+            }
+            textView6.setText(parts[5]);
+            textView6.setVisibility(View.VISIBLE);
+        } else {
+            if (parts.length > 0) {
+                textView1.setText(parts[0]);
+            }
+            if (parts.length > 1) {
+                textView2.setText(parts[1]);
+            }
+            if (parts.length > 2) {
+                textView3.setText(parts[2]);
+            }
+            if (parts.length > 3) {
+                textView4.setText(parts[3]);
+            }
+            if (parts.length > 4) {
+                textView5.setText(parts[4]);
+                textView5.setVisibility(View.VISIBLE);
+            }
+            if (textView6 != null) {
+                textView6.setVisibility(View.GONE);
+            }
         }
 
         // Получаем кнопку и устанавливаем обработчик нажатия

@@ -71,7 +71,7 @@
         app:layout_constraintEnd_toStartOf="@+id/button"
         app:layout_constraintTop_toBottomOf="@id/text3" />
 
-    <!-- TextView 5 -->
+    <!-- TextView 5 — очікуваний час подачі (лише якщо відомий) -->
     <TextView
         android:id="@+id/text5"
         android:layout_width="0dp"
@@ -82,9 +82,26 @@
         android:text="Ваш текст5"
         android:textColor="@color/white"
         android:textSize="14sp"
+        android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/button"
         app:layout_constraintTop_toBottomOf="@id/text4" />
+
+    <!-- TextView 6 — стан -->
+    <TextView
+        android:id="@+id/text6"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="8dp"
+        android:ellipsize="end"
+        android:gravity="center_vertical"
+        android:text="Ваш текст6"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/button"
+        app:layout_constraintTop_toBottomOf="@id/text5" />
 
     <!-- Кнопка справа -->
     <androidx.appcompat.widget.AppCompatButton
@@ -97,6 +114,5 @@
         android:textColor="@color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

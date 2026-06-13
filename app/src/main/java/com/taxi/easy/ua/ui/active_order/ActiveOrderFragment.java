@@ -39,6 +39,7 @@ import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.orders.OrderCreatedAtDisplayHelper;
 import com.taxi.easy.ua.utils.orders.OrderHistoryStatusHelper;
 import com.taxi.easy.ua.utils.orders.RequiredTimeParseHelper;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
@@ -276,7 +277,7 @@ public class ActiveOrderFragment extends Fragment {
             String routeTo = route.getRouteTo();
             String routeToNumber = route.getRouteToNumber();
             String webCost = route.getWebCost();
-            String createdAt = route.getCreatedAt();
+            String createdAt = OrderCreatedAtDisplayHelper.formatForDisplay(route.getCreatedAt());
             String closeReason = route.getCloseReason();
             String auto = route.getAuto();
             String dispatchingOrderUidDouble = route.getDispatchingOrderUidDouble();
@@ -307,34 +308,29 @@ public class ActiveOrderFragment extends Fragment {
                 routeTo = context.getString(R.string.on_city);
             }
 
-            String required_time_text = "";
-            if (required_time != null && !required_time.contains("01.01.1970")) {
-                required_time_text = requireActivity().getString(R.string.ex_st_5) + required_time;
-            }
-
             String routeInfo = "";
             if (auto == null) {
                 auto = "??";
             }
 
+            String routeHead;
             if (routeFrom.equals(routeTo)) {
-                routeInfo = routeFrom + ", " + routeFromNumber
+                routeHead = routeFrom + ", " + routeFromNumber
                         + getString(R.string.close_resone_to)
-                        + getString(R.string.on_city)
-                        + required_time_text + "#"
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH) + "#"
-                        + getString(R.string.auto_info) + " " + auto + "#"
-                        + getString(R.string.close_resone_time) + createdAt + "#"
-                        + getString(R.string.close_resone_text) + closeReasonText;
+                        + getString(R.string.on_city);
             } else {
-                routeInfo = routeFrom + ", " + routeFromNumber
-                        + getString(R.string.close_resone_to) + routeTo + " " + routeToNumber + "."
-                        + required_time_text + "#"
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH) + "#"
-                        + getString(R.string.auto_info) + " " + auto + "#"
-                        + getString(R.string.close_resone_time) + createdAt + "#"
-                        + getString(R.string.close_resone_text) + closeReasonText;
+                routeHead = routeFrom + ", " + routeFromNumber
+                        + getString(R.string.close_resone_to) + routeTo + " " + routeToNumber + ".";
             }
+            routeInfo = RequiredTimeParseHelper.buildCancelListRouteInfo(
+                    context,
+                    routeHead,
+                    webCost,
+                    auto,
+                    createdAt,
+                    required_time,
+                    closeReasonText
+            );
 
             array[i] = routeInfo;
             databaseHelper.addRouteCancel(uid, routeInfo); // Добавляем только уникальные записи

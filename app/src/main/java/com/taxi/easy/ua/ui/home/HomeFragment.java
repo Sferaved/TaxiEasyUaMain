@@ -108,7 +108,9 @@ import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.orders.OrderCreatedAtDisplayHelper;
 import com.taxi.easy.ua.utils.orders.OrderHistoryStatusHelper;
+import com.taxi.easy.ua.utils.orders.RequiredTimeParseHelper;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
@@ -2398,7 +2400,7 @@ private void cost() {
             String routeTo = route.getRouteTo();
             String routeTonumber = route.getRouteToNumber();
             String webCost = route.getWebCost();
-            String createdAt = route.getCreatedAt();
+            String createdAt = OrderCreatedAtDisplayHelper.formatForDisplay(route.getCreatedAt());
             String closeReason = route.getCloseReason();
             String auto = route.getAuto();
             String dispatchingOrderUidDouble = route.getDispatchingOrderUidDouble();
@@ -2435,45 +2437,24 @@ private void cost() {
                 auto = "??";
             }
 
-            String required_time_text = "";
-            if (required_time != null && !required_time.contains("1970-01-01")) {
-                try {
-
-                    @SuppressLint("SimpleDateFormat")
-                    SimpleDateFormat outputFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
-
-                    // Преобразуем строку required_time в Date
-                    Date date = outputFormat.parse(required_time);
-
-                    // Преобразуем Date в строку нужного формата
-                    assert date != null;
-                    required_time_text = " " + context.getString(R.string.time_order) + " " + outputFormat.format(date) + ".";
-
-                } catch (ParseException e) {
-                    FirebaseCrashlytics.getInstance().recordException(e);
-                    required_time_text = ""; // Если ошибка парсинга, задаём пустое значение
-                }
-            }
-
+            String routeHead;
             if (routeFrom.equals(routeTo)) {
-                routeInfo = routeFrom + " " + routefromnumber
+                routeHead = routeFrom + " " + routefromnumber
                         + getString(R.string.close_resone_to)
-                        + getString(R.string.on_city)
-                        + required_time_text  + "#"
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)  + "#"
-                        + getString(R.string.auto_info) + " " + auto + "#"
-                        + getString(R.string.close_resone_time)
-                        + createdAt  + "#"
-                        + getString(R.string.close_resone_text) + closeReasonText;
+                        + getString(R.string.on_city);
             } else {
-                routeInfo = routeFrom + " " + routefromnumber
-                        + getString(R.string.close_resone_to) + routeTo + " " + routeTonumber + "."
-                        + required_time_text + "#"
-                        + getString(R.string.close_resone_cost) + webCost + " " + getString(R.string.UAH)  + "#"
-                        + getString(R.string.auto_info) + " " + auto + "#"
-                        + getString(R.string.close_resone_time) + createdAt  + "#"
-                        + getString(R.string.close_resone_text) + closeReasonText;
+                routeHead = routeFrom + " " + routefromnumber
+                        + getString(R.string.close_resone_to) + routeTo + " " + routeTonumber + ".";
             }
+            routeInfo = RequiredTimeParseHelper.buildCancelListRouteInfo(
+                    context,
+                    routeHead,
+                    webCost,
+                    auto,
+                    createdAt,
+                    required_time,
+                    closeReasonText
+            );
 
             databaseHelper.addRouteCancel(uid, routeInfo);
             List<String> settings = new ArrayList<>();
