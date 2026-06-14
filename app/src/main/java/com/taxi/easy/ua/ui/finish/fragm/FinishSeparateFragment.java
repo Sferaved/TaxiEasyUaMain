@@ -1933,25 +1933,43 @@ public class FinishSeparateFragment extends Fragment {
             }
         }, 2000); // Затримка 2 секунди
     }
-    private void orderInRout() {
+    private void orderInRout(
+            String driverPhone,
+            String orderCarInfo
+    ) {
         Logger.d(context, TAG, "orderInRout ");
         sharedPreferencesHelperMain.saveValue("carFound", true);
-//        new Handler(Looper.getMainLooper()).post(() -> {
-        // В пути
         updateProgress(3);
-        String message = context.getString(R.string.ex_st_in_rout);
-        text_status.setText(message);
+        text_status.setText(context.getString(R.string.ex_st_in_rout));
         text_status.clearAnimation();
 
-        // Скрываем элементы
         if (btn_cancel_order.getVisibility() == View.VISIBLE) {
-//            btn_cancel_order.setVisibility(GONE);
             viewModel.hideCancelButton();
         }
 
-        setVisibility(GONE, btn_add_cost, btn_open, btn_options, btn_cancel_order,
-                textStatusCar, textCarMessage, textCost, countdownTextView,
-                textCostMessage, carProgressBar, progressSteps);
+        setVisibility(GONE, btn_open, btn_options, btn_cancel_order,
+                countdownTextView, carProgressBar, progressSteps);
+        setVisibility(View.VISIBLE, textCost, textCostMessage);
+
+        if (!TextUtils.isEmpty(driverPhone)) {
+            btn_add_cost.setText(context.getString(R.string.phone_driver));
+            btn_add_cost.setOnClickListener(v -> PhoneCallHelper.callDriver(driverPhone, context));
+            btn_add_cost.setVisibility(View.VISIBLE);
+            btn_add_cost.setEnabled(true);
+            btn_add_cost.setAlpha(1f);
+        } else {
+            btn_add_cost.setVisibility(View.VISIBLE);
+            btn_add_cost.setEnabled(true);
+            btn_add_cost.setAlpha(1f);
+            btnAddCost(timeCheckOutAddCost);
+        }
+
+        if (!TextUtils.isEmpty(orderCarInfo)) {
+            setVisibility(View.VISIBLE, textStatusCar, textCarMessage);
+            textCarMessage.setText(orderCarInfo);
+        } else {
+            setVisibility(GONE, textStatusCar, textCarMessage);
+        }
 
         applyActiveOrderCloseMode();
         viewModel.hideCancelButton();
@@ -2553,7 +2571,7 @@ public class FinishSeparateFragment extends Fragment {
                 break;
             case 103:
                action = "В пути";
-                orderInRout();
+                orderInRout(driverPhone, orderCarInfo);
                 break;
             case 104:
                action = "Заказ выполнен";
@@ -2646,7 +2664,7 @@ public class FinishSeparateFragment extends Fragment {
                     break;
                 case 103:
                     action = "В пути";
-                    orderInRout();
+                    orderInRout(driverPhone, orderCarInfo);
                     break;
                 case 104:
                     action = "Заказ выполнен";
@@ -2661,6 +2679,12 @@ public class FinishSeparateFragment extends Fragment {
             switch (action) {
                 case "Авто найдено":
                     carFound(closeReason, driverPhone, time_to_start_point, orderCarInfo);
+                    break;
+                case "На месте":
+                    orderInStartPoint(driverPhone, orderCarInfo);
+                    break;
+                case "В пути":
+                    orderInRout(driverPhone, orderCarInfo);
                     break;
                 case "Заказ выполнен":
                     orderComplete();
