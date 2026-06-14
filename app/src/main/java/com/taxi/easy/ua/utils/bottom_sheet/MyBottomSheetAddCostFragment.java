@@ -16,10 +16,14 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatButton;
 
+import com.google.android.gms.wallet.PaymentsClient;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
@@ -30,10 +34,13 @@ import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseResponse;
 import com.taxi.easy.ua.ui.wfp.purchase.PurchaseService;
+import com.taxi.easy.ua.utils.helpers.WfpGooglePayHelper;
 import com.taxi.easy.ua.utils.hold.APIHoldService;
 import com.taxi.easy.ua.utils.hold.HoldResponse;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
+import com.taxi.easy.ua.utils.payment.GooglePayOrderHelper;
+import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.uxcam.UXCam;
 
@@ -62,6 +69,11 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
     private ExecutionStatusViewModel viewModel;
 
+    private PaymentsClient googlePayPaymentsClient;
+    private ActivityResultLauncher<IntentSenderRequest> googlePayLauncher;
+    @Nullable
+    private String pendingGooglePayAddCostOrderRef;
+
     public MyBottomSheetAddCostFragment(
             String cost,
             String uid,
@@ -80,8 +92,31 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Инициализация ViewModel
+        googlePayPaymentsClient = WfpGooglePayHelper.createPaymentsClient(this);
+        googlePayLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartIntentSenderForResult(),
+                result -> WfpGooglePayHelper.handlePaymentResult(
+                        result.getResultCode(),
+                        result.getData(),
+                        requireContext(),
+                        new WfpGooglePayHelper.PaymentResultCallback() {
+                            @Override
+                            public void onSuccess(@NonNull String paymentDataJson) {
+                                submitGooglePayAddCostCharge(paymentDataJson);
+                            }
 
+                            @Override
+                            public void onCancelled() {
+                                onGooglePayAddCostCancelled();
+                            }
+
+                            @Override
+                            public void onError(@NonNull String message) {
+                                onGooglePayAddCostFailed(message);
+                            }
+                        }
+                )
+        );
     }
 
     @Nullable
@@ -137,7 +172,8 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                 dismiss();
                 return;
             }
-            if ("wfp_payment".equals(pay_method) && ExecutionStatusViewModel.isAddCostInFlightPref()) {
+            if (PaymentTypeHelper.usesWalletHold(pay_method)
+                    && ExecutionStatusViewModel.isAddCostInFlightPref()) {
                 Logger.d(getActivity(), TAG, "btn_ok blocked: add-cost in flight");
                 Toast.makeText(context, R.string.recounting_order, Toast.LENGTH_LONG).show();
                 dismiss();
@@ -173,6 +209,10 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         if ("wfp_payment".equals(pay_method)) {
             viewModel.setCancelStatus(false);
             startAddCostCardUpdate(addCost);
+        }
+        if (PaymentTypeHelper.isGooglePay(pay_method)) {
+            viewModel.setCancelStatus(false);
+            startAddCostGooglePayUpdate(addCost);
         }
     }
     public void startAddCostWithUpdate(String uid, String addCost, String baseUrl) {
@@ -273,6 +313,161 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             paymentByTokenWfp(messageFondy, addCost, MainActivity.order_id );
         }
 
+    }
+
+    private void startAddCostGooglePayUpdate(String addCost) {
+        if (ExecutionStatusViewModel.isAddCostInFlightPref()) {
+            Logger.d(context, TAG, "startAddCostGooglePayUpdate skipped: add-cost in flight");
+            Toast.makeText(context, R.string.recounting_order, Toast.LENGTH_LONG).show();
+            return;
+        }
+        int amountUah = GooglePayOrderHelper.parseAmountUah(addCost);
+        if (amountUah <= 0) {
+            Toast.makeText(context, R.string.cost_error, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+        pendingGooglePayAddCostOrderRef = MainActivity.order_id;
+        wfpInvoice(MainActivity.order_id, addCost, uid);
+
+        ExecutionStatusViewModel.setPendingAddCostAmountPref(addCost);
+        ExecutionStatusViewModel.setPendingAddCostOrderRefPref(MainActivity.order_id);
+        ExecutionStatusViewModel.setAddCostInFlightPref(true);
+        viewModel.setCancelStatus(false);
+
+        WfpGooglePayHelper.checkReady(googlePayPaymentsClient, ready -> {
+            if (!isAdded()) {
+                return;
+            }
+            if (!ready) {
+                onGooglePayAddCostFailed(getString(R.string.google_pay_unavailable));
+                return;
+            }
+            List<String> cityInfo = logCursor(MainActivity.CITY_INFO);
+            String city = cityInfo.size() > 1 ? cityInfo.get(1) : "";
+            String baseUrl = (String) sharedPreferencesHelperMain.getValue(
+                    "baseUrl", "https://m.easy-order-taxi.site");
+            GooglePayOrderHelper.fetchMerchantConfig(
+                    baseUrl,
+                    context.getString(R.string.application),
+                    city,
+                    new GooglePayOrderHelper.ConfigCallback() {
+                        @Override
+                        public void onSuccess(@NonNull String merchantAccount) {
+                            if (!isAdded()) {
+                                return;
+                            }
+                            WfpGooglePayHelper.requestPayment(
+                                    MyBottomSheetAddCostFragment.this,
+                                    googlePayPaymentsClient,
+                                    merchantAccount,
+                                    String.valueOf(amountUah),
+                                    googlePayLauncher,
+                                    new WfpGooglePayHelper.PaymentResultCallback() {
+                                        @Override
+                                        public void onSuccess(@NonNull String paymentDataJson) {
+                                            submitGooglePayAddCostCharge(paymentDataJson);
+                                        }
+
+                                        @Override
+                                        public void onCancelled() {
+                                            onGooglePayAddCostCancelled();
+                                        }
+
+                                        @Override
+                                        public void onError(@NonNull String message) {
+                                            onGooglePayAddCostFailed(message);
+                                        }
+                                    }
+                            );
+                        }
+
+                        @Override
+                        public void onError(@NonNull String message) {
+                            onGooglePayAddCostFailed(message);
+                        }
+                    }
+            );
+        });
+    }
+
+    private void submitGooglePayAddCostCharge(@NonNull String paymentDataJson) {
+        if (!isAdded() || pendingGooglePayAddCostOrderRef == null) {
+            return;
+        }
+        String pendingAmount = ExecutionStatusViewModel.getPendingAddCostAmountPref();
+        int amountUah = GooglePayOrderHelper.parseAmountUah(
+                pendingAmount != null ? pendingAmount : "0");
+        if (amountUah <= 0) {
+            onGooglePayAddCostFailed("invalid_amount");
+            return;
+        }
+        List<String> cityInfo = logCursor(MainActivity.CITY_INFO);
+        String city = cityInfo.size() > 1 ? cityInfo.get(1) : "";
+        List<String> userInfo = logCursor(MainActivity.TABLE_USER_INFO);
+        String email = userInfo.size() > 3 ? userInfo.get(3) : "";
+        String phone = userInfo.size() > 2 ? userInfo.get(2) : "";
+        String baseUrl = (String) sharedPreferencesHelperMain.getValue(
+                "baseUrl", "https://m.easy-order-taxi.site");
+
+        GooglePayOrderHelper.submitHoldCharge(
+                context,
+                baseUrl,
+                context.getString(R.string.application),
+                city,
+                pendingGooglePayAddCostOrderRef,
+                amountUah,
+                email,
+                phone,
+                paymentDataJson,
+                new GooglePayOrderHelper.ChargeCallback() {
+                    @Override
+                    public void onHoldSuccess(@NonNull String orderReference) {
+                        if (!isAdded()) {
+                            return;
+                        }
+                        MainActivity.order_id = orderReference;
+                        Logger.d(context, TAG, "Google Pay add-cost hold ok: " + orderReference);
+                        viewModel.setCancelStatus(false);
+                        Toast.makeText(context, R.string.add_cost_processing, Toast.LENGTH_LONG).show();
+                        enableCancelButtonIfAddCostNotInFlight();
+                    }
+
+                    @Override
+                    public void onHoldFailed(@NonNull String message) {
+                        onGooglePayAddCostFailed(message);
+                    }
+                }
+        );
+    }
+
+    private void onGooglePayAddCostCancelled() {
+        Logger.d(context, TAG, "Google Pay add-cost cancelled");
+        clearGooglePayAddCostInFlight(true);
+        Toast.makeText(context, R.string.e_google_pay_canceled, Toast.LENGTH_SHORT).show();
+    }
+
+    private void onGooglePayAddCostFailed(@Nullable String message) {
+        Logger.w(context, TAG, "Google Pay add-cost failed: " + message);
+        String orderRef = pendingGooglePayAddCostOrderRef;
+        clearGooglePayAddCostInFlight(true);
+        if (orderRef != null) {
+            deleteInvoice(orderRef);
+        }
+        if (isAdded()) {
+            Toast.makeText(context, R.string.add_cost_payment_failed, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void clearGooglePayAddCostInFlight(boolean enableCancel) {
+        ExecutionStatusViewModel.setAddCostInFlightPref(false);
+        ExecutionStatusViewModel.clearPendingAddCostAmountPref();
+        pendingGooglePayAddCostOrderRef = null;
+        if (viewModel != null && enableCancel) {
+            viewModel.setCancelStatus(true);
+        }
+        enableCancelButtonIfAddCostNotInFlight();
     }
 
     @SuppressLint("Range")
@@ -408,7 +603,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                         case "Approved":
                         case "WaitingAuthComplete":
                             // WFP: держим in-flight до finishAbsoluteCost / order_uid_new
-                            if (!"wfp_payment".equals(pay_method)) {
+                            if (!PaymentTypeHelper.usesWalletHold(pay_method)) {
                                 ExecutionStatusViewModel.setAddCostInFlightPref(false);
                                 ExecutionStatusViewModel.clearPendingAddCostAmountPref();
                                 viewModel.setAddCostViewUpdate(amount);
@@ -450,7 +645,6 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         });
 
     }
-
     private void enableCancelButtonIfAddCostNotInFlight() {
         if (ExecutionStatusViewModel.isAddCostInFlightPref()) {
             return;
@@ -462,6 +656,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             Logger.d(context, "Pusher eventTransactionStatus", "Cancel button enabled successfully");
         }
     }
+
     private void deleteInvoice(String orderReference) {
 
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();

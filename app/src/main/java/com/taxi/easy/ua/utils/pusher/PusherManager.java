@@ -832,6 +832,8 @@ public class PusherManager {
             case "mono_payment":
             case "wfp_payment":
                 return baseMessage + " " + activity.getString(R.string.pay_method_message_card);
+            case "google_pay_payment":
+                return baseMessage + " " + activity.getString(R.string.pay_method_message_google);
             default:
                 return baseMessage + " " + activity.getString(R.string.pay_method_message_nal);
         }

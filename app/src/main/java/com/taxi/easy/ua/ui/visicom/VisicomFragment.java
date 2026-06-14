@@ -5869,6 +5869,14 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     private void statusOrder() throws ParseException {
         String uid = (String) sharedPreferencesHelperMain.getValue("uid_fcm", "");
         uid = uid != null ? uid.trim() : "";
+        if (uid.isEmpty()) {
+            String persisted = ExecutionStatusViewModel.getPersistedActiveUid();
+            if (persisted != null && !persisted.trim().isEmpty()) {
+                uid = persisted.trim();
+                sharedPreferencesHelperMain.saveValue("uid_fcm", uid);
+                Logger.d(context, TAG, "statusOrder: restored uid_fcm from persisted active order");
+            }
+        }
         Logger.d(context, TAG, "statusOrder: " + uid);
 
         new Thread(this::fetchRoutesCancel).start();

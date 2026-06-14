@@ -62,6 +62,12 @@ public final class PaymentTypeHelper {
         return GOOGLE_PAY.equals(normalize(paymentType));
     }
 
+    /** WFP-карта или Google Pay: холд на сервере, доплата не через локальный addCostView. */
+    public static boolean usesWalletHold(@Nullable String paymentType) {
+        String type = normalize(paymentType);
+        return CARD.equals(type) || GOOGLE_PAY.equals(type);
+    }
+
     public static boolean isCardPayment(@Nullable String paymentType) {
         String type = normalize(paymentType);
         return CARD.equals(type)

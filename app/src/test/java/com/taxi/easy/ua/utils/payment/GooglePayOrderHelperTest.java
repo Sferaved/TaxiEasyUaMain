@@ -27,4 +27,11 @@ public class GooglePayOrderHelperTest {
         assertEquals(0, GooglePayOrderHelper.parseAmountUah(""));
         assertEquals(0, GooglePayOrderHelper.parseAmountUah("abc"));
     }
+
+    @Test
+    public void usesWalletHold_coversWfpAndGooglePay() {
+        assertTrue(PaymentTypeHelper.usesWalletHold(PaymentTypeHelper.CARD));
+        assertTrue(PaymentTypeHelper.usesWalletHold(PaymentTypeHelper.GOOGLE_PAY));
+        assertFalse(PaymentTypeHelper.usesWalletHold(PaymentTypeHelper.NAL));
+    }
 }

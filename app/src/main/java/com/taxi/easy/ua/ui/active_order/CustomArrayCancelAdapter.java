@@ -1,6 +1,8 @@
 package com.taxi.easy.ua.ui.active_order;
 
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
@@ -20,6 +22,7 @@ import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.db.RouteInfoCancel;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -283,6 +286,12 @@ public class CustomArrayCancelAdapter extends ArrayAdapter<String> {
                 to_name_local + ".";
         Logger.d(context, TAG, "startFinishPage: messageResult " + messageResult);
         Logger.d(context, TAG, "startFinishPage: to_name " + to_name);
+
+        String activeUid = Objects.requireNonNull(sendUrlMap.get("dispatching_order_uid"));
+        String doubleUid = sendUrlMap.get("dispatching_order_uid_Double");
+        ExecutionStatusViewModel.clearActiveOrderNoticeSuppress();
+        ExecutionStatusViewModel.switchActiveOrderSession(activeUid, doubleUid);
+        sharedPreferencesHelperMain.saveValue(ExecutionStatusViewModel.PREF_UID_FCM, activeUid);
 
         Logger.d(context, TAG, "orderWeb: " + orderWeb);
         Logger.d(context, TAG, "uah: " + uah);
