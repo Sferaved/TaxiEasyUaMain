@@ -31,6 +31,9 @@ public final class AutoLocationAfterCityHelper {
     public static final String KEY_GPS_PENDING_USER_APPLY = "auto_location_gps_pending_user_apply";
     /** При определении по геопозиции пользователь согласился сменить город — снять крестик после перехода. */
     public static final String KEY_CITY_CHANGED_VIA_GEO = "city_changed_via_geo_pending";
+    /** Координаты GPS для повторного геокодирования после смены города по геопозиции. */
+    public static final String KEY_PENDING_GEO_REGEOCODE_LAT = "pending_geo_regeocode_lat";
+    public static final String KEY_PENDING_GEO_REGEOCODE_LON = "pending_geo_regeocode_lon";
     /** Источник стартового адреса: gps — кэш не может перезаписать. */
     public static final String KEY_START_ADDRESS_SOURCE = "start_address_source";
     public static final String SOURCE_GPS = "gps";
@@ -173,6 +176,30 @@ public final class AutoLocationAfterCityHelper {
 
     public static void clearCityChangedViaGeo() {
         sharedPreferencesHelperMain.saveValue(KEY_CITY_CHANGED_VIA_GEO, false);
+    }
+
+    public static void markPendingGeoRegeocode(double lat, double lon) {
+        logGuard(String.format(java.util.Locale.US,
+                "markPendingGeoRegeocode: lat=%.6f lon=%.6f", lat, lon));
+        sharedPreferencesHelperMain.saveValue(KEY_PENDING_GEO_REGEOCODE_LAT, String.valueOf(lat));
+        sharedPreferencesHelperMain.saveValue(KEY_PENDING_GEO_REGEOCODE_LON, String.valueOf(lon));
+    }
+
+    public static boolean hasPendingGeoRegeocode() {
+        return getPendingGeoRegeocodeLat() != 0.0 || getPendingGeoRegeocodeLon() != 0.0;
+    }
+
+    public static double getPendingGeoRegeocodeLat() {
+        return parseCoord(sharedPreferencesHelperMain.getValue(KEY_PENDING_GEO_REGEOCODE_LAT, "0.0"));
+    }
+
+    public static double getPendingGeoRegeocodeLon() {
+        return parseCoord(sharedPreferencesHelperMain.getValue(KEY_PENDING_GEO_REGEOCODE_LON, "0.0"));
+    }
+
+    public static void clearPendingGeoRegeocode() {
+        sharedPreferencesHelperMain.saveValue(KEY_PENDING_GEO_REGEOCODE_LAT, "0.0");
+        sharedPreferencesHelperMain.saveValue(KEY_PENDING_GEO_REGEOCODE_LON, "0.0");
     }
 
     public static void markGpsStartApplied() {

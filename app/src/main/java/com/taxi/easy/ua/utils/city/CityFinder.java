@@ -481,7 +481,8 @@ public class CityFinder {
                         VisicomFragment.updateGpsButtonCross(false);
                         isCityChangeDialogShowing = false;
                         AutoLocationAfterCityHelper.markCityChangedViaGeo();
-                        applyCityChange(finalCity, startLat, startLan, position);
+                        AutoLocationAfterCityHelper.markPendingGeoRegeocode(startLat, startLan);
+                        applyCityChange(finalCity, startLat, startLan, "");
                         synchronized (lock) {
                             isProcessing = false;
                         }
@@ -705,6 +706,8 @@ public class CityFinder {
     private void applyCityChange(String city, double startLat, double startLan, String position) {
         String TAG = "applyCityChange";
         Logger.d(context, TAG, "applyCityChange: " + city);
+
+        applyBaseUrlForCity(city);
 
         SQLiteDatabase database = null;
         try {
@@ -1016,8 +1019,10 @@ public class CityFinder {
                         .setPositiveButton(R.string.ok, dialog -> {
                             isCityChangeDialogShowing = false;
                             userConfirmed[0] = true;  // ✅ Устанавливаем значение в массиве
+                            cangedCity = true;
                             AutoLocationAfterCityHelper.markCityChangedViaGeo();
-                            applyCityChange(cityResult, startLat, startLan, position);
+                            AutoLocationAfterCityHelper.markPendingGeoRegeocode(startLat, startLan);
+                            applyCityChange(cityResult, startLat, startLan, "");
                             synchronized (lock) {
                                 isProcessing = false;
                             }
@@ -1224,6 +1229,40 @@ public class CityFinder {
                 getPublicIPAddress();
                 cityMenu = context.getString(R.string.city_kyiv);
                 countryState = "UA";
+                break;
+        }
+    }
+
+    private void applyBaseUrlForCity(String city) {
+        switch (city) {
+            case "Dnipropetrovsk Oblast":
+            case "Odessa":
+            case "Zaporizhzhia":
+            case "Cherkasy Oblast":
+            case "Kyiv City":
+            case "Lviv":
+            case "Ivano_frankivsk":
+            case "Vinnytsia":
+            case "Poltava":
+            case "Sumy":
+            case "Kharkiv":
+            case "Chernihiv":
+            case "Rivne":
+            case "Ternopil":
+            case "Khmelnytskyi":
+            case "Zakarpattya":
+            case "Zhytomyr":
+            case "Kropyvnytskyi":
+            case "Mykolaiv":
+            case "Chernivtsi":
+            case "Lutsk":
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                break;
+            case "OdessaTest":
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://t.easy-order-taxi.site");
+                break;
+            default:
+                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
                 break;
         }
     }

@@ -86,6 +86,7 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.city.CityLastAddressHelper;
 import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
+import com.taxi.easy.ua.utils.location.GpsGeocodeHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
@@ -191,16 +192,8 @@ public class OpenStreetMapFragment extends Fragment {
     @SuppressLint({"MissingInflatedId", "InflateParams", "UseCompatLoadingForDrawables"})
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        binding = FragmentOpenstreetmapBinding.inflate(inflater, container, false);
-        map = binding.map;
-        View root = binding.getRoot();
-        unuString = new String(Character.toChars(0x1F449));
-        viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
         ctx = requireContext();
-        if(button1 != null) {
-            button1.setVisibility(View.VISIBLE);
-        }
-        // Настройка конфигурации OSMDroid
+        // OSMDroid должен быть сконфигурирован до inflate MapView (иначе NPE в getExternalFilesDir)
         try {
             File cacheDir = new File(ctx.getCacheDir(), "osmdroid");
             if (!cacheDir.exists()) {
@@ -215,7 +208,6 @@ public class OpenStreetMapFragment extends Fragment {
             Configuration.getInstance().load(ctx, androidx.preference.PreferenceManager.getDefaultSharedPreferences(ctx));
             Logger.d(ctx, TAG, "OSMDroid configuration initialized, cache path: " + cacheDir.getPath());
 
-            // Проверка сети
             if (!isNetworkAvailable()) {
                 Logger.w(ctx, TAG, "No network connection, relying on cached tiles");
                 Toast.makeText(ctx, "Нет интернета, используются кэшированные тайлы", Toast.LENGTH_SHORT).show();
@@ -223,6 +215,15 @@ public class OpenStreetMapFragment extends Fragment {
         } catch (Exception e) {
             Logger.e(ctx, TAG, "Error configuring OSMDroid: " + e.getMessage());
             FirebaseCrashlytics.getInstance().recordException(e);
+        }
+
+        binding = FragmentOpenstreetmapBinding.inflate(inflater, container, false);
+        map = binding.map;
+        View root = binding.getRoot();
+        unuString = new String(Character.toChars(0x1F449));
+        viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
+        if(button1 != null) {
+            button1.setVisibility(View.VISIBLE);
         }
 
         // Инициализация MapView
@@ -1119,28 +1120,17 @@ public class OpenStreetMapFragment extends Fragment {
 
     // Обновление позиции на основе геолокации
     private void updateLocation() {
-        String language = Locale.getDefault().getLanguage();
-        String BASE_URL = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
-        String urlFrom = BASE_URL + "/" + api + "/android/fromSearchGeoLocal/" + startLat + "/" + startLan + "/" + language;
-
-        try {
-            FromJSONParser parser = new FromJSONParser(urlFrom);
-            Map<String, String> sendUrlFrom = parser.sendURL(urlFrom);
-            if (sendUrlFrom != null) {
-                fromAddressString = sendUrlFrom.get("route_address_from");
-                if (fromAddressString != null && fromAddressString.equals("Точка на карте")) {
-                    fromAddressString = getString(R.string.startPoint);
-                }
+        GpsGeocodeHelper.reverseGeocode(ctx, startLat, startLan, address -> {
+            if (!isAdded()) {
+                return;
             }
+            fromAddressString = address;
             updateMyPosition(startLat, startLan, fromAddressString, ctx);
             startPoint = new GeoPoint(startLat, startLan);
             mapController.setCenter(startPoint);
             setMarker(startLat, startLan, fromAddressString, ctx, "1.");
             map.invalidate();
-        } catch (MalformedURLException | InterruptedException | JSONException e) {
-            Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
-            Logger.w(requireActivity(), TAG, "NO INTERNET - Showing toast message");
-        }
+        });
     }
 
     // Запуск обновлений геолокации
@@ -1207,38 +1197,22 @@ public class OpenStreetMapFragment extends Fragment {
             Logger.i(context, TAG, "Invalid markerType: " + markerType + ", defaulting to startMarker");
             markerType = "startMarker"; // Fallback
         }
-        String localeCode = (String) sharedPreferencesHelperMain.getValue("locale", Locale.getDefault().toString());
-        Logger.d(context, TAG, "localeCode=" + localeCode);
-        Locale locale = new Locale(localeCode.split("_")[0]);
-        Locale.setDefault(locale);
-
-        Resources resources = context.getResources();
-        android.content.res.Configuration config = resources.getConfiguration();
-        config.setLocale(locale);
-        Context localizedContext = context.createConfigurationContext(config);
-        Logger.d(context, TAG, "language currentLocale=" + localeCode);
-
-        if (map == null) {
-            Logger.e(context, TAG, "MapView is null");
-            return;
-        }
-
-        Call<ApiResponse> call = apiService.reverseAddressLocal(latitude, longitude, localeCode);
-        Logger.d(context, TAG, "API call created for reverseAddressLocal");
-
         prepareMarker();
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
-                handleApiResponse(response, localizedContext);
+        GpsGeocodeHelper.reverseGeocode(context, latitude, longitude, address -> {
+            if (!isAdded()) {
+                return;
             }
-
-            @Override
-            public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
-                hideSearchProgress(); // Скрываем прогресс при ошибке
-                Logger.e(context, TAG, "API call failed: " + t.getMessage());
-                FirebaseCrashlytics.getInstance().recordException(t);
-                Toast.makeText(context, "Ошибка поиска: " + t.getMessage(), Toast.LENGTH_LONG).show();
+            hideSearchProgress();
+            if (map == null || map.getRepository() == null) {
+                Logger.e(context, TAG, "Map or repository is null");
+                return;
+            }
+            String result = address != null ? address : getString(R.string.startPoint);
+            Logger.d(context, TAG, "reverseGeocode result: " + result);
+            if ("startMarker".equals(markerType)) {
+                handleStartMarkerResponse(result, context);
+            } else if ("finishMarker".equals(markerType)) {
+                handleFinishMarkerResponse(result, context);
             }
         });
     }
@@ -1308,7 +1282,10 @@ public class OpenStreetMapFragment extends Fragment {
             return;
         }
 
-        fromAddressString = result.equals("Точка на карте") ? localizedContext.getString(R.string.startPoint) : result;
+        fromAddressString = GpsGeocodeHelper.normalizeServerAddress(localizedContext, result);
+        if (fromAddressString == null) {
+            fromAddressString = localizedContext.getString(R.string.startPoint);
+        }
         Logger.d(ctx, TAG, "fromAddressString set to: " + fromAddressString);
 
         if (previousMarker != null) {
@@ -1342,7 +1319,10 @@ public class OpenStreetMapFragment extends Fragment {
         }
 
         // Установка строки адреса
-        toAddressString = result.equals("Точка на карте") ? localizedContext.getString(R.string.end_point_marker) : result;
+        toAddressString = GpsGeocodeHelper.normalizeServerAddress(localizedContext, result);
+        if (toAddressString == null) {
+            toAddressString = localizedContext.getString(R.string.end_point_marker);
+        }
         Logger.d(ctx, TAG, "toAddressString set to: " + toAddressString);
 
         // ПРОВЕРКА: если адрес содержит "по городу" - не показываем маркер и не строим маршрут
