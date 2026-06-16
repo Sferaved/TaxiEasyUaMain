@@ -74,6 +74,25 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
     @Nullable
     private String pendingGooglePayAddCostOrderRef;
     private boolean googlePayAddCostAwaitingWallet;
+    @Nullable
+    private Runnable onGooglePayWalletOpeningListener;
+
+    public void setOnGooglePayWalletOpeningListener(@Nullable Runnable listener) {
+        onGooglePayWalletOpeningListener = listener;
+    }
+
+    public boolean isGooglePayWalletAwaiting() {
+        return googlePayAddCostAwaitingWallet;
+    }
+
+    private void prepareUiForGooglePayWallet() {
+        if (getDialog() != null) {
+            getDialog().hide();
+        }
+        if (onGooglePayWalletOpeningListener != null) {
+            onGooglePayWalletOpeningListener.run();
+        }
+    }
 
     public MyBottomSheetAddCostFragment(
             String cost,
@@ -341,6 +360,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         viewModel.setCancelStatus(false);
         googlePayAddCostAwaitingWallet = true;
         setAddCostButtonsEnabled(false);
+        prepareUiForGooglePayWallet();
         if (getDialog() != null) {
             getDialog().setCancelable(false);
             getDialog().setCanceledOnTouchOutside(false);

@@ -29,6 +29,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Locale;
+
 public final class WfpGooglePayHelper {
 
     private static final String TAG = "WfpGooglePayHelper";
@@ -183,13 +185,27 @@ public final class WfpGooglePayHelper {
         }
     }
 
+    /** Google Pay expects a decimal string (e.g. {@code "60.00"}), not {@code "60"}. */
+    public static String formatTotalPriceForGooglePay(@NonNull String amountUah) {
+        try {
+            double amount = Double.parseDouble(amountUah.trim().replace(',', '.'));
+            if (amount <= 0) {
+                return amountUah;
+            }
+            return String.format(Locale.US, "%.2f", amount);
+        } catch (NumberFormatException e) {
+            return amountUah;
+        }
+    }
+
     private static JSONObject buildPaymentDataRequest(String merchantAccount, String amountUah) throws JSONException {
+        String totalPrice = formatTotalPriceForGooglePay(amountUah);
         return new JSONObject()
                 .put("apiVersion", 2)
                 .put("apiVersionMinor", 0)
                 .put("allowedPaymentMethods", new JSONArray().put(cardPaymentMethod(merchantAccount)))
                 .put("transactionInfo", new JSONObject()
-                        .put("totalPrice", amountUah)
+                        .put("totalPrice", totalPrice)
                         .put("totalPriceStatus", "FINAL")
                         .put("countryCode", "UA")
                         .put("currencyCode", "UAH"))

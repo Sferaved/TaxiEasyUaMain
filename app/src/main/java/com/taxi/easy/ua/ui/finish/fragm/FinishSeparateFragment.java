@@ -818,7 +818,7 @@ public class FinishSeparateFragment extends Fragment {
 
     private void scheduleAddCostProcessingNotices() {
         cancelAddCostProcessingNotices();
-        if (!ExecutionStatusViewModel.isAddCostInFlightPref()) {
+        if (!ExecutionStatusViewModel.isAddCostInFlightPref() || isAddCostGooglePayWalletOpen()) {
             return;
         }
         addCostNoticeHandler.postDelayed(addCostSlowNoticeRunnable, ADD_COST_SLOW_NOTICE_MS);
@@ -834,7 +834,8 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     private void showAddCostProcessingNotice() {
-        if (!isAdded() || context == null || !ExecutionStatusViewModel.isAddCostInFlightPref()) {
+        if (!isAdded() || context == null || !ExecutionStatusViewModel.isAddCostInFlightPref()
+                || isAddCostGooglePayWalletOpen()) {
             return;
         }
         String message = context.getString(R.string.add_cost_processing);
@@ -845,7 +846,8 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     private void showAddCostSlowNotice() {
-        if (!isAdded() || context == null || !ExecutionStatusViewModel.isAddCostInFlightPref()) {
+        if (!isAdded() || context == null || !ExecutionStatusViewModel.isAddCostInFlightPref()
+                || isAddCostGooglePayWalletOpen()) {
             return;
         }
         String message = context.getString(R.string.add_cost_processing_slow);
@@ -2306,10 +2308,7 @@ public class FinishSeparateFragment extends Fragment {
                              pay_method,
                              viewModel
                      );
-    // Устанавливаем слушатель для обработки закрытия
-                     bottomSheetDialogFragment.setOnDismissListener(this::onAddCostSheetDismissed);
-                     addCostSheetShowing = true;
-                     bottomSheetDialogFragment.show(fragmentManager, TAG_ADD_COST_SHEET);
+                     bindAddCostBottomSheet(bottomSheetDialogFragment);
                  } else {
                      Logger.d(context, TAG, "No numeric value found in the text.");
                  }
@@ -3858,6 +3857,29 @@ public class FinishSeparateFragment extends Fragment {
         resumeStatusPolling();
     }
 
+    private void dismissAddCostPromptDialog() {
+        if (addCostDialog != null && addCostDialog.isShowing()) {
+            addCostDialog.dismiss();
+        }
+        addCostDialog = null;
+    }
+
+    private boolean isAddCostGooglePayWalletOpen() {
+        if (fragmentManager == null) {
+            return false;
+        }
+        Fragment sheet = fragmentManager.findFragmentByTag(TAG_ADD_COST_SHEET);
+        return sheet instanceof MyBottomSheetAddCostFragment addCost
+                && addCost.isGooglePayWalletAwaiting();
+    }
+
+    private void bindAddCostBottomSheet(@NonNull MyBottomSheetAddCostFragment sheet) {
+        sheet.setOnDismissListener(this::onAddCostSheetDismissed);
+        sheet.setOnGooglePayWalletOpeningListener(this::dismissAddCostPromptDialog);
+        addCostSheetShowing = true;
+        sheet.show(fragmentManager, TAG_ADD_COST_SHEET);
+    }
+
     private void verifyOldHold() {
         if (ExecutionStatusViewModel.isAddCostInFlightPref()) {
             Logger.d(context, TAG, "[addCost] verifyOldHold skipped: add-cost in flight");
@@ -3938,10 +3960,7 @@ public class FinishSeparateFragment extends Fragment {
                                             pay_method,
                                             viewModel
                                     );
-                                    bottomSheetDialogFragment.setOnDismissListener(
-                                            FinishSeparateFragment.this::onAddCostSheetDismissed);
-                                    addCostSheetShowing = true;
-                                    bottomSheetDialogFragment.show(fragmentManager, TAG_ADD_COST_SHEET);
+                                    bindAddCostBottomSheet(bottomSheetDialogFragment);
                                 } else {
                                     Logger.d(context, TAG, "No numeric value found in the text.");
                                 }
@@ -3969,10 +3988,7 @@ public class FinishSeparateFragment extends Fragment {
                                             pay_method,
                                             viewModel
                                     );
-                                    bottomSheetDialogFragment.setOnDismissListener(
-                                            FinishSeparateFragment.this::onAddCostSheetDismissed);
-                                    addCostSheetShowing = true;
-                                    bottomSheetDialogFragment.show(fragmentManager, TAG_ADD_COST_SHEET);
+                                    bindAddCostBottomSheet(bottomSheetDialogFragment);
                                 } else {
                                     Logger.d(context, TAG, "No numeric value found in the text.");
                                     resumeStatusPolling();
@@ -4041,6 +4057,8 @@ public class FinishSeparateFragment extends Fragment {
                 .setTitle(R.string.add_cost_fin)
                 .setCancelable(false)
                 .setPositiveButton(R.string.ok_button, d -> {
+                    d.dismiss();
+                    addCostDialog = null;
                     if (PaymentTypeHelper.usesWalletHold(pay_method)) {
                         verifyOldHold();
                         return;
@@ -4064,9 +4082,7 @@ public class FinishSeparateFragment extends Fragment {
                                     pay_method,
                                     viewModel
                             );
-                            bottomSheetDialogFragment.setOnDismissListener(this::onAddCostSheetDismissed);
-                            addCostSheetShowing = true;
-                            bottomSheetDialogFragment.show(fragmentManager, TAG_ADD_COST_SHEET);
+                            bindAddCostBottomSheet(bottomSheetDialogFragment);
                         } else {
                             Logger.d(context, TAG, "No numeric value found in the text.");
                         }
