@@ -2,15 +2,15 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.1039</string>
-    <string name="version"># 1.1039</string>
+    <string name="version_code">1.1040</string>
+    <string name="version"># 1.1040</string>
 
-    <string name="app_name">Taxi Companion Ukraine Cheap</string>
+    <string name="app_name">Taxi Kyiv</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Taxi Companion Ukraine Cheap</string>
-    <string name="nav_header_subtitle">Quick trips around the cities of Ukraine</string>
+    <string name="nav_header_title">Taxi Kyiv</string>
+    <string name="nav_header_subtitle">Fast car call, fixed price and pickup</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
 </resources>

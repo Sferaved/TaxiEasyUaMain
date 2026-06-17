@@ -1,16 +1,16 @@
 <resources>
     <string name="application">PAS1</string>
 
-    <string name="version_code">1.1039</string>
-    <string name="version"># 1.1039</string>
+    <string name="version_code">1.1040</string>
+    <string name="version"># 1.1040</string>
 
-    <string name="app_name">Попутчик таксі Україна дешево</string>
+    <string name="app_name">Таксі Київ</string>
 
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Попутчик таксі Україна дешево</string>
-    <string name="nav_header_subtitle">Швидкі поїздки по містам України</string>
+    <string name="nav_header_title">Таксі Київ</string>
+    <string name="nav_header_subtitle">Швидкий виклик авто, фіксована ціна та подача</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Налаштування</string>
 </resources>
