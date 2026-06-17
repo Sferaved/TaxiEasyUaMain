@@ -207,6 +207,7 @@ public final class WfpGooglePayHelper {
                 .put("transactionInfo", new JSONObject()
                         .put("totalPrice", totalPrice)
                         .put("totalPriceStatus", "FINAL")
+                        .put("totalPriceLabel", "Easy Taxi")
                         .put("countryCode", "UA")
                         .put("currencyCode", "UAH"))
                 .put("merchantInfo", new JSONObject().put("merchantName", "Easy Taxi"));

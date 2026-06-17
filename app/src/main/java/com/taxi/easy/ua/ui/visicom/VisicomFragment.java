@@ -2277,7 +2277,11 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             KafkaRequest costRequest = new KafkaRequest();
             costRequest.sendCostMessage(urlKafka);
         }
-        btnVisible(GONE);
+        boolean keepOrderCostButtonsForGooglePay = "orderClientCostMyApi".equals(urlAPI)
+                && "google_pay_payment".equals(payment_type);
+        if (!keepOrderCostButtonsForGooglePay) {
+            btnVisible(GONE);
+        }
 
         database.close();
         return url;
@@ -3443,8 +3447,6 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 Logger.w(context, TAG, "NO INTERNET - Showing toast message");
             }
 
-            linearLayout.setVisibility(GONE);
-            btnVisible(GONE);
             List<String> stringList1 = logCursor(MainActivity.CITY_INFO, context);
 
             pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
@@ -3468,6 +3470,10 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
             Logger.d(context, TAG, "onClick: pay_method " + pay_method);
 
+            if (!"google_pay_payment".equals(pay_method)) {
+                linearLayout.setVisibility(GONE);
+                btnVisible(GONE);
+            }
 
             List<String> stringListCity = logCursor(MainActivity.CITY_INFO, context);
             String card_max_pay = stringListCity.get(4);
@@ -5590,7 +5596,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         }
         pendingGooglePayAmount = String.valueOf(amountUah);
         pendingGooglePayOrderReference = MainActivity.order_id;
-        progressBar.setVisibility(VISIBLE);
+        linearLayout.setVisibility(VISIBLE);
+        btnVisible(VISIBLE);
         googlePayOrderHoldInProgress = true;
 
         WfpGooglePayHelper.checkReady(googlePayPaymentsClient, ready -> {

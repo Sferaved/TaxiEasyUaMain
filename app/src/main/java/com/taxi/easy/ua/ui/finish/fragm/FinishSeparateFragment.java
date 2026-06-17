@@ -39,6 +39,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -52,6 +55,8 @@ import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavOptions;
 
+import com.google.android.gms.wallet.PaymentsClient;
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -75,9 +80,11 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetFinishOptionFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetMessageFragment;
 import com.taxi.easy.ua.utils.dialog.UklonAlertDialog;
 import com.taxi.easy.ua.utils.data.DataArr;
+import com.taxi.easy.ua.utils.helpers.WfpGooglePayHelper;
 import com.taxi.easy.ua.utils.hold.APIHoldService;
 import com.taxi.easy.ua.utils.hold.HoldResponse;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.payment.GooglePayOrderHelper;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper;
@@ -243,13 +250,47 @@ public class FinishSeparateFragment extends Fragment {
     private final Handler addCostNoticeHandler = new Handler(Looper.getMainLooper());
     private final Runnable addCostSlowNoticeRunnable = this::showAddCostSlowNotice;
     private final Runnable addCostTimeoutRunnable = this::handleAddCostTimeout;
-    @Nullable
+        @Nullable
     private Call<StatusResponse> addCostStatusCheckCall;
+    private PaymentsClient googlePayPaymentsClient;
+    private ActivityResultLauncher<IntentSenderRequest> googlePayAddCostLauncher;
+    private boolean googlePayAddCostAwaitingWallet;
+    @Nullable
+    private String pendingAddCostGpUid;
+    @Nullable
+    private String pendingAddCostGpAmount;
+    @Nullable
+    private String pendingAddCostGpOrderRef;
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Инициализация ViewModel
         viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
+        googlePayPaymentsClient = WfpGooglePayHelper.createPaymentsClient(this);
+        googlePayAddCostLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartIntentSenderForResult(),
+                result -> WfpGooglePayHelper.handlePaymentResult(
+                        result.getResultCode(),
+                        result.getData(),
+                        requireContext(),
+                        new WfpGooglePayHelper.PaymentResultCallback() {
+                            @Override
+                            public void onSuccess(@NonNull String paymentDataJson) {
+                                submitGooglePayAddCostCharge(paymentDataJson);
+                            }
+
+                            @Override
+                            public void onCancelled() {
+                                onGooglePayAddCostCancelled();
+                            }
+
+                            @Override
+                            public void onError(@NonNull String message) {
+                                onGooglePayAddCostFailed(message);
+                            }
+                        }
+                )
+        );
     }
 
 
@@ -3865,22 +3906,248 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     private boolean isAddCostGooglePayWalletOpen() {
-        if (fragmentManager == null) {
-            return false;
-        }
-        Fragment sheet = fragmentManager.findFragmentByTag(TAG_ADD_COST_SHEET);
-        return sheet instanceof MyBottomSheetAddCostFragment addCost
-                && addCost.isGooglePayWalletAwaiting();
+        return googlePayAddCostAwaitingWallet;
     }
 
     private void bindAddCostBottomSheet(@NonNull MyBottomSheetAddCostFragment sheet) {
         sheet.setOnDismissListener(this::onAddCostSheetDismissed);
-        sheet.setOnGooglePayWalletOpeningListener(this::dismissAddCostPromptDialog);
+        sheet.setAddCostGooglePayHost(this);
         addCostSheetShowing = true;
         sheet.show(fragmentManager, TAG_ADD_COST_SHEET);
     }
 
-    private void verifyOldHold() {
+    /** Закрыть шторки доплаты и открыть Google Pay с экрана заказа (без оверлея DialogFragment). */
+    public void launchGooglePayAddCostWallet(
+            @NonNull String orderUid,
+            @NonNull String addCostDelta,
+            @NonNull String orderRef,
+            int amountUah
+    ) {
+        if (!isAdded() || googlePayAddCostAwaitingWallet) {
+            Logger.d(context, TAG, "launchGooglePayAddCostWallet skipped: added="
+                    + isAdded() + " awaiting=" + googlePayAddCostAwaitingWallet);
+            return;
+        }
+        pendingAddCostGpUid = orderUid;
+        pendingAddCostGpAmount = addCostDelta;
+        pendingAddCostGpOrderRef = orderRef;
+        googlePayAddCostAwaitingWallet = true;
+        dismissAddCostUiForGooglePay();
+        Logger.d(context, TAG, "launchGooglePayAddCostWallet: addCost=" + addCostDelta
+                + " amountUah=" + amountUah + " ref=" + orderRef);
+
+        WfpGooglePayHelper.checkReady(googlePayPaymentsClient, ready -> {
+            if (!isAdded()) {
+                onGooglePayAddCostFailed("fragment_detached");
+                return;
+            }
+            if (!ready) {
+                onGooglePayAddCostFailed(getString(R.string.google_pay_unavailable));
+                return;
+            }
+            List<String> cityInfo = logCursor(MainActivity.CITY_INFO, context);
+            String city = cityInfo.size() > 1 ? cityInfo.get(1) : "";
+            String appBaseUrl = (String) sharedPreferencesHelperMain.getValue(
+                    "baseUrl", "https://m.easy-order-taxi.site");
+            GooglePayOrderHelper.fetchMerchantConfig(
+                    appBaseUrl,
+                    getString(R.string.application),
+                    city,
+                    new GooglePayOrderHelper.ConfigCallback() {
+                        @Override
+                        public void onSuccess(@NonNull String merchantAccount) {
+                            if (!isAdded()) {
+                                onGooglePayAddCostFailed("fragment_detached");
+                                return;
+                            }
+                            WfpGooglePayHelper.requestPayment(
+                                    FinishSeparateFragment.this,
+                                    googlePayPaymentsClient,
+                                    merchantAccount,
+                                    String.valueOf(amountUah),
+                                    googlePayAddCostLauncher,
+                                    new WfpGooglePayHelper.PaymentResultCallback() {
+                                        @Override
+                                        public void onSuccess(@NonNull String paymentDataJson) {
+                                            submitGooglePayAddCostCharge(paymentDataJson);
+                                        }
+
+                                        @Override
+                                        public void onCancelled() {
+                                            onGooglePayAddCostCancelled();
+                                        }
+
+                                        @Override
+                                        public void onError(@NonNull String message) {
+                                            onGooglePayAddCostFailed(message);
+                                        }
+                                    }
+                            );
+                        }
+
+                        @Override
+                        public void onError(@NonNull String message) {
+                            onGooglePayAddCostFailed(message);
+                        }
+                    }
+            );
+        });
+    }
+
+    private void dismissAddCostUiForGooglePay() {
+        dismissAddCostPromptDialog();
+        if (fragmentManager == null) {
+            addCostSheetShowing = false;
+            return;
+        }
+        Fragment sheet = fragmentManager.findFragmentByTag(TAG_ADD_COST_SHEET);
+        if (sheet instanceof BottomSheetDialogFragment bottomSheet) {
+            try {
+                bottomSheet.dismiss();
+            } catch (IllegalStateException e) {
+                Logger.w(context, TAG, "dismissAddCostUiForGooglePay: " + e.getMessage());
+            }
+        }
+        addCostSheetShowing = false;
+    }
+
+    private void submitGooglePayAddCostCharge(@NonNull String paymentDataJson) {
+        if (pendingAddCostGpOrderRef == null) {
+            onGooglePayAddCostFailed("missing_order_ref");
+            return;
+        }
+        if (!isAdded()) {
+            onGooglePayAddCostFailed("fragment_detached");
+            return;
+        }
+        String pendingAmount = ExecutionStatusViewModel.getPendingAddCostAmountPref();
+        int amountUah = GooglePayOrderHelper.parseAmountUah(
+                pendingAmount != null ? pendingAmount : "0");
+        if (amountUah <= 0) {
+            onGooglePayAddCostFailed("invalid_amount");
+            return;
+        }
+        List<String> cityInfo = logCursor(MainActivity.CITY_INFO, context);
+        String city = cityInfo.size() > 1 ? cityInfo.get(1) : "";
+        List<String> userInfo = logCursor(TABLE_USER_INFO, context);
+        String email = userInfo.size() > 3 ? userInfo.get(3) : "";
+        String phone = userInfo.size() > 2 ? userInfo.get(2) : "";
+        String appBaseUrl = (String) sharedPreferencesHelperMain.getValue(
+                "baseUrl", "https://m.easy-order-taxi.site");
+
+        GooglePayOrderHelper.submitHoldCharge(
+                context,
+                appBaseUrl,
+                getString(R.string.application),
+                city,
+                pendingAddCostGpOrderRef,
+                amountUah,
+                email,
+                phone,
+                paymentDataJson,
+                new GooglePayOrderHelper.ChargeCallback() {
+                    @Override
+                    public void onHoldSuccess(@NonNull String orderReference) {
+                        MainActivity.order_id = orderReference;
+                        Logger.d(context, TAG, "Google Pay add-cost hold ok: " + orderReference
+                                + " amount=" + amountUah);
+                        clearGooglePayAddCostAwaiting();
+                        viewModel.setCancelStatus(false);
+                        Toast.makeText(context, R.string.add_cost_processing, Toast.LENGTH_LONG).show();
+                        enableCancelAfterAddCostIfReady();
+                    }
+
+                    @Override
+                    public void onHoldFailed(@NonNull String message) {
+                        onGooglePayAddCostFailed(message);
+                    }
+                }
+        );
+    }
+
+    private void onGooglePayAddCostCancelled() {
+        Logger.d(context, TAG, "Google Pay add-cost cancelled");
+        String orderRef = pendingAddCostGpOrderRef;
+        clearGooglePayAddCostInFlight(true);
+        if (orderRef != null) {
+            deleteAddCostInvoice(orderRef);
+        }
+        if (isAdded()) {
+            Toast.makeText(context, R.string.e_google_pay_canceled, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void onGooglePayAddCostFailed(@Nullable String message) {
+        Logger.w(context, TAG, "Google Pay add-cost failed: " + message);
+        String orderRef = pendingAddCostGpOrderRef;
+        clearGooglePayAddCostInFlight(true);
+        if (orderRef != null) {
+            deleteAddCostInvoice(orderRef);
+        }
+        if (isAdded()) {
+            Toast.makeText(context, R.string.add_cost_payment_failed, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void clearGooglePayAddCostAwaiting() {
+        googlePayAddCostAwaitingWallet = false;
+        pendingAddCostGpUid = null;
+        pendingAddCostGpAmount = null;
+        pendingAddCostGpOrderRef = null;
+    }
+
+    private void clearGooglePayAddCostInFlight(boolean enableCancel) {
+        clearGooglePayAddCostAwaiting();
+        ExecutionStatusViewModel.setAddCostInFlightPref(false);
+        ExecutionStatusViewModel.clearPendingAddCostAmountPref();
+        if (enableCancel) {
+            viewModel.setCancelStatus(true);
+        }
+        enableCancelAfterAddCostIfReady();
+    }
+
+    private void enableCancelAfterAddCostIfReady() {
+        if (ExecutionStatusViewModel.isAddCostInFlightPref()) {
+            return;
+        }
+        if (btn_cancel_order != null) {
+            btn_cancel_order.setVisibility(VISIBLE);
+            btn_cancel_order.setEnabled(true);
+            btn_cancel_order.setClickable(true);
+            Logger.d(context, TAG, "Cancel button enabled after add-cost GP");
+        }
+    }
+
+    private void deleteAddCostInvoice(String orderReference) {
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        OkHttpClient httpClient = new OkHttpClient.Builder()
+                .addInterceptor(loggingInterceptor)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .build();
+        String baseUrl = (String) sharedPreferencesHelperMain.getValue(
+                "baseUrl", "https://m.easy-order-taxi.site");
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(httpClient)
+                .build();
+        APIHoldService apiService = retrofit.create(APIHoldService.class);
+        apiService.deleteInvoice(orderReference).enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<HoldResponse> call, @NonNull Response<HoldResponse> response) {
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<HoldResponse> call, @NonNull Throwable t) {
+                FirebaseCrashlytics.getInstance().recordException(t);
+            }
+        });
+    }
+
+        private void verifyOldHold() {
         if (ExecutionStatusViewModel.isAddCostInFlightPref()) {
             Logger.d(context, TAG, "[addCost] verifyOldHold skipped: add-cost in flight");
             resumePendingAddCostIfInFlight();
