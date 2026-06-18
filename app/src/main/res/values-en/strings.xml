@@ -30,6 +30,8 @@
     <string name="gps_on_button">turn on gps</string>
     <string name="wellcome">Create a route or choose a favorite.</string>
     <string name="verify_phone">Verify phone</string>
+    <string name="verify_phone_question">Is this phone number correct?</string>
+    <string name="phone_edit">Edit</string>
     <string name="format_phone">Phone number input format: +38 093 666 55 44</string>
     <string name="sent_button">Send</string>
     <string name="verify_internet">Check your Internet connection, call the operator or restart the application.</string>

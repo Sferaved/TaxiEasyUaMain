@@ -32,6 +32,8 @@
     <string name="gps_on_button">включит gps</string>
     <string name="wellcome">Сформируйте маршрут или выберите любимый.</string>
     <string name="verify_phone">Проверка телефона</string>
+    <string name="verify_phone_question">Номер введён правильно?</string>
+    <string name="phone_edit">Исправить</string>
     <string name="format_phone">Формат ввода номера телефона: +38 093 666 55 44</string>
     <string name="sent_button">Отправить</string>
     <string name="verify_internet">Проверьте интернет-соединение, позвоните оператору или перезагрузите приложение.</string>

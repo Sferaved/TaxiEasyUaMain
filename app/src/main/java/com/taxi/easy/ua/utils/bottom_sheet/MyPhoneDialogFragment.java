@@ -35,6 +35,7 @@ import com.taxi.easy.ua.ui.home.ButtonVisibilityCallback;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.phone.PhoneNumberHelper;
 import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
 import com.uxcam.UXCam;
 
@@ -91,23 +92,21 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
         phoneFull();
 
         button.setOnClickListener(v -> {
-            String phone = formatPhoneNumber(phoneNumber.getText().toString());
-            phoneNumber.setText(phone);
-            if (Pattern.compile(PHONE_PATTERN).matcher(phone).matches()) {
-                updateRecordsUser(phone);
-                Logger.d(requireActivity(), TAG, "setOnClickListener phone: " + phone);
-                Logger.d(requireActivity(), TAG, "setOnClickListener page: " + page);
-
-                userManager = new FirebaseUserManager();
-                userManager.saveUserPhone(phone);
-
-                navigateBasedOnPage();
-            } else {
+            String phone = PhoneNumberHelper.normalizeAndFormat(phoneNumber.getText().toString());
+            if (!PhoneNumberHelper.isValid(phone)) {
                 Toast.makeText(requireContext(), getString(R.string.format_phone), Toast.LENGTH_SHORT).show();
+                return;
             }
+            PhoneNumberHelper.showConfirmDialog(requireContext(), phone,
+                    confirmedPhone -> savePhoneAndContinue(confirmedPhone),
+                    () -> {
+                        phoneNumber.setText(phone);
+                        phoneNumber.requestFocus();
+                        phoneNumber.setSelection(phoneNumber.getText().length());
+                    });
         });
 
-        setupPhoneMask();
+        PhoneNumberHelper.setupPhoneInput(phoneNumber);
 
         return view;
     }
@@ -121,6 +120,18 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
             callback = (ButtonVisibilityCallback) getActivity();
         }
     }
+    private void savePhoneAndContinue(String phone) {
+        phoneNumber.setText(phone);
+        updateRecordsUser(phone);
+        Logger.d(requireActivity(), TAG, "savePhoneAndContinue phone: " + phone);
+        Logger.d(requireActivity(), TAG, "savePhoneAndContinue page: " + page);
+
+        userManager = new FirebaseUserManager();
+        userManager.saveUserPhone(phone);
+
+        navigateBasedOnPage();
+    }
+
     private void navigateBasedOnPage() {
         if (page == null) {
             dismiss();
@@ -145,16 +156,6 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
                 dismiss();
                 break;
         }
-    }
-
-    private void setupPhoneMask() {
-        MaskedTextChangedListener listener = new MaskedTextChangedListener(
-                "+38 [000] [000] [00] [00]",
-                phoneNumber,
-                null
-        );
-        phoneNumber.addTextChangedListener(listener);
-        phoneNumber.setOnFocusChangeListener(listener);
     }
 
     @Override
@@ -238,7 +239,7 @@ public class MyPhoneDialogFragment extends BottomSheetDialogFragment {
             return false;
         }
         String phone = userInfo.get(2);
-        return Pattern.compile(PHONE_PATTERN).matcher(phone).matches();
+        return Pattern.compile(PhoneNumberHelper.PHONE_PATTERN).matcher(phone).matches();
     }
 
     @SuppressLint("Range")

@@ -56,6 +56,7 @@ import com.taxi.easy.ua.utils.dialog.UklonAlertDialog;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.orders.OrderCreatedAtDisplayHelper;
 import com.taxi.easy.ua.utils.orders.OrderHistoryStatusHelper;
+import com.taxi.easy.ua.utils.phone.PhoneNumberHelper;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.sanitizer.InputSanitizerHelper;
 import com.taxi.easy.ua.utils.ui.ScreenInsetsHelper;
@@ -213,14 +214,7 @@ public class AccountFragment extends Fragment {
 
         googleVerifyAccount();
 
-        MaskedTextChangedListener listener = new MaskedTextChangedListener(
-                "+38 [000] [000] [00] [00]",
-                phoneNumber,
-                null
-        );
-
-        phoneNumber.addTextChangedListener(listener);
-        phoneNumber.setOnFocusChangeListener(listener);
+        PhoneNumberHelper.setupPhoneInput(phoneNumber);
 
         if (!NetworkUtils.isNetworkAvailable(requireActivity())) {
             Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
@@ -571,38 +565,41 @@ public class AccountFragment extends Fragment {
 
     private void accountSet() {
         Logger.d(requireActivity(), TAG, "phoneNumber.getText().toString() " + phoneNumber.getText().toString());
-        String phone = formatPhoneNumber(phoneNumber.getText().toString());
+        String rawPhone = phoneNumber.getText().toString();
+        String normalized = PhoneNumberHelper.normalizeAndFormat(rawPhone);
+        String safePhone = InputSanitizerHelper.sanitize(normalized, InputSanitizerHelper.InputType.PHONE);
 
-        // Санитизация телефона
-        String safePhone = InputSanitizerHelper.sanitize(phone, InputSanitizerHelper.InputType.PHONE);
-
-        // Валидация телефона
-        String PHONE_PATTERN = "\\+38 \\d{3} \\d{3} \\d{2} \\d{2}";
-        boolean val = Pattern.compile(PHONE_PATTERN).matcher(safePhone).matches();
-
-        if (!val) {
+        if (!PhoneNumberHelper.isValid(safePhone)) {
             Toast.makeText(requireActivity(), getString(format_phone), Toast.LENGTH_SHORT).show();
-            Logger.d(requireActivity(), TAG, "accountSet" + phoneNumber.getText().toString());
-        } else {
-            // Санитизация имени
-            String safeName = InputSanitizerHelper.sanitize(userName.getText().toString(), InputSanitizerHelper.InputType.USERNAME);
-
-            if (safeName.trim().isEmpty()) {
-                safeName = "No_name";
-            }
-
-            // Дополнительная проверка на SQL-инъекции
-            if (InputSanitizerHelper.containsSqlInjectionPatterns(safeName) ||
-                    InputSanitizerHelper.containsSqlInjectionPatterns(safePhone)) {
-                Toast.makeText(requireActivity(), R.string.invalid_input_detected, Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            phoneNumber.setText(safePhone);
-            updateRecordsUser("phone_number", safePhone);
-            userManager.saveUserPhone(safePhone);
-            updateRecordsUser("username", safeName);
+            Logger.d(requireActivity(), TAG, "accountSet invalid: " + rawPhone);
+            return;
         }
+
+        String safeName = InputSanitizerHelper.sanitize(userName.getText().toString(), InputSanitizerHelper.InputType.USERNAME);
+        if (safeName.trim().isEmpty()) {
+            safeName = "No_name";
+        }
+        if (InputSanitizerHelper.containsSqlInjectionPatterns(safeName)
+                || InputSanitizerHelper.containsSqlInjectionPatterns(safePhone)) {
+            Toast.makeText(requireActivity(), R.string.invalid_input_detected, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final String nameToSave = safeName;
+        PhoneNumberHelper.showConfirmDialog(requireContext(), safePhone,
+                confirmedPhone -> saveAccountData(confirmedPhone, nameToSave),
+                () -> {
+                    phoneNumber.setText(safePhone);
+                    phoneNumber.requestFocus();
+                    phoneNumber.setSelection(phoneNumber.getText().length());
+                });
+    }
+
+    private void saveAccountData(String safePhone, String safeName) {
+        phoneNumber.setText(safePhone);
+        updateRecordsUser("phone_number", safePhone);
+        userManager.saveUserPhone(safePhone);
+        updateRecordsUser("username", safeName);
     }
 
     private void updateRecordsUser(String field, String result) {
