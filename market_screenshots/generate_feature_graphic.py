@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Google Play Feature Graphic (1024x500) for Таксі Київ."""
+"""Generate Google Play Feature Graphic (1024x500) — trilingual."""
 
 from __future__ import annotations
 
@@ -20,15 +20,23 @@ from brand import (
     WHITE,
     render_svg,
 )
-from generate_logos import add_glow, draw_dot_grid, fit_font, lerp, vertical_gradient
+from generate_logos import add_glow, draw_dot_grid, fit_font, vertical_gradient
 
 ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT / "output" / "feature_graphic.png"
 
 W, H = 1024, 500
+LEFT_PAD = 56
+TEXT_MAX_W = 600
 FONT_BOLD = Path(r"C:\Windows\Fonts\segoeuib.ttf")
 FONT_LIGHT = Path(r"C:\Windows\Fonts\segoeuil.ttf")
 FONT_REGULAR = Path(r"C:\Windows\Fonts\segoeui.ttf")
+
+LANG_ROWS = [
+    ("UK", "Замовлення таксі у Києві", "Виклик авто · тарифи · оплата · історія"),
+    ("RU", "Заказ такси в Киеве", "Вызов авто · тарифы · оплата · история"),
+    ("EN", "Taxi booking in Kyiv", "Car call · fares · payment · trip history"),
+]
 
 
 def draw_blob(draw: ImageDraw.ImageDraw, center: tuple[int, int], radius: int, color: tuple[int, int, int, int]) -> None:
@@ -36,61 +44,93 @@ def draw_blob(draw: ImageDraw.ImageDraw, center: tuple[int, int], radius: int, c
     draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=color)
 
 
+def draw_lang_badge(draw: ImageDraw.ImageDraw, x: int, y: int, label: str, font: ImageFont.FreeTypeFont) -> int:
+    bbox = draw.textbbox((0, 0), label, font=font)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    pad_x, pad_y = 8, 4
+    draw.rounded_rectangle(
+        (x, y, x + tw + pad_x * 2, y + th + pad_y * 2),
+        radius=6,
+        fill=TAXI_YELLOW,
+    )
+    draw.text((x + pad_x, y + pad_y - 1), label, fill=KYIV_BLUE_DARK, font=font)
+    return tw + pad_x * 2
+
+
 def generate() -> Image.Image:
     base = vertical_gradient((W, H), KYIV_BLUE_MID, KYIV_BLUE_DARK).convert("RGBA")
     overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
-    draw_blob(draw, (900, 80), 180, TAXI_YELLOW + (28,))
-    draw_blob(draw, (-40, 420), 150, KYIV_BLUE + (40,))
-    draw_blob(draw, (760, 460), 120, TAXI_YELLOW_SOFT + (22,))
+    draw_blob(draw, (920, 70), 170, TAXI_YELLOW + (26,))
+    draw_blob(draw, (-50, 430), 140, KYIV_BLUE + (38,))
     canvas = Image.alpha_composite(base, overlay)
     canvas = draw_dot_grid(canvas, spacing=34, alpha=10)
-    canvas = add_glow(canvas, (780, 250), 220, TAXI_YELLOW, 30)
+    canvas = add_glow(canvas, (800, 250), 200, TAXI_YELLOW, 28)
     draw = ImageDraw.Draw(canvas)
 
-    left_pad = 72
-    word1, word2 = "Таксі", "Київ"
-    font1 = fit_font(word1, 480, 68, FONT_LIGHT)
-    font2 = fit_font(word2, 480, 76, FONT_BOLD)
-    y = 108
-    bbox1 = draw.textbbox((0, 0), word1, font=font1)
-    bbox2 = draw.textbbox((0, 0), word2, font=font2)
-    gap = 14
-    total = (bbox1[2] - bbox1[0]) + gap + (bbox2[2] - bbox2[0])
-    x0 = left_pad
-    draw.text((x0, y), word1, fill=(235, 242, 250), font=font1)
-    x2 = x0 + (bbox1[2] - bbox1[0]) + gap
-    draw.text((x2, y - 6), word2, fill=TAXI_YELLOW_LIGHT, font=font2)
+    y = 44
+    title1, title2 = "Таксі", "Київ"
+    t1_font = fit_font(title1, TEXT_MAX_W, 58, FONT_LIGHT)
+    t2_font = fit_font(title2, TEXT_MAX_W, 64, FONT_BOLD)
+    draw.text((LEFT_PAD, y), title1, fill=(235, 242, 250), font=t1_font)
+    b1 = draw.textbbox((LEFT_PAD, y), title1, font=t1_font)
+    draw.text((b1[2] + 12, y - 4), title2, fill=TAXI_YELLOW_LIGHT, font=t2_font)
+    b2 = draw.textbbox((b1[2] + 12, y - 4), title2, font=t2_font)
 
-    line_y = y + max(bbox1[3], bbox2[3]) + 16
-    draw.rounded_rectangle((left_pad, line_y, left_pad + 130, line_y + 4), radius=2, fill=TAXI_YELLOW)
-    draw.rounded_rectangle((left_pad + 130, line_y, left_pad + 210, line_y + 4), radius=2, fill=KYIV_BLUE_LIGHT + (160,))
+    names = "Такси Киев  ·  Taxi Kyiv"
+    names_font = fit_font(names, TEXT_MAX_W, 22, FONT_REGULAR)
+    names_y = max(b1[3], b2[3]) + 8
+    draw.text((LEFT_PAD, names_y), names, fill=TEXT_SECONDARY, font=names_font)
+    names_bb = draw.textbbox((LEFT_PAD, names_y), names, font=names_font)
 
-    subtitle = "Швидкий виклик авто, фіксована ціна та подача"
-    tagline = "Онлайн замовлення таксі у Києві"
-    sub_font = fit_font(subtitle, 520, 34, FONT_BOLD)
-    tag_font = fit_font(tagline, 520, 26, FONT_REGULAR)
-    draw.text((left_pad, line_y + 22), subtitle, fill=WHITE, font=sub_font)
-    draw.text((left_pad, line_y + 68), tagline, fill=TEXT_SECONDARY, font=tag_font)
+    line_y = names_bb[3] + 14
+    draw.rounded_rectangle((LEFT_PAD, line_y, LEFT_PAD + 100, line_y + 3), radius=2, fill=TAXI_YELLOW)
+    draw.rounded_rectangle((LEFT_PAD + 100, line_y, LEFT_PAD + 170, line_y + 3), radius=2, fill=KYIV_BLUE_LIGHT + (150,))
 
-    bullets = [
-        "Онлайн виклик авто за кілька секунд",
-        "Зручна оплата та попереднє замовлення",
-        "Тарифи, історія поїздок і улюблені адреси",
-    ]
-    bullet_font = fit_font(bullets[0], 520, 23, FONT_REGULAR)
-    by = line_y + 118
-    for line in bullets:
-        draw.ellipse((left_pad, by + 8, left_pad + 7, by + 15), fill=TAXI_YELLOW)
-        draw.text((left_pad + 16, by), line, fill=(205, 212, 225), font=bullet_font)
-        by = draw.textbbox((left_pad + 16, by), line, font=bullet_font)[3] + 10
+    badge_font = ImageFont.truetype(str(FONT_BOLD), 13)
+    row_title_font = fit_font(LANG_ROWS[0][1], TEXT_MAX_W - 60, 21, FONT_BOLD)
+    row_sub_font = fit_font(LANG_ROWS[0][2], TEXT_MAX_W - 60, 17, FONT_REGULAR)
 
-    mark = render_svg(LOGO_MARK_SVG, 300)
-    glow = Image.new("RGBA", (360, 360), (0, 0, 0, 0))
-    ImageDraw.Draw(glow).ellipse((30, 30, 330, 330), fill=TAXI_YELLOW + (45,))
-    glow = glow.filter(ImageFilter.GaussianBlur(24))
-    px, py = W - 350, (H - 300) // 2 - 8
-    canvas.alpha_composite(glow, (px - 28, py - 28))
+    row_y = line_y + 20
+    row_gap = 14
+    for code, title, subtitle in LANG_ROWS:
+        badge_w = draw_lang_badge(draw, LEFT_PAD, row_y + 2, code, badge_font)
+        text_x = LEFT_PAD + badge_w + 12
+        draw.text((text_x, row_y), title, fill=WHITE, font=row_title_font)
+        title_bb = draw.textbbox((text_x, row_y), title, font=row_title_font)
+        draw.text((text_x, title_bb[3] + 2), subtitle, fill=(175, 188, 205), font=row_sub_font)
+        sub_bb = draw.textbbox((text_x, title_bb[3] + 2), subtitle, font=row_sub_font)
+        row_y = sub_bb[3] + row_gap
+
+    # bottom feature strip (make it readable)
+    strip_y = H - 58
+    strip = "Online booking  ·  Онлайн заказ  ·  Онлайн замовлення"
+    strip_font = fit_font(strip, TEXT_MAX_W, 20, FONT_BOLD)
+    strip_bb = draw.textbbox((LEFT_PAD, strip_y), strip, font=strip_font)
+
+    # darker pill + subtle stroke for contrast
+    pill = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    pill_draw = ImageDraw.Draw(pill)
+    pill_draw.rounded_rectangle(
+        (LEFT_PAD - 14, strip_y - 10, strip_bb[2] + 18, strip_bb[3] + 10),
+        radius=14,
+        fill=(8, 24, 42, 175),
+        outline=TAXI_YELLOW + (110,),
+        width=1,
+    )
+    canvas = Image.alpha_composite(canvas, pill)
+    draw = ImageDraw.Draw(canvas)
+
+    # text with soft shadow
+    draw.text((LEFT_PAD + 1, strip_y + 1), strip, fill=(0, 0, 0, 110), font=strip_font)
+    draw.text((LEFT_PAD, strip_y), strip, fill=(245, 248, 252), font=strip_font)
+
+    mark = render_svg(LOGO_MARK_SVG, 250)
+    glow = Image.new("RGBA", (300, 300), (0, 0, 0, 0))
+    ImageDraw.Draw(glow).ellipse((25, 25, 275, 275), fill=TAXI_YELLOW + (42,))
+    glow = glow.filter(ImageFilter.GaussianBlur(22))
+    px, py = W - 310, (H - 250) // 2 - 6
+    canvas.alpha_composite(glow, (px - 24, py - 24))
     canvas.alpha_composite(mark, (px, py))
 
     return canvas.convert("RGB")

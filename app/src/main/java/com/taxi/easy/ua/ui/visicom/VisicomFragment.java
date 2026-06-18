@@ -2830,6 +2830,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             bundle.putSerializable("sendUrlMap", new HashMap<>(sendUrlMap));
             bundle.putString("UID_key", orderUid);
             viewModel.setStatusNalUpdate(true); //наюлюдение за опросом статусом нала
+            EarlyOrderNavigationHelper.reportOrderConversion(context, orderUid, sendUrlMap);
             navController.navigate(
                     R.id.nav_finish_separate,
                     bundle,

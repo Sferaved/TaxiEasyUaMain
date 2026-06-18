@@ -1,3 +1,5 @@
+Stability improvements and app analytics updates.
+
 Improved geolocation verification and GPS spoofing protection for taxis:
 Multi-level risk assessment instead of hard blocking
 More accurate detection of fake GPS and mock locations

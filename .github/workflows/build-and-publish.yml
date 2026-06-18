@@ -277,7 +277,7 @@ jobs:
           echo "✅ All release notes loaded successfully"
 
           # Обновление треков
-          echo "🔄 Updating tracks (internal, alpha, beta)..."
+          echo "🔄 Updating tracks (internal, alpha, beta, production)..."
 
           for TRACK in internal alpha beta production; do
             echo "  Updating $TRACK track..."
@@ -308,7 +308,7 @@ jobs:
             "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE_NAME/edits/$EDIT_ID:commit")
 
           echo "$COMMIT_RESPONSE" | jq '.'
-          echo "✅ Successfully published to Google Play (internal, alpha, beta)!"
+          echo "✅ Successfully published to Google Play (internal, alpha, beta, production)!"
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

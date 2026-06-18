@@ -119,6 +119,7 @@ import com.taxi.easy.ua.utils.user.del_server.CallbackUser;
 import com.taxi.easy.ua.utils.user.del_server.RetrofitClient;
 import com.taxi.easy.ua.utils.user.del_server.UserFindResponse;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
+import com.taxi.easy.ua.utils.analytics.AdsConversionHelper;
 import com.taxi.easy.ua.utils.worker.AddUserNoNameWorker;
 import com.taxi.easy.ua.utils.worker.CheckPushPermissionWorker;
 import com.taxi.easy.ua.utils.worker.GetCardTokenWfpWorker;
@@ -2623,6 +2624,7 @@ public class MainActivity extends AppCompatActivity {
                     usernameForTest = "username";
 
                     settingsNewUser(user.getEmail());
+                    AdsConversionHelper.logSignUpIfNewUser(this, user);
                     crispChat();
 
                     requestNotificationPermissionOnce();
