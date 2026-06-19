@@ -52,7 +52,8 @@ jobs:
           fi
           CLEAN_VERSION=$(echo "$TAG" | sed 's/^v//')
           SUFFIX=$(echo "$CLEAN_VERSION" | grep -oE '[0-9]+$' || echo "1000")
-          VERSION_CODE="1${SUFFIX}"
+          # PAS_1: versionCode in build.gradle = 1000 + visible suffix (e.g. 1.1046 → 2046)
+          VERSION_CODE=$((1000 + SUFFIX))
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version_name=$CLEAN_VERSION" >> "$GITHUB_OUTPUT"
           echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
