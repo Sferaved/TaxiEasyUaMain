@@ -695,8 +695,14 @@ public class FinishSeparateFragment extends Fragment {
 
         String time_to_start_point = orderResponse.getTimeToStartPoint();
 
-       action = resolveActionFromOrderResponse(orderResponse);
-        lastExecutionStatus = orderResponse.getExecutionStatus();
+        String resolvedAction = resolveActionFromOrderResponse(orderResponse);
+        String executionStatus = orderResponse.getExecutionStatus();
+        if ("SearchesForCar".equals(executionStatus)
+                || ("Поиск авто".equals(resolvedAction) && TextUtils.isEmpty(orderCarInfo))) {
+            sharedPreferencesHelperMain.saveValue("carFound", false);
+        }
+        action = resolvedAction;
+        lastExecutionStatus = executionStatus;
         if (isOrderDispatched()) {
             clearDeclinedPaymentUi();
         }
@@ -803,6 +809,9 @@ public class FinishSeparateFragment extends Fragment {
 
     /** Заказ уже в работе — оплата не может считаться «зависшей». */
     private boolean isOrderDispatched() {
+        if ("SearchesForCar".equals(lastExecutionStatus)) {
+            return false;
+        }
         if ((boolean) sharedPreferencesHelperMain.getValue("carFound", false)) {
             return true;
         }
@@ -2103,6 +2112,9 @@ public class FinishSeparateFragment extends Fragment {
 
             setVisibility(GONE, textStatusCar, textCarMessage);
             setVisibility(VISIBLE, carProgressBar);
+            if (!canceled && isAdded()) {
+                startCycle();
+            }
             Logger.d(context, TAG, "carSearch() completed");
 //        });
     }
