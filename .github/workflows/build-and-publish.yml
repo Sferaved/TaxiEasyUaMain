@@ -274,6 +274,15 @@ jobs:
             exit 1
           fi
 
+          # Google Play: max 500 characters per language
+          for NOTES_FILE in "$EN_NOTES_FILE" "$RU_NOTES_FILE" "$UK_NOTES_FILE"; do
+            LEN=$(wc -m < "$NOTES_FILE" | tr -d ' ')
+            if [ "$LEN" -gt 500 ]; then
+              echo "❌ $NOTES_FILE is $LEN chars (max 500)"
+              exit 1
+            fi
+          done
+
           echo "✅ All release notes loaded successfully"
 
           # Обновление треков
