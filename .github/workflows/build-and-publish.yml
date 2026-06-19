@@ -9,12 +9,18 @@ on:
     workflows: ["Unit tests"]
     types: [completed]
     branches: [master]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag for manual republish (e.g. v1.1045)'
+        required: true
+        type: string
 
 jobs:
   resolve_release:
     name: Resolve release tag
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     outputs:
       tag: ${{ steps.release.outputs.tag }}
       version_name: ${{ steps.release.outputs.version_name }}
@@ -23,13 +29,22 @@ jobs:
       - name: Checkout commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag || github.event.workflow_run.head_sha }}
           fetch-depth: 0
+          fetch-tags: true
 
       - name: Find version tag
         id: release
+        env:
+          DISPATCH_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag || '' }}
         run: |
-          TAG=$(git tag --points-at HEAD | grep -E '^v[0-9]' | sort -V | tail -1)
+          if [ -n "$DISPATCH_TAG" ]; then
+            TAG="$DISPATCH_TAG"
+            echo "Manual republish tag: $TAG"
+          else
+            git fetch origin --tags --force
+            TAG=$(git tag --points-at HEAD | grep -E '^v[0-9]' | sort -V | tail -1)
+          fi
           if [ -z "$TAG" ]; then
             echo "No release tag on this commit — skip Google Play build"
             echo "tag=" >> "$GITHUB_OUTPUT"
