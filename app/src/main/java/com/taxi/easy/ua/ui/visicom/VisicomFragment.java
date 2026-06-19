@@ -119,6 +119,7 @@ import com.taxi.easy.ua.utils.cost.CostParseHelper;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
+import com.taxi.easy.ua.utils.download.AppUpdatePromptHelper;
 import com.taxi.easy.ua.utils.download.AppUpdater;
 import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
@@ -845,27 +846,17 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(context);
         Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
         appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
-            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
-                    && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) {
+            if (AppUpdatePromptHelper.shouldShowUpdateDialog(appUpdateInfo)) {
+                showUpdateDialog();
 
-                int installStatus = appUpdateInfo.installStatus();
-
-                if (installStatus == InstallStatus.PENDING || installStatus == InstallStatus.UNKNOWN
-                        || installStatus == InstallStatus.INSTALLED || installStatus == InstallStatus.FAILED
-                        || installStatus == InstallStatus.CANCELED || installStatus == InstallStatus.DOWNLOADED) {
-
-                    // Обновление доступно и можно начинать
-                    showUpdateDialog(); // Показываем диалог или запускаем update flow
-
-                    if (isAdded()) {
-                        Logger.d(MyApplication.getContext(), TAG, "Available updates found and ready to start");
-                    }
-
-                } else {
-                    // Установка уже в процессе (DOWNLOADING или INSTALLING)
-                    Logger.d(MyApplication.getContext(), TAG, "Update already in progress. Skipping start. Status: " + installStatus);
+                if (isAdded()) {
+                    Logger.d(MyApplication.getContext(), TAG, "Available updates found and ready to start");
                 }
 
+            } else if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+                    && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) {
+                Logger.d(MyApplication.getContext(), TAG,
+                        "Update already in progress. Skipping start. Status: " + appUpdateInfo.installStatus());
             } else {
                 Logger.d(MyApplication.getContext(), TAG, "No updates available or type not allowed.");
             }
