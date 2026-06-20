@@ -2159,8 +2159,22 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                     }
                 }
             } else if (payment_type.equals("google_pay_payment")) {
-                MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-                wfpInvoice = MainActivity.order_id;
+                String activeUid = MainActivity.uid;
+                String savedRef = activeUid != null && !activeUid.isEmpty()
+                        ? PaymentSessionHelper.getWfpOrderRef(activeUid)
+                        : null;
+                if (savedRef != null) {
+                    MainActivity.order_id = savedRef;
+                    wfpInvoice = savedRef;
+                } else if (pendingGooglePayOrderReference != null && !pendingGooglePayOrderReference.isEmpty()) {
+                    MainActivity.order_id = pendingGooglePayOrderReference;
+                    wfpInvoice = pendingGooglePayOrderReference;
+                } else if (MainActivity.order_id != null && !MainActivity.order_id.isEmpty()) {
+                    wfpInvoice = MainActivity.order_id;
+                } else {
+                    MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+                    wfpInvoice = MainActivity.order_id;
+                }
             }
 
             phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
@@ -5569,12 +5583,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         if (!isAdded() || googlePayOrderHoldInProgress) {
             return;
         }
-        if (MainActivity.order_id == null || MainActivity.order_id.isEmpty()) {
-            MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-            if (!orderRout()) {
-                btnVisible(VISIBLE);
-                return;
-            }
+        if (!orderRout()) {
+            btnVisible(VISIBLE);
+            return;
         }
         String costText = resolveOrderDisplayCostForSubmit();
         if (costText == null && text_view_cost != null && text_view_cost.getText() != null) {
@@ -5682,7 +5693,12 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                         googlePayOrderHoldInProgress = false;
                         progressBar.setVisibility(GONE);
                         MainActivity.order_id = orderReference;
+                        pendingGooglePayOrderReference = orderReference;
                         try {
+                            if (!orderRout()) {
+                                onGooglePayOrderHoldFailed(context.getString(R.string.cost_error));
+                                return;
+                            }
                             orderFinished();
                         } catch (MalformedURLException e) {
                             FirebaseCrashlytics.getInstance().recordException(e);
