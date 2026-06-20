@@ -76,24 +76,8 @@ public final class PendingTransactionHelper {
             return;
         }
 
-        clear();
         Log.d(TAG, "consume pending Declined uid=" + data.uid);
-
-        if (showBottomSheet != null && com.taxi.easy.ua.androidx.startup.MyApplication.isInForeground()) {
-            PaymentDeclinedNotifier.prepareDeclinedOrderState();
-            if (PaymentDeclinedNotifier.shouldShowSheetNow()
-                    && PaymentErrorSheetHelper.beginShowAttempt()) {
-                PaymentDeclinedNotifier.markSheetShown();
-                showBottomSheet.run();
-            }
-        } else if (MainActivity.viewModel != null) {
-            String current = MainActivity.viewModel.getTransactionStatus().getValue();
-            if (!"Declined".equals(current)) {
-                MainActivity.viewModel.setTransactionStatus("Declined");
-            }
-        } else if (!com.taxi.easy.ua.androidx.startup.MyApplication.isInForeground()) {
-            PaymentDeclinedNotifier.maybeSendPaymentErrorPush(context, data.uid);
-        }
+        PaymentDeclinedUiHelper.handleDeclined(context, data.uid);
     }
 
     @Nullable
@@ -135,13 +119,7 @@ public final class PendingTransactionHelper {
         }
 
         boolean matchesActiveOrder() {
-            if (uid.equals(MainActivity.uid)) {
-                return true;
-            }
-            if (MainActivity.viewModel != null && MainActivity.viewModel.getUid().getValue() != null) {
-                return uid.equals(MainActivity.viewModel.getUid().getValue());
-            }
-            return false;
+            return PaymentDeclinedUiHelper.isRelevantOrderUid(uid);
         }
     }
 }

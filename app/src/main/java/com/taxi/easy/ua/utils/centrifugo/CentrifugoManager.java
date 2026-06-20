@@ -24,6 +24,7 @@ import com.taxi.easy.ua.utils.cost.CostParseHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.payment.PendingTransactionHelper;
+import com.taxi.easy.ua.utils.payment.PaymentDeclinedUiHelper;
 import com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper;
 import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
 
@@ -495,19 +496,22 @@ public class CentrifugoManager {
             // Проверяем, жив ли еще контекст
             Log.d(TAG, "Context valid: " + isContextValid());
 
-            // Проверяем, есть ли совпадение
-            if (Objects.equals(viewModelUid, uid)) {
-                Log.d(TAG, "✅ UID MATCH with ViewModel!");
-                publishTransactionStatus(transactionStatus);
-            } else if (Objects.equals(MainActivity.uid, uid)) {
-                Log.d(TAG, "✅ UID MATCH with MainActivity.uid!");
+            boolean uidMatches = Objects.equals(viewModelUid, uid) || Objects.equals(MainActivity.uid, uid);
+
+            if ("Declined".equals(transactionStatus) && PaymentDeclinedUiHelper.isRelevantOrderUid(uid)) {
+                Context ctx = getContext();
+                if (ctx == null) {
+                    ctx = com.taxi.easy.ua.androidx.startup.MyApplication.getContext();
+                }
+                PaymentDeclinedUiHelper.handleDeclined(ctx, uid);
+            } else if (uidMatches) {
+                Log.d(TAG, "✅ UID MATCH — publish status");
                 publishTransactionStatus(transactionStatus);
             } else {
                 Log.d(TAG, "❌ UID MISMATCH:");
                 Log.d(TAG, "   Event UID: " + uid);
                 Log.d(TAG, "   ViewModel UID: " + viewModelUid);
                 Log.d(TAG, "   MainActivity.uid: " + MainActivity.uid);
-
                 PendingTransactionHelper.save(uid, transactionStatus);
             }
         } catch (JSONException e) {

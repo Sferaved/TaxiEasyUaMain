@@ -334,6 +334,7 @@
     <string name="pay_cancel">Trip cancelled due to failure to make successful payment within the allotted time. Please try again.</string>
     <string name="ex_st_canceled">The order was canceled. Please try again.</string>
     <string name="ex_st_canceled_no_pay">Order sent for cancellation</string>
+    <string name="ex_st_canceled_payment_failed">Order canceled: payment failed</string>
     <string name="search">Search for address...</string>
     <string name="account_verify">Verifying registration...</string>
     <string name="city_search">Your location is determined...</string>

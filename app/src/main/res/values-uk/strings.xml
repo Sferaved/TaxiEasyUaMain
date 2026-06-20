@@ -339,6 +339,7 @@
     <string name="pay_cancel">Поїздку скасовано через відсутність успішної оплати протягом відведеного таймінгу. Спробуйте ще.</string>
     <string name="ex_st_canceled">Заказ скасовано. Спробуйте ще.</string>
     <string name="ex_st_canceled_no_pay">Замовлення надіслано на скасування</string>
+    <string name="ex_st_canceled_payment_failed">Замовлення скасовано: оплата не пройшла</string>
     <string name="search">Пошук адреси...</string>
     <string name="account_verify">Відбувається перевірка реєстрації...</string>
     <string name="city_search">Визначається Ваше місцезнаходження...</string>

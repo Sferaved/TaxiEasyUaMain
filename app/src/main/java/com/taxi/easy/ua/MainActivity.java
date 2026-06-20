@@ -88,6 +88,7 @@ import com.taxi.easy.ua.ui.cities.api.CityService;
 import com.taxi.easy.ua.ui.cities.check.CityCheckActivity;
 import com.taxi.easy.ua.ui.clear.AppDataUtils;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
+import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.ui.CostCalculationProgressBar;
@@ -1055,6 +1056,7 @@ public class MainActivity extends AppCompatActivity {
         }
         sharedPreferencesHelperMain.saveValue("gps_upd", gps_upd);
 
+        FinishSeparateFragment.notifyPaymentDeclinedIfNeeded(this);
     }
 
     @Override

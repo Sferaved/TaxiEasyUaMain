@@ -31,6 +31,7 @@ import com.taxi.easy.ua.utils.cost.CostParseHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.payment.PendingTransactionHelper;
+import com.taxi.easy.ua.utils.payment.PaymentDeclinedUiHelper;
 import com.taxi.easy.ua.utils.pusher.events.TransactionStatusEvent;
 
 import org.greenrobot.eventbus.EventBus;
@@ -553,7 +554,13 @@ public class PusherManager {
             Log.d("Pusher", "Processing TransactionStatus - uid: " + uid + ", status: " + transactionStatus);
             Log.d("Pusher", "MainActivity.uid = " + MainActivity.uid);
 
-            if (Objects.equals(MainActivity.uid, uid)) {
+            if ("Declined".equals(transactionStatus) && PaymentDeclinedUiHelper.isRelevantOrderUid(uid)) {
+                Context ctx = getContext();
+                if (ctx == null) {
+                    ctx = com.taxi.easy.ua.androidx.startup.MyApplication.getContext();
+                }
+                PaymentDeclinedUiHelper.handleDeclined(ctx, uid);
+            } else if (Objects.equals(MainActivity.uid, uid)) {
                 // Отправляем событие через EventBus
                 EventBus.getDefault().post(new TransactionStatusEvent(transactionStatus));
 

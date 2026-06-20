@@ -18,6 +18,7 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.payment.PaymentDeclinedNotifier;
+import com.taxi.easy.ua.utils.payment.PaymentDeclinedUiHelper;
 import com.taxi.easy.ua.utils.worker.utils.TokenUtils;
 
 import java.util.Locale;
@@ -212,12 +213,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         Logger.d(this, TAG, "Ошибка оплаты FCM: " + message + ", uid=" + uid);
 
-        if (!MyApplication.isInForeground() && shouldShowOrderPushForUid(uid)) {
-            PaymentDeclinedNotifier.maybeSendPaymentErrorPush(localizedContext, uid);
-        } else if (!shouldShowOrderPushForUid(uid)) {
+        if (!PaymentDeclinedUiHelper.isRelevantOrderUid(uid)) {
             Logger.d(this, TAG, "Оплата FCM: push не показан — uid не относится к активному заказу PAS1");
+            return;
         }
-        applyDeclinedToActiveOrder(uid);
+        if (!MyApplication.isInForeground()) {
+            PaymentDeclinedNotifier.maybeSendPaymentErrorPush(localizedContext, uid);
+        }
+        PaymentDeclinedUiHelper.handleDeclined(getApplicationContext(), uid);
     }
 
     /** Push только для PAS1 (поле target_app с бэкенда). */
@@ -250,20 +253,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
         Object uidFcm = MyApplication.sharedPreferencesHelperMain.getValue("uid_fcm", "");
         return uid.equals(String.valueOf(uidFcm));
-    }
-
-    private void applyDeclinedToActiveOrder(String uid) {
-        if (uid == null || uid.isEmpty()) {
-            return;
-        }
-        new Handler(Looper.getMainLooper()).post(() -> {
-            if (MainActivity.uid != null
-                    && MainActivity.uid.equals(uid)
-                    && MainActivity.viewModel != null) {
-                MainActivity.viewModel.setTransactionStatus("Declined");
-                Logger.d(this, TAG, "setTransactionStatus(Declined) для uid=" + uid);
-            }
-        });
     }
 
     private void notifyCancel(String message, String uid) {

@@ -4,6 +4,8 @@ import static com.taxi.easy.ua.MainActivity.activeCalls;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.getCurrentActivity;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -126,6 +128,21 @@ public class ToJSONParserRetrofit {
 
     private volatile boolean eventReceived = false;
     private Call<JsonResponse> activeCall;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    private void deliverCallbackSuccess(final Callback<Map<String, String>> callback, Map<String, String> costMap) {
+        mainHandler.post(() -> callback.onResponse(null, Response.success(costMap)));
+    }
+
+    private void showNetworkErrorToast() {
+        mainHandler.post(() -> {
+            android.app.Activity activity = getCurrentActivity();
+            if (activity != null) {
+                Toast.makeText(activity, R.string.network_no_internet, Toast.LENGTH_LONG).show();
+                Logger.w(activity, TAG, "NO INTERNET - Showing toast message");
+            }
+        });
+    }
 
     public void sendURLChannel(String urlString, final Callback<Map<String, String>> callback) {
         Log.d("API_CALL", "Запуск запроса URL: " + urlString);
@@ -175,24 +192,22 @@ public class ToJSONParserRetrofit {
                             }
 
                             Log.d("API_CALL", "HTTP-ответ получен успешно: " + costMap);
-                            callback.onResponse(null, Response.success(costMap));
+                            deliverCallbackSuccess(callback, costMap);
                         } else {
                             costMap.put("order_cost", "0");
                             costMap.put("message", json.getMessage());
-                            callback.onResponse(null, Response.success(costMap));
+                            deliverCallbackSuccess(callback, costMap);
 
                         }
                     } else {
-                        Toast.makeText(getCurrentActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
-                        Logger.w(getCurrentActivity(), TAG, "NO INTERNET - Showing toast message");
+                        showNetworkErrorToast();
 
                     }
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<JsonResponse> call, @NonNull Throwable t) {
-                    Toast.makeText(getCurrentActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
-                    Logger.w(getCurrentActivity(), TAG, "NO INTERNET - Showing toast message");
+                    showNetworkErrorToast();
                 }
             });
         });
@@ -206,13 +221,12 @@ public class ToJSONParserRetrofit {
                         activeCall.cancel(); // Прерываем запрос
                         Log.d("API_CALL", "HTTP-запрос прерван из-за события.");
                     }
-                    callback.onResponse(null, Response.success(VisicomFragment.sendUrlMap));
+                    deliverCallbackSuccess(callback, VisicomFragment.sendUrlMap);
                 }
                 try {
                     Thread.sleep(100); // Ожидание события с минимальной задержкой
                 } catch (InterruptedException e) {
-                    Toast.makeText(getCurrentActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
-                    Logger.w(getCurrentActivity(), TAG, "NO INTERNET - Showing toast message");
+                    showNetworkErrorToast();
                     Thread.currentThread().interrupt();
                 }
             }

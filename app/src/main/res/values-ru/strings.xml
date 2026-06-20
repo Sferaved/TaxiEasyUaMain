@@ -339,6 +339,7 @@
     <string name="pay_cancel">Поездка отменена из-за отсутствия успешной  оплаты в течении отведенного тайминга. Попробуйте еще.</string>
     <string name="ex_st_canceled">Заказ отменен. Попробуйте еще.</string>
     <string name="ex_st_canceled_no_pay">Заказ отправлен на отмену</string>
+    <string name="ex_st_canceled_payment_failed">Заказ отменён: оплата не прошла</string>
     <string name="search">Поиск адреса...</string>
     <string name="account_verify">Происходит проверка регистрации...</string>
     <string name="city_search">Определяется местоположение...</string>

@@ -93,6 +93,7 @@ import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.pusher.events.AddCostUpdateEvent;
 import com.taxi.easy.ua.utils.pusher.events.CanceledStatusEvent;
 import com.taxi.easy.ua.utils.payment.PaymentDeclinedNotifier;
+import com.taxi.easy.ua.utils.payment.PaymentDeclinedUiHelper;
 import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
 import com.taxi.easy.ua.utils.payment.PaymentErrorSheetHelper;
 import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
@@ -1026,7 +1027,7 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     /** Declined из push/Centrifugo — показываем шторку только после checkStatus WFP. */
-    private void confirmDeclinedWithServerCheck() {
+    void confirmDeclinedWithServerCheck() {
         if (!isAdded() || canceled || isViewingCompletedOrder()) {
             return;
         }
@@ -1657,25 +1658,29 @@ public class FinishSeparateFragment extends Fragment {
         submitOrderCancelRequest(context.getString(R.string.ex_st_canceled_no_pay));
     }
 
+    /** Передаём Declined на экран статуса, если он открыт. */
+    public static boolean dispatchDeclinedToFinish(@NonNull FragmentActivity activity) {
+        FinishSeparateFragment finish = findFinishFragment(activity.getSupportFragmentManager());
+        if (finish != null && finish.isAdded() && !finish.canceled) {
+            finish.confirmDeclinedWithServerCheck();
+            return true;
+        }
+        return false;
+    }
+
     /** Единая точка Declined (карта, Centrifugo, FCM) — без второй шторки. */
     public static void notifyPaymentDeclinedIfNeeded(@NonNull Context context) {
-        FragmentActivity activity = null;
-        if (context instanceof FragmentActivity) {
-            activity = (FragmentActivity) context;
-        } else if (context instanceof android.content.ContextWrapper) {
-            Context base = ((android.content.ContextWrapper) context).getBaseContext();
-            if (base instanceof FragmentActivity) {
-                activity = (FragmentActivity) base;
-            }
+        if (PendingTransactionHelper.hasPendingDeclinedForActiveOrder()) {
+            PendingTransactionHelper.consumePendingDeclined(context, null);
+            return;
         }
-        if (activity != null) {
-            FinishSeparateFragment finish = findFinishFragment(activity.getSupportFragmentManager());
-            if (finish != null && finish.isAdded()) {
-                finish.confirmDeclinedWithServerCheck();
-                return;
-            }
+        String orderUid = MainActivity.uid;
+        if (orderUid == null || orderUid.isEmpty()) {
+            orderUid = ExecutionStatusViewModel.getPersistedActiveUid();
         }
-        PaymentDeclinedNotifier.maybeSendPaymentErrorPush(context, MainActivity.uid);
+        if (PaymentSessionHelper.hasKnownPaymentFailure()) {
+            PaymentDeclinedUiHelper.tryPresentDeclinedUi(context, orderUid);
+        }
     }
 
     public static boolean cancelFromPaymentBottomSheet(@NonNull Context context) {
@@ -2554,7 +2559,7 @@ public class FinishSeparateFragment extends Fragment {
         }
         Logger.d(context, TAG, "showOrderCanceledFromServer");
         cancelShowDialogAddCost();
-        orderCanceled(context.getString(R.string.ex_st_canceled));
+        orderCanceled(PaymentDeclinedUiHelper.canceledStatusMessage(context, resolveActiveOrderUid()));
     }
 
     private void closeReasonReactNal(
