@@ -37,6 +37,7 @@ public final class AutoLocationAfterCityHelper {
     /** Источник стартового адреса: gps — кэш не может перезаписать. */
     public static final String KEY_START_ADDRESS_SOURCE = "start_address_source";
     public static final String SOURCE_GPS = "gps";
+    public static final String SOURCE_MANUAL = "manual";
 
     private AutoLocationAfterCityHelper() {
     }
@@ -212,6 +213,12 @@ public final class AutoLocationAfterCityHelper {
         return SOURCE_GPS.equals(sharedPreferencesHelperMain.getValue(KEY_START_ADDRESS_SOURCE, ""));
     }
 
+    /** GPS или ручной выбор адреса (поиск / карта) — координаты можно показывать на карте. */
+    public static boolean isUserConfirmedStartOnMap() {
+        Object source = sharedPreferencesHelperMain.getValue(KEY_START_ADDRESS_SOURCE, "");
+        return SOURCE_GPS.equals(source) || SOURCE_MANUAL.equals(source);
+    }
+
     public static void clearStartAddressSource() {
         Object prev = sharedPreferencesHelperMain.getValue(KEY_START_ADDRESS_SOURCE, "");
         logGuard("clearStartAddressSource: было source='" + prev + "' → сброс (ручной выбор / новый город)");
@@ -220,8 +227,8 @@ public final class AutoLocationAfterCityHelper {
 
     /** «Откуда» выбрано вручную (карта / поиск), не через кнопку GPS. */
     public static void markManualStartSelected() {
-        logGuard("markManualStartSelected: ручной старт — крестик на GPS");
-        clearStartAddressSource();
+        logGuard("markManualStartSelected: ручной старт — крестик на GPS, source=manual");
+        sharedPreferencesHelperMain.saveValue(KEY_START_ADDRESS_SOURCE, SOURCE_MANUAL);
         clearGpsPendingUserApply();
         sharedPreferencesHelperMain.saveValue("setStatusX", true);
     }

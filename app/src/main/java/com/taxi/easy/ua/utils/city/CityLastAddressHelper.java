@@ -56,15 +56,15 @@ public final class CityLastAddressHelper {
     }
 
     /**
-     * Точка GPS на карте — только после явного нажатия GPS и с адресом в выбранном городе.
+     * Точка старта на карте — после GPS или ручного выбора адреса, с координатами в выбранном городе.
      */
     public static boolean shouldUseGpsStartOnMap(
-            boolean gpsStartApplied,
+            boolean userConfirmedStart,
             @Nullable String startAddress,
             double lat,
             double lon,
             @Nullable String cityCode) {
-        return gpsStartApplied
+        return userConfirmedStart
                 && startAddress != null
                 && !startAddress.trim().isEmpty()
                 && isNearSelectedCity(cityCode, lat, lon);

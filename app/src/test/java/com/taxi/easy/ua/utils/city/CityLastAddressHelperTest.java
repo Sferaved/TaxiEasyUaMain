@@ -83,9 +83,16 @@ public class CityLastAddressHelperTest {
     }
 
     @Test
-    public void shouldUseGpsStartOnMap_afterManualSelection_returnsFalse() {
+    public void shouldUseGpsStartOnMap_withoutUserConfirmedStart_returnsFalse() {
         assertFalse(CityLastAddressHelper.shouldUseGpsStartOnMap(
                 false, "вул. Тестова, місто Чернівці", 48.29, 25.93, "Chernivtsi"));
+    }
+
+    @Test
+    public void shouldUseGpsStartOnMap_manualStartOnPalladina_returnsTrue() {
+        assertTrue(CityLastAddressHelper.shouldUseGpsStartOnMap(
+                true, "просп. Академіка Палладіна, буд.32/34, місто Київ",
+                50.4655828, 30.3575999, "Kyiv City"));
     }
 
     @Test

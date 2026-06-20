@@ -2071,7 +2071,7 @@ public class OpenStreetMapFragment extends Fragment {
 
     private boolean shouldUseGpsCoordsForMap(String startAddress, double lat, double lon, String city) {
         return CityLastAddressHelper.shouldUseGpsStartOnMap(
-                AutoLocationAfterCityHelper.isGpsStartApplied(), startAddress, lat, lon, city);
+                AutoLocationAfterCityHelper.isUserConfirmedStartOnMap(), startAddress, lat, lon, city);
     }
 
     private boolean isEditingStartWithoutUserGps() {
