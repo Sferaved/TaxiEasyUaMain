@@ -29,6 +29,20 @@ public class GooglePayOrderHelperTest {
     }
 
     @Test
+    public void isChargeServerError_detectsHttp5xxCodes() {
+        assertTrue(GooglePayOrderHelper.isChargeServerError("charge_http_500"));
+        assertTrue(GooglePayOrderHelper.isChargeServerError("charge_http_503"));
+        assertFalse(GooglePayOrderHelper.isChargeServerError("charge_http_400"));
+        assertFalse(GooglePayOrderHelper.isChargeServerError("Declined"));
+    }
+
+    @Test
+    public void isChargeNetworkError_detectsNetworkFailures() {
+        assertTrue(GooglePayOrderHelper.isChargeNetworkError("network_error"));
+        assertFalse(GooglePayOrderHelper.isChargeNetworkError("charge_http_500"));
+    }
+
+    @Test
     public void usesWalletHold_coversWfpAndGooglePay() {
         assertTrue(PaymentTypeHelper.usesWalletHold(PaymentTypeHelper.CARD));
         assertTrue(PaymentTypeHelper.usesWalletHold(PaymentTypeHelper.GOOGLE_PAY));

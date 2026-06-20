@@ -5735,8 +5735,19 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             return;
         }
         MyBottomSheetErrorFragment bottomSheet = new MyBottomSheetErrorFragment(
-                getString(R.string.google_pay_hold_failed_message));
+                resolveGooglePayHoldFailedMessage(message));
         bottomSheet.show(fragmentManager, "GooglePayHoldFailed");
+    }
+
+    @NonNull
+    private String resolveGooglePayHoldFailedMessage(@Nullable String failureCode) {
+        if (GooglePayOrderHelper.isChargeServerError(failureCode)) {
+            return getString(R.string.google_pay_hold_server_error_message);
+        }
+        if (GooglePayOrderHelper.isChargeNetworkError(failureCode)) {
+            return getString(R.string.google_pay_hold_network_error_message);
+        }
+        return getString(R.string.google_pay_hold_failed_message);
     }
 
     private void googleVerifyAccount() {

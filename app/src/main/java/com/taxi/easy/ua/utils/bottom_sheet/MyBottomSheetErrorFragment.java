@@ -177,6 +177,10 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                 errorMessageKey = "server_error_card_payment";
             } else if (errorMessage.equals(getString(R.string.google_pay_hold_failed_message))) {
                 errorMessageKey = "google_pay_hold_failed";
+            } else if (errorMessage.equals(getString(R.string.google_pay_hold_server_error_message))) {
+                errorMessageKey = "google_pay_hold_server_error";
+            } else if (errorMessage.equals(getString(R.string.google_pay_hold_network_error_message))) {
+                errorMessageKey = "google_pay_hold_network_error";
             }
         }
 
@@ -298,6 +302,8 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                     break;
 
                 case "google_pay_hold_failed":
+                case "google_pay_hold_server_error":
+                case "google_pay_hold_network_error":
                     textViewInfo.setOnClickListener(v -> dismiss());
                     btn_ok.setText(getString(R.string.payment_methods_title));
                     btn_ok.setOnClickListener(v -> {

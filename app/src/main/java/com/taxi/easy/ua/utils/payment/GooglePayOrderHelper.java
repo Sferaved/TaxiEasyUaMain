@@ -3,6 +3,7 @@ package com.taxi.easy.ua.utils.payment;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.ui.wfp.googlepay.GooglePayChargeRequest;
@@ -44,6 +45,15 @@ public final class GooglePayOrderHelper {
     public static boolean isHoldSuccess(@NonNull String transactionStatus) {
         return "Approved".equals(transactionStatus)
                 || "WaitingAuthComplete".equals(transactionStatus);
+    }
+
+    public static boolean isChargeServerError(@Nullable String failureCode) {
+        return failureCode != null && failureCode.startsWith("charge_http_5");
+    }
+
+    public static boolean isChargeNetworkError(@Nullable String failureCode) {
+        return failureCode != null
+                && ("network_error".equals(failureCode) || failureCode.startsWith("charge_http_0"));
     }
 
     public static void fetchMerchantConfig(
