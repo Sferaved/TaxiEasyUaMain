@@ -261,6 +261,7 @@
 <string name="google_pay_hold_failed_message">Оплату Google Pay не подтвердили (например, недостаточно средств на карте). Закажите с оплатой наличными или смените способ оплаты.</string>
     <string name="google_pay_hold_server_error_message">Оплату Google Pay временно не удалось подтвердить из-за ошибки сервера. Попробуйте ещё раз через минуту или закажите с оплатой наличными.</string>
     <string name="google_pay_hold_network_error_message">Не удалось подтвердить оплату Google Pay из-за проблем с интернетом. Проверьте соединение и попробуйте ещё раз.</string>
+<string name="google_pay_hold_duplicate_order_message">Не удалось оплатить повторно тем же номером заказа. Попробуйте ещё раз — будет создан новый платёж.</string>
     <string name="fondy_revers_message">"Возврат платежа: "</string>
     <string name="fondy_pay">Оплатить картой</string>
     <string name="cost_of_road_fondy">Стоимость поездки: </string>

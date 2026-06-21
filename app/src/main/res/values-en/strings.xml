@@ -256,6 +256,7 @@
 <string name="google_pay_hold_failed_message">Google Pay payment was not confirmed (for example, insufficient funds). Order with cash or change your payment method.</string>
     <string name="google_pay_hold_server_error_message">Google Pay could not be confirmed due to a temporary server error. Try again in a minute or order with cash.</string>
     <string name="google_pay_hold_network_error_message">Google Pay could not be confirmed because of a network problem. Check your connection and try again.</string>
+<string name="google_pay_hold_duplicate_order_message">Payment could not use the same order number again. Try again — a new payment will be created.</string>
     <string name="fondy_revers_message">"Refund: "</string>
     <string name="fondy_pay">Pay by card</string>
     <string name="cost_of_road_fondy">Cost of the trip: </string>

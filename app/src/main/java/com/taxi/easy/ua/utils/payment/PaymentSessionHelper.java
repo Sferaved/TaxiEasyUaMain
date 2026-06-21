@@ -40,6 +40,14 @@ public final class PaymentSessionHelper {
         return ref.isEmpty() ? null : ref;
     }
 
+    /** Сброс ref после отмены заказа — иначе второй GPay получит Duplicate Order ID. */
+    public static void clearWfpOrderRef(@Nullable String uid) {
+        if (uid == null || uid.isEmpty()) {
+            return;
+        }
+        sharedPreferencesHelperMain.saveValue(PREFIX_WFP_REF + uid, "");
+    }
+
     public static void markPaymentFailed() {
         sharedPreferencesHelperMain.saveValue(KEY_PAY_ERROR, "pay_error");
     }

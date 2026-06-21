@@ -2159,18 +2159,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                     }
                 }
             } else if (payment_type.equals("google_pay_payment")) {
-                String activeUid = MainActivity.uid;
-                String savedRef = activeUid != null && !activeUid.isEmpty()
-                        ? PaymentSessionHelper.getWfpOrderRef(activeUid)
-                        : null;
-                if (savedRef != null) {
-                    MainActivity.order_id = savedRef;
-                    wfpInvoice = savedRef;
-                } else if (pendingGooglePayOrderReference != null && !pendingGooglePayOrderReference.isEmpty()) {
+                if (pendingGooglePayOrderReference != null && !pendingGooglePayOrderReference.isEmpty()) {
                     MainActivity.order_id = pendingGooglePayOrderReference;
                     wfpInvoice = pendingGooglePayOrderReference;
-                } else if (MainActivity.order_id != null && !MainActivity.order_id.isEmpty()) {
-                    wfpInvoice = MainActivity.order_id;
                 } else {
                     MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
                     wfpInvoice = MainActivity.order_id;
@@ -5598,6 +5589,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             return;
         }
         pendingGooglePayAmount = String.valueOf(amountUah);
+        MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
         pendingGooglePayOrderReference = MainActivity.order_id;
         linearLayout.setVisibility(VISIBLE);
         btnVisible(VISIBLE);
@@ -5718,6 +5710,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     private void onGooglePayOrderHoldCancelled() {
         googlePayOrderHoldInProgress = false;
         pendingOrderDisplayCost = null;
+        pendingGooglePayOrderReference = null;
+        MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
         progressBar.setVisibility(GONE);
         btnVisible(VISIBLE);
         Toast.makeText(context, R.string.e_google_pay_canceled, Toast.LENGTH_SHORT).show();
@@ -5726,6 +5720,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     private void onGooglePayOrderHoldFailed(@Nullable String message) {
         googlePayOrderHoldInProgress = false;
         pendingOrderDisplayCost = null;
+        pendingGooglePayOrderReference = null;
         progressBar.setVisibility(GONE);
         btnVisible(VISIBLE);
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
@@ -5746,6 +5741,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         }
         if (GooglePayOrderHelper.isChargeNetworkError(failureCode)) {
             return getString(R.string.google_pay_hold_network_error_message);
+        }
+        if (GooglePayOrderHelper.isDuplicateOrderError(failureCode)) {
+            return getString(R.string.google_pay_hold_duplicate_order_message);
         }
         return getString(R.string.google_pay_hold_failed_message);
     }

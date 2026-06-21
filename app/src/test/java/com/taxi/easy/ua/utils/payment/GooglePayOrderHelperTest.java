@@ -43,6 +43,12 @@ public class GooglePayOrderHelperTest {
     }
 
     @Test
+    public void isDuplicateOrderError_detectsDuplicateOrderIdCode() {
+        assertTrue(GooglePayOrderHelper.isDuplicateOrderError("duplicate_order_id"));
+        assertFalse(GooglePayOrderHelper.isDuplicateOrderError("Declined"));
+    }
+
+    @Test
     public void usesWalletHold_coversWfpAndGooglePay() {
         assertTrue(PaymentTypeHelper.usesWalletHold(PaymentTypeHelper.CARD));
         assertTrue(PaymentTypeHelper.usesWalletHold(PaymentTypeHelper.GOOGLE_PAY));

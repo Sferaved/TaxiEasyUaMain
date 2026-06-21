@@ -56,6 +56,10 @@ public final class GooglePayOrderHelper {
                 && ("network_error".equals(failureCode) || failureCode.startsWith("charge_http_0"));
     }
 
+    public static boolean isDuplicateOrderError(@Nullable String failureCode) {
+        return "duplicate_order_id".equals(failureCode);
+    }
+
     public static void fetchMerchantConfig(
             @NonNull String baseUrl,
             @NonNull String application,
@@ -134,6 +138,10 @@ public final class GooglePayOrderHelper {
                             + " ref=" + orderReference);
                     if (status != null && isHoldSuccess(status)) {
                         callback.onHoldSuccess(orderReference);
+                        return;
+                    }
+                    if (body.getReasonCode() == 1112) {
+                        callback.onHoldFailed("duplicate_order_id");
                         return;
                     }
                     callback.onHoldFailed(status != null ? status : "charge_declined");

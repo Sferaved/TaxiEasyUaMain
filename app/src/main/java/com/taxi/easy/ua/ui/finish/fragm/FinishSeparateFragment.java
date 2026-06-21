@@ -69,6 +69,7 @@ import com.taxi.easy.ua.ui.finish.BonusResponse;
 import com.taxi.easy.ua.ui.finish.FinishCostResponse;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
 import com.taxi.easy.ua.ui.finish.Status;
+import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
 import com.taxi.easy.ua.ui.weather.finish.PassengerNotifier;
@@ -2546,7 +2547,9 @@ public class FinishSeparateFragment extends Fragment {
         }
         if (uidToCancel != null && !uidToCancel.isEmpty()) {
             ExecutionStatusViewModel.markUserCanceledOrderPair(uidToCancel, uid_Double);
+            PaymentSessionHelper.clearWfpOrderRef(uidToCancel);
         }
+        MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
         cancel_btn_click = true;
         cancelShowDialogAddCost();
         orderCanceled(successMessage);
