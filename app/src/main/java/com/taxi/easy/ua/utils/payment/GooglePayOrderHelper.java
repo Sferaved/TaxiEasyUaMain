@@ -1,18 +1,29 @@
 package com.taxi.easy.ua.utils.payment;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import com.google.gson.Gson;
+import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
+import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
 import com.taxi.easy.ua.ui.wfp.googlepay.GooglePayChargeRequest;
 import com.taxi.easy.ua.ui.wfp.googlepay.GooglePayChargeResponse;
 import com.taxi.easy.ua.ui.wfp.googlepay.GooglePayChargeService;
 import com.taxi.easy.ua.ui.wfp.googlepay.GooglePayConfigResponse;
 import com.taxi.easy.ua.ui.wfp.googlepay.GooglePayConfigService;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -26,6 +37,10 @@ public final class GooglePayOrderHelper {
 
     private static final String TAG = "GooglePayOrderHelper";
     private static final String PRODUCT_NAME = "Інша допоміжна діяльність у сфері транспорту";
+    private static final int CHARGE_READ_TIMEOUT_SEC = 60;
+    private static final int HOLD_RECOVERY_POLL_ATTEMPTS = 15;
+    private static final long HOLD_RECOVERY_POLL_DELAY_MS = 2_000L;
+    private static final Gson GSON = new Gson();
 
     public interface ConfigCallback {
         void onSuccess(@NonNull String merchantAccount);
@@ -39,10 +54,16 @@ public final class GooglePayOrderHelper {
         void onHoldFailed(@NonNull String message);
     }
 
+    public interface HoldPollCallback {
+        void onHoldConfirmed(@NonNull String orderReference);
+
+        void onPollExhausted();
+    }
+
     private GooglePayOrderHelper() {
     }
 
-    public static boolean isHoldSuccess(@NonNull String transactionStatus) {
+    public static boolean isHoldSuccess(@Nullable String transactionStatus) {
         return "Approved".equals(transactionStatus)
                 || "WaitingAuthComplete".equals(transactionStatus);
     }
@@ -56,6 +77,20 @@ public final class GooglePayOrderHelper {
                 && ("network_error".equals(failureCode) || failureCode.startsWith("charge_http_0"));
     }
 
+    public static boolean isTimeoutFailure(@Nullable String failureCode) {
+        if (failureCode == null) {
+            return false;
+        }
+        String lower = failureCode.toLowerCase(Locale.ROOT);
+        return lower.contains("timeout") || lower.contains("timed out");
+    }
+
+    public static boolean isRecoverableHoldFailure(@Nullable String failureCode) {
+        return isChargeServerError(failureCode)
+                || isChargeNetworkError(failureCode)
+                || isTimeoutFailure(failureCode);
+    }
+
     public static boolean isDuplicateOrderError(@Nullable String failureCode) {
         return "duplicate_order_id".equals(failureCode);
     }
@@ -66,11 +101,7 @@ public final class GooglePayOrderHelper {
             @NonNull String city,
             @NonNull ConfigCallback callback
     ) {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(normalizeBaseUrl(baseUrl))
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        GooglePayConfigService service = retrofit.create(GooglePayConfigService.class);
+        GooglePayConfigService service = buildRetrofit(baseUrl, false).create(GooglePayConfigService.class);
         service.getConfig(application, city).enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<GooglePayConfigResponse> call,
@@ -112,11 +143,7 @@ public final class GooglePayOrderHelper {
             callback.onHoldFailed("invalid_amount");
             return;
         }
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(normalizeBaseUrl(baseUrl))
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        GooglePayChargeService service = retrofit.create(GooglePayChargeService.class);
+        GooglePayChargeService service = buildRetrofit(baseUrl, true).create(GooglePayChargeService.class);
         GooglePayChargeRequest request = new GooglePayChargeRequest(
                 application,
                 city,
@@ -131,10 +158,11 @@ public final class GooglePayOrderHelper {
             @Override
             public void onResponse(@NonNull Call<GooglePayChargeResponse> call,
                                    @NonNull Response<GooglePayChargeResponse> response) {
-                GooglePayChargeResponse body = response.body();
-                if (response.isSuccessful() && body != null) {
+                GooglePayChargeResponse body = parseChargeResponse(response);
+                if (body != null) {
                     String status = body.getTransactionStatus();
                     Logger.d(context, TAG, "googlePayCharge status=" + status
+                            + " http=" + response.code()
                             + " ref=" + orderReference);
                     if (status != null && isHoldSuccess(status)) {
                         callback.onHoldSuccess(orderReference);
@@ -158,6 +186,90 @@ public final class GooglePayOrderHelper {
         });
     }
 
+    /**
+     * После timeout/5xx опрашиваем checkStatus по orderReference — WFP мог уже принять холд.
+     *
+     * @return runnable для отмены опроса
+     */
+    @NonNull
+    public static Runnable startHoldRecoveryPoll(
+            @NonNull Context context,
+            @NonNull String baseUrl,
+            @NonNull String application,
+            @NonNull String city,
+            @NonNull String orderReference,
+            @NonNull HoldPollCallback callback
+    ) {
+        Handler handler = new Handler(Looper.getMainLooper());
+        AtomicInteger generation = new AtomicInteger(0);
+        Runnable[] pollStep = new Runnable[1];
+        pollStep[0] = new Runnable() {
+            int attempt;
+
+            @Override
+            public void run() {
+                if (generation.get() != 0) {
+                    return;
+                }
+                if (attempt >= HOLD_RECOVERY_POLL_ATTEMPTS) {
+                    callback.onPollExhausted();
+                    return;
+                }
+                attempt++;
+                checkHoldStatusOnce(context, baseUrl, application, city, orderReference,
+                        new HoldPollCallback() {
+                            @Override
+                            public void onHoldConfirmed(@NonNull String confirmedRef) {
+                                if (generation.get() == 0) {
+                                    callback.onHoldConfirmed(confirmedRef);
+                                }
+                            }
+
+                            @Override
+                            public void onPollExhausted() {
+                                if (generation.get() == 0) {
+                                    handler.postDelayed(pollStep[0], HOLD_RECOVERY_POLL_DELAY_MS);
+                                }
+                            }
+                        });
+            }
+        };
+        handler.post(pollStep[0]);
+        return () -> generation.incrementAndGet();
+    }
+
+    public static void checkHoldStatusOnce(
+            @NonNull Context context,
+            @NonNull String baseUrl,
+            @NonNull String application,
+            @NonNull String city,
+            @NonNull String orderReference,
+            @NonNull HoldPollCallback callback
+    ) {
+        StatusService service = buildRetrofit(baseUrl, true).create(StatusService.class);
+        service.checkStatus(application, city, orderReference).enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<StatusResponse> call,
+                                   @NonNull Response<StatusResponse> response) {
+                String status = response.body() != null
+                        ? response.body().getTransactionStatus()
+                        : null;
+                Logger.d(context, TAG, "checkStatus poll status=" + status + " ref=" + orderReference);
+                if (isHoldSuccess(status)) {
+                    callback.onHoldConfirmed(orderReference);
+                } else {
+                    callback.onPollExhausted();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
+                Logger.w(context, TAG, "checkStatus poll failed: " + t.getMessage());
+                callback.onPollExhausted();
+            }
+        });
+    }
+
     public static int parseAmountUah(@NonNull String costText) {
         String normalized = costText.trim().replace(',', '.');
         if (normalized.isEmpty()) {
@@ -170,7 +282,47 @@ public final class GooglePayOrderHelper {
         }
     }
 
+    @Nullable
+    private static GooglePayChargeResponse parseChargeResponse(
+            @NonNull Response<GooglePayChargeResponse> response
+    ) {
+        GooglePayChargeResponse body = response.body();
+        if (body != null) {
+            return body;
+        }
+        if (response.errorBody() == null) {
+            return null;
+        }
+        try {
+            return GSON.fromJson(response.errorBody().string(), GooglePayChargeResponse.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static Retrofit buildRetrofit(@NonNull String baseUrl, boolean longChargeTimeout) {
+        OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor());
+        if (longChargeTimeout) {
+            clientBuilder
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(CHARGE_READ_TIMEOUT_SEC, TimeUnit.SECONDS)
+                    .writeTimeout(30, TimeUnit.SECONDS);
+        } else {
+            clientBuilder
+                    .connectTimeout(15, TimeUnit.SECONDS)
+                    .readTimeout(15, TimeUnit.SECONDS)
+                    .writeTimeout(15, TimeUnit.SECONDS);
+        }
+        return new Retrofit.Builder()
+                .baseUrl(normalizeBaseUrl(baseUrl))
+                .client(clientBuilder.build())
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+    }
+
     private static String normalizeBaseUrl(@NonNull String baseUrl) {
         return baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
     }
 }
+

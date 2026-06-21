@@ -29,6 +29,12 @@ public class GooglePayOrderHelperTest {
     }
 
     @Test
+    public void parseAmountUah_parsesAddCostDeltaOnly() {
+        assertEquals(5, GooglePayOrderHelper.parseAmountUah("5"));
+        assertEquals(5, GooglePayOrderHelper.parseAmountUah(" 5 "));
+    }
+
+    @Test
     public void isChargeServerError_detectsHttp5xxCodes() {
         assertTrue(GooglePayOrderHelper.isChargeServerError("charge_http_500"));
         assertTrue(GooglePayOrderHelper.isChargeServerError("charge_http_503"));
@@ -49,9 +55,25 @@ public class GooglePayOrderHelperTest {
     }
 
     @Test
+    public void isTimeoutFailure_detectsTimeoutMessages() {
+        assertTrue(GooglePayOrderHelper.isTimeoutFailure("timeout"));
+        assertTrue(GooglePayOrderHelper.isTimeoutFailure("Read timed out"));
+        assertFalse(GooglePayOrderHelper.isTimeoutFailure("Declined"));
+    }
+
+    @Test
+    public void isRecoverableHoldFailure_coversTimeoutNetworkAnd5xx() {
+        assertTrue(GooglePayOrderHelper.isRecoverableHoldFailure("timeout"));
+        assertTrue(GooglePayOrderHelper.isRecoverableHoldFailure("charge_http_500"));
+        assertTrue(GooglePayOrderHelper.isRecoverableHoldFailure("network_error"));
+        assertFalse(GooglePayOrderHelper.isRecoverableHoldFailure("Declined"));
+    }
+
+    @Test
     public void usesWalletHold_coversWfpAndGooglePay() {
         assertTrue(PaymentTypeHelper.usesWalletHold(PaymentTypeHelper.CARD));
         assertTrue(PaymentTypeHelper.usesWalletHold(PaymentTypeHelper.GOOGLE_PAY));
         assertFalse(PaymentTypeHelper.usesWalletHold(PaymentTypeHelper.NAL));
     }
 }
+

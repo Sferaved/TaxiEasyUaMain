@@ -260,6 +260,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     private ActivityResultLauncher<IntentSenderRequest> googlePayLauncher;
     private PaymentsClient googlePayPaymentsClient;
     private boolean googlePayOrderHoldInProgress;
+    private boolean googlePayOrderProcessingUiShown;
+    @Nullable
+    private Runnable googlePayHoldPollCancel;
     private String pendingGooglePayMerchant;
     private String pendingGooglePayAmount;
     private String pendingGooglePayOrderReference;
@@ -1657,6 +1660,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
     @Override
     public void onDestroyView() {
+        cancelGooglePayHoldPoll();
         // ✅ Отменяем активные запросы
         pendingAddressRequest = null;
         isUpdatingFromGPS = false;
@@ -5799,6 +5803,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         if (!isAdded() || pendingGooglePayOrderReference == null) {
             return;
         }
+        showGooglePayOrderProcessingUi();
         List<String> cityInfo = logCursor(MainActivity.CITY_INFO, context);
         String city = cityInfo.size() > 1 ? cityInfo.get(1) : "";
         List<String> userInfo = logCursor(MainActivity.TABLE_USER_INFO, context);
@@ -5810,6 +5815,11 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 + " ref=" + pendingGooglePayOrderReference);
         String appBaseUrl = (String) sharedPreferencesHelperMain.getValue(
                 "baseUrl", "https://m.easy-order-taxi.site");
+        String displayCost = resolveOrderDisplayCostForSubmit();
+        if (displayCost == null) {
+            displayCost = pendingGooglePayAmount;
+        }
+        EarlyOrderNavigationHelper.markSubmitStarted(context, pay_method, displayCost);
 
         GooglePayOrderHelper.submitHoldCharge(
                 context,
@@ -5824,29 +5834,136 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 new GooglePayOrderHelper.ChargeCallback() {
                     @Override
                     public void onHoldSuccess(@NonNull String orderReference) {
-                        if (!isAdded()) {
-                            return;
-                        }
-                        googlePayOrderHoldInProgress = false;
-                        progressBar.setVisibility(GONE);
-                        MainActivity.order_id = orderReference;
-                        pendingGooglePayOrderReference = orderReference;
-                        restoreFrozenGooglePayOrderCostForSubmit();
-                        try {
-                            if (!orderRout()) {
-                                onGooglePayOrderHoldFailed(context.getString(R.string.cost_error));
-                                return;
-                            }
-                            orderFinished();
-                        } catch (MalformedURLException e) {
-                            FirebaseCrashlytics.getInstance().recordException(e);
-                            onGooglePayOrderHoldFailed(e.getMessage() != null
-                                    ? e.getMessage() : "order_error");
-                        }
+                        onGooglePayOrderHoldSucceeded(orderReference);
                     }
 
                     @Override
                     public void onHoldFailed(@NonNull String message) {
+                        handleGooglePayOrderHoldFailure(message, appBaseUrl, city);
+                    }
+                }
+        );
+    }
+
+    private void showGooglePayOrderProcessingUi() {
+        if (!isAdded() || getContext() == null) {
+            return;
+        }
+        Context ctx = requireContext();
+        googlePayOrderProcessingUiShown = true;
+        btnVisible(GONE);
+        if (progressBar != null) {
+            progressBar.forceShow();
+            progressBar.bringToFront();
+        }
+        if (constraintLayoutVisicomMain != null) {
+            constraintLayoutVisicomMain.setVisibility(GONE);
+        }
+        if (textViewTo != null && textViewTo.getText().toString().trim().isEmpty()) {
+            textViewTo.setText(ctx.getString(R.string.on_city_tv));
+        }
+        if (geoText != null && textViewTo != null && text_full_message != null) {
+            String messageResult = geoText.getText().toString() + " "
+                    + getString(R.string.to_message) + textViewTo.getText() + ".";
+            text_full_message.setText(messageResult);
+        }
+        if (textCostMessage != null) {
+            textCostMessage.setText(R.string.google_pay_order_processing);
+        }
+        if (textStatusCar != null) {
+            textStatusCar.setText(R.string.google_pay_order_processing);
+            Animation blinkAnimation = AnimationUtils.loadAnimation(ctx, R.anim.blink_animation);
+            textStatusCar.startAnimation(blinkAnimation);
+        }
+        if (carProgressBar != null) {
+            carProgressBar.resumeAnimation();
+        }
+        if (constraintLayoutVisicomFinish != null) {
+            constraintLayoutVisicomFinish.setVisibility(VISIBLE);
+        }
+    }
+
+    private void restoreVisicomMainAfterGooglePayFailure() {
+        if (!googlePayOrderProcessingUiShown) {
+            return;
+        }
+        googlePayOrderProcessingUiShown = false;
+        if (constraintLayoutVisicomMain != null) {
+            constraintLayoutVisicomMain.setVisibility(VISIBLE);
+        }
+        if (constraintLayoutVisicomFinish != null) {
+            constraintLayoutVisicomFinish.setVisibility(GONE);
+        }
+    }
+
+    private void cancelGooglePayHoldPoll() {
+        if (googlePayHoldPollCancel != null) {
+            googlePayHoldPollCancel.run();
+            googlePayHoldPollCancel = null;
+        }
+    }
+
+    private void onGooglePayOrderHoldSucceeded(@NonNull String orderReference) {
+        if (!isAdded()) {
+            return;
+        }
+        cancelGooglePayHoldPoll();
+        googlePayOrderHoldInProgress = false;
+        googlePayOrderProcessingUiShown = false;
+        if (progressBar != null) {
+            progressBar.setVisibility(GONE);
+        }
+        MainActivity.order_id = orderReference;
+        pendingGooglePayOrderReference = orderReference;
+        restoreFrozenGooglePayOrderCostForSubmit();
+        try {
+            if (!orderRout()) {
+                onGooglePayOrderHoldFailed(context.getString(R.string.cost_error));
+                return;
+            }
+            orderFinished();
+        } catch (MalformedURLException e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+            onGooglePayOrderHoldFailed(e.getMessage() != null
+                    ? e.getMessage() : "order_error");
+        }
+    }
+
+    private void handleGooglePayOrderHoldFailure(
+            @NonNull String message,
+            @NonNull String appBaseUrl,
+            @NonNull String city
+    ) {
+        if (!isAdded() || pendingGooglePayOrderReference == null) {
+            onGooglePayOrderHoldFailed(message);
+            return;
+        }
+        if (!GooglePayOrderHelper.isRecoverableHoldFailure(message)) {
+            onGooglePayOrderHoldFailed(message);
+            return;
+        }
+        Logger.d(context, TAG, "Google Pay hold recoverable failure, polling checkStatus: " + message);
+        if (textCostMessage != null) {
+            textCostMessage.setText(R.string.google_pay_order_processing);
+        }
+        cancelGooglePayHoldPoll();
+        final String orderRef = pendingGooglePayOrderReference;
+        googlePayHoldPollCancel = GooglePayOrderHelper.startHoldRecoveryPoll(
+                context,
+                appBaseUrl,
+                context.getString(R.string.application),
+                city,
+                orderRef,
+                new GooglePayOrderHelper.HoldPollCallback() {
+                    @Override
+                    public void onHoldConfirmed(@NonNull String confirmedRef) {
+                        googlePayHoldPollCancel = null;
+                        onGooglePayOrderHoldSucceeded(confirmedRef);
+                    }
+
+                    @Override
+                    public void onPollExhausted() {
+                        googlePayHoldPollCancel = null;
                         onGooglePayOrderHoldFailed(message);
                     }
                 }
@@ -5859,7 +5976,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     }
 
     private void onGooglePayOrderHoldCancelled() {
+        cancelGooglePayHoldPoll();
         googlePayOrderHoldInProgress = false;
+        googlePayOrderProcessingUiShown = false;
         pendingOrderDisplayCost = null;
         clearFrozenGooglePaySubmitCost();
         pendingGooglePayOrderReference = null;
@@ -5872,7 +5991,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     }
 
     private void onGooglePayOrderHoldFailed(@Nullable String message) {
+        cancelGooglePayHoldPoll();
         googlePayOrderHoldInProgress = false;
+        restoreVisicomMainAfterGooglePayFailure();
         pendingOrderDisplayCost = null;
         clearFrozenGooglePaySubmitCost();
         pendingGooglePayOrderReference = null;
@@ -5897,6 +6018,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         }
         if (GooglePayOrderHelper.isChargeNetworkError(failureCode)) {
             return getString(R.string.google_pay_hold_network_error_message);
+        }
+        if (GooglePayOrderHelper.isTimeoutFailure(failureCode)) {
+            return getString(R.string.google_pay_hold_timeout_message);
         }
         if (GooglePayOrderHelper.isDuplicateOrderError(failureCode)) {
             return getString(R.string.google_pay_hold_duplicate_order_message);
