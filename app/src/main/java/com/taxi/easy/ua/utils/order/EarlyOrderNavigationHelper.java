@@ -2,12 +2,14 @@ package com.taxi.easy.ua.utils.order;
 
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
+import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import androidx.annotation.Nullable;
 import androidx.navigation.NavOptions;
 
 import com.taxi.easy.ua.MainActivity;
@@ -23,7 +25,9 @@ import com.taxi.easy.ua.utils.route.RoutePlaceMatcher;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Ранний переход на экран заказа по Centrifugo {@code order_uid_new}
@@ -56,6 +60,20 @@ public final class EarlyOrderNavigationHelper {
         sharedPreferencesHelperMain.saveValue(PREF_EARLY_NAV_UID, "");
     }
 
+    /** Сбрасывает только флаг отправки; uid раннего перехода сохраняется. */
+    public static void clearSubmitInProgressOnly() {
+        sharedPreferencesHelperMain.saveValue(PREF_SUBMIT_IN_PROGRESS, false);
+    }
+
+    @Nullable
+    public static String getEarlyNavUid() {
+        Object v = sharedPreferencesHelperMain.getValue(PREF_EARLY_NAV_UID, "");
+        if (v instanceof String && !TextUtils.isEmpty((String) v)) {
+            return (String) v;
+        }
+        return null;
+    }
+
     public static boolean isSubmitInProgress() {
         Object v = sharedPreferencesHelperMain.getValue(PREF_SUBMIT_IN_PROGRESS, false);
         return v instanceof Boolean && (Boolean) v;
@@ -83,6 +101,7 @@ public final class EarlyOrderNavigationHelper {
         if (MainActivity.currentNavDestination == R.id.nav_finish_separate) {
             markEarlyDone(orderUid);
             MainActivity.uid = orderUid;
+            clearSubmitInProgressOnly();
             if (MainActivity.viewModel != null) {
                 MainActivity.viewModel.updateUid(orderUid);
                 if (!TextUtils.isEmpty(paySystemStatus)) {
@@ -93,6 +112,54 @@ public final class EarlyOrderNavigationHelper {
             return false;
         }
 
+        markEarlyDone(orderUid);
+        Logger.d(context, TAG, "early navigate uid=" + orderUid);
+        boolean navigated = navigateToFinishScreen(context, orderUid, paySystemStatus, true);
+        if (navigated) {
+            clearSubmitInProgressOnly();
+        }
+        return navigated;
+    }
+
+    /**
+     * Повторить переход на finish, если {@code order_uid_new} пришёл в фоне и UI остался на Visicom.
+     */
+    public static boolean tryResumePendingFinishNavigation(Context context) {
+        if (context == null || !isEarlyNavigationDone()) {
+            return false;
+        }
+        clearSubmitInProgressOnly();
+        if (MainActivity.navController == null) {
+            Logger.w(context, TAG, "tryResumePendingFinish: navController null");
+            return false;
+        }
+        if (MainActivity.currentNavDestination == R.id.nav_finish_separate) {
+            return false;
+        }
+        String orderUid = getEarlyNavUid();
+        if (TextUtils.isEmpty(orderUid)) {
+            orderUid = resolveOrderUid(VisicomFragment.sendUrlMap);
+        }
+        if (TextUtils.isEmpty(orderUid)) {
+            return false;
+        }
+        String paySystemStatus = null;
+        if (MainActivity.viewModel != null && MainActivity.viewModel.getPaySystemStatus() != null) {
+            paySystemStatus = MainActivity.viewModel.getPaySystemStatus().getValue();
+        }
+        if (TextUtils.isEmpty(paySystemStatus)) {
+            paySystemStatus = resolvePayMethod(context);
+        }
+        Logger.d(context, TAG, "resume pending finish uid=" + orderUid);
+        return navigateToFinishScreen(context, orderUid, paySystemStatus, false);
+    }
+
+    private static boolean navigateToFinishScreen(
+            Context context,
+            String orderUid,
+            String paySystemStatus,
+            boolean reportConversion
+    ) {
         Map<String, String> map = VisicomFragment.sendUrlMap;
         if (map == null) {
             map = buildSnapshotMap(context, resolvePayMethod(context), "");
@@ -138,9 +205,9 @@ public final class EarlyOrderNavigationHelper {
             MainActivity.viewModel.setStatusNalUpdate(true);
         }
 
-        markEarlyDone(orderUid);
-        Logger.d(context, TAG, "early navigate uid=" + orderUid);
-        reportOrderConversion(context, orderUid, map);
+        if (reportConversion) {
+            reportOrderConversion(context, orderUid, map);
+        }
 
         MainActivity.navController.navigate(
                 R.id.nav_finish_separate,
@@ -153,9 +220,6 @@ public final class EarlyOrderNavigationHelper {
     }
 
     /** Дополняет карту заказа ответом HTTP, если UI уже ушёл с Visicom. */
-    /**
-     * UID заказа: из ответа HTTP, Centrifugo, ранней навигации или сохранённого uid_fcm.
-     */
     public static String resolveOrderUid(Map<String, String> sendUrlMap) {
         if (sendUrlMap != null) {
             String uid = sendUrlMap.get("dispatching_order_uid");
@@ -379,3 +443,4 @@ public final class EarlyOrderNavigationHelper {
         return list;
     }
 }
+

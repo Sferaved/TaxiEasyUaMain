@@ -35,6 +35,7 @@ import android.os.Looper;
 import android.provider.Settings;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.text.style.StyleSpan;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -498,7 +499,10 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         // Инициализация существующего ExecutionStatusViewModel (из MainActivity)
         viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
 
-        if (EarlyOrderNavigationHelper.isSubmitInProgress() || googlePayOrderHoldInProgress) {
+        if (EarlyOrderNavigationHelper.isEarlyNavigationDone()) {
+            new Handler(Looper.getMainLooper()).post(
+                    () -> EarlyOrderNavigationHelper.tryResumePendingFinishNavigation(context));
+        } else if (EarlyOrderNavigationHelper.isSubmitInProgress() || googlePayOrderHoldInProgress) {
             new Handler(Looper.getMainLooper()).post(this::restoreGooglePayProcessingUiIfNeeded);
         }
 
@@ -3235,7 +3239,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
 
 
-        final boolean preserveGPaySubmit = isGooglePaySubmitFrozen() || googlePayOrderProcessingUiShown;
+        final boolean preserveGPaySubmit = (isGooglePaySubmitFrozen() || googlePayOrderProcessingUiShown)
+                && !EarlyOrderNavigationHelper.isEarlyNavigationDone();
 
         if (!preserveGPaySubmit) {
             VisicomFragment.sendUrlMap = null;
@@ -3253,7 +3258,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
         textfrom = binding.textfrom;
 
-        if (preserveGPaySubmit) {
+        if (EarlyOrderNavigationHelper.isEarlyNavigationDone()) {
+            EarlyOrderNavigationHelper.tryResumePendingFinishNavigation(context);
+        } else if (preserveGPaySubmit) {
             restoreGooglePayProcessingUiIfNeeded();
         } else {
             constraintLayoutVisicomMain.setVisibility(GONE);
@@ -5450,6 +5457,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
         String[] array = databaseHelper.readRouteCancel();
         Logger.d(context, TAG, "processRouteList: array " + Arrays.toString(array));
+        dismissStuckGooglePaySubmitIfOrderClosed();
         if (array != null && array.length > 0) {
             NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
             int currentDestination = navController.getCurrentDestination().getId();
@@ -5463,6 +5471,82 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             databaseHelper.clearTableCancel();
             databaseHelperUid.clearTableCancel();
         }
+    }
+
+    private void dismissStuckGooglePaySubmitIfOrderClosed() {
+        if (!isGooglePaySubmitFrozen() && !googlePayOrderProcessingUiShown
+                && !EarlyOrderNavigationHelper.isSubmitInProgress()) {
+            return;
+        }
+        if (routeListCancel == null || routeListCancel.isEmpty()) {
+            return;
+        }
+        String activeUid = EarlyOrderNavigationHelper.resolveOrderUid(sendUrlMap);
+        if (TextUtils.isEmpty(activeUid)) {
+            activeUid = MainActivity.uid;
+        }
+        if (TextUtils.isEmpty(activeUid)) {
+            activeUid = EarlyOrderNavigationHelper.getEarlyNavUid();
+        }
+        if (TextUtils.isEmpty(activeUid)) {
+            return;
+        }
+        for (RouteResponseCancel route : routeListCancel) {
+            String uid = route.getUid();
+            if (TextUtils.isEmpty(uid) || "*".equals(uid) || !uid.equals(activeUid)) {
+                continue;
+            }
+            if (OrderHistoryStatusHelper.isCanceled(
+                    route.getCloseReason(),
+                    route.getExecution_status(),
+                    uid)
+                    || isTerminalDispatchCloseReason(route.getCloseReason())) {
+                Logger.d(context, TAG, "dismissStuckGooglePaySubmit: order closed uid=" + uid);
+                releaseStuckGooglePaySubmitState();
+                return;
+            }
+        }
+    }
+
+    private static boolean isTerminalDispatchCloseReason(@Nullable String closeReason) {
+        if (closeReason == null) {
+            return false;
+        }
+        switch (closeReason.trim()) {
+            case "2":
+            case "3":
+            case "4":
+            case "5":
+            case "8":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private void releaseStuckGooglePaySubmitState() {
+        if (!isAdded()) {
+            return;
+        }
+        googlePayOrderProcessingUiShown = false;
+        googlePayOrderHoldInProgress = false;
+        cancelGooglePayHoldPoll();
+        clearFrozenGooglePaySubmitCost();
+        pendingOrderDisplayCost = null;
+        pendingGooglePayOrderReference = null;
+        EarlyOrderNavigationHelper.clearSubmitState();
+        VisicomFragment.sendUrlMap = null;
+        MainActivity.uid = null;
+        if (progressBar != null) {
+            progressBar.setVisibility(GONE);
+        }
+        if (constraintLayoutVisicomFinish != null) {
+            constraintLayoutVisicomFinish.setVisibility(GONE);
+        }
+        if (constraintLayoutVisicomMain != null) {
+            constraintLayoutVisicomMain.setVisibility(VISIBLE);
+        }
+        btnVisible(VISIBLE);
     }
 
     private static boolean isDuplicateOrderMessage(@Nullable String message) {
@@ -5901,6 +5985,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     /** После возврата из GPay onResume/onCreateView не должны показывать карту вместо «Підтверджуємо…». */
     private void restoreGooglePayProcessingUiIfNeeded() {
         if (!isAdded() || getContext() == null) {
+            return;
+        }
+        if (EarlyOrderNavigationHelper.isEarlyNavigationDone()) {
             return;
         }
         if (!isGooglePaySubmitFrozen() && !googlePayOrderProcessingUiShown) {
