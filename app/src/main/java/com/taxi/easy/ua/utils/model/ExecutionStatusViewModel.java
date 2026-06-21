@@ -215,6 +215,10 @@ public class ExecutionStatusViewModel extends ViewModel {
     }
 
     public void persistDisplayCostGrivna(@Nullable String costGrivna) {
+        persistDisplayCostGrivnaStatic(costGrivna);
+    }
+
+    public static void persistDisplayCostGrivnaStatic(@Nullable String costGrivna) {
         if (costGrivna == null || costGrivna.isEmpty()) {
             return;
         }

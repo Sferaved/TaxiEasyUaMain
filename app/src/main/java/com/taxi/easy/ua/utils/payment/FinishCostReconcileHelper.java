@@ -17,10 +17,14 @@ public final class FinishCostReconcileHelper {
             boolean walletHold,
             boolean addCostInFlight,
             boolean addCostSheetShowing,
-            @Nullable Integer walletFloorGrivna
+            @Nullable Integer walletFloorGrivna,
+            boolean walletAddCostApplied
     ) {
         if (displayed <= 0 || serverTotal >= displayed) {
             return false;
+        }
+        if (walletAddCostApplied) {
+            return true;
         }
         if (addCostInFlight || addCostSheetShowing) {
             return true;
@@ -29,6 +33,35 @@ public final class FinishCostReconcileHelper {
             return false;
         }
         return displayed >= walletFloorGrivna && serverTotal < walletFloorGrivna;
+    }
+
+    /** Не дублировать +N после WaitingAuthComplete, если доплата уже на экране или подтверждена. */
+    public static boolean shouldSkipOptimisticWalletAdd(
+            int displayedGrivna,
+            @Nullable Integer walletFloorGrivna,
+            boolean walletAddCostApplied
+    ) {
+        if (walletAddCostApplied) {
+            return true;
+        }
+        return walletFloorGrivna != null && walletFloorGrivna > 0 && displayedGrivna >= walletFloorGrivna;
+    }
+
+    @Nullable
+    public static String pickHigherCostGrivna(@Nullable String first, @Nullable String second) {
+        if (first == null || first.trim().isEmpty()) {
+            return second;
+        }
+        if (second == null || second.trim().isEmpty()) {
+            return first;
+        }
+        try {
+            int a = (int) Math.round(Double.parseDouble(first.replace(',', '.').trim()));
+            int b = (int) Math.round(Double.parseDouble(second.replace(',', '.').trim()));
+            return a >= b ? first.trim() : second.trim();
+        } catch (NumberFormatException e) {
+            return first;
+        }
     }
 
     public static int computeOptimisticWalletTotal(

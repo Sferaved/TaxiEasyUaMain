@@ -430,6 +430,7 @@ public class CentrifugoManager {
                             viewModel.updatePaySystemStatus(paySystemStatus);
                             if (orderCost != null && !orderCost.isEmpty() && !"0".equals(orderCost)) {
                                 viewModel.setFinishAbsoluteCostGrivna(orderCost);
+                                viewModel.persistDisplayCostGrivna(orderCost);
                                 sharedPreferencesHelperMain.saveValue("order_cost", orderCost);
                                 ExecutionStatusViewModel.markWalletAddCostApplied(orderUid);
                             }

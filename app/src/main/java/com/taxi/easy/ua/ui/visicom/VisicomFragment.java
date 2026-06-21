@@ -268,6 +268,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     /** addCost/startCost на момент старта GPay — не пересчитываем из изменившейся базы. */
     private long frozenSubmitAddCost = -1;
     private long frozenSubmitStartCost = -1;
+    /** Ответ расчёта стоимости, пришедший во время GPay hold — применить после закрытия шторки. */
+    private String deferredCostWhileGPayHold;
     private boolean location_update;
     LocationManager locationManager;
 
@@ -981,6 +983,10 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             );
         }
 
+        if (visible == VISIBLE) {
+            ensureRouteCostVisible();
+        }
+
         Logger.d(context,"BTN_VISIBLE", "Метод завершен. Текущий режим: " + getVisibilityString(visible));
     }
 
@@ -1308,7 +1314,52 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 || "autoGps".equals(source)
                 || "addressChanged".equals(source)
                 || "fromHistory".equals(source)
-                || "fromFinish".equals(source);
+                || "fromFinish".equals(source)
+                || "costMissing".equals(source)
+                || "gpayCancelled".equals(source);
+    }
+
+    private boolean hasDisplayableCostOnUi() {
+        if (text_view_cost == null || text_view_cost.getText() == null) {
+            return false;
+        }
+        return hasDisplayableCost(text_view_cost.getText().toString());
+    }
+
+    /** Если кнопки заказа видны, а поле цены пустое — кэш или повторный расчёт. */
+    private void ensureRouteCostVisible() {
+        if (!isAdded() || binding == null || googlePayOrderHoldInProgress) {
+            return;
+        }
+        if (CostCalculationProgressBar.isCalculationInProgress()) {
+            return;
+        }
+        if (hasDisplayableCostOnUi()) {
+            return;
+        }
+        if (tryApplyCachedAroundCityCost()) {
+            return;
+        }
+        requestVisicomCost("costMissing");
+    }
+
+    private void storeDeferredCostWhileGPayHold(@Nullable String orderCost) {
+        if (hasDisplayableCost(orderCost)) {
+            deferredCostWhileGPayHold = orderCost.trim();
+        }
+    }
+
+    private void releaseDeferredCostAfterGPayHold() {
+        if (googlePayOrderHoldInProgress) {
+            return;
+        }
+        String deferred = deferredCostWhileGPayHold;
+        deferredCostWhileGPayHold = null;
+        if (hasDisplayableCost(deferred)) {
+            applyDiscountAndUpdateUI(deferred, context);
+            return;
+        }
+        ensureRouteCostVisible();
     }
 
     private void snapshotCostPreviewBeforeRouteChange() {
@@ -3178,9 +3229,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
         VisicomFragment.sendUrlMap = null;
         MainActivity.uid = null;
-        if (!isGooglePaySubmitFrozen()) {
-            EarlyOrderNavigationHelper.clearSubmitState();
-        }
+        EarlyOrderNavigationHelper.clearSubmitState();
         Logger.d(context, "MainActivity.uid", "MainActivity.uid 2 " + MainActivity.uid);
 
         MainActivity.orderResponse = null;
@@ -4057,8 +4106,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             Logger.d(context, TAG, "visicomCost пропущен (активный заказ), источник: " + source);
             return;
         }
-        if (googlePayOrderHoldInProgress || EarlyOrderNavigationHelper.isSubmitInProgress()) {
-            Logger.d(context, TAG, "visicomCost пропущен (оплата/отправка заказа), источник: " + source);
+        if (googlePayOrderHoldInProgress) {
+            Logger.d(context, TAG, "visicomCost пропущен (Google Pay hold), источник: " + source);
             return;
         }
         List<String> userInfo = logCursor(MainActivity.TABLE_USER_INFO, context);
@@ -5001,10 +5050,12 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 costHandler.removeCallbacks(reserveRunnable);
             }
 
-            if (binding != null && !isGooglePaySubmitFrozen()) {
+            if (binding != null && !googlePayOrderHoldInProgress) {
                 Logger.d(context, ADDR_GUARD, "costObserver: sync UI from ROUT_MARKER after cost=" + cost);
                 syncAddressFieldsFromRouteMarker();
                 applyDiscountAndUpdateUI(cost, context);
+            } else if (hasDisplayableCost(cost)) {
+                storeDeferredCostWhileGPayHold(cost);
             }
         });
 
@@ -5096,8 +5147,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     }
 
     private void applyDiscountAndUpdateUI(String orderCost, Context context, boolean finalizeUi) {
-        if (isGooglePaySubmitFrozen()) {
-            Logger.d(context, TAG, "applyDiscountAndUpdateUI: skip during GPay/submit, orderCost=" + orderCost);
+        if (googlePayOrderHoldInProgress) {
+            storeDeferredCostWhileGPayHold(orderCost);
+            Logger.d(context, TAG, "applyDiscountAndUpdateUI: defer during GPay hold, orderCost=" + orderCost);
             return;
         }
         Logger.d(context, TAG, "applyDiscountAndUpdateUI() start — orderCost = " + orderCost);
@@ -5117,8 +5169,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         Logger.d(context, TAG, "Retrieved discountText = " + discountText);
 
         if (discountText == null || !(discountText.matches("[+-]?\\d+") || discountText.equals("0"))) {
-            Logger.w(context, TAG, "Invalid or missing discountText: " + discountText);
-            return;
+            Logger.w(context, TAG, "Invalid discountText, using 0: " + discountText);
+            discountText = "0";
         }
 
         try {
@@ -5813,7 +5865,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         pendingGooglePayOrderReference = null;
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
         progressBar.setVisibility(GONE);
+        EarlyOrderNavigationHelper.clearSubmitState();
         btnVisible(VISIBLE);
+        releaseDeferredCostAfterGPayHold();
         Toast.makeText(context, R.string.e_google_pay_canceled, Toast.LENGTH_SHORT).show();
     }
 
@@ -5826,6 +5880,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         btnVisible(VISIBLE);
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
         EarlyOrderNavigationHelper.clearSubmitState();
+        releaseDeferredCostAfterGPayHold();
         Logger.w(context, TAG, "Google Pay hold failed: " + message);
         if (!isAdded() || fragmentManager == null) {
             return;

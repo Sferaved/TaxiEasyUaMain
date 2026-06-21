@@ -11,19 +11,41 @@ public class FinishCostReconcileHelperTest {
     @Test
     public void keepDisplayed_whenServerLagAfterWalletAddCost() {
         assertTrue(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
-                22, 12, true, false, false, 22));
+                22, 12, true, false, false, 22, false));
+    }
+
+    @Test
+    public void keepDisplayed_whenWalletAddCostAppliedEvenWithoutFloor() {
+        assertTrue(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
+                20, 15, true, false, false, null, true));
     }
 
     @Test
     public void allowServerUpdate_whenServerCaughtUp() {
         assertFalse(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
-                22, 22, true, false, false, 22));
+                22, 22, true, false, false, 22, false));
     }
 
     @Test
     public void keepDisplayed_whileAddCostInFlight() {
         assertTrue(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
-                15, 12, false, true, false, null));
+                15, 12, false, true, false, null, false));
+    }
+
+    @Test
+    public void skipOptimisticWalletAdd_whenFloorAlreadyOnScreen() {
+        assertTrue(FinishCostReconcileHelper.shouldSkipOptimisticWalletAdd(20, 20, false));
+    }
+
+    @Test
+    public void skipOptimisticWalletAdd_whenAlreadyApplied() {
+        assertTrue(FinishCostReconcileHelper.shouldSkipOptimisticWalletAdd(15, null, true));
+    }
+
+    @Test
+    public void pickHigherCost_prefersLarger() {
+        assertEquals("20", FinishCostReconcileHelper.pickHigherCostGrivna("15", "20"));
+        assertEquals("20", FinishCostReconcileHelper.pickHigherCostGrivna("20", "15"));
     }
 
     @Test

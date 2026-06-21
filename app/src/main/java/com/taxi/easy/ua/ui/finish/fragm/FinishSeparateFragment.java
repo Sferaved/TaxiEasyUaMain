@@ -2957,7 +2957,14 @@ public class FinishSeparateFragment extends Fragment {
             }
             Logger.d(context, TAG, "finishAbsoluteCost observe: " + absoluteCost);
             applyDisplayCostToFinishUi(absoluteCost);
-            ExecutionStatusViewModel.markWalletAddCostApplied(resolveActiveOrderUid());
+            if (receivedMap != null) {
+                receivedMap.put("order_cost", absoluteCost);
+            }
+            String appliedUid = viewModel.getUid().getValue();
+            if (appliedUid == null || appliedUid.isEmpty()) {
+                appliedUid = resolveActiveOrderUid();
+            }
+            ExecutionStatusViewModel.markWalletAddCostApplied(appliedUid);
             ExecutionStatusViewModel.clearWalletAddCostFloorGrivna();
             ExecutionStatusViewModel.setAddCostInFlightPref(false);
             ExecutionStatusViewModel.clearPendingAddCostAmountPref();
@@ -3022,8 +3029,14 @@ public class FinishSeparateFragment extends Fragment {
                 clearDeclinedPaymentUi();
                 if (pendingAmount != null && !pendingAmount.equals("0")
                         && PaymentTypeHelper.usesWalletHold(pay_method)) {
-                    applyWalletAddCostOptimisticTotal(
-                            GooglePayOrderHelper.parseAmountUah(pendingAmount));
+                    int pendingUah = GooglePayOrderHelper.parseAmountUah(pendingAmount);
+                    String activeUid = resolveActiveOrderUid();
+                    boolean walletApplied = ExecutionStatusViewModel.isWalletAddCostAppliedForUid(activeUid);
+                    Integer floor = ExecutionStatusViewModel.getWalletAddCostFloorGrivnaInt();
+                    if (!FinishCostReconcileHelper.shouldSkipOptimisticWalletAdd(
+                            parseDisplayedCostGrivna(), floor, walletApplied)) {
+                        applyWalletAddCostOptimisticTotal(pendingUah);
+                    }
                 } else if (pendingAmount != null && !pendingAmount.equals("0")
                         && !PaymentTypeHelper.usesWalletHold(pay_method)) {
                     viewModel.setAddCostViewUpdate(pendingAmount);
@@ -3091,6 +3104,9 @@ public class FinishSeparateFragment extends Fragment {
             if (uidChanged) {
                 navigationOrderUid = newUid;
                 PassengerNotifier.linkFinishOrderUidsAfterUidChange(previous, newUid);
+                if (ExecutionStatusViewModel.isWalletAddCostAppliedForUid(previous)) {
+                    ExecutionStatusViewModel.markWalletAddCostApplied(newUid);
+                }
                 String persistedDouble = ExecutionStatusViewModel.getPersistedDoubleUid();
                 if (persistedDouble != null && !persistedDouble.trim().isEmpty()) {
                     uid_Double = persistedDouble;
@@ -3186,6 +3202,24 @@ public class FinishSeparateFragment extends Fragment {
     /** После фона: восстановить сумму GPay-доплаты, пока status API ещё отдаёт старую. */
     private void restoreWalletAddCostFloorIfNeeded() {
         if (!PaymentTypeHelper.usesWalletHold(pay_method)) {
+            return;
+        }
+        String activeUid = resolveActiveOrderUid();
+        if (ExecutionStatusViewModel.isWalletAddCostAppliedForUid(activeUid)) {
+            String persisted = ExecutionStatusViewModel.getPersistedDisplayCost();
+            if (persisted != null && !persisted.isEmpty()) {
+                int displayed = parseDisplayedCostGrivna();
+                try {
+                    int target = (int) Math.round(Double.parseDouble(persisted.replace(',', '.').trim()));
+                    if (displayed < target) {
+                        Logger.d(context, TAG, "restoreWalletAddCostFloorIfNeeded applied: "
+                                + displayed + " -> " + target);
+                        applyDisplayCostToFinishUi(persisted);
+                    }
+                } catch (NumberFormatException ignored) {
+                    // fall through
+                }
+            }
             return;
         }
         Integer floor = ExecutionStatusViewModel.getWalletAddCostFloorGrivnaInt();
@@ -3316,6 +3350,7 @@ public class FinishSeparateFragment extends Fragment {
                 return;
             }
             Integer walletFloor = ExecutionStatusViewModel.getWalletAddCostFloorGrivnaInt();
+            boolean walletApplied = ExecutionStatusViewModel.isWalletAddCostAppliedForUid(activeUid);
             if (FinishCostReconcileHelper.serverConfirmedWalletFloor(serverTotal, walletFloor)) {
                 ExecutionStatusViewModel.clearWalletAddCostFloorGrivna();
                 onWalletAddCostConfirmedByServer(serverTotal);
@@ -3335,7 +3370,8 @@ public class FinishSeparateFragment extends Fragment {
                         PaymentTypeHelper.usesWalletHold(pay_method),
                         ExecutionStatusViewModel.isAddCostInFlightPref(),
                         addCostSheetShowing,
-                        walletFloor)) {
+                        walletFloor,
+                        walletApplied)) {
                     Logger.d(context, TAG, "refreshFinishCostFromOrder keep client cost="
                             + displayed + " server=" + serverTotal
                             + " floor=" + walletFloor
@@ -3399,7 +3435,8 @@ public class FinishSeparateFragment extends Fragment {
     @Nullable
     private String resolveReconcileDisplayCost(boolean explicitSelection,
             @Nullable String persistedCost,
-            @Nullable Map<String, String> bundle) {
+            @Nullable Map<String, String> bundle,
+            @Nullable String activeUid) {
         String bundleCost = null;
         if (bundle != null) {
             bundleCost = bundle.get("order_cost");
@@ -3415,6 +3452,10 @@ public class FinishSeparateFragment extends Fragment {
         }
         if (persistedCost == null || persistedCost.isEmpty() || explicitSelection) {
             return bundleCost;
+        }
+        if (activeUid != null
+                && ExecutionStatusViewModel.isWalletAddCostAppliedForUid(activeUid)) {
+            return FinishCostReconcileHelper.pickHigherCostGrivna(persistedCost, bundleCost);
         }
         try {
             int fromBundle = (int) Math.round(Double.parseDouble(bundleCost.replace(',', '.')));
@@ -3521,7 +3562,12 @@ public class FinishSeparateFragment extends Fragment {
         String displayCost = resolveReconcileDisplayCost(
                 explicitSelection,
                 ExecutionStatusViewModel.getPersistedDisplayCost(),
-                receivedMap);
+                receivedMap,
+                uid);
+        if (viewModel != null) {
+            displayCost = FinishCostReconcileHelper.pickHigherCostGrivna(
+                    displayCost, viewModel.getFinishAbsoluteCostGrivna().getValue());
+        }
         if (displayCost != null && textCostMessage != null
                 && !orderSwitch && uid != null
                 && (persistedActive == null || uid.equals(persistedActive))) {
@@ -4226,7 +4272,10 @@ public class FinishSeparateFragment extends Fragment {
                         Logger.d(context, TAG, "Google Pay add-cost hold ok: " + orderReference
                                 + " amount=" + amountUah);
                         applyWalletAddCostOptimisticTotal(amountUah);
-                        ExecutionStatusViewModel.markWalletAddCostApplied(resolveActiveOrderUid());
+                        ExecutionStatusViewModel.markWalletAddCostApplied(
+                                viewModel.getUid().getValue() != null
+                                        ? viewModel.getUid().getValue()
+                                        : resolveActiveOrderUid());
                         clearGooglePayAddCostAwaiting();
                         viewModel.setCancelStatus(false);
                         Toast.makeText(context, R.string.add_cost_processing, Toast.LENGTH_LONG).show();
@@ -4255,6 +4304,14 @@ public class FinishSeparateFragment extends Fragment {
 
     private void onGooglePayAddCostFailed(@Nullable String message) {
         Logger.w(context, TAG, "Google Pay add-cost failed: " + message);
+        if (isGooglePayAddCostAlreadyConfirmed()) {
+            Logger.d(context, TAG, "Google Pay add-cost failure ignored: already confirmed");
+            clearGooglePayAddCostAwaiting();
+            ExecutionStatusViewModel.setAddCostInFlightPref(false);
+            ExecutionStatusViewModel.clearPendingAddCostAmountPref();
+            enableCancelAfterAddCostIfReady();
+            return;
+        }
         String orderRef = pendingAddCostGpOrderRef;
         clearGooglePayAddCostInFlight(true);
         if (orderRef != null) {
@@ -4263,6 +4320,44 @@ public class FinishSeparateFragment extends Fragment {
         if (isAdded()) {
             Toast.makeText(context, R.string.add_cost_payment_failed, Toast.LENGTH_LONG).show();
         }
+    }
+
+    /** Доплата уже подтверждена order_uid_new / finishAbsoluteCost — timeout в фоне не откатываем. */
+    private boolean isGooglePayAddCostAlreadyConfirmed() {
+        String activeUid = resolveActiveOrderUid();
+        if (ExecutionStatusViewModel.isWalletAddCostAppliedForUid(activeUid)) {
+            return true;
+        }
+        if (viewModel != null) {
+            String vmUid = viewModel.getUid().getValue();
+            if (vmUid != null && ExecutionStatusViewModel.isWalletAddCostAppliedForUid(vmUid)) {
+                return true;
+            }
+            String absoluteCost = viewModel.getFinishAbsoluteCostGrivna().getValue();
+            if (absoluteCost != null && !absoluteCost.isEmpty()) {
+                return true;
+            }
+        }
+        Integer floor = ExecutionStatusViewModel.getWalletAddCostFloorGrivnaInt();
+        if (floor != null && floor > 0) {
+            int displayed = parseDisplayedCostGrivna();
+            if (displayed >= floor) {
+                return true;
+            }
+            String persisted = ExecutionStatusViewModel.getPersistedDisplayCost();
+            if (persisted != null && !persisted.isEmpty()) {
+                try {
+                    int persistedGrivna = (int) Math.round(
+                            Double.parseDouble(persisted.replace(',', '.').trim()));
+                    if (persistedGrivna >= floor) {
+                        return true;
+                    }
+                } catch (NumberFormatException ignored) {
+                    // fall through
+                }
+            }
+        }
+        return false;
     }
 
     private void clearGooglePayAddCostAwaiting() {
