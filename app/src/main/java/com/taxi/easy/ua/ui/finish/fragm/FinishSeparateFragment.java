@@ -276,27 +276,37 @@ public class FinishSeparateFragment extends Fragment {
         googlePayPaymentsClient = WfpGooglePayHelper.createPaymentsClient(this);
         googlePayAddCostLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartIntentSenderForResult(),
-                result -> WfpGooglePayHelper.handlePaymentResult(
-                        result.getResultCode(),
-                        result.getData(),
-                        requireContext(),
-                        new WfpGooglePayHelper.PaymentResultCallback() {
-                            @Override
-                            public void onSuccess(@NonNull String paymentDataJson) {
-                                submitGooglePayAddCostCharge(paymentDataJson);
-                            }
+                result -> {
+                    if (!isAdded()) {
+                        Logger.w(getContext(), TAG, "Google Pay add-cost result ignored: fragment detached");
+                        return;
+                    }
+                    Context ctx = getContext();
+                    if (ctx == null) {
+                        return;
+                    }
+                    WfpGooglePayHelper.handlePaymentResult(
+                            result.getResultCode(),
+                            result.getData(),
+                            ctx,
+                            new WfpGooglePayHelper.PaymentResultCallback() {
+                                @Override
+                                public void onSuccess(@NonNull String paymentDataJson) {
+                                    submitGooglePayAddCostCharge(paymentDataJson);
+                                }
 
-                            @Override
-                            public void onCancelled() {
-                                onGooglePayAddCostCancelled();
-                            }
+                                @Override
+                                public void onCancelled() {
+                                    onGooglePayAddCostCancelled();
+                                }
 
-                            @Override
-                            public void onError(@NonNull String message) {
-                                onGooglePayAddCostFailed(message);
+                                @Override
+                                public void onError(@NonNull String message) {
+                                    onGooglePayAddCostFailed(message);
+                                }
                             }
-                        }
-                )
+                    );
+                }
         );
     }
 
@@ -2927,7 +2937,7 @@ public class FinishSeparateFragment extends Fragment {
             if (addCost != null && !addCost.equals("0")) {
                 Logger.d(context, TAG, "addCostViewUpdate observe: " + addCost);
                 if (PaymentTypeHelper.usesWalletHold(pay_method)) {
-                    Logger.d(context, TAG, "addCostViewUpdate skipped for wfp (absolute cost from server)");
+                    Logger.d(context, TAG, "addCostViewUpdate skipped for wallet hold (absolute cost from server)");
                     pendingAddCost = "0";
                     sharedPreferencesHelperMain.saveValue("pendingAddCost", "0");
                     viewModel.setAddCostViewUpdate("0");
@@ -2947,12 +2957,14 @@ public class FinishSeparateFragment extends Fragment {
             }
             Logger.d(context, TAG, "finishAbsoluteCost observe: " + absoluteCost);
             applyDisplayCostToFinishUi(absoluteCost);
+            ExecutionStatusViewModel.markWalletAddCostApplied(resolveActiveOrderUid());
             ExecutionStatusViewModel.clearWalletAddCostFloorGrivna();
             ExecutionStatusViewModel.setAddCostInFlightPref(false);
             ExecutionStatusViewModel.clearPendingAddCostAmountPref();
             pendingAddCost = "0";
             sharedPreferencesHelperMain.saveValue("pendingAddCost", "0");
             viewModel.setCancelStatus(true);
+            onInitialPaymentHoldVerified();
             onAddCostProcessingFinished();
         });
 
@@ -3205,6 +3217,48 @@ public class FinishSeparateFragment extends Fragment {
         Logger.d(context, TAG, "applyWalletAddCostOptimisticTotal: floor=" + totalStr
                 + " add=" + addCostUah);
     }
+
+    /** Не предлагать повторную доплату после успешного GPay / order_uid_new. */
+    private boolean shouldSkipWalletAddCostPrompt() {
+        if (!PaymentTypeHelper.usesWalletHold(pay_method)) {
+            return false;
+        }
+        if (isPaymentVerified()) {
+            return true;
+        }
+        if (ExecutionStatusViewModel.isAddCostInFlightPref()) {
+            return true;
+        }
+        String activeUid = resolveActiveOrderUid();
+        if (ExecutionStatusViewModel.isWalletAddCostAppliedForUid(activeUid)) {
+            return true;
+        }
+        Integer floor = ExecutionStatusViewModel.getWalletAddCostFloorGrivnaInt();
+        int displayed = parseDisplayedCostGrivna();
+        return floor != null && floor > 0 && displayed >= floor;
+    }
+
+    private void onWalletAddCostConfirmedByServer(int serverTotalGrivna) {
+        if (!PaymentTypeHelper.usesWalletHold(pay_method) || serverTotalGrivna <= 0) {
+            return;
+        }
+        ExecutionStatusViewModel.markWalletAddCostApplied(resolveActiveOrderUid());
+        ExecutionStatusViewModel.clearWalletAddCostFloorGrivna();
+        onInitialPaymentHoldVerified();
+        Logger.d(context, TAG, "onWalletAddCostConfirmedByServer: " + serverTotalGrivna);
+    }
+
+    /** После пересоздания заказа status API отдаёт отрицательный add_cost (метаданные). */
+    private static boolean isWalletAddCostMetaFromStatus(@Nullable String addCostMeta) {
+        if (addCostMeta == null || addCostMeta.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            return Double.parseDouble(addCostMeta.replace(',', '.').trim()) < 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
     private void showCancelErrorDialog() {
         if (isAdded()) {
             String message = getString(R.string.error_5_min_cancel_card_order);
@@ -3264,6 +3318,13 @@ public class FinishSeparateFragment extends Fragment {
             Integer walletFloor = ExecutionStatusViewModel.getWalletAddCostFloorGrivnaInt();
             if (FinishCostReconcileHelper.serverConfirmedWalletFloor(serverTotal, walletFloor)) {
                 ExecutionStatusViewModel.clearWalletAddCostFloorGrivna();
+                onWalletAddCostConfirmedByServer(serverTotal);
+            } else if (PaymentTypeHelper.usesWalletHold(pay_method)
+                    && serverTotal > 0
+                    && displayed > 0
+                    && serverTotal == displayed
+                    && isWalletAddCostMetaFromStatus(orderResponse.getAddCost())) {
+                onWalletAddCostConfirmedByServer(serverTotal);
             }
             // order_cost from status API is the billable total; add_cost is metadata only.
             // Summing them duplicated +5 UAH after add-cost (60+5 showed as 70).
@@ -3580,6 +3641,9 @@ public class FinishSeparateFragment extends Fragment {
                 } else {
                     Logger.d(context, TAG,
                             "verifyHold on enter: no active hold — wait for checkStatus (capture is OK)");
+                    if (shouldSkipWalletAddCostPrompt()) {
+                        onInitialPaymentHoldVerified();
+                    }
                 }
             }
 
@@ -3784,6 +3848,9 @@ public class FinishSeparateFragment extends Fragment {
             handlerStatus.removeCallbacks(myTaskStatus);
         }
         refreshPaymentStatusOnEnter();
+        if (shouldSkipWalletAddCostPrompt()) {
+            onInitialPaymentHoldVerified();
+        }
         if (!canceled && !isOrderDispatched()) {
             isTaskCancelled = false;
             startCycle();
@@ -3879,6 +3946,10 @@ public class FinishSeparateFragment extends Fragment {
     }
     private void startAddCostDialog (int timeCheckout) {
         if (isViewingCompletedOrder()) {
+            return;
+        }
+        if (shouldSkipWalletAddCostPrompt()) {
+            Logger.d(context, TAG, "startAddCostDialog skipped: wallet add-cost already applied");
             return;
         }
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
@@ -4030,6 +4101,7 @@ public class FinishSeparateFragment extends Fragment {
                     + isAdded() + " awaiting=" + googlePayAddCostAwaitingWallet);
             return;
         }
+        applyWalletAddCostOptimisticTotal(amountUah);
         pendingAddCostGpUid = orderUid;
         pendingAddCostGpAmount = addCostDelta;
         pendingAddCostGpOrderRef = orderRef;
@@ -4154,6 +4226,7 @@ public class FinishSeparateFragment extends Fragment {
                         Logger.d(context, TAG, "Google Pay add-cost hold ok: " + orderReference
                                 + " amount=" + amountUah);
                         applyWalletAddCostOptimisticTotal(amountUah);
+                        ExecutionStatusViewModel.markWalletAddCostApplied(resolveActiveOrderUid());
                         clearGooglePayAddCostAwaiting();
                         viewModel.setCancelStatus(false);
                         Toast.makeText(context, R.string.add_cost_processing, Toast.LENGTH_LONG).show();

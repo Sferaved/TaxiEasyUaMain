@@ -36,6 +36,8 @@ public class ExecutionStatusViewModel extends ViewModel {
     public static final String PREF_FINISH_PENDING_ADD_COST_ORDER_REF = "finish_pending_add_cost_order_ref";
     /** Минимальная сумма на экране после GPay-доплаты, пока сервер не прислал order_cost. */
     public static final String PREF_FINISH_WALLET_ADD_COST_FLOOR = "finish_wallet_add_cost_floor_grivna";
+    /** UID заказа, для которого wallet-доплата уже применена (order_uid_new / finishAbsoluteCost). */
+    public static final String PREF_FINISH_WALLET_ADD_COST_APPLIED_UID = "finish_wallet_add_cost_applied_uid";
     public static final String PREF_UID_FCM = "uid_fcm";
     private static final long ACTIVE_ORDER_NOTICE_SUPPRESS_MS = 90_000L;
 
@@ -265,6 +267,7 @@ public class ExecutionStatusViewModel extends ViewModel {
         MainActivity.uid_Double = doubleOrderUid != null ? doubleOrderUid : "";
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_DOUBLE_UID, MainActivity.uid_Double);
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_DISPLAY_COST, "");
+        clearWalletAddCostAppliedUid();
     }
 
     public static void markUserCanceledOrder(@Nullable String orderUid) {
@@ -343,6 +346,23 @@ public class ExecutionStatusViewModel extends ViewModel {
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_WALLET_ADD_COST_FLOOR, "");
     }
 
+    public static void markWalletAddCostApplied(@Nullable String orderUid) {
+        sharedPreferencesHelperMain.saveValue(
+                PREF_FINISH_WALLET_ADD_COST_APPLIED_UID, orderUid != null ? orderUid : "");
+    }
+
+    public static boolean isWalletAddCostAppliedForUid(@Nullable String orderUid) {
+        if (orderUid == null || orderUid.isEmpty()) {
+            return false;
+        }
+        Object v = sharedPreferencesHelperMain.getValue(PREF_FINISH_WALLET_ADD_COST_APPLIED_UID, "");
+        return orderUid.equals(v);
+    }
+
+    public static void clearWalletAddCostAppliedUid() {
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_WALLET_ADD_COST_APPLIED_UID, "");
+    }
+
     public static void setPendingAddCostOrderRefPref(@Nullable String orderRef) {
         sharedPreferencesHelperMain.saveValue(
                 PREF_FINISH_PENDING_ADD_COST_ORDER_REF, orderRef != null ? orderRef : "");
@@ -405,6 +425,7 @@ public class ExecutionStatusViewModel extends ViewModel {
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_DISPLAY_COST, "");
         sharedPreferencesHelperMain.saveValue(PREF_UID_FCM, "");
         clearWalletAddCostFloorGrivna();
+        clearWalletAddCostAppliedUid();
         setCancelInFlightPref(false);
         PassengerNotifier.clearWeatherNoticePrefs();
     }
