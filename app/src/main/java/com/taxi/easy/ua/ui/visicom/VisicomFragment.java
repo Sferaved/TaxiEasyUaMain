@@ -2138,6 +2138,14 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             Logger.d(context, TAG, "getTaxiUrlSearchMarkers cost: finalCost " + finalCost);
 
             long addCostInt = finalCost - startCost;
+            if ("google_pay_payment".equals(payment_type)
+                    && CostParseHelper.hasDisplayableCost(pendingOrderDisplayCost)) {
+                int frozenTotal = GooglePayOrderHelper.parseAmountUah(
+                        CostParseHelper.normalizeCostString(pendingOrderDisplayCost));
+                if (frozenTotal > 0 && startCost > 0 && frozenTotal >= startCost) {
+                    addCostInt = frozenTotal - startCost;
+                }
+            }
             String addCost = String.valueOf(addCostInt);
             Logger.d(context, TAG, "getTaxiUrlSearchMarkers: addCost " + addCost);
 
@@ -2186,6 +2194,10 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             }
 
             String clientCost = text_view_cost.getText().toString();
+            if ("google_pay_payment".equals(payment_type)
+                    && CostParseHelper.hasDisplayableCost(pendingOrderDisplayCost)) {
+                clientCost = CostParseHelper.normalizeCostString(pendingOrderDisplayCost);
+            }
             if (clientCost == null || clientCost.trim().isEmpty()) {
                 clientCost = " ";
             }
@@ -3161,7 +3173,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
         VisicomFragment.sendUrlMap = null;
         MainActivity.uid = null;
-        EarlyOrderNavigationHelper.clearSubmitState();
+        if (!isGooglePaySubmitFrozen()) {
+            EarlyOrderNavigationHelper.clearSubmitState();
+        }
         Logger.d(context, "MainActivity.uid", "MainActivity.uid 2 " + MainActivity.uid);
 
         MainActivity.orderResponse = null;
@@ -3301,8 +3315,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
         num1 = binding.num1;
 
-        addCost = 0;
-        updateAddCost(String.valueOf(addCost), context);
+        initAddCostOnCreateView();
 
         numberFlagTo = "2";
 
@@ -5570,6 +5583,62 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
     }
 
+    private boolean isGooglePaySubmitFrozen() {
+        return googlePayOrderHoldInProgress || EarlyOrderNavigationHelper.isSubmitInProgress();
+    }
+
+    private void initAddCostOnCreateView() {
+        if (!isGooglePaySubmitFrozen()) {
+            addCost = 0;
+            updateAddCost(String.valueOf(addCost), context);
+            return;
+        }
+        Logger.d(context, TAG, "onCreateView: preserve addCost during GPay/submit");
+        List<String> settings = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
+        if (settings.size() > 5 && !settings.get(5).isEmpty()) {
+            try {
+                addCost = Long.parseLong(settings.get(5));
+            } catch (NumberFormatException ignored) {
+                addCost = 0;
+            }
+        }
+        if (startCost > 0) {
+            finalCost = startCost + addCost;
+            if (text_view_cost != null) {
+                text_view_cost.setText(String.valueOf(finalCost));
+            }
+        } else if (CostParseHelper.hasDisplayableCost(pendingOrderDisplayCost)) {
+            finalCost = GooglePayOrderHelper.parseAmountUah(
+                    CostParseHelper.normalizeCostString(pendingOrderDisplayCost));
+        }
+    }
+
+    /** После возврата из GPay onCreateView мог обнулить addCost — восстанавливаем сумму заказа. */
+    private void restoreFrozenGooglePayOrderCostForSubmit() {
+        String frozen = null;
+        if (CostParseHelper.hasDisplayableCost(pendingOrderDisplayCost)) {
+            frozen = CostParseHelper.normalizeCostString(pendingOrderDisplayCost);
+        } else if (CostParseHelper.hasDisplayableCost(pendingGooglePayAmount)) {
+            frozen = CostParseHelper.normalizeCostString(pendingGooglePayAmount);
+        }
+        if (frozen == null) {
+            return;
+        }
+        int totalUah = GooglePayOrderHelper.parseAmountUah(frozen);
+        if (totalUah <= 0) {
+            return;
+        }
+        finalCost = totalUah;
+        if (startCost > 0 && totalUah >= startCost) {
+            addCost = totalUah - startCost;
+            updateAddCost(String.valueOf(addCost), context);
+        } else if (text_view_cost != null) {
+            text_view_cost.setText(String.valueOf(totalUah));
+        }
+        Logger.d(context, TAG, "restoreFrozenGooglePayOrderCost: total=" + totalUah
+                + " startCost=" + startCost + " addCost=" + addCost);
+    }
+
     private void startGooglePayHoldBeforeOrder() {
         if (!isAdded() || googlePayOrderHoldInProgress) {
             return;
@@ -5589,6 +5658,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             return;
         }
         pendingGooglePayAmount = String.valueOf(amountUah);
+        Logger.d(context, TAG, "startGooglePayHoldBeforeOrder: amountUah=" + amountUah
+                + " pendingOrderDisplayCost=" + pendingOrderDisplayCost);
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
         pendingGooglePayOrderReference = MainActivity.order_id;
         linearLayout.setVisibility(VISIBLE);
@@ -5663,6 +5734,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         String phone = userInfo.size() > 2 ? userInfo.get(2) : "";
         int amountUah = GooglePayOrderHelper.parseAmountUah(
                 pendingGooglePayAmount != null ? pendingGooglePayAmount : "0");
+        Logger.d(context, TAG, "submitGooglePayHoldCharge: amountUah=" + amountUah
+                + " ref=" + pendingGooglePayOrderReference);
         String appBaseUrl = (String) sharedPreferencesHelperMain.getValue(
                 "baseUrl", "https://m.easy-order-taxi.site");
 
@@ -5686,6 +5759,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                         progressBar.setVisibility(GONE);
                         MainActivity.order_id = orderReference;
                         pendingGooglePayOrderReference = orderReference;
+                        restoreFrozenGooglePayOrderCostForSubmit();
                         try {
                             if (!orderRout()) {
                                 onGooglePayOrderHoldFailed(context.getString(R.string.cost_error));
