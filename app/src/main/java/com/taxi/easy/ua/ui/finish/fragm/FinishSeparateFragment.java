@@ -229,6 +229,10 @@ public class FinishSeparateFragment extends Fragment {
     private Call<HoldResponse> holdVerifyCall;
     private int holdCheckGeneration;
     private boolean holdVerifiedOnEnter;
+    private int holdVerifyEnterRetryCount;
+    private static final int HOLD_VERIFY_ENTER_MAX_RETRIES = 4;
+    private static final long HOLD_VERIFY_ENTER_RETRY_MS = 2500L;
+    private final Handler holdVerifyRetryHandler = new Handler(Looper.getMainLooper());
     @Nullable
     private String lastKnownPaymentStatus;
     @Nullable
@@ -807,6 +811,15 @@ public class FinishSeparateFragment extends Fragment {
             return true;
         }
         return false;
+    }
+
+    private void onInitialPaymentHoldVerified() {
+        holdVerifiedOnEnter = true;
+        need_20_add = false;
+        holdVerifyEnterRetryCount = 0;
+        holdVerifyRetryHandler.removeCallbacksAndMessages(null);
+        cancelShowDialogAddCost();
+        clearDeclinedPaymentUi();
     }
 
     /** Заказ уже в работе — оплата не может считаться «зависшей». */
@@ -1393,6 +1406,7 @@ public class FinishSeparateFragment extends Fragment {
             checkHandler.removeCallbacksAndMessages(null);
         }
         cancelAddCostProcessingNotices();
+        holdVerifyRetryHandler.removeCallbacksAndMessages(null);
         if (notifier != null) {
             notifier.cancelPendingWeatherRequests();
         }
@@ -2098,7 +2112,7 @@ public class FinishSeparateFragment extends Fragment {
                 return;
             }
 
-        if (need_20_add && handlerAddcost != null && showDialogAddcost != null) {
+        if (need_20_add && !isPaymentVerified() && handlerAddcost != null && showDialogAddcost != null) {
             Logger.d(context, TAG, "Triggering add cost delay: " + timeCheckOutAddCost);
 //            handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost);
 
@@ -2987,6 +3001,9 @@ public class FinishSeparateFragment extends Fragment {
                 String pendingAmount = ExecutionStatusViewModel.getPendingAddCostAmountPref();
                 boolean addCostPending = ExecutionStatusViewModel.isAddCostInFlightPref()
                         || (pendingAmount != null && !pendingAmount.equals("0"));
+                if (!addCostPending && PaymentTypeHelper.usesWalletHold(pay_method)) {
+                    onInitialPaymentHoldVerified();
+                }
                 ExecutionStatusViewModel.setAddCostInFlightPref(false);
                 clearDeclinedPaymentUi();
                 if (pendingAmount != null && !pendingAmount.equals("0")
@@ -3497,8 +3514,15 @@ public class FinishSeparateFragment extends Fragment {
                         : null;
                 Logger.d(context, TAG, "verifyHold on enter: " + result);
                 if ("hold".equals(result)) {
-                    holdVerifiedOnEnter = true;
-                    clearDeclinedPaymentUi();
+                    onInitialPaymentHoldVerified();
+                } else if (holdVerifyEnterRetryCount < HOLD_VERIFY_ENTER_MAX_RETRIES) {
+                    holdVerifyEnterRetryCount++;
+                    Logger.d(context, TAG,
+                            "verifyHold on enter: no active hold — retry "
+                                    + holdVerifyEnterRetryCount + "/" + HOLD_VERIFY_ENTER_MAX_RETRIES);
+                    holdVerifyRetryHandler.postDelayed(
+                            () -> verifyPaymentHoldOnEnter(holdGen),
+                            HOLD_VERIFY_ENTER_RETRY_MS);
                 } else {
                     Logger.d(context, TAG,
                             "verifyHold on enter: no active hold — wait for checkStatus (capture is OK)");
@@ -3539,6 +3563,8 @@ public class FinishSeparateFragment extends Fragment {
         paymentCheckGeneration++;
         holdCheckGeneration++;
         holdVerifiedOnEnter = false;
+        holdVerifyEnterRetryCount = 0;
+        holdVerifyRetryHandler.removeCallbacksAndMessages(null);
         final int checkGen = paymentCheckGeneration;
         final int holdGen = holdCheckGeneration;
         final boolean pendingDeclined = PendingTransactionHelper.hasPendingDeclinedForActiveOrder();
