@@ -34,6 +34,8 @@ public class ExecutionStatusViewModel extends ViewModel {
     public static final String PREF_FINISH_PENDING_ADD_COST_AMOUNT = "finish_pending_add_cost_amount";
     /** orderReference доплаты WFP (для checkStatus после таймаута). */
     public static final String PREF_FINISH_PENDING_ADD_COST_ORDER_REF = "finish_pending_add_cost_order_ref";
+    /** Минимальная сумма на экране после GPay-доплаты, пока сервер не прислал order_cost. */
+    public static final String PREF_FINISH_WALLET_ADD_COST_FLOOR = "finish_wallet_add_cost_floor_grivna";
     public static final String PREF_UID_FCM = "uid_fcm";
     private static final long ACTIVE_ORDER_NOTICE_SUPPRESS_MS = 90_000L;
 
@@ -313,6 +315,34 @@ public class ExecutionStatusViewModel extends ViewModel {
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_PENDING_ADD_COST_ORDER_REF, "");
     }
 
+    public static void setWalletAddCostFloorGrivna(@Nullable String totalGrivna) {
+        sharedPreferencesHelperMain.saveValue(
+                PREF_FINISH_WALLET_ADD_COST_FLOOR, totalGrivna != null ? totalGrivna : "");
+    }
+
+    @Nullable
+    public static String getWalletAddCostFloorGrivna() {
+        Object v = sharedPreferencesHelperMain.getValue(PREF_FINISH_WALLET_ADD_COST_FLOOR, "");
+        return v instanceof String && !((String) v).isEmpty() ? (String) v : null;
+    }
+
+    @Nullable
+    public static Integer getWalletAddCostFloorGrivnaInt() {
+        String raw = getWalletAddCostFloorGrivna();
+        if (raw == null) {
+            return null;
+        }
+        try {
+            return (int) Math.round(Double.parseDouble(raw.replace(',', '.').trim()));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public static void clearWalletAddCostFloorGrivna() {
+        sharedPreferencesHelperMain.saveValue(PREF_FINISH_WALLET_ADD_COST_FLOOR, "");
+    }
+
     public static void setPendingAddCostOrderRefPref(@Nullable String orderRef) {
         sharedPreferencesHelperMain.saveValue(
                 PREF_FINISH_PENDING_ADD_COST_ORDER_REF, orderRef != null ? orderRef : "");
@@ -374,6 +404,7 @@ public class ExecutionStatusViewModel extends ViewModel {
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_DOUBLE_UID, "");
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_DISPLAY_COST, "");
         sharedPreferencesHelperMain.saveValue(PREF_UID_FCM, "");
+        clearWalletAddCostFloorGrivna();
         setCancelInFlightPref(false);
         PassengerNotifier.clearWeatherNoticePrefs();
     }
