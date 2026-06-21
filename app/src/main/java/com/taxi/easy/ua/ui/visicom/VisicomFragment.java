@@ -498,6 +498,10 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         // Инициализация существующего ExecutionStatusViewModel (из MainActivity)
         viewModel = new ViewModelProvider(requireActivity()).get(ExecutionStatusViewModel.class);
 
+        if (EarlyOrderNavigationHelper.isSubmitInProgress() || googlePayOrderHoldInProgress) {
+            new Handler(Looper.getMainLooper()).post(this::restoreGooglePayProcessingUiIfNeeded);
+        }
+
         // Инициализация нового VisicomViewModel для этого фрагмента
         VisicomViewModel visicomViewModel = new ViewModelProvider(this).get(VisicomViewModel.class);
 
@@ -3231,10 +3235,16 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
 
 
-        VisicomFragment.sendUrlMap = null;
-        MainActivity.uid = null;
-        EarlyOrderNavigationHelper.clearSubmitState();
-        Logger.d(context, "MainActivity.uid", "MainActivity.uid 2 " + MainActivity.uid);
+        final boolean preserveGPaySubmit = isGooglePaySubmitFrozen() || googlePayOrderProcessingUiShown;
+
+        if (!preserveGPaySubmit) {
+            VisicomFragment.sendUrlMap = null;
+            MainActivity.uid = null;
+            EarlyOrderNavigationHelper.clearSubmitState();
+            Logger.d(context, "MainActivity.uid", "MainActivity.uid 2 " + MainActivity.uid);
+        } else {
+            Logger.d(context, TAG, "onResume: preserve GPay submit state");
+        }
 
         MainActivity.orderResponse = null;
         viewModel.updateOrderResponse(null);
@@ -3243,31 +3253,35 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
         textfrom = binding.textfrom;
 
-        constraintLayoutVisicomMain.setVisibility(GONE);
+        if (preserveGPaySubmit) {
+            restoreGooglePayProcessingUiIfNeeded();
+        } else {
+            constraintLayoutVisicomMain.setVisibility(GONE);
 
-        String cityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
-        Logger.d(context, TAG, "CityCheckActivity: " + cityCheckActivity);
-        progressBar.setVisibility(GONE);
-        if (cityCheckActivity.equals("run")) {
-            btnVisible(VISIBLE);
-        }
-
-        String visible_shed = (String) sharedPreferencesHelperMain.getValue("visible_shed", "no");
-        if(visible_shed.equals("no")) {
-            Logger.d(context, TAG, "onResume 2" );
-            btnVisible(GONE);
-        } else  {
-            if (NetworkUtils.isNetworkAvailable(context)) {
-                Logger.d(context, TAG, "onResume 3" );
+            String cityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
+            Logger.d(context, TAG, "CityCheckActivity: " + cityCheckActivity);
+            progressBar.setVisibility(GONE);
+            if (cityCheckActivity.equals("run")) {
                 btnVisible(VISIBLE);
-            } else {
-                Logger.d(context, TAG, "onResume 4" );
-                btnVisible(GONE);
             }
+
+            String visible_shed = (String) sharedPreferencesHelperMain.getValue("visible_shed", "no");
+            if(visible_shed.equals("no")) {
+                Logger.d(context, TAG, "onResume 2" );
+                btnVisible(GONE);
+            } else  {
+                if (NetworkUtils.isNetworkAvailable(context)) {
+                    Logger.d(context, TAG, "onResume 3" );
+                    btnVisible(VISIBLE);
+                } else {
+                    Logger.d(context, TAG, "onResume 4" );
+                    btnVisible(GONE);
+                }
+            }
+            Logger.d(context, TAG, "onResume 5" );
+            constraintLayoutVisicomMain.setVisibility(VISIBLE);
+            constraintLayoutVisicomFinish.setVisibility(GONE);
         }
-        Logger.d(context, TAG, "onResume 5" );
-        constraintLayoutVisicomMain.setVisibility(VISIBLE);
-        constraintLayoutVisicomFinish.setVisibility(GONE);
 
         databaseHelper = new DatabaseHelper(context);
         databaseHelperUid = new DatabaseHelperUid(context);
@@ -4110,7 +4124,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             Logger.d(context, TAG, "visicomCost пропущен (активный заказ), источник: " + source);
             return;
         }
-        if (googlePayOrderHoldInProgress) {
+        if (googlePayOrderHoldInProgress || EarlyOrderNavigationHelper.isSubmitInProgress()) {
             Logger.d(context, TAG, "visicomCost пропущен (Google Pay hold), источник: " + source);
             return;
         }
@@ -5851,6 +5865,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         }
         Context ctx = requireContext();
         googlePayOrderProcessingUiShown = true;
+        Logger.d(context, TAG, "showGooglePayOrderProcessingUi");
         btnVisible(GONE);
         if (progressBar != null) {
             progressBar.forceShow();
@@ -5881,6 +5896,18 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         if (constraintLayoutVisicomFinish != null) {
             constraintLayoutVisicomFinish.setVisibility(VISIBLE);
         }
+    }
+
+    /** После возврата из GPay onResume/onCreateView не должны показывать карту вместо «Підтверджуємо…». */
+    private void restoreGooglePayProcessingUiIfNeeded() {
+        if (!isAdded() || getContext() == null) {
+            return;
+        }
+        if (!isGooglePaySubmitFrozen() && !googlePayOrderProcessingUiShown) {
+            return;
+        }
+        Logger.d(context, TAG, "restoreGooglePayProcessingUiIfNeeded");
+        showGooglePayOrderProcessingUi();
     }
 
     private void restoreVisicomMainAfterGooglePayFailure() {

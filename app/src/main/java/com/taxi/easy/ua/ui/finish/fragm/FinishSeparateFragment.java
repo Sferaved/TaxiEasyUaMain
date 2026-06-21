@@ -3209,12 +3209,20 @@ public class FinishSeparateFragment extends Fragment {
             String persisted = ExecutionStatusViewModel.getPersistedDisplayCost();
             if (persisted != null && !persisted.isEmpty()) {
                 int displayed = parseDisplayedCostGrivna();
+                int authoritative = resolveAuthoritativeOrderCostGrivna();
                 try {
                     int target = (int) Math.round(Double.parseDouble(persisted.replace(',', '.').trim()));
-                    if (displayed < target) {
+                    if (authoritative > 0) {
+                        target = FinishCostReconcileHelper.capInflatedWalletDisplay(target, authoritative);
+                    }
+                    if (authoritative > 0 && displayed > authoritative) {
+                        Logger.d(context, TAG, "restoreWalletAddCostFloorIfNeeded corrected stale: "
+                                + displayed + " -> " + authoritative);
+                        applyDisplayCostToFinishUi(String.valueOf(authoritative));
+                    } else if (displayed < target) {
                         Logger.d(context, TAG, "restoreWalletAddCostFloorIfNeeded applied: "
                                 + displayed + " -> " + target);
-                        applyDisplayCostToFinishUi(persisted);
+                        applyDisplayCostToFinishUi(String.valueOf(target));
                     }
                 } catch (NumberFormatException ignored) {
                     // fall through
@@ -3237,6 +3245,22 @@ public class FinishSeparateFragment extends Fragment {
     private void applyWalletAddCostOptimisticTotal(int addCostUah) {
         if (addCostUah <= 0 || !PaymentTypeHelper.usesWalletHold(pay_method)) {
             return;
+        }
+        String activeUid = resolveActiveOrderUid();
+        Integer floor = ExecutionStatusViewModel.getWalletAddCostFloorGrivnaInt();
+        int displayed = parseDisplayedCostGrivna();
+        if (FinishCostReconcileHelper.shouldSkipOptimisticWalletAdd(
+                displayed, floor, ExecutionStatusViewModel.isWalletAddCostAppliedForUid(activeUid))) {
+            Logger.d(context, TAG, "applyWalletAddCostOptimisticTotal skipped: wallet add-cost already on screen");
+            return;
+        }
+        if (viewModel != null) {
+            String absoluteCost = viewModel.getFinishAbsoluteCostGrivna().getValue();
+            if (absoluteCost != null && !absoluteCost.isEmpty()) {
+                Logger.d(context, TAG, "applyWalletAddCostOptimisticTotal skipped: finishAbsoluteCost="
+                        + absoluteCost);
+                return;
+            }
         }
         int newTotal = FinishCostReconcileHelper.computeOptimisticWalletTotal(
                 parseDisplayedCostGrivna(),
@@ -3418,6 +3442,33 @@ public class FinishSeparateFragment extends Fragment {
         return context.getString(R.string.pay_method_message_nal);
     }
 
+    private int resolveAuthoritativeOrderCostGrivna() {
+        if (viewModel != null) {
+            String absoluteCost = viewModel.getFinishAbsoluteCostGrivna().getValue();
+            if (absoluteCost != null && !absoluteCost.isEmpty()) {
+                try {
+                    return (int) Math.round(Double.parseDouble(absoluteCost.replace(',', '.').trim()));
+                } catch (NumberFormatException ignored) {
+                    // fall through
+                }
+            }
+        }
+        if (receivedMap != null) {
+            for (String key : new String[]{"orderWeb", "order_cost"}) {
+                String raw = receivedMap.get(key);
+                if (raw == null || raw.trim().isEmpty()) {
+                    continue;
+                }
+                try {
+                    return (int) Math.round(Double.parseDouble(raw.replace(',', '.').trim()));
+                } catch (NumberFormatException ignored) {
+                    // try next key
+                }
+            }
+        }
+        return 0;
+    }
+
     private void applyDisplayCostToFinishUi(String costGrivna) {
         if (textCostMessage == null) {
             return;
@@ -3455,6 +3506,9 @@ public class FinishSeparateFragment extends Fragment {
         }
         if (activeUid != null
                 && ExecutionStatusViewModel.isWalletAddCostAppliedForUid(activeUid)) {
+            if (explicitSelection && bundleCost != null && !bundleCost.isEmpty()) {
+                return bundleCost;
+            }
             return FinishCostReconcileHelper.pickHigherCostGrivna(persistedCost, bundleCost);
         }
         try {

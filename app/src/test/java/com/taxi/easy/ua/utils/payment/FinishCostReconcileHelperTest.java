@@ -58,4 +58,11 @@ public class FinishCostReconcileHelperTest {
         assertTrue(FinishCostReconcileHelper.serverConfirmedWalletFloor(22, 22));
         assertFalse(FinishCostReconcileHelper.serverConfirmedWalletFloor(12, 22));
     }
+
+    @Test
+    public void capInflatedWalletDisplay_clampsAboveAuthoritative() {
+        assertEquals(12, FinishCostReconcileHelper.capInflatedWalletDisplay(17, 12));
+        assertEquals(12, FinishCostReconcileHelper.capInflatedWalletDisplay(12, 12));
+        assertEquals(12, FinishCostReconcileHelper.capInflatedWalletDisplay(15, 12));
+    }
 }

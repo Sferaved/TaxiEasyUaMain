@@ -79,4 +79,12 @@ public final class FinishCostReconcileHelper {
     public static boolean serverConfirmedWalletFloor(int serverTotal, @Nullable Integer walletFloorGrivna) {
         return walletFloorGrivna != null && walletFloorGrivna > 0 && serverTotal >= walletFloorGrivna;
     }
+
+    /** Не восстанавливать завышенную сумму после order_uid_new (12+5≠17). */
+    public static int capInflatedWalletDisplay(int candidateGrivna, int authoritativeGrivna) {
+        if (authoritativeGrivna <= 0) {
+            return candidateGrivna;
+        }
+        return candidateGrivna > authoritativeGrivna ? authoritativeGrivna : candidateGrivna;
+    }
 }
