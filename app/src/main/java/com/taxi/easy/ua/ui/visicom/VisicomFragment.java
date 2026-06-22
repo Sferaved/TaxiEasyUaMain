@@ -468,6 +468,11 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
         btnAdd = binding.btnAdd;
         constr2 = binding.constr2;
+        buttonBonus = binding.btnBonus;
+        btn_minus = binding.btnMinus;
+        btn_plus = binding.btnPlus;
+        btnOrder = binding.btnOrder;
+        textViewTo = binding.textTo;
 
         constr2.setVisibility(GONE);
 
@@ -1214,7 +1219,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     }
 
     private void finishCostCalculationWithPrice() {
-        if (text_view_cost == null) {
+        if (!isAdded() || binding == null || text_view_cost == null) {
             return;
         }
         CharSequence priceText = text_view_cost.getText();
@@ -1225,15 +1230,15 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         hideCostCalculationProgress();
         sharedPreferencesHelperMain.saveValue("old_cost", priceText.toString().trim());
         btnVisible(VISIBLE);
-        btnAdd.setVisibility(View.VISIBLE);
-        buttonBonus.setVisibility(View.VISIBLE);
-        btn_minus.setVisibility(View.VISIBLE);
+        binding.btnAdd.setVisibility(View.VISIBLE);
+        binding.btnBonus.setVisibility(View.VISIBLE);
+        binding.btnMinus.setVisibility(View.VISIBLE);
         text_view_cost.setVisibility(View.VISIBLE);
-        btn_plus.setVisibility(View.VISIBLE);
-        btnOrder.setVisibility(View.VISIBLE);
-        constr2.setVisibility(View.VISIBLE);
-        schedule.setVisibility(View.VISIBLE);
-        shed_down.setVisibility(View.VISIBLE);
+        binding.btnPlus.setVisibility(View.VISIBLE);
+        binding.btnOrder.setVisibility(View.VISIBLE);
+        binding.constr2.setVisibility(View.VISIBLE);
+        binding.schedule.setVisibility(View.VISIBLE);
+        binding.shedDown.setVisibility(View.VISIBLE);
     }
 
     private static boolean hasDisplayableCost(String cost) {
@@ -1265,7 +1270,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
     /** Кэшированная цена «по городу», если сервер ещё не вернул маршрут/стоимость. */
     private boolean tryApplyCachedAroundCityCost() {
-        if (!isAdded() || context == null) {
+        if (!isAdded() || context == null || binding == null) {
             return false;
         }
         CostPreviewHint preview = resolveCostPreviewForRecalc();
@@ -3183,6 +3188,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     @Override
     public void onResume() {
         super.onResume();
+        if (binding == null) {
+            return;
+        }
         Logger.d(context, TAG, "onResume 1" );
 
 
@@ -3257,6 +3265,11 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         viewModel.setCanceledStatus("no_canceled");
 
         textfrom = binding.textfrom;
+        buttonBonus = binding.btnBonus;
+        btn_minus = binding.btnMinus;
+        btn_plus = binding.btnPlus;
+        btnOrder = binding.btnOrder;
+        textViewTo = binding.textTo;
 
         if (EarlyOrderNavigationHelper.isEarlyNavigationDone()) {
             EarlyOrderNavigationHelper.tryResumePendingFinishNavigation(context);
@@ -5247,7 +5260,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
                 Logger.d(context, TAG, "Setting UI visibility and values");
 
-                if (!isCityOnlyFinishInDatabase(finish)) {
+                if (!isCityOnlyFinishInDatabase(finish) && textViewTo != null) {
                     textViewTo.setText(finish);
                 }
 

@@ -41,11 +41,11 @@ public final class PaymentDeclinedUiHelper {
             return;
         }
         Context appContext = context.getApplicationContext();
-        syncActiveOrderUid(orderUid);
         PaymentSessionHelper.markPaymentFailedForOrder(orderUid);
         PendingTransactionHelper.save(orderUid, "Declined");
 
         Runnable onMain = () -> {
+            syncActiveOrderUid(orderUid);
             if (MainActivity.viewModel != null) {
                 MainActivity.viewModel.setTransactionStatus("Declined");
             }

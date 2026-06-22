@@ -191,7 +191,11 @@ public class ExecutionStatusViewModel extends ViewModel {
             Log.d("VIEWMODEL", "updateUid: active " + current + " -> " + newUid + ", await orderDouble event");
         }
         MainActivity.uid = newUid;
-        uidLiveData.setValue(newUid);
+        if (Looper.getMainLooper().isCurrentThread()) {
+            uidLiveData.setValue(newUid);
+        } else {
+            uidLiveData.postValue(newUid);
+        }
         persistFinishOrderSnapshot();
         sharedPreferencesHelperMain.saveValue(PREF_UID_FCM, newUid);
         PassengerNotifier.linkFinishOrderUidsAfterUidChange(current, newUid);
@@ -211,7 +215,11 @@ public class ExecutionStatusViewModel extends ViewModel {
         }
         MainActivity.uid = activeUid;
         MainActivity.uid_Double = doubleUid != null ? doubleUid : "";
-        uidLiveData.setValue(activeUid);
+        if (Looper.getMainLooper().isCurrentThread()) {
+            uidLiveData.setValue(activeUid);
+        } else {
+            uidLiveData.postValue(activeUid);
+        }
     }
 
     public void persistDisplayCostGrivna(@Nullable String costGrivna) {

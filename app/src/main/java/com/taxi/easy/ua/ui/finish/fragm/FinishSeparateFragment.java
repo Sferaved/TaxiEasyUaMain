@@ -130,6 +130,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
+import com.taxi.easy.ua.utils.network.ApiGsonHelper;
 import retrofit2.converter.gson.GsonConverterFactory;
 import com.taxi.easy.ua.utils.db.CursorReadHelper;
 
@@ -971,7 +972,7 @@ public class FinishSeparateFragment extends Fragment {
                 .build();
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrlValue + "/")
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create(ApiGsonHelper.create()))
                 .client(client)
                 .build();
         StatusService service = retrofit.create(StatusService.class);
@@ -3742,7 +3743,7 @@ public class FinishSeparateFragment extends Fragment {
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrlValue)
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create(ApiGsonHelper.create()))
                 .client(client)
                 .build();
 
@@ -3894,7 +3895,7 @@ public class FinishSeparateFragment extends Fragment {
                 "baseUrl", "https://m.easy-order-taxi.site");
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrlValue + "/")
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create(ApiGsonHelper.create()))
                 .client(client)
                 .build();
 
@@ -4489,7 +4490,7 @@ public class FinishSeparateFragment extends Fragment {
                 "baseUrl", "https://m.easy-order-taxi.site");
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create(ApiGsonHelper.create()))
                 .client(httpClient)
                 .build();
         APIHoldService apiService = retrofit.create(APIHoldService.class);
@@ -4534,7 +4535,7 @@ public class FinishSeparateFragment extends Fragment {
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create(ApiGsonHelper.create()))
                 .client(httpClient.build()) // Подключение клиента OkHttpClient с логгером
                 .build();
 

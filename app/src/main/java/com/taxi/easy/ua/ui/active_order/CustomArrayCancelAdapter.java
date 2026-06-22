@@ -250,7 +250,9 @@ public class CustomArrayCancelAdapter extends ArrayAdapter<String> {
         Logger.d(context, TAG, "orderFinished: required_time " + required_time);
 
 
-        if (required_time != null && !required_time.contains("1970-01-01")) {
+        if (required_time != null
+                && !required_time.trim().isEmpty()
+                && !required_time.contains("1970-01-01")) {
             try {
                 @SuppressLint("SimpleDateFormat")
                 SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");

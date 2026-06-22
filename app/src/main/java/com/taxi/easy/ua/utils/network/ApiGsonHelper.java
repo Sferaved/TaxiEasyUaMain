@@ -92,6 +92,45 @@ public final class ApiGsonHelper {
         }
     };
 
+    private static final TypeAdapter<Long> LONG_ADAPTER = new TypeAdapter<Long>() {
+        @Override
+        public void write(JsonWriter out, Long value) throws IOException {
+            if (value == null) {
+                out.nullValue();
+            } else {
+                out.value(value);
+            }
+        }
+
+        @Override
+        public Long read(JsonReader in) throws IOException {
+            JsonToken token = in.peek();
+            if (token == JsonToken.NULL) {
+                in.nextNull();
+                return 0L;
+            }
+            if (token == JsonToken.STRING) {
+                String value = in.nextString();
+                if (value == null || value.trim().isEmpty()) {
+                    return 0L;
+                }
+                try {
+                    return (long) Double.parseDouble(value.trim().replace(',', '.'));
+                } catch (NumberFormatException e) {
+                    return 0L;
+                }
+            }
+            if (token == JsonToken.NUMBER) {
+                return (long) in.nextDouble();
+            }
+            if (token == JsonToken.BOOLEAN) {
+                return in.nextBoolean() ? 1L : 0L;
+            }
+            in.skipValue();
+            return 0L;
+        }
+    };
+
     private static final TypeAdapter<Boolean> BOOLEAN_ADAPTER = new TypeAdapter<Boolean>() {
         @Override
         public void write(JsonWriter out, Boolean value) throws IOException {
@@ -137,6 +176,8 @@ public final class ApiGsonHelper {
                 .registerTypeAdapter(Integer.class, INT_ADAPTER)
                 .registerTypeAdapter(double.class, DOUBLE_ADAPTER)
                 .registerTypeAdapter(Double.class, DOUBLE_ADAPTER)
+                .registerTypeAdapter(long.class, LONG_ADAPTER)
+                .registerTypeAdapter(Long.class, LONG_ADAPTER)
                 .registerTypeAdapter(boolean.class, BOOLEAN_ADAPTER)
                 .registerTypeAdapter(Boolean.class, BOOLEAN_ADAPTER)
                 .create();
