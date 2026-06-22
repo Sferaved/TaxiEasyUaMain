@@ -1525,6 +1525,7 @@ public class FinishSeparateFragment extends Fragment {
         String api = listCity.get(2);
         baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
         boolean orderInMyVod = (boolean) sharedPreferencesHelperMain.getValue("order_in_my_vod", false);
+        boolean useVodCancel = orderInMyVod && action != null && !"Поиск авто".equals(action);
         String activeUid = resolveActiveOrderUid();
         if (activeUid == null || activeUid.trim().isEmpty()) {
             return null;
@@ -1538,7 +1539,7 @@ public class FinishSeparateFragment extends Fragment {
             return baseUrl + api + "/android/webordersCancelDouble/" + activeUid + "/" + doubleUid
                     + "/" + pay_method + "/" + city + "/" + context.getString(R.string.application);
         }
-        if (orderInMyVod) {
+        if (useVodCancel) {
             return baseUrl + api + "/android/webordersCancelVod/" + activeUid;
         }
         return baseUrl + api + "/android/webordersCancel/" + activeUid + "/" + city
@@ -1562,6 +1563,11 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     private void handleCancelRequestFailed() {
+        if (canceled || isCancelUiShown()) {
+            finishCancelInFlightState();
+            Logger.d(context, TAG, "handleCancelRequestFailed: ignored, order already canceled");
+            return;
+        }
         cancelRequestInFlight = false;
         ExecutionStatusViewModel.setCancelInFlightPref(false);
         activeCancelCall = null;
@@ -1647,6 +1653,10 @@ public class FinishSeparateFragment extends Fragment {
                 if (context == null || !isAdded()) {
                     return;
                 }
+                if (canceled || isCancelUiShown()) {
+                    finishCancelInFlightState();
+                    return;
+                }
                 setCancelButtonBusy(false);
                 if (response.isSuccessful() && response.body() != null) {
                     Logger.d(context, TAG, "submitOrderCancelRequest OK: " + response.body());
@@ -1667,6 +1677,10 @@ public class FinishSeparateFragment extends Fragment {
                 }
                 FirebaseCrashlytics.getInstance().recordException(t);
                 Logger.d(context, TAG, "submitOrderCancelRequest onFailure: " + t.getMessage());
+                if (canceled || isCancelUiShown()) {
+                    finishCancelInFlightState();
+                    return;
+                }
                 handleCancelRequestFailed();
             }
         });
@@ -2088,6 +2102,7 @@ public class FinishSeparateFragment extends Fragment {
             return;
         }
         sharedPreferencesHelperMain.saveValue("carFound", false);
+        sharedPreferencesHelperMain.saveValue("order_in_my_vod", false);
         viewModel.showCancelButton();
         sharedPreferencesHelperMain.saveValue("bonusExecuted", false);
 //        new Handler(Looper.getMainLooper()).post(() -> {
@@ -2582,12 +2597,29 @@ public class FinishSeparateFragment extends Fragment {
     }
 
     private void showOrderCanceledFromServer() {
-        if (!isAdded() || context == null || isCancelUiShown()) {
+        if (!isAdded() || context == null) {
+            return;
+        }
+        if (isCancelUiShown()) {
+            finishCancelInFlightState();
             return;
         }
         Logger.d(context, TAG, "showOrderCanceledFromServer");
+        finishCancelInFlightState();
+        String activeUid = resolveActiveOrderUid();
+        if (activeUid == null || activeUid.isEmpty()) {
+            activeUid = uid;
+        }
+        if (activeUid != null && !activeUid.isEmpty()) {
+            ExecutionStatusViewModel.markUserCanceledOrderPair(activeUid, uid_Double);
+            PaymentSessionHelper.clearWfpOrderRef(activeUid);
+        }
+        MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
+        cancel_btn_click = true;
         cancelShowDialogAddCost();
-        orderCanceled(PaymentDeclinedUiHelper.canceledStatusMessage(context, resolveActiveOrderUid()));
+        orderCanceled(PaymentDeclinedUiHelper.canceledStatusMessage(context, activeUid));
+        clearActiveOrderUidsAfterCancel();
+        sharedPreferencesHelperMain.saveValue("order_in_my_vod", false);
     }
 
     private void closeReasonReactNal(
