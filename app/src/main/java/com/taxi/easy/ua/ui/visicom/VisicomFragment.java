@@ -143,6 +143,7 @@ import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
 import com.taxi.easy.ua.utils.worker.TilePreloadWorker;
+import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 import com.uxcam.UXCam;
 
 import java.io.IOException;
@@ -2616,6 +2617,13 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                         ? text_view_cost.getText().toString().trim() : "";
             }
             EarlyOrderNavigationHelper.markSubmitStarted(ctx, pay_method, displayCost);
+
+            if ("wfp_payment".equals(pay_method)) {
+                String activeCardId = getCheckRectoken(ctx);
+                if (!activeCardId.isEmpty()) {
+                    WfpUtils.syncActiveCardBeforeOrder(ctx, activeCardId);
+                }
+            }
 
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
             baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");

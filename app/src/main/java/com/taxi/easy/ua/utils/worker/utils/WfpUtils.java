@@ -13,6 +13,7 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.card.CardInfo;
+import com.taxi.easy.ua.ui.wfp.token.CallbackResponseSetActivCardWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -133,6 +134,40 @@ public class WfpUtils {
                 ExistingWorkPolicy.REPLACE,
                 request
         );
+    }
+
+    /**
+     * Синхронно выставить активную карту на сервере перед списанием по токену.
+     */
+    public static boolean syncActiveCardBeforeOrder(Context context, String cardId) {
+        if (cardId == null || cardId.isEmpty()) {
+            return true;
+        }
+        List<String> cityInfo = logCursor(MainActivity.CITY_INFO, context);
+        if (cityInfo.size() < 2 || !isCityValidForCardFetch(cityInfo.get(1))) {
+            Logger.d(context, TAG, "syncActiveCardBeforeOrder: skip invalid city");
+            return true;
+        }
+        String city = cityInfo.get(1);
+        String userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
+        try {
+            CallbackServiceWfp service = createCallbackService(context);
+            Response<CallbackResponseSetActivCardWfp> response = service.setActiveCard(
+                    userEmail,
+                    cardId,
+                    city,
+                    context.getString(R.string.application)
+            ).execute();
+            boolean ok = response.isSuccessful()
+                    && response.body() != null
+                    && "ok".equalsIgnoreCase(response.body().getResult());
+            Logger.d(context, TAG, "syncActiveCardBeforeOrder: cardId=" + cardId + " ok=" + ok);
+            return ok;
+        } catch (Exception e) {
+            Logger.w(context, TAG, "syncActiveCardBeforeOrder failed: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
+            return false;
+        }
     }
 
     public static void fetchCardTokenWfpAsync(String city, Context context, @Nullable CardFetchCallback callback) {
