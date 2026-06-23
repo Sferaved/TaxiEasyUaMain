@@ -318,11 +318,20 @@ public class CentrifugoManager {
             }
             Log.d(TAG, "Event accepted for this client: " + eventName);
 
-            // Создаем уникальный ключ для события
-            String uniqueKey = "pub_" + data.hashCode();
+            // Получаем данные из поля "data" если оно есть
+            JSONObject eventData = jsonObject;
+            if (jsonObject.has("data")) {
+                eventData = jsonObject.getJSONObject("data");
+            }
+
+            // Создаем уникальный ключ для события (отмену не дедуплицируем — повтор нужен при re-entry)
+            boolean cancelEvent = eventData.has("canceled");
+            String uniqueKey = cancelEvent
+                    ? "canceled_" + eventData.optString("uid", "") + "_" + System.nanoTime()
+                    : "pub_" + data.hashCode();
 
             // Проверка на дубликаты
-            if (processedEventIds.contains(uniqueKey)) {
+            if (!cancelEvent && processedEventIds.contains(uniqueKey)) {
                 Log.d(TAG, "Duplicate event ignored: " + uniqueKey);
                 return;
             }
@@ -331,12 +340,6 @@ public class CentrifugoManager {
             // Ограничиваем размер множества
             if (processedEventIds.size() > MAX_PROCESSED_EVENTS) {
                 processedEventIds.clear();
-            }
-
-            // Получаем данные из поля "data" если оно есть
-            JSONObject eventData = jsonObject;
-            if (jsonObject.has("data")) {
-                eventData = jsonObject.getJSONObject("data");
             }
 
             // ДИАГНОСТИКА: проверяем наличие полей transactionStatus

@@ -61,7 +61,34 @@ public class WfpUtils {
             return;
         }
         sharedPreferencesHelperMain.saveValue(PREF_USER_SELECTED_WFP_RECTOKEN, rectoken);
+        String city = getCurrentCity(context);
+        if (isCityValidForCardFetch(city)) {
+            sharedPreferencesHelperMain.saveValue(cityScopedRectokenKey(city), rectoken);
+        }
         Logger.d(context, TAG, "saveUserSelectedWfpRectoken: " + rectoken);
+    }
+
+    @NonNull
+    private static String cityScopedRectokenKey(@NonNull String city) {
+        return PREF_USER_SELECTED_WFP_RECTOKEN + "_" + city;
+    }
+
+    @NonNull
+    public static String getCurrentCity(Context context) {
+        List<String> cityInfo = logCursor(MainActivity.CITY_INFO, context);
+        return cityInfo.size() >= 2 ? cityInfo.get(1) : "";
+    }
+
+    @NonNull
+    public static String getCityScopedSelectedWfpRectoken(Context context) {
+        String city = getCurrentCity(context);
+        if (isCityValidForCardFetch(city)) {
+            Object value = sharedPreferencesHelperMain.getValue(cityScopedRectokenKey(city), "");
+            if (value != null && !value.toString().isEmpty()) {
+                return value.toString();
+            }
+        }
+        return getUserSelectedWfpRectoken(context);
     }
 
     @NonNull
@@ -71,9 +98,12 @@ public class WfpUtils {
     }
 
     private static String resolveRectokenCheckForSync(Context context, CardInfo cardInfo) {
-        String selected = getUserSelectedWfpRectoken(context);
+        String selected = getCityScopedSelectedWfpRectoken(context);
         String rectoken = cardInfo.getRectoken();
         if (!selected.isEmpty() && selected.equals(rectoken)) {
+            return "1";
+        }
+        if ("1".equals(normalizeActiveFlag(cardInfo.getActive()))) {
             return "1";
         }
         return "0";
@@ -121,8 +151,145 @@ public class WfpUtils {
                 cv.put("rectoken_check", rectokenCheck);
                 database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
             }
+            ensureActiveWfpCardAfterSync(context, cards);
         } finally {
             database.close();
+        }
+    }
+
+    /**
+     * Активная карта для оплаты: checked в БД или авто-выбор единственной / сохранённой по городу.
+     */
+    @NonNull
+    public static String resolveActiveWfpRectoken(Context context) {
+        String checked = queryCheckedWfpRectoken(context);
+        if (!checked.isEmpty()) {
+            return checked;
+        }
+        ensureActiveWfpCardFromDb(context);
+        return queryCheckedWfpRectoken(context);
+    }
+
+    @NonNull
+    private static String queryCheckedWfpRectoken(Context context) {
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        try {
+            Cursor cursor = database.query(
+                    MainActivity.TABLE_WFP_CARDS,
+                    new String[]{"rectoken"},
+                    "rectoken_check = ?",
+                    new String[]{"1"},
+                    null, null, null);
+            if (cursor.moveToFirst()) {
+                String result = CursorReadHelper.getString(cursor, "rectoken");
+                cursor.close();
+                return result != null ? result : "";
+            }
+            cursor.close();
+        } finally {
+            database.close();
+        }
+        return "";
+    }
+
+    private static void ensureActiveWfpCardFromDb(Context context) {
+        if (hasCheckedWfpCard(context)) {
+            return;
+        }
+        ArrayList<String> rectokens = new ArrayList<>();
+        ArrayList<String> checks = new ArrayList<>();
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        try {
+            Cursor cursor = database.query(
+                    MainActivity.TABLE_WFP_CARDS,
+                    new String[]{"rectoken", "rectoken_check"},
+                    null, null, null, null, null);
+            while (cursor.moveToNext()) {
+                rectokens.add(CursorReadHelper.getString(cursor, "rectoken"));
+                checks.add(CursorReadHelper.getString(cursor, "rectoken_check"));
+            }
+            cursor.close();
+        } finally {
+            database.close();
+        }
+        if (rectokens.isEmpty()) {
+            return;
+        }
+        String preferred = getCityScopedSelectedWfpRectoken(context);
+        if (!preferred.isEmpty()) {
+            for (String rectoken : rectokens) {
+                if (preferred.equals(rectoken)) {
+                    setWfpCardChecked(context, rectoken);
+                    Logger.d(context, TAG, "ensureActiveWfpCardFromDb: preferred " + preferred);
+                    return;
+                }
+            }
+        }
+        for (int i = 0; i < rectokens.size(); i++) {
+            if ("1".equals(normalizeActiveFlag(checks.get(i)))) {
+                String rectoken = rectokens.get(i);
+                setWfpCardChecked(context, rectoken);
+                saveUserSelectedWfpRectoken(context, rectoken);
+                Logger.d(context, TAG, "ensureActiveWfpCardFromDb: server active " + rectoken);
+                return;
+            }
+        }
+        if (rectokens.size() == 1) {
+            String only = rectokens.get(0);
+            setWfpCardChecked(context, only);
+            saveUserSelectedWfpRectoken(context, only);
+            Logger.d(context, TAG, "ensureActiveWfpCardFromDb: single card " + only);
+        }
+    }
+
+    private static boolean hasCheckedWfpCard(Context context) {
+        return !queryCheckedWfpRectoken(context).isEmpty();
+    }
+
+    private static void setWfpCardChecked(Context context, String rectoken) {
+        if (rectoken == null || rectoken.isEmpty()) {
+            return;
+        }
+        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
+        try {
+            ContentValues clear = new ContentValues();
+            clear.put("rectoken_check", "0");
+            database.update(MainActivity.TABLE_WFP_CARDS, clear, null, null);
+            ContentValues mark = new ContentValues();
+            mark.put("rectoken_check", "1");
+            database.update(MainActivity.TABLE_WFP_CARDS, mark, "rectoken=?", new String[]{rectoken});
+        } finally {
+            database.close();
+        }
+    }
+
+    private static void ensureActiveWfpCardAfterSync(Context context, @Nullable List<CardInfo> cards) {
+        if (cards == null || cards.isEmpty() || hasCheckedWfpCard(context)) {
+            return;
+        }
+        String preferred = getCityScopedSelectedWfpRectoken(context);
+        if (!preferred.isEmpty()) {
+            for (CardInfo cardInfo : cards) {
+                if (preferred.equals(cardInfo.getRectoken())) {
+                    setWfpCardChecked(context, cardInfo.getRectoken());
+                    Logger.d(context, TAG, "ensureActiveWfpCardAfterSync: preferred " + preferred);
+                    return;
+                }
+            }
+        }
+        for (CardInfo cardInfo : cards) {
+            if ("1".equals(normalizeActiveFlag(cardInfo.getActive()))) {
+                setWfpCardChecked(context, cardInfo.getRectoken());
+                saveUserSelectedWfpRectoken(context, cardInfo.getRectoken());
+                Logger.d(context, TAG, "ensureActiveWfpCardAfterSync: server active " + cardInfo.getRectoken());
+                return;
+            }
+        }
+        if (cards.size() == 1) {
+            String only = cards.get(0).getRectoken();
+            setWfpCardChecked(context, only);
+            saveUserSelectedWfpRectoken(context, only);
+            Logger.d(context, TAG, "ensureActiveWfpCardAfterSync: single card " + only);
         }
     }
 

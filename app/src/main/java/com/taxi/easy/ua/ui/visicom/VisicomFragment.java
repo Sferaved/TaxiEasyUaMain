@@ -2371,28 +2371,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
     @SuppressLint("Range")
     private static String getCheckRectoken(Context context) {
-        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-
-        String[] columns = {"rectoken"}; // Указываем нужное поле
-        String selection = "rectoken_check = ?";
-        String[] selectionArgs = {"1"};
-        String result = "";
-
-        Cursor cursor = database.query(MainActivity.TABLE_WFP_CARDS, columns, selection, selectionArgs, null, null, null);
-
-        if (cursor.moveToFirst()) {
-            do {
-                result = CursorReadHelper.getString(cursor, "rectoken");
-                Logger.d(context, TAG, "Found rectoken with rectoken_check = 1" + ": " + result);
-                return result;
-            } while (cursor.moveToNext());
-        }
-        cursor.close();
-
-        database.close();
-
-
-        return result;
+        return WfpUtils.resolveActiveWfpRectoken(context);
     }
 
     private static String addCostBlackList(String addcost) {

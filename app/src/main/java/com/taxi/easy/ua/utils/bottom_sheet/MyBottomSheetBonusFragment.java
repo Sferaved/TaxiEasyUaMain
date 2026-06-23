@@ -46,6 +46,7 @@ import com.taxi.easy.ua.utils.retrofit.cost_json_parser.CostJSONParserRetrofit;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
+import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 
 import android.widget.ImageView;
 import com.taxi.easy.ua.utils.permissions.UserPermissions;
@@ -508,6 +509,9 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
 
     @SuppressLint("Range")
     private static String getCheckRectoken(String table, Context context) {
+        if (MainActivity.TABLE_WFP_CARDS.equals(table)) {
+            return WfpUtils.resolveActiveWfpRectoken(context);
+        }
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
         String[] columns = {"rectoken"};

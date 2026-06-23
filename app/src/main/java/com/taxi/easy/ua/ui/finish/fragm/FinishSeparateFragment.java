@@ -514,6 +514,7 @@ public class FinishSeparateFragment extends Fragment {
         uid_Double = receivedMap.get("dispatching_order_uid_Double");
 
         reconcileOrderIdentityFromPersistedState();
+        applyCanceledOrderIfAlreadyClosed();
         if (uid != null && !uid.isEmpty()) {
             ExecutionStatusViewModel.resetNewOrderSession(uid);
         }
@@ -1594,10 +1595,15 @@ public class FinishSeparateFragment extends Fragment {
         cancelFailureWatchRemaining = 0;
         stopCancelWatchPoll();
         statusPollPaused = false;
-        canceled = false;
         if (context == null || !isAdded()) {
             return;
         }
+        if (isCanceledExecutionStatus(lastExecutionStatus)) {
+            Logger.d(context, TAG, "resumeStatusPollingAfterCancelFailure: order canceled on server");
+            showOrderCanceledFromServer();
+            return;
+        }
+        canceled = false;
         Logger.d(context, TAG, "resumeStatusPollingAfterCancelFailure: order still active on server");
         try {
             statusOrder();
@@ -2510,6 +2516,9 @@ public class FinishSeparateFragment extends Fragment {
         }
         String executionStatus = orderResponse.getExecutionStatus();
         int closeReason = orderResponse.getCloseReason();
+        if (isCanceledExecutionStatus(executionStatus)) {
+            return true;
+        }
         if (orderResponse.isOrderIsArchive() && isCanceledExecutionStatus(executionStatus)) {
             return true;
         }
@@ -2597,6 +2606,21 @@ public class FinishSeparateFragment extends Fragment {
         clearActiveOrderUidsAfterCancel();
     }
 
+    private void applyCanceledOrderIfAlreadyClosed() {
+        if (!isAdded() || context == null || isCancelUiShown()) {
+            return;
+        }
+        String activeUid = resolveActiveOrderUid();
+        if (activeUid == null || activeUid.isEmpty()) {
+            return;
+        }
+        String canceledUid = ExecutionStatusViewModel.getCanceledOrderUid();
+        if (canceledUid != null && canceledUid.equals(activeUid)) {
+            Logger.d(context, TAG, "applyCanceledOrderIfAlreadyClosed uid=" + activeUid);
+            showOrderCanceledFromServer();
+        }
+    }
+
     private void showOrderCanceledFromServer() {
         if (!isAdded() || context == null) {
             return;
@@ -2665,9 +2689,13 @@ public class FinishSeparateFragment extends Fragment {
                        action = "Заказ выполнен";
                         orderComplete();
                         break;
-                    default: //Поиск авто
-                       action = "Поиск авто";
-                        carSearch();
+                    default:
+                        if (isCanceledExecutionStatus(executionStatus)) {
+                            showOrderCanceledFromServer();
+                        } else {
+                            action = "Поиск авто";
+                            carSearch();
+                        }
                 }
                 break;
             case 101:
@@ -2738,6 +2766,10 @@ public class FinishSeparateFragment extends Fragment {
         Logger.d(context, TAG, "closeReasonReactCard: " + closeReason);
         if (closeReason == 8) {
             orderComplete();
+            return;
+        }
+        if (isCanceledExecutionStatus(lastExecutionStatus)) {
+            showOrderCanceledFromServer();
             return;
         }
         if (closeReason == 0 || closeReason == 9) {
@@ -3570,11 +3602,17 @@ public class FinishSeparateFragment extends Fragment {
                 && !navigationOrderUid.equals(persistedActive);
 
         if (ExecutionStatusViewModel.isCancelInFlightPref() && !orderSwitch) {
-            cancelRequestInFlight = true;
-            setCancelButtonBusy(true);
-            if (text_status != null) {
-                text_status.clearAnimation();
-                text_status.setText(R.string.sent_cancel_message);
+            String reopenUid = navigationOrderUid != null ? navigationOrderUid : persistedActive;
+            String canceledUid = ExecutionStatusViewModel.getCanceledOrderUid();
+            if (canceledUid != null && canceledUid.equals(reopenUid)) {
+                ExecutionStatusViewModel.setCancelInFlightPref(false);
+            } else {
+                cancelRequestInFlight = true;
+                setCancelButtonBusy(true);
+                if (text_status != null) {
+                    text_status.clearAnimation();
+                    text_status.setText(R.string.sent_cancel_message);
+                }
             }
         }
 
@@ -3962,6 +4000,7 @@ public class FinishSeparateFragment extends Fragment {
 
         addCheck(context);
         reconcileOrderIdentityFromPersistedState();
+        applyCanceledOrderIfAlreadyClosed();
         restoreWalletAddCostFloorIfNeeded();
         if (shouldIgnoreStatusPollingUi()) {
             if (isViewingCompletedOrder()) {

@@ -119,6 +119,7 @@ import com.taxi.easy.ua.utils.retrofit.worker.RetrofitWorker;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
+import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 import com.uxcam.UXCam;
 
 import org.json.JSONException;
@@ -2163,6 +2164,9 @@ private void cost() {
     }
     @SuppressLint("Range")
     private String getCheckRectoken(String table) {
+        if (MainActivity.TABLE_WFP_CARDS.equals(table)) {
+            return WfpUtils.resolveActiveWfpRectoken(context);
+        }
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
         String[] columns = {"rectoken"}; // Указываем нужное поле

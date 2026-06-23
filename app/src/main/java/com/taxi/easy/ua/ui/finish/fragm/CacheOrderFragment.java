@@ -63,6 +63,7 @@ import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.payment.PaymentErrorSheetHelper;
 import com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper;
 import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
+import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
@@ -550,6 +551,9 @@ public class CacheOrderFragment extends Fragment {
     }
     @SuppressLint("Range")
     private String getCheckRectoken(String table, Context context) {
+        if (MainActivity.TABLE_WFP_CARDS.equals(table)) {
+            return WfpUtils.resolveActiveWfpRectoken(context);
+        }
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
         String[] columns = {"rectoken"}; // Указываем нужное поле
