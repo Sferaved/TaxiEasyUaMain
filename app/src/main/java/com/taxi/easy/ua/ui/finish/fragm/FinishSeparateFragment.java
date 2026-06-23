@@ -2966,13 +2966,29 @@ public class FinishSeparateFragment extends Fragment {
     }
 
 
+    /** Не показывать отмену по push, если опрос ещё видит заказ в поиске (вилка безнал/нал). */
+    private boolean shouldAcceptServerCanceledPush() {
+        if (isCancelUiShown() || canceled) {
+            return false;
+        }
+        if (OrderHistoryStatusHelper.isCanceled(
+                String.valueOf(lastCloseReason), lastExecutionStatus, resolveActiveOrderUid())) {
+            return true;
+        }
+        if (lastCloseReason == -1 || lastCloseReason == 0) {
+            Logger.d(context, TAG, "shouldAcceptServerCanceledPush: ignore, order still active");
+            return false;
+        }
+        return true;
+    }
+
     @Subscribe(threadMode = ThreadMode.MAIN) // Обработка события в UI-потоке
     public void onCanceledStatusEvent(CanceledStatusEvent event) {
         String canceledStatus = event.getCanceledStatus();
         Log.d("EventBus", "Received canceled status: " + canceledStatus);
         // Обновление UI или выполнение действий
         Logger.d(context,"Pusher eventCanceled", "Finish eventCanceled status set: " + canceledStatus);
-        if (canceledStatus != null && "canceled".equals(canceledStatus)) {
+        if (canceledStatus != null && "canceled".equals(canceledStatus) && shouldAcceptServerCanceledPush()) {
             viewModel.getOrderResponse().removeObservers(getViewLifecycleOwner());
             showOrderCanceledFromServer();
         }
@@ -3125,7 +3141,7 @@ public class FinishSeparateFragment extends Fragment {
         viewModel.getCanceledStatus().removeObservers(getViewLifecycleOwner());
         viewModel.getCanceledStatus().observe(getViewLifecycleOwner(), status -> {
             Logger.d(context, "Pusher eventCanceled", "Finish eventCanceled status set: " + status);
-            if (status != null && "canceled".equals(status)) {
+            if (status != null && "canceled".equals(status) && shouldAcceptServerCanceledPush()) {
                 viewModel.getOrderResponse().removeObservers(getViewLifecycleOwner());
                 showOrderCanceledFromServer();
             }
