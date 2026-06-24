@@ -90,6 +90,7 @@ import com.taxi.easy.ua.utils.payment.GooglePayOrderHelper;
 import com.taxi.easy.ua.utils.notify.NotificationHelper;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper;
+import com.taxi.easy.ua.utils.orders.OrderCancelResponseHelper;
 import com.taxi.easy.ua.utils.orders.OrderHistoryStatusHelper;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
@@ -219,6 +220,8 @@ public class FinishSeparateFragment extends Fragment {
     private boolean statusPollPaused = false;
     /** Опрос статуса после сбоя cancel HTTP — не возвращать UI «ищем авто» сразу. */
     private int cancelFailureWatchRemaining = 0;
+    /** -1 = ждём подтверждения отмены с диспетчера (фоновый дожим на сервере). */
+    private static final int CANCEL_WATCH_INDEFINITE = -1;
     private Runnable cancelWatchPoll;
     /** UID заказа, выбранного при открытии экрана (список «В работе» или новый заказ). */
     @Nullable
@@ -620,6 +623,10 @@ public class FinishSeparateFragment extends Fragment {
                 return;
             }
             if (cancelRequestInFlight) {
+                scheduleCancelWatchPoll();
+                return;
+            }
+            if (cancelFailureWatchRemaining == CANCEL_WATCH_INDEFINITE) {
                 scheduleCancelWatchPoll();
                 return;
             }
@@ -1566,6 +1573,60 @@ public class FinishSeparateFragment extends Fragment {
         }
     }
 
+    private boolean isCancelResponseFailed(@NonNull Status status) {
+        return OrderCancelResponseHelper.isFailed(status.getResponse());
+    }
+
+    private boolean isCancelResponseConfirmed(@NonNull Status status) {
+        return OrderCancelResponseHelper.isConfirmed(status.getResponse());
+    }
+
+    private boolean isCancelResponsePending(@NonNull Status status) {
+        return OrderCancelResponseHelper.isPending(status.getResponse());
+    }
+
+    private void handleCancelRequestPending() {
+        if (canceled || isCancelUiShown()) {
+            finishCancelInFlightState();
+            Logger.d(context, TAG, "handleCancelRequestPending: ignored, order already canceled");
+            return;
+        }
+        cancelRequestInFlight = false;
+        ExecutionStatusViewModel.setCancelInFlightPref(true);
+        activeCancelCall = null;
+        cancel_btn_click = false;
+        if (context == null || !isAdded()) {
+            return;
+        }
+        setCancelButtonBusy(true);
+        statusPollPaused = true;
+        cancelFailureWatchRemaining = CANCEL_WATCH_INDEFINITE;
+        scheduleCancelWatchPoll();
+        if (text_status != null) {
+            text_status.setText(R.string.sent_cancel_message);
+        }
+        Logger.d(context, TAG, "handleCancelRequestPending: awaiting dispatch confirmation");
+    }
+
+    private void handleCancelRequestAwaitingConfirm() {
+        if (canceled || isCancelUiShown()) {
+            finishCancelInFlightState();
+            return;
+        }
+        cancelRequestInFlight = false;
+        ExecutionStatusViewModel.setCancelInFlightPref(true);
+        activeCancelCall = null;
+        cancel_btn_click = false;
+        if (context == null || !isAdded()) {
+            return;
+        }
+        setCancelButtonBusy(true);
+        statusPollPaused = true;
+        cancelFailureWatchRemaining = CANCEL_WATCH_INDEFINITE;
+        scheduleCancelWatchPoll();
+        Logger.d(context, TAG, "handleCancelRequestAwaitingConfirm: HTTP failed, keep status watch");
+    }
+
     private void handleCancelRequestFailed() {
         if (canceled || isCancelUiShown()) {
             finishCancelInFlightState();
@@ -1587,10 +1648,10 @@ public class FinishSeparateFragment extends Fragment {
         if (viewModel != null) {
             viewModel.setStatusNalUpdate(false);
         }
-        cancelFailureWatchRemaining = 8;
+        cancelFailureWatchRemaining = CANCEL_WATCH_INDEFINITE;
         statusPollPaused = true;
         scheduleCancelWatchPoll();
-        Logger.d(context, TAG, "handleCancelRequestFailed: watching status before resume, polls=" + cancelFailureWatchRemaining);
+        Logger.d(context, TAG, "handleCancelRequestFailed: HTTP failed, keep status watch");
     }
 
     private void resumeStatusPollingAfterCancelFailure() {
@@ -1669,8 +1730,17 @@ public class FinishSeparateFragment extends Fragment {
                 }
                 setCancelButtonBusy(false);
                 if (response.isSuccessful() && response.body() != null) {
-                    Logger.d(context, TAG, "submitOrderCancelRequest OK: " + response.body());
-                    completeOrderCancelSuccess(successMessage, uidToCancel);
+                    Status body = response.body();
+                    if (isCancelResponseConfirmed(body)) {
+                        Logger.d(context, TAG, "submitOrderCancelRequest confirmed: " + body);
+                        completeOrderCancelSuccess(successMessage, uidToCancel);
+                    } else if (isCancelResponsePending(body)) {
+                        Logger.d(context, TAG, "submitOrderCancelRequest pending: " + body);
+                        handleCancelRequestPending();
+                    } else {
+                        Logger.d(context, TAG, "submitOrderCancelRequest rejected by server: " + body);
+                        handleCancelRequestFailed();
+                    }
                 } else {
                     Logger.d(context, TAG, "submitOrderCancelRequest HTTP " + response.code());
                     handleCancelRequestFailed();
@@ -1691,7 +1761,7 @@ public class FinishSeparateFragment extends Fragment {
                     finishCancelInFlightState();
                     return;
                 }
-                handleCancelRequestFailed();
+                handleCancelRequestAwaitingConfirm();
             }
         });
     }
@@ -2544,7 +2614,8 @@ public class FinishSeparateFragment extends Fragment {
     private boolean shouldIgnoreStatusPollingUi() {
         return canceled
                 || cancelRequestInFlight
-                || cancelFailureWatchRemaining > 0
+                || cancelFailureWatchRemaining != 0
+                || ExecutionStatusViewModel.isCancelInFlightPref()
                 || isViewingCompletedOrder();
     }
 
