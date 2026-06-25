@@ -715,6 +715,10 @@ public class FinishSeparateFragment extends Fragment {
     ) {
         assert orderResponse != null;
         if (shouldIgnoreStatusPollingUi()) {
+            if (isOrderCanceledOnServer(orderResponse)) {
+                showOrderCanceledFromServer();
+                return;
+            }
             Logger.d(context, TAG, "updateUICardPayStatus ignored: terminal/cancel UI");
             return;
         }
@@ -2003,7 +2007,15 @@ public class FinishSeparateFragment extends Fragment {
                             Activity activity = activityRef.get();
                             if (activity != null && isAdded()) {
                                 Log.d("RetrofitCall", "Updating UI for orderResponse: ");
-                                activity.runOnUiThread(() -> updateUICardPayStatus(orderResponse));
+                                activity.runOnUiThread(() -> {
+                                    if (isOrderCanceledOnServer(orderResponse)) {
+                                        completeOrderCancelSuccess(
+                                                context.getString(R.string.ex_st_canceled),
+                                                orderResponse.getDispatchingOrderUid());
+                                        return;
+                                    }
+                                    updateUICardPayStatus(orderResponse);
+                                });
                             } else {
                                 Log.w("RetrofitCall", "Activity is null or fragment not added. Cannot update UI.");
                             }
@@ -2604,14 +2616,26 @@ public class FinishSeparateFragment extends Fragment {
         return "Executed".equals(executionStatus);
     }
 
-    private static boolean isOrderCanceledOnServer(@Nullable OrderResponse orderResponse) {
+    private boolean isCancelAwaitingConfirmation() {
+        return cancelRequestInFlight
+                || statusPollPaused
+                || cancelFailureWatchRemaining != 0
+                || ExecutionStatusViewModel.isCancelInFlightPref();
+    }
+
+    private boolean isOrderCanceledOnServer(@Nullable OrderResponse orderResponse) {
         if (orderResponse == null) {
             return false;
         }
         int closeReason = orderResponse.getCloseReason();
         String executionStatus = orderResponse.getExecutionStatus();
+        boolean cancelAwaiting = isCancelAwaitingConfirmation();
         if (OrderHistoryStatusHelper.isCanceled(
-                String.valueOf(closeReason), executionStatus, orderResponse.getDispatchingOrderUid())) {
+                String.valueOf(closeReason), executionStatus, orderResponse.getDispatchingOrderUid(),
+                cancelAwaiting)) {
+            return true;
+        }
+        if (cancelAwaiting && "Заказ снят".equals(resolveActionFromOrderResponse(orderResponse))) {
             return true;
         }
         if (closeReason >= 1 && closeReason <= 9 && closeReason != 8 && executionStatus != null) {

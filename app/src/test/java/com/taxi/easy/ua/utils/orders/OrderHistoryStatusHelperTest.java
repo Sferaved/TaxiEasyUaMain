@@ -71,6 +71,16 @@ public class OrderHistoryStatusHelperTest {
     }
 
     @Test
+    public void canceledExecutionStatus_whileClientCancelAwaiting_isCanceled() {
+        assertTrue(OrderHistoryStatusHelper.isCanceled("-1", "Canceled", null, true));
+    }
+
+    @Test
+    public void canceledExecutionStatus_withoutAwaiting_staysActive() {
+        assertFalse(OrderHistoryStatusHelper.isCanceled("-1", "Canceled", null, false));
+    }
+
+    @Test
     public void closeReasonOne_isCanceled() {
         OrderHistoryStatusHelper.StatusKind kind = OrderHistoryStatusHelper.resolveKind(
                 "1",
