@@ -42,25 +42,25 @@ public class OrderHistoryStatusHelperTest {
     }
 
     @Test
-    public void canceledExecutionStatus_withActiveCloseReason_staysInWork() {
+    public void canceledExecutionStatus_withActiveCloseReason_showsCanceled() {
         OrderHistoryStatusHelper.StatusKind kind = OrderHistoryStatusHelper.resolveKind(
                 "-1",
                 "Canceled",
                 "07.07.2026 21:47",
                 null);
 
-        assertEquals(OrderHistoryStatusHelper.StatusKind.WAITING_DISPATCH, kind);
+        assertEquals(OrderHistoryStatusHelper.StatusKind.CANCELED, kind);
     }
 
     @Test
-    public void canceledExecutionStatus_withActiveCloseReason_withoutBooking_isInWork() {
+    public void canceledExecutionStatus_withActiveCloseReason_withoutBooking_isCanceled() {
         OrderHistoryStatusHelper.StatusKind kind = OrderHistoryStatusHelper.resolveKind(
                 "-1",
                 "Canceled",
                 null,
                 null);
 
-        assertEquals(OrderHistoryStatusHelper.StatusKind.IN_WORK, kind);
+        assertEquals(OrderHistoryStatusHelper.StatusKind.CANCELED, kind);
     }
 
     @Test

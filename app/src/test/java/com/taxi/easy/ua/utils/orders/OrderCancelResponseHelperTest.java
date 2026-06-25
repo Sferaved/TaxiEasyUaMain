@@ -68,4 +68,22 @@ public class OrderCancelResponseHelperTest {
         assertEquals(OrderCancelResponseHelper.Kind.UNKNOWN,
                 OrderCancelResponseHelper.classify("200"));
     }
+
+    @Test
+    public void acceptCanceledPush_whenCancelAwaitingConfirmation() {
+        assertTrue(OrderCancelResponseHelper.shouldAcceptServerCanceledPush(
+                false, true, false, -1));
+    }
+
+    @Test
+    public void ignoreCanceledPush_whenOrderStillActiveAndNoCancelRequest() {
+        assertFalse(OrderCancelResponseHelper.shouldAcceptServerCanceledPush(
+                false, false, false, -1));
+    }
+
+    @Test
+    public void acceptCanceledPush_whenPollShowsCanceled() {
+        assertTrue(OrderCancelResponseHelper.shouldAcceptServerCanceledPush(
+                false, false, true, -1));
+    }
 }

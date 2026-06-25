@@ -123,7 +123,7 @@ public final class OrderHistoryStatusHelper {
             @Nullable String orderUid
     ) {
         String cr = closeReason != null ? closeReason.trim() : "";
-        if (isCanceledExecutionStatus(executionStatus) && !"-1".equals(cr)) {
+        if (isCanceledExecutionStatus(executionStatus)) {
             return true;
         }
 

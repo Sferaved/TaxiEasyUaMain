@@ -66,4 +66,26 @@ public final class OrderCancelResponseHelper {
         return lower.contains("очікуємо")
                 || (lower.contains("надіслано") && !lower.contains("скасоване"));
     }
+
+    /**
+     * Принимать push eventCanceled: да, если пользователь уже ждёт отмену;
+     * иначе — только когда опрос не показывает активный поиск.
+     */
+    public static boolean shouldAcceptServerCanceledPush(
+            boolean orderAlreadyCanceled,
+            boolean cancelAwaitingConfirmation,
+            boolean orderCanceledByPoll,
+            int lastCloseReason
+    ) {
+        if (orderAlreadyCanceled) {
+            return false;
+        }
+        if (cancelAwaitingConfirmation) {
+            return true;
+        }
+        if (orderCanceledByPoll) {
+            return true;
+        }
+        return lastCloseReason != -1 && lastCloseReason != 0;
+    }
 }

@@ -222,6 +222,7 @@ public class FinishSeparateFragment extends Fragment {
     private int cancelFailureWatchRemaining = 0;
     /** -1 = ждём подтверждения отмены с диспетчера (фоновый дожим на сервере). */
     private static final int CANCEL_WATCH_INDEFINITE = -1;
+    private static final long CANCEL_WATCH_POLL_MS = 2000L;
     private Runnable cancelWatchPoll;
     /** UID заказа, выбранного при открытии экрана (список «В работе» или новый заказ). */
     @Nullable
@@ -1351,7 +1352,7 @@ public class FinishSeparateFragment extends Fragment {
             return;
         }
         stopCancelWatchPoll();
-        HandlerCompat.postDelayed(handlerStatus, cancelWatchPoll, null, 4000);
+        HandlerCompat.postDelayed(handlerStatus, cancelWatchPoll, null, CANCEL_WATCH_POLL_MS);
     }
 
     private void stopCycle() {
@@ -1601,11 +1602,23 @@ public class FinishSeparateFragment extends Fragment {
         setCancelButtonBusy(true);
         statusPollPaused = true;
         cancelFailureWatchRemaining = CANCEL_WATCH_INDEFINITE;
+        pollOrderStatusDuringCancelWatch();
         scheduleCancelWatchPoll();
         if (text_status != null) {
             text_status.setText(R.string.sent_cancel_message);
         }
         Logger.d(context, TAG, "handleCancelRequestPending: awaiting dispatch confirmation");
+    }
+
+    private void pollOrderStatusDuringCancelWatch() {
+        if (!isAdded() || canceled) {
+            return;
+        }
+        try {
+            statusOrder();
+        } catch (ParseException e) {
+            Logger.e(context, TAG, "pollOrderStatusDuringCancelWatch: " + e.getMessage());
+        }
     }
 
     private void handleCancelRequestAwaitingConfirm() {
@@ -1623,6 +1636,7 @@ public class FinishSeparateFragment extends Fragment {
         setCancelButtonBusy(true);
         statusPollPaused = true;
         cancelFailureWatchRemaining = CANCEL_WATCH_INDEFINITE;
+        pollOrderStatusDuringCancelWatch();
         scheduleCancelWatchPoll();
         Logger.d(context, TAG, "handleCancelRequestAwaitingConfirm: HTTP failed, keep status watch");
     }
@@ -3039,18 +3053,23 @@ public class FinishSeparateFragment extends Fragment {
 
     /** Не показывать отмену по push, если опрос ещё видит заказ в поиске (вилка безнал/нал). */
     private boolean shouldAcceptServerCanceledPush() {
-        if (isCancelUiShown() || canceled) {
-            return false;
-        }
-        if (OrderHistoryStatusHelper.isCanceled(
-                String.valueOf(lastCloseReason), lastExecutionStatus, resolveActiveOrderUid())) {
-            return true;
-        }
-        if (lastCloseReason == -1 || lastCloseReason == 0) {
+        boolean cancelAwaiting = cancelRequestInFlight
+                || statusPollPaused
+                || cancelFailureWatchRemaining != 0
+                || ExecutionStatusViewModel.isCancelInFlightPref();
+        boolean canceledByPoll = OrderHistoryStatusHelper.isCanceled(
+                String.valueOf(lastCloseReason), lastExecutionStatus, resolveActiveOrderUid());
+        boolean accept = OrderCancelResponseHelper.shouldAcceptServerCanceledPush(
+                canceled,
+                cancelAwaiting,
+                canceledByPoll,
+                lastCloseReason);
+        if (!accept && !canceled && (lastCloseReason == -1 || lastCloseReason == 0)) {
             Logger.d(context, TAG, "shouldAcceptServerCanceledPush: ignore, order still active");
-            return false;
+        } else if (accept && cancelAwaiting) {
+            Logger.d(context, TAG, "shouldAcceptServerCanceledPush: accept, cancel in flight");
         }
-        return true;
+        return accept;
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN) // Обработка события в UI-потоке
