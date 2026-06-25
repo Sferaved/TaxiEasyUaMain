@@ -688,7 +688,7 @@ public class FinishSeparateFragment extends Fragment {
         Logger.d(context, "PassengerNotifier", "city " + city);
         // Проверка через 1 секунду
         checkHandler.postDelayed(() -> {
-            if (!isAdded() || notifier == null) {
+            if (!isAdded() || notifier == null || canceled || isCancelUiShown()) {
                 return;
             }
             String orderUid = resolveActiveOrderUid();
@@ -2535,6 +2535,12 @@ public class FinishSeparateFragment extends Fragment {
 
             text_status.clearAnimation();
             canceled = true;
+            if (checkHandler != null) {
+                checkHandler.removeCallbacksAndMessages(null);
+            }
+            if (notifier != null) {
+                notifier.cancelPendingWeatherRequests();
+            }
             String activeUid = resolveActiveOrderUid();
             if (activeUid == null || activeUid.isEmpty()) {
                 activeUid = uid;
