@@ -81,7 +81,8 @@ public final class OrderCancelResponseHelper {
             return false;
         }
         if (cancelAwaitingConfirmation) {
-            return true;
+            return orderCanceledByPoll
+                    || (lastCloseReason >= 1 && lastCloseReason != 8);
         }
         if (orderCanceledByPoll) {
             return true;

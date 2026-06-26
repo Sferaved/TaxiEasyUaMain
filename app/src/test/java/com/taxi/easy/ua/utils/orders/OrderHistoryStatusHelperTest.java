@@ -71,8 +71,9 @@ public class OrderHistoryStatusHelperTest {
     }
 
     @Test
-    public void canceledExecutionStatus_whileClientCancelAwaiting_isCanceled() {
-        assertTrue(OrderHistoryStatusHelper.isCanceled("-1", "Canceled", null, true));
+    public void canceledExecutionStatus_whileClientCancelAwaiting_staysActiveUntilCloseReason() {
+        assertFalse(OrderHistoryStatusHelper.isCanceled("-1", "Canceled", null, true));
+        assertTrue(OrderHistoryStatusHelper.isCanceled("1", "Canceled", null, true));
     }
 
     @Test

@@ -131,10 +131,6 @@ public final class OrderHistoryStatusHelper {
             @Nullable String orderUid,
             boolean clientCancelAwaiting
     ) {
-        if (clientCancelAwaiting && isCanceledExecutionStatus(executionStatus)) {
-            return true;
-        }
-
         String cr = closeReason != null ? closeReason.trim() : "";
         if (isCanceledExecutionStatus(executionStatus) && !"-1".equals(cr)) {
             return true;

@@ -70,9 +70,21 @@ public class OrderCancelResponseHelperTest {
     }
 
     @Test
-    public void acceptCanceledPush_whenCancelAwaitingConfirmation() {
-        assertTrue(OrderCancelResponseHelper.shouldAcceptServerCanceledPush(
+    public void ignoreCanceledPush_whenCancelAwaitingButOrderStillActive() {
+        assertFalse(OrderCancelResponseHelper.shouldAcceptServerCanceledPush(
                 false, true, false, -1));
+    }
+
+    @Test
+    public void acceptCanceledPush_whenCancelAwaitingAndPollShowsCanceled() {
+        assertTrue(OrderCancelResponseHelper.shouldAcceptServerCanceledPush(
+                false, true, true, -1));
+    }
+
+    @Test
+    public void acceptCanceledPush_whenCancelAwaitingAndCloseReasonSettled() {
+        assertTrue(OrderCancelResponseHelper.shouldAcceptServerCanceledPush(
+                false, true, false, 1));
     }
 
     @Test
