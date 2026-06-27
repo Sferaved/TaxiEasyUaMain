@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Импорт нетканых материалов в Украину — 5603139000, 5603149000 (2024)</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --paper: #ffffff;
+      --text: #1a2332;
+      --muted: #5c6b7f;
+      --accent: #1e5a8a;
+      --accent-light: #e8f2fa;
+      --border: #dde3ec;
+      --success: #1a7f4e;
+      --warning: #b45309;
+      --highlight: #fef3c7;
+      --shadow: 0 2px 12px rgba(26, 35, 50, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      font-size: 15px;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 24px 20px 48px; }
+    header {
+      background: linear-gradient(135deg, #1e5a8a 0%, #2d7ab8 100%);
+      color: #fff;
+      padding: 36px 40px;
+      border-radius: 12px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+    }
+    header h1 { margin: 0 0 8px; font-size: 1.65rem; font-weight: 700; line-height: 1.3; }
+    header .meta { opacity: 0.92; font-size: 0.92rem; }
+    header .codes { margin-top: 14px; font-family: Consolas, monospace; font-size: 0.95rem; background: rgba(255,255,255,0.15); display: inline-block; padding: 6px 12px; border-radius: 6px; }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .kpi {
+      background: var(--paper);
+      border-radius: 10px;
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+      border-left: 4px solid var(--accent);
+    }
+    .kpi .label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .kpi .value { font-size: 1.75rem; font-weight: 700; color: var(--accent); margin: 4px 0 2px; }
+    .kpi .sub { font-size: 0.85rem; color: var(--muted); }
+    nav.toc {
+      background: var(--paper);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+    }
+    nav.toc h2 { margin: 0 0 12px; font-size: 1rem; color: var(--muted); }
+    nav.toc ol { margin: 0; padding-left: 20px; }
+    nav.toc a { color: var(--accent); text-decoration: none; }
+    nav.toc a:hover { text-decoration: underline; }
+    section {
+      background: var(--paper);
+      border-radius: 10px;
+      padding: 24px 28px;
+      margin-bottom: 22px;
+      box-shadow: var(--shadow);
+    }
+    section h2 {
+      margin: 0 0 16px;
+      font-size: 1.25rem;
+      color: var(--accent);
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--accent-light);
+    }
+    section h3 { margin: 20px 0 10px; font-size: 1.05rem; color: var(--text); }
+    p { margin: 0 0 12px; }
+    ul, ol { margin: 0 0 14px; padding-left: 22px; }
+    li { margin-bottom: 6px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 18px;
+      font-size: 0.92rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 9px 12px;
+      text-align: left;
+    }
+    th { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tr.total td { font-weight: 700; background: #f8fafc; }
+    tr.peak td { background: var(--highlight); }
+    .note { font-size: 0.88rem; color: var(--muted); font-style: italic; }
+    .chart { margin: 16px 0 8px; }
+    .chart-row {
+      display: grid;
+      grid-template-columns: 72px 1fr 52px;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+    }
+    .chart-label { color: var(--muted); }
+    .chart-bar-wrap { background: #eef2f7; border-radius: 4px; height: 22px; overflow: hidden; }
+    .chart-bar { background: linear-gradient(90deg, #2d7ab8, #5ba3d9); height: 100%; border-radius: 4px; min-width: 2px; }
+    .chart-val { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .conclusions {
+      background: linear-gradient(180deg, #f0f9ff 0%, #fff 100%);
+      border: 1px solid #bae6fd;
+    }
+    .conclusions h2 { color: #0c4a6e; border-color: #bae6fd; }
+    .conclusion-item {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .conclusion-item:last-child { border-bottom: none; }
+    .conclusion-item strong { color: var(--accent); }
+    .badge {
+      display: inline-block;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-right: 6px;
+    }
+    .share-bar { display: flex; height: 28px; border-radius: 6px; overflow: hidden; margin: 10px 0; font-size: 0.75rem; color: #fff; }
+    .share-bar span { display: flex; align-items: center; justify-content: center; padding: 0 4px; white-space: nowrap; overflow: hidden; }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 24px;
+      padding: 16px;
+    }
+    a { color: var(--accent); }
+    @media print {
+      body { background: #fff; }
+      .wrap { padding: 0; max-width: 100%; }
+      header, section, nav.toc, .kpi { box-shadow: none; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Анализ импорта в Украину: нетканые материалы</h1>
+    <div class="meta">
+      Период: 2024 год &nbsp;|&nbsp; Дата подготовки: 26.06.2026 17:04<br>
+      Источник: Держстат Украины, раздел XI (текстиль); данные ГТС
+    </div>
+    <div class="codes">УКТ ЗЕД: 5603139000 &nbsp;·&nbsp; 5603149000</div>
+  </header>
+
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="label">Импорт 2024</div>
+      <div class="value">34,4</div>
+      <div class="sub">млн $ &nbsp;·&nbsp; 7 861 т</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Экспорт 2024</div>
+      <div class="value">9,7</div>
+      <div class="sub">млн $ &nbsp;·&nbsp; 3 060 т</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Чистый импорт</div>
+      <div class="value">24,7</div>
+      <div class="sub">млн $ (спрос внутри страны)</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Пик месяца</div>
+      <div class="value">Июнь</div>
+      <div class="sub">3,78 млн $ импорта</div>
+    </div>
+  </div>
+
+  <nav class="toc">
+    <h2>Содержание</h2>
+    <ol>
+      <li><a href="#s1">О товарах</a></li>
+      <li><a href="#s2">Ключевые цифры 2024</a></li>
+      <li><a href="#s3">Помесячная динамика импорта</a></li>
+      <li><a href="#s4">Экспорт и баланс</a></li>
+      <li><a href="#s5">Структура по странам</a></li>
+      <li><a href="#s6">Ёмкость рынка</a></li>
+      <li><a href="#s7">Динамика 2020–2024</a></li>
+      <li><a href="#s8">Выводы и рекомендации</a></li>
+      <li><a href="#s9">Источники</a></li>
+    </ol>
+  </nav>
+
+  <section id="s1">
+    <h2>1. О товарах</h2>
+    <table>
+      <thead>
+        <tr><th>Код УКТ ЗЕД</th><th>Плотность</th><th>Описание</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>5603139000</strong></td>
+          <td>70–150 г/м²</td>
+          <td>Нетканые материалы из химических нитей, <strong>без покрытия</strong>. Подложки, утеплители, технический текстиль.</td>
+        </tr>
+        <tr>
+          <td><strong>5603149000</strong></td>
+          <td>&gt;150 г/м²</td>
+          <td>Нетканые материалы из химических нитей, <strong>без покрытия</strong>. Плотные полотна: мебель, напольные покрытия, основы.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Смежные коды (с покрытием): <strong>5603131000</strong> — 3,18 млн $; <strong>5603141000</strong> — 4,88 млн $.<br>
+    Вся группа 560313 + 560314 (4 кода): <strong>~42,4 млн $</strong> импорта в 2024.</p>
+  </section>
+
+  <section id="s2">
+    <h2>2. Ключевые цифры за 2024 год</h2>
+    <table>
+      <thead>
+        <tr><th>Показатель</th><th class="num">5603139000</th><th class="num">5603149000</th><th class="num">Вместе</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Импорт, млн $</strong></td><td class="num">19,41</td><td class="num">14,95</td><td class="num"><strong>34,36</strong></td></tr>
+        <tr><td>Объём импорта, т</td><td class="num">5 157</td><td class="num">2 704</td><td class="num"><strong>7 861</strong></td></tr>
+        <tr><td>Средняя цена, $/кг</td><td class="num">3,76</td><td class="num">5,53</td><td class="num">4,37</td></tr>
+        <tr><td><strong>Экспорт, млн $</strong></td><td class="num">7,00</td><td class="num">2,65</td><td class="num"><strong>9,65</strong></td></tr>
+        <tr><td>Объём экспорта, т</td><td class="num">2 207</td><td class="num">853</td><td class="num">3 060</td></tr>
+        <tr><td><strong>Чистый импорт, млн $</strong></td><td class="num">12,41</td><td class="num">12,30</td><td class="num"><strong>24,71</strong></td></tr>
+        <tr><td>Экспорт / импорт</td><td class="num">36%</td><td class="num">18%</td><td class="num">28%</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><strong>Валовой импорт (~34 млн $)</strong> — потолок для иностранных поставщиков.</li>
+      <li><strong>Чистый импорт (~25 млн $)</strong> — спрос внутри страны с учётом украинского экспорта.</li>
+      <li>По коду 5603139000 сильное местное производство (экспорт = 36% импорта).</li>
+    </ul>
+  </section>
+
+  <section id="s3">
+    <h2>3. Помесячная динамика импорта, 2024</h2>
+    <p class="note">Импорт за календарный месяц (разница накопительных итогов Держстата).</p>
+    <table>
+      <thead>
+        <tr><th>Месяц</th><th class="num">5603139000</th><th class="num">5603149000</th><th class="num">Сумма</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Январь</td><td class="num">1,27</td><td class="num">0,58</td><td class="num">1,85</td></tr>
+        <tr><td>Февраль</td><td class="num">1,37</td><td class="num">0,71</td><td class="num">2,08</td></tr>
+        <tr><td>Март</td><td class="num">1,64</td><td class="num">1,35</td><td class="num">3,00</td></tr>
+        <tr><td>Апрель</td><td class="num">1,42</td><td class="num">1,66</td><td class="num">3,08</td></tr>
+        <tr><td>Май</td><td class="num">1,46</td><td class="num">1,83</td><td class="num">3,29</td></tr>
+        <tr class="peak"><td><strong>Июнь</strong></td><td class="num"><strong>2,30</strong></td><td class="num">1,48</td><td class="num"><strong>3,78</strong></td></tr>
+        <tr><td>Июль</td><td class="num">1,78</td><td class="num">1,16</td><td class="num">2,93</td></tr>
+        <tr><td>Август</td><td class="num">1,98</td><td class="num">1,53</td><td class="num">3,50</td></tr>
+        <tr><td>Сентябрь</td><td class="num">1,78</td><td class="num">1,07</td><td class="num">2,85</td></tr>
+        <tr><td>Октябрь</td><td class="num">1,73</td><td class="num">1,40</td><td class="num">3,12</td></tr>
+        <tr><td>Ноябрь</td><td class="num">1,62</td><td class="num">1,00</td><td class="num">2,62</td></tr>
+        <tr><td>Декабрь</td><td class="num">1,07</td><td class="num">1,18</td><td class="num">2,25</td></tr>
+        <tr class="total"><td><strong>Итого</strong></td><td class="num">19,41</td><td class="num">14,95</td><td class="num">34,36</td></tr>
+      </tbody>
+    </table>
+
+    <h3>График: суммарный импорт по месяцам (млн $)</h3>
+    <div class="chart">
+      <div class="chart-row"><span class="chart-label">Янв</span><div class="chart-bar-wrap"><div class="chart-bar" style="width:49%"></div></div><span class="chart-val">1,85</span></div>
+      <div class="chart-row"><span class="chart-label">Фев</span><div class="chart-bar-wrap"><div class="chart-bar" style="width:55%"></div></div><span class="chart-val">2,08</span></div>
+      <div class="chart-row"><span class="chart-label">Мар</span><div class="chart-bar-wrap"><div class="chart-bar" style="width:79%"></div></div><span class="chart-val">3,00</span></div>
+      <div class="chart-row"><span class="chart-label">Апр</span><div class="chart-bar-wrap"><div class="chart-bar" style="width:82%"></div></div><span class="chart-val">3,08</span></div>
+      <div class="chart-row"><span class="chart-label">Май</span><div class="chart-bar-wrap"><div class="chart-bar" style="width:87%"></div></div><span class="chart-val">3,29</span></div>
+      <div class="chart-row"><span class="chart-label">Июн</span><div class="chart-bar-wrap"><div class="chart-bar" style="width:100%"></div></div><span class="chart-val">3,78</span></div>
+      <div class="chart-row"><span class="chart-label">Июл</span><div class="chart-bar-wrap"><div class="chart-bar" style="width:78%"></div></div><span class="chart-val">2,93</span></div>
+      <div class="chart-row"><span class="chart-label">Авг</span><div class="chart-bar-wrap"><div class="chart-bar" style="width:93%"></div></div><span class="chart-val">3,50</span></div>
+      <div class="chart-row"><span class="chart-label">Сен</span><div class="chart-bar-wrap"><div class="chart-bar" style="width:75%"></div></div><span class="chart-val">2,85</span></div>
+      <div class="chart-row"><span class="chart-label">Окт</span><div class="chart-bar-wrap"><div class="chart-bar" style="width:83%"></div></div><span class="chart-val">3,12</span></div>
+      <div class="chart-row"><span class="chart-label">Ноя</span><div class="chart-bar-wrap"><div class="chart-bar" style="width:69%"></div></div><span class="chart-val">2,62</span></div>
+      <div class="chart-row"><span class="chart-label">Дек</span><div class="chart-bar-wrap"><div class="chart-bar" style="width:60%"></div></div><span class="chart-val">2,25</span></div>
+    </div>
+    <p><strong>Сезонность:</strong> пик апрель–август; максимум в июне (3,78 млн $); минимум в декабре (2,25 млн $).</p>
+  </section>
+
+  <section id="s4">
+    <h2>4. Экспорт и баланс, 2024</h2>
+    <table>
+      <thead>
+        <tr><th>Месяц</th><th class="num">5603139000</th><th class="num">5603149000</th><th class="num">Сумма</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Январь</td><td class="num">0,77</td><td class="num">0,17</td><td class="num">0,94</td></tr>
+        <tr><td>Февраль</td><td class="num">0,68</td><td class="num">0,25</td><td class="num">0,92</td></tr>
+        <tr><td>Март</td><td class="num">0,64</td><td class="num">0,28</td><td class="num">0,92</td></tr>
+        <tr><td>Апрель</td><td class="num">0,66</td><td class="num">0,19</td><td class="num">0,84</td></tr>
+        <tr><td>Май</td><td class="num">0,44</td><td class="num">0,13</td><td class="num">0,57</td></tr>
+        <tr><td>Июнь</td><td class="num">0,47</td><td class="num">0,26</td><td class="num">0,73</td></tr>
+        <tr><td>Июль</td><td class="num">0,52</td><td class="num">0,20</td><td class="num">0,72</td></tr>
+        <tr><td>Август</td><td class="num">0,41</td><td class="num">0,14</td><td class="num">0,55</td></tr>
+        <tr><td>Сентябрь</td><td class="num">0,73</td><td class="num">0,26</td><td class="num">0,99</td></tr>
+        <tr><td>Октябрь</td><td class="num">0,70</td><td class="num">0,50</td><td class="num">1,19</td></tr>
+        <tr><td>Ноябрь</td><td class="num">0,55</td><td class="num">0,24</td><td class="num">0,79</td></tr>
+        <tr><td>Декабрь</td><td class="num">0,44</td><td class="num">0,05</td><td class="num">0,49</td></tr>
+        <tr class="total"><td><strong>Итого</strong></td><td class="num">7,00</td><td class="num">2,65</td><td class="num">9,65</td></tr>
+      </tbody>
+    </table>
+    <h3>Квартальный баланс (импорт − экспорт), млн $</h3>
+    <table>
+      <thead><tr><th>Квартал</th><th class="num">Импорт</th><th class="num">Экспорт</th><th class="num">Сальдо</th></tr></thead>
+      <tbody>
+        <tr><td>I (янв–мар)</td><td class="num">6,93</td><td class="num">2,78</td><td class="num"><strong>+4,15</strong></td></tr>
+        <tr><td>II (апр–июн)</td><td class="num">10,15</td><td class="num">2,14</td><td class="num"><strong>+8,01</strong></td></tr>
+        <tr><td>III (июл–сен)</td><td class="num">9,28</td><td class="num">2,26</td><td class="num"><strong>+7,02</strong></td></tr>
+        <tr><td>IV (окт–дек)</td><td class="num">8,00</td><td class="num">2,47</td><td class="num"><strong>+5,53</strong></td></tr>
+      </tbody>
+    </table>
+    <p>Оптимальное окно для поставок: <strong>март–сентябрь</strong> (максимальный чистый ввоз).</p>
+  </section>
+
+  <section id="s5">
+    <h2>5. Структура импорта по странам, 2024</h2>
+    <h3>5603139000 — 19,41 млн $</h3>
+    <div class="share-bar">
+      <span style="width:35%;background:#1e5a8a">Польша 35%</span>
+      <span style="width:23%;background:#2d7ab8">Китай 23%</span>
+      <span style="width:14%;background:#5ba3d9">Турция 14%</span>
+      <span style="width:28%;background:#94c5e8">Прочие 28%</span>
+    </div>
+    <table>
+      <thead><tr><th>№</th><th>Страна</th><th class="num">млн $</th><th class="num">тонн</th><th class="num">Доля</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Польша</td><td class="num">6,86</td><td class="num">1 995</td><td class="num">35%</td></tr>
+        <tr><td>2</td><td>Китай</td><td class="num">4,37</td><td class="num">1 452</td><td class="num">23%</td></tr>
+        <tr><td>3</td><td>Турция</td><td class="num">2,70</td><td class="num">661</td><td class="num">14%</td></tr>
+        <tr><td>4</td><td>Венгрия</td><td class="num">0,99</td><td class="num">191</td><td class="num">5%</td></tr>
+        <tr><td>5</td><td>Германия</td><td class="num">0,85</td><td class="num">125</td><td class="num">4%</td></tr>
+        <tr><td>6</td><td>Италия</td><td class="num">0,55</td><td class="num">118</td><td class="num">3%</td></tr>
+        <tr><td></td><td>Прочие</td><td class="num">3,09</td><td class="num">615</td><td class="num">16%</td></tr>
+      </tbody>
+    </table>
+
+    <h3>5603149000 — 14,95 млн $</h3>
+    <div class="share-bar">
+      <span style="width:58%;background:#1e5a8a">Италия 58%</span>
+      <span style="width:17%;background:#2d7ab8">Китай 17%</span>
+      <span style="width:9%;background:#5ba3d9">Польша 9%</span>
+      <span style="width:16%;background:#94c5e8">Прочие 16%</span>
+    </div>
+    <table>
+      <thead><tr><th>№</th><th>Страна</th><th class="num">млн $</th><th class="num">тонн</th><th class="num">Доля</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><strong>Италия</strong></td><td class="num"><strong>8,60</strong></td><td class="num">833</td><td class="num"><strong>58%</strong></td></tr>
+        <tr><td>2</td><td>Китай</td><td class="num">2,48</td><td class="num">942</td><td class="num">17%</td></tr>
+        <tr><td>3</td><td>Польша</td><td class="num">1,35</td><td class="num">379</td><td class="num">9%</td></tr>
+        <tr><td>4</td><td>Венгрия</td><td class="num">0,96</td><td class="num">290</td><td class="num">6%</td></tr>
+        <tr><td>5</td><td>Чехия</td><td class="num">0,49</td><td class="num">77</td><td class="num">3%</td></tr>
+        <tr><td></td><td>Прочие</td><td class="num">1,07</td><td class="num">183</td><td class="num">7%</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="s6">
+    <h2>6. Оценка ёмкости рынка</h2>
+    <h3>Сценарий А — 5603139000 (70–150 г/м²)</h3>
+    <table>
+      <thead><tr><th>Уровень</th><th class="num">млн $/год</th><th class="num">т/год</th></tr></thead>
+      <tbody>
+        <tr><td>Валовой импорт</td><td class="num">19,4</td><td class="num">5 157</td></tr>
+        <tr><td>Чистый ввоз</td><td class="num">12,4</td><td class="num">~3 950</td></tr>
+        <tr><td>Пиковый месяц (июнь)</td><td class="num">~2,3</td><td class="num">~600</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>Доля нового поставщика</th><th class="num">млн $/год</th><th class="num">т/год</th></tr></thead>
+      <tbody>
+        <tr><td>3%</td><td class="num">~0,6</td><td class="num">~155</td></tr>
+        <tr><td>5%</td><td class="num">~1,0</td><td class="num">~258</td></tr>
+        <tr><td>10%</td><td class="num">~1,9</td><td class="num">~516</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Сценарий Б — 5603149000 (&gt;150 г/м²)</h3>
+    <table>
+      <thead><tr><th>Уровень</th><th class="num">млн $/год</th><th class="num">т/год</th></tr></thead>
+      <tbody>
+        <tr><td>Валовой импорт</td><td class="num">15,0</td><td class="num">2 704</td></tr>
+        <tr><td>Чистый ввоз</td><td class="num">12,3</td><td class="num">~2 220</td></tr>
+        <tr><td>Пиковый месяц (май)</td><td class="num">~1,8</td><td class="num">~330</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>Доля нового поставщика</th><th class="num">млн $/год</th><th class="num">т/год</th></tr></thead>
+      <tbody>
+        <tr><td>3%</td><td class="num">~0,45</td><td class="num">~81</td></tr>
+        <tr><td>5%</td><td class="num">~0,75</td><td class="num">~135</td></tr>
+        <tr><td>10%</td><td class="num">~1,5</td><td class="num">~270</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Место на рынке</h3>
+    <table>
+      <thead><tr><th>Сегмент</th><th class="num">Импорт 2024</th></tr></thead>
+      <tbody>
+        <tr><td>5603139000 + 5603149000</td><td class="num">34,4 млн $</td></tr>
+        <tr><td>Все 4 кода (с покрытием)</td><td class="num">~42,4 млн $</td></tr>
+        <tr><td>Группа HS 56 (нетканые)</td><td class="num">~154 млн $</td></tr>
+        <tr><td>Раздел XI (текстиль)</td><td class="num">~2 400 млн $</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="s7">
+    <h2>7. Динамика 2020–2024</h2>
+    <table>
+      <thead><tr><th>Год</th><th class="num">5603139000</th><th class="num">5603149000</th><th class="num">Сумма</th><th>Комментарий</th></tr></thead>
+      <tbody>
+        <tr><td>2020</td><td class="num">10,18</td><td class="num">9,09</td><td class="num"><strong>19,26</strong></td><td>COVID</td></tr>
+        <tr><td>2021</td><td class="num">20,65</td><td class="num">15,07</td><td class="num"><strong>35,72</strong></td><td>Пик</td></tr>
+        <tr><td>2022</td><td class="num">11,91</td><td class="num">9,76</td><td class="num"><strong>21,68</strong></td><td>Спад (война)</td></tr>
+        <tr><td>2024</td><td class="num">19,41</td><td class="num">14,95</td><td class="num"><strong>34,36</strong></td><td>Восстановление</td></tr>
+      </tbody>
+    </table>
+    <p>После провала 2022 рынок вернулся почти к уровню пика 2021 года.</p>
+  </section>
+
+  <section id="s8" class="conclusions">
+    <h2>8. Выводы и рекомендации</h2>
+
+    <h3>Главные выводы</h3>
+    <div class="conclusion-item"><span class="badge">1</span> <strong>Рынок восстановлен.</strong> Импорт 34,4 млн $ (~7 900 т) — подтверждённый спрос, не «мёртвая» ниша.</div>
+    <div class="conclusion-item"><span class="badge">2</span> <strong>Два сегмента.</strong> 5603139000 — объём и конкуренция (Польша, Китай, местные). 5603149000 — выше цена, доминирует Италия (58%).</div>
+    <div class="conclusion-item"><span class="badge">3</span> <strong>Сезонность.</strong> Поставки — март–сентябрь; пик в июне (3,78 млн $/мес).</div>
+    <div class="conclusion-item"><span class="badge">4</span> <strong>Конкуренция с Украиной.</strong> Экспорт 9,7 млн $ — есть местное производство; чистый ввоз ~25 млн $.</div>
+    <div class="conclusion-item"><span class="badge">5</span> <strong>Ниша стабильная</strong> (~1,4% текстильного импорта), подходит для B2B-контрактов.</div>
+
+    <h3>Практические рекомендации</h3>
+    <table>
+      <thead><tr><th>Если продукт…</th><th>Рекомендация</th></tr></thead>
+      <tbody>
+        <tr><td>70–150 г/м², без покрытия</td><td>Код <strong>5603139000</strong>. Цель: 0,6–1,9 млн $/год. Конкуренты: Польша, Китай.</td></tr>
+        <tr><td>&gt;150 г/м², без покрытия</td><td>Код <strong>5603149000</strong>. Цель: 0,45–1,5 млн $/год. Конкурент: Италия — нужно УТП.</td></tr>
+        <tr><td>С покрытием</td><td>Коды 5603131000 / 5603141000 (+8 млн $ к рынку).</td></tr>
+        <tr><td>Выход на рынок</td><td>Переговоры в Q1, отгрузки с марта–апреля, пик — июнь–август.</td></tr>
+        <tr><td>Цена</td><td>Ориентир: 3,5–4,0 $/кг (лёгкие), 5,0–6,0 $/кг (плотные).</td></tr>
+        <tr><td>Таможня</td><td>Пошлина 5%, НДС 20% (уточнять по поставке).</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Для точного бизнес-плана уточните</h3>
+    <ol>
+      <li>Плотность (г/м²)</li>
+      <li>С покрытием или без</li>
+      <li>Назначение (мебель, пол, авто, медицина, стройка)</li>
+      <li>Цена ($/кг) и минимальная партия</li>
+    </ol>
+  </section>
+
+  <section id="s9">
+    <h2>9. Источники и методология</h2>
+    <ul>
+      <li><a href="https://www.ukrstat.gov.ua/operativ/operativ2025/zd/e_iovt/arh_iovt2025.htm">Держстат — Експорт-імпорт окремих видів товарів</a></li>
+      <li>Файлы <code>ei_01_2024.zip</code> … <code>ei_12_2024.zip</code>, лист 11.XI</li>
+      <li><a href="https://export.gov.ua/dashboard-on-exports-and-imports-of-ukrainian-goods">Дашборд ГТС (export.gov.ua)</a></li>
+    </ul>
+    <p class="note">Помесячные значения — разница накопительных итогов. Данные без временно оккупированных территорий. Оценка доли поставщика — экспертная.</p>
+    <p>Помесячная таблица (CSV): <code>Отчет_импорт_5603139000_5603149000_помесячно_2024.csv</code></p>
+  </section>
+
+  <footer>
+    Отчёт на основе официальной статистики Украины · 26.06.2026<br>
+    Для коммерческих решений — проверка через таможенного брокера и актуальный УКТ ЗЕД
+  </footer>
+
+</div>
+</body>
+</html>

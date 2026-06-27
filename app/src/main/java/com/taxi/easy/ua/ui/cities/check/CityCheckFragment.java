@@ -924,7 +924,14 @@ public class CityCheckFragment extends Fragment {
         database.close();
         sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
         AutoLocationAfterCityHelper.markCityLoaded();
-        startActivity(new Intent(requireActivity(), MainActivity.class));
+        if (requireActivity() instanceof MainActivity) {
+            requireActivity().recreate();
+        } else {
+            Intent intent = new Intent(requireActivity(), MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            requireActivity().finish();
+        }
     }
 
 
