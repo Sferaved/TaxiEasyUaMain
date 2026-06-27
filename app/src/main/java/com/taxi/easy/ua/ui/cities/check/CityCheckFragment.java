@@ -36,6 +36,7 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.ip.ApiServiceCountry;
 import com.taxi.easy.ua.utils.ip.CountryResponse;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
+import com.taxi.easy.ua.utils.city.CityChangeRestartHelper;
 import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
@@ -924,14 +925,9 @@ public class CityCheckFragment extends Fragment {
         database.close();
         sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
         AutoLocationAfterCityHelper.markCityLoaded();
-        if (requireActivity() instanceof MainActivity) {
-            requireActivity().recreate();
-        } else {
-            Intent intent = new Intent(requireActivity(), MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
-            requireActivity().finish();
-        }
+        MainActivity.firstStart = false;
+        startTilePreloadWorker();
+        CityChangeRestartHelper.restartForNewCity(requireActivity());
     }
 
 

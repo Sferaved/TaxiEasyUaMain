@@ -39,6 +39,7 @@ import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import com.taxi.easy.ua.utils.city.CityChangeRestartHelper;
 import com.taxi.easy.ua.utils.city.CityLastAddressHelper;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
@@ -1127,7 +1128,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         }
 
 //        checkNotificationPermissionAndRequestIfNeeded();
-        startActivity(new Intent(context, MainActivity.class));
+        CityChangeRestartHelper.restartForNewCity(context);
     }
 
     private void cityMaxPay(String city) {
