@@ -522,7 +522,13 @@ public class FinishSeparateFragment extends Fragment {
         reconcileOrderIdentityFromPersistedState();
         applyCanceledOrderIfAlreadyClosed();
         if (uid != null && !uid.isEmpty()) {
+            String persistedActive = ExecutionStatusViewModel.getPersistedActiveUid();
             ExecutionStatusViewModel.resetNewOrderSession(uid);
+            if (viewModel != null
+                    && persistedActive != null && !persistedActive.isEmpty()
+                    && !uid.equals(persistedActive)) {
+                viewModel.clearFinishAbsoluteCostGrivna();
+            }
         }
 
         text_status = root.findViewById(R.id.text_status);
@@ -3165,6 +3171,11 @@ public class FinishSeparateFragment extends Fragment {
             if (absoluteCost == null || absoluteCost.isEmpty() || !isAdded()) {
                 return;
             }
+            String currentUid = resolveActiveOrderUid();
+            if (currentUid != null
+                    && !ExecutionStatusViewModel.isWalletAddCostAppliedForUid(currentUid)) {
+                return;
+            }
             Logger.d(context, TAG, "finishAbsoluteCost observe: " + absoluteCost);
             applyDisplayCostToFinishUi(absoluteCost);
             if (receivedMap != null) {
@@ -3841,8 +3852,12 @@ public class FinishSeparateFragment extends Fragment {
                 receivedMap,
                 uid);
         if (viewModel != null) {
-            displayCost = FinishCostReconcileHelper.pickHigherCostGrivna(
-                    displayCost, viewModel.getFinishAbsoluteCostGrivna().getValue());
+            String vmCost = viewModel.getFinishAbsoluteCostGrivna().getValue();
+            if (vmCost != null && !vmCost.isEmpty()
+                    && uid != null
+                    && ExecutionStatusViewModel.isWalletAddCostAppliedForUid(uid)) {
+                displayCost = FinishCostReconcileHelper.pickHigherCostGrivna(displayCost, vmCost);
+            }
         }
         if (displayCost != null && textCostMessage != null
                 && !orderSwitch && uid != null

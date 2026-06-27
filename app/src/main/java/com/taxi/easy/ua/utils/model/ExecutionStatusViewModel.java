@@ -93,6 +93,14 @@ public class ExecutionStatusViewModel extends ViewModel {
         finishAbsoluteCostGrivna.postValue(costGrivna);
     }
 
+    public void clearFinishAbsoluteCostGrivna() {
+        if (Looper.getMainLooper().isCurrentThread()) {
+            finishAbsoluteCostGrivna.setValue(null);
+        } else {
+            finishAbsoluteCostGrivna.postValue(null);
+        }
+    }
+
     // ✅ ИЗМЕНЕННЫЙ МЕТОД
     public void setAddCostViewUpdate(String addCost) {
         Log.e("Pusher addCostViewUpdate", "addCostViewUpdate:" + addCost);
@@ -261,6 +269,14 @@ public class ExecutionStatusViewModel extends ViewModel {
         setCancelInFlightPref(false);
         setUserCanceledPref(false);
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_CANCELED_UID, "");
+        String persistedActive = getPersistedActiveUid();
+        if (activeOrderUid != null && !activeOrderUid.isEmpty()
+                && persistedActive != null && !persistedActive.isEmpty()
+                && !activeOrderUid.equals(persistedActive)) {
+            sharedPreferencesHelperMain.saveValue(PREF_FINISH_DISPLAY_COST, "");
+            clearWalletAddCostAppliedUid();
+            clearWalletAddCostFloorGrivna();
+        }
         if (activeOrderUid != null && !activeOrderUid.isEmpty()) {
             MainActivity.uid = activeOrderUid;
             sharedPreferencesHelperMain.saveValue(PREF_FINISH_ACTIVE_UID, activeOrderUid);
