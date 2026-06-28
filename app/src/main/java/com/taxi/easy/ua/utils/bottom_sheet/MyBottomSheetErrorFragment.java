@@ -79,6 +79,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
     TextView textViewInfo;
     AppCompatButton btn_help, btn_ok, btn_google_pay;
     String errorMessage;
+    private String errorMessageKey = "";
     final String Kyiv_City_phone = "tel:0674443804";
     final String Dnipropetrovsk_Oblast_phone = "tel:0667257070";
     final String Odessa_phone = "tel:0737257070";
@@ -121,8 +122,6 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
 
         View view = inflater.inflate(R.layout.error_list_layout, container, false);
 
-        setCancelable(false);
-
         btn_help = view.findViewById(R.id.btn_help);
         btn_help.setOnClickListener(v -> {
             PhoneCallHelper.callWithFallback(() -> {
@@ -142,7 +141,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
 
         textViewInfo = view.findViewById(R.id.textViewInfo);
         Logger.d(getActivity(), TAG, "onCreateView:errorMessage " + errorMessage);
-        String errorMessageKey = "";
+        errorMessageKey = "";
 
         if (errorMessage != null && !errorMessage.equals("null")) {
             if (errorMessage.equals(getString(R.string.verify_internet))) {
@@ -377,7 +376,18 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
             btn_ok.setOnClickListener(dismissListener);
         }
 
+        boolean missingMessage = errorMessage == null || errorMessage.equals("null");
+        setCancelable(missingMessage || ErrorBottomSheetDismissHelper.allowsDismissOnOutsideTap(errorMessageKey));
+
         return view;
+    }
+
+    @Override
+    public void onCancel(@NonNull DialogInterface dialog) {
+        if (ErrorBottomSheetDismissHelper.shouldRestoreOrderButtonsOnDismiss(errorMessageKey)) {
+            restoreOrderButtonsIfNeeded();
+        }
+        super.onCancel(dialog);
     }
 
     @Override
@@ -684,7 +694,11 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
 
 
     private void restoreOrderButtonsAfterNoCardsDismiss() {
+        restoreOrderButtonsIfNeeded();
         dismiss();
+    }
+
+    private void restoreOrderButtonsIfNeeded() {
         NavDestination destination = navController.getCurrentDestination();
         if (destination == null) {
             return;
