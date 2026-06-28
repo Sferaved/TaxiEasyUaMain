@@ -109,6 +109,7 @@ import com.taxi.easy.ua.ui.home.ButtonVisibilityCallback;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
 import com.taxi.easy.ua.utils.payment.GooglePayOrderHelper;
 import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
+import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
 import com.taxi.easy.ua.utils.helpers.WfpGooglePayHelper;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
@@ -5808,6 +5809,42 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         Logger.d(context, TAG, "restoreFrozenGooglePayOrderCost: total=" + totalUah
                 + " startCost=" + startCost + " addCost=" + addCost
                 + " frozenAdd=" + frozenSubmitAddCost);
+    }
+
+    @Nullable
+    public static VisicomFragment findActiveInstance(@NonNull Context context) {
+        if (!(context instanceof AppCompatActivity activity)) {
+            return null;
+        }
+        Fragment navHost = activity.getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment_content_main);
+        if (navHost == null) {
+            return null;
+        }
+        Fragment current = navHost.getChildFragmentManager().getPrimaryNavigationFragment();
+        if (current instanceof VisicomFragment) {
+            return (VisicomFragment) current;
+        }
+        return null;
+    }
+
+    /** После выбора GPay на шторке «нет карт»: смена способа оплаты и сразу холд через кошелёк. */
+    public static void resumeOrderWithGooglePay(@NonNull Context context) {
+        PaymentTypeHelper.setGooglePay(context);
+        btnStaticVisible(VISIBLE);
+        VisicomFragment fragment = findActiveInstance(context);
+        if (fragment == null) {
+            return;
+        }
+        new Handler(Looper.getMainLooper()).post(() -> {
+            if (fragment.isAdded()) {
+                fragment.triggerGooglePayOrderHold();
+            }
+        });
+    }
+
+    public void triggerGooglePayOrderHold() {
+        pay_method = PaymentTypeHelper.GOOGLE_PAY;
+        startGooglePayHoldBeforeOrder();
     }
 
     private void startGooglePayHoldBeforeOrder() {

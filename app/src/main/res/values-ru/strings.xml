@@ -505,7 +505,8 @@
     <string name="ex_st_in_start_point">Машина прибыла. Пожалуйста проследуйте на посадку. Приятной поездки</string>
     <string name="pay_error_title">Ошибка платежа</string>
     <string name="try_again_pay">"Попробуйте снова, номер счета на оплату: "</string>
-    <string name="no_cards_info">У вас нет проверенных карт для оплаты. Подтвердите свою платежную карту для оплаты поездок.</string>
+    <string name="no_cards_info">У вас нет проверенных карт для оплаты. Подтвердите платёжную карту или выберите Google Pay.</string>
+    <string name="no_cards_google_pay">Оплатить Google Pay</string>
     <string name="verify_address">Проверьте правильность ввода адреса</string>
     <string name="paymentErrMes">Ошибка платежа</string>
     <string name="low_memory_0">"Устройство испытывает нехватку памяти! Свободная память: "</string>

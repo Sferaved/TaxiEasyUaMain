@@ -616,6 +616,9 @@ public class HomeFragment extends Fragment  implements ButtonVisibilityCallback 
             case "wfp_payment":
                 btnBonusName = context.getString(R.string.btn_card);
                 break;
+            case "google_pay_payment":
+                btnBonusName = context.getString(R.string.btn_pay_google);
+                break;
             default:
                 btnBonusName = context.getString(R.string.btn_cache);
                 break;

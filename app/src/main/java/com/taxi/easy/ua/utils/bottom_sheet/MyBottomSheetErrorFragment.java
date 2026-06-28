@@ -48,6 +48,8 @@ import com.taxi.easy.ua.ui.cities.api.CityApiClient;
 import com.taxi.easy.ua.ui.cities.api.CityResponse;
 import com.taxi.easy.ua.ui.cities.api.CityService;
 import com.taxi.easy.ua.ui.home.ButtonVisibilityCallback;
+import com.taxi.easy.ua.utils.payment.GooglePayAvailabilityHelper;
+import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
@@ -75,7 +77,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
     private static final long SCHEDULED_TRIPS_DEBOUNCE_MS = 8000L;
     private static final String ARG_ERROR_MESSAGE = "error_message";
     TextView textViewInfo;
-    AppCompatButton btn_help, btn_ok;
+    AppCompatButton btn_help, btn_ok, btn_google_pay;
     String errorMessage;
     final String Kyiv_City_phone = "tel:0674443804";
     final String Dnipropetrovsk_Oblast_phone = "tel:0667257070";
@@ -136,6 +138,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         });
 
         btn_ok = view.findViewById(R.id.btn_ok);
+        btn_google_pay = view.findViewById(R.id.btn_google_pay);
 
         textViewInfo = view.findViewById(R.id.textViewInfo);
         Logger.d(getActivity(), TAG, "onCreateView:errorMessage " + errorMessage);
@@ -282,23 +285,32 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                     break;
 
                 case "no_cards_info":
-                    textViewInfo.setOnClickListener(v -> {
-                        dismiss();
-                        int currentId = Objects.requireNonNull(navController.getCurrentDestination()).getId();
-                        if (currentId == R.id.nav_visicom) {
-                            VisicomFragment.btnStaticVisible(View.VISIBLE);
-                        } else if (currentId == R.id.nav_home) {
-                            if (callback != null) {
-                                callback.onShowButtons(View.VISIBLE);
-                            }
-                        }
-                    });
+                    textViewInfo.setOnClickListener(v -> restoreOrderButtonsAfterNoCardsDismiss());
 
                     btn_ok.setText(getString(R.string.link_card));
                     btn_ok.setOnClickListener(v -> {
                         navController.navigate(R.id.nav_card, null, new NavOptions.Builder().build());
                         dismiss();
                     });
+
+                    if (GooglePayAvailabilityHelper.isGooglePayOfferAvailable(requireContext())) {
+                        btn_google_pay.setVisibility(View.VISIBLE);
+                        btn_google_pay.setOnClickListener(v -> {
+                            dismiss();
+                            NavDestination destination = navController.getCurrentDestination();
+                            int currentId = destination != null ? destination.getId() : 0;
+                            if (currentId == R.id.nav_visicom) {
+                                VisicomFragment.resumeOrderWithGooglePay(requireContext());
+                            } else {
+                                PaymentTypeHelper.setGooglePay(requireContext());
+                                if (currentId == R.id.nav_home && callback != null) {
+                                    callback.onShowButtons(View.VISIBLE);
+                                }
+                            }
+                        });
+                    } else {
+                        btn_google_pay.setVisibility(View.GONE);
+                    }
                     break;
 
                 case "google_pay_hold_failed":
@@ -670,6 +682,20 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         });
     }
 
+
+    private void restoreOrderButtonsAfterNoCardsDismiss() {
+        dismiss();
+        NavDestination destination = navController.getCurrentDestination();
+        if (destination == null) {
+            return;
+        }
+        int currentId = destination.getId();
+        if (currentId == R.id.nav_visicom) {
+            VisicomFragment.btnStaticVisible(View.VISIBLE);
+        } else if (currentId == R.id.nav_home && callback != null) {
+            callback.onShowButtons(View.VISIBLE);
+        }
+    }
 
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {

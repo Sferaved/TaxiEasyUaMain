@@ -501,7 +501,8 @@
     <string name="ex_st_in_start_point">The car has arrived. Please proceed to board. Enjoy your trip</string>
     <string name="pay_error_title">Payment error</string>
     <string name="try_again_pay">"Try again, invoice number: "</string>
-    <string name="no_cards_info">You have no verified cards for payment. Verify your payment card to pay for trips.</string>
+    <string name="no_cards_info">You have no verified cards for payment. Verify your payment card or choose Google Pay.</string>
+    <string name="no_cards_google_pay">Pay with Google Pay</string>
     <string name="verify_address">Please check if you entered the address correctly</string>
     <string name="paymentErrMes">Payment Error</string>
     <string name="low_memory_0">"The device is running low on memory! Free memory: "</string>
