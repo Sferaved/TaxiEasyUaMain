@@ -53,7 +53,6 @@ public class NavigationViewTest {
                         int[] menuItems = {
                                 R.id.nav_visicom,
                                 R.id.nav_about,
-                                R.id.nav_home,
                                 R.id.nav_cancel,
                                 R.id.nav_settings,
                                 R.id.nav_uid,

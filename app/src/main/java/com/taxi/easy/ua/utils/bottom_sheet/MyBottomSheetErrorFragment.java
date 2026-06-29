@@ -302,9 +302,6 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                                 VisicomFragment.resumeOrderWithGooglePay(requireContext());
                             } else {
                                 PaymentTypeHelper.setGooglePay(requireContext());
-                                if (currentId == R.id.nav_home && callback != null) {
-                                    callback.onShowButtons(View.VISIBLE);
-                                }
                             }
                         });
                     } else {
@@ -706,8 +703,6 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         int currentId = destination.getId();
         if (currentId == R.id.nav_visicom) {
             VisicomFragment.btnStaticVisible(View.VISIBLE);
-        } else if (currentId == R.id.nav_home && callback != null) {
-            callback.onShowButtons(View.VISIBLE);
         }
     }
 

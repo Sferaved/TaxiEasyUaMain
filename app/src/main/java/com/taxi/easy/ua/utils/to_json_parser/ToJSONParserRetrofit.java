@@ -17,6 +17,7 @@ import com.taxi.easy.ua.utils.network.ApiGsonHelper;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
+import com.taxi.easy.ua.utils.orders.OrderChannelResponseHelper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -146,6 +147,7 @@ public class ToJSONParserRetrofit {
 
     public void sendURLChannel(String urlString, final Callback<Map<String, String>> callback) {
         Log.d("API_CALL", "Запуск запроса URL: " + urlString);
+        eventReceived = false;
 
         // Запускаем HTTP-запрос в отдельном потоке
         ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -215,11 +217,11 @@ public class ToJSONParserRetrofit {
         // Ожидаем событие
         new Thread(() -> {
             while (!eventReceived) {
-                if (VisicomFragment.sendUrlMap != null && !VisicomFragment.sendUrlMap.isEmpty()) {
+                if (OrderChannelResponseHelper.hasDispatchingOrderUid(VisicomFragment.sendUrlMap)) {
                     eventReceived = true;
-                    if (activeCall != null && !activeCall.isExecuted()) {
-                        activeCall.cancel(); // Прерываем запрос
-                        Log.d("API_CALL", "HTTP-запрос прерван из-за события.");
+                    if (activeCall != null && !activeCall.isCanceled()) {
+                        activeCall.cancel(); // Прерываем HTTP — UID уже пришёл по Centrifugo
+                        Log.d("API_CALL", "HTTP-запрос прерван: UID получен из push-канала.");
                     }
                     deliverCallbackSuccess(callback, VisicomFragment.sendUrlMap);
                 }

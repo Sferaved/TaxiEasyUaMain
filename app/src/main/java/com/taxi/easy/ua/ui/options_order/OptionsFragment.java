@@ -578,22 +578,17 @@ public class OptionsFragment extends Fragment {
         Logger.d(context, TAG, "changeCost: tarif " + tarif);
 
         String initial_page = (String) sharedPreferencesHelperMain.getValue("initial_page", "visicom");
-
+        if ("home".equals(initial_page)) {
+            sharedPreferencesHelperMain.saveValue("initial_page", "visicom");
+        }
 
         if (isAdded()) {
-            if(initial_page.equals("visicom")){
-                // Проверяем, существует ли VisicomFragment и его views
-                Fragment visicomFragment = getParentFragmentManager().findFragmentByTag("visicom");
-                if (visicomFragment != null && visicomFragment.isAdded() && visicomFragment.getView() != null) {
-                    VisicomFragment.tariffBtnColor();
-                }
-                NavController navController = NavHostFragment.findNavController(this);
-                navController.navigate(R.id.nav_visicom);
-            } else {
-                NavController navController = NavHostFragment.findNavController(this);
-                navController.navigate(R.id.nav_home);
+            Fragment visicomFragment = getParentFragmentManager().findFragmentByTag("visicom");
+            if (visicomFragment != null && visicomFragment.isAdded() && visicomFragment.getView() != null) {
+                VisicomFragment.tariffBtnColor();
             }
-
+            NavController navController = NavHostFragment.findNavController(this);
+            navController.navigate(R.id.nav_visicom);
         } else {
             Logger.e(context,TAG, "Fragment не присоединён к активности — навигация невозможна");
         }

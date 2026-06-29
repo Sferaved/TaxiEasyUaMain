@@ -1169,7 +1169,7 @@ public class HomeFragment extends Fragment  implements ButtonVisibilityCallback 
                     // Фокус установлен на TextView, очищаем его
                     resetRoutHome();
 
-                    MainActivity.navController.navigate(R.id.nav_home, null, new NavOptions.Builder()
+                    MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                             .setPopUpTo(R.id.nav_visicom, true)
                             .build());
                 }
@@ -1184,7 +1184,7 @@ public class HomeFragment extends Fragment  implements ButtonVisibilityCallback 
         btn_clear.setOnClickListener(v -> {
             resetRoutHome();
 
-            MainActivity.navController.navigate(R.id.nav_home, null, new NavOptions.Builder()
+            MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)
                     .build());
 
