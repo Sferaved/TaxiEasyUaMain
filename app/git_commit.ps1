@@ -193,9 +193,12 @@ if ($confirm -ne 'y' -and $confirm -ne 'Y') {
 }
 
 
-# Add changes
+# Add changes (never commit secrets)
 Write-Host "`nAdding changes..." -ForegroundColor Yellow
 git add .
+foreach ($secret in @('keystore/service-account.json', 'app/keystore/service-account.json', 'keystore.properties')) {
+    git reset HEAD -- $secret 2>$null | Out-Null
+}
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: git add failed" -ForegroundColor Red

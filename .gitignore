@@ -35,7 +35,8 @@ replay_pid*.log
 # Generated
 generated/
 
-# Keystore (*.jks) — в репозитории намеренно для CI (app/keystore, keystore/)
-# service-account.json лучше хранить только в GitHub Secret SERVICE_ACCOUNT_JSON
-# app/keystore/service-account.json
-# keystore/service-account.json
+# service-account.json и локальные пароли — только на машине / в GitHub Secrets
+app/keystore/service-account.json
+keystore/service-account.json
+keystore.properties
+
