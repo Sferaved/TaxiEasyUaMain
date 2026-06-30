@@ -19,4 +19,22 @@ Non-interactive (agent/terminal, auto-dismiss `pause`):
 cmd /c "echo.| app\run_version_update.bat"
 ```
 
-Run separately per PAS repo (PAS_1, PAS_2, PAS_3, PAS_4). The script bumps version, updates strings, commits, tags, and pushes.
+Run separately per PAS repo (PAS_1, PAS_2, PAS_3, PAS_4).
+
+## Что делает скрипт (локальный релиз, без GitHub Actions)
+
+1. `testDebugUnitTest`
+2. bump `versionCode` / `versionName` + strings
+3. `bundleRelease` (подписанный AAB)
+4. `publish-google-play.ps1` → Google Play (internal, alpha, beta, production)
+5. **Только после успешной публикации:** commit, tag, push в GitHub
+
+Push тега **не** запускает CI/CD — сборка и маркет уже сделаны локально.
+
+## Требования на машине релиза
+
+- JDK (Android Studio JBR), keystore в `app/keystore/`
+- `keystore/service-account.json` или `app/keystore/service-account.json` (Google Play API)
+- PowerShell 7+ (для JWT подписи в publish-скрипте)
+
+Резервная публикация с GitHub: Actions → **Android CI/CD to Google Play** → Run workflow (вручную).

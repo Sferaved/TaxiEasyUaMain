@@ -1,12 +1,9 @@
 name: Unit tests
 
-# Экономия минут Actions: не на каждый push — PR, тег релиза v*, ручной прогон.
+# Unit tests на PR и ручной прогон. Релиз — локально (run_version_update.bat), без Actions на тег.
 on:
   pull_request:
     branches: [master]
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
 
 jobs:

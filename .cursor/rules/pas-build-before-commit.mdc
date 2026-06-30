@@ -16,11 +16,11 @@ gradlew.bat assembleRelease --no-daemon
 
 2. Дождись **BUILD SUCCESSFUL** на обоих шагах. При ошибке — исправь код, **не** коммить и **не** запускай `run_version_update.bat`.
 
-3. `app\run_version_update.bat` (`git_commit.ps1`) **сам** запускает `testDebugUnitTest` и `assembleRelease` **до** bump версии. Ручной прогон нужен при обычном коммите кода без bump.
+3. `app\run_version_update.bat` (`git_commit.ps1`) **сам** запускает `testDebugUnitTest`, bump версии, `bundleRelease`, публикацию в Play и только потом git push. Ручной прогон нужен при обычном коммите кода без bump.
 
 ## Если локально падает только подпись APK
 
-Keystore может быть недоступен на dev-машине. `git_commit.ps1` автоматически пробует fallback:
+Keystore может быть недоступен на dev-машине. Для обычного коммита без релиза:
 
 ```bat
 gradlew.bat compileReleaseJavaWithJavac --no-daemon
@@ -28,8 +28,8 @@ gradlew.bat compileReleaseJavaWithJavac --no-daemon
 
 ## CI
 
-- Push/PR в `master` — workflow `ci.yml` → `testDebugUnitTest`
-- Push тега — `build-and-publish.yml` → `testDebugUnitTest`, затем `bundleRelease`
+- PR в `master` — workflow `ci.yml` → `testDebugUnitTest` (опционально)
+- Релиз в маркет — **локально**, не через Actions
 
 ## Мульти-PAS
 

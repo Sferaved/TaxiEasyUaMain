@@ -44,22 +44,10 @@ if (-not (Test-Path $gradlew)) {
 Write-Host "Running unit tests (testDebugUnitTest)..." -ForegroundColor Yellow
 & $gradlew testDebugUnitTest --no-daemon
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: unit tests failed - version bump cancelled" -ForegroundColor Red
+    Write-Host "ERROR: unit tests failed - release cancelled" -ForegroundColor Red
     exit 1
 }
 Write-Host "OK: unit tests passed" -ForegroundColor Green
-
-Write-Host "Running release build (assembleRelease)..." -ForegroundColor Yellow
-& $gradlew assembleRelease --no-daemon
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "assembleRelease failed, trying compileReleaseJavaWithJavac..." -ForegroundColor Yellow
-    & $gradlew compileReleaseJavaWithJavac --no-daemon
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "ERROR: release build check failed - version bump cancelled" -ForegroundColor Red
-        exit 1
-    }
-}
-Write-Host "OK: release build check passed" -ForegroundColor Green
 Write-Host ""
 
 # ===== 1. Read build.gradle =====
@@ -153,6 +141,30 @@ Write-Host ""
 Write-Host "SUCCESS: Version updated to $newVersionName ($newVersionCode)" -ForegroundColor Cyan
 Write-Host ""
 
+# ===== 5. Build signed AAB and publish to Google Play =====
+Write-Host "===== Release bundle =====" -ForegroundColor Cyan
+Write-Host "Running bundleRelease..." -ForegroundColor Yellow
+& $gradlew bundleRelease --no-daemon
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: bundleRelease failed - revert version in build.gradle manually" -ForegroundColor Red
+    exit 1
+}
+Write-Host "OK: bundleRelease passed" -ForegroundColor Green
+
+$publishScript = Join-Path $PSScriptRoot "publish-google-play.ps1"
+if (-not (Test-Path $publishScript)) {
+    Write-Host "ERROR: publish-google-play.ps1 not found" -ForegroundColor Red
+    exit 1
+}
+Write-Host "Publishing to Google Play..." -ForegroundColor Yellow
+& powershell -ExecutionPolicy Bypass -File $publishScript -ProjectRoot $projectRoot
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: Google Play publish failed - git push skipped" -ForegroundColor Red
+    exit 1
+}
+Write-Host "OK: Google Play publish completed" -ForegroundColor Green
+Write-Host ""
+
 # ============================================================
 # ===================== GIT BLOCK =============================
 # ============================================================
@@ -239,6 +251,7 @@ if ($pushConfirm -eq 'y' -or $pushConfirm -eq 'Y') {
     }
 
     Write-Host "OK: Git push completed, tag $tagName ready" -ForegroundColor Green
+    Write-Host "Release is local-only (Google Play already updated). GitHub Actions not triggered." -ForegroundColor Gray
 } else {
     Write-Host "OK: Commit and tag created locally. Push skipped." -ForegroundColor Green
     Write-Host "To push later use: git push && git push origin $tagName/actions" -ForegroundColor Yellow

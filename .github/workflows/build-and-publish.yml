@@ -4,10 +4,8 @@ permissions:
   contents: write
   pull-requests: read
 
+# Резерв: повторная публикация с GitHub (основной путь — локально через run_version_update.bat).
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
     inputs:
       release_tag:
