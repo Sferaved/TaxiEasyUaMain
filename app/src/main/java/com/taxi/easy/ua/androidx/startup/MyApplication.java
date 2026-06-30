@@ -38,7 +38,6 @@ import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.time_ut.IdleTimeoutManager;
-import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
 import com.taxi.easy.ua.utils.worker.OrderStatusWorker;
 import com.uxcam.UXCam;
 import com.uxcam.datamodel.UXConfig;
@@ -125,7 +124,6 @@ public class MyApplication extends MultiDexApplication {
                 supportEmailFromFb();
                 crispInit();
                 getUtaxKey();
-                mainHandler.post(this::scheduleInclusiveTransportWorker);
             } catch (Exception e) {
                 Logger.e(this, TAG, "Async initialization failed: " + e);
                 FirebaseCrashlytics.getInstance().recordException(e);
@@ -533,35 +531,6 @@ public class MyApplication extends MultiDexApplication {
                 fetchUXCamKey(attempt + 1);
             }
         });
-    }
-
-    private void scheduleInclusiveTransportWorker() {
-        // Используем те же настройки, что и в Worker
-         boolean alreadyAsked = (boolean) sharedPreferencesHelperMain.getValue("inclusive_transport_asked", false);
-
-        Logger.d(this, TAG, "scheduleInclusiveTransportWorker - alreadyAsked: " + alreadyAsked);
-
-        if (!alreadyAsked) {
-            Logger.d(this, TAG, "Запланирован InclusiveTransportPreferenceWorker");
-            OneTimeWorkRequest inclusiveWorker = new OneTimeWorkRequest.Builder(InclusiveTransportPreferenceWorker.class)
-                    .setInitialDelay(10, TimeUnit.SECONDS) // Уменьшим задержку
-                    .build();
-
-            WorkManager.getInstance(this).enqueue(inclusiveWorker);
-
-            // Добавим отслеживание для отладки
-            WorkManager.getInstance(this).getWorkInfoByIdLiveData(inclusiveWorker.getId())
-                    .observeForever(workInfo -> {
-                        if (workInfo != null) {
-                            Logger.d(this, TAG, "Worker state: " + workInfo.getState());
-                            if (workInfo.getState().isFinished()) {
-                                Logger.d(this, TAG, "Worker finished with state: " + workInfo.getState());
-                            }
-                        }
-                    });
-        } else {
-            Logger.d(this, TAG, "Вопрос уже был задан, Worker не запускается");
-        }
     }
     public static Context updateContextLocale(Context context) {
         return LocaleHelper.wrapContext(context);

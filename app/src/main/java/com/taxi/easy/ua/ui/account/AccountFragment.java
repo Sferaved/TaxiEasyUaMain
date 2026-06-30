@@ -60,6 +60,7 @@ import com.taxi.easy.ua.utils.phone.PhoneNumberHelper;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.sanitizer.InputSanitizerHelper;
 import com.taxi.easy.ua.utils.ui.ScreenInsetsHelper;
+import com.taxi.easy.ua.utils.inclusive.InclusiveTransportPromptCoordinator;
 import com.taxi.easy.ua.utils.user.save_firebase.FirebaseUserManager;
 import com.taxi.easy.ua.utils.user.user_verify.VerifyUserTask;
 import com.uxcam.UXCam;
@@ -706,6 +707,7 @@ public class AccountFragment extends Fragment {
             Logger.d(context, TAG, "onSignInResult: result.getResultCode() " + resultCode);
             if (result.getResultCode() == Activity.RESULT_OK) {
                 Logger.d(context, "SignIn", "Успешная авторизация!");
+                InclusiveTransportPromptCoordinator.onAuthSucceeded();
                 NavController navController = MainActivity.navController;
                 navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                         .setPopUpTo(R.id.nav_visicom, true)

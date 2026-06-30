@@ -2,79 +2,78 @@ package com.taxi.easy.ua.utils.worker;
 
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
-import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
+import android.text.TextUtils;
 
-import androidx.annotation.NonNull;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import androidx.work.Worker;
-import androidx.work.WorkerParameters;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
-import com.taxi.easy.ua.androidx.startup.MyApplication;
-import com.taxi.easy.ua.utils.log.Logger;
+import java.util.Locale;
 
-public class InclusiveTransportPreferenceWorker extends Worker {
-    private static final String TAG = "InclusiveTransportWorker";
-    private static final String PREF_NAME = "user_preferences";
+public final class InclusiveTransportPreferenceWorker {
+
     private static final String KEY_INCLUSIVE_TRANSPORT_ASKED = "inclusive_transport_asked";
     private static final String KEY_INCLUSIVE_TRANSPORT_ENABLED = "inclusive_transport_enabled";
+    private static final String KEY_ASKED_PREFIX = "inclusive_transport_asked_";
+    private static final String KEY_ENABLED_PREFIX = "inclusive_transport_enabled_";
 
-    public InclusiveTransportPreferenceWorker(Context context, WorkerParameters params) {
-        super(context, params);
+    private InclusiveTransportPreferenceWorker() {
     }
 
-    @NonNull
-    @Override
-    public Result doWork() {
-        try {
-            Logger.d(getApplicationContext(), TAG, "Worker started");
-
-            SharedPreferences prefs = getApplicationContext()
-                    .getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-
-            // Проверяем, спрашивали ли уже пользователя
-            boolean alreadyAsked = prefs.getBoolean(KEY_INCLUSIVE_TRANSPORT_ASKED, false);
-            Logger.d(getApplicationContext(), TAG, "alreadyAsked: " + alreadyAsked);
-
-            if (!alreadyAsked) {
-                Logger.d(getApplicationContext(), TAG, "Отправляем запрос на показ диалога");
-
-                // Сохраняем, что вопрос уже был задан (чтобы не спамить)
-                prefs.edit().putBoolean(KEY_INCLUSIVE_TRANSPORT_ASKED, true).apply();
-
-                // Отправляем broadcast через LocalBroadcastManager
-                Intent intent = new Intent("ACTION_REQUEST_INCLUSIVE_TRANSPORT");
-                intent.putExtra("request_type", "inclusive_transport_preference");
-                LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
-
-                Logger.d(getApplicationContext(), TAG, "Broadcast отправлен");
-            } else {
-                Logger.d(getApplicationContext(), TAG, "Вопрос уже задавался ранее");
-            }
-
-            return Result.success();
-        } catch (Exception e) {
-            Logger.e(MyApplication.getContext(), TAG,
-                    "Ошибка в InclusiveTransportPreferenceWorker: " + e.getMessage());
-            e.printStackTrace();
-            return Result.failure();
+    public static void saveUserPreference(boolean needsInclusiveTransport) {
+        String email = resolveCurrentUserEmail();
+        if (!email.isEmpty()) {
+            sharedPreferencesHelperMain.saveValue(enabledKey(email), needsInclusiveTransport);
+            sharedPreferencesHelperMain.saveValue(askedKey(email), true);
+        } else {
+            sharedPreferencesHelperMain.saveValue(KEY_INCLUSIVE_TRANSPORT_ENABLED, needsInclusiveTransport);
+            sharedPreferencesHelperMain.saveValue(KEY_INCLUSIVE_TRANSPORT_ASKED, true);
         }
     }
 
-    // Статический метод для сохранения ответа пользователя
-    public static void saveUserPreference(boolean needsInclusiveTransport) {
-        sharedPreferencesHelperMain.saveValue(KEY_INCLUSIVE_TRANSPORT_ENABLED, needsInclusiveTransport);
-        sharedPreferencesHelperMain.saveValue(KEY_INCLUSIVE_TRANSPORT_ASKED, true);
-    }
-
-    // Метод для проверки, нужен ли пользователю инклюзивный транспорт
     public static boolean needsInclusiveTransport() {
+        String email = resolveCurrentUserEmail();
+        if (!email.isEmpty()) {
+            return (boolean) sharedPreferencesHelperMain.getValue(enabledKey(email), false);
+        }
         return (boolean) sharedPreferencesHelperMain.getValue(KEY_INCLUSIVE_TRANSPORT_ENABLED, false);
     }
 
-    // Метод для проверки, задавался ли уже вопрос
+    /** @deprecated use {@link #hasBeenAskedForCurrentUser()} */
+    @Deprecated
     public static boolean hasBeenAsked() {
+        return hasBeenAskedForCurrentUser();
+    }
+
+    public static boolean hasBeenAskedForCurrentUser() {
+        String email = resolveCurrentUserEmail();
+        if (!email.isEmpty()) {
+            return (boolean) sharedPreferencesHelperMain.getValue(askedKey(email), false);
+        }
         return (boolean) sharedPreferencesHelperMain.getValue(KEY_INCLUSIVE_TRANSPORT_ASKED, false);
+    }
+
+    static String askedKey(String normalizedEmail) {
+        return KEY_ASKED_PREFIX + normalizedEmail;
+    }
+
+    static String enabledKey(String normalizedEmail) {
+        return KEY_ENABLED_PREFIX + normalizedEmail;
+    }
+
+    static String resolveCurrentUserEmail() {
+        try {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null && !TextUtils.isEmpty(user.getEmail())) {
+                return user.getEmail().trim().toLowerCase(Locale.ROOT);
+            }
+        } catch (IllegalStateException ignored) {
+            // Firebase not initialized in unit tests
+        }
+        Object stored = sharedPreferencesHelperMain.getValue("userEmail", "");
+        if (stored == null) {
+            return "";
+        }
+        String email = String.valueOf(stored).trim();
+        return email.isEmpty() ? "" : email.toLowerCase(Locale.ROOT);
     }
 }

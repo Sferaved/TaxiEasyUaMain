@@ -40,3 +40,10 @@ app/keystore/service-account.json
 keystore/service-account.json
 keystore.properties
 
+# Credentials at repository root (local machine only)
+/*.json
+/*.jks
+/*.pem
+/*.7z
+/*.txt
+
