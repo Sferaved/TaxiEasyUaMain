@@ -18,6 +18,60 @@ function Get-Base64UrlFromString([string]$Text) {
     Get-Base64Url ([System.Text.Encoding]::UTF8.GetBytes($Text))
 }
 
+function Find-OpenSsl {
+    @(
+        "${env:ProgramFiles}\Git\usr\bin\openssl.exe",
+        "${env:ProgramFiles(x86)}\Git\usr\bin\openssl.exe",
+        "C:\Program Files\OpenSSL-Win64\bin\openssl.exe"
+    ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+}
+
+function New-PlayServiceJwt([object]$ServiceAccount) {
+    $headerJson = '{"alg":"RS256","typ":"JWT"}'
+    $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+    $exp = $now + 3600
+    $email = $ServiceAccount.client_email
+    $claimJson = "{`"iss`":`"$email`",`"scope`":`"https://www.googleapis.com/auth/androidpublisher`",`"aud`":`"https://oauth2.googleapis.com/token`",`"exp`":$exp,`"iat`":$now}"
+    $unsigned = "$(Get-Base64UrlFromString $headerJson).$(Get-Base64UrlFromString $claimJson)"
+
+    $openssl = Find-OpenSsl
+    if ($openssl) {
+        $id = [Guid]::NewGuid().ToString("N")
+        $keyPath = Join-Path $env:TEMP "play-sa-key-$id.pem"
+        $unsignedPath = Join-Path $env:TEMP "play-jwt-$id.txt"
+        $sigPath = Join-Path $env:TEMP "play-jwt-sig-$id.bin"
+        try {
+            [System.IO.File]::WriteAllText($keyPath, $ServiceAccount.private_key)
+            [System.IO.File]::WriteAllText($unsignedPath, $unsigned)
+            & $openssl dgst -sha256 -sign $keyPath -binary -out $sigPath $unsignedPath
+            if ($LASTEXITCODE -ne 0) {
+                throw "openssl sign failed (exit $LASTEXITCODE)"
+            }
+            $sig = [System.IO.File]::ReadAllBytes($sigPath)
+            return "$unsigned.$(Get-Base64Url $sig)"
+        }
+        finally {
+            foreach ($p in @($keyPath, $unsignedPath, $sigPath)) {
+                if (Test-Path $p) { Remove-Item $p -Force -ErrorAction SilentlyContinue }
+            }
+        }
+    }
+
+    $rsa = [System.Security.Cryptography.RSA]::Create()
+    try {
+        $rsa.ImportFromPem($ServiceAccount.private_key)
+        $signature = $rsa.SignData(
+            [System.Text.Encoding]::UTF8.GetBytes($unsigned),
+            [System.Security.Cryptography.HashAlgorithmName]::SHA256,
+            [System.Security.Cryptography.RSASignaturePadding]::Pkcs1
+        )
+        return "$unsigned.$(Get-Base64Url $signature)"
+    }
+    catch {
+        throw "JWT sign failed. Install Git for Windows (openssl) or PowerShell 7+: $_"
+    }
+}
+
 function Invoke-GoogleApi {
     param(
         [string]$Method,
@@ -85,31 +139,7 @@ foreach ($file in $noteFiles) {
 }
 
 Write-Step "Getting access token..."
-$headerJson = '{"alg":"RS256","typ":"JWT"}'
-$now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-$claimJson = (@{
-    iss   = $sa.client_email
-    scope = "https://www.googleapis.com/auth/androidpublisher"
-    aud   = "https://oauth2.googleapis.com/token"
-    exp   = $now + 3600
-    iat   = $now
-} | ConvertTo-Json -Compress)
-
-$unsigned = "$(Get-Base64UrlFromString $headerJson).$(Get-Base64UrlFromString $claimJson)"
-
-$rsa = [System.Security.Cryptography.RSA]::Create()
-try {
-    $rsa.ImportFromPem($sa.private_key)
-    $signature = $rsa.SignData(
-        [System.Text.Encoding]::UTF8.GetBytes($unsigned),
-        [System.Security.Cryptography.HashAlgorithmName]::SHA256,
-        [System.Security.Cryptography.RSASignaturePadding]::Pkcs1
-    )
-} catch {
-    throw "RSA sign failed (need PowerShell 7+ / .NET 5+): $_"
-}
-
-$jwt = "$unsigned.$(Get-Base64Url $signature)"
+$jwt = New-PlayServiceJwt $sa
 $tokenResponse = Invoke-RestMethod -Method Post -Uri "https://oauth2.googleapis.com/token" `
     -ContentType "application/x-www-form-urlencoded" `
     -Body "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=$jwt"

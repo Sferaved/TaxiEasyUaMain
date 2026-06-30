@@ -157,7 +157,12 @@ if (-not (Test-Path $publishScript)) {
     exit 1
 }
 Write-Host "Publishing to Google Play..." -ForegroundColor Yellow
-& powershell -ExecutionPolicy Bypass -File $publishScript -ProjectRoot $projectRoot
+$pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
+if ($pwsh) {
+    & pwsh -NoProfile -ExecutionPolicy Bypass -File $publishScript -ProjectRoot $projectRoot
+} else {
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $publishScript -ProjectRoot $projectRoot
+}
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Google Play publish failed - git push skipped" -ForegroundColor Red
     exit 1
