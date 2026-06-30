@@ -48,6 +48,18 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 Write-Host "OK: unit tests passed" -ForegroundColor Green
+
+Write-Host "Running release build check (assembleRelease)..." -ForegroundColor Yellow
+& $gradlew assembleRelease --no-daemon
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "assembleRelease failed, trying compileReleaseJavaWithJavac..." -ForegroundColor Yellow
+    & $gradlew compileReleaseJavaWithJavac --no-daemon
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: release build check failed - deploy cancelled" -ForegroundColor Red
+        exit 1
+    }
+}
+Write-Host "OK: release build check passed" -ForegroundColor Green
 Write-Host ""
 
 # ===== 1. Read build.gradle =====
