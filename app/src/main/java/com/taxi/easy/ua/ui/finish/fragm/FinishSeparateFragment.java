@@ -1345,6 +1345,7 @@ public class FinishSeparateFragment extends Fragment {
             clearActiveOrderUidsAfterCancel();
         } else if (activeOrderCloseMode) {
             sharedPreferencesHelperMain.saveValue("carFound", false);
+            ExecutionStatusViewModel.clearActiveOrderNoticeSuppress();
         }
         EarlyOrderNavigationHelper.clearSubmitState();
         sharedPreferencesHelperMain.saveValue("cost_recalc_from_finish", true);

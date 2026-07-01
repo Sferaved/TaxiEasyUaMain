@@ -11,6 +11,8 @@ public final class ActiveOrdersNoticeHelper {
     /**
      * @param currentNavDestinationId {@link com.taxi.easy.ua.MainActivity#currentNavDestination}
      *        или id из {@link androidx.navigation.NavController#getCurrentDestination()}
+     * @param hasPersistedActiveOrderUid зарезервировано для вызовов; не блокирует шторку после
+     *        возврата со статуса заказа (см. {@code closeActiveOrderScreen}).
      */
     public static boolean shouldOfferOnOrderPage(
             boolean suppressAfterCancel,
@@ -25,9 +27,6 @@ public final class ActiveOrdersNoticeHelper {
             boolean hasPersistedActiveOrderUid
     ) {
         if (suppressAfterCancel) {
-            return false;
-        }
-        if (hasPersistedActiveOrderUid) {
             return false;
         }
         if (currentNavDestinationId == navFinishSeparateId

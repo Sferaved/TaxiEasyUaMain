@@ -1,3 +1,2 @@
-• No extra "Active orders" sheet during Google Pay / card payment on the order status screen
-• Faster loading of the active orders list
+• Tapping Close on order status shows the active orders reminder on the order page again
 • Stability improvements

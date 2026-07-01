@@ -910,9 +910,6 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                 || EarlyOrderNavigationHelper.isEarlyNavigationDone()) {
             return;
         }
-        if (ExecutionStatusViewModel.getPersistedActiveUid() != null) {
-            return;
-        }
         DatabaseHelperUid db = new DatabaseHelperUid(context);
         if (!db.hasAnyCancelOrders()) {
             return;

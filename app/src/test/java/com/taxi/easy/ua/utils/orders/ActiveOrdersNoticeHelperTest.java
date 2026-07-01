@@ -57,14 +57,20 @@ public class ActiveOrdersNoticeHelperTest {
     }
 
     @Test
+    public void offersOnOrderPageWithPersistedUidAfterFinishClose() {
+        assertTrue(offer(false, NAV_VISICOM, false, false, false, false, true));
+    }
+
+    @Test
     public void suppressesDuringGooglePayFlow() {
         assertFalse(offer(false, NAV_VISICOM, false, false, true, false, false));
         assertFalse(offer(false, NAV_VISICOM, false, false, false, true, false));
     }
 
     @Test
-    public void suppressesWithPersistedActiveOrder() {
-        assertFalse(offer(false, NAV_VISICOM, false, false, false, false, true));
+    public void suppressesDuringSubmitEvenWithPersistedUid() {
+        assertFalse(offer(false, NAV_VISICOM, true, false, false, false, true));
+        assertFalse(offer(false, NAV_VISICOM, false, true, false, false, true));
     }
 
     @Test
