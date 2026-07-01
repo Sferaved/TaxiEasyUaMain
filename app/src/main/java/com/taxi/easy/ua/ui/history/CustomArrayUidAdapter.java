@@ -22,6 +22,7 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.db.RouteInfo;
+import com.taxi.easy.ua.utils.orders.CancelListRowBinder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,36 +77,11 @@ public class CustomArrayUidAdapter extends ArrayAdapter<String> {
         // Получаем строку для данного элемента
         String item = items.get(position);
 
-        // Разделяем строку на части
-        String[] parts = item.split("#"); // Разделение по запятой
+        CancelListRowBinder.bind(view, getContext(), item);
 
-        // Получаем TextViews для отображения частей
-        TextView textView1 = view.findViewById(R.id.text1);
-        TextView textView2 = view.findViewById(R.id.text2);
-        TextView textView3 = view.findViewById(R.id.text3);
-        TextView textView4 = view.findViewById(R.id.text4);
-        TextView textView5 = view.findViewById(R.id.text5);
-        // Добавьте дополнительные TextViews, если нужно
+        final String[] parts = item.split("#", -1);
 
-        // Устанавливаем текст для TextView
-        if (parts.length > 0) {
-            textView1.setText(parts[0]); // Первая часть
-        }
-        if (parts.length > 1) {
-            String cost_info = getContext().getString(R.string.close_resone_cost) + parts[1] + " " + getContext().getString(R.string.UAH);
-            textView2.setText(cost_info);
-        }
-        if (parts.length > 2) {
-            textView3.setText(parts[2]);
-        }
-        if (parts.length > 3) {
-            textView4.setText(parts[3]);
-        }
-        if (parts.length > 4) {
-            textView5.setText(parts[4]);
-        }
-
-        textView1.setOnClickListener(v -> {
+        view.findViewById(R.id.text1).setOnClickListener(v -> {
             routeInfo = databaseHelperUid.getRouteInfoById(position+1);
             if (routeInfo != null) {
                 Log.d(TAG, "onContextItemSelected: " + routeInfo);
@@ -125,8 +101,8 @@ public class CustomArrayUidAdapter extends ArrayAdapter<String> {
             Log.d(TAG, "onContextItemSelected parts[1]: " + parts[1]);
 
             sharedPreferencesHelperMain.saveValue("gps_upd", false);
-            sharedPreferencesHelperMain.saveValue("old_cost", parts[1]);
-            sharedPreferencesHelperMain.saveValue("cost_preview_display", parts[1]);
+            sharedPreferencesHelperMain.saveValue("old_cost", CancelListRowBinder.rawCostFromItem(item));
+            sharedPreferencesHelperMain.saveValue("cost_preview_display", CancelListRowBinder.rawCostFromItem(item));
             sharedPreferencesHelperMain.saveValue("cost_recalc_from_history", true);
             MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)
@@ -152,8 +128,8 @@ public class CustomArrayUidAdapter extends ArrayAdapter<String> {
 
             updateRoutMarker(settings);
             sharedPreferencesHelperMain.saveValue("gps_upd", false);
-            sharedPreferencesHelperMain.saveValue("old_cost", parts[1]);
-            sharedPreferencesHelperMain.saveValue("cost_preview_display", parts[1]);
+            sharedPreferencesHelperMain.saveValue("old_cost", CancelListRowBinder.rawCostFromItem(item));
+            sharedPreferencesHelperMain.saveValue("cost_preview_display", CancelListRowBinder.rawCostFromItem(item));
             sharedPreferencesHelperMain.saveValue("cost_recalc_from_history", true);
             MainActivity.navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                     .setPopUpTo(R.id.nav_visicom, true)

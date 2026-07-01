@@ -36,6 +36,9 @@ public class RouteResponse {
 
     @SerializedName("created_at")
     private String createdAt;
+
+    @SerializedName("pay_method")
+    private String payMethod;
     public String getStartLat() {
         return startLat;
     }
@@ -112,5 +115,9 @@ public class RouteResponse {
 
     public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getPay_method() {
+        return payMethod;
     }
 }

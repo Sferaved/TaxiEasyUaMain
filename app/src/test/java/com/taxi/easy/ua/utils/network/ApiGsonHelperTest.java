@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.taxi.easy.ua.ui.finish.FinishCostResponse;
 import com.taxi.easy.ua.ui.finish.OrderResponse;
+import com.taxi.easy.ua.ui.finish.RouteResponse;
 import com.taxi.easy.ua.ui.finish.RouteResponseCancel;
 
 import org.junit.Test;
@@ -100,5 +101,21 @@ public class ApiGsonHelperTest {
         assertNotNull(routes);
         assertEquals(1, routes.size());
         assertEquals("abc", routes.get(0).getUid());
+    }
+
+    @Test
+    public void routeResponse_parsesPayMethod() {
+        String json = "[{"
+                + "\"routefrom\":\"A\","
+                + "\"web_cost\":\"10\","
+                + "\"pay_method\":\"google_pay_payment\""
+                + "}]";
+
+        Type type = new TypeToken<List<RouteResponse>>() {}.getType();
+        List<RouteResponse> routes = gson.fromJson(json, type);
+
+        assertNotNull(routes);
+        assertEquals(1, routes.size());
+        assertEquals("google_pay_payment", routes.get(0).getPay_method());
     }
 }

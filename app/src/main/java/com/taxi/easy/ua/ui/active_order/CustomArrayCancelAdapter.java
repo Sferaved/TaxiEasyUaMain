@@ -23,6 +23,7 @@ import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.db.RouteInfoCancel;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
+import com.taxi.easy.ua.utils.orders.CancelListRowBinder;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -82,55 +83,9 @@ public class CustomArrayCancelAdapter extends ArrayAdapter<String> {
         // Получаем строку для данного элемента
         String item = items.get(position);
 
-        // Разделяем строку на части
-        String[] parts = item.split("#"); // Разделение по запятой
+        CancelListRowBinder.bind(view, getContext(), item);
 
-        // Получаем TextViews для отображения частей
-        TextView textView1 = view.findViewById(R.id.text1);
-        TextView textView2 = view.findViewById(R.id.text2);
-        TextView textView3 = view.findViewById(R.id.text3);
-        TextView textView4 = view.findViewById(R.id.text4);
-        TextView textView5 = view.findViewById(R.id.text5);
-        TextView textView6 = view.findViewById(R.id.text6);
-
-        if (parts.length >= 6) {
-            textView1.setText(parts[0]);
-            textView2.setText(parts[1]);
-            textView3.setText(parts[2]);
-            textView4.setText(parts[3]);
-            if (parts[4] != null && !parts[4].trim().isEmpty()) {
-                textView5.setText(parts[4]);
-                textView5.setVisibility(View.VISIBLE);
-            } else {
-                textView5.setText("");
-                textView5.setVisibility(View.GONE);
-            }
-            textView6.setText(parts[5]);
-            textView6.setVisibility(View.VISIBLE);
-        } else {
-            if (parts.length > 0) {
-                textView1.setText(parts[0]);
-            }
-            if (parts.length > 1) {
-                textView2.setText(parts[1]);
-            }
-            if (parts.length > 2) {
-                textView3.setText(parts[2]);
-            }
-            if (parts.length > 3) {
-                textView4.setText(parts[3]);
-            }
-            if (parts.length > 4) {
-                textView5.setText(parts[4]);
-                textView5.setVisibility(View.VISIBLE);
-            }
-            if (textView6 != null) {
-                textView6.setVisibility(View.GONE);
-            }
-        }
-
-        // Получаем кнопку и устанавливаем обработчик нажатия
-        textView1.setOnClickListener(v -> {
+        view.findViewById(R.id.text1).setOnClickListener(v -> {
             Logger.d(getContext(), TAG, "position+1: " + position+1);
             routeInfo = databaseHelperUid.getCancelInfoById(position+1);
             if (routeInfo != null) {
@@ -235,6 +190,9 @@ public class CustomArrayCancelAdapter extends ArrayAdapter<String> {
             case "mono_payment":
             case "wfp_payment":
                 pay_method_message += " " + context.getString(R.string.pay_method_message_card);
+                break;
+            case "google_pay_payment":
+                pay_method_message += " " + context.getString(R.string.pay_method_message_google);
                 break;
             default:
                 pay_method_message += " " + context.getString(R.string.pay_method_message_nal);

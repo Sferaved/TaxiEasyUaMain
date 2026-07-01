@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.payment.PaymentMethodDisplayHelper;
 import com.taxi.easy.ua.utils.route.RoutePlaceMatcher;
 
 import java.time.LocalDateTime;
@@ -100,15 +101,23 @@ public final class RequiredTimeParseHelper {
             @Nullable String auto,
             @NonNull String createdAt,
             @Nullable String requiredTimeRaw,
-            @NonNull String closeReasonText
+            @NonNull String closeReasonText,
+            @Nullable String payMethod
     ) {
-        String autoText = auto != null ? auto : "??";
+        String costLine = context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH);
+        String paymentLine = PaymentMethodDisplayHelper.formatPaymentLine(context, payMethod);
+        String autoLine = PaymentMethodDisplayHelper.formatAutoLine(context, auto);
+        String timeLine = context.getString(R.string.close_resone_time) + createdAt;
         String expectedLine = formatExpectedPickupLine(context, requiredTimeRaw);
+        String statusLine = closeReasonText != null && !closeReasonText.trim().isEmpty()
+                ? context.getString(R.string.close_resone_text) + closeReasonText
+                : "";
         return routeHead + "#"
-                + context.getString(R.string.close_resone_cost) + webCost + " " + context.getString(R.string.UAH) + "#"
-                + context.getString(R.string.auto_info) + " " + autoText + "#"
-                + context.getString(R.string.close_resone_time) + createdAt + "#"
+                + costLine + "#"
+                + paymentLine + "#"
+                + autoLine + "#"
+                + timeLine + "#"
                 + expectedLine + "#"
-                + context.getString(R.string.close_resone_text) + closeReasonText;
+                + statusLine;
     }
 }

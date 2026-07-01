@@ -108,10 +108,10 @@ import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.orders.OrderCreatedAtDisplayHelper;
 import com.taxi.easy.ua.utils.orders.OrderHistoryStatusHelper;
 import com.taxi.easy.ua.utils.orders.RequiredTimeParseHelper;
-import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.retrofit.cost_json_parser.CostJSONParserRetrofit;
@@ -2438,11 +2438,7 @@ private void cost() {
             if (routeTo.contains("по місту")) {
                 routeTo = getString(R.string.on_city);
             }
-            String routeInfo = "";
-
-            if (auto == null) {
-                auto = "??";
-            }
+            String routeInfo;
 
             String routeHead;
             if (routeFrom.equals(routeTo)) {
@@ -2460,7 +2456,8 @@ private void cost() {
                     auto,
                     createdAt,
                     required_time,
-                    closeReasonText
+                    closeReasonText,
+                    pay_method
             );
 
             databaseHelper.addRouteCancel(uid, routeInfo);

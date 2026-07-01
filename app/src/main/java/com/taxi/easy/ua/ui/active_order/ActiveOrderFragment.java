@@ -16,7 +16,6 @@ import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -39,10 +38,6 @@ import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
-import com.taxi.easy.ua.utils.orders.ActiveOrdersFetchGate;
-import com.taxi.easy.ua.utils.orders.OrderCreatedAtDisplayHelper;
-import com.taxi.easy.ua.utils.orders.OrderHistoryStatusHelper;
-import com.taxi.easy.ua.utils.orders.RequiredTimeParseHelper;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
 import com.taxi.easy.ua.utils.ui.ListScrollPaginationHelper;
@@ -59,6 +54,10 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import com.taxi.easy.ua.utils.db.CursorReadHelper;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
+import com.taxi.easy.ua.utils.orders.ActiveOrdersFetchGate;
+import com.taxi.easy.ua.utils.orders.OrderCreatedAtDisplayHelper;
+import com.taxi.easy.ua.utils.orders.OrderHistoryStatusHelper;
+import com.taxi.easy.ua.utils.orders.RequiredTimeParseHelper;
 
 
 public class ActiveOrderFragment extends Fragment {
@@ -331,10 +330,7 @@ public class ActiveOrderFragment extends Fragment {
                 routeTo = context.getString(R.string.on_city);
             }
 
-            String routeInfo = "";
-            if (auto == null) {
-                auto = "??";
-            }
+            String routeInfo;
 
             String routeHead;
             if (routeFrom.equals(routeTo)) {
@@ -352,7 +348,8 @@ public class ActiveOrderFragment extends Fragment {
                     auto,
                     createdAt,
                     required_time,
-                    closeReasonText
+                    closeReasonText,
+                    pay_method
             );
 
             array[i] = routeInfo;

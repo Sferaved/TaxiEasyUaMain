@@ -47,7 +47,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import com.taxi.easy.ua.utils.ui.CostCalculationProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -107,10 +106,6 @@ import com.taxi.easy.ua.utils.auth.FirebaseConsentManager;
 import com.taxi.easy.ua.utils.blacklist.BlacklistManager;
 import com.taxi.easy.ua.ui.home.ButtonVisibilityCallback;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
-import com.taxi.easy.ua.utils.payment.GooglePayOrderHelper;
-import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
-import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
-import com.taxi.easy.ua.utils.helpers.WfpGooglePayHelper;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
@@ -118,6 +113,8 @@ import com.taxi.easy.ua.utils.bugreport.BugReportHelper;
 import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.cost.CostParseHelper;
+import com.taxi.easy.ua.utils.helpers.WfpGooglePayHelper;
+import com.taxi.easy.ua.utils.payment.GooglePayOrderHelper;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
@@ -136,13 +133,16 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.orders.OrderCreatedAtDisplayHelper;
 import com.taxi.easy.ua.utils.orders.OrderHistoryStatusHelper;
 import com.taxi.easy.ua.utils.orders.RequiredTimeParseHelper;
-import com.taxi.easy.ua.utils.route.RoutePlaceMatcher;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
+import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
+import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.retrofit.cost_json_parser.CostJSONParserRetrofit;
+import com.taxi.easy.ua.utils.route.RoutePlaceMatcher;
 import com.taxi.easy.ua.utils.sanitizer.InputSanitizerHelper;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ui.BackPressBlocker;
+import com.taxi.easy.ua.utils.ui.CostCalculationProgressBar;
 import com.taxi.easy.ua.utils.inclusive.InclusiveTransportPromptCoordinator;
 import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
 import com.taxi.easy.ua.utils.worker.TilePreloadWorker;
@@ -157,12 +157,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import retrofit2.Call;
@@ -1753,12 +1751,12 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 || trimmed.contains("around the city");
     }
 
+    /** Реальный адрес «Откуда»; пусто и «по місту» в поле старта не подставляем. */
     private boolean isValidStartAddressForFromField(String start) {
         return start != null
                 && !start.trim().isEmpty()
                 && !isCityOnlyFinishInDatabase(start);
     }
-
 
     private boolean isGpsPlaceholderAddress(String address) {
         return GpsGeocodeHelper.isPlaceholderAddress(requireContext(), address);
@@ -1810,6 +1808,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                                            java.util.function.Consumer<String> onAddress) {
         GpsGeocodeHelper.reverseGeocode(context, latitude, longitude, onAddress);
     }
+
+    /** singleTask: в UI может остаться адрес прошлого города, хотя в БД start уже пустой. */
     public static void clearFromAddressUiForCityChange() {
         if (geoText != null) {
             geoText.post(() -> geoText.setText(""));
@@ -1980,7 +1980,6 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         }
     }
 
-    /** Поездка «по городу»: пустое/«по місту» назначение или те же адреса откуда и куда. */
     private boolean isAroundCityRoute(String start, String finish) {
         if (isCityOnlyFinishInDatabase(finish)) {
             return true;
@@ -2585,7 +2584,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                     pay_method_message += " " + ctx.getString(R.string.pay_method_message_card); // ← ctx
                     break;
                 case "google_pay_payment":
-                    pay_method_message += " " + ctx.getString(R.string.pay_method_message_google); // ← ctx
+                    pay_method_message += " " + ctx.getString(R.string.pay_method_message_google);
                     break;
                 default:
                     pay_method_message += " " + ctx.getString(R.string.pay_method_message_nal); // ← ctx
@@ -3366,7 +3365,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             case "Mykolaiv":
                 cityMenu = context.getString(R.string.city_mykolaiv);
                 break;
-            case "Chernivtsi":  // Обрати внимание, тут "С" кириллицей
+            case "Chernivtsi":
                 cityMenu = context.getString(R.string.city_chernivtsi);
                 break;
             case "Lutsk":
@@ -3447,7 +3446,6 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
         textViewTo = binding.textTo;
         textViewTo.setOnClickListener(v -> {
-            // Не сбрасываем ROUT_MARKER: на экране поиска подставится сохранённый адрес «куда».
             Bundle bundle = new Bundle();
             bundle.putString("start", "no");
             bundle.putString("end", "ok");
@@ -3912,7 +3910,6 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 });
     }
 
-    /** Нажатие GPS: перезаписать «Откуда» и ROUT_MARKER по геолокации. */
     private void logAddrGuardState(String where) {
         if (context == null) {
             return;
@@ -3944,6 +3941,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 "[%s] OVERWRITE '%s' -> '%s' | reason=%s", where, from, to, reason));
     }
 
+    /** Нажатие GPS: перезаписать «Откуда» и ROUT_MARKER по геолокации. */
     private void applyGpsLocationToOrder(double latitude, double longitude, String address) {
         applyGpsLocationToOrder(latitude, longitude, address, false);
     }
@@ -4103,8 +4101,10 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
         List<String> cityInfo = logCursor(MainActivity.CITY_INFO, context);
         String currentCity = cityInfo.size() > 1 ? cityInfo.get(1) : "";
+        String dbLat = route.get(1);
+        String dbLon = route.get(2);
         if (!com.taxi.easy.ua.utils.city.CityLastAddressHelper.shouldApplyLastAddress(
-                currentCity, route.get(1), route.get(2), startAddress)
+                currentCity, dbLat, dbLon, startAddress)
                 || !isValidStartAddressForFromField(startAddress)) {
             Logger.d(context, ADDR_GUARD, "lastOrderCache: SKIP — адрес не для текущего города");
             clearInvalidStartInRouteMarker();
@@ -4310,11 +4310,6 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         buttonBonus.setText(btnBonusName);
     }
 
-    @Override
-    public void onShowButtons(int visibility) {
-        btnVisible(visibility);
-    }
-
     private void firstLocation() {
         autoLocationFromCityLoad = false;
 
@@ -4401,7 +4396,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
                             if (!isAdded()) {
                                 isUpdatingFromGPS = false;
-                                pendingAddressRequest = null; // ✅ Сбрасываем запрос
+                                pendingAddressRequest = null;
                                 return;
                             }
 
@@ -4877,7 +4872,6 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
     }
 
-    /** Есть старт и пункт назначения (координаты или текст), достаточные для расчёта. */
     private boolean isRouteReadyForCostFromDatabase() {
         if (context == null) {
             return false;
@@ -5243,17 +5237,23 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
             Logger.d(context, TAG, "Calculated firstCost = " + firstCost + ", discount = " + discount);
 
-            // Скидка не является "доплатой": addCost должен оставаться отдельным полем.
-            // Сбрасываем addCost к 0 при установке новой базовой стоимости.
-            updateAddCost("0", context);
-            if (text_view_cost != null) {
-                text_view_cost.setText(String.valueOf(firstCost));
+            // Скидка не является "доплатой": addCost хранится отдельно и не должен сбрасываться,
+            // иначе при пересчёте/пушах цены пропадает ручная доплата (+10/+5 и т.п.).
+            List<String> settingsInfo = logCursor(MainActivity.TABLE_SETTINGS_INFO, context);
+            String persistedAddCost = settingsInfo.size() > 5 ? settingsInfo.get(5) : "0";
+            if (persistedAddCost == null || persistedAddCost.trim().isEmpty()) {
+                persistedAddCost = "0";
             }
-            text_view_cost.setAlpha(1f);
+
+            // Важно: updateAddCost использует startCost. Сначала обновляем базовую стоимость,
+            // затем применяем сохранённую доплату.
+            startCost = firstCost;
+            updateAddCost(persistedAddCost.trim(), context);
+            if (text_view_cost != null) {
+                text_view_cost.setAlpha(1f);
+            }
 
             if (finalizeUi) {
-                startCost = firstCost;
-                finalCost = firstCost;
                 MIN_COST_VALUE = (long) (firstCost * 0.6);
                 firstCostForMin = firstCost;
 
@@ -5425,9 +5425,6 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             }
             String routeInfo;
 
-            if (auto == null) {
-                auto = "??";
-            }
             String routeHead;
             if (routeFrom.equals(routeTo)) {
                 routeHead = routeFrom + " " + routefromnumber
@@ -5444,7 +5441,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                     auto,
                     createdAt,
                     route.getRequired_time(),
-                    closeReasonText
+                    closeReasonText,
+                    pay_method
             );
 
             databaseHelper.addRouteCancel(uid, routeInfo);
@@ -6472,5 +6470,10 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
+    }
+
+    @Override
+    public void onShowButtons(int visibility) {
+        btnVisible(visibility);
     }
 }
