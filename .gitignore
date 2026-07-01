@@ -35,9 +35,9 @@ replay_pid*.log
 # Generated
 generated/
 
-# service-account.json и локальные пароли — только на машине / в GitHub Secrets
-app/keystore/service-account.json
-keystore/service-account.json
+# Google Play API keys — только на машине / в GitHub Secrets
+**/service-account*.json
+**/private-key.pem
 keystore.properties
 
 # Credentials at repository root (local machine only)
