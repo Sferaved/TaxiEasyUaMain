@@ -127,6 +127,7 @@ import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.ip.RetrofitClient;
 import com.taxi.easy.ua.utils.kafka.KafkaRequest;
 import com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper;
+import com.taxi.easy.ua.utils.orders.ActiveOrdersNoticeHelper;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
 import com.taxi.easy.ua.utils.location.GpsGeocodeHelper;
@@ -5471,10 +5472,23 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         dismissStuckGooglePaySubmitIfOrderClosed();
         if (array != null && array.length > 0) {
             NavController navController = Navigation.findNavController(context, R.id.nav_host_fragment_content_main);
-            int currentDestination = navController.getCurrentDestination().getId();
+            int currentDestination = MainActivity.currentNavDestination;
+            if (navController.getCurrentDestination() != null) {
+                currentDestination = navController.getCurrentDestination().getId();
+            }
 
-            if (currentDestination == R.id.nav_visicom
-                    && !ExecutionStatusViewModel.shouldSuppressActiveOrderNotice()) {
+            if (ActiveOrdersNoticeHelper.shouldOfferOnOrderPage(
+                    ExecutionStatusViewModel.shouldSuppressActiveOrderNotice(),
+                    currentDestination,
+                    R.id.nav_visicom,
+                    R.id.nav_finish_separate,
+                    R.id.nav_cacheOrder,
+                    EarlyOrderNavigationHelper.isSubmitInProgress(),
+                    EarlyOrderNavigationHelper.isEarlyNavigationDone(),
+                    isGooglePaySubmitFrozen(),
+                    googlePayOrderProcessingUiShown,
+                    ExecutionStatusViewModel.getPersistedActiveUid() != null
+            )) {
                 MyBottomSheetErrorFragment.showScheduledTripsNotice(fragmentManager, context);
             }
 

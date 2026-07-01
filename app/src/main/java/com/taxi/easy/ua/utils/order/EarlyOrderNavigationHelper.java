@@ -15,7 +15,10 @@ import androidx.navigation.NavOptions;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
+import androidx.fragment.app.FragmentActivity;
+
 import com.taxi.easy.ua.utils.analytics.AdsConversionHelper;
+import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
@@ -207,6 +210,11 @@ public final class EarlyOrderNavigationHelper {
 
         if (reportConversion) {
             reportOrderConversion(context, orderUid, map);
+        }
+
+        if (context instanceof FragmentActivity) {
+            MyBottomSheetErrorFragment.dismissScheduledTripsNotice(
+                    ((FragmentActivity) context).getSupportFragmentManager());
         }
 
         MainActivity.navController.navigate(

@@ -10,6 +10,11 @@ function Write-Step([string]$Message) {
     Write-Host $Message -ForegroundColor Cyan
 }
 
+function Read-ReleaseNotesUtf8([string]$Path) {
+    $utf8 = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::ReadAllText($Path, $utf8).Trim()
+}
+
 function Get-Base64Url([byte[]]$Bytes) {
     [Convert]::ToBase64String($Bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
 }
@@ -132,7 +137,7 @@ foreach ($file in $noteFiles) {
     if (-not (Test-Path $file)) {
         throw "Release notes not found: $file"
     }
-    $len = (Get-Content $file -Raw).Length
+    $len = (Read-ReleaseNotesUtf8 $file).Length
     if ($len -gt 500) {
         throw "$file is $len chars (Google Play max 500)"
     }
@@ -181,9 +186,9 @@ foreach ($track in $tracks) {
                 versionCodes = @([int]$versionCode)
                 status       = "completed"
                 releaseNotes = @(
-                    @{ language = "en-US"; text = (Get-Content $noteFiles[0] -Raw).Trim() }
-                    @{ language = "ru-RU"; text = (Get-Content $noteFiles[1] -Raw).Trim() }
-                    @{ language = "uk"; text = (Get-Content $noteFiles[2] -Raw).Trim() }
+                    @{ language = "en-US"; text = (Read-ReleaseNotesUtf8 $noteFiles[0]) }
+                    @{ language = "ru-RU"; text = (Read-ReleaseNotesUtf8 $noteFiles[1]) }
+                    @{ language = "uk"; text = (Read-ReleaseNotesUtf8 $noteFiles[2]) }
                 )
             }
         )

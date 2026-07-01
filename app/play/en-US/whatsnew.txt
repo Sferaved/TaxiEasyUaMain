@@ -1,5 +1,3 @@
-Card payment orders:
-• notification when a car is assigned (app in background)
-• order screen updates if the car is removed
-
-Stability improvements.
+• No extra "Active orders" sheet during Google Pay / card payment on the order status screen
+• Faster loading of the active orders list
+• Stability improvements

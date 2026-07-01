@@ -39,6 +39,7 @@ import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelper;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.orders.ActiveOrdersFetchGate;
 import com.taxi.easy.ua.utils.orders.OrderCreatedAtDisplayHelper;
 import com.taxi.easy.ua.utils.orders.OrderHistoryStatusHelper;
 import com.taxi.easy.ua.utils.orders.RequiredTimeParseHelper;
@@ -69,6 +70,7 @@ public class ActiveOrderFragment extends Fragment {
 
 
     ProgressBar progressBar;
+    private View loadingOverlay;
 
     DatabaseHelper databaseHelper;
     DatabaseHelperUid databaseHelperUid;
@@ -86,6 +88,8 @@ public class ActiveOrderFragment extends Fragment {
     public static AppCompatButton btnCallAdmin;
     private Handler handler;
     private Runnable taskRunnable;
+    private final ActiveOrdersFetchGate fetchGate = new ActiveOrdersFetchGate();
+    private boolean pollingActive;
 
     public ActiveOrderFragment() {
     }
@@ -114,6 +118,7 @@ public class ActiveOrderFragment extends Fragment {
 
         listView = binding.listView;
         progressBar = binding.progressBar;
+        loadingOverlay = binding.loadingOverlay;
 
 
         email = logCursor(MainActivity.TABLE_USER_INFO, Objects.requireNonNull(requireActivity())).get(3);
@@ -152,16 +157,37 @@ public class ActiveOrderFragment extends Fragment {
         scrollPagination.bind();
         scrollPagination.wireScrollButtons();
 
-        startRepeatingTask();
         return root;
     }
 
-    private void fetchRoutesCancel(String value) {
-        progressBar.setVisibility(VISIBLE);
-        listView.setVisibility(View.GONE);
+    private void showLoadingState() {
+        if (loadingOverlay != null) {
+            loadingOverlay.setVisibility(VISIBLE);
+        }
+        if (listView != null) {
+            listView.setVisibility(View.GONE);
+        }
+        if (textUid != null) {
+            textUid.setVisibility(View.GONE);
+        }
         if (scrollPagination != null) {
             scrollPagination.update();
         }
+    }
+
+    private void hideLoadingState() {
+        if (loadingOverlay != null) {
+            loadingOverlay.setVisibility(View.GONE);
+        }
+    }
+
+    private void fetchRoutesCancel(String value) {
+        if (!fetchGate.tryBegin()) {
+            Logger.d(context, TAG, "fetchRoutesCancel: skip duplicate in-flight request");
+            return;
+        }
+
+        showLoadingState();
 
         routeList = new ArrayList<>();
 
@@ -182,7 +208,11 @@ public class ActiveOrderFragment extends Fragment {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Response<List<RouteResponseCancel>> response) {
-                progressBar.setVisibility(View.GONE);
+                fetchGate.end();
+                hideLoadingState();
+                if (!isAdded() || isDetached() || getActivity() == null) {
+                    return;
+                }
                 if (response.isSuccessful() && response.body() != null) {
                     List<RouteResponseCancel> routes = response.body();
                     Logger.d(context, TAG, "onResponse: " + routes.toString());
@@ -206,6 +236,7 @@ public class ActiveOrderFragment extends Fragment {
                         } else {
                             textUid.setVisibility(VISIBLE);
                             textUid.setText(R.string.no_routs);
+                            startRepeatingTaskIfNeeded();
                         }
 
                     } else {
@@ -216,29 +247,22 @@ public class ActiveOrderFragment extends Fragment {
                         }
                         textUid.setVisibility(VISIBLE);
                         textUid.setText(R.string.no_routs);
+                        startRepeatingTaskIfNeeded();
                     }
                 } else {
                     Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
                     Logger.w(context, TAG, "NO INTERNET - Showing toast message");
+                    startRepeatingTaskIfNeeded();
                 }
-                if (!isAdded() || isDetached() || getActivity() == null) {
-                    return;
-                }
-
-                // Безопасное выполнение на UI потоке
-                Handler mainHandler = new Handler(Looper.getMainLooper());
-                mainHandler.post(() -> {
-                    if (isAdded() && !isDetached() && progressBar != null) {
-                        progressBar.setVisibility(View.GONE);
-                    }
-                });
             }
 
             public void onFailure(@NonNull Call<List<RouteResponseCancel>> call, @NonNull Throwable t) {
+                fetchGate.end();
                 FirebaseCrashlytics.getInstance().recordException(t);
                 if (isAdded() && getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
-                        progressBar.setVisibility(View.GONE);
+                        hideLoadingState();
+                        startRepeatingTaskIfNeeded();
                     });
                 } else {
                     Logger.i(requireContext(), TAG, "Фрагмент не привязан к активности, пропуск обработки UI");
@@ -249,7 +273,6 @@ public class ActiveOrderFragment extends Fragment {
         });
         if (isAdded()) {
             upd_but.setText(context.getString(R.string.order));
-            progressBar.setVisibility(View.GONE);
         }
     }
 
@@ -369,7 +392,7 @@ public class ActiveOrderFragment extends Fragment {
             listView.setAdapter(adapter);
 
             listView.setVisibility(VISIBLE);
-            progressBar.setVisibility(View.GONE);
+            hideLoadingState();
             upd_but.setVisibility(VISIBLE);
             listView.post(() -> scrollPagination.update());
 
@@ -420,7 +443,11 @@ public class ActiveOrderFragment extends Fragment {
 
 
 
-    public void startRepeatingTask() {
+    public void startRepeatingTaskIfNeeded() {
+        if (pollingActive || email == null) {
+            return;
+        }
+        pollingActive = true;
         handler = new Handler(Looper.getMainLooper());
         final int intervalMillis = 5000;
         final int[] runCount = {0};
@@ -428,6 +455,10 @@ public class ActiveOrderFragment extends Fragment {
         taskRunnable = new Runnable() {
             @Override
             public void run() {
+                if (!isAdded()) {
+                    stopRepeatingTask();
+                    return;
+                }
                 fetchRoutesCancel(email);
                 Logger.d(context, TAG, "Выполнение задачи #" + (runCount[0] + 1));
 
@@ -436,10 +467,15 @@ public class ActiveOrderFragment extends Fragment {
             }
         };
 
-        handler.post(taskRunnable); // запускаем сразу
+        handler.postDelayed(taskRunnable, intervalMillis);
+    }
+
+    public void startRepeatingTask() {
+        startRepeatingTaskIfNeeded();
     }
 
     public void stopRepeatingTask() {
+        pollingActive = false;
         if (handler != null && taskRunnable != null) {
             handler.removeCallbacks(taskRunnable);
             Logger.d(context, TAG, "Задача остановлена вручную");
