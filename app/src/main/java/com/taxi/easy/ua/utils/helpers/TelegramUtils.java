@@ -30,6 +30,11 @@ public class TelegramUtils {
     private static final String TAG = "TelegramUtils";
     private static final int MAX_CAPTION_LENGTH = 1000;
 
+    public static void sendBugReportCreatedNotification(String message) {
+        Log.d(TAG, "Sending Mantis bug report notification to Telegram...");
+        sendTextNotification(message);
+    }
+
     public static void sendErrorToTelegram(String errorMessage, @Nullable String logFilePath) {
         Log.d(TAG, "Started sending error message to Telegram...");
 
@@ -186,6 +191,23 @@ public class TelegramUtils {
             // Отправляем сообщение без файла
             sendMessageOnly(apiService, "📋 Баг-репорт\n\n⚠️ Не удалось отправить файл с логами.");
         }
+    }
+
+    private static void sendTextNotification(String message) {
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor())
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .build();
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://api.telegram.org/bot" + TOKEN + "/")
+                .client(client)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        sendMessageOnly(retrofit.create(TelegramApiService.class), message);
     }
 
     private static void sendMessageOnly(TelegramApiService apiService, String message) {

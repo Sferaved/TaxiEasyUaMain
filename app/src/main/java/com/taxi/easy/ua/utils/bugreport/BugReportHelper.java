@@ -19,7 +19,7 @@ import androidx.core.content.ContextCompat;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
-import com.taxi.easy.ua.utils.helpers.TelegramUtils;
+import com.taxi.easy.ua.utils.bugreport.mantis.MantisBugReportSender;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 
@@ -307,31 +307,47 @@ public class BugReportHelper {
         if (!expected.isEmpty()) fullReport.append("✅ ").append(context.getString(R.string.expected_label)).append(":\n").append(expected).append("\n\n");
         if (!actual.isEmpty()) fullReport.append("❌ ").append(context.getString(R.string.actual_label)).append(":\n").append(actual).append("\n\n");
 
-        // Формируем краткое сообщение для Telegram
-        String shortMessage = "🐞 " + context.getString(R.string.bug_report_header) + "\n" +
-                "📝 " + context.getString(R.string.problem_label) + ": " + description + "\n\n" +
-                "📱 " + context.getString(R.string.device_info_header) + ": " + Build.MANUFACTURER + " " + Build.MODEL + "\n" +
-                "📅 " + context.getString(R.string.report_date) + ": " + getCurrentTimestamp() + "\n\n" +
-                "📄 " + context.getString(R.string.logs) + ": " + getLogFileSize();
-
         new Thread(() -> {
             try {
-                // Добавляем полный отчет в лог-файл
                 appendToLogFile(fullReport.toString());
 
-                // Отправляем краткое сообщение + лог-файл
                 File logFile = new File(context.getExternalFilesDir(null), "app_log.txt");
-                if (logFile.exists() && logFile.length() > 0) {
-                    TelegramUtils.sendErrorToTelegram(shortMessage, logFile.getAbsolutePath());
-                    mainActivity.runOnUiThread(() ->
-                            Toast.makeText(context, context.getString(R.string.sent_to_telegram_with_logs, logFile.length() / 1024), Toast.LENGTH_LONG).show());
-                } else {
-                    TelegramUtils.sendErrorToTelegram(shortMessage, null);
-                    mainActivity.runOnUiThread(() ->
-                            Toast.makeText(context, context.getString(R.string.sent_to_telegram), Toast.LENGTH_SHORT).show());
-                }
+                MantisBugReportSender.DeliveryResult deliveryResult = MantisBugReportSender.sendWithFallback(
+                        context,
+                        context.getString(R.string.bug_report_header),
+                        context.getString(R.string.problem_label),
+                        context.getString(R.string.device_info_header),
+                        context.getString(R.string.report_date),
+                        getCurrentTimestamp(),
+                        context.getString(R.string.logs),
+                        context.getString(R.string.no_logs),
+                        context.getString(R.string.bug_report_header),
+                        getAppVersionName(),
+                        description,
+                        fullReport.toString(),
+                        logFile
+                );
 
                 mainActivity.runOnUiThread(() -> {
+                    if (deliveryResult.usedMantis) {
+                        Toast.makeText(
+                                context,
+                                context.getString(R.string.sent_to_mantis, deliveryResult.issueId),
+                                Toast.LENGTH_LONG
+                        ).show();
+                    } else if (deliveryResult.logFileSizeKb > 0) {
+                        Toast.makeText(
+                                context,
+                                context.getString(R.string.sent_to_telegram_with_logs, deliveryResult.logFileSizeKb),
+                                Toast.LENGTH_LONG
+                        ).show();
+                    } else {
+                        Toast.makeText(
+                                context,
+                                context.getString(R.string.sent_to_telegram),
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
                     if (dialog != null && dialog.isShowing()) {
                         dialog.dismiss();
                     }
@@ -352,6 +368,15 @@ public class BugReportHelper {
                 });
             }
         }).start();
+    }
+
+    private String getAppVersionName() {
+        try {
+            return context.getPackageManager()
+                    .getPackageInfo(context.getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return context.getString(R.string.unknown);
+        }
     }
 
     private void appendToLogFile(String content) {

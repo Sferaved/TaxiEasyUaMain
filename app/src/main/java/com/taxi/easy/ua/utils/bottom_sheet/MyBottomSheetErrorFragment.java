@@ -54,14 +54,18 @@ import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.db.DatabaseHelperUid;
+import com.taxi.easy.ua.utils.bugreport.mantis.MantisBugReportSender;
 import com.taxi.easy.ua.utils.helpers.TelegramUtils;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.uxcam.UXCam;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Random;
 
@@ -219,7 +223,7 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
                     });
 
                     String logFilePath = requireActivity().getExternalFilesDir(null) + "/app_log.txt";
-                    TelegramUtils.sendErrorToTelegram(generateEmailBody(errorMessage), logFilePath);
+                    sendServerErrorToMantis(errorMessage, logFilePath);
                     break;
 
                 case "sentNotifyMessage":
@@ -769,6 +773,43 @@ public class MyBottomSheetErrorFragment extends BottomSheetDialogFragment {
         }
 
 
+    }
+
+    private void sendServerErrorToMantis(String errorMessage, String logFilePath) {
+        Context appContext = requireContext().getApplicationContext();
+        String body = generateEmailBody(errorMessage);
+        File logFile = new File(logFilePath);
+
+        new Thread(() -> {
+            try {
+                MantisBugReportSender.sendWithFallback(
+                        appContext,
+                        getString(R.string.bug_report_header),
+                        getString(R.string.problem_label),
+                        getString(R.string.device_info_header),
+                        getString(R.string.report_date),
+                        new SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault()).format(new Date()),
+                        getString(R.string.logs),
+                        getString(R.string.no_logs),
+                        getString(R.string.bug_report_header),
+                        getAppVersionName(appContext),
+                        errorMessage,
+                        body,
+                        logFile
+                );
+            } catch (Exception e) {
+                Logger.e(requireActivity(), TAG, "Mantis server error report failed: " + e.getMessage());
+            }
+        }).start();
+    }
+
+    private String getAppVersionName(Context context) {
+        try {
+            return context.getPackageManager()
+                    .getPackageInfo(context.getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return getString(R.string.unknown);
+        }
     }
 
     public String generateEmailBody(String errorMessage) {

@@ -804,6 +804,7 @@
     <string name="report_copied">📋 Звіт скопійовано в буфер</string>
     <string name="sent_to_telegram">✅ Відправлено в Telegram</string>
     <string name="sent_to_telegram_with_logs">✅ Відправлено в Telegram з логами (%d KB)</string>
+    <string name="sent_to_mantis">✅ Заявку #%1$d створено. Повідомлення надіслано в Telegram</string>
     <string name="report_saved">✅ Звіт збережено: %s</string>
     <string name="error_saving_report">❌ Помилка збереження: %s</string>
     <string name="share_report">Поділитися звітом</string>

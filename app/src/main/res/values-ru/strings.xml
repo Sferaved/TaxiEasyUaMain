@@ -799,6 +799,7 @@
     <string name="report_copied">📋 Отчет скопирован в буфер</string>
     <string name="sent_to_telegram">✅ Отправлено в Telegram</string>
     <string name="sent_to_telegram_with_logs">✅ Отправлено в Telegram с логами (%d KB)</string>
+    <string name="sent_to_mantis">✅ Заявка #%1$d создана. Уведомление отправлено в Telegram</string>
     <string name="report_saved">✅ Отчет сохранен: %s</string>
     <string name="error_saving_report">❌ Ошибка сохранения: %s</string>
     <string name="share_report">Поделиться отчетом</string>

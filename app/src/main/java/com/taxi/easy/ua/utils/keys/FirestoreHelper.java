@@ -11,9 +11,12 @@ import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.taxi.easy.ua.utils.bugreport.mantis.MantisConfig;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
@@ -258,6 +261,33 @@ public class FirestoreHelper {
             }
         });
     }
+    public MantisConfig fetchMantisConfigBlocking() throws Exception {
+        DocumentSnapshot documentSnapshot = Tasks.await(
+                firestore.collection("keys").document("mantis_key").get()
+        );
+
+        if (documentSnapshot == null || !documentSnapshot.exists()) {
+            throw new Exception("Документ keys/mantis_key не знайдено.");
+        }
+
+        String apiToken = documentSnapshot.getString("api_token");
+        String baseUrl = documentSnapshot.getString("base_url");
+        Long projectId = documentSnapshot.getLong("project_id");
+        Long categoryId = documentSnapshot.getLong("category_id");
+
+        if (apiToken == null || apiToken.isEmpty()) {
+            throw new Exception("Поле api_token не знайдено в keys/mantis_key.");
+        }
+        if (baseUrl == null || baseUrl.isEmpty()) {
+            throw new Exception("Поле base_url не знайдено в keys/mantis_key.");
+        }
+        if (projectId == null || categoryId == null) {
+            throw new Exception("Поля project_id або category_id не знайдено в keys/mantis_key.");
+        }
+
+        return new MantisConfig(apiToken, baseUrl, projectId.intValue(), categoryId.intValue());
+    }
+
     public void getUtaxKey(OnSupportUtaxFetchedListener listener) {
         DocumentReference docRef = firestore.collection("keys").document("utaxKey");
 

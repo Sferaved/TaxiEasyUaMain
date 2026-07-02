@@ -790,6 +790,7 @@ Tap "Settings" to check.</string>
     <string name="report_copied">📋 Report copied to clipboard</string>
     <string name="sent_to_telegram">✅ Sent to Telegram</string>
     <string name="sent_to_telegram_with_logs">✅ Sent to Telegram with logs (%d KB)</string>
+    <string name="sent_to_mantis">✅ Ticket #%1$d created. Notification sent to Telegram</string>
     <string name="report_saved">✅ Report saved: %s</string>
     <string name="error_saving_report">❌ Error saving: %s</string>
     <string name="share_report">Share report</string>
