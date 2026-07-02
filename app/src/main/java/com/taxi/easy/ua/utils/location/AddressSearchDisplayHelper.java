@@ -3,6 +3,7 @@ package com.taxi.easy.ua.utils.location;
 import androidx.annotation.Nullable;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Форматирование подсказок Visicom: маркеры \f (улица) и \t (полный адрес),
@@ -12,6 +13,11 @@ public final class AddressSearchDisplayHelper {
 
     public static final char STREET_MARKER = '\f';
     public static final char COMPLETE_MARKER = '\t';
+
+    /** Площі, сквери, парки — без обов'язкового номера будинку (на відміну від вул./пр. тощо). */
+    private static final String[] PLACE_PREFIXES_WITHOUT_HOUSE = {
+            "пл.", "пл ", "скв.", "сквер", "майдан", "парк ", "парк.", "наб.", "спуск "
+    };
 
     private AddressSearchDisplayHelper() {
     }
@@ -57,14 +63,34 @@ public final class AddressSearchDisplayHelper {
         return raw != null && raw.indexOf(COMPLETE_MARKER) >= 0;
     }
 
-    /** Улица/площадь/POI без полного адреса (\t) — можно применить без номера дома. */
+    /**
+     * Площа/сквер/парк с маркером \f — можна застосувати без номера будинку.
+     * Звичайна вулиця (вул., пр., …) з \f — номер обов'язковий.
+     */
+    public static boolean isPlaceWithoutRequiredHouse(@Nullable String raw) {
+        if (raw == null || isComplete(raw) || !isStreetOnly(raw)) {
+            return false;
+        }
+        String label = toDisplayLabel(raw).toLowerCase(Locale.ROOT).trim();
+        for (String prefix : PLACE_PREFIXES_WITHOUT_HOUSE) {
+            if (label.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Повна адреса (\t) або площа/POI без обов'язкового номера будинку. */
     public static boolean canApplyWithoutHouseNumber(@Nullable String raw) {
-        return raw != null && !isComplete(raw);
+        if (raw == null) {
+            return false;
+        }
+        return isComplete(raw) || isPlaceWithoutRequiredHouse(raw);
     }
 
     /**
-     * Показать «застосувати»: в списке есть хотя бы один неполный адрес.
-     * Цифра в названии площади не считается номером дома — ориентир на маркер \t.
+     * Показати «застосувати»: у списку є площа/повна адреса без обов'язкового номера будинку.
+     * Звичайні вулиці з \f не враховуються — після вибору вулиці потрібен номер будинку.
      */
     public static boolean shouldOfferApplyWithoutHouse(@Nullable List<String> addresses) {
         if (addresses == null || addresses.isEmpty()) {

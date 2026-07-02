@@ -25,12 +25,22 @@ public class AddressSearchDisplayHelperTest {
     }
 
     @Test
-    public void shouldOfferApplyWithoutHouse_whenNoDigits() {
+    public void shouldOfferApplyWithoutHouse_forPlazaOnly() {
         assertTrue(AddressSearchDisplayHelper.shouldOfferApplyWithoutHouse(
                 Arrays.asList("пл. Сквер\f", "пл. Інша\f")));
-        assertFalse(AddressSearchDisplayHelper.shouldOfferApplyWithoutHouse(
+        assertTrue(AddressSearchDisplayHelper.shouldOfferApplyWithoutHouse(
                 Arrays.asList("вул. Тест 5\t", "вул. Тест 6\t")));
+        assertFalse(AddressSearchDisplayHelper.shouldOfferApplyWithoutHouse(
+                Arrays.asList("вул. Дерибасівська\f", "пр. Гагаріна\f")));
         assertFalse(AddressSearchDisplayHelper.shouldOfferApplyWithoutHouse(Collections.emptyList()));
+    }
+
+    @Test
+    public void shouldNotOfferApplyWithoutHouse_forNormalStreet() {
+        assertFalse(AddressSearchDisplayHelper.canApplyWithoutHouseNumber("вул. Дерибасівська\f"));
+        assertFalse(AddressSearchDisplayHelper.shouldOfferApplyWithoutHouse(
+                Collections.singletonList("вул. Дерибасівська\f")));
+        assertTrue(AddressSearchDisplayHelper.canApplyWithoutHouseNumber("пл. Сквер\f"));
     }
 
     @Test

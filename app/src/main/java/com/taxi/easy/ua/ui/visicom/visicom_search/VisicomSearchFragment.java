@@ -369,11 +369,12 @@ public class VisicomSearchFragment extends Fragment {
         String raw = addressesList.get(position);
         String display = AddressSearchDisplayHelper.toDisplayLabel(raw);
 
-        if (allowApplyWithoutHouseNumber) {
-            if (AddressSearchDisplayHelper.isComplete(raw)) {
-                applyAddressAtPosition(position, point, coordinatesSnapshot);
-                return;
-            }
+        if (AddressSearchDisplayHelper.isComplete(raw)) {
+            applyAddressAtPosition(position, point, coordinatesSnapshot);
+            return;
+        }
+
+        if (AddressSearchDisplayHelper.canApplyWithoutHouseNumber(raw)) {
             if (point.equals("start")) {
                 fromEditAddress.setText(display);
                 fromEditAddress.setSelection(display.length());
@@ -382,9 +383,11 @@ public class VisicomSearchFragment extends Fragment {
                 toEditAddress.setSelection(display.length());
             }
             addressListView.setItemChecked(position, true);
+            showApplyButton();
             return;
         }
 
+        hideApplyButton();
         startMarker = "ok";
         finishMarker = "no";
         if (point.equals("start")) {
@@ -443,6 +446,7 @@ public class VisicomSearchFragment extends Fragment {
                 textGeoError.setVisibility(View.VISIBLE);
                 textGeoError.setText(R.string.house_vis_mes);
                 hideAddressScrollControls();
+                performAddressSearch(raw, point);
             }
         } else if (point.equals("finish")) {
             finishPoint = raw;
@@ -479,10 +483,24 @@ public class VisicomSearchFragment extends Fragment {
                 text_toError.setVisibility(View.VISIBLE);
                 text_toError.setText(R.string.house_vis_mes);
                 hideAddressScrollControls();
+                performAddressSearch(raw, point);
             }
         }
 
-        addressListView.setVisibility(View.INVISIBLE);
+        if (AddressSearchDisplayHelper.isStreetOnly(raw)
+                && !AddressSearchDisplayHelper.canApplyWithoutHouseNumber(raw)) {
+            int houseCursor = raw.indexOf(AddressSearchDisplayHelper.STREET_MARKER);
+            if (houseCursor >= 0) {
+                if (point.equals("start")) {
+                    fromEditAddress.setSelection(houseCursor + 1);
+                } else {
+                    toEditAddress.setSelection(houseCursor + 1);
+                }
+            }
+            addressListView.setVisibility(View.VISIBLE);
+        } else {
+            addressListView.setVisibility(View.INVISIBLE);
+        }
         Logger.d(context, TAG, "onAddressListItemClicked: " + raw);
     }
 
