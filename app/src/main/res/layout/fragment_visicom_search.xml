@@ -209,6 +209,21 @@
             android:textColor="#D9D9D9"
             android:textSize="13sp" />
 
+        <!-- Застосувати адресу без номера будинку (площі, POI) -->
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_apply"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="50"
+            android:background="@drawable/btn_accents"
+            android:fontFamily="@font/regular"
+            android:text="@string/address_take"
+            android:textAlignment="center"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
         <!-- Кнопка "На карте" - растягивается на оставшееся место -->
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_on_map"
