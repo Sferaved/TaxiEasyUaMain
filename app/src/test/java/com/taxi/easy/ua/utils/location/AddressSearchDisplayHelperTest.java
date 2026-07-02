@@ -32,4 +32,10 @@ public class AddressSearchDisplayHelperTest {
                 Arrays.asList("вул. Тест 5\t", "вул. Тест 6\t")));
         assertFalse(AddressSearchDisplayHelper.shouldOfferApplyWithoutHouse(Collections.emptyList()));
     }
+
+    @Test
+    public void shouldOfferApplyWithoutHouse_digitInPlazaNameIsNotHouseNumber() {
+        assertTrue(AddressSearchDisplayHelper.shouldOfferApplyWithoutHouse(
+                Collections.singletonList("пл. Сквер Героїчної оборони Одеси 1\f")));
+    }
 }

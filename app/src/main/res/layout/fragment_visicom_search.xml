@@ -230,7 +230,7 @@
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_marginStart="8dp"
-            android:layout_weight="100"
+            android:layout_weight="50"
             android:background="@drawable/buttons"
             android:fontFamily="@font/regular"
             android:text="@string/on_map"

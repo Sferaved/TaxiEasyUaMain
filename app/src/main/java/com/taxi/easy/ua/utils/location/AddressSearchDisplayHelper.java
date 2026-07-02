@@ -57,9 +57,24 @@ public final class AddressSearchDisplayHelper {
         return raw != null && raw.indexOf(COMPLETE_MARKER) >= 0;
     }
 
-    /** Ни один результат не содержит цифр — можно применить адрес без номера дома. */
+    /** Улица/площадь/POI без полного адреса (\t) — можно применить без номера дома. */
+    public static boolean canApplyWithoutHouseNumber(@Nullable String raw) {
+        return raw != null && !isComplete(raw);
+    }
+
+    /**
+     * Показать «застосувати»: в списке есть хотя бы один неполный адрес.
+     * Цифра в названии площади не считается номером дома — ориентир на маркер \t.
+     */
     public static boolean shouldOfferApplyWithoutHouse(@Nullable List<String> addresses) {
-        return addresses != null && !addresses.isEmpty()
-                && !anyResultHasHouseNumber(addresses);
+        if (addresses == null || addresses.isEmpty()) {
+            return false;
+        }
+        for (String address : addresses) {
+            if (canApplyWithoutHouseNumber(address)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -370,6 +370,10 @@ public class VisicomSearchFragment extends Fragment {
         String display = AddressSearchDisplayHelper.toDisplayLabel(raw);
 
         if (allowApplyWithoutHouseNumber) {
+            if (AddressSearchDisplayHelper.isComplete(raw)) {
+                applyAddressAtPosition(position, point, coordinatesSnapshot);
+                return;
+            }
             if (point.equals("start")) {
                 fromEditAddress.setText(display);
                 fromEditAddress.setSelection(display.length());
@@ -494,11 +498,6 @@ public class VisicomSearchFragment extends Fragment {
                 textGeoError.setVisibility(View.GONE);
             } else {
                 text_toError.setVisibility(View.GONE);
-            }
-            if (addressesList.size() == 1) {
-                hideAddressScrollControls();
-                applyAddressAtPosition(0, point, coordinatesSnapshot);
-                return;
             }
             showApplyButton();
         } else {
