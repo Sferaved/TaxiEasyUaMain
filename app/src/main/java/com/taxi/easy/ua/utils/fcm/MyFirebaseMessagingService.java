@@ -56,9 +56,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 //            }
         } else {
             // Пользователь ещё не залогинен
-            Log.w(TAG, "Пользователь не залогинен — токен НЕ сохраняем как last_fcm_token, отправим после логина");
-            // ← НЕ вызываем saveLastSentToken(token)!
-            // Токен будет получен заново в MainActivity.sendCurrentFcmToken() после логина
+            Log.w(TAG, "Пользователь не залогинен — регистрируем токен анонимно (installationId)");
+            TokenUtils.registerInstallationToken(this, token);
         }
     }
 
@@ -83,6 +82,16 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         if (data.isEmpty()) {
             Logger.d(this, TAG, "Данные пуш-уведомления пусты");
+            return;
+        }
+
+        // Напоминание о входе (через сутки после установки, 07:00 Kyiv)
+        if ("login_reminder".equals(data.get("type"))) {
+            if (!isPushForThisApp(data)) {
+                Logger.d(this, TAG, "login_reminder: push для другого приложения, target_app=" + data.get("target_app"));
+                return;
+            }
+            handleLoginReminderMessage(data);
             return;
         }
 
@@ -133,6 +142,18 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         Logger.d(this, TAG, "uid: " + uid);
 
         notifyUser(message, uid);
+    }
+
+    private void handleLoginReminderMessage(Map<String, String> data) {
+        String locale = LocaleHelper.getLocale();
+        String message = data.get("message_" + locale);
+        if (message == null || message.isEmpty()) {
+            message = data.get("message_uk");
+        }
+        if (message == null || message.isEmpty()) {
+            message = "Відкрийте додаток та увійдіть у акаунт.";
+        }
+        NotificationHelper.showNotificationMessage(getApplicationContext(), getString(R.string.app_name), message);
     }
 
     private boolean isCancelMessage(Map<String, String> data) {

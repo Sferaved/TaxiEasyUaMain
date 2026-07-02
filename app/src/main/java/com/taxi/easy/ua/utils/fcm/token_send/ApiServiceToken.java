@@ -12,4 +12,27 @@ public interface ApiServiceToken {
             @Path("token") String token,
             @Path("local") String local
     );
+
+    @GET("android_installation/register/{installationId}/{app}/{token}/{local}/{tz}/")
+    Call<Void> registerInstallation(
+            @Path("installationId") String installationId,
+            @Path("app") String app,
+            @Path("token") String token,
+            @Path("local") String local,
+            @Path("tz") String tz
+    );
+
+    @GET("android_installation/schedule_login_reminder/{installationId}/{app}/{local}/{tz}/")
+    Call<Void> scheduleLoginReminder(
+            @Path("installationId") String installationId,
+            @Path("app") String app,
+            @Path("local") String local,
+            @Path("tz") String tz
+    );
+
+    @GET("android_installation/cancel_login_reminder/{installationId}/{app}/")
+    Call<Void> cancelLoginReminder(
+            @Path("installationId") String installationId,
+            @Path("app") String app
+    );
 }
