@@ -4,4 +4,8 @@
     <dimen name="address_scroll_button_height">28dp</dimen>
     <dimen name="address_scroll_icon_width">18dp</dimen>
     <dimen name="address_scroll_icon_height">12dp</dimen>
+    <dimen name="visicom_bottom_btn_gap">4dp</dimen>
+    <dimen name="visicom_bottom_btn_padding_h">4dp</dimen>
+    <dimen name="visicom_bottom_btn_text_max">12sp</dimen>
+    <dimen name="visicom_bottom_btn_text_min">8sp</dimen>
 </resources>
