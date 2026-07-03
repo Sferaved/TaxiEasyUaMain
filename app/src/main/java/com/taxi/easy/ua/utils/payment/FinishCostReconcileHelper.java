@@ -87,4 +87,19 @@ public final class FinishCostReconcileHelper {
         }
         return candidateGrivna > authoritativeGrivna ? authoritativeGrivna : candidateGrivna;
     }
+
+    /**
+     * Observer {@code finishAbsoluteCostGrivna}: wallet-hold ждёт подтверждения по uid;
+     * готівка применяет итог сразу из HTTP-ответа пересоздания заказа.
+     */
+    public static boolean shouldApplyFinishAbsoluteCostObserver(
+            boolean walletHoldPayment,
+            @Nullable String currentUid,
+            boolean walletAddCostAppliedForCurrentUid
+    ) {
+        if (!walletHoldPayment) {
+            return true;
+        }
+        return currentUid == null || walletAddCostAppliedForCurrentUid;
+    }
 }

@@ -61,7 +61,7 @@ public interface ApiService {
     );
 
     @GET("android/startAddCostWithAddBottomUpdate/{uid}/{cost}")
-    Call<Status> startAddCostWithAddBottomUpdate(
+    Call<AddCostBottomUpdateResponse> startAddCostWithAddBottomUpdate(
             @Path("uid") String uid,
             @Path("cost") String cost
     );

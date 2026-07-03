@@ -24,6 +24,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.ui.finish.AddCostBottomUpdateResponse;
 import com.taxi.easy.ua.ui.finish.ApiService;
 import com.taxi.easy.ua.ui.finish.Status;
 import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
@@ -205,40 +206,61 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
             ApiService apiService = retrofit.create(ApiService.class);
 
-            Call<Status> call = apiService.startAddCostWithAddBottomUpdate(uid, addCost);
+            Call<AddCostBottomUpdateResponse> call = apiService.startAddCostWithAddBottomUpdate(uid, addCost);
             String url = call.request().url().toString();
             Logger.d(context, TAG, "URL запроса nal_payment: " + url);
 
             // Выполняем асинхронный запрос
             call.enqueue(new Callback<>() {
                 @Override
-                public void onResponse(@NonNull Call<Status> call, @NonNull Response<Status> response) {
+                public void onResponse(@NonNull Call<AddCostBottomUpdateResponse> call,
+                                       @NonNull Response<AddCostBottomUpdateResponse> response) {
                     if (ExecutionStatusViewModel.shouldBlockAddCost(uid)) {
                         Logger.d(context, TAG, "startAddCost response ignored: order canceled uid=" + uid);
                         return;
                     }
-                    if (response.isSuccessful() && response.body() != null) {
-                        String responseStatus = response.body().getResponse();
-                        Logger.d(context, TAG, "startAddCostUpdate nal_payment: " + responseStatus);
-                        if (isNalAddCostError(responseStatus)) {
-                            if (isAdded()) {
-                                showNalAddCostError(responseStatus);
-                            }
-                            viewModel.setCancelStatus(true);
-                            return;
+                    if (!response.isSuccessful() || response.body() == null) {
+                        if (isAdded()) {
+                            showNalAddCostError(null);
                         }
-                        viewModel.setAddCostViewUpdate(addCost);
                         viewModel.setCancelStatus(true);
                         return;
                     }
-                    if (isAdded()) {
-                        showNalAddCostError(null);
+
+                    AddCostBottomUpdateResponse body = response.body();
+                    if (body.hasRecreatedOrder()) {
+                        String newUid = body.getUid();
+                        String displayCost = body.resolveDisplayCostGrivna();
+                        Logger.d(context, TAG, "startAddCostUpdate nal_payment ok uid="
+                                + newUid + " cost=" + displayCost);
+                        if (newUid != null && !newUid.trim().isEmpty()) {
+                            viewModel.updateUid(newUid.trim());
+                        }
+                        if (displayCost != null) {
+                            viewModel.persistDisplayCostGrivna(displayCost);
+                            viewModel.setFinishAbsoluteCostGrivna(displayCost);
+                        } else {
+                            viewModel.setAddCostViewUpdate(addCost);
+                        }
+                        ExecutionStatusViewModel.setAddCostInFlightPref(false);
+                        viewModel.setCancelStatus(true);
+                        return;
+                    }
+
+                    String responseStatus = body.getResponse();
+                    Logger.d(context, TAG, "startAddCostUpdate nal_payment error: " + responseStatus);
+                    if (isNalAddCostError(responseStatus)) {
+                        if (isAdded()) {
+                            showNalAddCostError(responseStatus);
+                        }
+                    } else if (isAdded()) {
+                        showNalAddCostError(responseStatus);
                     }
                     viewModel.setCancelStatus(true);
                 }
 
                 @Override
-                public void onFailure(@NonNull Call<Status> call, @NonNull Throwable t) {
+                public void onFailure(@NonNull Call<AddCostBottomUpdateResponse> call, @NonNull Throwable t) {
                     FirebaseCrashlytics.getInstance().recordException(t);
                     Logger.e(context, TAG, "startAddCostWithUpdate failed: " + t.getMessage());
                     if (isAdded()) {

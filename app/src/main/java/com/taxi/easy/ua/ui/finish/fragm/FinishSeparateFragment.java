@@ -3173,8 +3173,10 @@ public class FinishSeparateFragment extends Fragment {
                 return;
             }
             String currentUid = resolveActiveOrderUid();
-            if (currentUid != null
-                    && !ExecutionStatusViewModel.isWalletAddCostAppliedForUid(currentUid)) {
+            if (!FinishCostReconcileHelper.shouldApplyFinishAbsoluteCostObserver(
+                    PaymentTypeHelper.usesWalletHold(pay_method),
+                    currentUid,
+                    ExecutionStatusViewModel.isWalletAddCostAppliedForUid(currentUid))) {
                 return;
             }
             Logger.d(context, TAG, "finishAbsoluteCost observe: " + absoluteCost);

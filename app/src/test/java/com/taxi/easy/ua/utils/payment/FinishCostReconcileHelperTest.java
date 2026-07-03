@@ -65,4 +65,18 @@ public class FinishCostReconcileHelperTest {
         assertEquals(12, FinishCostReconcileHelper.capInflatedWalletDisplay(12, 12));
         assertEquals(12, FinishCostReconcileHelper.capInflatedWalletDisplay(15, 12));
     }
+
+    @Test
+    public void applyFinishAbsoluteCostObserver_alwaysForCash() {
+        assertTrue(FinishCostReconcileHelper.shouldApplyFinishAbsoluteCostObserver(
+                false, "old-uid", false));
+    }
+
+    @Test
+    public void applyFinishAbsoluteCostObserver_walletWaitsForUidFlag() {
+        assertFalse(FinishCostReconcileHelper.shouldApplyFinishAbsoluteCostObserver(
+                true, "uid-1", false));
+        assertTrue(FinishCostReconcileHelper.shouldApplyFinishAbsoluteCostObserver(
+                true, "uid-1", true));
+    }
 }
