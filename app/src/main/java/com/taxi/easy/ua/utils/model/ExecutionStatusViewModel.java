@@ -270,12 +270,14 @@ public class ExecutionStatusViewModel extends ViewModel {
         setUserCanceledPref(false);
         sharedPreferencesHelperMain.saveValue(PREF_FINISH_CANCELED_UID, "");
         String persistedActive = getPersistedActiveUid();
-        if (activeOrderUid != null && !activeOrderUid.isEmpty()
-                && persistedActive != null && !persistedActive.isEmpty()
-                && !activeOrderUid.equals(persistedActive)) {
+        boolean uidChanged = activeOrderUid != null && !activeOrderUid.isEmpty()
+                && !activeOrderUid.equals(persistedActive);
+        if (uidChanged) {
             sharedPreferencesHelperMain.saveValue(PREF_FINISH_DISPLAY_COST, "");
             clearWalletAddCostAppliedUid();
             clearWalletAddCostFloorGrivna();
+        }
+        if (uidChanged || (persistedActive == null || persistedActive.isEmpty())) {
             if (MainActivity.viewModel != null) {
                 MainActivity.viewModel.clearFinishAbsoluteCostGrivna();
             }
