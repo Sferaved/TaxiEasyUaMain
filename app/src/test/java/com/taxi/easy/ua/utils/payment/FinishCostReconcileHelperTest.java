@@ -123,4 +123,16 @@ public class FinishCostReconcileHelperTest {
         assertTrue(FinishCostReconcileHelper.shouldApplyFinishAbsoluteCostObserver(
                 true, "uid-1", true));
     }
+
+    @Test
+    public void allowServerUpdate_nalStaleDisplayedAfterNewOrder() {
+        assertFalse(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
+                17, 7, false, false, false, null, false));
+    }
+
+    @Test
+    public void keepDisplayed_nalDuringAddCostSheet() {
+        assertTrue(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
+                17, 7, false, false, true, null, false));
+    }
 }

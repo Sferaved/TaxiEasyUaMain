@@ -276,6 +276,9 @@ public class ExecutionStatusViewModel extends ViewModel {
             sharedPreferencesHelperMain.saveValue(PREF_FINISH_DISPLAY_COST, "");
             clearWalletAddCostAppliedUid();
             clearWalletAddCostFloorGrivna();
+            if (MainActivity.viewModel != null) {
+                MainActivity.viewModel.clearFinishAbsoluteCostGrivna();
+            }
         }
         if (activeOrderUid != null && !activeOrderUid.isEmpty()) {
             MainActivity.uid = activeOrderUid;
