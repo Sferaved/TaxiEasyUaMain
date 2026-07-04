@@ -29,8 +29,11 @@ public final class FinishCostReconcileHelper {
         if (addCostInFlight || addCostSheetShowing) {
             return true;
         }
-        if (!walletHold || walletFloorGrivna == null || walletFloorGrivna <= 0) {
+        if (!walletHold) {
             return false;
+        }
+        if (walletFloorGrivna == null || walletFloorGrivna <= 0) {
+            return (displayed - serverTotal) <= 2;
         }
         return displayed >= walletFloorGrivna && serverTotal < walletFloorGrivna;
     }

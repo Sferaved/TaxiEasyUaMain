@@ -97,6 +97,20 @@ public class FinishCostReconcileHelperTest {
     }
 
     @Test
+    public void keepDisplayed_walletCostCorrectionWithinTolerance() {
+        assertTrue(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
+                7, 6, true, false, false, null, false));
+        assertTrue(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
+                8, 6, true, false, false, null, false));
+    }
+
+    @Test
+    public void allowServerUpdate_walletLargeDifference() {
+        assertFalse(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
+                20, 10, true, false, false, null, false));
+    }
+
+    @Test
     public void applyFinishAbsoluteCostObserver_alwaysForCash() {
         assertTrue(FinishCostReconcileHelper.shouldApplyFinishAbsoluteCostObserver(
                 false, "old-uid", false));
