@@ -261,6 +261,8 @@ public class FinishSeparateFragment extends Fragment {
     private Runnable checkRunnable;
     private static final long ADD_COST_SLOW_NOTICE_MS = 20_000L;
     private static final long ADD_COST_TIMEOUT_MS = 120_000L;
+    private static final long ADD_COST_RECOVERY_WINDOW_MS = 120_000L;
+    private long addCostRecoveryUntilMs = 0;
     private final Handler addCostNoticeHandler = new Handler(Looper.getMainLooper());
     private final Runnable addCostSlowNoticeRunnable = this::showAddCostSlowNotice;
     private final Runnable addCostTimeoutRunnable = this::handleAddCostTimeout;
@@ -728,6 +730,8 @@ public class FinishSeparateFragment extends Fragment {
             Logger.d(context, TAG, "updateUICardPayStatus ignored: terminal/cancel UI");
             return;
         }
+
+        refreshFinishCostFromOrder(orderResponse);
 
         String orderCarInfo = orderResponse.getOrderCarInfo();
         String driverPhone = orderResponse.getDriverPhone();
@@ -2054,6 +2058,9 @@ public class FinishSeparateFragment extends Fragment {
                     }
                 }
             });
+            if (System.currentTimeMillis() < addCostRecoveryUntilMs) {
+                pollHistoryUidForCostRecovery();
+            }
         }
 
     }
@@ -3181,6 +3188,7 @@ public class FinishSeparateFragment extends Fragment {
             }
             Logger.d(context, TAG, "finishAbsoluteCost observe: " + absoluteCost);
             applyDisplayCostToFinishUi(absoluteCost);
+            addCostRecoveryUntilMs = 0;
             if (receivedMap != null) {
                 receivedMap.put("order_cost", absoluteCost);
             }
@@ -3207,6 +3215,7 @@ public class FinishSeparateFragment extends Fragment {
             btn_cancel_order.setEnabled(status);
             if (!status) {
                 if (ExecutionStatusViewModel.isAddCostInFlightPref()) {
+                    addCostRecoveryUntilMs = System.currentTimeMillis() + ADD_COST_RECOVERY_WINDOW_MS;
                     showAddCostProcessingNotice();
                     scheduleAddCostProcessingNotices();
                 } else {
@@ -3217,6 +3226,13 @@ public class FinishSeparateFragment extends Fragment {
             } else {
                 onAddCostProcessingFinished();
                 resumeStatusPolling();
+                if (addCostRecoveryUntilMs > 0) {
+                    try {
+                        statusOrder();
+                    } catch (ParseException e) {
+                        Logger.e(context, TAG, "statusOrder after add-cost: " + e.getMessage());
+                    }
+                }
             }
         });
 
@@ -3632,12 +3648,14 @@ public class FinishSeparateFragment extends Fragment {
                     return;
                 }
                 applyDisplayCostToFinishUi(String.valueOf(serverTotal));
+                addCostRecoveryUntilMs = 0;
                 Logger.d(context, TAG, "refreshFinishCostFromOrder corrected stale client="
                         + displayed + " server=" + serverTotal);
                 return;
             }
             if (serverTotal != displayed) {
                 applyDisplayCostToFinishUi(String.valueOf(serverTotal));
+                addCostRecoveryUntilMs = 0;
                 Logger.d(context, TAG, "refreshFinishCostFromOrder server=" + serverTotal
                         + " add_cost(meta)=" + orderResponse.getAddCost()
                         + " displayed=" + displayed);
@@ -3645,6 +3663,41 @@ public class FinishSeparateFragment extends Fragment {
         } catch (NumberFormatException e) {
             Logger.w(context, TAG, "refreshFinishCostFromOrder parse failed: " + baseCost);
         }
+    }
+
+    private void pollHistoryUidForCostRecovery() {
+        String value = resolveActiveOrderUid();
+        if (value == null || value.isEmpty() || !isAdded() || context == null) {
+            return;
+        }
+        List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
+        if (listCity.size() < 3) {
+            return;
+        }
+        String city = listCity.get(1);
+        String api = listCity.get(2);
+        String base = sharedPreferencesHelperMain.getValue("baseUrl",
+                "https://m.easy-order-taxi.site") + "/";
+        String url = base + api + "/android/historyUIDStatusNew/" + value + "/" + city
+                + "/" + context.getString(R.string.application);
+        Logger.d(context, TAG, "pollHistoryUidForCostRecovery: " + url);
+        Call<OrderResponse> call = ApiClient.getPollingApiService().statusOrder(url);
+        call.enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<OrderResponse> call,
+                                   @NonNull Response<OrderResponse> response) {
+                if (response.isSuccessful() && response.body() != null
+                        && isAdded() && context != null) {
+                    context.runOnUiThread(() -> refreshFinishCostFromOrder(response.body()));
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<OrderResponse> call, @NonNull Throwable t) {
+                Logger.d(context, TAG,
+                        "pollHistoryUidForCostRecovery failed: " + t.getMessage());
+            }
+        });
     }
 
     private int parseDisplayedCostGrivna() {

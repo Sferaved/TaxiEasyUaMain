@@ -79,6 +79,24 @@ public class FinishCostReconcileHelperTest {
     }
 
     @Test
+    public void allowServerUpdate_wfpAfterAddCostRecovery() {
+        assertFalse(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
+                11, 16, true, false, false, null, false));
+    }
+
+    @Test
+    public void keepDisplayed_wfpDuringAddCostInFlight() {
+        assertTrue(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
+                16, 11, true, true, false, null, false));
+    }
+
+    @Test
+    public void allowServerUpdate_nalAfterTimeoutServerProcessed() {
+        assertFalse(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
+                10, 15, false, false, false, null, false));
+    }
+
+    @Test
     public void applyFinishAbsoluteCostObserver_alwaysForCash() {
         assertTrue(FinishCostReconcileHelper.shouldApplyFinishAbsoluteCostObserver(
                 false, "old-uid", false));
