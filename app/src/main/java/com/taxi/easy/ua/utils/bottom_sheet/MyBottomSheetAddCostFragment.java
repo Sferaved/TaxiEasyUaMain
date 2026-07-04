@@ -220,6 +220,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                         return;
                     }
                     if (!response.isSuccessful() || response.body() == null) {
+                        ExecutionStatusViewModel.setAddCostInFlightPref(false);
                         if (isAdded()) {
                             showNalAddCostError(null);
                         }
@@ -249,6 +250,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
                     String responseStatus = body.getResponse();
                     Logger.d(context, TAG, "startAddCostUpdate nal_payment error: " + responseStatus);
+                    ExecutionStatusViewModel.setAddCostInFlightPref(false);
                     if (isNalAddCostError(responseStatus)) {
                         if (isAdded()) {
                             showNalAddCostError(responseStatus);
@@ -263,6 +265,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                 public void onFailure(@NonNull Call<AddCostBottomUpdateResponse> call, @NonNull Throwable t) {
                     FirebaseCrashlytics.getInstance().recordException(t);
                     Logger.e(context, TAG, "startAddCostWithUpdate failed: " + t.getMessage());
+                    ExecutionStatusViewModel.setAddCostInFlightPref(false);
                     if (isAdded()) {
                         Toast.makeText(context, R.string.network_no_internet, Toast.LENGTH_LONG).show();
                     }

@@ -3585,7 +3585,12 @@ public class FinishSeparateFragment extends Fragment {
         String responseUid = orderResponse.getDispatchingOrderUid();
         if (activeUid != null && responseUid != null && !responseUid.isEmpty()
                 && !activeUid.equals(responseUid)) {
-            return;
+            Logger.d(context, TAG, "refreshFinishCostFromOrder uid mismatch active="
+                    + activeUid + " server=" + responseUid);
+            if (viewModel != null) {
+                viewModel.updateUid(responseUid);
+            }
+            activeUid = responseUid;
         }
         String baseCost = orderResponse.getOrderCost();
         if (baseCost == null || baseCost.isEmpty()) {

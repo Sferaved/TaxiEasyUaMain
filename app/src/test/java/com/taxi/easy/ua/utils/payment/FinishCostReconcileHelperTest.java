@@ -33,6 +33,18 @@ public class FinishCostReconcileHelperTest {
     }
 
     @Test
+    public void allowServerUpdate_afterAddCostTimeout() {
+        assertFalse(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
+                10, 15, false, false, false, null, false));
+    }
+
+    @Test
+    public void allowServerUpdate_addCostFlagClearedAfterFailure() {
+        assertFalse(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
+                12, 17, false, false, false, null, false));
+    }
+
+    @Test
     public void skipOptimisticWalletAdd_whenFloorAlreadyOnScreen() {
         assertTrue(FinishCostReconcileHelper.shouldSkipOptimisticWalletAdd(20, 20, false));
     }
