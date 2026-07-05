@@ -137,6 +137,14 @@ public class FinishCostReconcileHelperTest {
     }
 
     @Test
+    public void orderUidNewCost_notCompleteForWalletHold() {
+        assertFalse(FinishCostReconcileHelper
+                .shouldTreatOrderUidNewCostAsWalletSurchargeComplete(true));
+        assertTrue(FinishCostReconcileHelper
+                .shouldTreatOrderUidNewCostAsWalletSurchargeComplete(false));
+    }
+
+    @Test
     public void walletCheckoutSurcharge_notSkippedAfterInitialHoldOnly() {
         assertFalse(FinishCostReconcileHelper.shouldSkipWalletCheckoutSurchargePrompt(
                 true, false, false, null, 11));

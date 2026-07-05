@@ -23,6 +23,8 @@ import com.taxi.easy.ua.ui.weather.finish.PassengerNotifier;
 import com.taxi.easy.ua.utils.cost.CostParseHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
+import com.taxi.easy.ua.utils.payment.FinishCostReconcileHelper;
+import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
 import com.taxi.easy.ua.utils.payment.PendingTransactionHelper;
 import com.taxi.easy.ua.utils.payment.PaymentDeclinedUiHelper;
 import com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper;
@@ -432,10 +434,14 @@ public class CentrifugoManager {
                             viewModel.updateUid(orderUid);
                             viewModel.updatePaySystemStatus(paySystemStatus);
                             if (orderCost != null && !orderCost.isEmpty() && !"0".equals(orderCost)) {
-                                viewModel.setFinishAbsoluteCostGrivna(orderCost);
                                 viewModel.persistDisplayCostGrivna(orderCost);
                                 sharedPreferencesHelperMain.saveValue("order_cost", orderCost);
-                                ExecutionStatusViewModel.markWalletAddCostApplied(orderUid);
+                                boolean walletHold = PaymentTypeHelper.usesWalletHold(paySystemStatus);
+                                if (FinishCostReconcileHelper
+                                        .shouldTreatOrderUidNewCostAsWalletSurchargeComplete(walletHold)) {
+                                    viewModel.setFinishAbsoluteCostGrivna(orderCost);
+                                    ExecutionStatusViewModel.markWalletAddCostApplied(orderUid);
+                                }
                             }
                             EarlyOrderNavigationHelper.tryEarlyNavigateToFinish(
                                     activity, orderUid, paySystemStatus);

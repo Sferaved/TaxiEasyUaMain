@@ -107,6 +107,16 @@ public final class FinishCostReconcileHelper {
     }
 
     /**
+     * order_uid_new с order_cost: для wallet-hold это только базовый холд,
+     * не финальная доплата (+5 грн на экране заказа).
+     */
+    public static boolean shouldTreatOrderUidNewCostAsWalletSurchargeComplete(
+            boolean walletHoldPayment
+    ) {
+        return !walletHoldPayment;
+    }
+
+    /**
      * Пропустить checkout-доплату (+5 грн) для Google Pay / wallet-hold.
      * Начальный hold на базовую сумму не считается завершением доплаты (Mantis #21).
      */
