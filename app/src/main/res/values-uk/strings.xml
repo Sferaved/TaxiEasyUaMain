@@ -934,7 +934,7 @@
     <string name="phone_error_driver_empty">Номер водія не вказано</string>
     <!-- Діалоги верифікації -->
     <string name="verification_required_title">📱 Вхід до облікового запису</string>
-    <string name="verification_required_message">Для повноцінної роботи з додатком рекомендується увійти у свій обліковий запис або зареєструватися.\n\nЦе займе всього хвилину!</string>
+    <string name="verification_required_message">Для повноцінної роботи з додатком TAXI рекомендується увійти у свій обліковий запис або зареєструватися.\n\nЦе займе всього хвилину!</string>
     <string name="verification_cancelled_title">🔐 Продовження роботи</string>
     <string name="verification_cancelled_message">Для використання всіх можливостей програми необхідно увійти в обліковий запис.\n\nВи можете зробити це зараз або пізніше.</string>
     <string name="verification_error_title">🔧 Технічна помилка</string>

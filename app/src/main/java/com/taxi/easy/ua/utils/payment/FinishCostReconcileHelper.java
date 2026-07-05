@@ -105,4 +105,27 @@ public final class FinishCostReconcileHelper {
         }
         return currentUid == null || walletAddCostAppliedForCurrentUid;
     }
+
+    /**
+     * Пропустить checkout-доплату (+5 грн) для Google Pay / wallet-hold.
+     * Начальный hold на базовую сумму не считается завершением доплаты (Mantis #21).
+     */
+    public static boolean shouldSkipWalletCheckoutSurchargePrompt(
+            boolean walletHoldPayment,
+            boolean addCostInFlight,
+            boolean walletAddCostAppliedForCurrentUid,
+            @Nullable Integer walletFloorGrivna,
+            int displayedGrivna
+    ) {
+        if (!walletHoldPayment) {
+            return false;
+        }
+        if (addCostInFlight) {
+            return true;
+        }
+        if (walletAddCostAppliedForCurrentUid) {
+            return true;
+        }
+        return walletFloorGrivna != null && walletFloorGrivna > 0 && displayedGrivna >= walletFloorGrivna;
+    }
 }

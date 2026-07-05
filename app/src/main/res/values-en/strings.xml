@@ -921,7 +921,7 @@ Tap "Settings" to check.</string>
     <string name="phone_error_driver_empty">Driver number not specified</string>
     <!-- Verification Dialogs -->
     <string name="verification_required_title">📱 Login to your account</string>
-    <string name="verification_required_message">To fully use the app, we recommend logging in to your account or registering.\n\nIt only takes a minute!</string>
+    <string name="verification_required_message">To fully use the app TAXI, we recommend logging in to your account or registering.\n\nIt only takes a minute!</string>
     <string name="verification_cancelled_title">🔐 Continuing work</string>
     <string name="verification_cancelled_message">To use all the features of the app, you need to log in to your account.\n\nYou can do this now or later.</string>
     <string name="verification_error_title">🔧 Technical error</string>

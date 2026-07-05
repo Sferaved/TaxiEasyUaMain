@@ -16,12 +16,33 @@ alwaysApply: true
 | Проект | PAS (id=1) |
 | API | REST `…/mantis/api/rest/`; токен в Firebase `keys/mantis_key` и на сервере `/opt/mantis/CREDENTIALS.local.txt` |
 | Эталон кода отправки | `PAS_4` → `utils/bugreport/mantis/` |
+| Скрипт закрытия | `taxi_repo` → `scripts/mantis-close-issue.sh` (на сервере: `/opt/mantis/CREDENTIALS.local.txt`) |
 
 При задаче «разбери баг», «исправь жалобу», «тикет #N»:
 
 1. Читать тикет в Mantis (описание, вложения `app_log.txt`, история).
 2. Разбирать код в PAS / `taxi_repo` по фактам из тикета и логов.
-3. После исправления — **комментарий в тикет** (что сделано, версия) и закрытие (`resolved` / `closed`) через API или по просьбе пользователя.
+3. После **успешного деплоя** (prod или test, по среде бага) — **обязательно** комментарий в тикет и закрытие (`resolved` + `fixed`, при необходимости `closed`) через API. Не оставлять тикет открытым после выката фикса.
+
+## Закрытие тикета после деплоя (обязательно для агента)
+
+Чеклист в конце сессии по багу Mantis:
+
+| # | Шаг |
+|---|-----|
+| 1 | Деплой прошёл (образ prod/test с SHA коммита) |
+| 2 | Комментарий: что исправлено, коммит/образ, нужно ли обновлять PAS |
+| 3 | Статус тикета → `resolved` (resolution `fixed`) |
+
+Пример (с сервера `taxi-prod`):
+
+```bash
+scp scripts/mantis-close-issue.sh taxi-prod:/tmp/
+scp comment.txt taxi-prod:/tmp/
+ssh taxi-prod "chmod +x /tmp/mantis-close-issue.sh && /tmp/mantis-close-issue.sh 20 /tmp/comment.txt resolved"
+```
+
+Токен API — только с сервера (`/opt/mantis/CREDENTIALS.local.txt`), **не** в чат и git.
 
 ## Описание от клиента
 
@@ -42,6 +63,7 @@ alwaysApply: true
 
 ## Агент
 
-- Не закрывать тикет без разбора или без согласования с пользователем.
+- **Не закрывать** тикет без разбора или до успешного деплоя фикса.
+- **Всегда закрывать** тикет после успешного деплоя — не ждать отдельной просьбы пользователя.
 - Не публиковать пароли Mantis и API-токены в чат или в git.
 - Коммит/push правил — по `cursor-rules-sync.mdc` (PAS_1–PAS_4, `taxi_repo`).

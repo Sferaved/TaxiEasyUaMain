@@ -931,7 +931,7 @@
     <string name="phone_error_driver_empty">Номер водителя не указан</string>
     <!-- Диалоги верификации -->
     <string name="verification_required_title">📱 Вход в аккаунт</string>
-    <string name="verification_required_message">Для полноценной работы с приложением рекомендуется войти в свой аккаунт или зарегистрироваться.\n\nЭто займёт всего минуту!</string>
+    <string name="verification_required_message">Для полноценной работы с приложением TAXI рекомендуется войти в свой аккаунт или зарегистрироваться.\n\nЭто займёт всего минуту!</string>
     <string name="verification_cancelled_title">🔐 Продолжение работы</string>
     <string name="verification_cancelled_message">Для использования всех возможностей приложения необходимо войти в аккаунт.\n\nВы можете сделать это сейчас или позже.</string>
     <string name="verification_error_title">🔧 Техническая ошибка</string>

@@ -852,11 +852,21 @@ public class FinishSeparateFragment extends Fragment {
 
     private void onInitialPaymentHoldVerified() {
         holdVerifiedOnEnter = true;
-        need_20_add = false;
         holdVerifyEnterRetryCount = 0;
         holdVerifyRetryHandler.removeCallbacksAndMessages(null);
-        cancelShowDialogAddCost();
         clearDeclinedPaymentUi();
+        if (!PaymentTypeHelper.usesWalletHold(pay_method) || shouldSkipWalletAddCostPrompt()) {
+            need_20_add = false;
+            cancelShowDialogAddCost();
+        }
+    }
+
+    /** Блокировать таймер checkout-доплаты: для карты — после verify hold; для GPay — после доплаты. */
+    private boolean isAddCostCheckoutBlockedForPayment() {
+        if (PaymentTypeHelper.usesWalletHold(pay_method)) {
+            return shouldSkipWalletAddCostPrompt();
+        }
+        return isPaymentVerified();
     }
 
     /** Заказ уже в работе — оплата не может считаться «зависшей». */
@@ -2259,7 +2269,7 @@ public class FinishSeparateFragment extends Fragment {
                 return;
             }
 
-        if (need_20_add && !isPaymentVerified() && handlerAddcost != null && showDialogAddcost != null) {
+        if (need_20_add && !isAddCostCheckoutBlockedForPayment() && handlerAddcost != null && showDialogAddcost != null) {
             Logger.d(context, TAG, "Triggering add cost delay: " + timeCheckOutAddCost);
 //            handlerAddcost.postDelayed(showDialogAddcost, timeCheckOutAddCost);
 
@@ -3518,22 +3528,13 @@ public class FinishSeparateFragment extends Fragment {
 
     /** Не предлагать повторную доплату после успешного GPay / order_uid_new. */
     private boolean shouldSkipWalletAddCostPrompt() {
-        if (!PaymentTypeHelper.usesWalletHold(pay_method)) {
-            return false;
-        }
-        if (isPaymentVerified()) {
-            return true;
-        }
-        if (ExecutionStatusViewModel.isAddCostInFlightPref()) {
-            return true;
-        }
         String activeUid = resolveActiveOrderUid();
-        if (ExecutionStatusViewModel.isWalletAddCostAppliedForUid(activeUid)) {
-            return true;
-        }
-        Integer floor = ExecutionStatusViewModel.getWalletAddCostFloorGrivnaInt();
-        int displayed = parseDisplayedCostGrivna();
-        return floor != null && floor > 0 && displayed >= floor;
+        return FinishCostReconcileHelper.shouldSkipWalletCheckoutSurchargePrompt(
+                PaymentTypeHelper.usesWalletHold(pay_method),
+                ExecutionStatusViewModel.isAddCostInFlightPref(),
+                ExecutionStatusViewModel.isWalletAddCostAppliedForUid(activeUid),
+                ExecutionStatusViewModel.getWalletAddCostFloorGrivnaInt(),
+                parseDisplayedCostGrivna());
     }
 
     private void onWalletAddCostConfirmedByServer(int serverTotalGrivna) {
