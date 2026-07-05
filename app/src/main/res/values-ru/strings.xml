@@ -263,6 +263,7 @@
     <string name="google_pay_hold_network_error_message">Не удалось подтвердить оплату Google Pay из-за проблем с интернетом. Проверьте соединение и попробуйте ещё раз.</string>
     <string name="google_pay_hold_duplicate_order_message">Не удалось оплатить повторно тем же номером заказа. Попробуйте ещё раз — будет создан новый платёж.</string>
     <string name="google_pay_hold_timeout_message">Оплату Google Pay ещё обрабатывают. Подождите или проверьте банк — если средства заблокированы, закажите снова или обратитесь в поддержку.</string>
+    <string name="google_pay_waiting">Открываем Google Pay. Подождите, пожалуйста…</string>
     <string name="google_pay_order_processing">Подтверждаем оплату Google Pay. Подождите, пожалуйста…</string>
     <string name="fondy_revers_message">"Возврат платежа: "</string>
     <string name="fondy_pay">Оплатить картой</string>

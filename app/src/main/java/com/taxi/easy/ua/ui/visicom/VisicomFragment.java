@@ -3105,7 +3105,11 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             }
 
             if (orderRout()) {
-                googleVerifyAccount();
+                if ("google_pay_payment".equals(pay_method)) {
+                    beginGooglePayCheckout();
+                } else {
+                    googleVerifyAccount();
+                }
             } else {
                 btnVisible(VISIBLE);
             }
@@ -3596,6 +3600,15 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                         }else {
                             btnVisible(VISIBLE);
                         }
+                    }
+                    break;
+                case "google_pay_payment":
+                    if (Long.parseLong(card_max_pay) <= Long.parseLong(text_view_cost.getText().toString())) {
+                        changePayMethodMax(text_view_cost.getText().toString(), pay_method);
+                    } else if (orderRout()) {
+                        beginGooglePayCheckout();
+                    } else {
+                        btnVisible(VISIBLE);
                     }
                     break;
                 default:
@@ -5869,11 +5882,21 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         startGooglePayHoldBeforeOrder();
     }
 
+    /** Экран с анимацией сразу после «Заказать», пока открывается кошелёк и идёт холд. */
+    private void beginGooglePayCheckout() {
+        if (!isAdded() || googlePayOrderHoldInProgress || googlePayOrderProcessingUiShown) {
+            return;
+        }
+        showGooglePayOrderProcessingUi(R.string.google_pay_waiting);
+        googleVerifyAccount();
+    }
+
     private void startGooglePayHoldBeforeOrder() {
         if (!isAdded() || googlePayOrderHoldInProgress) {
             return;
         }
         if (!orderRout()) {
+            restoreVisicomMainAfterGooglePayFailure();
             btnVisible(VISIBLE);
             return;
         }
@@ -5884,6 +5907,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         int amountUah = GooglePayOrderHelper.parseAmountUah(costText != null ? costText : "");
         if (amountUah <= 0) {
             Toast.makeText(context, R.string.cost_error, Toast.LENGTH_SHORT).show();
+            restoreVisicomMainAfterGooglePayFailure();
             btnVisible(VISIBLE);
             return;
         }
@@ -5895,8 +5919,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 + " frozenAddCost=" + frozenSubmitAddCost + " frozenStartCost=" + frozenSubmitStartCost);
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
         pendingGooglePayOrderReference = MainActivity.order_id;
-        linearLayout.setVisibility(VISIBLE);
-        btnVisible(VISIBLE);
+        showGooglePayOrderProcessingUi(R.string.google_pay_waiting);
         googlePayOrderHoldInProgress = true;
 
         WfpGooglePayHelper.checkReady(googlePayPaymentsClient, ready -> {
@@ -5960,7 +5983,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         if (!isAdded() || pendingGooglePayOrderReference == null) {
             return;
         }
-        showGooglePayOrderProcessingUi();
+        showGooglePayOrderProcessingUi(R.string.google_pay_order_processing);
         List<String> cityInfo = logCursor(MainActivity.CITY_INFO, context);
         String city = cityInfo.size() > 1 ? cityInfo.get(1) : "";
         List<String> userInfo = logCursor(MainActivity.TABLE_USER_INFO, context);
@@ -6003,19 +6026,30 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     }
 
     private void showGooglePayOrderProcessingUi() {
+        showGooglePayOrderProcessingUi(R.string.google_pay_order_processing);
+    }
+
+    private void showGooglePayOrderProcessingUi(int statusMessageResId) {
         if (!isAdded() || getContext() == null) {
             return;
         }
         Context ctx = requireContext();
+        boolean firstShow = !googlePayOrderProcessingUiShown;
         googlePayOrderProcessingUiShown = true;
-        Logger.d(context, TAG, "showGooglePayOrderProcessingUi");
-        btnVisible(GONE);
-        if (progressBar != null) {
-            progressBar.forceShow();
-            progressBar.bringToFront();
-        }
-        if (constraintLayoutVisicomMain != null) {
-            constraintLayoutVisicomMain.setVisibility(GONE);
+        Logger.d(context, TAG, "showGooglePayOrderProcessingUi firstShow=" + firstShow
+                + " msgRes=" + statusMessageResId);
+        if (firstShow) {
+            btnVisible(GONE);
+            if (progressBar != null) {
+                progressBar.forceShow();
+                progressBar.bringToFront();
+            }
+            if (constraintLayoutVisicomMain != null) {
+                constraintLayoutVisicomMain.setVisibility(GONE);
+            }
+            if (constraintLayoutVisicomFinish != null) {
+                constraintLayoutVisicomFinish.setVisibility(VISIBLE);
+            }
         }
         if (textViewTo != null && textViewTo.getText().toString().trim().isEmpty()) {
             textViewTo.setText(ctx.getString(R.string.on_city_tv));
@@ -6026,18 +6060,17 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             text_full_message.setText(messageResult);
         }
         if (textCostMessage != null) {
-            textCostMessage.setText(R.string.google_pay_order_processing);
+            textCostMessage.setText(statusMessageResId);
         }
         if (textStatusCar != null) {
-            textStatusCar.setText(R.string.google_pay_order_processing);
-            Animation blinkAnimation = AnimationUtils.loadAnimation(ctx, R.anim.blink_animation);
-            textStatusCar.startAnimation(blinkAnimation);
+            textStatusCar.setText(statusMessageResId);
+            if (textStatusCar.getAnimation() == null) {
+                Animation blinkAnimation = AnimationUtils.loadAnimation(ctx, R.anim.blink_animation);
+                textStatusCar.startAnimation(blinkAnimation);
+            }
         }
         if (carProgressBar != null) {
             carProgressBar.resumeAnimation();
-        }
-        if (constraintLayoutVisicomFinish != null) {
-            constraintLayoutVisicomFinish.setVisibility(VISIBLE);
         }
     }
 
@@ -6061,6 +6094,12 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             return;
         }
         googlePayOrderProcessingUiShown = false;
+        if (textStatusCar != null) {
+            textStatusCar.clearAnimation();
+        }
+        if (progressBar != null) {
+            progressBar.setVisibility(GONE);
+        }
         if (constraintLayoutVisicomMain != null) {
             constraintLayoutVisicomMain.setVisibility(VISIBLE);
         }
@@ -6151,12 +6190,11 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     private void onGooglePayOrderHoldCancelled() {
         cancelGooglePayHoldPoll();
         googlePayOrderHoldInProgress = false;
-        googlePayOrderProcessingUiShown = false;
+        restoreVisicomMainAfterGooglePayFailure();
         pendingOrderDisplayCost = null;
         clearFrozenGooglePaySubmitCost();
         pendingGooglePayOrderReference = null;
         MainActivity.order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-        progressBar.setVisibility(GONE);
         EarlyOrderNavigationHelper.clearSubmitState();
         btnVisible(VISIBLE);
         releaseDeferredCostAfterGPayHold();
@@ -6233,7 +6271,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                             } else {
                                 String message = context.getString(R.string.black_list_message_err);
                                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
-
+                                if ("google_pay_payment".equals(pay_method)) {
+                                    restoreVisicomMainAfterGooglePayFailure();
+                                }
                                 btnVisible(VISIBLE);
                             }
                         }
@@ -6247,6 +6287,10 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             @Override
             public void onConsentInvalid() {
                 Logger.d(context, TAG, "Согласие пользователя НЕ действительное.");
+                if ("google_pay_payment".equals(pay_method)) {
+                    restoreVisicomMainAfterGooglePayFailure();
+                    btnVisible(VISIBLE);
+                }
                 String message = getString(R.string.google_verify_mes);
                 MyBottomSheetErrorFragment bottomSheetDialogFragment = new MyBottomSheetErrorFragment(message);
                 bottomSheetDialogFragment.show(fragmentManager, bottomSheetDialogFragment.getTag());
