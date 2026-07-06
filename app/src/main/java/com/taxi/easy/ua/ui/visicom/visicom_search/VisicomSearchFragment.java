@@ -1320,9 +1320,13 @@ public class VisicomSearchFragment extends Fragment {
                 // В массиве есть элементы, обрабатываем результат
                 // Ваши дополнительные действия с features
                 for (int i = 0; i < features.length(); i++) {
-                    JSONObject properties = features.getJSONObject(i).getJSONObject("properties");
+                    JSONObject feature = features.getJSONObject(i);
+                    if (!com.taxi.easy.ua.utils.visicom.VisicomFeatureJsonHelper.hasFeatureItemFields(feature)) {
+                        continue;
+                    }
+                    JSONObject properties = feature.getJSONObject("properties");
 //                    Logger.d(context, TAG, "processAddressData:properties " + i + " - " + properties);
-                    JSONObject geoCentroid = features.getJSONObject(i).getJSONObject("geo_centroid");
+                    JSONObject geoCentroid = feature.getJSONObject("geo_centroid");
 
                     if (properties.getString("country_code").equals("ua")) {
                         switch (properties.getString("categories")) {
@@ -1635,7 +1639,7 @@ public class VisicomSearchFragment extends Fragment {
                 addresses = new ArrayList<>();
                 coordinatesList = new ArrayList<>();
 
-                if(jsonResponse.length() != 0)  {
+                if (com.taxi.easy.ua.utils.visicom.VisicomFeatureJsonHelper.hasRootFeatureFields(jsonResponse)) {
                     JSONObject properties = jsonResponse.getJSONObject("properties");
                     JSONObject geoCentroid = jsonResponse.getJSONObject("geo_centroid");
 

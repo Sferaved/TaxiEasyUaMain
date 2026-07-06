@@ -6,6 +6,8 @@ import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesH
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
@@ -29,6 +31,8 @@ import androidx.work.WorkManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -341,8 +345,11 @@ public class WfpUtils {
         );
     }
 
+    private static final ExecutorService CARD_SYNC_EXECUTOR = Executors.newSingleThreadExecutor();
+
     /**
      * Синхронно выставить активную карту на сервере перед списанием по токену.
+     * Только с фонового потока — на UI вызывать {@link #syncActiveCardBeforeOrderOffMain}.
      */
     public static boolean syncActiveCardBeforeOrder(Context context, String cardId) {
         if (cardId == null || cardId.isEmpty()) {
@@ -373,6 +380,19 @@ public class WfpUtils {
             FirebaseCrashlytics.getInstance().recordException(e);
             return false;
         }
+    }
+
+    /** Синхронизация активной карты в фоне; {@code onDone} — на главном потоке. */
+    public static void syncActiveCardBeforeOrderOffMain(
+            Context context,
+            String cardId,
+            @Nullable Runnable onDone) {
+        CARD_SYNC_EXECUTOR.execute(() -> {
+            syncActiveCardBeforeOrder(context.getApplicationContext(), cardId);
+            if (onDone != null) {
+                new Handler(Looper.getMainLooper()).post(onDone);
+            }
+        });
     }
 
     public static void fetchCardTokenWfpAsync(String city, Context context, @Nullable CardFetchCallback callback) {

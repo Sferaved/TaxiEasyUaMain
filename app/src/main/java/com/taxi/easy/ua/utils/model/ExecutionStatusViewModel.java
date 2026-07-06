@@ -454,6 +454,8 @@ public class ExecutionStatusViewModel extends ViewModel {
         sharedPreferencesHelperMain.saveValue(PREF_UID_FCM, "");
         clearWalletAddCostFloorGrivna();
         clearWalletAddCostAppliedUid();
+        setAddCostInFlightPref(false);
+        clearPendingAddCostAmountPref();
         setCancelInFlightPref(false);
         PassengerNotifier.clearWeatherNoticePrefs();
     }
