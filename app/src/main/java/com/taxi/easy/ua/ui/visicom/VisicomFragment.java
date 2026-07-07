@@ -2603,10 +2603,20 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             if ("wfp_payment".equals(pay_method)) {
                 String activeCardId = getCheckRectoken(ctx);
                 if (!activeCardId.isEmpty()) {
-                    WfpUtils.syncActiveCardBeforeOrder(ctx, activeCardId);
+                    WfpUtils.syncActiveCardBeforeOrderOffMain(ctx, activeCardId, () -> {
+                        if (isAdded() && getActivity() != null) {
+                            dispatchOrderFinishedRequest(ctx);
+                        }
+                    });
+                    return;
                 }
             }
 
+            dispatchOrderFinishedRequest(ctx);
+        }
+    }
+
+    private void dispatchOrderFinishedRequest(Context ctx) {
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
             baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
             Logger.d(ctx, TAG, "orderFinished: " + baseUrl + urlOrder); // ← ctx
@@ -2648,7 +2658,6 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                     Logger.w(ctx, TAG, "NO INTERNET - Showing toast message"); // ← ctx
                 }
             });
-        }
     }
 
     private void handleOrderFinished(Map<String, String> sendUrlMap, String pay_method, Context context) {
