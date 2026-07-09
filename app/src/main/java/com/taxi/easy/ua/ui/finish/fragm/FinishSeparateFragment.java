@@ -2651,6 +2651,11 @@ public class FinishSeparateFragment extends Fragment {
         if (orderResponse == null) {
             return false;
         }
+        if (OrderHistoryStatusHelper.shouldDeferCancelUiDuringAddCost(
+                ExecutionStatusViewModel.isAddCostInFlightPref(),
+                addCostRecoveryUntilMs)) {
+            return false;
+        }
         int closeReason = orderResponse.getCloseReason();
         String executionStatus = orderResponse.getExecutionStatus();
         boolean cancelAwaiting = isCancelAwaitingConfirmation();
@@ -2660,9 +2665,6 @@ public class FinishSeparateFragment extends Fragment {
             return true;
         }
         if (cancelAwaiting && "Заказ снят".equals(resolveActionFromOrderResponse(orderResponse))) {
-            return true;
-        }
-        if (closeReason >= 1 && closeReason <= 9 && closeReason != 8 && executionStatus != null) {
             return true;
         }
         return false;
@@ -2684,6 +2686,8 @@ public class FinishSeparateFragment extends Fragment {
                 || cancelRequestInFlight
                 || cancelFailureWatchRemaining != 0
                 || ExecutionStatusViewModel.isCancelInFlightPref()
+                || ExecutionStatusViewModel.isAddCostInFlightPref()
+                || System.currentTimeMillis() < addCostRecoveryUntilMs
                 || isViewingCompletedOrder();
     }
 
@@ -2802,6 +2806,13 @@ public class FinishSeparateFragment extends Fragment {
             return;
         }
         if (closeReason >= 1 && closeReason <= 9 && closeReason != 8) {
+            if (executionStatus != null
+                    && !OrderHistoryStatusHelper.isCanceled(
+                    String.valueOf(closeReason), executionStatus, resolveActiveOrderUid())) {
+                action = "Поиск авто";
+                carSearch();
+                return;
+            }
             if (executionStatus != null) {
                 showOrderCanceledFromServer();
             } else {

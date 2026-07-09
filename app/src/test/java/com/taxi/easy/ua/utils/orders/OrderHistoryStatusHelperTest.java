@@ -93,6 +93,14 @@ public class OrderHistoryStatusHelperTest {
     }
 
     @Test
+    public void shouldDeferCancelUiDuringAddCost_whenInFlightOrRecoveryWindow() {
+        long future = System.currentTimeMillis() + 60_000L;
+        assertTrue(OrderHistoryStatusHelper.shouldDeferCancelUiDuringAddCost(true, 0L));
+        assertTrue(OrderHistoryStatusHelper.shouldDeferCancelUiDuringAddCost(false, future));
+        assertFalse(OrderHistoryStatusHelper.shouldDeferCancelUiDuringAddCost(false, 0L));
+    }
+
+    @Test
     public void isScheduledBooking_rejectsEpochPlaceholder() {
         assertFalse(OrderHistoryStatusHelper.isScheduledBooking("01.01.1970 03:00:00"));
         assertTrue(OrderHistoryStatusHelper.isScheduledBooking("07.07.2026 21:47"));

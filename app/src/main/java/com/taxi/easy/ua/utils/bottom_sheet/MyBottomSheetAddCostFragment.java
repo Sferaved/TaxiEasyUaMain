@@ -160,6 +160,9 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                     Logger.e(getActivity(), TAG, "viewModel is null in btn_ok");
                     return;
                 }
+                if ("nal_payment".equals(pay_method)) {
+                    ExecutionStatusViewModel.setAddCostInFlightPref(true);
+                }
                 viewModel.setCancelStatus(false);
                 String addCostDelta = String.valueOf(currentAddCost[0]);
                 boolean googlePayAddCost = PaymentTypeHelper.isGooglePay(pay_method);
@@ -198,6 +201,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                 Logger.d(context, TAG, "startAddCostWithUpdate skipped: cancel for uid=" + uid);
                 return;
             }
+            ExecutionStatusViewModel.setAddCostInFlightPref(true);
 
             OkHttpClient client = new OkHttpClient.Builder()
                     .connectTimeout(20, TimeUnit.SECONDS)
@@ -244,6 +248,10 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                         if (newUid != null && !newUid.trim().isEmpty()) {
                             viewModel.updateUid(newUid.trim());
                         }
+                        ExecutionStatusViewModel.clearActiveOrderNoticeSuppress();
+                        ExecutionStatusViewModel.setUserCanceledPref(false);
+                        sharedPreferencesHelperMain.saveValue(
+                                ExecutionStatusViewModel.PREF_FINISH_CANCELED_UID, "");
                         if (displayCost != null) {
                             viewModel.persistDisplayCostGrivna(displayCost);
                             viewModel.setFinishAbsoluteCostGrivna(displayCost);

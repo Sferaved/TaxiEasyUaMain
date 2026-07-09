@@ -182,4 +182,12 @@ public final class OrderHistoryStatusHelper {
         return "Canceled".equalsIgnoreCase(executionStatus)
                 || "Cancelled".equalsIgnoreCase(executionStatus);
     }
+
+    /** Во время доплаты/пересоздания заказа не показывать «снят клиентом» по опросу старой ноги. */
+    public static boolean shouldDeferCancelUiDuringAddCost(
+            boolean addCostInFlight,
+            long addCostRecoveryUntilMs
+    ) {
+        return addCostInFlight || System.currentTimeMillis() < addCostRecoveryUntilMs;
+    }
 }
