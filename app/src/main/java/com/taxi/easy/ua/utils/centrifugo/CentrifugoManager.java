@@ -437,10 +437,19 @@ public class CentrifugoManager {
                                 viewModel.persistDisplayCostGrivna(orderCost);
                                 sharedPreferencesHelperMain.saveValue("order_cost", orderCost);
                                 boolean walletHold = PaymentTypeHelper.usesWalletHold(paySystemStatus);
+                                boolean addCostInFlight = ExecutionStatusViewModel.isAddCostInFlightPref();
+                                String pendingAddCost = ExecutionStatusViewModel.getPendingAddCostAmountPref();
                                 if (FinishCostReconcileHelper
-                                        .shouldTreatOrderUidNewCostAsWalletSurchargeComplete(walletHold)) {
+                                        .shouldTreatOrderUidNewCostAsWalletSurchargeComplete(
+                                                walletHold, addCostInFlight, pendingAddCost)) {
                                     viewModel.setFinishAbsoluteCostGrivna(orderCost);
                                     ExecutionStatusViewModel.markWalletAddCostApplied(orderUid);
+                                    if (walletHold && (addCostInFlight || pendingAddCost != null)) {
+                                        ExecutionStatusViewModel.setAddCostInFlightPref(false);
+                                        ExecutionStatusViewModel.clearPendingAddCostAmountPref();
+                                        ExecutionStatusViewModel.clearWalletAddCostFloorGrivna();
+                                        viewModel.setCancelStatus(true);
+                                    }
                                 }
                             }
                             EarlyOrderNavigationHelper.tryEarlyNavigateToFinish(

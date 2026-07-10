@@ -3658,4 +3658,19 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+    /** После смены города — экран заказа, без полного перезапуска приложения. */
+    public void openVisicomAfterCityChange() {
+        if (navController == null) {
+            return;
+        }
+        navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                .setLaunchSingleTop(true)
+                .setPopUpTo(R.id.nav_visicom, true)
+                .build());
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().show();
+        }
+        binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+    }
 }

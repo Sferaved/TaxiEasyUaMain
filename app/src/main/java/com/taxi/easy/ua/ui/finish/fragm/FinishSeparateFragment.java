@@ -654,7 +654,7 @@ public class FinishSeparateFragment extends Fragment {
         Logger.d(context, TAG, "no_pay: 2 " + no_pay);
 
         ImageButton btn_no = root.findViewById(R.id.btn_no);
-        btn_no.setOnClickListener(view -> startActivity(new Intent(context, MainActivity.class)));
+        btn_no.setOnClickListener(view -> closeActiveOrderScreen());
 
         carProgressBar = root.findViewById(R.id.carProgressBar);
 
@@ -1361,9 +1361,7 @@ public class FinishSeparateFragment extends Fragment {
             sharedPreferencesHelperMain.saveValue("carFound", false);
             ExecutionStatusViewModel.clearActiveOrderNoticeSuppress();
         }
-        EarlyOrderNavigationHelper.clearSubmitState();
-        sharedPreferencesHelperMain.saveValue("cost_recalc_from_finish", true);
-        startActivity(new Intent(context, MainActivity.class));
+        navigateToNewOrder();
     }
 
     private void stopCancelWatchPoll() {
@@ -3387,6 +3385,15 @@ public class FinishSeparateFragment extends Fragment {
                     ExecutionStatusViewModel.resetNewOrderSession(null);
                     submitOrderCancelRequest(context.getString(R.string.ex_st_canceled));
                     return;
+                }
+                if (ExecutionStatusViewModel.isAddCostInFlightPref()
+                        || ExecutionStatusViewModel.getPendingAddCostAmountPref() != null) {
+                    Logger.d(context, TAG, "uid changed after wallet add-cost — resume status polling");
+                    ExecutionStatusViewModel.setAddCostInFlightPref(false);
+                    ExecutionStatusViewModel.clearPendingAddCostAmountPref();
+                    addCostRecoveryUntilMs = 0;
+                    onAddCostProcessingFinished();
+                    viewModel.setCancelStatus(true);
                 }
             }
             if (uidChanged && isAdded()) {

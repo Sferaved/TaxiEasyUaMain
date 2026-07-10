@@ -107,13 +107,24 @@ public final class FinishCostReconcileHelper {
     }
 
     /**
-     * order_uid_new с order_cost: для wallet-hold это только базовый холд,
-     * не финальная доплата (+5 грн на экране заказа).
+     * Применять order_cost из order_uid_new как итог на экране заказа.
+     * Для wallet-hold при первом холде — только базовая сумма (Mantis #21).
+     * После доплаты / пересоздания заказа — полный client_cost (Mantis #29).
      */
     public static boolean shouldTreatOrderUidNewCostAsWalletSurchargeComplete(
-            boolean walletHoldPayment
+            boolean walletHoldPayment,
+            boolean addCostInFlight,
+            @Nullable String pendingAddCostAmount
     ) {
-        return !walletHoldPayment;
+        if (!walletHoldPayment) {
+            return true;
+        }
+        if (addCostInFlight) {
+            return true;
+        }
+        return pendingAddCostAmount != null
+                && !pendingAddCostAmount.trim().isEmpty()
+                && !"0".equals(pendingAddCostAmount.trim());
     }
 
     /**

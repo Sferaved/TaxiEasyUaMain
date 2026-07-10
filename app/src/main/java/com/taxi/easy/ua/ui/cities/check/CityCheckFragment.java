@@ -924,7 +924,9 @@ public class CityCheckFragment extends Fragment {
         database.close();
         sharedPreferencesHelperMain.saveValue("CityCheckActivity", "run");
         AutoLocationAfterCityHelper.markCityLoaded();
-        startActivity(new Intent(requireActivity(), MainActivity.class));
+        if (requireActivity() instanceof MainActivity activity) {
+            activity.openVisicomAfterCityChange();
+        }
     }
 
 

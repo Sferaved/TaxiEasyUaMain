@@ -139,9 +139,23 @@ public class FinishCostReconcileHelperTest {
     @Test
     public void orderUidNewCost_notCompleteForWalletHold() {
         assertFalse(FinishCostReconcileHelper
-                .shouldTreatOrderUidNewCostAsWalletSurchargeComplete(true));
+                .shouldTreatOrderUidNewCostAsWalletSurchargeComplete(true, false, null));
         assertTrue(FinishCostReconcileHelper
-                .shouldTreatOrderUidNewCostAsWalletSurchargeComplete(false));
+                .shouldTreatOrderUidNewCostAsWalletSurchargeComplete(false, false, null));
+    }
+
+    @Test
+    public void orderUidNewCost_completeAfterWalletAddCostInFlight() {
+        assertTrue(FinishCostReconcileHelper
+                .shouldTreatOrderUidNewCostAsWalletSurchargeComplete(true, true, null));
+    }
+
+    @Test
+    public void orderUidNewCost_completeWhenPendingWalletAddCost() {
+        assertTrue(FinishCostReconcileHelper
+                .shouldTreatOrderUidNewCostAsWalletSurchargeComplete(true, false, "5"));
+        assertFalse(FinishCostReconcileHelper
+                .shouldTreatOrderUidNewCostAsWalletSurchargeComplete(true, false, "0"));
     }
 
     @Test

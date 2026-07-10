@@ -1126,8 +1126,9 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
             VisicomFragment.num1.setVisibility(View.VISIBLE);
         }
 
-//        checkNotificationPermissionAndRequestIfNeeded();
-        startActivity(new Intent(context, MainActivity.class));
+        if (context instanceof MainActivity activity) {
+            activity.openVisicomAfterCityChange();
+        }
     }
 
     private void cityMaxPay(String city) {
