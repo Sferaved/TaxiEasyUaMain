@@ -6,6 +6,14 @@
     app:startDestination="@+id/nav_visicom">
 
     <fragment
+        android:id="@+id/nav_landing"
+        android:name="com.taxi.easy.ua.ui.landing.LandingFragment"
+        android:label="@string/landing_greeting"
+        tools:layout="@layout/fragment_landing" />
+
+
+
+    <fragment
         android:id="@+id/nav_visicom"
         android:name="com.taxi.easy.ua.ui.visicom.VisicomFragment"
 

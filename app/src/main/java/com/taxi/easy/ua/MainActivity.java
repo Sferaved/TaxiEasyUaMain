@@ -39,6 +39,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -164,9 +165,15 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import com.taxi.easy.ua.utils.db.CursorReadHelper;
+import com.taxi.easy.ua.ui.landing.LandingAction;
+import com.taxi.easy.ua.ui.landing.LandingCityHelper;
+import com.taxi.easy.ua.ui.landing.LandingFragment;
+import com.taxi.easy.ua.ui.landing.LandingLanguageHelper;
+import com.taxi.easy.ua.ui.landing.LandingNavigationHelper;
+import com.taxi.easy.ua.utils.auth.GuestSessionHelper;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements LandingFragment.LandingHost {
     private static final String TAG = "MainActivity";
 
     @Override
@@ -281,6 +288,8 @@ public class MainActivity extends AppCompatActivity {
     private AlertDialog verificationDialog = null;   // Ссылка на диалог
     private AlertDialog inclusiveTransportDialog = null;
     private boolean isWaitingForVerification = false;
+    private LandingAction pendingLandingAction = null;
+    private boolean suppressGuestNavGuard = false;
 
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
@@ -351,7 +360,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Добавляем слушатель изменения направления
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
-            currentNavDestination = destination.getId(); // Обновляем текущий экран
+            currentNavDestination = destination.getId();
+            updateShellForDestination(destination.getId());
+            enforceGuestNavigation(destination.getId());
         });
 
         mAppBarConfiguration = new AppBarConfiguration.Builder(
@@ -386,6 +397,11 @@ public class MainActivity extends AppCompatActivity {
 
         // Явная обработка нажатий в NavigationView
         navigationView.setNavigationItemSelectedListener(item -> {
+            if (isGuestSession()) {
+                binding.drawerLayout.closeDrawers();
+                requestAuthForLandingAction(null);
+                return true;
+            }
             int itemId = item.getItemId();
             NavDestination currentDestination = navController.getCurrentDestination();
             if (currentDestination != null && currentDestination.getId() != itemId) {
@@ -1049,6 +1065,8 @@ public class MainActivity extends AppCompatActivity {
         sharedPreferencesHelperMain.saveValue("gps_upd", gps_upd);
 
         FinishSeparateFragment.notifyPaymentDeclinedIfNeeded(this);
+        tryFulfillPendingLandingAction();
+        ensureGuestLandingOnResume();
     }
 
     @Override
@@ -1557,7 +1575,17 @@ public class MainActivity extends AppCompatActivity {
             openCrispChat();
             return true;
         }
-        
+
+        if (isGuestSession() && isProtectedToolbarItem(item.getItemId())) {
+            LandingAction landingAction = mapToolbarItemToLandingAction(item.getItemId());
+            if (landingAction == LandingAction.DRIVER) {
+                openDriverScreen();
+                return true;
+            }
+            requestAuthForLandingAction(landingAction);
+            return true;
+        }
+
         if (item.getItemId() == R.id.action_exit) {
             FirebaseAnalytics firebaseAnalytics = FirebaseAnalytics.getInstance(getContext());
             firebaseAnalytics.setAnalyticsCollectionEnabled(false);
@@ -2393,12 +2421,22 @@ public class MainActivity extends AppCompatActivity {
 
         insertPushDateWorkerTask();
 
-        String userEmail = logCursor(TABLE_USER_INFO).get(3);
+        String userEmail = resolveSessionEmail();
         Logger.d(this, TAG, "newUser: " + userEmail);
 
-        if (userEmail.equals("email") || userEmail.equals("no_email") ||userEmail.isEmpty()) {
+        if (!GuestSessionHelper.isGuestEmail(userEmail)) {
+            try {
+                String dbEmail = logCursor(TABLE_USER_INFO).get(3);
+                if (GuestSessionHelper.isGuestEmail(dbEmail)) {
+                    updateRecordsUser("email", userEmail);
+                }
+            } catch (Exception e) {
+                Logger.e(this, TAG, "newUser sync email: " + e.getMessage());
+            }
+        }
+
+        if (isGuestSession()) {
             firstStart = true;
-            sharedPreferencesHelperMain.saveValue("CityCheckActivity", "**");
             if (VisicomFragment.progressBar != null) {
                 VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
             }
@@ -2407,12 +2445,10 @@ public class MainActivity extends AppCompatActivity {
             // Одно напоминание "не вошёл" на завтра 07:00 (Europe/Kyiv) — планируется на сервере
             com.taxi.easy.ua.utils.worker.utils.TokenUtils.scheduleLoginReminderIfNeeded(getApplicationContext());
 
-            // Блокируем UI до верификации
-            blockUiUntilVerification();
-
-            // Показываем диалог верификации
-            showAccountVerificationRequiredDialog();
+            applyLandingEntryRestrictions();
+            showLandingPage();
         } else {
+            showLandingPage();
 
             findUserFromServer(userEmail, findUser -> {
                 // Use the boolean result here
@@ -2452,15 +2488,6 @@ public class MainActivity extends AppCompatActivity {
                     centrifugoManager.subscribeToChannel();
 
                     new VerifyUserTask(this).execute();
-                    String sityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
-                    Logger.d(this, TAG, "CityCheckActivity: " + sityCheckActivity);
-
-                    if (sityCheckActivity.equals("**")) {
-                        // Запускаем CityCheckActivity, если состояние страны не задано
-                        Intent intent = new Intent(this, CityCheckActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                        startActivity(intent);
-                    }
                     firstStart = false;
 
                     OneTimeWorkRequest versionFromMarketRequest = new OneTimeWorkRequest.Builder(VersionFromMarketWorker.class)
@@ -2620,7 +2647,9 @@ public class MainActivity extends AppCompatActivity {
                     userEmailForTest = user.getEmail();
                     usernameForTest = "username";
 
+                    updateRecordsUser("email", user.getEmail());
                     settingsNewUser(user.getEmail());
+                    firstStart = false;
                     AdsConversionHelper.logSignUpIfNewUser(this, user);
                     crispChat();
 
@@ -2629,10 +2658,9 @@ public class MainActivity extends AppCompatActivity {
                     String sityCheckActivity = (String) sharedPreferencesHelperMain.getValue("CityCheckActivity", "**");
                     Logger.d(this, TAG, "CityCheckActivity: " + sityCheckActivity);
 
-                    if (sityCheckActivity.equals("**")) {
-                        Intent intent = new Intent(this, CityCheckActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                        startActivity(intent);
+                    if (isCitySelectionPending()
+                            && LandingNavigationHelper.shouldLaunchCityCheckAfterAuth(pendingLandingAction)) {
+                        launchCityCheckActivity();
                     }
 
                     releaseCentrifugoManager();
@@ -2649,6 +2677,7 @@ public class MainActivity extends AppCompatActivity {
                     // Разблокируем UI
                     unblockUiAfterVerification();
                     InclusiveTransportPromptCoordinator.onAuthSucceeded();
+                    tryFulfillPendingLandingAction();
                 }
             } else {
                 handleSignInFailure(result);
@@ -3496,12 +3525,8 @@ public class MainActivity extends AppCompatActivity {
                     startFireBase();
                 });
 
-                // Красная кнопка с крестиком - закрывает приложение
-                btnClose.setOnClickListener(v -> {
-                    verificationDialog.dismiss();
-                    finishAffinity();
-                    System.exit(0);
-                });
+                // Красная кнопка с крестиком — возврат на гостевую страницу
+                btnClose.setOnClickListener(v -> dismissVerificationDialogAndReturnToLanding());
 
             } catch (Exception e) {
                 Logger.e(this, TAG, "Error showing dialog: " + e.getMessage());
@@ -3519,42 +3544,13 @@ public class MainActivity extends AppCompatActivity {
                 verificationDialog = null;
             }
 
-            Toast.makeText(this, "Верификация обязательна", Toast.LENGTH_LONG).show();
+            isWaitingForVerification = false;
+            pendingLandingAction = null;
+            Toast.makeText(this, R.string.verification_mandatory_toast, Toast.LENGTH_LONG).show();
 
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                if (isVerificationRequired && !isFinishing() && !isDestroyed()) {
-                    View dialogView = getLayoutInflater().inflate(R.layout.dialog_verification_simple_new, null);
-
-                    TextView tvTitle = dialogView.findViewById(R.id.tvTitle);
-                    TextView tvMessage = dialogView.findViewById(R.id.tvMessage);
-                    Button btnPositive = dialogView.findViewById(R.id.btnPositive);
-                    ImageButton btnClose = dialogView.findViewById(R.id.btnClose);
-
-                    tvTitle.setText(getString(R.string.verification_required_title));
-                    tvMessage.setText(getString(R.string.verification_required_message));
-                    btnPositive.setText(getString(R.string.start));
-
-                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                    builder.setView(dialogView)
-                            .setCancelable(false);
-
-                    verificationDialog = builder.create();
-                    verificationDialog.show();
-
-                    // Кнопка Старт
-                    btnPositive.setOnClickListener(v -> {
-                        verificationDialog.dismiss();
-                        startFireBase();
-                    });
-
-                    // Красная кнопка с крестиком - закрывает приложение
-                    btnClose.setOnClickListener(v -> {
-                        verificationDialog.dismiss();
-                        finishAffinity();
-                        System.exit(0);
-                    });
-                }
-            }, 1000);
+            if (isGuestSession()) {
+                showLandingPage();
+            }
         });
     }
 
@@ -3587,11 +3583,10 @@ public class MainActivity extends AppCompatActivity {
                 startFireBase();
             });
 
-            // Красная кнопка с крестиком - закрывает приложение
+            // Красная кнопка с крестиком — возврат на гостевую страницу
             btnClose.setOnClickListener(v -> {
                 errorDialog.dismiss();
-                finishAffinity();
-                System.exit(0);
+                dismissVerificationDialogAndReturnToLanding();
             });
         });
     }
@@ -3659,18 +3654,411 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /** После смены города — экран заказа, без полного перезапуска приложения. */
+    /** После смены города — экран заказа, без перезапуска приложения и лендинга. */
     public void openVisicomAfterCityChange() {
         if (navController == null) {
             return;
         }
+        hideBlockingOverlay();
+        suppressGuestNavGuard = true;
         navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
                 .setLaunchSingleTop(true)
                 .setPopUpTo(R.id.nav_visicom, true)
                 .build());
+        suppressGuestNavGuard = false;
         if (getSupportActionBar() != null) {
             getSupportActionBar().show();
         }
         binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+    }
+
+    // --- Гостевая статическая страница (лендинг) ---
+
+    public boolean isGuestSession() {
+        try {
+            FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+            if (firebaseUser != null) {
+                String firebaseEmail = firebaseUser.getEmail();
+                if (!GuestSessionHelper.isGuestEmail(firebaseEmail)) {
+                    return false;
+                }
+            }
+            return GuestSessionHelper.isGuestEmail(logCursor(TABLE_USER_INFO).get(3));
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    private void applyLandingEntryRestrictions() {
+        runOnUiThread(() -> {
+            try {
+                binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+                hideBlockingOverlay();
+            } catch (Exception e) {
+                Logger.e(this, TAG, "applyLandingEntryRestrictions error: " + e.getMessage());
+            }
+        });
+    }
+
+    private void ensureGuestLandingOnResume() {
+        if (!shouldShowGuestLandingNow()) {
+            return;
+        }
+        showLandingPage();
+    }
+
+    private boolean shouldShowGuestLandingNow() {
+        if (!isGuestSession()) {
+            return false;
+        }
+        if (isWaitingForVerification) {
+            return false;
+        }
+        if (verificationDialog != null && verificationDialog.isShowing()) {
+            return false;
+        }
+        return true;
+    }
+
+    private void showLandingPage() {
+        if (navController == null) {
+            return;
+        }
+        applyLandingEntryRestrictions();
+        suppressGuestNavGuard = true;
+        if (navController.getCurrentDestination() == null
+                || navController.getCurrentDestination().getId() != R.id.nav_landing) {
+            navController.navigate(R.id.nav_landing, null, new NavOptions.Builder()
+                    .setLaunchSingleTop(true)
+                    .build());
+        }
+        suppressGuestNavGuard = false;
+    }
+
+    private void updateShellForDestination(int destinationId) {
+        if (destinationId == R.id.nav_landing) {
+            if (getSupportActionBar() != null) {
+                getSupportActionBar().hide();
+            }
+            binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+            hideBlockingOverlay();
+        } else if (!isGuestSession()) {
+            if (getSupportActionBar() != null) {
+                getSupportActionBar().show();
+            }
+            binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+        }
+    }
+
+    private void enforceGuestNavigation(int destinationId) {
+        if (suppressGuestNavGuard || !isGuestSession() || destinationId == R.id.nav_landing) {
+            return;
+        }
+        suppressGuestNavGuard = true;
+        navController.navigate(R.id.nav_landing, null, new NavOptions.Builder()
+                .setLaunchSingleTop(true)
+                .build());
+        suppressGuestNavGuard = false;
+    }
+
+    private void dismissVerificationDialogAndReturnToLanding() {
+        if (verificationDialog != null && verificationDialog.isShowing()) {
+            verificationDialog.dismiss();
+            verificationDialog = null;
+        }
+        isWaitingForVerification = false;
+        pendingLandingAction = null;
+        showLandingPage();
+    }
+
+    private void requestAuthForLandingAction(@Nullable LandingAction action) {
+        pendingLandingAction = action;
+        showAccountVerificationRequiredDialog();
+    }
+
+    private void tryFulfillPendingLandingAction() {
+        if (isGuestSession()) {
+            return;
+        }
+        if (pendingLandingAction == LandingAction.CITY) {
+            LandingAction action = pendingLandingAction;
+            pendingLandingAction = null;
+            navigateLandingAction(action);
+            return;
+        }
+        if (pendingLandingAction != null
+                && LandingNavigationHelper.appliesDefaultCityInsteadOfPicker(pendingLandingAction)
+                && isCitySelectionPending()) {
+            applyDefaultKyivCityForLanding();
+            LandingAction action = pendingLandingAction;
+            pendingLandingAction = null;
+            navigateLandingAction(action);
+            return;
+        }
+        if (isCitySelectionPending()) {
+            if (pendingLandingAction != null
+                    && LandingNavigationHelper.shouldPromptCityBeforeAction(pendingLandingAction)) {
+                launchCityCheckActivity();
+            } else {
+                leaveLandingAfterAuthIfNeeded();
+            }
+            return;
+        }
+        if (pendingLandingAction != null) {
+            LandingAction action = pendingLandingAction;
+            pendingLandingAction = null;
+            navigateLandingAction(action);
+            return;
+        }
+        leaveLandingAfterAuthIfNeeded();
+    }
+
+    private void continueLandingAction(@NonNull LandingAction action) {
+        if (LandingNavigationHelper.appliesDefaultCityInsteadOfPicker(action)
+                && isCitySelectionPending()) {
+            applyDefaultKyivCityForLanding();
+            navigateLandingAction(action);
+            return;
+        }
+        if (LandingNavigationHelper.shouldPromptCityBeforeAction(action)
+                && isCitySelectionPending()) {
+            pendingLandingAction = action;
+            launchCityCheckActivity();
+            return;
+        }
+        navigateLandingAction(action);
+    }
+
+    private String resolveSessionEmail() {
+        try {
+            String dbEmail = logCursor(TABLE_USER_INFO).get(3);
+            if (!GuestSessionHelper.isGuestEmail(dbEmail)) {
+                return dbEmail;
+            }
+        } catch (Exception e) {
+            Logger.e(this, TAG, "resolveSessionEmail db: " + e.getMessage());
+        }
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (firebaseUser != null && firebaseUser.getEmail() != null) {
+            return firebaseUser.getEmail();
+        }
+        String emailFromPrefs = (String) sharedPreferencesHelperMain.getValue("userEmail", "no_email");
+        if (!GuestSessionHelper.isGuestEmail(emailFromPrefs)) {
+            return emailFromPrefs;
+        }
+        return "email";
+    }
+
+    private void applyDefaultKyivCityForLanding() {
+        LandingCityHelper.applyDefaultKyivCityIfPending(this, sharedPreferencesHelperMain);
+        setCityAppbar();
+    }
+
+    private void leaveLandingIfShowing() {
+        if (navController == null) {
+            return;
+        }
+        NavDestination current = navController.getCurrentDestination();
+        if (current != null && current.getId() == R.id.nav_landing) {
+            suppressGuestNavGuard = true;
+            navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                    .setLaunchSingleTop(true)
+                    .build());
+            suppressGuestNavGuard = false;
+        }
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().show();
+        }
+        binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+        hideBlockingOverlay();
+    }
+
+    private void launchCityCheckActivity() {
+        Intent intent = new Intent(this, CityCheckActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(intent);
+    }
+
+    private void leaveLandingAfterAuthIfNeeded() {
+        if (navController == null) {
+            return;
+        }
+        NavDestination current = navController.getCurrentDestination();
+        if (current != null && current.getId() == R.id.nav_landing) {
+            safeNavigate(R.id.nav_visicom);
+        }
+    }
+
+    private boolean isCitySelectionPending() {
+        return LandingCityHelper.isCitySelectionPending(sharedPreferencesHelperMain);
+    }
+
+    private void showLandingLanguagePicker() {
+        LandingLanguageHelper.showLanguagePicker(this);
+    }
+
+    private void navigateLandingAction(@NonNull LandingAction action) {
+        switch (action) {
+            case ORDER:
+            case CALCULATION:
+                safeNavigate(R.id.nav_visicom);
+                break;
+            case LANGUAGE:
+                showLandingLanguagePicker();
+                break;
+            case CITY:
+                safeNavigate(R.id.nav_city);
+                break;
+            case PAYMENT:
+                safeNavigate(R.id.nav_card);
+                break;
+            case OPERATOR:
+                callOperatorWithKyivFallback();
+                break;
+            case DRIVER:
+                openDriverScreen();
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void safeNavigate(int destinationId) {
+        if (navController == null) {
+            return;
+        }
+        suppressGuestNavGuard = true;
+        navController.navigate(destinationId, null, new NavOptions.Builder()
+                .setLaunchSingleTop(true)
+                .build());
+        suppressGuestNavGuard = false;
+    }
+
+    private void callOperatorWithKyivFallback() {
+        PhoneCallHelper.callWithFallback(() -> {
+            if (isCitySelectionPending()) {
+                return normalizeTelUri(Kyiv_City_phone);
+            }
+            List<String> phones = logCursor(CITY_INFO);
+            String phone = phones.size() > 3 ? phones.get(3) : "";
+            if (phone == null || phone.trim().isEmpty()) {
+                return normalizeTelUri(Kyiv_City_phone);
+            }
+            return normalizeTelUri(phone);
+        });
+    }
+
+    private static String normalizeTelUri(String phone) {
+        if (phone == null) {
+            return "";
+        }
+        String trimmed = phone.trim();
+        if (trimmed.startsWith("tel:")) {
+            return trimmed.substring(4);
+        }
+        return trimmed;
+    }
+
+    private boolean isProtectedToolbarItem(int itemId) {
+        return itemId == R.id.settings
+                || itemId == R.id.weather
+                || itemId == R.id.nav_driver
+                || itemId == R.id.gps
+                || itemId == R.id.inclusiveTransport
+                || itemId == R.id.send_email_admin
+                || itemId == R.id.send_email
+                || itemId == R.id.update
+                || itemId == R.id.clearApp
+                || itemId == R.id.send_like;
+    }
+
+    @Nullable
+    private LandingAction mapToolbarItemToLandingAction(int itemId) {
+        if (itemId == R.id.settings) {
+            return LandingAction.LANGUAGE;
+        }
+        if (itemId == R.id.nav_driver) {
+            return LandingAction.DRIVER;
+        }
+        return null;
+    }
+
+    @Override
+    public boolean isLandingLoginRequired() {
+        return isGuestSession();
+    }
+
+    @Override
+    @Nullable
+    public String getLandingWelcomeName() {
+        if (isGuestSession()) {
+            return null;
+        }
+        String email = resolveSessionEmail();
+        if (GuestSessionHelper.isGuestEmail(email)) {
+            return null;
+        }
+        int at = email.indexOf('@');
+        if (at <= 0) {
+            return null;
+        }
+        String local = email.substring(0, at);
+        int dot = local.indexOf('.');
+        if (dot > 0) {
+            local = local.substring(0, dot);
+        }
+        if (local.isEmpty()) {
+            return null;
+        }
+        return local.substring(0, 1).toUpperCase() + local.substring(1);
+    }
+
+    @Override
+    public void onLandingLoginRequested() {
+        if (isGuestSession()) {
+            requestAuthForLandingAction(null);
+            return;
+        }
+        continueLandingAction(LandingAction.ORDER);
+    }
+
+    @Override
+    public void onLandingProtectedAction(@NonNull LandingAction action) {
+        if (action == LandingAction.OPERATOR) {
+            callOperatorWithKyivFallback();
+            return;
+        }
+        if (action == LandingAction.DRIVER) {
+            openDriverScreen();
+            return;
+        }
+        if (action == LandingAction.LANGUAGE) {
+            showLandingLanguagePicker();
+            return;
+        }
+        if (isGuestSession()) {
+            requestAuthForLandingAction(action);
+            return;
+        }
+        continueLandingAction(action);
+    }
+
+    @Override
+    public void onLandingOperatorCall() {
+        callOperatorWithKyivFallback();
+    }
+
+    @Override
+    public void onLandingExitRequested() {
+        hideBlockingOverlay();
+        finishAffinity();
+    }
+
+    private void hideBlockingOverlay() {
+        View overlay = findViewById(R.id.overlay_view);
+        if (overlay != null) {
+            overlay.setVisibility(View.GONE);
+            overlay.setOnClickListener(null);
+        }
     }
 }

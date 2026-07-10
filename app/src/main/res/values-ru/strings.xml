@@ -973,4 +973,29 @@
     <string name="support">Поддержка</string>
     <string name="start">Старт</string>
 
+    <string name="landing_greeting">Добро пожаловать!</string>
+    <string name="landing_greeting_subtitle_guest">Заказывайте такси удобно — войдите или выберите действие ниже</string>
+    <string name="landing_greeting_named">Рады видеть вас, %1$s!</string>
+    <string name="landing_greeting_back">Рады видеть вас снова!</string>
+    <string name="landing_greeting_subtitle_user">Куда поедем сегодня?</string>
+    <string name="landing_quick_order">Заказать такси</string>
+    <string name="landing_login_title">Войти в аккаунт</string>
+    <string name="landing_login_subtitle">Сохраняйте адреса и оплату в одном месте</string>
+    <string name="landing_login_button">Войти</string>
+    <string name="landing_services_title">Или выберите другое</string>
+    <string name="landing_action_order">Заказ</string>
+    <string name="landing_action_calculation">Просчёт</string>
+    <string name="landing_action_city">Выбор города</string>
+    <string name="landing_action_payment">Оплата</string>
+    <string name="landing_action_language">Язык</string>
+    <string name="landing_action_operator">Звонок оператору</string>
+    <string name="landing_action_driver">Работа водителем</string>
+    <string name="landing_action_exit">Выход</string>
+    <string name="landing_language_dialog_title">Смена языка</string>
+    <string name="landing_language_dialog_subtitle">Выберите язык интерфейса</string>
+    <string name="landing_language_label_en">English</string>
+    <string name="landing_language_label_ru">Русский</string>
+    <string name="landing_language_label_uk">Українська</string>
+    <string name="landing_auth_required">Для этого действия нужен вход в аккаунт</string>
+
 </resources>

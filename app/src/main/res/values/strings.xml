@@ -976,4 +976,29 @@
     <string name="support">Підтримка</string>
     <string name="start">Старт</string>
 
+    <string name="landing_greeting">Вітаємо!</string>
+    <string name="landing_greeting_subtitle_guest">Замовляйте таксі зручно — увійдіть або оберіть дію нижче</string>
+    <string name="landing_greeting_named">Раді бачити вас, %1$s!</string>
+    <string name="landing_greeting_back">Раді бачити вас знову!</string>
+    <string name="landing_greeting_subtitle_user">Куди поїдемо сьогодні?</string>
+    <string name="landing_quick_order">Замовити таксі</string>
+    <string name="landing_login_title">Увійти в акаунт</string>
+    <string name="landing_login_subtitle">Зберігайте адреси та оплату в одному місці</string>
+    <string name="landing_login_button">Увійти</string>
+    <string name="landing_services_title">Або оберіть інше</string>
+    <string name="landing_action_order">Заказ</string>
+    <string name="landing_action_calculation">Прорахунок</string>
+    <string name="landing_action_city">Вибір міста</string>
+    <string name="landing_action_payment">Оплата</string>
+    <string name="landing_action_language">Мова</string>
+    <string name="landing_action_operator">Дзвінок оператору</string>
+    <string name="landing_action_driver">Робота водієм</string>
+    <string name="landing_action_exit">Вихід</string>
+    <string name="landing_language_dialog_title">Зміна мови</string>
+    <string name="landing_language_dialog_subtitle">Оберіть мову інтерфейсу</string>
+    <string name="landing_language_label_en">English</string>
+    <string name="landing_language_label_ru">Русский</string>
+    <string name="landing_language_label_uk">Українська</string>
+    <string name="landing_auth_required">Для цієї дії потрібен вхід у обліковий запис</string>
+
 </resources>
