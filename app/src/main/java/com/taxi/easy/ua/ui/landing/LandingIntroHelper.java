@@ -16,4 +16,13 @@ public final class LandingIntroHelper {
     public static boolean shouldShowIntroAfterUpdate(int storedVersionCode, int currentVersionCode) {
         return storedVersionCode < currentVersionCode;
     }
+
+    /**
+     * Холодный старт Activity: лендинг сразу, без ожидания newUser / onResume.
+     *
+     * @param savedInstanceStateNull {@code savedInstanceState == null} в {@code onCreate}
+     */
+    public static boolean shouldOpenLandingOnColdStart(boolean savedInstanceStateNull) {
+        return savedInstanceStateNull;
+    }
 }

@@ -26,4 +26,10 @@ public class LandingIntroHelperTest {
     public void skipsWhenStoredAheadOfCurrent() {
         assertFalse(LandingIntroHelper.shouldShowIntroAfterUpdate(1200, 1126));
     }
+
+    @Test
+    public void opensLandingOnColdStart() {
+        assertTrue(LandingIntroHelper.shouldOpenLandingOnColdStart(true));
+        assertFalse(LandingIntroHelper.shouldOpenLandingOnColdStart(false));
+    }
 }

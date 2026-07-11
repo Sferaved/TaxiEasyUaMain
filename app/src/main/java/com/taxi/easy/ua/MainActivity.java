@@ -172,6 +172,7 @@ import com.taxi.easy.ua.ui.landing.LandingIntroHelper;
 import com.taxi.easy.ua.ui.landing.LandingLanguageHelper;
 import com.taxi.easy.ua.ui.landing.LandingNavigationHelper;
 import com.taxi.easy.ua.utils.auth.GuestSessionHelper;
+import com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper;
 
 
 public class MainActivity extends AppCompatActivity implements LandingFragment.LandingHost {
@@ -361,7 +362,14 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
         DrawerLayout drawer = binding.drawerLayout;
         navigationView = binding.navView;
         navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        flushPendingLandingIfNeeded();
+        // Лендинг — стартовая страница: сбросить стек/флаги заказа, не восстанавливать finish.
+        if (LandingIntroHelper.shouldOpenLandingOnColdStart(savedInstanceState == null)) {
+            EarlyOrderNavigationHelper.clearSubmitState();
+            navController.setGraph(R.navigation.mobile_navigation);
+            showLandingPage();
+        } else {
+            flushPendingLandingIfNeeded();
+        }
 
         // Добавляем слушатель изменения направления
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
@@ -371,6 +379,7 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
         });
 
         mAppBarConfiguration = new AppBarConfiguration.Builder(
+                R.id.nav_landing,
                 R.id.nav_visicom,
                 R.id.nav_cancel,
                 R.id.nav_about,
@@ -3773,14 +3782,16 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
         pendingShowLanding = false;
         applyLandingEntryRestrictions();
         suppressGuestNavGuard = true;
-        if (navController.getCurrentDestination() == null
-                || navController.getCurrentDestination().getId() != R.id.nav_landing) {
+        NavDestination current = navController.getCurrentDestination();
+        if (current == null || current.getId() != R.id.nav_landing) {
             navController.navigate(R.id.nav_landing, null, new NavOptions.Builder()
+                    .setPopUpTo(navController.getGraph().getId(), true)
                     .setLaunchSingleTop(true)
                     .build());
         }
         suppressGuestNavGuard = false;
         markLandingIntroShownForCurrentVersion();
+        updateShellForDestination(R.id.nav_landing);
     }
 
     private void updateShellForDestination(int destinationId) {
@@ -3847,8 +3858,6 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
             if (pendingLandingAction != null
                     && LandingNavigationHelper.shouldPromptCityBeforeAction(pendingLandingAction)) {
                 launchCityCheckActivity();
-            } else {
-                leaveLandingAfterAuthIfNeeded();
             }
             return;
         }
@@ -3858,7 +3867,9 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
             navigateLandingAction(action);
             return;
         }
-        leaveLandingAfterAuthIfNeeded();
+        if (LandingNavigationHelper.shouldAutoLeaveLandingToMain(null)) {
+            safeNavigate(R.id.nav_visicom);
+        }
     }
 
     private void continueLandingAction(@NonNull LandingAction action) {
@@ -3902,39 +3913,10 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
         setCityAppbar();
     }
 
-    private void leaveLandingIfShowing() {
-        if (navController == null) {
-            return;
-        }
-        NavDestination current = navController.getCurrentDestination();
-        if (current != null && current.getId() == R.id.nav_landing) {
-            suppressGuestNavGuard = true;
-            navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                    .setLaunchSingleTop(true)
-                    .build());
-            suppressGuestNavGuard = false;
-        }
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().show();
-        }
-        binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
-        hideBlockingOverlay();
-    }
-
     private void launchCityCheckActivity() {
         Intent intent = new Intent(this, CityCheckActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(intent);
-    }
-
-    private void leaveLandingAfterAuthIfNeeded() {
-        if (navController == null) {
-            return;
-        }
-        NavDestination current = navController.getCurrentDestination();
-        if (current != null && current.getId() == R.id.nav_landing) {
-            safeNavigate(R.id.nav_visicom);
-        }
     }
 
     private boolean isCitySelectionPending() {

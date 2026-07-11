@@ -42,4 +42,12 @@ public final class LandingNavigationHelper {
     public static boolean shouldLaunchCityCheckAfterAuth(@Nullable LandingAction pendingAction) {
         return shouldPromptCityBeforeAction(pendingAction);
     }
+
+    /**
+     * Лендинг — стартовая страница: без явного действия пользователя
+     * не уходить на экран заказа (visicom) после auth / onResume.
+     */
+    public static boolean shouldAutoLeaveLandingToMain(@Nullable LandingAction pendingAction) {
+        return false;
+    }
 }

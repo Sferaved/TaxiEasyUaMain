@@ -44,4 +44,11 @@ public class LandingNavigationHelperTest {
         assertTrue(LandingNavigationHelper.appliesDefaultCityInsteadOfPicker(LandingAction.LANGUAGE));
         assertFalse(LandingNavigationHelper.appliesDefaultCityInsteadOfPicker(LandingAction.ORDER));
     }
+
+    @Test
+    public void shouldAutoLeaveLandingToMain_never_landingIsHome() {
+        assertFalse(LandingNavigationHelper.shouldAutoLeaveLandingToMain(null));
+        assertFalse(LandingNavigationHelper.shouldAutoLeaveLandingToMain(LandingAction.ORDER));
+        assertFalse(LandingNavigationHelper.shouldAutoLeaveLandingToMain(LandingAction.CITY));
+    }
 }
