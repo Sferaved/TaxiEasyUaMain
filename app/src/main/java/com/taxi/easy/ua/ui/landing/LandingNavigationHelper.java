@@ -44,10 +44,11 @@ public final class LandingNavigationHelper {
     }
 
     /**
-     * Лендинг — стартовая страница: без явного действия пользователя
-     * не уходить на экран заказа (visicom) после auth / onResume.
+     * Авторизованный пользователь: лендинг как сплеш — уходим на заказ,
+     * если нет отложенного действия. Гость остаётся на лендинге.
      */
-    public static boolean shouldAutoLeaveLandingToMain(@Nullable LandingAction pendingAction) {
-        return false;
+    public static boolean shouldAutoLeaveLandingToMain(boolean isGuest,
+                                                       @Nullable LandingAction pendingAction) {
+        return !isGuest && pendingAction == null;
     }
 }

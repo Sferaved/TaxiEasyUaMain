@@ -1081,10 +1081,11 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
         sharedPreferencesHelperMain.saveValue("gps_upd", gps_upd);
 
         FinishSeparateFragment.notifyPaymentDeclinedIfNeeded(this);
-        tryFulfillPendingLandingAction();
         flushPendingLandingIfNeeded();
         ensureLandingIntroAfterUpdate();
         ensureGuestLandingOnResume();
+        // После показа лендинга: авторизованный уходит на заказ (сплеш), гость остаётся.
+        tryFulfillPendingLandingAction();
     }
 
     @Override
@@ -3858,6 +3859,12 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
             if (pendingLandingAction != null
                     && LandingNavigationHelper.shouldPromptCityBeforeAction(pendingLandingAction)) {
                 launchCityCheckActivity();
+                return;
+            }
+            // Свой пользователь без города: выбор города, затем заказ (не зависаем на лендинге).
+            if (LandingNavigationHelper.shouldAutoLeaveLandingToMain(false, null)
+                    && isOnLandingDestination()) {
+                launchCityCheckActivity();
             }
             return;
         }
@@ -3867,9 +3874,18 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
             navigateLandingAction(action);
             return;
         }
-        if (LandingNavigationHelper.shouldAutoLeaveLandingToMain(null)) {
+        if (LandingNavigationHelper.shouldAutoLeaveLandingToMain(false, null)
+                && isOnLandingDestination()) {
             safeNavigate(R.id.nav_visicom);
         }
+    }
+
+    private boolean isOnLandingDestination() {
+        if (navController == null) {
+            return false;
+        }
+        NavDestination current = navController.getCurrentDestination();
+        return current != null && current.getId() == R.id.nav_landing;
     }
 
     private void continueLandingAction(@NonNull LandingAction action) {

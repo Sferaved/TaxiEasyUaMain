@@ -46,9 +46,11 @@ public class LandingNavigationHelperTest {
     }
 
     @Test
-    public void shouldAutoLeaveLandingToMain_never_landingIsHome() {
-        assertFalse(LandingNavigationHelper.shouldAutoLeaveLandingToMain(null));
-        assertFalse(LandingNavigationHelper.shouldAutoLeaveLandingToMain(LandingAction.ORDER));
-        assertFalse(LandingNavigationHelper.shouldAutoLeaveLandingToMain(LandingAction.CITY));
+    public void shouldAutoLeaveLandingToMain_guestStays_loggedInLeavesWithoutPending() {
+        assertFalse(LandingNavigationHelper.shouldAutoLeaveLandingToMain(true, null));
+        assertFalse(LandingNavigationHelper.shouldAutoLeaveLandingToMain(true, LandingAction.ORDER));
+        assertTrue(LandingNavigationHelper.shouldAutoLeaveLandingToMain(false, null));
+        assertFalse(LandingNavigationHelper.shouldAutoLeaveLandingToMain(false, LandingAction.ORDER));
+        assertFalse(LandingNavigationHelper.shouldAutoLeaveLandingToMain(false, LandingAction.CITY));
     }
 }
