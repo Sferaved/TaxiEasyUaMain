@@ -1,4 +1,4 @@
-﻿package com.taxi.easy.ua.utils.payment;
+package com.taxi.easy.ua.utils.payment;
 
 import androidx.annotation.Nullable;
 

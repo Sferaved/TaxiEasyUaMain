@@ -1,4 +1,4 @@
-﻿package com.taxi.easy.ua.ui.wfp.purchase;
+package com.taxi.easy.ua.ui.wfp.purchase;
 
 import androidx.annotation.Nullable;
 

@@ -1,4 +1,4 @@
-﻿package com.taxi.easy.ua.utils.bottom_sheet;
+package com.taxi.easy.ua.utils.bottom_sheet;
 
 import static android.content.Context.MODE_PRIVATE;
 import static android.view.View.VISIBLE;
