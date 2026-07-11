@@ -17,4 +17,17 @@ public final class GuestSessionHelper {
         String trimmed = email.trim();
         return trimmed.isEmpty() || "email".equals(trimmed) || "no_email".equals(trimmed);
     }
+
+    /**
+     * Гость только если нет Firebase-сессии и нет реального email в БД/prefs.
+     * Phone Auth часто даёт {@code getEmail() == null} — это всё равно вход.
+     */
+    public static boolean isGuestSession(boolean hasFirebaseUser,
+                                         @Nullable String dbEmail,
+                                         @Nullable String prefsEmail) {
+        if (hasFirebaseUser) {
+            return false;
+        }
+        return isGuestEmail(dbEmail) && isGuestEmail(prefsEmail);
+    }
 }

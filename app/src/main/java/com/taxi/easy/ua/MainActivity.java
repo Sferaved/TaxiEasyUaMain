@@ -362,11 +362,16 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
         DrawerLayout drawer = binding.drawerLayout;
         navigationView = binding.navView;
         navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        // Лендинг — стартовая страница: сбросить стек/флаги заказа, не восстанавливать finish.
-        if (LandingIntroHelper.shouldOpenLandingOnColdStart(savedInstanceState == null)) {
+        // Холодный старт: гость → лендинг; авторизованный → сразу заказ (без лендинга).
+        if (savedInstanceState == null) {
             EarlyOrderNavigationHelper.clearSubmitState();
             navController.setGraph(R.navigation.mobile_navigation);
-            showLandingPage();
+            if (LandingIntroHelper.shouldOpenLandingOnColdStart(true, isGuestSession())) {
+                showLandingPage();
+            } else if (LandingIntroHelper.shouldEnterOrderOnColdStart(true, isGuestSession())) {
+                markLandingIntroShownForCurrentVersion();
+                openSignedInHome();
+            }
         } else {
             flushPendingLandingIfNeeded();
         }
@@ -481,8 +486,10 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
                     runOnUiThread(() -> {
                         if (NetworkUtils.isNetworkAvailable(MainActivity.this)) {
                             newUser();
-                        } else {
+                        } else if (isGuestSession()) {
                             showLandingPage();
+                        } else {
+                            openSignedInHome();
                         }
                     });
                 } catch (MalformedURLException | JSONException | InterruptedException e) {
@@ -2467,7 +2474,8 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
             applyLandingEntryRestrictions();
             showLandingPage();
         } else {
-            showLandingPage();
+            // Авторизованный: без лендинга — сразу заказ (как до гостевой статики).
+            openSignedInHome();
 
             findUserFromServer(userEmail, findUser -> {
                 // Use the boolean result here
@@ -3694,18 +3702,25 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
     // --- Гостевая статическая страница (лендинг) ---
 
     public boolean isGuestSession() {
+        boolean hasFirebaseUser = false;
         try {
-            FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-            if (firebaseUser != null) {
-                String firebaseEmail = firebaseUser.getEmail();
-                if (!GuestSessionHelper.isGuestEmail(firebaseEmail)) {
-                    return false;
-                }
-            }
-            return GuestSessionHelper.isGuestEmail(logCursor(TABLE_USER_INFO).get(3));
-        } catch (Exception e) {
-            return true;
+            hasFirebaseUser = FirebaseAuth.getInstance().getCurrentUser() != null;
+        } catch (Exception ignored) {
+            // ignore
         }
+        String dbEmail = null;
+        try {
+            dbEmail = logCursor(TABLE_USER_INFO).get(3);
+        } catch (Exception ignored) {
+            // БД ещё не готова
+        }
+        String prefsEmail = null;
+        try {
+            prefsEmail = (String) sharedPreferencesHelperMain.getValue("userEmail", "no_email");
+        } catch (Exception ignored) {
+            // ignore
+        }
+        return GuestSessionHelper.isGuestSession(hasFirebaseUser, dbEmail, prefsEmail);
     }
 
     private void applyLandingEntryRestrictions() {
@@ -3727,8 +3742,8 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
     }
 
     /**
-     * После обновления с магазина (без очистки данных) один раз показать лендинг
-     * и гостю, и авторизованному — иначе остаётся старый экран заказа.
+     * После обновления один раз показать лендинг только гостю.
+     * Авторизованному лендинг не нужен — сразу заказ.
      */
     private void ensureLandingIntroAfterUpdate() {
         if (isWaitingForVerification) {
@@ -3738,10 +3753,32 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
             return;
         }
         if (!LandingIntroHelper.shouldShowIntroAfterUpdate(
-                readLandingIntroVersionCode(), BuildConfig.VERSION_CODE)) {
+                readLandingIntroVersionCode(), BuildConfig.VERSION_CODE, isGuestSession())) {
+            if (!isGuestSession()) {
+                markLandingIntroShownForCurrentVersion();
+            }
             return;
         }
         showLandingPage();
+    }
+
+    /** Экран заказа для авторизованного; при отсутствии города — выбор города. */
+    private void openSignedInHome() {
+        markLandingIntroShownForCurrentVersion();
+        if (isCitySelectionPending()) {
+            launchCityCheckActivity();
+            return;
+        }
+        if (navController == null) {
+            return;
+        }
+        suppressGuestNavGuard = true;
+        navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                .setLaunchSingleTop(true)
+                .setPopUpTo(R.id.nav_landing, true)
+                .build());
+        suppressGuestNavGuard = false;
+        updateShellForDestination(R.id.nav_visicom);
     }
 
     private int readLandingIntroVersionCode() {
@@ -3876,7 +3913,7 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
         }
         if (LandingNavigationHelper.shouldAutoLeaveLandingToMain(false, null)
                 && isOnLandingDestination()) {
-            safeNavigate(R.id.nav_visicom);
+            openSignedInHome();
         }
     }
 

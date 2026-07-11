@@ -44,8 +44,8 @@ public final class LandingNavigationHelper {
     }
 
     /**
-     * Авторизованный пользователь: лендинг как сплеш — уходим на заказ,
-     * если нет отложенного действия. Гость остаётся на лендинге.
+     * Если авторизованный всё же оказался на лендинге — уходим на заказ
+     * (без отложенного действия). Гость остаётся.
      */
     public static boolean shouldAutoLeaveLandingToMain(boolean isGuest,
                                                        @Nullable LandingAction pendingAction) {

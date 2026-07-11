@@ -8,28 +8,33 @@ import org.junit.Test;
 public class LandingIntroHelperTest {
 
     @Test
-    public void showsWhenNeverShown() {
-        assertTrue(LandingIntroHelper.shouldShowIntroAfterUpdate(0, 1126));
+    public void showsWhenNeverShown_guestOnly() {
+        assertTrue(LandingIntroHelper.shouldShowIntroAfterUpdate(0, 1126, true));
+        assertFalse(LandingIntroHelper.shouldShowIntroAfterUpdate(0, 1126, false));
     }
 
     @Test
-    public void showsWhenAppUpdated() {
-        assertTrue(LandingIntroHelper.shouldShowIntroAfterUpdate(1125, 1126));
+    public void showsWhenAppUpdated_guestOnly() {
+        assertTrue(LandingIntroHelper.shouldShowIntroAfterUpdate(1125, 1126, true));
+        assertFalse(LandingIntroHelper.shouldShowIntroAfterUpdate(1125, 1126, false));
     }
 
     @Test
     public void skipsWhenAlreadyShownForCurrentVersion() {
-        assertFalse(LandingIntroHelper.shouldShowIntroAfterUpdate(1126, 1126));
+        assertFalse(LandingIntroHelper.shouldShowIntroAfterUpdate(1126, 1126, true));
     }
 
     @Test
     public void skipsWhenStoredAheadOfCurrent() {
-        assertFalse(LandingIntroHelper.shouldShowIntroAfterUpdate(1200, 1126));
+        assertFalse(LandingIntroHelper.shouldShowIntroAfterUpdate(1200, 1126, true));
     }
 
     @Test
-    public void opensLandingOnColdStart() {
-        assertTrue(LandingIntroHelper.shouldOpenLandingOnColdStart(true));
-        assertFalse(LandingIntroHelper.shouldOpenLandingOnColdStart(false));
+    public void opensLandingOnColdStart_guestOnly() {
+        assertTrue(LandingIntroHelper.shouldOpenLandingOnColdStart(true, true));
+        assertFalse(LandingIntroHelper.shouldOpenLandingOnColdStart(true, false));
+        assertFalse(LandingIntroHelper.shouldOpenLandingOnColdStart(false, true));
+        assertTrue(LandingIntroHelper.shouldEnterOrderOnColdStart(true, false));
+        assertFalse(LandingIntroHelper.shouldEnterOrderOnColdStart(true, true));
     }
 }
