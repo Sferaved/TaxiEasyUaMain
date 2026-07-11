@@ -7,6 +7,8 @@ alwaysApply: true
 
 For any PAS Android app (PAS_1, PAS_2, PAS_3, PAS_4) in this family, **never** commit version bumps by calling `git_commit.ps1` or raw `git commit` directly.
 
+**Перед запуском** — явное подтверждение пользователя на публикацию в Google Play (см. `pas-market-release-confirm.mdc`). Фикс бага сам по себе **не** даёт права на `run_version_update.bat`.
+
 Always use the project script from the **PAS project root**:
 
 ```bat
