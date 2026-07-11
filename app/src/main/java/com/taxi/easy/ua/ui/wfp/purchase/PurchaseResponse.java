@@ -1,6 +1,10 @@
-package com.taxi.easy.ua.ui.wfp.purchase;
+﻿package com.taxi.easy.ua.ui.wfp.purchase;
 
+import androidx.annotation.Nullable;
+
+import com.google.gson.JsonElement;
 import com.google.gson.annotations.SerializedName;
+import com.taxi.easy.ua.utils.payment.WalletAddCostHttpRecreateHelper;
 
 public class PurchaseResponse {
     @SerializedName("merchantAccount")
@@ -8,6 +12,19 @@ public class PurchaseResponse {
 
     @SerializedName("orderReference")
     private String orderReference;
+
+    /** РќРѕРІС‹Р№ uid РїРѕСЃР»Рµ РїРµСЂРµСЃРѕР·РґР°РЅРёСЏ Р·Р°РєР°Р·Р° РїСЂРё РґРѕРїР»Р°С‚Рµ (startAddCostSimpleCashless). */
+    @Nullable
+    @SerializedName("uid")
+    private String uid;
+
+    @Nullable
+    @SerializedName("client_cost")
+    private JsonElement clientCost;
+
+    @Nullable
+    @SerializedName("web_cost")
+    private JsonElement webCost;
 
     @SerializedName("merchantSignature")
     private String merchantSignature;
@@ -63,7 +80,7 @@ public class PurchaseResponse {
     @SerializedName("paymentSystem")
     private String paymentSystem;
 
-    // геттеры и сеттеры
+    // РіРµС‚С‚РµСЂС‹ Рё СЃРµС‚С‚РµСЂС‹
 
     public String getMerchantAccount() {
         return merchantAccount;
@@ -127,6 +144,20 @@ public class PurchaseResponse {
 
     public String getTransactionStatus() {
         return transactionStatus;
+    }
+
+    @Nullable
+    public String getUid() {
+        return uid;
+    }
+
+    public boolean hasRecreatedOrder() {
+        return WalletAddCostHttpRecreateHelper.hasRecreatedOrder(uid);
+    }
+
+    @Nullable
+    public String resolveDisplayCostGrivna() {
+        return WalletAddCostHttpRecreateHelper.resolveDisplayCostGrivna(clientCost, webCost);
     }
 
     public String getReason() {
