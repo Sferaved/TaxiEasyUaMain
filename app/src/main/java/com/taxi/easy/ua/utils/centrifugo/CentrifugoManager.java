@@ -431,25 +431,40 @@ public class CentrifugoManager {
                     activity.runOnUiThread(() -> {
                         try {
                             Log.d(TAG, "🟢 Updating ViewModel on UI thread");
-                            viewModel.updateUid(orderUid);
-                            viewModel.updatePaySystemStatus(paySystemStatus);
+                            boolean walletHold = PaymentTypeHelper.usesWalletHold(paySystemStatus);
+                            boolean addCostInFlight = ExecutionStatusViewModel.isAddCostInFlightPref();
+                            String pendingAddCost = ExecutionStatusViewModel.getPendingAddCostAmountPref();
+                            boolean treatAsSurchargeComplete = orderCost != null
+                                    && !orderCost.isEmpty()
+                                    && !"0".equals(orderCost)
+                                    && FinishCostReconcileHelper
+                                    .shouldTreatOrderUidNewCostAsWalletSurchargeComplete(
+                                            walletHold, addCostInFlight, pendingAddCost);
+                            boolean clearAddCostGate = treatAsSurchargeComplete
+                                    && walletHold
+                                    && (addCostInFlight
+                                    || (pendingAddCost != null
+                                    && !pendingAddCost.trim().isEmpty()
+                                    && !"0".equals(pendingAddCost.trim())));
+                            // Снять addCostInFlight до updateUid, иначе statusOrder игнорируется
+                            // (shouldIgnoreStatusPollingUi) и экран остаётся без реального статуса.
+                            if (clearAddCostGate) {
+                                ExecutionStatusViewModel.setAddCostInFlightPref(false);
+                                ExecutionStatusViewModel.clearPendingAddCostAmountPref();
+                                ExecutionStatusViewModel.clearWalletAddCostFloorGrivna();
+                            }
                             if (orderCost != null && !orderCost.isEmpty() && !"0".equals(orderCost)) {
                                 viewModel.persistDisplayCostGrivna(orderCost);
                                 sharedPreferencesHelperMain.saveValue("order_cost", orderCost);
-                                boolean walletHold = PaymentTypeHelper.usesWalletHold(paySystemStatus);
-                                boolean addCostInFlight = ExecutionStatusViewModel.isAddCostInFlightPref();
-                                String pendingAddCost = ExecutionStatusViewModel.getPendingAddCostAmountPref();
-                                if (FinishCostReconcileHelper
-                                        .shouldTreatOrderUidNewCostAsWalletSurchargeComplete(
-                                                walletHold, addCostInFlight, pendingAddCost)) {
-                                    viewModel.setFinishAbsoluteCostGrivna(orderCost);
-                                    ExecutionStatusViewModel.markWalletAddCostApplied(orderUid);
-                                    if (walletHold && (addCostInFlight || pendingAddCost != null)) {
-                                        ExecutionStatusViewModel.setAddCostInFlightPref(false);
-                                        ExecutionStatusViewModel.clearPendingAddCostAmountPref();
-                                        ExecutionStatusViewModel.clearWalletAddCostFloorGrivna();
-                                        viewModel.setCancelStatus(true);
-                                    }
+                            }
+                            viewModel.updateUid(orderUid);
+                            viewModel.updatePaySystemStatus(paySystemStatus);
+                            if (treatAsSurchargeComplete) {
+                                // mark до setFinishAbsolute: observer проверяет flag по текущему uid
+                                ExecutionStatusViewModel.markWalletAddCostApplied(orderUid);
+                                viewModel.setFinishAbsoluteCostGrivna(orderCost);
+                                if (clearAddCostGate) {
+                                    viewModel.setCancelStatus(true);
                                 }
                             }
                             EarlyOrderNavigationHelper.tryEarlyNavigateToFinish(

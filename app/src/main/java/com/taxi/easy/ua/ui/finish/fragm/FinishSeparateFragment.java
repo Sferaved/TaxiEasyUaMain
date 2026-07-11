@@ -3202,7 +3202,9 @@ public class FinishSeparateFragment extends Fragment {
             if (!FinishCostReconcileHelper.shouldApplyFinishAbsoluteCostObserver(
                     PaymentTypeHelper.usesWalletHold(pay_method),
                     currentUid,
-                    ExecutionStatusViewModel.isWalletAddCostAppliedForUid(currentUid))) {
+                    ExecutionStatusViewModel.isWalletAddCostAppliedForUid(currentUid),
+                    ExecutionStatusViewModel.isAddCostInFlightPref()
+                            || ExecutionStatusViewModel.getPendingAddCostAmountPref() != null)) {
                 return;
             }
             Logger.d(context, TAG, "finishAbsoluteCost observe: " + absoluteCost);

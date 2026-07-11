@@ -92,7 +92,8 @@ public final class FinishCostReconcileHelper {
     }
 
     /**
-     * Observer {@code finishAbsoluteCostGrivna}: wallet-hold ждёт подтверждения по uid;
+     * Observer {@code finishAbsoluteCostGrivna}: wallet-hold ждёт подтверждения по uid
+     * или активного сценария доплаты (иначе гонка mark/set — Mantis #30);
      * готівка применяет итог сразу из HTTP-ответа пересоздания заказа.
      */
     public static boolean shouldApplyFinishAbsoluteCostObserver(
@@ -100,7 +101,20 @@ public final class FinishCostReconcileHelper {
             @Nullable String currentUid,
             boolean walletAddCostAppliedForCurrentUid
     ) {
+        return shouldApplyFinishAbsoluteCostObserver(
+                walletHoldPayment, currentUid, walletAddCostAppliedForCurrentUid, false);
+    }
+
+    public static boolean shouldApplyFinishAbsoluteCostObserver(
+            boolean walletHoldPayment,
+            @Nullable String currentUid,
+            boolean walletAddCostAppliedForCurrentUid,
+            boolean addCostInFlightOrJustCompleted
+    ) {
         if (!walletHoldPayment) {
+            return true;
+        }
+        if (addCostInFlightOrJustCompleted) {
             return true;
         }
         return currentUid == null || walletAddCostAppliedForCurrentUid;

@@ -1,10 +1,11 @@
 package com.taxi.easy.ua.utils.worker.utils;
 
+import android.graphics.Color;
 import android.os.Bundle;
+import android.view.Window;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
@@ -15,14 +16,11 @@ public class DialogHostActivity extends AppCompatActivity {
     public static MyBottomSheetErrorFragment bottomSheetDialogFragment;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
+        supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         super.onCreate(savedInstanceState);
-        // Set the content view to the new layout
         setContentView(R.layout.activity_dialog_host);
-
-
-        getWindow().getDecorView().setBackgroundColor(
-                ContextCompat.getColor(this, R.color.background_color_new)
-        );
+        getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        getWindow().getDecorView().setBackgroundColor(Color.TRANSPARENT);
 
         Logger.d(this, TAG, "DialogHostActivity запущена");
 
@@ -30,13 +28,11 @@ public class DialogHostActivity extends AppCompatActivity {
         bottomSheetDialogFragment =
                 new MyBottomSheetErrorFragment(sentNotifyMessage);
 
-        // Добавляем колбэк закрытия
         bottomSheetDialogFragment.setOnDismissListener(() -> {
             Logger.d(this, TAG, "BottomSheet закрыт — завершаем Activity");
             finish();
         });
 
-        // Показываем BottomSheet
         bottomSheetDialogFragment.show(getSupportFragmentManager(), "PushDialog");
     }
 }

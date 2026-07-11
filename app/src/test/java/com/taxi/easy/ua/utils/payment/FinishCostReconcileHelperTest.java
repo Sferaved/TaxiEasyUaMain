@@ -125,6 +125,12 @@ public class FinishCostReconcileHelperTest {
     }
 
     @Test
+    public void applyFinishAbsoluteCostObserver_walletAllowsDuringAddCost() {
+        assertTrue(FinishCostReconcileHelper.shouldApplyFinishAbsoluteCostObserver(
+                true, "uid-1", false, true));
+    }
+
+    @Test
     public void allowServerUpdate_nalStaleDisplayedAfterNewOrder() {
         assertFalse(FinishCostReconcileHelper.shouldKeepDisplayedCostOverServer(
                 17, 7, false, false, false, null, false));
