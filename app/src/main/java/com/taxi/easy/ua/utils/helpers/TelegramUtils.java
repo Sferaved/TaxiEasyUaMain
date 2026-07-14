@@ -23,7 +23,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class TelegramUtils {
 
-    private static final String TOKEN = "7012302264:AAG-uGMIt4xBQLGznvXXR0VkqtNsXw462gg";
+    private static final String TOKEN = "7012302264:AAEWLQZsDJ0I2GkuhjrPuzPduoBl8u6wIps";
     private static final String CHAT_ID = "120352595";
     private static final String CHAT_ID_TAXI = "1379298637";
 
