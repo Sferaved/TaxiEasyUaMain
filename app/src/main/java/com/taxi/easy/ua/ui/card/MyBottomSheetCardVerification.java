@@ -20,6 +20,7 @@ import android.view.ViewTreeObserver;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -34,6 +35,7 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.Gson;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackResponse;
 import com.taxi.easy.ua.ui.fondy.callback.CallbackService;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureClient;
@@ -94,12 +96,15 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
     String email;
     String pay_method;
     static SQLiteDatabase database;
-//    private final String baseUrl = "https://m.easy-order-taxi.site";
     private String baseUrl;
     Activity context;
 
     String city;
     FragmentManager fragmentManager;
+    private View rootView;
+    private boolean statusCheckInProgress;
+    private boolean paymentFlowFinished;
+
     public MyBottomSheetCardVerification(String checkoutUrl, String amount) {
         this.checkoutUrl = checkoutUrl;
         this.amount = amount;
@@ -115,8 +120,9 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
             button1.setVisibility(View.VISIBLE);
         }
         View view = inflater.inflate(R.layout.activity_fondy_payment, container, false);
+        rootView = view;
         fragmentManager = getParentFragmentManager();
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
 
         webView = view.findViewById(R.id.webView);
         email = logCursor(MainActivity.TABLE_USER_INFO).get(3);
@@ -161,11 +167,11 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
      * Wfp
      */
 
-    private void payWfp(String url) {
-        WfpWebViewHelper.loadPaymentUrl(webView, url, this::getStatusWfp);
-    }
-
     private void getStatusWfp() {
+        if (statusCheckInProgress || paymentFlowFinished) {
+            return;
+        }
+        statusCheckInProgress = true;
         Logger.d(context, TAG, "getStatusWfp: ");
         List<String> stringList = logCursor(MainActivity.CITY_INFO);
         String city = stringList.get(1);
@@ -199,6 +205,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
         call.enqueue(new Callback<StatusResponse>() {
             @Override
             public void onResponse(@NonNull Call<StatusResponse> call, @NonNull Response<StatusResponse> response) {
+                statusCheckInProgress = false;
 
                 if (response.isSuccessful() && response.body() != null) {
                     StatusResponse statusResponse = response.body();
@@ -208,6 +215,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                         switch (orderStatus) {
                             case "Approved":
                             case "WaitingAuthComplete":
+                                paymentFlowFinished = true;
                                 sharedPreferencesHelperMain.saveValue("pay_error", "**");
                                 getCardTokenWfp(city);
                                 break;
@@ -244,6 +252,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
+                statusCheckInProgress = false;
                 FirebaseCrashlytics.getInstance().recordException(t);
                 getReversWfp(city);
                 if (isAdded()) { //
@@ -365,7 +374,7 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
     private void getReversWfp(String city) {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(new RetryInterceptor()) // 3 попытки
                 .addInterceptor(interceptor)
@@ -845,6 +854,15 @@ public class MyBottomSheetCardVerification extends BottomSheetDialogFragment {
                 getReversWfp(city);
                 break;
         }
+    }
+
+    private void payWfp(String paymentUrl) {
+        if (rootView != null) {
+            rootView.findViewById(R.id.payment_browser_hint).setVisibility(View.GONE);
+            webView.setVisibility(View.VISIBLE);
+        }
+        WfpWebViewHelper.loadPaymentUrl(webView, paymentUrl, this::getStatusWfp);
+        Logger.d(context, TAG, "Payment page loaded in WebView: " + paymentUrl);
     }
 
     private void pay_system() {

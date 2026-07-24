@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.ui.fondy.payment;
 
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
+
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import androidx.annotation.NonNull;
@@ -31,7 +33,7 @@ public class RequestData {
     private String required_rectoken; // Имя поля должно соответствовать JSON-запросу
     @SerializedName("server_callback_url")
     private String server_callback_url; // Имя поля должно соответствовать JSON-запросу
-    String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+    String baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
 
     public RequestData(
             String orderId,
@@ -48,8 +50,7 @@ public class RequestData {
         this.preauth = "Y";
         this.required_rectoken = "Y";
         this.sender_email = email;
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
-//        this.server_callback_url = "https://m.easy-order-taxi.site/server-callback";
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         this.server_callback_url = baseUrl + "/server-callback";
 
         this.signature = merchantPassword;

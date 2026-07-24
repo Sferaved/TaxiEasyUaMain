@@ -1,5 +1,7 @@
 package com.taxi.easy.ua;
 
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
+
 import static android.view.View.GONE;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.getContext;
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
@@ -53,6 +55,7 @@ import androidx.navigation.NavController;
 import androidx.navigation.NavDestination;
 import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 import androidx.work.Constraints;
@@ -92,9 +95,6 @@ import com.taxi.easy.ua.ui.finish.OrderResponse;
 import com.taxi.easy.ua.ui.finish.fragm.FinishSeparateFragment;
 import com.taxi.easy.ua.ui.home.HomeFragment;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
-import com.taxi.easy.ua.utils.ui.CostCalculationProgressBar;
-
-import androidx.navigation.fragment.NavHostFragment;
 import com.taxi.easy.ua.ui.weather.WeatherApiHelper;
 import com.taxi.easy.ua.ui.weather.WeatherResponse;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
@@ -116,6 +116,7 @@ import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.pusher.PusherManager;
 import com.taxi.easy.ua.utils.review.AppReviewManager;
+import com.taxi.easy.ua.utils.ui.CostCalculationProgressBar;
 import com.taxi.easy.ua.utils.user.del_server.ApiUserService;
 import com.taxi.easy.ua.utils.user.del_server.CallbackUser;
 import com.taxi.easy.ua.utils.user.del_server.RetrofitClient;
@@ -406,7 +407,18 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
 
         // Связывание Navigation с UI
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
-        NavigationUI.setupWithNavController(navigationView, navController);
+        navigationView.setNavigationItemSelectedListener(item -> {
+            if (isGuestSession()) {
+                binding.drawerLayout.closeDrawers();
+                requestAuthForLandingAction(null);
+                return true;
+            }
+            boolean handled = NavigationUI.onNavDestinationSelected(item, navController);
+            if (handled) {
+                binding.drawerLayout.closeDrawers();
+            }
+            return handled;
+        });
         if (getIntent() != null && getIntent().getBooleanExtra("open_weather", false)) {
             navController.navigate(R.id.nav_visicom);
         }
@@ -416,11 +428,6 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
 
         // Явная обработка нажатий в NavigationView
         navigationView.setNavigationItemSelectedListener(item -> {
-            if (isGuestSession()) {
-                binding.drawerLayout.closeDrawers();
-                requestAuthForLandingAction(null);
-                return true;
-            }
             int itemId = item.getItemId();
             NavDestination currentDestination = navController.getCurrentDestination();
             if (currentDestination != null && currentDestination.getId() != itemId) {
@@ -896,10 +903,16 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
     }
 
     private void openDriverScreen() {
-        // Открыть экран для водителей
-        if (NetworkUtils.isNetworkAvailable(this)) {
-            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.taxieasyua.job"));
-            startActivity(browserIntent);
+        if (!NetworkUtils.isNetworkAvailable(this)) {
+            return;
+        }
+        String packageId = "com.taxieasyua.job";
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("market://details?id=" + packageId)));
+        } catch (Exception e) {
+            startActivity(new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://play.google.com/store/apps/details?id=" + packageId)));
         }
     }
     // Вспомогательный метод для проверки разрешений
@@ -1076,7 +1089,7 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
         }
 
 
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
 
         boolean gps_upd;
         if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
@@ -1312,13 +1325,27 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
     }
 
     private void cityMaxPay() {
+        cityMaxPayAttempt(0);
+    }
 
-        String BASE_URL = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+    private void cityMaxPayAttempt(int attempt) {
+        String baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
+        CityApiClient cityApiClient = new CityApiClient(baseUrl);
+        Retrofit retrofit = cityApiClient.getClient();
+        if (retrofit == null) {
+            if (attempt < 20) {
+                Logger.d(getApplication(), TAG,
+                        "cityMaxPay: baseUrl not ready, retry " + (attempt + 1));
+                new Handler(Looper.getMainLooper()).postDelayed(
+                        () -> cityMaxPayAttempt(attempt + 1), 500);
+            } else {
+                Logger.e(getApplication(), TAG,
+                        "cityMaxPay: give up — keys/base_urls still empty");
+            }
+            return;
+        }
+        CityService cityService = retrofit.create(CityService.class);
 
-        CityApiClient cityApiClient = new CityApiClient(BASE_URL);
-        CityService cityService = cityApiClient.getClient().create(CityService.class);
-
-        // Замените "your_city" на фактическое название города
         Call<CityResponse> call = cityService.getMaxPayValues("Kyiv City", getString(R.string.application));
 
         call.enqueue(new Callback<CityResponse>() {
@@ -1628,7 +1655,7 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
         if (item.getItemId() == R.id.clearApp) {
             new UklonAlertDialog(this)
                     .setIcon(R.drawable.baseline_cleaning_services_24)
-                    .setTitle(R.string.clearAppMess)
+                    .setTitle(R.string.clearAppTitle)
                     .setMessage(R.string.clearAppMess)
                     .setPositiveButton(R.string.ok_button, dialog -> clearApplication(this))
                     .setNegativeButton(R.string.cancel_button, dialog -> dialog.dismiss())
@@ -1940,10 +1967,15 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
                 Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
             }
 
-            // Fallback: открыть email
+            // Fallback: открыть email (адрес из Firestore keys/mail)
             try {
+                String support = supportEmail;
+                if (support == null || support.trim().isEmpty()) {
+                    Logger.e(this, TAG, "supportEmail empty — skip mailto fallback");
+                    return;
+                }
                 Intent emailIntent = new Intent(Intent.ACTION_SENDTO);
-                emailIntent.setData(Uri.parse("mailto:support@easy-order-taxi.site"));
+                emailIntent.setData(Uri.parse("mailto:" + support.trim()));
                 emailIntent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.support_subject));
                 startActivity(Intent.createChooser(emailIntent, getString(R.string.support)));
             } catch (Exception emailError) {
@@ -2194,7 +2226,6 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
 //
 //        // Создаем Retrofit
 //        Retrofit retrofit = new Retrofit.Builder()
-//                .baseUrl("https://t.easy-order-taxi.site/") // ваш сервер
 //                .addConverterFactory(ScalarsConverterFactory.create()) // для получения plain text
 //                .build();
 //
@@ -2271,7 +2302,6 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
 //
 //        // Настройка Retrofit
 //        Retrofit retrofit = new Retrofit.Builder()
-//                .baseUrl("https://t.easy-order-taxi.site/") // твой сервер
 //                .addConverterFactory(GsonConverterFactory.create())
 //                .build();
 //
@@ -2469,7 +2499,7 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
             Toast.makeText(MainActivity.this, R.string.checking, Toast.LENGTH_SHORT).show();
 
             // Одно напоминание "не вошёл" на завтра 07:00 (Europe/Kyiv) — планируется на сервере
-            com.taxi.easy.ua.utils.worker.utils.TokenUtils.scheduleLoginReminderIfNeeded(getApplicationContext());
+            TokenUtils.scheduleLoginReminderIfNeeded(getApplicationContext());
 
             applyLandingEntryRestrictions();
             showLandingPage();
@@ -2757,7 +2787,7 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
         MyApplication.sharedPreferencesHelperMain.saveValue("userEmail", emailUser);
 
         // Успешный вход — отменяем напоминание "не вошёл"
-        com.taxi.easy.ua.utils.worker.utils.TokenUtils.cancelLoginReminder(getApplicationContext());
+        TokenUtils.cancelLoginReminder(getApplicationContext());
 
 // Отправляем актуальный токен
         sendCurrentFcmToken();
@@ -3681,24 +3711,6 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
         }
     }
 
-    /** После смены города — экран заказа, без перезапуска приложения и лендинга. */
-    public void openVisicomAfterCityChange() {
-        if (navController == null) {
-            return;
-        }
-        hideBlockingOverlay();
-        suppressGuestNavGuard = true;
-        navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
-                .setLaunchSingleTop(true)
-                .setPopUpTo(R.id.nav_visicom, true)
-                .build());
-        suppressGuestNavGuard = false;
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().show();
-        }
-        binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
-    }
-
     // --- Гостевая статическая страница (лендинг) ---
 
     public boolean isGuestSession() {
@@ -3822,6 +3834,7 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
         suppressGuestNavGuard = true;
         NavDestination current = navController.getCurrentDestination();
         if (current == null || current.getId() != R.id.nav_landing) {
+            // popUpTo graph: убрать восстановленный экран заказа из стека без мелькания назад.
             navController.navigate(R.id.nav_landing, null, new NavOptions.Builder()
                     .setPopUpTo(navController.getGraph().getId(), true)
                     .setLaunchSingleTop(true)
@@ -4143,5 +4156,23 @@ public class MainActivity extends AppCompatActivity implements LandingFragment.L
             overlay.setVisibility(View.GONE);
             overlay.setOnClickListener(null);
         }
+    }
+
+    /** После смены города — экран заказа, без перезапуска приложения и лендинга. */
+    public void openVisicomAfterCityChange() {
+        if (navController == null) {
+            return;
+        }
+        hideBlockingOverlay();
+        suppressGuestNavGuard = true;
+        navController.navigate(R.id.nav_visicom, null, new NavOptions.Builder()
+                .setLaunchSingleTop(true)
+                .setPopUpTo(R.id.nav_visicom, true)
+                .build());
+        suppressGuestNavGuard = false;
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().show();
+        }
+        binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
     }
 }

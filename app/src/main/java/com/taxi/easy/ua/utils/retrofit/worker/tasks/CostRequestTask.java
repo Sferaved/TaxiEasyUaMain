@@ -8,6 +8,7 @@ import androidx.work.Data;
 import androidx.work.Worker;
 
 import com.taxi.easy.ua.androidx.startup.MyApplication;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.retrofit.APIService;
 import com.taxi.easy.ua.utils.retrofit.RetrofitClient;
@@ -47,8 +48,7 @@ public class CostRequestTask {
         String url = inputData.getString("url");
         Logger.d(MyApplication.getContext(), TAG, "Received url: " + url);
 
-        String baseUrl = (String) MyApplication.sharedPreferencesHelperMain
-                .getValue("baseUrl", "https://m.easy-order-taxi.site");
+        String baseUrl = BaseUrlHelper.fromPrefs(MyApplication.sharedPreferencesHelperMain);
         Logger.d(MyApplication.getContext(), TAG, "baseUrl: " + baseUrl);
 
         if (url == null || url.isEmpty()) {

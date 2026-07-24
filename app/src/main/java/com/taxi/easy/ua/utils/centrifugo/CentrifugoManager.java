@@ -20,6 +20,7 @@ import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
 import com.taxi.easy.ua.ui.visicom.VisicomFragment;
 import com.taxi.easy.ua.ui.weather.finish.PassengerNotifier;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.utils.cost.CostParseHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
@@ -66,7 +67,6 @@ import com.taxi.easy.ua.utils.db.CursorReadHelper;
  * Версия с официальным Centrifuge SDK
  */
 public class CentrifugoManager {
-    private static final String CENTRIFUGO_URL = "wss://t.easy-order-taxi.site/connection/websocket";
     private static final String CHANNEL_NAME = "teal-towel-48";
     private static final String TAG = "CentrifugoManager";
     private static final int RECONNECT_DELAY_MS = 5000;
@@ -151,8 +151,11 @@ public class CentrifugoManager {
         Options options = new Options();
         options.setToken(connectionToken);
 
+        String centrifugoUrl = BaseUrlHelper.centrifugoWsUrl(sharedPreferencesHelperMain);
+        Log.i(TAG, "Centrifugo URL: " + centrifugoUrl);
+
         // Создаем клиент с тремя параметрами: URL, options, слушатель
-        client = new Client(CENTRIFUGO_URL, options, new EventListener() {
+        client = new Client(centrifugoUrl, options, new EventListener() {
             @Override
             public void onConnected(Client client, ConnectedEvent event) {
                 Log.d(TAG, "✅ Connected to Centrifugo");
@@ -463,7 +466,8 @@ public class CentrifugoManager {
                                 // mark до setFinishAbsolute: observer проверяет flag по текущему uid
                                 ExecutionStatusViewModel.markWalletAddCostApplied(orderUid);
                                 viewModel.setFinishAbsoluteCostGrivna(orderCost);
-                                // Always clear gate and resume polling (Mantis #31).
+                                // Всегда снимаем gate и возобновляем опрос — даже если inFlight
+                                // уже сброшен HTTP-путём (Mantis #31).
                                 ExecutionStatusViewModel.setAddCostInFlightPref(false);
                                 ExecutionStatusViewModel.clearPendingAddCostAmountPref();
                                 viewModel.setCancelStatus(true);

@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteDatabase;
 
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.utils.db.CursorReadHelper;
 import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
@@ -24,7 +25,6 @@ import java.util.function.Consumer;
 public final class GpsGeocodeHelper {
 
     private static final String TAG = "GpsGeocodeHelper";
-    private static final String PROD_BASE_URL = "https://m.easy-order-taxi.site";
 
     private GpsGeocodeHelper() {
     }
@@ -45,7 +45,7 @@ public final class GpsGeocodeHelper {
         String api = cityInfo.size() > 2 ? cityInfo.get(2) : MainActivity.api;
         String city = cityInfo.size() > 1 ? cityInfo.get(1) : "";
         String language = LocaleHelper.getLocale();
-        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", PROD_BASE_URL);
+        String baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         String url = baseUrl + "/" + api + "/android/fromSearchGeoLocal/"
                 + latitude + "/" + longitude + "/" + language;
         Logger.d(context, TAG, "reverseGeocode: " + url);
@@ -56,8 +56,14 @@ public final class GpsGeocodeHelper {
                     && isPlaceholderAddress(context, address)
                     && shouldRetryOnProductionServer(city, baseUrl)) {
                 Logger.d(context, TAG, "reverseGeocode: заглушка на тестовом сервере — повтор на prod");
-                sharedPreferencesHelperMain.saveValue("baseUrl", PROD_BASE_URL);
-                reverseGeocode(context, latitude, longitude, true, onAddress);
+                String prod = BaseUrlHelper.prodFromPrefs(sharedPreferencesHelperMain);
+                if (prod != null) {
+                    BaseUrlHelper.applyToPrefs(sharedPreferencesHelperMain, prod, "gps-prod-retry", city);
+                    reverseGeocode(context, latitude, longitude, true, onAddress);
+                } else {
+                    Logger.w(context, TAG, "prod default missing — cannot retry on prod");
+                    onAddress.accept(address);
+                }
                 return;
             }
             onAddress.accept(address);
@@ -96,9 +102,12 @@ public final class GpsGeocodeHelper {
     }
 
     private static boolean shouldRetryOnProductionServer(String city, String currentBaseUrl) {
-        return !"OdessaTest".equals(city)
-                && currentBaseUrl != null
-                && currentBaseUrl.contains("t.easy-order-taxi.site");
+        if (BaseUrlHelper.TEST_CITY.equals(city) || currentBaseUrl == null) {
+            return false;
+        }
+        String test = BaseUrlHelper.testFromPrefs(sharedPreferencesHelperMain);
+        String normalized = BaseUrlHelper.normalize(currentBaseUrl);
+        return test != null && test.equals(normalized);
     }
 
     private static List<String> readCityInfo(Context context) {

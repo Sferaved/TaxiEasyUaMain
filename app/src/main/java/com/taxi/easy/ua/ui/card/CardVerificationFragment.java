@@ -26,6 +26,7 @@ import androidx.navigation.NavOptions;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
@@ -38,6 +39,7 @@ import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.helpers.WfpWebViewHelper;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.uxcam.UXCam;
 
@@ -60,7 +62,6 @@ public class CardVerificationFragment extends Fragment {
 
     private final String TAG = "CardVerificationFragment";
 
-    private WebView webView;
     private String order_id;
     private String amount;
     String email;
@@ -68,10 +69,10 @@ public class CardVerificationFragment extends Fragment {
 
     private FragmentManager fragmentManager;
     private Context context;
+    private WebView webView;
     private String messageFondy;
-    private String cityName;
-    private String userEmail;
-    private String phoneNumber;
+    private boolean statusCheckInProgress;
+    private boolean paymentFlowFinished;
 
     @SuppressLint({"MissingInflatedId", "SetJavaScriptEnabled"})
     @Nullable
@@ -85,53 +86,54 @@ public class CardVerificationFragment extends Fragment {
         View view = inflater.inflate(R.layout.activity_fondy_payment, container, false);
         context = requireActivity();
         webView = view.findViewById(R.id.webView);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        view.findViewById(R.id.payment_browser_hint).setVisibility(View.GONE);
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         amount = "1";
         messageFondy =  context.getString(R.string.fondy_message);
         order_id = UniqueNumberGenerator.generateUniqueNumber(context);
-        cityName = logCursor(MainActivity.CITY_INFO, context).get(1);
-        userEmail = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-        phoneNumber = logCursor(MainActivity.TABLE_USER_INFO, context).get(2);
-
+        
         fragmentManager = getParentFragmentManager();
+
         getUrlToPaymentWfp();
 
         return view;
     }
 
-    private OkHttpClient buildHttpClient() {
+    private void getUrlToPaymentWfp() {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        return new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor())
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new RetryInterceptor()) // 3 попытки
                 .addInterceptor(interceptor)
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
+                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
+                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
+                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
                 .build();
-    }
-
-
-    private void getUrlToPaymentWfp() {
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl + "/")
                 .addConverterFactory(GsonConverterFactory.create())
-                .client(buildHttpClient())
+                .client(client)
                 .build();
 
         InvoiceService service = retrofit.create(InvoiceService.class);
+        List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
+        String city = stringList.get(1);
+
+        stringList = logCursor(MainActivity.TABLE_USER_INFO, context);
+        String userEmail = stringList.get(3);
+        String phone_number = stringList.get(2);
 
         Call<InvoiceResponse> call = service.createInvoice(
                 context.getString(R.string.application),
-                cityName,
+                city,
                 order_id,
                 Integer.parseInt(amount),
                 LocaleHelper.getLocale(),
                 messageFondy,
                 userEmail,
-                phoneNumber
+                phone_number
         );
 
         call.enqueue(new Callback<InvoiceResponse>() {
@@ -165,9 +167,14 @@ public class CardVerificationFragment extends Fragment {
     
     private void payWfp(String checkoutUrl) {
         WfpWebViewHelper.loadPaymentUrl(webView, checkoutUrl, this::getStatusWfp);
+        Logger.d(context, TAG, "Payment page loaded in WebView: " + checkoutUrl);
     }
 
     private void getStatusWfp() {
+        if (statusCheckInProgress || paymentFlowFinished) {
+            return;
+        }
+        statusCheckInProgress = true;
         Logger.d(context, TAG, "getStatusWfp: ");
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
@@ -202,30 +209,23 @@ public class CardVerificationFragment extends Fragment {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<StatusResponse> call, @NonNull Response<StatusResponse> response) {
-
+                statusCheckInProgress = false;
                 if (response.isSuccessful() && response.body() != null) {
                     StatusResponse statusResponse = response.body();
-                    if (statusResponse != null) {
-                        String orderStatus = statusResponse.getTransactionStatus();
-                        Logger.d(context, TAG, "Transaction Status: " + orderStatus);
+                    String orderStatus = statusResponse.getTransactionStatus();
+                    Logger.d(context, TAG, "Transaction Status: " + orderStatus);
 
-                        switch (orderStatus) {
-                            case "Approved":
-                            case "WaitingAuthComplete":
-                                sharedPreferencesHelperMain.saveValue("pay_error", "**");
-                                getReversWfp(city);
-//                                dismiss();
-                                getCardTokenWfp();
-//                                MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder()
-//                                        .setPopUpTo(R.id.nav_card, true)
-//                                        .build());
-                                break;
-                            default:
-                                sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
-                        }
-                        // Другие данные можно также получить из statusResponse
-                    } else {
-                        Logger.d(context, TAG, "Response body is null");
+                    switch (orderStatus) {
+                        case "Approved":
+                        case "WaitingAuthComplete":
+                            paymentFlowFinished = true;
+                            sharedPreferencesHelperMain.saveValue("pay_error", "**");
+                            getReversWfp(city);
+                            getCardTokenWfp();
+                            break;
+                        default:
+                            sharedPreferencesHelperMain.saveValue("pay_error", "pay_error");
+                            break;
                     }
                 } else {
                     Logger.d(context, TAG, "Request failed:5");
@@ -234,6 +234,7 @@ public class CardVerificationFragment extends Fragment {
 
             @Override
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
+                statusCheckInProgress = false;
                 Logger.d(context, TAG, "Request failed:6" + t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
                 Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
@@ -281,35 +282,7 @@ public class CardVerificationFragment extends Fragment {
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
                         Logger.d(context, TAG, "onResponse: cards" + cards);
-                        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
-
-
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-
-
-                        database.execSQL("DELETE FROM " + tableName + ";");
-
-                        if (cards != null && !cards.isEmpty()) {
-                            for (CardInfo cardInfo : cards) {
-                                String masked_card = cardInfo.getMasked_card(); // Маска карты
-                                String card_type = cardInfo.getCard_type(); // Тип карты
-                                String bank_name = cardInfo.getBank_name(); // Название банка
-                                String rectoken = cardInfo.getRectoken(); // Токен карты
-                                String merchant = cardInfo.getMerchant(); //
-                                String active = cardInfo.getActive();
-
-                                Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
-                                ContentValues cv = new ContentValues();
-                                cv.put("masked_card", masked_card);
-                                cv.put("card_type", card_type);
-                                cv.put("bank_name", bank_name);
-                                cv.put("rectoken", rectoken);
-                                cv.put("merchant", merchant);
-                                cv.put("rectoken_check", active);
-                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
-                            }
-                        }
-                        database.close();
+                        WfpUtils.saveWfpCardsToDatabase(context, cards, true);
                         MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder()
                             .setPopUpTo(R.id.nav_card, true)
                             .build());
@@ -341,7 +314,7 @@ public class CardVerificationFragment extends Fragment {
         Log.d("ReversWfp", "HttpLoggingInterceptor configured with level: BODY");
 
         // Retrieve base URL from SharedPreferences
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         Log.d("ReversWfp", "Base URL retrieved: " + baseUrl);
 
         // Build OkHttpClient with interceptors and timeouts
@@ -438,3 +411,4 @@ public class CardVerificationFragment extends Fragment {
         return list;
     }
 }
+

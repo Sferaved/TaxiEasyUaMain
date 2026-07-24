@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 
 import com.taxi.easy.ua.ui.finish.ApiService;
 import com.taxi.easy.ua.ui.finish.Status;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import java.util.concurrent.TimeUnit;
@@ -56,7 +57,8 @@ public class NetworkUtils {
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site/") // Укажите URL
+                .baseUrl(BaseUrlHelper.fromPrefsWithSlash(
+                        com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain))
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
                 .build();

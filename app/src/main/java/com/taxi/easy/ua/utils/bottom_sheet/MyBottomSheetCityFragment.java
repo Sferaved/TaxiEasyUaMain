@@ -28,6 +28,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.ui.card.CardInfo;
 import com.taxi.easy.ua.ui.cities.api.CityApiClient;
 import com.taxi.easy.ua.ui.cities.api.CityLastAddressResponse;
@@ -513,38 +514,10 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         Logger.d(context, TAG, "updateMyPosition:city "+ city);
 //        ActionBarUtil.setupCustomActionBar(this, R.layout.custom_action_bar_title, R.id.action_bar_title, newTitle);
 
-        switch (city){
-            case "Dnipropetrovsk Oblast":
-            case "Odessa":
-            case "Zaporizhzhia":
-            case "Cherkasy Oblast":
-            case "Kyiv City":
-            case "Lviv":
-            case "Ivano_frankivsk":
-            case "Vinnytsia":
-            case "Poltava":
-            case "Sumy":
-            case "Kharkiv":
-            case "Chernihiv":
-            case "Rivne":
-            case "Ternopil":
-            case "Khmelnytskyi":
-            case "Zakarpattya":
-            case "Zhytomyr":
-            case "Kropyvnytskyi":
-            case "Mykolaiv":
-            case "Chernivtsi":
-            case "Lutsk":
-                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-                break;
-            case "OdessaTest":
-//                sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
-                sharedPreferencesHelperMain.saveValue("baseUrl", "https://t.easy-order-taxi.site");
-                break;
-            default:
-                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-                city = "foreign countries";
+        if (!BaseUrlHelper.isKnownCity(city)) {
+            city = "foreign countries";
         }
+        BaseUrlHelper.syncForCity(context, city, sharedPreferencesHelperMain);
 
         switch (city) {
             case "Kyiv City":
@@ -750,38 +723,10 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         Logger.d(context, TAG, "updateMyPosition:city "+ city);
 //        ActionBarUtil.setupCustomActionBar(this, R.layout.custom_action_bar_title, R.id.action_bar_title, newTitle);
 
-        switch (city){
-            case "Dnipropetrovsk Oblast":
-            case "Odessa":
-            case "Zaporizhzhia":
-            case "Cherkasy Oblast":
-            case "Kyiv City":
-            case "Lviv":
-            case "Ivano_frankivsk":
-            case "Vinnytsia":
-            case "Poltava":
-            case "Sumy":
-            case "Kharkiv":
-            case "Chernihiv":
-            case "Rivne":
-            case "Ternopil":
-            case "Khmelnytskyi":
-            case "Zakarpattya":
-            case "Zhytomyr":
-            case "Kropyvnytskyi":
-            case "Mykolaiv":
-            case "Chernivtsi":
-            case "Lutsk":
-                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-                break;
-            case "OdessaTest":
-//                sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
-                sharedPreferencesHelperMain.saveValue("baseUrl", "https://t.easy-order-taxi.site");
-                break;
-            default:
-                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-                city = "foreign countries";
+        if (!BaseUrlHelper.isKnownCity(city)) {
+            city = "foreign countries";
         }
+        BaseUrlHelper.syncForCity(context, city, sharedPreferencesHelperMain);
 
         switch (city) {
             case "Kyiv City":
@@ -943,7 +888,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
         String city = stringList.get(1);
 
-        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        String baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         String url = baseUrl + "/android/UIDStatusShowEmailCityApp/" + value + "/" + city + "/" + context.getString(R.string.application);
 
         Call<List<RouteResponse>> call = ApiClient.getApiService().getRoutes(url);
@@ -1134,9 +1079,13 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     private void cityMaxPay(String city) {
 
 
-        String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        String BASE_URL =BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
         CityApiClient cityApiClient = new CityApiClient(BASE_URL);
-        CityService cityService = cityApiClient.getClient().create(CityService.class);
+        CityService cityService = cityApiClient.createService();
+        if (cityService == null) {
+            Logger.w(context, TAG, "CityApiClient not ready");
+            return;
+        }
 
         // Замените "your_city" на фактическое название города
         Call<CityResponse> call = cityService.getMaxPayValues(city, context.getString(R.string.application));
@@ -1185,10 +1134,14 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     private void merchantFondy(String city, Context context) {
 
 
-        String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        String BASE_URL =BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
 
         CityApiClient cityApiClient = new CityApiClient(BASE_URL);
-        CityService cityService = cityApiClient.getClient().create(CityService.class);
+        CityService cityService = cityApiClient.createService();
+        if (cityService == null) {
+            Logger.w(context, TAG, "CityApiClient not ready");
+            return;
+        }
 
         Call<CityResponseMerchantFondy> call = cityService.getMerchantFondy(city);
 
@@ -1242,7 +1195,7 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     }
     private void getCardToken(Context context, String merchant_fondy) {
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://m.easy-order-taxi.site") // Замените на фактический URL вашего сервера
+                .baseUrl(BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain))
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         String baseUrl = retrofit.baseUrl().toString();
@@ -1460,23 +1413,19 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
     private void lastAddressUser(String cityString) {
 
         String email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
-        String BASE_URL = "https://m.easy-order-taxi.site";
+        BaseUrlHelper.syncForCity(context, cityString, sharedPreferencesHelperMain);
+        String BASE_URL = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
 
         Logger.d(context, TAG, "lastAddressUser: cityString" + cityString);
-        if (cityString.equals("OdessaTest")) {
-//            sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://t.easy-order-taxi.site");
-//            BASE_URL = "https://test-taxi.kyiv.ua";
-            BASE_URL = "https://t.easy-order-taxi.site";
-        } else {
-            sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-
-        }
-        Logger.d(context, TAG, "lastAddressUser: baseUrl" +BASE_URL);
+        Logger.d(context, TAG, "lastAddressUser: baseUrl" + BASE_URL);
 
 
         CityApiClient cityApiClient = new CityApiClient(BASE_URL);
-        CityService cityService = cityApiClient.getClient().create(CityService.class);
+        CityService cityService = cityApiClient.createService();
+        if (cityService == null) {
+            Logger.w(context, TAG, "CityApiClient not ready");
+            return;
+        }
 
         Call<CityLastAddressResponse> call = cityService.lastAddressUser(email, cityString, context.getString(R.string.application));
         resetRoutHome();
@@ -1521,5 +1470,6 @@ public class MyBottomSheetCityFragment extends BottomSheetDialogFragment {
         });
         VisicomFragment.progressBar.setVisibility(View.INVISIBLE);
     }
+
 }
 

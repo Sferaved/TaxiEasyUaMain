@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.utils.user.del_server;
 
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
+
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
@@ -12,8 +14,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class RetrofitClient {
-//    private static final String BASE_URL = "https://m.easy-order-taxi.site/";
-    private static final String BASE_URL = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+    private static final String BASE_URL = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
     private static Retrofit retrofit;
 
     public static Retrofit getRetrofitInstance() {

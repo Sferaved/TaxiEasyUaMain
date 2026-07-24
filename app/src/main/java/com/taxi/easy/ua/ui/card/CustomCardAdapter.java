@@ -24,6 +24,7 @@ import androidx.navigation.NavOptions;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.ui.card.unlink.UnlinkApi;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseSetActivCardWfp;
 import com.taxi.easy.ua.ui.wfp.token.CallbackResponseWfp;
@@ -55,7 +56,7 @@ public class CustomCardAdapter extends ArrayAdapter<Map<String, String>> {
     public static String table;
     public static String pay_method;
 
-    private  final String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+    private  final String baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
     public CustomCardAdapter(Context context, ArrayList<Map<String, String>> cardMaps, String table, String pay_method) {
         super(context, R.layout.cards_adapter_layout, cardMaps);
         this.cardMaps = cardMaps;

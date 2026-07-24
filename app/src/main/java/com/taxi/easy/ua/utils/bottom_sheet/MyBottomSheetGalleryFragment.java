@@ -33,6 +33,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.ui.gallery.GalleryFragment;
 import com.taxi.easy.ua.ui.home.CustomListAdapter;
 import com.taxi.easy.ua.utils.data.DataArr;
@@ -619,7 +620,7 @@ public class MyBottomSheetGalleryFragment extends BottomSheetDialogFragment {
         String message = getString(R.string.change_tarrif);
         String discountText = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(3);
         ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
-        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        String baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
 
         Logger.d(getActivity(), TAG, "orderFinished: "  + baseUrl + url);
         parser.sendURL(url, new Callback<Map<String, String>>() {

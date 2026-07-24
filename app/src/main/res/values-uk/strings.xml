@@ -1001,4 +1001,6 @@
     <string name="landing_language_label_uk">Українська</string>
     <string name="landing_auth_required">Для цієї дії потрібен вхід у обліковий запис</string>
 
+    <string name="card_verification_browser_hint">Оплата відкрита в Chrome. Після завершення поверніться в додаток — ми перевіримо прив\'язку карти.</string>
+    <string name="payment_browser_hint">Оплата відкрита в Chrome. Після завершення поверніться в додаток.</string>
 </resources>

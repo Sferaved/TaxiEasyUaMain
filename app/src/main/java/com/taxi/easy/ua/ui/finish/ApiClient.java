@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.ui.finish;
 
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
+
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import com.taxi.easy.ua.utils.network.ApiGsonHelper;
@@ -13,8 +15,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
-//    static final String BASE_URL = "https://m.easy-order-taxi.site/";
-    static String BASE_URL = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+    static String BASE_URL = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
 
     private static Retrofit retrofit = null;
     private static Retrofit cancelRetrofit = null;

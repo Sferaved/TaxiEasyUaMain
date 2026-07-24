@@ -988,4 +988,6 @@ Tap "Settings" to check.</string>
     <string name="landing_language_label_uk">Українська</string>
     <string name="landing_auth_required">Sign in is required for this action</string>
 
+    <string name="card_verification_browser_hint">Payment opened in Chrome. When finished, return to the app and we will verify your card.</string>
+    <string name="payment_browser_hint">Payment opened in Chrome. When finished, return to the app.</string>
 </resources>

@@ -29,6 +29,8 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -40,6 +42,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.ui.finish.ApiService;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureClient;
 import com.taxi.easy.ua.ui.fondy.gen_signatur.SignatureResponse;
@@ -51,6 +54,7 @@ import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorPaymentFragment;
 import com.taxi.easy.ua.utils.helpers.WfpWebViewHelper;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.uxcam.UXCam;
 
@@ -79,7 +83,6 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
     private final String amount;
     String email, uid, uid_Double;
     private String pay_method;
-//    private final String baseUrl = "https://m.easy-order-taxi.site";
     private String baseUrl;
     private boolean hold;
     private static String timeoutText;
@@ -104,6 +107,9 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
     private static final int TIMEOUT_SECONDS = 60;
     private CountDownTimer paymentTimer;
     private FragmentManager fragmentManager;
+    private View rootView;
+    private boolean statusCheckInProgress;
+    private boolean paymentFlowFinished;
 
     public MyBottomSheetCardPayment(
             String checkoutUrl,
@@ -129,12 +135,13 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.activity_fondy_payment, container, false);
+        rootView = view;
         if(button1 != null) {
             button1.setVisibility(View.VISIBLE);
         }
         UXCam.tagScreenName(TAG);
 
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         webView = view.findViewById(R.id.webView);
         email = logCursor(MainActivity.TABLE_USER_INFO, requireActivity()).get(3);
         fragmentManager = getParentFragmentManager();
@@ -228,10 +235,10 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
     private void paymentView(String orderReference) {
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         switch (pay_method) {
             case "wfp_payment":
-                WfpWebViewHelper.loadPaymentUrl(webView, checkoutUrl, () -> getStatusWfp(orderReference));
+                payWfp(checkoutUrl);
                 break;
             case "fondy_payment":
 
@@ -453,12 +460,25 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 //        });
 //    }
 
+    private void payWfp(String paymentUrl) {
+        if (rootView != null) {
+            rootView.findViewById(R.id.payment_browser_hint).setVisibility(View.GONE);
+            webView.setVisibility(View.VISIBLE);
+        }
+        WfpWebViewHelper.loadPaymentUrl(webView, paymentUrl, () -> getStatusWfp(order_id));
+        Logger.d(context, TAG, "Payment page loaded in WebView: " + paymentUrl);
+    }
+
     private void getStatusWfp(String order_id) {
+        if (statusCheckInProgress || paymentFlowFinished) {
+            return;
+        }
+        statusCheckInProgress = true;
         Logger.d(getActivity(), TAG, "getStatusWfp: ");
         Logger.d(context, TAG, "getStatusWfp: MainActivity.order_id " +  order_id);
         List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
         String city = stringList.get(1);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
@@ -476,7 +496,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                 .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
                 .build();
 
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl +"/")
                 .addConverterFactory(GsonConverterFactory.create())
@@ -496,6 +516,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
         call.enqueue(new Callback<StatusResponse>() {
             @Override
             public void onResponse(@NonNull Call<StatusResponse> call, @NonNull Response<StatusResponse> response) {
+                statusCheckInProgress = false;
 
                 if (response.isSuccessful() && response.body() != null) {
                     StatusResponse statusResponse = response.body();
@@ -507,6 +528,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                             switch (orderStatus) {
                                 case "Approved":
                                 case "WaitingAuthComplete":
+                                    paymentFlowFinished = true;
                                     sharedPreferencesHelperMain.saveValue("pay_error", "**");
                                     getCardTokenWfp(city);
                                     hold = true;
@@ -544,6 +566,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
+                statusCheckInProgress = false;
                 Logger.d(context, TAG, "Request failed:"+ t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
             }
@@ -616,32 +639,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
                         Logger.d(context, TAG, "onResponse: cards" + cards);
-                        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
-
-// Открываем или создаем базу данных
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-
-                         if (cards != null && !cards.isEmpty()) {
-                            for (CardInfo cardInfo : cards) {
-                                String masked_card = cardInfo.getMasked_card(); // Маска карты
-                                String card_type = cardInfo.getCard_type(); // Тип карты
-                                String bank_name = cardInfo.getBank_name(); // Название банка
-                                String rectoken = cardInfo.getRectoken(); // Токен карты
-                                String merchant = cardInfo.getMerchant(); //
-                                String  active = cardInfo.getActive();
-
-                                Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
-                                ContentValues cv = new ContentValues();
-                                cv.put("masked_card", masked_card);
-                                cv.put("card_type", card_type);
-                                cv.put("bank_name", bank_name);
-                                cv.put("rectoken", rectoken);
-                                cv.put("merchant", merchant);
-                                cv.put("rectoken_check", active);
-                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
-                            }
-                        }
-                        database.close();
+                        WfpUtils.saveWfpCardsToDatabase(context, cards);
                     }
 
                 }
@@ -661,7 +659,7 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
 //
 //
 //
-//        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+//        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
 //
 //        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
 //        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
@@ -750,7 +748,9 @@ public class MyBottomSheetCardPayment extends BottomSheetDialogFragment {
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {
         super.onDismiss(dialog);
-        getStatusWfp(order_id);
+        if (!paymentFlowFinished && !statusCheckInProgress) {
+            getStatusWfp(order_id);
+        }
         Logger.d(getActivity(), TAG, "onDismiss: hold " + hold);
     }
 

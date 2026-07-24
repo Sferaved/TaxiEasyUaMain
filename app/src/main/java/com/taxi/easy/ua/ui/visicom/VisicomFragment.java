@@ -94,6 +94,7 @@ import com.google.android.play.core.install.model.UpdateAvailability;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.utils.dialog.UklonAlertDialog;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentVisicomBinding;
@@ -1296,13 +1297,19 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         hideCostCalculationProgress();
         long now = System.currentTimeMillis();
         lastVisicomCostRequestMs = now;
-        if (isNetworkRelatedCostError(serverMessage)) {
+        boolean networkUp = context != null && NetworkUtils.isNetworkAvailable(context);
+        if (isNetworkRelatedCostError(serverMessage) && !networkUp) {
             lastCostCalculationFailureMs = 0;
             btnVisible(GONE);
             Logger.w(context, TAG, "Ошибка сети при расчёте стоимости: " + serverMessage);
             return;
         }
+        // Сеть есть (Wi‑Fi/4G), но расчёт не удался — не оставляем экран без кнопок заказа.
         lastCostCalculationFailureMs = now;
+        if (tryApplyCachedAroundCityCost()) {
+            Logger.d(context, TAG, "showCostCalculationError: показали кэш при сети online");
+            return;
+        }
         btnVisible(VISIBLE);
         if (!isAdded() || isStateSaved()) {
             return;
@@ -1677,6 +1684,9 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     @Override
     public void onDestroyView() {
         cancelGooglePayHoldPoll();
+        // If cost response arrives after destroy, do not leave buttons stuck hidden.
+        CostCalculationProgressBar.setCalculationInProgress(false);
+        cancelPendingReserveCost();
         // ✅ Отменяем активные запросы
         pendingAddressRequest = null;
         isUpdatingFromGPS = false;
@@ -2618,7 +2628,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
     private void dispatchOrderFinishedRequest(Context ctx) {
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
-            baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+            baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
             Logger.d(ctx, TAG, "orderFinished: " + baseUrl + urlOrder); // ← ctx
 
             parser.sendURLChannel(urlOrder, new Callback<>() {
@@ -3308,7 +3318,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
         databaseHelper = new DatabaseHelper(context);
         databaseHelperUid = new DatabaseHelperUid(context);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
 //        new Thread(this::fetchRoutesCancel).start();
         try {
             statusOrder();
@@ -5126,6 +5136,31 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 "reserveCost: capturedStart='%s' capturedFinish='%s' gpsApplied=%s",
                 start, finish, AutoLocationAfterCityHelper.isGpsStartApplied()));
 
+        String readyBase = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
+        if (readyBase == null || readyBase.isEmpty()) {
+            Logger.w(context, TAG, "reserveCost: baseUrl ещё пустой — ждём Firebase, кэш/повтор");
+            if (isAroundCityRoute(start, finish) && tryApplyCachedAroundCityCost()) {
+                return;
+            }
+            if (costHandler == null) {
+                costHandler = new Handler(Looper.getMainLooper());
+            }
+            costHandler.postDelayed(() -> {
+                if (!isAdded() || binding == null) {
+                    CostCalculationProgressBar.setCalculationInProgress(false);
+                    return;
+                }
+                try {
+                    reserveCost(start, finish, urlCost);
+                } catch (MalformedURLException e) {
+                    Logger.e(context, TAG, "reserveCost retry: " + e.getMessage());
+                    hideCostCalculationProgress();
+                    btnVisible(VISIBLE);
+                }
+            }, 500);
+            return;
+        }
+
         Logger.d(context, TAG, "Попытка #" + ( 1) + ", URL: " + urlCost);
 
         CostJSONParserRetrofit parser = new CostJSONParserRetrofit();
@@ -5134,7 +5169,8 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             public void onResponse(@NonNull Call<Map<String, String>> call, @NonNull Response<Map<String, String>> response) {
                 new Handler(Looper.getMainLooper()).post(() -> {
                     if (!isAdded() || binding == null) {
-                        Logger.w(context, TAG, "Фрагмент отсоединён или binding null — выходим");
+                        Logger.w(context, TAG, "Фрагмент отсоединён или binding null — сбрасываем расчёт, выходим");
+                        CostCalculationProgressBar.setCalculationInProgress(false);
                         return;
                     }
 
@@ -5170,6 +5206,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 Logger.e(context, TAG, "Ошибка подключения к серверу: " + t.getMessage());
                 new Handler(Looper.getMainLooper()).post(() -> {
                     if (!isAdded() || binding == null) {
+                        CostCalculationProgressBar.setCalculationInProgress(false);
                         return;
                     }
                     if (isAroundCityRoute(start, finish) && tryApplyCachedAroundCityCost()) {
@@ -5339,11 +5376,10 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
             routeListCancel = new ArrayList<>();
 
-//            String baseUrl = "https://m.easy-order-taxi.site";
 
             List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
             String city = stringList.get(1);
-            baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+            baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
             String url = baseUrl + "/android/UIDStatusShowEmailCancelApp/" + userEmail + "/" + city + "/" + context.getString(R.string.application);
 
             Call<List<RouteResponseCancel>> call = ApiClient.getApiService().getRoutesCancel(url);
@@ -5941,8 +5977,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             }
             List<String> cityInfo = logCursor(MainActivity.CITY_INFO, context);
             String city = cityInfo.size() > 1 ? cityInfo.get(1) : "";
-            String appBaseUrl = (String) sharedPreferencesHelperMain.getValue(
-                    "baseUrl", "https://m.easy-order-taxi.site");
+            String appBaseUrl = (String) BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
             GooglePayOrderHelper.fetchMerchantConfig(
                     appBaseUrl,
                     context.getString(R.string.application),
@@ -6002,8 +6037,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                 pendingGooglePayAmount != null ? pendingGooglePayAmount : "0");
         Logger.d(context, TAG, "submitGooglePayHoldCharge: amountUah=" + amountUah
                 + " ref=" + pendingGooglePayOrderReference);
-        String appBaseUrl = (String) sharedPreferencesHelperMain.getValue(
-                "baseUrl", "https://m.easy-order-taxi.site");
+        String appBaseUrl = (String) BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         String displayCost = resolveOrderDisplayCostForSubmit();
         if (displayCost == null) {
             displayCost = pendingGooglePayAmount;
@@ -6473,7 +6507,7 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
         }
         String api = listCity.get(2);
 
-        String baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        String baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
         String url = baseUrl  + api + "/android/searchAutoOrderService/" + uid +"/no_mes";
 
         Call<OrderServiceResponse> call = ApiClient.getApiService().searchAutoOrderService(url);

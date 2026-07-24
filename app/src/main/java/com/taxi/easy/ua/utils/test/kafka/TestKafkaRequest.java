@@ -1,8 +1,12 @@
 package com.taxi.easy.ua.utils.test.kafka;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 
 import java.io.IOException;
 
@@ -24,8 +28,9 @@ public class TestKafkaRequest {
      * @param status  - статус заказа
      */
     public void sendTestMessage(String orderId, String status) {
-        // Формируем URL
-        String url = "https://t.easy-order-taxi.site/kafka/test-kafka/" + orderId + "/" + status;
+        String url = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain)
+                + "/kafka/test-kafka/" + orderId + "/" + status;
+        Log.d(TAG, "url=" + url);
 
         Request request = new Request.Builder()
                 .url(url)
@@ -54,7 +59,9 @@ public class TestKafkaRequest {
     }
 
     public void consumeMessages() {
-        String url = "https://t.easy-order-taxi.site/kafka/consume-kafka";
+        String url = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain)
+                + "/kafka/consume-kafka";
+        Log.d(TAG, "consume url=" + url);
 
         Request request = new Request.Builder()
                 .url(url)

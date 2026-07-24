@@ -28,6 +28,7 @@ import androidx.work.WorkManager;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.ui.cities.api.CityApiClient;
 import com.taxi.easy.ua.ui.cities.api.CityLastAddressResponse;
 import com.taxi.easy.ua.ui.cities.api.CityResponse;
@@ -208,7 +209,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_kyiv);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -231,7 +232,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_dnipro);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -254,7 +255,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_odessa);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -277,7 +278,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_zaporizhzhia);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -300,7 +301,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_cherkassy);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -323,7 +324,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_lviv);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -346,7 +347,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_ivano_frankivsk);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -371,7 +372,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_vinnytsia);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -394,7 +395,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_poltava);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -417,7 +418,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_sumy);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -440,7 +441,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_kharkiv);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -463,7 +464,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_chernihiv);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -486,7 +487,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_rivne);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -509,7 +510,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_ternopil);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -532,7 +533,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_khmelnytskyi);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -555,7 +556,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_zakarpattya);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -578,7 +579,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_zhytomyr);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -601,7 +602,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_kropyvnytskyi);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -624,7 +625,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_mykolaiv);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -647,7 +648,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.city_chernivtsi);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -670,7 +671,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = "Lutsk";
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -693,7 +694,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = "Test";
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://t.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -716,7 +717,7 @@ public class CityCheckActivity extends AppCompatActivity {
                         cityMenu = getString(R.string.foreign_countries);
                         String newTitle = getString(R.string.menu_city) + " " + cityMenu;
                         sharedPreferencesHelperMain.saveValue("newTitle", newTitle);
-                        sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
+                        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
                         lastAddressUser(city);
                     })
                     .start();
@@ -944,7 +945,8 @@ public class CityCheckActivity extends AppCompatActivity {
         cv.put("startLan", Double.parseDouble(settings.get(1)));
         cv.put("start", settings.get(4));
         // Не ставим "второй маркер" по умолчанию при смене города.
-        // Конечную точку (to_lat/to_lng/finish) перезаписываем только если она уже была задана пользователем.
+        // Для заказа "по городу" координаты могут совпадать (to_lat/to_lng == start),
+        // а отображение 2-й точки завязано на непустой finish.
         double existingToLat = 0.0;
         double existingToLng = 0.0;
         String existingFinish = "";
@@ -966,7 +968,6 @@ public class CityCheckActivity extends AppCompatActivity {
                 }
             }
         } catch (Exception ignored) {
-            // Если таблица/строка ещё не готова — просто оставим финиш пустым (второй маркер не нужен).
         } finally {
             if (cursor != null) cursor.close();
         }
@@ -977,8 +978,6 @@ public class CityCheckActivity extends AppCompatActivity {
             cv.put("to_lng", existingToLng);
             cv.put("finish", existingFinish);
         } else {
-            // Для заказа "по городу" координаты должны совпадать в запросе,
-            // но второй маркер в UI появится только после выбора пользователем "куда".
             cv.put("to_lat", Double.parseDouble(settings.get(2)));
             cv.put("to_lng", Double.parseDouble(settings.get(3)));
             cv.put("finish", "");
@@ -1009,10 +1008,14 @@ public class CityCheckActivity extends AppCompatActivity {
     private void cityMaxPay(String city) {
 
 
-        String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        String BASE_URL =BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
 
         CityApiClient cityApiClient = new CityApiClient(BASE_URL);
-        CityService cityService = cityApiClient.getClient().create(CityService.class);
+        CityService cityService = cityApiClient.createService();
+        if (cityService == null) {
+            Logger.w(CityCheckActivity.this, TAG, "CityApiClient not ready");
+            return;
+        }
 
         // Замените "your_city" на фактическое название города
         Call<CityResponse> call = cityService.getMaxPayValues(city, getString(R.string.application));
@@ -1154,10 +1157,14 @@ public class CityCheckActivity extends AppCompatActivity {
         VisicomFragment.clearFromAddressUiForCityChange();
         resetRoutMarker();
 
-        String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        String BASE_URL =BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
 
         CityApiClient cityApiClient = new CityApiClient(BASE_URL);
-        CityService cityService = cityApiClient.getClient().create(CityService.class);
+        CityService cityService = cityApiClient.createService();
+        if (cityService == null) {
+            Logger.w(CityCheckActivity.this, TAG, "CityApiClient not ready");
+            return;
+        }
 
         Call<CityLastAddressResponse> call = cityService.lastAddressUser(email, cityString, this.getString(R.string.application));
 
@@ -1220,38 +1227,10 @@ public class CityCheckActivity extends AppCompatActivity {
         Logger.d(getApplicationContext(), TAG, "updateMyPosition:city "+ city);
 //        ActionBarUtil.setupCustomActionBar(this, R.layout.custom_action_bar_title, R.id.action_bar_title, newTitle);
 
-        switch (city){
-            case "Dnipropetrovsk Oblast":
-            case "Odessa":
-            case "Zaporizhzhia":
-            case "Cherkasy Oblast":
-            case "Kyiv City":
-            case "Lviv":
-            case "Ivano_frankivsk":
-            case "Vinnytsia":
-            case "Poltava":
-            case "Sumy":
-            case "Kharkiv":
-            case "Chernihiv":
-            case "Rivne":
-            case "Ternopil":
-            case "Khmelnytskyi":
-            case "Zakarpattya":
-            case "Zhytomyr":
-            case "Kropyvnytskyi":
-            case "Mykolaiv":
-            case "Chernivtsi":
-            case "Lutsk":
-                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-                break;
-            case "OdessaTest":
-//                sharedPreferencesHelperMain.saveValue("baseUrl", "https://test-taxi.kyiv.ua");
-                sharedPreferencesHelperMain.saveValue("baseUrl", "https://t.easy-order-taxi.site");
-                break;
-            default:
-                sharedPreferencesHelperMain.saveValue("baseUrl", "https://m.easy-order-taxi.site");
-                city = "foreign countries";
+        if (!BaseUrlHelper.isKnownCity(city)) {
+            city = "foreign countries";
         }
+        BaseUrlHelper.syncForCity(CityCheckActivity.this, city, sharedPreferencesHelperMain);
 
         switch (city) {
             case "Kyiv City":

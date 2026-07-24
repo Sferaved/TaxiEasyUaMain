@@ -78,6 +78,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentHomeBinding;
 import com.taxi.easy.ua.ui.cities.Cherkasy.Cherkasy;
@@ -234,7 +235,6 @@ public class HomeFragment extends Fragment  implements ButtonVisibilityCallback 
     ConstraintLayout constraintLayoutHomeMain, constraintLayoutHomeFinish;
     public static TextView text_full_message, textCostMessage, textStatusCar;
     private Animation blinkAnimation;
-//    private String baseUrl = "https://m.easy-order-taxi.site";
     private String baseUrl;
 
     private ExecutionStatusViewModel viewModel;
@@ -249,7 +249,7 @@ public class HomeFragment extends Fragment  implements ButtonVisibilityCallback 
         }
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
 
 
         permissionLauncher = registerForActivityResult(
@@ -1224,7 +1224,7 @@ public class HomeFragment extends Fragment  implements ButtonVisibilityCallback 
                     List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
                     String city = stringList.get(1);
                     String api =  stringList.get(2);
-                    baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+                    baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
                     String url = baseUrl + "/" + api + "/android/autocompleteSearchComboHid/" + from + "/" + city;
 
                     Map sendUrlMapCost = null;
@@ -1321,7 +1321,7 @@ public class HomeFragment extends Fragment  implements ButtonVisibilityCallback 
                 List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
                 String city = stringList.get(1);
                 String api =  stringList.get(2);
-                baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+                baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
                 String url = baseUrl + "/" + api + "/android/autocompleteSearchComboHid/" + to + "/" + city;
 
                 Map sendUrlMapCost = null;
@@ -2330,12 +2330,11 @@ private void cost() {
 
             routeListCancel = new ArrayList<>();
 
-//            String baseUrl = "https://m.easy-order-taxi.site";
-            String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+            String baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
 
             List<String> stringList = logCursor(MainActivity.CITY_INFO,context);
             String city = stringList.get(1);
-            baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+            baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
             String url = baseUrl + "/android/UIDStatusShowEmailCancelApp/" + userEmail + "/" + city + "/" +  context.getString(R.string.application);
 
             Call<List<RouteResponseCancel>> call = ApiClient.getApiService().getRoutesCancel(url);

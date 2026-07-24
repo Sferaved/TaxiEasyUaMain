@@ -76,6 +76,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentOpenstreetmapBinding;
 import com.taxi.easy.ua.ui.maps.FromJSONParser;
@@ -113,6 +114,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -429,8 +431,6 @@ public class OpenStreetMapFragment extends Fragment {
                 markerType = explicitMarkerType;
                 return;
             }
-            // Фолбэк: если оба "ok", то лучше считать что редактируем финиш (2-я точка),
-            // иначе снова будет эффект "тап по 2-й точке открывает 1-ю".
             boolean startOk = "ok".equals(arguments.getString("startMarker", ""));
             boolean finishOk = "ok".equals(arguments.getString("finishMarker", ""));
             if (finishOk) {
@@ -691,7 +691,6 @@ public class OpenStreetMapFragment extends Fragment {
         removeTextOverlay("finishMarker");
     }
 
-    /** Подпись «куда» на карте (без пина — точка задаётся крестиком в центре). */
     private void showFinishAddressLabel(GeoPoint point, String address) {
         if (map == null || point == null || address == null || address.trim().isEmpty()) {
             return;
@@ -723,7 +722,6 @@ public class OpenStreetMapFragment extends Fragment {
         map.invalidate();
     }
 
-    /** Перерисовка линии маршрута без сброса всех оверлеев (центр = 2-я точка). */
     private void redrawRouteToFinish(GeoPoint finish) {
         if (map == null || finish == null) {
             return;
@@ -732,7 +730,6 @@ public class OpenStreetMapFragment extends Fragment {
             startPoint = new GeoPoint(startLat, startLan);
         }
         if (startPoint == null) {
-            Logger.w(ctx, TAG, "redrawRouteToFinish: startPoint is null");
             return;
         }
         if (!isFinishDistinctFromStart(startPoint.getLatitude(), startPoint.getLongitude(),
@@ -743,7 +740,6 @@ public class OpenStreetMapFragment extends Fragment {
         }
         showRout(startPoint, finish);
     }
-
 
     // Обновление уровня зума
     private void updateZoomLevel() {
@@ -1153,7 +1149,7 @@ public class OpenStreetMapFragment extends Fragment {
 
     // Инициализация API сервиса
     private void apiServiceActivate() {
-        String BASE_URL = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        String BASE_URL = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(message -> Logger.d(ctx, TAG, message));
         loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
@@ -1197,6 +1193,7 @@ public class OpenStreetMapFragment extends Fragment {
             Logger.i(context, TAG, "Invalid markerType: " + markerType + ", defaulting to startMarker");
             markerType = "startMarker"; // Fallback
         }
+
         prepareMarker();
         GpsGeocodeHelper.reverseGeocode(context, latitude, longitude, address -> {
             if (!isAdded()) {
@@ -1335,7 +1332,6 @@ public class OpenStreetMapFragment extends Fragment {
                 finishMarkerObj = null;
             }
 
-            // Удаляем текстовый оверлей
             removeTextOverlay("finishMarker");
 
             // Очищаем конечную точку
@@ -1536,21 +1532,17 @@ public class OpenStreetMapFragment extends Fragment {
             return;
         }
 
-        // Проверяем, что мы на главном потоке
         if (Looper.myLooper() != Looper.getMainLooper()) {
             new Handler(Looper.getMainLooper()).post(() -> setMarker(lat, lon, title, context, prefix));
             return;
         }
 
         try {
-            // Проверяем, что map всё ещё валиден
             if (map.getRepository() == null) {
                 Logger.e(context, TAG, "Map repository is null, cannot create marker");
                 return;
             }
 
-            // В режиме отображения маршрута setMarker вызывается дважды (1. и 2.).
-            // markerType отражает "что редактируем сейчас", но для отрисовки нужно различать роль по prefix.
             final String role;
             if ("1.".equals(prefix)) {
                 role = "startMarker";
@@ -1567,7 +1559,6 @@ public class OpenStreetMapFragment extends Fragment {
                 return;
             }
 
-            // Удаляем старый маркер и подпись для соответствующей роли
             if ("startMarker".equals(role)) {
                 if (startMarkerObj != null) {
                     map.getOverlays().remove(startMarkerObj);
@@ -1580,9 +1571,7 @@ public class OpenStreetMapFragment extends Fragment {
                 removeTextOverlay("finishMarker");
             }
 
-            // Create new marker
             Marker marker = new Marker(map);
-            // Маркер должен быть кликабельным, иначе при тапе по 2-й точке будет срабатывать "текущая" (markerType).
             marker.setVisible(true);
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
             BitmapDrawable markerIcon = getMarkerIconForRole(context, role);
@@ -1598,16 +1587,12 @@ public class OpenStreetMapFragment extends Fragment {
                     markerType = "startMarker";
                 }
                 updateCenterMarkerVisibility();
-                return false; // стандартное поведение (InfoWindow), если оно включено
+                return false;
             });
 
-            // Set marker position
             marker.setPosition(new GeoPoint(lat, lon));
-
-            // Add marker to map
             map.getOverlays().add(marker);
 
-            // Add custom text overlay for persistent label (отдельно для старта и финиша)
             Overlay textOverlay = createTextOverlay(new GeoPoint(lat, lon), prefix + unuString + title, role);
             if ("startMarker".equals(role)) {
                 if (startTextOverlay != null) {
@@ -1622,10 +1607,8 @@ public class OpenStreetMapFragment extends Fragment {
             }
             map.getOverlays().add(textOverlay);
 
-            // Update map
             map.invalidate();
 
-            // Update marker references
             if ("startMarker".equals(role)) {
                 startMarkerObj = marker;
             } else if ("finishMarker".equals(role)) {
@@ -2164,36 +2147,43 @@ public class OpenStreetMapFragment extends Fragment {
             if (shouldUpdatePosition) {
                 Logger.d(ctx, TAG, "✅ Обновляем позицию");
 
-                // Сохраняем координаты
-                startLat = latitude;
-                startLan = longitude;
-                startPoint = new GeoPoint(latitude, longitude);
-                fromAddressString = address;
-
-                // Обновляем БД
-                updateStartPointInDatabase(latitude, longitude, address);
-
-                // Обновляем заголовок города в ActionBar
-                setCityAppbar();
-
-                // Обновляем маркер на карте (уже в UI потоке)
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    if (map != null && isAdded()) {
-                        // Удаляем старый маркер и текстовый оверлей
-                        if (startMarkerObj != null) {
-                            map.getOverlays().remove(startMarkerObj);
-                        }
-                        removeTextOverlay("startMarker"); // Удаляем старый текстовый оверлей
-
-                        // Устанавливаем новый маркер
-                        setMarker(latitude, longitude, address, ctx, "1.");
-                        map.invalidate();
-                        mapController.setCenter(startPoint);
-
-                        Logger.d(ctx, TAG, "Marker and map updated successfully");
-                        updateRouteAfterStartPointChange();
+                Consumer<String> applyAddress = resolvedAddress -> {
+                    if (!isAdded() || getActivity() == null || map == null) {
+                        return;
                     }
-                });
+                    startLat = latitude;
+                    startLan = longitude;
+                    startPoint = new GeoPoint(latitude, longitude);
+                    fromAddressString = resolvedAddress;
+
+                    updateStartPointInDatabase(latitude, longitude, resolvedAddress);
+                    setCityAppbar();
+
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        if (map != null && isAdded()) {
+                            if (startMarkerObj != null) {
+                                map.getOverlays().remove(startMarkerObj);
+                            }
+                            removeTextOverlay("startMarker");
+                            setMarker(latitude, longitude, resolvedAddress, ctx, "1.");
+                            map.invalidate();
+                            mapController.setCenter(startPoint);
+                            Logger.d(ctx, TAG, "Marker and map updated successfully");
+                            updateRouteAfterStartPointChange();
+                        }
+                    });
+                };
+
+                if (cityChanged && userConfirmed) {
+                    GpsGeocodeHelper.reverseGeocode(ctx, latitude, longitude, resolved -> {
+                        String addr = resolved != null && !GpsGeocodeHelper.isPlaceholderAddress(ctx, resolved)
+                                ? resolved
+                                : address;
+                        applyAddress.accept(addr);
+                    });
+                } else {
+                    applyAddress.accept(address);
+                }
 
             } else {
                 Logger.d(ctx, TAG, "❌ Пользователь отказался от смены города");

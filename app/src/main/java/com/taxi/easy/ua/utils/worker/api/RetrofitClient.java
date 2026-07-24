@@ -1,5 +1,8 @@
 package com.taxi.easy.ua.utils.worker.api;
 
+import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
+
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import java.util.concurrent.TimeUnit;
@@ -10,12 +13,12 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class RetrofitClient {
-    private static final String BASE_URL = "https://t.easy-order-taxi.site/";
     private static Retrofit retrofit = null;
+    private static String lastBaseUrl = null;
 
     public static Retrofit getClient() {
-        if (retrofit == null) {
-            // Логирование запросов (опционально)
+        String baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
+        if (retrofit == null || !baseUrl.equals(lastBaseUrl)) {
             HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
             logging.setLevel(HttpLoggingInterceptor.Level.BODY);
 
@@ -28,10 +31,11 @@ public class RetrofitClient {
                     .build();
 
             retrofit = new Retrofit.Builder()
-                    .baseUrl(BASE_URL)
+                    .baseUrl(baseUrl)
                     .client(client)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
+            lastBaseUrl = baseUrl;
         }
         return retrofit;
     }

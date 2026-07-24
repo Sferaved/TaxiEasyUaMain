@@ -24,6 +24,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.ui.finish.AddCostBottomUpdateResponse;
 import com.taxi.easy.ua.ui.finish.ApiService;
 import com.taxi.easy.ua.ui.finish.Status;
@@ -39,7 +40,6 @@ import com.taxi.easy.ua.utils.payment.GooglePayOrderHelper;
 import com.taxi.easy.ua.utils.payment.PaymentTypeHelper;
 import com.taxi.easy.ua.utils.payment.WalletAddCostHttpRecreateHelper;
 import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
-import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.uxcam.UXCam;
 
 import java.lang.ref.WeakReference;
@@ -119,10 +119,10 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
     @Override
     public void onResume() {
         super.onResume();
-        // РќР°С‡Р°Р»СЊРЅР°СЏ СЃС‚РѕРёРјРѕСЃС‚СЊ
+        // Начальная стоимость
         int initialCost = Integer.parseInt(cost);
         int initialAddCost = 0;
-// РўРµРєСѓС‰РµРµ Р·РЅР°С‡РµРЅРёРµ СЃС‚РѕРёРјРѕСЃС‚Рё
+// Текущее значение стоимости
         int[] currentCost = {initialCost};
         int[] currentAddCost = {initialAddCost};
 
@@ -168,6 +168,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                 String addCostDelta = String.valueOf(currentAddCost[0]);
                 boolean googlePayAddCost = PaymentTypeHelper.isGooglePay(pay_method);
                 startAddCostUpdate(uid, addCostDelta);
+                // Google Pay: шторку не закрываем до кошелька — launcher привязан к фрагменту.
                 if (!googlePayAddCost) {
                     dismiss();
                 }
@@ -182,7 +183,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             String addCost
     ) {
 
-        String  baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        String  baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
 
         if ("nal_payment".equals(pay_method)) {
             viewModel.setCancelStatus(false);
@@ -220,9 +221,9 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
             Call<AddCostBottomUpdateResponse> call = apiService.startAddCostWithAddBottomUpdate(uid, addCost);
             String url = call.request().url().toString();
-            Logger.d(context, TAG, "URL Р·Р°РїСЂРѕСЃР° nal_payment: " + url);
+            Logger.d(context, TAG, "URL запроса nal_payment: " + url);
 
-            // Р’С‹РїРѕР»РЅСЏРµРј Р°СЃРёРЅС…СЂРѕРЅРЅС‹Р№ Р·Р°РїСЂРѕСЃ
+            // Выполняем асинхронный запрос
             call.enqueue(new Callback<>() {
                 @Override
                 public void onResponse(@NonNull Call<AddCostBottomUpdateResponse> call,
@@ -296,10 +297,10 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             return false;
         }
         String lower = response.toLowerCase();
-        return lower.contains("РґСѓР±Р»РёСЂ")
-                || lower.contains("РґСѓР±Р»СЋРІР°РЅ")
-                || lower.contains("РЅРµ РјРѕР¶РµС‚Рµ")
-                || lower.contains("РЅРµ РјРѕР¶РµС‚Рµ")
+        return lower.contains("дублир")
+                || lower.contains("дублюван")
+                || lower.contains("не можете")
+                || lower.contains("не можете")
                 || lower.contains("cannot");
     }
 
@@ -383,7 +384,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         }
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
-        String[] columns = {"rectoken"}; // РЈРєР°Р·С‹РІР°РµРј РЅСѓР¶РЅРѕРµ РїРѕР»Рµ
+        String[] columns = {"rectoken"}; // Указываем нужное поле
         String selection = "rectoken_check = ?";
         String[] selectionArgs = {"1"};
         String result = "";
@@ -408,7 +409,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
     private void logTableContent(String table) {
         SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
 
-        String[] columns = {"rectoken_check", "merchant", "rectoken"}; // РЈРєР°Р¶РёС‚Рµ РІСЃРµ РЅРµРѕР±С…РѕРґРёРјС‹Рµ РїРѕР»СЏ
+        String[] columns = {"rectoken_check", "merchant", "rectoken"}; // Укажите все необходимые поля
         String selection = null;
         String[] selectionArgs = null;
 
@@ -430,7 +431,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
 
     private void wfpInvoice(String orderId, String amount, String uid) {
-        String  baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        String  baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
@@ -447,7 +448,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
 
             @Override
             public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
-                // РћР±СЂР°Р±РѕС‚РєР° РѕС€РёР±РєРё
+                // Обработка ошибки
                 FirebaseCrashlytics.getInstance().recordException(t);
             }
         });
@@ -458,13 +459,13 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
             String amount,
             String order_id
     ) {
-        String  baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        String  baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
 
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
         OkHttpClient client = new OkHttpClient.Builder()
-                // Р”РѕРїР»Р°С‚Р° вЂ” РѕРґРЅР° РїРѕРїС‹С‚РєР° Р±РµР· RetryInterceptor, С‡С‚РѕР±С‹ РЅРµ РґСѓР±Р»РёСЂРѕРІР°С‚СЊ CHARGE РЅР° СЃРµСЂРІРµСЂРµ.
+                // Доплата — одна попытка без RetryInterceptor, чтобы не дублировать CHARGE на сервере.
                 .addInterceptor(interceptor)
                 .connectTimeout(ADD_COST_WFP_TIMEOUT_SEC, TimeUnit.SECONDS)
                 .readTimeout(ADD_COST_WFP_TIMEOUT_SEC, TimeUnit.SECONDS)
@@ -511,13 +512,14 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
                     switch (orderStatus) {
                         case "Approved":
                         case "WaitingAuthComplete":
-                            // Server already returned new uid in HTTP — apply without Centrifugo (Mantis #31).
+                            // Сервер уже вернул новый uid в HTTP (startAddCostSimpleCashless) —
+                            // применяем сразу, не завися от Centrifugo (Mantis #31).
                             if (WalletAddCostHttpRecreateHelper.shouldApplyHttpRecreateOnHoldSuccess(
                                     orderStatus, statusResponse.getUid())) {
                                 applyWalletAddCostHttpRecreate(statusResponse, amount);
                                 break;
                             }
-                            // Otherwise keep in-flight until finishAbsoluteCost / order_uid_new
+                            // Иначе держим in-flight до finishAbsoluteCost / order_uid_new
                             if (!PaymentTypeHelper.usesWalletHold(pay_method)) {
                                 ExecutionStatusViewModel.setAddCostInFlightPref(false);
                                 ExecutionStatusViewModel.clearPendingAddCostAmountPref();
@@ -610,20 +612,19 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
         loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
-        // РЎРѕР·РґР°РЅРёРµ РєР»РёРµРЅС‚Р° OkHttpClient СЃ РїРѕРґРєР»СЋС‡РµРЅРЅС‹Рј Р»РѕРіРіРµСЂРѕРј
+        // Создание клиента OkHttpClient с подключенным логгером
         OkHttpClient httpClient = new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor())
                 .addInterceptor(loggingInterceptor)
-                .connectTimeout(30, TimeUnit.SECONDS) // РўР°Р№Рј-Р°СѓС‚ РЅР° СЃРѕРµРґРёРЅРµРЅРёРµ
-                .readTimeout(30, TimeUnit.SECONDS)    // РўР°Р№Рј-Р°СѓС‚ РЅР° С‡С‚РµРЅРёРµ РґР°РЅРЅС‹С…
-                .writeTimeout(30, TimeUnit.SECONDS)   // РўР°Р№Рј-Р°СѓС‚ РЅР° Р·Р°РїРёСЃСЊ РґР°РЅРЅС‹С…
+                .connectTimeout(30, TimeUnit.SECONDS) // Тайм-аут на соединение
+                .readTimeout(30, TimeUnit.SECONDS)    // Тайм-аут на чтение данных
+                .writeTimeout(30, TimeUnit.SECONDS)   // Тайм-аут на запись данных
                 .build();
-        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        String baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
-                .client(httpClient) // РџРѕРґРєР»СЋС‡РµРЅРёРµ РєР»РёРµРЅС‚Р° OkHttpClient СЃ Р»РѕРіРіРµСЂРѕРј
+                .client(httpClient) // Подключение клиента OkHttpClient с логгером
                 .build();
 
 
@@ -683,7 +684,7 @@ public class MyBottomSheetAddCostFragment extends BottomSheetDialogFragment {
     public void onDismiss(@NonNull DialogInterface dialog) {
         super.onDismiss(dialog);
         if (dismissListener != null) {
-            dismissListener.onDismiss(); // РЈРІРµРґРѕРјР»СЏРµРј Рѕ Р·Р°РєСЂС‹С‚РёРё
+            dismissListener.onDismiss(); // Уведомляем о закрытии
         }
     }
 }

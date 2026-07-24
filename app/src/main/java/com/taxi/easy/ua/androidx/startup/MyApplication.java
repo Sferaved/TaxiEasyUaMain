@@ -19,6 +19,7 @@ import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.multidex.MultiDexApplication;
 import androidx.work.ExistingWorkPolicy;
@@ -35,10 +36,12 @@ import com.taxi.easy.ua.ui.exit.AnrActivity;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.keys.SecurePrefs;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.preferences.SharedPreferencesHelper;
 import com.taxi.easy.ua.utils.time_ut.IdleTimeoutManager;
 import com.taxi.easy.ua.utils.worker.OrderStatusWorker;
+import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 import com.uxcam.UXCam;
 import com.uxcam.datamodel.UXConfig;
 
@@ -110,6 +113,11 @@ public class MyApplication extends MultiDexApplication {
     public static MyApplication getInstance() {
         return instance;
     }
+
+    @Nullable
+    public FirestoreHelper getFirestoreHelper() {
+        return firestoreHelper;
+    }
     private void initializeAsync() {
         executorService.execute(() -> {
             try {
@@ -124,6 +132,8 @@ public class MyApplication extends MultiDexApplication {
                 supportEmailFromFb();
                 crispInit();
                 getUtaxKey();
+                baseUrlDefaultsFromFb();
+                baseUrlFromFb();
             } catch (Exception e) {
                 Logger.e(this, TAG, "Async initialization failed: " + e);
                 FirebaseCrashlytics.getInstance().recordException(e);
@@ -358,6 +368,31 @@ public class MyApplication extends MultiDexApplication {
     }
 
     // ---------- FIRESTORE ЗАПРОСЫ ----------
+    private void baseUrlDefaultsFromFb() {
+        if (firestoreHelper == null || sharedPreferencesHelperMain == null) {
+            return;
+        }
+        BaseUrlHelper.syncGlobalDefaults(this, sharedPreferencesHelperMain);
+        Logger.d(getApplicationContext(), TAG, "baseUrl defaults sync started (keys/base_urls)");
+    }
+
+    private void baseUrlFromFb() {
+        if (firestoreHelper == null || sharedPreferencesHelperMain == null) {
+            return;
+        }
+        try {
+            String city = WfpUtils.getCurrentCity(this);
+            if (city == null || city.trim().isEmpty()) {
+                return;
+            }
+            BaseUrlHelper.syncForCity(this, city, sharedPreferencesHelperMain);
+            Logger.d(getApplicationContext(), TAG, "baseUrl sync started for city: " + city);
+        } catch (Exception e) {
+            FirebaseCrashlytics.getInstance().recordException(e);
+            Logger.e(getApplicationContext(), TAG, "baseUrlFromFb: " + e.getMessage());
+        }
+    }
+
     private void visicomKeyFromFb() {
         if (firestoreHelper == null) {
             return;

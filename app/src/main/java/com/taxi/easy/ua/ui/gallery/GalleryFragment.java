@@ -16,7 +16,6 @@ import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -36,6 +35,7 @@ import androidx.navigation.NavOptions;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentGalleryBinding;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetBonusFragment;
@@ -43,12 +43,12 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetDialogFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGalleryFragment;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
-import com.taxi.easy.ua.utils.ui.ListScrollPaginationHelper;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
+import com.taxi.easy.ua.utils.ui.ListScrollPaginationHelper;
 import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
 import com.uxcam.UXCam;
 
@@ -114,7 +114,7 @@ public class GalleryFragment extends Fragment {
         binding = FragmentGalleryBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
         context = requireActivity();
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
             Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
             Logger.w(context, TAG, "NO INTERNET - Showing toast message");
@@ -652,7 +652,7 @@ public class GalleryFragment extends Fragment {
             String urlCost = getTaxiUrlSearchMarkers("costSearchMarkersTime", context);
 
             ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
-            baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+            baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
 //            // Пример строки URL с параметрами
             Logger.d(getActivity(), TAG, "orderFinished: "  + baseUrl + urlCost);
             parser.sendURL(urlCost, new Callback<Map<String, String>>() {

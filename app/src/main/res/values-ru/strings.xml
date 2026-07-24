@@ -998,4 +998,6 @@
     <string name="landing_language_label_uk">Українська</string>
     <string name="landing_auth_required">Для этого действия нужен вход в аккаунт</string>
 
+    <string name="card_verification_browser_hint">Оплата открыта в Chrome. После завершения вернитесь в приложение — мы проверим привязку карты.</string>
+    <string name="payment_browser_hint">Оплата открыта в Chrome. После завершения вернитесь в приложение.</string>
 </resources>

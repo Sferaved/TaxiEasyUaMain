@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.utils.fcm.token_send.ApiServiceToken;
 import com.taxi.easy.ua.utils.fcm.token_send.RetrofitClientToken;
 import com.taxi.easy.ua.utils.helpers.InstallationIdHelper;
@@ -30,7 +31,7 @@ public class TokenUtils {
         Logger.d(context, TAG, "sendToken token " + token);
 
         if (!email.isEmpty() && !email.equals("no_email")) {
-            String baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+            String baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
             ApiServiceToken apiService = RetrofitClientToken.getClient(baseUrl).create(ApiServiceToken.class);
             String app = context.getString(R.string.application);
 
@@ -63,10 +64,11 @@ public class TokenUtils {
 
     /**
      * Регистрируем установку (анонимно) — чтобы можно было прислать напоминание о входе.
+     * Важно: не создаём "фейкового пользователя" на сервере через email.
      */
     public static void registerInstallationToken(Context context, String token) {
         try {
-            String baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+            String baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
             ApiServiceToken apiService = RetrofitClientToken.getClient(baseUrl).create(ApiServiceToken.class);
             String app = context.getString(R.string.application);
             String installationId = InstallationIdHelper.getOrCreateInstallationId();
@@ -92,7 +94,7 @@ public class TokenUtils {
     /** Планируем одно напоминание на завтра 07:00 Europe/Kyiv (на сервере). */
     public static void scheduleLoginReminderIfNeeded(Context context) {
         try {
-            String baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+            String baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
             ApiServiceToken apiService = RetrofitClientToken.getClient(baseUrl).create(ApiServiceToken.class);
             String app = context.getString(R.string.application);
             String installationId = InstallationIdHelper.getOrCreateInstallationId();
@@ -118,7 +120,7 @@ public class TokenUtils {
     /** Отменяем напоминание после успешного входа. */
     public static void cancelLoginReminder(Context context) {
         try {
-            String baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+            String baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
             ApiServiceToken apiService = RetrofitClientToken.getClient(baseUrl).create(ApiServiceToken.class);
             String app = context.getString(R.string.application);
             String installationId = InstallationIdHelper.getOrCreateInstallationId();

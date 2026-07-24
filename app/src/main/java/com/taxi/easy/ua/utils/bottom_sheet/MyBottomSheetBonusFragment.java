@@ -37,6 +37,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.ui.gallery.GalleryFragment;
 import com.taxi.easy.ua.ui.home.ButtonVisibilityCallback;
 import com.taxi.easy.ua.ui.home.HomeFragment;
@@ -104,7 +105,7 @@ public class MyBottomSheetBonusFragment extends BottomSheetDialogFragment {
     public MyBottomSheetBonusFragment() {
     }
 
-    private final String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+    private final String baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
 
     public MyBottomSheetBonusFragment(long cost, String rout, String api, TextView textView) {
         this.cost = cost;

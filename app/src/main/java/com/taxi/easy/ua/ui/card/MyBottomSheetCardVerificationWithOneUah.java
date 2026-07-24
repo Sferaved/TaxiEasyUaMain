@@ -11,13 +11,11 @@ import android.content.DialogInterface;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Rect;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
 import android.widget.Toast;
@@ -33,6 +31,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusResponse;
 import com.taxi.easy.ua.ui.wfp.checkStatus.StatusService;
@@ -45,6 +44,7 @@ import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.helpers.WfpWebViewHelper;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.worker.utils.WfpUtils;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.uxcam.UXCam;
 
@@ -66,7 +66,6 @@ import com.taxi.easy.ua.utils.db.CursorReadHelper;
 public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFragment {
     private final String TAG = "MyBottomSheetCardVerificationWithOneUah";
 
-    private WebView webView;
     private String order_id;
     private String amount;
     String email;
@@ -74,7 +73,10 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
 
     private FragmentManager fragmentManager;
     private Context context;
+    private WebView webView;
     private String messageFondy;
+    private boolean statusCheckInProgress;
+    private boolean paymentFlowFinished;
 
     @SuppressLint({"MissingInflatedId", "SetJavaScriptEnabled"})
     @Nullable
@@ -88,7 +90,8 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         View view = inflater.inflate(R.layout.activity_fondy_payment, container, false);
         context = requireActivity();
         webView = view.findViewById(R.id.webView);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        view.findViewById(R.id.payment_browser_hint).setVisibility(View.GONE);
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         email = logCursor(MainActivity.TABLE_USER_INFO, context).get(3);
         amount = "1";
         messageFondy =  context.getString(R.string.fondy_message);
@@ -96,31 +99,11 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         
         fragmentManager = getParentFragmentManager();
 
-        view.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                Rect r = new Rect();
-                view.getWindowVisibleDisplayFrame(r);
-                int screenHeight = view.getRootView().getHeight();
-
-                // Вычисляем размер видимой области экрана
-                int heightDifference = screenHeight - (r.bottom - r.top);
-
-                // Если высота разницы больше 200dp (можете подстроить под свои нужды)
-                if (heightDifference > dpToPx(200)) {
-                    // Поднимаем WebView
-                    view.setTranslationY(-heightDifference);
-                } else {
-                    // Сбрасываем перевод, если клавиатура закрыта
-                    view.setTranslationY(0);
-                }
-            }
-        });
-
         getUrlToPaymentWfp();
 
         return view;
     }
+
     @Override
     public void onStart() {
         super.onStart();
@@ -134,14 +117,11 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         bottomSheet.setLayoutParams(layoutParams);
         behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
     }
-    private int dpToPx(int dp) {
-        return (int) (dp * getResources().getDisplayMetrics().density + 0.5f);
-    }
 
     private void getUrlToPaymentWfp() {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(new RetryInterceptor()) // 3 попытки
                 .addInterceptor(interceptor)
@@ -205,9 +185,14 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
     
     private void payWfp(String checkoutUrl) {
         WfpWebViewHelper.loadPaymentUrl(webView, checkoutUrl, this::getStatusWfp);
+        Logger.d(context, TAG, "Payment page loaded in WebView: " + checkoutUrl);
     }
 
     private void getStatusWfp() {
+        if (statusCheckInProgress || paymentFlowFinished) {
+            return;
+        }
+        statusCheckInProgress = true;
         Logger.d(context, TAG, "getStatusWfp: ");
 
         List<String> stringList = logCursor(MainActivity.CITY_INFO, context);
@@ -242,6 +227,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<StatusResponse> call, @NonNull Response<StatusResponse> response) {
+                statusCheckInProgress = false;
 
                 if (response.isSuccessful() && response.body() != null) {
                     StatusResponse statusResponse = response.body();
@@ -252,9 +238,9 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
                         switch (orderStatus) {
                             case "Approved":
                             case "WaitingAuthComplete":
+                                paymentFlowFinished = true;
                                 sharedPreferencesHelperMain.saveValue("pay_error", "**");
                                 getReversWfp(city);
-//                                dismiss();
                                 getCardTokenWfp();
 //                                MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder()
 //                                        .setPopUpTo(R.id.nav_card, true)
@@ -274,6 +260,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
 
             @Override
             public void onFailure(@NonNull Call<StatusResponse> call, @NonNull Throwable t) {
+                statusCheckInProgress = false;
                 Logger.d(context, TAG, "Request failed:6" + t.getMessage());
                 FirebaseCrashlytics.getInstance().recordException(t);
                 Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
@@ -321,35 +308,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
                     if (callbackResponse != null) {
                         List<CardInfo> cards = callbackResponse.getCards();
                         Logger.d(context, TAG, "onResponse: cards" + cards);
-                        String tableName = MainActivity.TABLE_WFP_CARDS; // Например, "wfp_cards"
-
-
-                        SQLiteDatabase database = context.openOrCreateDatabase(MainActivity.DB_NAME, MODE_PRIVATE, null);
-
-
-                        database.execSQL("DELETE FROM " + tableName + ";");
-
-                        if (cards != null && !cards.isEmpty()) {
-                            for (CardInfo cardInfo : cards) {
-                                String masked_card = cardInfo.getMasked_card(); // Маска карты
-                                String card_type = cardInfo.getCard_type(); // Тип карты
-                                String bank_name = cardInfo.getBank_name(); // Название банка
-                                String rectoken = cardInfo.getRectoken(); // Токен карты
-                                String merchant = cardInfo.getMerchant(); //
-                                String active = cardInfo.getActive();
-
-                                Logger.d(context, TAG, "onResponse: card_token: " + rectoken);
-                                ContentValues cv = new ContentValues();
-                                cv.put("masked_card", masked_card);
-                                cv.put("card_type", card_type);
-                                cv.put("bank_name", bank_name);
-                                cv.put("rectoken", rectoken);
-                                cv.put("merchant", merchant);
-                                cv.put("rectoken_check", active);
-                                database.insert(MainActivity.TABLE_WFP_CARDS, null, cv);
-                            }
-                        }
-                        database.close();
+                        WfpUtils.saveWfpCardsToDatabase(context, cards, true);
                         MainActivity.navController.navigate(R.id.nav_card, null, new NavOptions.Builder()
                             .setPopUpTo(R.id.nav_card, true)
                             .build());
@@ -381,7 +340,7 @@ public class MyBottomSheetCardVerificationWithOneUah extends BottomSheetDialogFr
         Log.d("ReversWfp", "HttpLoggingInterceptor configured with level: BODY");
 
         // Retrieve base URL from SharedPreferences
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         Log.d("ReversWfp", "Base URL retrieved: " + baseUrl);
 
         // Build OkHttpClient with interceptors and timeouts

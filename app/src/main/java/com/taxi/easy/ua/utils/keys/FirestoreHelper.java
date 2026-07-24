@@ -34,6 +34,8 @@ public class FirestoreHelper {
     ListenerRegistration listenerWeatherKey;
     ListenerRegistration listenerCardPaymentKey;
     ListenerRegistration listenerUixCamKey;
+    ListenerRegistration listenerBaseUrl;
+    ListenerRegistration listenerBaseUrlDefaults;
 
     public FirestoreHelper(Context context) {
         this.firestore = FirebaseFirestore.getInstance();
@@ -70,6 +72,84 @@ public class FirestoreHelper {
     }
 
     private static final String TAG = "FirestoreHelper";
+
+    /**
+     * Live-слушатель {@code keys/base_urls} — поля prod / test (без хардкода в APK).
+     */
+    public void listenBaseUrlDefaults(OnBaseUrlDefaultsFetchedListener listener) {
+        if (listenerBaseUrlDefaults != null) {
+            listenerBaseUrlDefaults.remove();
+            listenerBaseUrlDefaults = null;
+        }
+        DocumentReference docRef = firestore.collection("keys").document("base_urls");
+        listenerBaseUrlDefaults = docRef.addSnapshotListener((documentSnapshot, e) -> {
+            if (e != null) {
+                if (listener != null) {
+                    listener.onFailure(e);
+                }
+                return;
+            }
+            if (documentSnapshot != null && documentSnapshot.exists()) {
+                String prod = documentSnapshot.getString("prod");
+                String test = documentSnapshot.getString("test");
+                if ((prod != null && !prod.trim().isEmpty())
+                        || (test != null && !test.trim().isEmpty())) {
+                    if (listener != null) {
+                        listener.onSuccess(
+                                prod != null ? prod.trim() : null,
+                                test != null ? test.trim() : null);
+                    }
+                    return;
+                }
+            }
+            if (listener != null) {
+                listener.onFailure(new Exception(
+                        "Документ keys/base_urls или поля prod/test не найдены."));
+            }
+        });
+    }
+
+    /**
+     * Live-слушатель {@code city/{city}.base_url} — как у Visicom key.
+     */
+    public void listenBaseUrlForCity(
+            @androidx.annotation.NonNull String city,
+            OnBaseUrlFetchedListener listener
+    ) {
+        if (city.isEmpty()) {
+            if (listener != null) {
+                listener.onFailure(new IllegalArgumentException("City name cannot be null or empty"));
+            }
+            return;
+        }
+        if (listenerBaseUrl != null) {
+            listenerBaseUrl.remove();
+            listenerBaseUrl = null;
+        }
+        DocumentReference docRef = firestore.collection("city").document(city);
+        listenerBaseUrl = docRef.addSnapshotListener((documentSnapshot, e) -> {
+            if (e != null) {
+                if (listener != null) {
+                    listener.onFailure(e);
+                }
+                return;
+            }
+            if (documentSnapshot != null && documentSnapshot.exists()
+                    && documentSnapshot.contains("base_url")) {
+                String baseUrl = documentSnapshot.getString("base_url");
+                if (baseUrl != null && !baseUrl.trim().isEmpty()) {
+                    if (listener != null) {
+                        listener.onSuccess(baseUrl.trim());
+                    }
+                    return;
+                }
+            }
+            if (listener != null) {
+                listener.onFailure(new Exception(
+                        "Поле base_url не найдено в документе city/" + city));
+            }
+        });
+    }
 
     public void getCardPaymentKeyForCity(
             OnCardPaymentKeyFetchedListener listener,
@@ -261,7 +341,7 @@ public class FirestoreHelper {
             }
         });
     }
-    public MantisConfig fetchMantisConfigBlocking() throws Exception {
+  public MantisConfig fetchMantisConfigBlocking() throws Exception {
         DocumentSnapshot documentSnapshot = Tasks.await(
                 firestore.collection("keys").document("mantis_key").get()
         );
@@ -384,6 +464,7 @@ public class FirestoreHelper {
             listenerCardPaymentKey.remove();
             listenerCardPaymentKey = null;
         }
+        // listenerBaseUrl намеренно не снимаем: нужен на всё время жизни приложения
     }
 
     // Интерфейс для передачи результатов через callback
@@ -410,6 +491,16 @@ public class FirestoreHelper {
     }
     public interface OnSupportCrispFetchedListener {
         void onSuccess(String crispKey);
+        void onFailure(Exception e);
+    }
+
+    public interface OnBaseUrlFetchedListener {
+        void onSuccess(String baseUrl);
+        void onFailure(Exception e);
+    }
+
+    public interface OnBaseUrlDefaultsFetchedListener {
+        void onSuccess(String prod, String test);
         void onFailure(Exception e);
     }
 }

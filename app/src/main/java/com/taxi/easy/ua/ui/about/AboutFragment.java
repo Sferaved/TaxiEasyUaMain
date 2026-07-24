@@ -23,6 +23,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.databinding.FragmentAboutBinding;
 import com.uxcam.UXCam;
 
@@ -51,7 +52,7 @@ public class AboutFragment extends Fragment {
         // Текст, который вы хотите отображать
         String displayText = requireActivity().getString(R.string.gdpr0);
 
-        String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        String baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         String url = baseUrl +"/taxi-gdbr";
 
         SpannableString spannableString = new SpannableString(displayText);

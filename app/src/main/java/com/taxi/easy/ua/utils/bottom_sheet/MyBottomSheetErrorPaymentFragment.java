@@ -32,6 +32,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.ui.card.CustomCardAdapter;
 import com.taxi.easy.ua.ui.card.MyBottomSheetCardPayment;
@@ -60,10 +61,9 @@ import com.taxi.easy.ua.ui.wfp.purchase.PurchaseService;
 import com.taxi.easy.ua.utils.data.DataArr;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
-import com.taxi.easy.ua.utils.payment.PaymentErrorSheetHelper;
-import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.payment.PaymentErrorSheetHelper;
+import com.taxi.easy.ua.utils.payment.PaymentSessionHelper;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
 import com.taxi.easy.ua.utils.to_json_parser.ToJSONParserRetrofit;
 import com.taxi.easy.ua.utils.worker.InclusiveTransportPreferenceWorker;
@@ -347,7 +347,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     private void getUrlToPaymentWfp() {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(new RetryInterceptor())
                 .addInterceptor(interceptor)
@@ -425,7 +425,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     ) {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(new RetryInterceptor())
                 .addInterceptor(interceptor)
@@ -470,8 +470,8 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
     }
 
     void callOrderIdMemory(String orderId, String uid, String paySystem) {
-        com.taxi.easy.ua.utils.payment.PaymentSessionHelper.saveWfpOrderRef(uid, orderId);
-        String baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        PaymentSessionHelper.saveWfpOrderRef(uid, orderId);
+        String baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
@@ -495,7 +495,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
 
     public void orderFinished(String page) throws MalformedURLException {
         String urlOrder = getTaxiUrlSearchMarkers(page, context);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
 
         Logger.d(context, TAG, "orderFinished: " + baseUrl + urlOrder);
@@ -896,7 +896,7 @@ public class MyBottomSheetErrorPaymentFragment extends BottomSheetDialogFragment
         String city = listCity.get(1);
         String api = listCity.get(2);
         String paymentMethod = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
         boolean orderInMyVod = (boolean) sharedPreferencesHelperMain.getValue("order_in_my_vod", false);
         String url = baseUrl + api;
         if (!orderInMyVod) {

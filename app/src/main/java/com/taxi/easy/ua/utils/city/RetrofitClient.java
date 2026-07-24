@@ -1,5 +1,7 @@
 package com.taxi.easy.ua.utils.city;
 
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
+
 import static com.taxi.easy.ua.androidx.startup.MyApplication.sharedPreferencesHelperMain;
 
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
@@ -17,7 +19,7 @@ public class RetrofitClient {
     public static Retrofit getClient() {
         if (retrofit == null) {
 
-            String BASE_URL =sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+            String BASE_URL =BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
             HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
             loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 

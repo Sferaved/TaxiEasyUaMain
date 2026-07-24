@@ -43,6 +43,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.utils.dialog.UklonAlertDialog;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentCacheOrderBinding;
@@ -594,7 +595,7 @@ public class CacheOrderFragment extends Fragment {
 
 
                 ToJSONParserRetrofit parser = new ToJSONParserRetrofit();
-                baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+                baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
                 Logger.d(context, TAG, "orderFinished: " + baseUrl + urlOrder);
 
                 parser.sendURLChannel(urlOrder, new Callback<>() {
@@ -1061,7 +1062,7 @@ public class CacheOrderFragment extends Fragment {
 
         Logger.d(context, TAG, "onResume 5" );
 
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
 
 
         List<String> listCity = logCursor(MainActivity.CITY_INFO, context);
@@ -1570,7 +1571,7 @@ public class CacheOrderFragment extends Fragment {
         String api = listCity.get(2);
         pay_method = logCursor(MainActivity.TABLE_SETTINGS_INFO, context).get(4);
 
-        baseUrl = sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site") + "/";
+        baseUrl = BaseUrlHelper.fromPrefsWithSlash(sharedPreferencesHelperMain);
 
         String url = baseUrl + api + "/android/webordersCancelDouble/" + uid + "/" + uid_Double + "/" + pay_method + "/" + city + "/" + context.getString(R.string.application);
 

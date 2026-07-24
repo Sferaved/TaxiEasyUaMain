@@ -51,6 +51,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.databinding.FragmentCardBinding;
 import com.taxi.easy.ua.ui.card.unlink.UnlinkApi;
 import com.taxi.easy.ua.ui.fondy.payment.UniqueNumberGenerator;
@@ -351,7 +352,7 @@ public class CardFragment extends Fragment {
         refreshCardUiAfterSync();
 
         String url = baseUrl != null ? baseUrl
-                : (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+                : BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(url)
                 .addConverterFactory(GsonConverterFactory.create())
@@ -691,7 +692,7 @@ public class CardFragment extends Fragment {
         super.onResume();
 
         context = requireActivity();
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
 
         // Проверка сети
         if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
@@ -708,12 +709,15 @@ public class CardFragment extends Fragment {
         btnOrder = binding.btnOrder;
         FloatingActionButton btnCallAdmin = binding.btnCallAdmin;
 
+        // Инициализация WebView
         initWebView();
 
+        // Настройка элементов
         progressBar = binding.progressBar;
         textCard = binding.textCard;
         emptyStateContainer = binding.emptyStateContainer;
         image_text_card = binding.imageTextCard;
+
         listView = binding.listView;
 
         btnCallAdmin.setOnClickListener(v -> {

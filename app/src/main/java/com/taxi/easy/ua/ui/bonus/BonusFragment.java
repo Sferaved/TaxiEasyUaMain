@@ -36,6 +36,7 @@ import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.taxi.easy.ua.MainActivity;
 import com.taxi.easy.ua.R;
+import com.taxi.easy.ua.utils.city.BaseUrlHelper;
 import com.taxi.easy.ua.androidx.startup.MyApplication;
 import com.taxi.easy.ua.databinding.FragmentBonusBinding;
 import com.taxi.easy.ua.ui.finish.ApiClient;
@@ -170,11 +171,11 @@ public class BonusFragment extends Fragment {
         });
     }
 
-    String baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+    String baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
 
     private void fetchBonus(String value, Context context) {
         btnOrder.setVisibility(View.INVISIBLE);
-        baseUrl = (String) sharedPreferencesHelperMain.getValue("baseUrl", "https://m.easy-order-taxi.site");
+        baseUrl = BaseUrlHelper.fromPrefs(sharedPreferencesHelperMain);
         String url = baseUrl + "/bonus/bonusUserShow/" + value + "/" + context.getString(R.string.application);
 //        String url = baseUrl + "/bonus/bonusUserShow/" + value;
         Call<BonusResponse> call = ApiClient.getApiService().getBonus(url);
