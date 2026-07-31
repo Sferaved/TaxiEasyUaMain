@@ -116,6 +116,11 @@ public final class VisicomGeocodeQueryHelper {
         if (cityCode == null || cityCode.isEmpty()) {
             return null;
         }
+        // «Інше» / all / unknown: GPS may be overseas and route may be Warsaw stub.
+        // Pinning Visicom to those coords + 25 km yields empty UA address results.
+        if (isNationwideGeocodeCity(cityCode)) {
+            return null;
+        }
         int radius = radiusForCity(cityCode);
 
         if (isValidCoord(gpsLat, gpsLon)
@@ -131,6 +136,19 @@ public final class VisicomGeocodeQueryHelper {
             return new Near(center[0], center[1], radius);
         }
         return null;
+    }
+
+    /**
+     * Cities without a fixed UA center — search without near/radius.
+     */
+    static boolean isNationwideGeocodeCity(@Nullable String cityCode) {
+        if (cityCode == null || cityCode.isEmpty()) {
+            return true;
+        }
+        if ("foreign countries".equals(cityCode) || "all".equals(cityCode)) {
+            return true;
+        }
+        return CityLastAddressHelper.getCityCenter(cityCode) == null;
     }
 
     private static int radiusForCity(String cityCode) {

@@ -69,4 +69,37 @@ public class VisicomGeocodeQueryHelperTest {
         assertNull(VisicomGeocodeQueryHelper.resolveNear(
                 "UnknownCity", 0, 0, 0, 0));
     }
+
+    @Test
+    public void resolveNear_foreignCountries_ignoresOverseasGpsAndWarsawRoute() {
+        // Mantis #49: foreign countries + Warsaw stub route → empty Visicom
+        assertNull(VisicomGeocodeQueryHelper.resolveNear(
+                "foreign countries",
+                0, 0,
+                52.13472, 21.00424));
+        assertTrue(VisicomGeocodeQueryHelper.isNationwideGeocodeCity("foreign countries"));
+    }
+
+    @Test
+    public void resolveNear_all_ignoresOverseasGps() {
+        // Mantis #50: city all + Lima GPS → empty Visicom for UA streets
+        assertNull(VisicomGeocodeQueryHelper.resolveNear(
+                "all",
+                -12.042056, -77.058333,
+                -12.042056, -77.058333));
+        assertTrue(VisicomGeocodeQueryHelper.isNationwideGeocodeCity("all"));
+    }
+
+    @Test
+    public void buildQueryParams_foreignCountries_omitsNear() {
+        String params = VisicomGeocodeQueryHelper.buildQueryParams(
+                "при",
+                false,
+                "foreign countries",
+                52.13472, 21.00424,
+                52.13472, 21.00424);
+        assertFalse(params.contains("near="));
+        assertFalse(params.contains("radius="));
+        assertTrue(params.contains("text=при"));
+    }
 }
