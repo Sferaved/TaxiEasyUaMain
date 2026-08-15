@@ -92,10 +92,10 @@ import com.taxi.easy.ua.utils.log.Logger;
 import com.taxi.easy.ua.utils.model.ExecutionStatusViewModel;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 import com.taxi.easy.ua.utils.phone_state.PhoneCallHelper;
+import com.taxi.easy.ua.utils.route.OsrmRouteHelper;
 
 import org.json.JSONException;
 import org.osmdroid.api.IMapController;
-import org.osmdroid.bonuspack.routing.OSRMRoadManager;
 import org.osmdroid.bonuspack.routing.Road;
 import org.osmdroid.bonuspack.routing.RoadManager;
 import org.osmdroid.config.Configuration;
@@ -987,10 +987,7 @@ public class OpenStreetMapFragment extends Fragment {
         if (endPoint == null || map == null) {
             return;
         }
-        String title = toAddressString;
-        if (title == null || title.trim().isEmpty()) {
-            title = getString(R.string.end_point_marker);
-        }
+        String title = resolveFinishAddressLabel(toAddressString);
         setMarker(finishLat, finishLan, title, ctx, "2.");
     }
 
@@ -1003,10 +1000,11 @@ public class OpenStreetMapFragment extends Fragment {
         }
         double lat = startPoint != null ? startPoint.getLatitude() : startLat;
         double lon = startPoint != null ? startPoint.getLongitude() : startLan;
-        String title = fromAddressString;
-        if (title == null || title.trim().isEmpty()) {
-            title = getString(R.string.startPoint);
-        }
+        String title = GpsGeocodeHelper.resolveMapPointLabel(
+                fromAddressString,
+                false,
+                getString(R.string.startPoint),
+                getString(R.string.end_point_marker));
         setMarker(lat, lon, title, ctx, "1.");
     }
 
@@ -1204,7 +1202,11 @@ public class OpenStreetMapFragment extends Fragment {
                 Logger.e(context, TAG, "Map or repository is null");
                 return;
             }
-            String result = address != null ? address : getString(R.string.startPoint);
+            String result = GpsGeocodeHelper.resolveMapPointLabel(
+                    address,
+                    "finishMarker".equals(markerType),
+                    getString(R.string.startPoint),
+                    getString(R.string.end_point_marker));
             Logger.d(context, TAG, "reverseGeocode result: " + result);
             if ("startMarker".equals(markerType)) {
                 handleStartMarkerResponse(result, context);
@@ -1279,10 +1281,11 @@ public class OpenStreetMapFragment extends Fragment {
             return;
         }
 
-        fromAddressString = GpsGeocodeHelper.normalizeServerAddress(localizedContext, result);
-        if (fromAddressString == null) {
-            fromAddressString = localizedContext.getString(R.string.startPoint);
-        }
+        fromAddressString = GpsGeocodeHelper.resolveMapPointLabel(
+                GpsGeocodeHelper.normalizeServerAddress(localizedContext, result),
+                false,
+                localizedContext.getString(R.string.startPoint),
+                localizedContext.getString(R.string.end_point_marker));
         Logger.d(ctx, TAG, "fromAddressString set to: " + fromAddressString);
 
         if (previousMarker != null) {
@@ -1316,10 +1319,11 @@ public class OpenStreetMapFragment extends Fragment {
         }
 
         // Установка строки адреса
-        toAddressString = GpsGeocodeHelper.normalizeServerAddress(localizedContext, result);
-        if (toAddressString == null) {
-            toAddressString = localizedContext.getString(R.string.end_point_marker);
-        }
+        toAddressString = GpsGeocodeHelper.resolveMapPointLabel(
+                GpsGeocodeHelper.normalizeServerAddress(localizedContext, result),
+                true,
+                localizedContext.getString(R.string.startPoint),
+                localizedContext.getString(R.string.end_point_marker));
         Logger.d(ctx, TAG, "toAddressString set to: " + toAddressString);
 
         // ПРОВЕРКА: если адрес содержит "по городу" - не показываем маркер и не строим маршрут
@@ -1708,8 +1712,16 @@ public class OpenStreetMapFragment extends Fragment {
                 float density = context.getResources().getDisplayMetrics().density;
                 int accentColor = resolveRoleAccentColor(context, role);
                 String header = resolveRoleHeader(context, role);
-                String body = stripLabelPrefix(text);
-                if (body.isEmpty()) {
+                String body = GpsGeocodeHelper.resolveMapPointLabel(
+                        stripLabelPrefix(text),
+                        "finishMarker".equals(role),
+                        context.getString(R.string.startPoint),
+                        context.getString(R.string.end_point_marker));
+                // Заглушка без адреса: только цветной заголовок роли, без дубля в теле.
+                if (header != null && header.equals(body)) {
+                    body = "";
+                }
+                if (body.isEmpty() && header == null) {
                     return;
                 }
 
@@ -1739,14 +1751,21 @@ public class OpenStreetMapFragment extends Fragment {
                 bodyPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
 
                 int bodyWidth = maxWidth - paddingH * 2;
-                StaticLayout bodyLayout = StaticLayout.Builder
+                boolean hasBody = body != null && !body.isEmpty();
+                StaticLayout bodyLayout = hasBody
+                        ? StaticLayout.Builder
                         .obtain(body, 0, body.length(), bodyPaint, bodyWidth)
                         .setAlignment(Layout.Alignment.ALIGN_NORMAL)
                         .setLineSpacing(0f, 1.05f)
-                        .build();
+                        .build()
+                        : null;
 
-                int bodyHeight = bodyLayout.getHeight();
-                int totalHeight = accentBarHeight + bodyHeight + paddingV * 2;
+                int bodyHeight = hasBody ? bodyLayout.getHeight() : 0;
+                int bodyPadding = hasBody ? paddingV * 2 : 0;
+                int totalHeight = Math.max(accentBarHeight, accentBarHeight + bodyHeight + bodyPadding);
+                if (!hasBody && accentBarHeight == 0) {
+                    return;
+                }
 
                 float left = screenPoint.x - maxWidth / 2f;
                 float top = screenPoint.y - totalHeight - arrowHeight - pinOffset;
@@ -1792,12 +1811,18 @@ public class OpenStreetMapFragment extends Fragment {
                 arrowPath.lineTo(screenPoint.x + arrowWidth / 2f, bottom);
                 arrowPath.lineTo(screenPoint.x, bottom + arrowHeight);
                 arrowPath.close();
-                canvas.drawPath(arrowPath, bgPaint);
+                Paint arrowFill = hasBody ? bgPaint : new Paint(Paint.ANTI_ALIAS_FLAG);
+                if (!hasBody) {
+                    arrowFill.setColor(accentColor);
+                }
+                canvas.drawPath(arrowPath, arrowFill);
                 canvas.drawPath(arrowPath, borderPaint);
 
                 canvas.save();
-                canvas.translate(left + paddingH, top + accentBarHeight + paddingV);
-                bodyLayout.draw(canvas);
+                if (hasBody) {
+                    canvas.translate(left + paddingH, top + accentBarHeight + paddingV);
+                    bodyLayout.draw(canvas);
+                }
                 canvas.restore();
             }
         };
@@ -1813,12 +1838,20 @@ public class OpenStreetMapFragment extends Fragment {
         }
         final int generation = ++routeBuildGeneration;
         removeRoadOverlayFromMap();
+        final String userAgent = OsrmRouteHelper.resolveUserAgent(
+                Configuration.getInstance().getUserAgentValue(),
+                ctx != null ? ctx.getPackageName() : null);
         executor.execute(() -> {
-            RoadManager roadManager = new OSRMRoadManager(map.getContext(), System.getProperty("http.agent"));
             ArrayList<GeoPoint> waypoints = new ArrayList<>();
             waypoints.add(startP);
             waypoints.add(endP);
-            Road road = roadManager.getRoad(waypoints);
+            Road road = OsrmRouteHelper.fetchDrivingRoute(userAgent, waypoints);
+            if (!OsrmRouteHelper.isUsableRoad(road)) {
+                Logger.e(ctx, TAG, "No usable OSRM route — skip straight-line overlay");
+                return;
+            }
+            Logger.d(ctx, TAG, "OSRM route points=" + OsrmRouteHelper.pointCount(road)
+                    + " lengthKm=" + road.mLength);
             Polyline newOverlay = RoadManager.buildRoadOverlay(road);
             newOverlay.getOutlinePaint().setStrokeWidth(10f);
             map.post(() -> {
@@ -2104,10 +2137,11 @@ public class OpenStreetMapFragment extends Fragment {
     }
 
     private String resolveFinishAddressLabel(String finishAddress) {
-        if (finishAddress != null && !finishAddress.trim().isEmpty()) {
-            return finishAddress.trim();
-        }
-        return getString(R.string.end_point_marker);
+        return GpsGeocodeHelper.resolveMapPointLabel(
+                finishAddress,
+                true,
+                getString(R.string.startPoint),
+                getString(R.string.end_point_marker));
     }
 
     private void checkCityAndUpdateStartPoint(double latitude, double longitude, String address) {
@@ -2216,7 +2250,7 @@ public class OpenStreetMapFragment extends Fragment {
             // Если есть конечная точка и это не "по городу", показываем маршрут
             if (toLat != 0.0 && !isCityOnlyAddress(finish)) {
                 GeoPoint endGeoPoint = new GeoPoint(toLat, toLng);
-                setMarker(toLat, toLng, finish, ctx, "2.");
+                setMarker(toLat, toLng, resolveFinishAddressLabel(finish), ctx, "2.");
                 showRout(startPoint, endGeoPoint);
             }
 

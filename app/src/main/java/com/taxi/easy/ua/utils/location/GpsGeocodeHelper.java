@@ -14,6 +14,8 @@ import com.taxi.easy.ua.utils.from_json_parser.FromJSONParserRetrofit;
 import com.taxi.easy.ua.utils.helpers.LocaleHelper;
 import com.taxi.easy.ua.utils.log.Logger;
 
+import androidx.annotation.Nullable;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -25,6 +27,8 @@ import java.util.function.Consumer;
 public final class GpsGeocodeHelper {
 
     private static final String TAG = "GpsGeocodeHelper";
+    static final String SERVER_POINT_ON_MAP_RU = "Точка на карте";
+    static final String SERVER_POINT_ON_MAP_UK = "Точка на карті";
 
     private GpsGeocodeHelper() {
     }
@@ -85,20 +89,56 @@ public final class GpsGeocodeHelper {
         if (raw == null || raw.isEmpty()) {
             return null;
         }
-        if (raw.contains("Точка на карте")) {
-            return context.getString(R.string.startPoint);
+        if (isServerPointOnMapPlaceholder(raw)) {
+            return null;
         }
         return raw;
     }
 
     public static boolean isPlaceholderAddress(Context context, String address) {
+        if (context == null) {
+            return isUnresolvedMapAddress(address, null, null);
+        }
+        return isUnresolvedMapAddress(
+                address,
+                context.getString(R.string.startPoint),
+                context.getString(R.string.end_point_marker));
+    }
+
+    /**
+     * Подпись точки на карте: если адрес не определён, старт и финиш
+     * получают разные заглушки («Місце посадки» / «Місце призначення»).
+     */
+    public static String resolveMapPointLabel(@Nullable String address, boolean isFinish,
+                                             @Nullable String startLabel,
+                                             @Nullable String finishLabel) {
+        if (isUnresolvedMapAddress(address, startLabel, finishLabel)) {
+            if (isFinish) {
+                return finishLabel != null ? finishLabel : "";
+            }
+            return startLabel != null ? startLabel : "";
+        }
+        return address.trim();
+    }
+
+    public static boolean isUnresolvedMapAddress(@Nullable String address,
+                                                @Nullable String startLabel,
+                                                @Nullable String finishLabel) {
         if (address == null || address.trim().isEmpty()) {
             return true;
         }
-        if (address.contains("Точка на карте")) {
+        String trimmed = address.trim();
+        if (isServerPointOnMapPlaceholder(trimmed)) {
             return true;
         }
-        return address.equals(context.getString(R.string.startPoint));
+        return trimmed.equals(startLabel) || trimmed.equals(finishLabel);
+    }
+
+    public static boolean isServerPointOnMapPlaceholder(@Nullable String raw) {
+        if (raw == null) {
+            return false;
+        }
+        return raw.contains(SERVER_POINT_ON_MAP_RU) || raw.contains(SERVER_POINT_ON_MAP_UK);
     }
 
     private static boolean shouldRetryOnProductionServer(String city, String currentBaseUrl) {
