@@ -111,6 +111,7 @@ import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetErrorFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyBottomSheetGPSFragment;
 import com.taxi.easy.ua.utils.bottom_sheet.MyPhoneDialogFragment;
 import com.taxi.easy.ua.utils.bugreport.BugReportHelper;
+import com.taxi.easy.ua.utils.city.CityChangeDeclineUiHelper;
 import com.taxi.easy.ua.utils.city.CityFinder;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.cost.CostParseHelper;
@@ -4549,14 +4550,16 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
                                             Logger.d(context, TAG, "   └─ Другая причина: cityChanged=" + cityChanged + ", userConfirmed=" + userConfirmed);
                                         }
 
-                                        // Скрываем ProgressBar и показываем кнопки
+                                        // Mantis #58: keep start/finish and order buttons after declining city change.
                                         Logger.d(context, TAG, "───────────────────────────────────────────");
                                         Logger.d(context, TAG, "🎨 Восстановление UI:");
 
-
-                                        geoText.setText("");
-                                        textViewTo.setText("");
-                                        btnVisible(GONE);
+                                        if (CityChangeDeclineUiHelper.shouldClearAddressFields()) {
+                                            geoText.setText("");
+                                            textViewTo.setText("");
+                                        }
+                                        btnVisible(CityChangeDeclineUiHelper.shouldShowOrderButtons() ? VISIBLE : GONE);
+                                        finishAutoLocationGpsButtonState();
                                         if (progressBar != null) {
                                             progressBar.setVisibility(View.GONE);
                                             Logger.d(context, TAG, "   ├─ progressBar.setVisibility(GONE)");
