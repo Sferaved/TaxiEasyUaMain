@@ -129,6 +129,7 @@ import com.taxi.easy.ua.utils.order.EarlyOrderNavigationHelper;
 import com.taxi.easy.ua.utils.orders.ActiveOrdersNoticeHelper;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.location.AutoLocationAfterCityHelper;
+import com.taxi.easy.ua.utils.location.GpsButtonAppearanceHelper;
 import com.taxi.easy.ua.utils.location.GpsGeocodeHelper;
 import com.taxi.easy.ua.utils.location.TaxiLocationValidator;
 import com.taxi.easy.ua.utils.log.Logger;
@@ -341,15 +342,21 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
 
                     if (locationGranted) {
                         location_update = true;
+                        savePermissionRequestCount(0);
                         AutoLocationAfterCityHelper.markEverGranted();
                         if (AutoLocationAfterCityHelper.isPending()) {
                             AutoLocationAfterCityHelper.clearPending();
                             startAutoLocationAfterCityIfPossible();
                         }
-                    } else if (AutoLocationAfterCityHelper.isPending()) {
-                        AutoLocationAfterCityHelper.clearPending();
-                        applyLastOrderAddressFromRouteMarker();
+                    } else {
+                        location_update = false;
+                        if (AutoLocationAfterCityHelper.isPending()) {
+                            AutoLocationAfterCityHelper.clearPending();
+                            applyLastOrderAddressFromRouteMarker();
+                        }
                     }
+                    boolean xStatus = viewModel != null && Boolean.TRUE.equals(viewModel.getStatusX().getValue());
+                    updateGpsButtonCross(xStatus);
                     maybeShowInclusiveTransportPrompt();
                 }
         );
@@ -620,37 +627,38 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     }
     public static void updateGpsButtonCross(boolean show) {
         if (gpsBtn != null && getCurrentActivity() != null) {
-            if (show) {
-                // При show=true ВСЕГДА показываем крестик
-                gpsBtn.setBackground(ContextCompat.getDrawable(getCurrentActivity(), R.drawable.buttons_green_cross));
-                gpsBtn.setTextColor(Color.WHITE);
-                Logger.d(null, TAG, "updateGpsButtonCross: показан КРЕСТИК (show=true)");
-            } else {
-                // При show=false проверяем статус GPS и разрешения
-                Context context = MyApplication.getContext();
-                LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+            Context context = MyApplication.getContext();
+            LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+            boolean hasFineLocationPermission = ActivityCompat.checkSelfPermission(
+                    context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+            boolean gpsEnabled = locationManager != null
+                    && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
 
-                boolean hasFineLocationPermission = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-                boolean gpsEnabled = locationManager != null && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            GpsButtonAppearanceHelper.Appearance appearance =
+                    GpsButtonAppearanceHelper.resolve(show, gpsEnabled, hasFineLocationPermission);
+            Logger.d(null, TAG, "updateGpsButtonCross: show=" + show
+                    + ", gpsEnabled=" + gpsEnabled
+                    + ", hasPermission=" + hasFineLocationPermission
+                    + ", appearance=" + appearance);
 
-                Logger.d(null, TAG, "updateGpsButtonCross: show=false, gpsEnabled=" + gpsEnabled + ", hasPermission=" + hasFineLocationPermission);
-
-                if (gpsEnabled && hasFineLocationPermission) {
-                    // GPS включен И есть разрешение - зеленая кнопка
+            switch (appearance) {
+                case GREEN_CROSS:
+                    gpsBtn.setBackground(ContextCompat.getDrawable(getCurrentActivity(), R.drawable.buttons_green_cross));
+                    gpsBtn.setTextColor(Color.WHITE);
+                    break;
+                case GREEN:
                     gpsBtn.setBackground(ContextCompat.getDrawable(getCurrentActivity(), R.drawable.buttons_green));
                     gpsBtn.setTextColor(Color.WHITE);
-                    Logger.d(null, TAG, "updateGpsButtonCross: ЗЕЛЕНАЯ кнопка");
-                } else if (gpsEnabled && !hasFineLocationPermission) {
-                    // GPS включен, НЕТ разрешения - желтая кнопка
+                    break;
+                case YELLOW:
                     gpsBtn.setBackground(ContextCompat.getDrawable(getCurrentActivity(), R.drawable.buttons_yellow));
                     gpsBtn.setTextColor(Color.BLACK);
-                    Logger.d(null, TAG, "updateGpsButtonCross: ЖЕЛТАЯ кнопка");
-                } else {
-                    // GPS выключен - красная кнопка
+                    break;
+                case RED:
+                default:
                     gpsBtn.setBackground(ContextCompat.getDrawable(getCurrentActivity(), R.drawable.btn_red));
                     gpsBtn.setTextColor(Color.WHITE);
-                    Logger.d(null, TAG, "updateGpsButtonCross: КРАСНАЯ кнопка");
-                }
+                    break;
             }
             gpsBtn.invalidate();
         }
@@ -4250,48 +4258,39 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
     private void gpsButSetOnClickListener(LocationManager locationManager) {
         if (locationManager != null) {
             if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                boolean hasLocationPermission = hasUsableLocationPermission();
+                location_update = hasLocationPermission;
 
-                if (loadPermissionRequestCount() >= 3 && !location_update) {
+                if (!hasLocationPermission) {
                     sharedPreferencesHelperMain.saveValue("setStatusX", true);
                     viewModel.setStatusX(true);
-                    MyBottomSheetGPSFragment bottomSheetDialogFragment = new MyBottomSheetGPSFragment(getString(R.string.location_on));
-                    bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
-                } else {
-                    sharedPreferencesHelperMain.saveValue("setStatusX", true);
-                    viewModel.setStatusX(true);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                            checkPermission();
-                        }
+                    if (shouldPromptSystemLocationPermission()) {
+                        checkPermission();
                     } else {
-                        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                                || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                            checkPermission();
-                        }
+                        MyBottomSheetGPSFragment bottomSheetDialogFragment =
+                                new MyBottomSheetGPSFragment(getString(R.string.location_on));
+                        bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
                     }
+                    updateGpsButtonCross(true);
+                    return;
                 }
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                        location_update = true;
-                    }
-                } else {
-                    location_update = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                            || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-                }
+                sharedPreferencesHelperMain.saveValue("setStatusX", true);
+                viewModel.setStatusX(true);
 
                 Logger.d(context, TAG, "locationManager: " + locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
 
                 if (!NetworkUtils.isNetworkAvailable(requireContext()) && isAdded()) {
                     Toast.makeText(requireActivity(), R.string.network_no_internet, Toast.LENGTH_LONG).show();
                     Logger.w(context, TAG, "NO INTERNET - Showing toast message");
-                } else if (location_update) {
+                } else {
                     String searchText = getString(R.string.search_text) + "...";
                     progressBar.setVisibility(View.VISIBLE);
                     Toast.makeText(context, searchText, Toast.LENGTH_SHORT).show();
                     if (autoLocationFromCityLoad && isUpdatingFromGPS) {
                         gpsClickAwaitingAutoDetected = true;
                         Logger.d(context, TAG, "GPS: ждём завершения авто-GPS после города (применим свежую локацию)");
+                        updateGpsButtonCross(true);
                         return;
                     }
                     firstLocation();
@@ -4307,14 +4306,37 @@ public class VisicomFragment extends Fragment implements ButtonVisibilityCallbac
             bottomSheetDialogFragment.show(getChildFragmentManager(), bottomSheetDialogFragment.getTag());
         }
 
-        // ✅ ЕДИНЫЙ ЦЕНТРАЛИЗОВАННЫЙ КОД ДЛЯ ОБНОВЛЕНИЯ ФОНА КНОПКИ
         updateGpsButtonCross(Boolean.TRUE.equals(viewModel.getStatusX().getValue()));
-
     }
-    private void checkPermission() {
 
+    private boolean hasUsableLocationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED;
+        }
+        return ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED
+                || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /** Системный диалог, пока Android ещё может его показать; иначе — переход в настройки. */
+    private boolean shouldPromptSystemLocationPermission() {
+        if (loadPermissionRequestCount() < 3) {
+            return true;
+        }
+        Activity activity = getActivity();
+        if (activity == null) {
+            return false;
+        }
+        return ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.ACCESS_FINE_LOCATION)
+                || ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.ACCESS_COARSE_LOCATION);
+    }
+
+    private void checkPermission() {
         requestLocationPermissions();
     }
+
     private void requestLocationPermissions() {
         permissionLauncher.launch(new String[]{
                 Manifest.permission.ACCESS_FINE_LOCATION,
