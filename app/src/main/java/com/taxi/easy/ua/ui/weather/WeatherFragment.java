@@ -40,6 +40,7 @@ import com.taxi.easy.ua.databinding.FragmentWeatherBinding;
 import com.taxi.easy.ua.utils.connect.NetworkUtils;
 import com.taxi.easy.ua.utils.keys.FirestoreHelper;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.network.GsonResponseParser;
 import com.taxi.easy.ua.widget.WeatherWidget;
 import com.uxcam.UXCam;
 
@@ -268,8 +269,9 @@ public class WeatherFragment extends Fragment {
         call.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<WeatherResponse> call, @NonNull Response<WeatherResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    updateCurrentWeatherUI(response.body());
+                WeatherResponse weather = GsonResponseParser.as(response.body(), WeatherResponse.class);
+                if (response.isSuccessful() && weather != null) {
+                    updateCurrentWeatherUI(weather);
                 } else {
                     Logger.e(context, TAG, "Failed to fetch weather: " + response.code());
                     showErrorState();
@@ -306,14 +308,20 @@ public class WeatherFragment extends Fragment {
             public void onResponse(@NonNull Call<WeatherResponse> call, @NonNull Response<WeatherResponse> response) {
                 progressBar.setVisibility(View.GONE);
 
-                if (response.isSuccessful() && response.body() != null && response.body().getForecastList() != null) {
-                    dailyForecastList.clear();
-                    dailyForecastList.addAll(
-                            WeatherForecastAggregator.aggregate(response.body().getForecastList()));
+                if (response.isSuccessful() && response.body() != null) {
+                    WeatherResponse forecast = GsonResponseParser.as(
+                            response.body(), WeatherResponse.class);
+                    if (forecast != null && forecast.getForecastList() != null) {
+                        dailyForecastList.clear();
+                        dailyForecastList.addAll(
+                                WeatherForecastAggregator.aggregate(forecast.getForecastList()));
 
-                    weatherAdapter.notifyDataSetChanged();
-                    refreshTodayTempRangeFromForecast();
-                    updateUI();
+                        weatherAdapter.notifyDataSetChanged();
+                        refreshTodayTempRangeFromForecast();
+                        updateUI();
+                    } else {
+                        showErrorState();
+                    }
                 } else {
                     showErrorState();
                 }
@@ -383,27 +391,27 @@ public class WeatherFragment extends Fragment {
         });
     }
     private void updateCurrentWeatherUI(WeatherResponse weather) {
+        if (weather == null || weather.getMain() == null) {
+            Logger.e(context, TAG, "Current weather payload missing main");
+            showErrorState();
+            return;
+        }
 
         String cityName = getCityFromDatabase();
 
         tvCityName.setText(cityName);
-//        tvCityName.setText(weather.getName());
         String localCode = sharedPreferencesHelperMain.getValue("locale", "uk").toString();
-        // Дата
         SimpleDateFormat dateFormat = new SimpleDateFormat("d MMMM, EEEE", new Locale(localCode));
         tvDate.setText(dateFormat.format(new Date()));
 
-        // Температура
         int temp = (int) Math.round(weather.getMain().getTemp());
         tvTemperature.setText(temp + "°C");
 
-        if (weather.getMain() != null) {
-            int feelsLike = (int) Math.round(weather.getMain().getFeelsLike());
-            int tempMin = (int) Math.round(weather.getMain().getTempMin());
-            int tempMax = (int) Math.round(weather.getMain().getTempMax());
-            tvFeelsLike.setText(getString(R.string.weather_feels_like, feelsLike));
-            updateTempRangeChip(tempMin, tempMax);
-        }
+        int feelsLike = (int) Math.round(weather.getMain().getFeelsLike());
+        int tempMin = (int) Math.round(weather.getMain().getTempMin());
+        int tempMax = (int) Math.round(weather.getMain().getTempMax());
+        tvFeelsLike.setText(getString(R.string.weather_feels_like, feelsLike));
+        updateTempRangeChip(tempMin, tempMax);
 
         if (weather.getSys() != null) {
             String sunrise = formatSunTime(weather.getSys().getSunrise(), weather.getTimezone());
@@ -412,25 +420,22 @@ public class WeatherFragment extends Fragment {
             tvSunset.setText(getString(R.string.weather_sunset, sunset));
         }
 
-        // Описание
         if (weather.getWeather() != null && !weather.getWeather().isEmpty()) {
             String description = weather.getWeather().get(0).getDescription();
             tvWeatherDescription.setText(capitalizeFirstLetter(description));
 
-            // Иконка
             String iconCode = weather.getWeather().get(0).getIcon();
             ivWeatherIcon.setImageResource(getWeatherIcon(iconCode));
         }
 
-        // Влажность
         tvHumidity.setText(weather.getMain().getHumidity() + "%");
 
-        // Ветер
-        double windSpeed = weather.getWind().getSpeed();
-        String speed = windSpeed + " " + context.getString(R.string.speed);
-        tvWind.setText(speed);
+        if (weather.getWind() != null) {
+            double windSpeed = weather.getWind().getSpeed();
+            String speed = windSpeed + " " + context.getString(R.string.speed);
+            tvWind.setText(speed);
+        }
 
-        // Давление (из гПа в мм рт. ст.)
         int pressureMmHg = (int) (weather.getMain().getPressure() * 0.750064);
         String pressure_high = pressureMmHg + " " + context.getString(R.string.pressure_high);
         tvPressure.setText(pressure_high);

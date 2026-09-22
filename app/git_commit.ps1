@@ -169,11 +169,26 @@ if (-not (Test-Path $publishScript)) {
     exit 1
 }
 Write-Host "Publishing to Google Play..." -ForegroundColor Yellow
+$publishArgs = @("-ProjectRoot", $projectRoot)
+if (-not [string]::IsNullOrWhiteSpace($env:PLAY_TRACKS)) {
+    $trackList = @(
+        $env:PLAY_TRACKS -split ',' |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { $_ }
+    )
+    if ($trackList.Count -eq 0) {
+        Write-Host "ERROR: PLAY_TRACKS is set but empty" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "PLAY_TRACKS: $($trackList -join ', ')" -ForegroundColor Gray
+    $publishArgs += "-Tracks"
+    $publishArgs += ($trackList -join ',')
+}
 $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
 if ($pwsh) {
-    & pwsh -NoProfile -ExecutionPolicy Bypass -File $publishScript -ProjectRoot $projectRoot
+    & pwsh -NoProfile -ExecutionPolicy Bypass -File $publishScript @publishArgs
 } else {
-    & powershell -NoProfile -ExecutionPolicy Bypass -File $publishScript -ProjectRoot $projectRoot
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $publishScript @publishArgs
 }
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Google Play publish failed - git push skipped" -ForegroundColor Red

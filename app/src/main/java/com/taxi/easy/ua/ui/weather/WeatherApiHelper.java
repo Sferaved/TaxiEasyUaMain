@@ -10,6 +10,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.taxi.easy.ua.utils.log.Logger;
+import com.taxi.easy.ua.utils.network.GsonResponseParser;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -94,14 +95,14 @@ public class WeatherApiHelper {
         call.enqueue(new Callback<WeatherResponse>() {
             @Override
             public void onResponse(@NonNull Call<WeatherResponse> call, @NonNull Response<WeatherResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    if (response.body().getWeather() != null && !response.body().getWeather().isEmpty()) {
-                        String desc = response.body().getWeather().get(0).getDescription();
+                WeatherResponse weather = GsonResponseParser.as(response.body(), WeatherResponse.class);
+                if (response.isSuccessful() && weather != null) {
+                    if (weather.getWeather() != null && !weather.getWeather().isEmpty()) {
+                        String desc = weather.getWeather().get(0).getDescription();
                         Logger.d(context, TAG, "📡 ПОЛУЧЕНО ОТ API: description = '" + desc + "'");
                     }
-                    result[0] = response.body();
-                    // Сохраняем данные для кэша
-                    saveWeatherToCache(context, response.body(), city);
+                    result[0] = weather;
+                    saveWeatherToCache(context, weather, city);
                 }
                 latch.countDown();
             }
@@ -147,9 +148,10 @@ public class WeatherApiHelper {
         call.enqueue(new Callback<WeatherResponse>() {
             @Override
             public void onResponse(@NonNull Call<WeatherResponse> call, @NonNull Response<WeatherResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    saveWeatherToCache(context, response.body(), city);
-                    if (callback != null) callback.onSuccess(response.body());
+                WeatherResponse weather = GsonResponseParser.as(response.body(), WeatherResponse.class);
+                if (response.isSuccessful() && weather != null) {
+                    saveWeatherToCache(context, weather, city);
+                    if (callback != null) callback.onSuccess(weather);
                 } else {
                     if (callback != null) callback.onFailure("Response error: " + response.code());
                 }

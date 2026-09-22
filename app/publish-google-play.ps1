@@ -1,7 +1,9 @@
 # Publish release AAB to Google Play (local, no GitHub Actions).
 # Requires: keystore/service-account.json or app/keystore/service-account.json
 param(
-    [string]$ProjectRoot = (Split-Path -Parent $PSScriptRoot)
+    [string]$ProjectRoot = (Split-Path -Parent $PSScriptRoot),
+    [string]$Tracks = "internal,alpha,beta,production",
+    [int]$ExistingVersionCode = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -109,7 +111,7 @@ $packageName = $Matches[1]
 Write-Host "Package: $packageName" -ForegroundColor Gray
 
 $aabPath = Join-Path $ProjectRoot "app/build/outputs/bundle/release/app-release.aab"
-if (-not (Test-Path $aabPath)) {
+if ($ExistingVersionCode -le 0 -and -not (Test-Path $aabPath)) {
     throw "AAB not found. Run: gradlew.bat bundleRelease`n$aabPath"
 }
 
@@ -163,23 +165,41 @@ if ([string]::IsNullOrWhiteSpace($editId)) {
     throw "Failed to create Play edit"
 }
 
-Write-Step "Uploading AAB..."
-$aabBytes = [System.IO.File]::ReadAllBytes($aabPath)
-$upload = Invoke-GoogleApi -Method Post `
-    -Url "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/$packageName/edits/$editId/bundles?uploadType=media" `
-    -AccessToken $accessToken `
-    -Body $aabBytes `
-    -ContentType "application/octet-stream"
+if ($ExistingVersionCode -gt 0) {
+    $versionCode = $ExistingVersionCode
+    Write-Host "Using existing versionCode: $versionCode (upload skipped)" -ForegroundColor Green
+} else {
+    Write-Step "Uploading AAB..."
+    $aabBytes = [System.IO.File]::ReadAllBytes($aabPath)
+    $upload = Invoke-GoogleApi -Method Post `
+        -Url "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/$packageName/edits/$editId/bundles?uploadType=media" `
+        -AccessToken $accessToken `
+        -Body $aabBytes `
+        -ContentType "application/octet-stream"
 
-$versionCode = $upload.versionCode
-if (-not $versionCode) {
-    throw "AAB upload failed"
+    $versionCode = $upload.versionCode
+    if (-not $versionCode) {
+        throw "AAB upload failed"
+    }
+    Write-Host "Uploaded versionCode: $versionCode" -ForegroundColor Green
 }
-Write-Host "Uploaded versionCode: $versionCode" -ForegroundColor Green
 
-$tracks = @("internal", "alpha", "beta", "production")
-Write-Step "Updating tracks: $($tracks -join ', ')..."
-foreach ($track in $tracks) {
+$allowedTracks = @("internal", "alpha", "beta", "production")
+$resolvedTracks = @(
+    $Tracks |
+        ForEach-Object { $_ -split ',' } |
+        ForEach-Object { $_.Trim().ToLowerInvariant() } |
+        Where-Object { $_ }
+)
+if ($resolvedTracks.Count -eq 0) {
+    throw "No Play tracks specified"
+}
+$unknown = @($resolvedTracks | Where-Object { $allowedTracks -notcontains $_ })
+if ($unknown.Count -gt 0) {
+    throw "Unknown Play tracks: $($unknown -join ', ')"
+}
+Write-Step "Updating tracks: $($resolvedTracks -join ', ')..."
+foreach ($track in $resolvedTracks) {
     $body = @{
         releases = @(
             @{
@@ -206,4 +226,4 @@ Invoke-GoogleApi -Method Post `
     -AccessToken $accessToken | Out-Null
 
 Write-Host ""
-Write-Host "OK: Published to Google Play (versionCode $versionCode)" -ForegroundColor Green
+Write-Host "OK: Published to Google Play tracks [$($resolvedTracks -join ', ')] (versionCode $versionCode)" -ForegroundColor Green

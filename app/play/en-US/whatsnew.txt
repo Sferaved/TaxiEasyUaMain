@@ -1,2 +1,3 @@
-• Tapping Close on order status shows the active orders reminder on the order page again
+• App optimization enabled
+• Fixed crashes on the weather screen and card list
 • Stability improvements

@@ -40,6 +40,7 @@ import com.taxi.easy.ua.ui.wfp.token.CallbackServiceWfp;
 
 import com.taxi.easy.ua.utils.log.Logger;
 
+import com.taxi.easy.ua.utils.network.GsonResponseParser;
 import com.taxi.easy.ua.utils.network.RetryInterceptor;
 
 import com.taxi.easy.ua.utils.worker.GetCardTokenWfpWorker;
@@ -735,11 +736,13 @@ public class WfpUtils {
 
             public void onResponse(@NonNull Call<CallbackResponseWfp> call, @NonNull Response<CallbackResponseWfp> response) {
 
-                boolean success = response.isSuccessful() && response.body() != null;
+                CallbackResponseWfp parsed = GsonResponseParser.as(response.body(), CallbackResponseWfp.class);
+
+                boolean success = response.isSuccessful() && parsed != null;
 
                 if (success) {
 
-                    success = applyFetchResultIfCurrent(context, response.body().getCards(), fetchGeneration);
+                    success = applyFetchResultIfCurrent(context, parsed.getCards(), fetchGeneration);
 
                 } else {
 
@@ -819,9 +822,11 @@ public class WfpUtils {
 
             Logger.d(context, TAG, "onResponse: " + response.body());
 
-            if (response.isSuccessful() && response.body() != null) {
+            CallbackResponseWfp parsed = GsonResponseParser.as(response.body(), CallbackResponseWfp.class);
 
-                List<CardInfo> cards = response.body().getCards();
+            if (response.isSuccessful() && parsed != null) {
+
+                List<CardInfo> cards = parsed.getCards();
 
                 Logger.d(context, TAG, "onResponse: cards" + cards);
 

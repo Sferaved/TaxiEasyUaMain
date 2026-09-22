@@ -21,7 +21,8 @@ public class WeatherNotificationHelper {
 
     public static void showWeatherNotification(Context context, WeatherResponse weather, String cityName) {
 
-        if (context == null || weather == null || weather.getWeather() == null || weather.getWeather().isEmpty()) {
+        if (context == null || weather == null || weather.getMain() == null
+                || weather.getWeather() == null || weather.getWeather().isEmpty()) {
             return;
         }
 

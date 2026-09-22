@@ -4,17 +4,24 @@ import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
 public class WeatherResponse {
+    @SerializedName("coord")
     private Coord coord;
+    @SerializedName("weather")
     private List<Weather> weather;
     private String base;
+    @SerializedName("main")
     private Main main;
     private int visibility;
+    @SerializedName("wind")
     private Wind wind;
+    @SerializedName("clouds")
     private Clouds clouds;
     private long dt;
+    @SerializedName("sys")
     private Sys sys;
     private int timezone;
     private int id;
+    @SerializedName("name")
     private String name;
     private int cod;
 
@@ -23,7 +30,9 @@ public class WeatherResponse {
     private List<ForecastItem> forecastList;
 
     public static class Coord {
+        @SerializedName("lon")
         private double lon;
+        @SerializedName("lat")
         private double lat;
 
         public double getLon() { return lon; }
@@ -36,8 +45,11 @@ public class WeatherResponse {
 
     public static class Weather {
         private int id;
+        @SerializedName("main")
         private String main;
+        @SerializedName("description")
         private String description;
+        @SerializedName("icon")
         private String icon;
 
         public int getId() { return id; }
@@ -53,6 +65,7 @@ public class WeatherResponse {
     }
 
     public static class Main {
+        @SerializedName("temp")
         private double temp;
         @SerializedName("feels_like")
         private double feelsLike;
@@ -60,7 +73,9 @@ public class WeatherResponse {
         private double tempMin;
         @SerializedName("temp_max")
         private double tempMax;
+        @SerializedName("pressure")
         private int pressure;
+        @SerializedName("humidity")
         private int humidity;
 
         public double getTemp() { return temp; }
@@ -80,7 +95,9 @@ public class WeatherResponse {
     }
 
     public static class Wind {
+        @SerializedName("speed")
         private double speed;
+        @SerializedName("deg")
         private int deg;
 
         public double getSpeed() { return speed; }
@@ -92,6 +109,7 @@ public class WeatherResponse {
     }
 
     public static class Clouds {
+        @SerializedName("all")
         private int all;
 
         public int getAll() { return all; }
@@ -103,8 +121,11 @@ public class WeatherResponse {
     public static class Sys {
         private int type;
         private int id;
+        @SerializedName("country")
         private String country;
+        @SerializedName("sunrise")
         private long sunrise;
+        @SerializedName("sunset")
         private long sunset;
 
         public String getCountry() { return country; }
@@ -121,13 +142,18 @@ public class WeatherResponse {
 
     public static class ForecastItem {
         private long dt;
+        @SerializedName("main")
         private Main main;
+        @SerializedName("weather")
         private List<Weather> weather;
+        @SerializedName("wind")
         private Wind wind;
+        @SerializedName("clouds")
         private Clouds clouds;
         @SerializedName("dt_txt")
         private String dtTxt;
         /** Probability of precipitation, 0..1 */
+        @SerializedName("pop")
         private double pop;
 
         public long getDt() { return dt; }
